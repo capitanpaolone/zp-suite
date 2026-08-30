@@ -16,6 +16,13 @@ nel suo insieme.
   VOICE/MUSIC a trasporto fermo, da GUI e da Chain Builder). Eletta come fonte la
   versione corretta.
 
+### Aggiunto
+- Pipeline ReaPack: `.reapack-index.conf` e due workflow GitHub Actions.
+  `check` valida i pacchetti a ogni push e su ogni pull request; `deploy` rigenera
+  `index.xml` a ogni push su master e lo ricommitta da solo.
+- `index.xml` iniziale con il nome "ZP Suite" — e' il nome che ReaPack mostra.
+  Da qui in avanti il file lo mantiene la CI: non va modificato a mano.
+
 ### Modificato
 - Rinominati sette file per togliere la versione dal nome: con ReaPack il nome del file
   e' l'identita' del pacchetto e non puo' piu' cambiare dopo la pubblicazione. La versione
