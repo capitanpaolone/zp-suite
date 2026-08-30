@@ -1,0 +1,197 @@
+desc:ZP Subliminal Presence Layer White v3.2 - Paolo Balestri
+options:no_menu
+//author: Paolo Balestri - Zio Paolo
+// Contatto: social@paolobalestri.com
+/**
+ * Subliminal Presence Layer (SPL) - DOCUMENTAZIONE TECNICA
+ * ---------------------------------------------------------------------------
+ * PROGETTO: "Hacking dell'Attenzione" per eLearning ad alta complessità[cite: 2, 3].
+ * * 1. IL PROBLEMA: La "Modalità ECO" Cerebrale
+ * Il cervello ottimizza l'energia filtrando la voce come rumore di fondo durante 
+ * narrazioni lunghe[cite: 28, 29]. Questo plugin combatte la fatica cognitiva 
+ * attraverso lo stimolo neurale costante[cite: 31, 33].
+ *
+ * 2. FONDAMENTI PSICOACUSTICI
+ * - Risonanza Stocastica: L'aggiunta di rumore sub-liminale migliora la 
+ * rilevabilità dei micro-dettagli del parlato[cite: 36, 85].
+ * - Modulazione Anarmonica: 4 LFO basati sulla Sezione Aurea (1.618) e radici 
+ * irrazionali garantiscono un pattern mai ripetitivo (anti-assuefazione)[cite: 51, 87].
+ * - Correlazione Dinamica: Il rumore "cavalca" l'inviluppo della voce[cite: 53, 88].
+ *
+ * 3. PROFILI OPERATIVI
+ * - MP3 128 MONO: Banda 2100-3500 Hz. Base -63 dBFS. Progettato per sopravvivere 
+ * a ricompressioni distruttive (fino a 64kbps)[cite: 70, 83, 91].
+ * - HQ: Banda 1500-8000 Hz. Base -67 dBFS. Per master ad alta risoluzione[cite: 93, 95].
+ *
+ * 4. PROTOCOLLO DI CONSEGNA (Survival Guide) [cite: 72]
+ * - Posizionamento: ULTIMO anello della catena (Post-Limiter)[cite: 49, 96].
+ * - Target LRA: < 2.0 per stabilità assoluta[cite: 76].
+ * - Peak: -3.0 dBFS per prevenire artefatti di inter-sample nei codec[cite: 48, 74].
+ * - Intensità: 15% - 30% per un effetto sub-percettivo[cite: 97, 98].
+ * ---------------------------------------------------------------------------
+ */
+
+slider1:0<0,1,1{MP3 128 mono,HQ / Compressione leggera}>Profilo
+slider2:30<0,100,1>Intensita (%)
+slider3:1<0,1,1{Off,On}>Attivo
+
+@init
+PHI    = 1.6180339887; PHI2   = 2.6180339887;
+SQRT2  = 1.4142135623; SQRT3  = 1.7320508075; SQRT5  = 2.2360679774;
+
+rng_state = 73856093;
+hp_x1=0; hp_x2=0; hp_y1=0; hp_y2=0;
+lp_x1=0; lp_x2=0; lp_y1=0; lp_y2=0;
+env_follow = 0; update_counter = 0; UPDATE_INTERVAL = 64; last_profile = -1;
+lfo1=0; lfo2=0; lfo3=0; lfo4=0; intensity_mod = 0; mod = 0;
+ui_scan = 0; gfx_t = 0;
+
+function white_noise() (
+  rng_state = (rng_state * 1664525 + 1013904223) & 0xFFFFFFFF;
+  (rng_state / 2147483648.0) - 1.0;
+);
+
+function calc_hp(freq, sr) local(w0 cosw0 sinw0 alpha a0inv) (
+  freq = max(20, min(sr*0.49, freq)); w0 = 2 * $pi * freq / sr;
+  cosw0 = cos(w0); sinw0 = sin(w0); alpha = sinw0 / (2 * 0.707); a0inv = 1 / (1 + alpha);
+  hp_a0 = (1 + cosw0) * 0.5 * a0inv; hp_a1 = -(1 + cosw0) * a0inv; hp_a2 = (1 + cosw0) * 0.5 * a0inv;
+  hp_b1 = -2 * cosw0 * a0inv; hp_b2 = (1 - alpha) * a0inv;
+);
+
+function calc_lp(freq, sr) local(w0 cosw0 sinw0 alpha a0inv) (
+  freq = max(20, min(sr*0.49, freq)); w0 = 2 * $pi * freq / sr;
+  cosw0 = cos(w0); sinw0 = sin(w0); alpha = sinw0 / (2 * 0.707); a0inv = 1 / (1 + alpha);
+  lp_a0 = (1 - cosw0) * 0.5 * a0inv; lp_a1 = (1 - cosw0) * a0inv; lp_a2 = (1 - cosw0) * 0.5 * a0inv;
+  lp_b1 = -2 * cosw0 * a0inv; lp_b2 = (1 - alpha) * a0inv;
+);
+
+function hp_process(x) local(y) (
+  y = hp_a0*x + hp_a1*hp_x1 + hp_a2*hp_x2 - hp_b1*hp_y1 - hp_b2*hp_y2;
+  hp_x2 = hp_x1; hp_x1 = x; hp_y2 = hp_y1; hp_y1 = y; y;
+);
+
+function lp_process(x) local(y) (
+  y = lp_a0*x + lp_a1*lp_x1 + lp_a2*lp_x2 - lp_b1*lp_y1 - lp_b2*lp_y2;
+  lp_x2 = lp_x1; lp_x1 = x; lp_y2 = lp_y1; lp_y1 = y; y;
+);
+
+@slider
+active = slider3; intensity = slider2 / 100;
+
+@block
+last_profile != slider1 ? (
+  slider1 == 0 ? (
+    center_freq = 2800; freq_range = 800;
+    env_att = exp(-1/(srate*0.005)); env_rel = exp(-1/(srate*0.080));
+    noise_base = 10 ^ (-63 / 20);
+  ) : (
+    center_freq = 4000; freq_range = 2500;
+    env_att = exp(-1/(srate*0.008)); env_rel = exp(-1/(srate*0.200));
+    noise_base = 10 ^ (-67 / 20);
+  );
+  calc_hp(center_freq - freq_range * 0.5, srate);
+  calc_lp(center_freq + freq_range * 0.5, srate);
+  last_profile = slider1;
+);
+
+@sample
+active ? (
+  _abs = abs(spl0);
+  _abs > env_follow ? env_follow = env_att * env_follow + (1 - env_att) * _abs : env_follow = env_rel * env_follow + (1 - env_rel) * _abs;
+
+  t = play_pos;
+  lfo1 = sin(2 * $pi * t * 0.23 * PHI);
+  lfo2 = sin(2 * $pi * t * 0.31 * PHI2);
+  lfo3 = sin(2 * $pi * t * 0.41 * SQRT2);
+  lfo4 = sin(2 * $pi * t * 0.57 * SQRT3);
+
+  update_counter += 1;
+  update_counter >= UPDATE_INTERVAL ? (
+    update_counter = 0;
+    mod = (lfo1 * 0.4 + lfo2 * 0.3 + lfo3 * 0.2 + lfo4 * 0.1);
+    intensity_mod = intensity * (1.0 + sin(2 * $pi * t * 0.07 * SQRT5) * 0.20);
+    fc = center_freq + mod * freq_range * 0.5;
+    calc_hp(fc - freq_range * 0.4, srate); calc_lp(fc + freq_range * 0.4, srate);
+  );
+
+  _noise = white_noise();
+  _noise = lp_process(hp_process(_noise));
+  _env_norm = max(0.0, min(1.0, env_follow / 0.126));
+  _noise *= noise_base * intensity_mod * _env_norm;
+  spl0 += _noise; spl1 += _noise;
+);
+
+@gfx 450 200
+gfx_set(0.05, 0.05, 0.06, 1); gfx_rect(0,0,gfx_w,gfx_h);
+gfx_t += 0.04; 
+
+glow = (env_follow * intensity) * 3;
+vibration = env_follow * intensity * 2;
+
+slider1 == 0 ? ( pr = 1.0; pg = 0.5; pb = 0.1; ) : ( pr = 0.1; pg = 0.8; pb = 1.0; );
+
+active ? (
+  gfx_set(pr, pg, pb, glow * 0.18); gfx_circle(gfx_w/2, gfx_h/2 - 10, 42 + glow*18, 1);
+  gfx_set(pr, pg, pb, glow * 0.35); gfx_circle(gfx_w/2, gfx_h/2 - 10, 30 + glow*12, 1);
+  gfx_set(1, 1, 1, glow * 0.75); gfx_circle(gfx_w/2, gfx_h/2 - 10, 5 + glow*5, 1);
+);
+
+gfx_set(0.9, 0.9, 0.9, 1); gfx_setfont(1, "Arial", 22, 'b');
+str_f = "SR = f(S, N, T)"; gfx_measurestr(str_f, sw, sh);
+gfx_x = (gfx_w - sw) / 2 + (rand(vibration) - vibration/2);
+gfx_y = (gfx_h - sh) / 2 - 10 + (rand(vibration) - vibration/2);
+gfx_drawstr(str_f);
+
+gfx_setfont(2, "Arial", 12, 'i'); gfx_set(0.6, 0.6, 0.6, 1);
+str_s = "Stochastic Resonance Protocol"; gfx_measurestr(str_s, sw2, sh2);
+gfx_x = (gfx_w - sw2) / 2; gfx_y += sh + 5; gfx_drawstr(str_s);
+
+gfx_set(0.1, 0.1, 0.12, 1); gfx_rect(0, gfx_h-35, gfx_w, 35);
+ui_scan += 0.015; ui_scan > 1 ? ui_scan = 0;
+gfx_set(pr, pg, pb, 0.04 + env_follow * intensity * 0.12);
+gfx_rect(ui_scan * gfx_w - 20, gfx_h-35, 40, 35);
+
+voice_gate = pow(min(1, env_follow / 0.025), 0.85);
+idx = 0;
+loop(4,
+  lx = 30 + idx * 40; ly = gfx_h - 22;
+  idx==0 ? val = sin(gfx_t * PHI * 1.9) : idx==1 ? val = sin(gfx_t * PHI2 * 1.3) : idx==2 ? val = sin(gfx_t * SQRT2 * 2.2) : val = sin(gfx_t * SQRT3 * 1.6);
+  val = val * 0.5 + 0.5;
+  led_b = (0.15 + pow(val, 0.65) * 0.85) * voice_gate;
+  active ? (
+    gfx_set(pr, pg, pb, led_b * 0.18); gfx_circle(lx, ly, 10 + led_b * 4, 1);
+    gfx_set(pr, pg, pb, 0.05 + led_b * 0.95); gfx_circle(lx, ly, 6, 1);
+    gfx_set(1, 1, 1, led_b * 0.55); gfx_circle(lx, ly, 2, 1);
+  ) : (
+    gfx_set(0.18, 0.04, 0.04, 0.25); gfx_circle(lx, ly, 6, 1);
+  );
+  idx += 1;
+);
+
+lx = 30 + 4 * 40; ly = gfx_h - 22;
+drive_vis = min(1, env_follow * intensity * 4);
+active ? (
+  gfx_set(0.2, 1, 0.2, 0.15 + drive_vis * 0.25); gfx_circle(lx, ly, 13 + drive_vis * 3, 1);
+  gfx_set(0.2, 1, 0.2, 0.35 + drive_vis * 0.65); gfx_circle(lx, ly, 8, 1);
+  gfx_set(1, 1, 1, 0.4 + drive_vis * 0.5); gfx_circle(lx, ly, 2, 1);
+) : (
+  gfx_set(0.18, 0.04, 0.04, 0.25); gfx_circle(lx, ly, 8, 1);
+);
+
+gfx_set(0.5, 0.5, 0.5, 1); gfx_setfont(3, "Arial", 10);
+gfx_x = 25; gfx_y = gfx_h - 12; gfx_drawstr("RANDOMIZATION LFO (1-4)");
+gfx_x = 175; gfx_y = gfx_h - 12; gfx_drawstr("INTENSITY DRIVE");
+
+led_x = gfx_w - 25; led_y = gfx_h - 18;
+active ? (
+  gfx_set(pr, pg, pb, 0.25); gfx_circle(led_x, led_y, 12, 1);
+  gfx_set(pr, pg, pb, 1); gfx_circle(led_x, led_y, 7, 1);
+  gfx_set(1, 1, 1, 0.5); gfx_circle(led_x, led_y, 2, 1);
+  t_st = "SYSTEM ACTIVE"; gfx_set(0.7, 0.7, 0.7, 1);
+) : (
+  gfx_set(1, 0, 0, 0.2); gfx_circle(led_x, led_y, 12, 1);
+  gfx_set(1, 0, 0, 1); gfx_circle(led_x, led_y, 7, 1);
+  t_st = "SYSTEM BYPASS"; gfx_set(1, 0.3, 0.3, 1);
+);
+gfx_setfont(2); gfx_measurestr(t_st, tw, th);
+gfx_x = led_x - tw - 15; gfx_y = led_y - th/2; gfx_drawstr(t_st);

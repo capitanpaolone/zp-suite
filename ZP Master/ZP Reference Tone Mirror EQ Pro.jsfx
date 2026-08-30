@@ -1,0 +1,3089 @@
+desc:ZP Reference Tone Mirror EQ Pro - Paolo Balestri
+//author: Paolo Balestri / Codex prototype
+//version: 0.062 true-capture + low-control + diag null hunter
+// Contatto: social@paolobalestri.com
+// ============================================================================
+//  MANUALE D'USO - REFERENCE TONE MIRROR EQ PRO
+// ============================================================================
+//  Analisi tonale comparativa e matching EQ con snapshot "frozen".
+//
+//  1. CONFIGURAZIONE ROUTING:
+//     - Traccia REAPER impostata a 4 canali.
+//     - Segnale da processare: Input 1/2.
+//     - Segnale di riferimento: Sidechain idealmente 3/4 ma dipende dal tuo routing.
+//
+//  2. PROFILAZIONE:
+//     - FOLLOW: L'EQ segue il riferimento in tempo reale (dinamico).
+//     - CAPTURE (Timed): resetta la cache Follow, analizza per Response/Capture Time,
+//       e aggiorna progressivamente l'EQ durante la cattura.
+//     - KEEP: congela il risultato raggiunto (da Follow o Capture).
+//       Puoi premere KEEP in qualsiasi momento per freezare lo stato corrente.
+//     - IDLE: stato di sicurezza all'apertura. Il motore non segue finche' non premi Follow/Capture.
+//
+//  3. RESET & RECOVER:
+//     - "Clear Memory" cancella i profili salvati e la cache live.
+//
+//  4. SUGGERIMENTI OPERATIVI (uso reale):
+//     - FOLLOW serve a trovare il punto giusto, KEEP a congelarlo.
+//       Se in FOLLOW il match e' musicale, premi KEEP subito: oltre quel punto
+//       il profilo puo' continuare a seguire l'articolazione del parlato.
+//     - STRICT EQ ON: riduce l'inseguimento dei fonemi/sibilanti
+//       (piu' stabile sulle voci difficili).
+//     - BAND Q:
+//       * piu' basso = interventi larghi/morbidi (piu' musicali e stabili)
+//       * piu' alto  = interventi piu' selettivi (piu' precisione, piu' rischio overfit)
+//     - MAX CURVE:
+//       * valori moderati = timbro piu' naturale
+//       * valori alti     = utile solo su mismatch estremi, con piu' rischio artefatti.
+//     - AGC WORKFLOW:
+//       * rifinitura timbrica: AGC OFF
+//       * controllo finale livelli: AGC ON
+//     - AIR/LP (zona 10k+):
+//       * se le altissime risultano eccessive, riduci Air Trim e/o abbassa Air LP.
+//     - WORKFLOW RAPIDO CONSIGLIATO:
+//       1) Routing OK (Reference su 3/4)
+//       2) FOLLOW fino a "pronto Keep"
+//       3) KEEP
+//       4) rifinitura finale (se necessaria)
+//
+//  5. PRESET GUIDA (uso rapido):
+//     - Vicino: sorgente/reference gia' simili. Correzione morbida.
+//     - Distante: mismatch evidente tra sorgente/reference. Piu' spazio di intervento.
+//     - Voce Stabile: riduce l'inseguimento dell'articolazione in Follow.
+//     - Basse Controllate: limita gonfiore low-end quando il match tende a "ingrossare".
+//     - Aria Controllata: attenua zona 10k+ se emergono sibilanti/altissime.
+//
+//  6. MONITORAGGIO RAPIDO:
+//     - Semaforo:
+//       * Rosso = attendi/routing non pronto
+//       * Giallo = sta convergendo
+//       * Verde = pronto Keep (in Follow) / ascolto stabile
+//     - A/B Listen:
+//       * AB: POST = uscita processata del plugin
+//       * AB: REF  = ascolto diretto del sidechain/reference
+// ============================================================================
+// Concept:
+// - Input 1/2 = track to process
+// - Input 3/4 5/6 7/8 and so on - depending on your routing = reference / sidechain signal
+// - Builds a long-term tonal profile from the sidechain (10-30 s)
+// - Compares it against the processed track profile
+// - Applies a wide-Q 7-band adaptive EQ to move the track toward the reference
+// - Adds harmonic support inspired by Spoken Finish style dynamic saturation
+// - Includes RMS-based gain compensation to keep judgments level-aware
+
+slider1:0<-24,24,0.1>-Input Trim (dB)
+slider2:1<0,1,1{Off,On}>-Auto Level Match (Ref vs Proc)
+slider3:30<15,90,1>-Response/Capture Time (s)
+slider4:100<0,100,1>-Match Amount (%)
+slider5:9<1,18,0.1>-Max Curve (dB)
+slider6:0.45<0.35,1.20,0.01>-Band Q
+slider7:0<0,100,1>-Harmonics (%)
+slider8:10<-100,100,1>-Harmonic Color
+slider9:55<0,100,1>-Harmonic Dynamics (%)
+slider10:2200<400,7000,1>-Harmonic HP (Hz)
+slider11:1<0,1,1{Off,On}>-Automatic Gain Control (Output RMS)
+slider12:0<-18,18,0.1>-Output Gain (dB)
+slider13:100<0,100,1>-Dry/Wet (%)
+slider14:0<0,2,1{Processed,Delta EQ,Delta Harm}>-Monitor
+slider15:0<-18,18,0.1>-[Read] Avg Curve (dB)
+slider16:0<-12,12,0.1>-[Read] Level Match (dB)
+slider17:-120<-120,12,0.1>-[Read] Reference Avg (dB)
+slider18:-120<-120,12,0.1>-[Read] Output Avg (dB)
+slider93:0<-24,24,0.01>-[Read] AGC Gain (dB)
+slider94:0<-24,24,0.1>-Target Level Offset (dB)
+slider95:0<0,1,1{Match Reference,Keep Input Delta}>-Level Target
+slider96:1<0,1,1{Off,On}>-Debug Overlay (GUI Dev)
+slider97:0<0,1,1{Off,On}>-Strict EQ (No Speech Chasing)
+slider98:0<-0.0,1.0,0.0001>-[Read] DBG Eff Match
+slider99:0<-0.0,1.0,0.0001>-[Read] DBG Mirror Err
+slider100:0<0.0,4.0,0.001>-[Read] DBG Curve Time (s)
+slider101:0<0.0,12.0,0.001>-[Read] DBG Raw Err (dB)
+slider19:0<0,1,1{Lite,JSFX}>-Interface Mode
+slider20:0<0,2,1{Follow,Capture,Keep}>-Profile Memory
+slider21:0<0,100,1>-[Read] Capture Progress (%)
+slider22:0<-18,18,0.1>-AGC Trim (dB)
+slider23:12<3,24,0.5>-AGC Range (dB)
+slider24:0<-24,24,0.1>-[Read] Input-Ref Delta (dB)
+slider25:85<0,100,1>-Delta Stability (%)
+slider26:0<0,1,1{Idle,Clear}>-Clear Cache/Fill
+slider27:0<0,1,1{Off,On}>-Auto Clean On Start
+slider28:100<25,200,1>-Capture Sensitivity (%)
+slider29:0<-24,24,0.1>-Reference Trim (dB)
+slider102:0<-12,6,0.1>-Air Trim (dB 10k+)
+slider103:20000<5000,20000,100>-Air LP (Hz)
+slider106:20<20,240,5>-Air HP (Hz)
+slider107:0<0,3,1{Off,RMS,Perceptual,Null Hunter}>-Diag Match Mode
+slider108:0<-60,24,0.1>-[Read] Diag Offset (dB)
+slider109:-120<-120,24,0.1>-[Read] Diag Null Rel (dB)
+slider104:0<0,1,1{Post FX,Sidechain Ref}>-A/B Listen
+slider105:0<0,5,1{Manual,Vicino,Distante,Voce Stabile,Basse Controllate,Aria Controllata}>-[Read] Preset Guida
+slider30:-120<-120,12,0.01>-[P1] Keep Ref Band 0
+slider31:-120<-120,12,0.01>-[P2] Keep Ref Band 1
+slider32:-120<-120,12,0.01>-[P3] Keep Ref Band 2
+slider33:-120<-120,12,0.01>-[P4] Keep Ref Band 3
+slider34:-120<-120,12,0.01>-[P5] Keep Ref Band 4
+slider35:-120<-120,12,0.01>-[P6] Keep Ref Band 5
+slider36:-120<-120,12,0.01>-[P7] Keep Ref Band 6
+slider37:-120<-120,12,0.01>-[P8] Keep Ref Band 7
+slider38:-120<-120,12,0.01>-[P9] Keep Ref Band 8
+slider39:-120<-120,12,0.01>-[P10] Keep Ref Band 9
+slider40:-120<-120,12,0.01>-[P11] Keep Ref Band 10
+slider41:-120<-120,12,0.01>-[P12] Keep Ref Band 11
+slider42:-120<-120,12,0.01>-[P13] Keep Ref Band 12
+slider43:-120<-120,12,0.01>-[P14] Keep Ref Band 13
+slider44:-120<-120,12,0.01>-[P15] Keep Ref Band 14
+slider45:-120<-120,12,0.01>-[P16] Keep Ref Band 15
+slider46:-120<-120,12,0.01>-[P17] Keep Ref Band 16
+slider47:-120<-120,12,0.01>-[P18] Keep Ref Band 17
+slider48:-120<-120,12,0.01>-[P19] Keep Ref Band 18
+slider49:-120<-120,12,0.01>-[P20] Keep Ref Band 19
+slider50:-120<-120,12,0.01>-[P21] Keep Ref Band 20
+slider51:-120<-120,12,0.01>-[P22] Keep Ref Band 21
+slider52:-120<-120,12,0.01>-[P23] Keep Ref Band 22
+slider53:-120<-120,12,0.01>-[P24] Keep Ref Band 23
+slider54:-120<-120,12,0.01>-[P25] Keep Ref Band 24
+slider55:-120<-120,12,0.01>-[P26] Keep Ref Band 25
+slider56:-120<-120,12,0.01>-[P27] Keep Ref Band 26
+slider57:-120<-120,12,0.01>-[P28] Keep Ref Band 27
+slider58:-120<-120,12,0.01>-[P29] Keep Ref Band 28
+slider59:-120<-120,12,0.01>-[P30] Keep Ref Band 29
+slider60:-120<-120,12,0.01>-[P31] Keep Ref Band 30
+slider61:-120<-120,12,0.01>-[P32] Keep In Band 0
+slider62:-120<-120,12,0.01>-[P33] Keep In Band 1
+slider63:-120<-120,12,0.01>-[P34] Keep In Band 2
+slider64:-120<-120,12,0.01>-[P35] Keep In Band 3
+slider65:-120<-120,12,0.01>-[P36] Keep In Band 4
+slider66:-120<-120,12,0.01>-[P37] Keep In Band 5
+slider67:-120<-120,12,0.01>-[P38] Keep In Band 6
+slider68:-120<-120,12,0.01>-[P39] Keep In Band 7
+slider69:-120<-120,12,0.01>-[P40] Keep In Band 8
+slider70:-120<-120,12,0.01>-[P41] Keep In Band 9
+slider71:-120<-120,12,0.01>-[P42] Keep In Band 10
+slider72:-120<-120,12,0.01>-[P43] Keep In Band 11
+slider73:-120<-120,12,0.01>-[P44] Keep In Band 12
+slider74:-120<-120,12,0.01>-[P45] Keep In Band 13
+slider75:-120<-120,12,0.01>-[P46] Keep In Band 14
+slider76:-120<-120,12,0.01>-[P47] Keep In Band 15
+slider77:-120<-120,12,0.01>-[P48] Keep In Band 16
+slider78:-120<-120,12,0.01>-[P49] Keep In Band 17
+slider79:-120<-120,12,0.01>-[P50] Keep In Band 18
+slider80:-120<-120,12,0.01>-[P51] Keep In Band 19
+slider81:-120<-120,12,0.01>-[P52] Keep In Band 20
+slider82:-120<-120,12,0.01>-[P53] Keep In Band 21
+slider83:-120<-120,12,0.01>-[P54] Keep In Band 22
+slider84:-120<-120,12,0.01>-[P55] Keep In Band 23
+slider85:-120<-120,12,0.01>-[P56] Keep In Band 24
+slider86:-120<-120,12,0.01>-[P57] Keep In Band 25
+slider87:-120<-120,12,0.01>-[P58] Keep In Band 26
+slider88:-120<-120,12,0.01>-[P59] Keep In Band 27
+slider89:-120<-120,12,0.01>-[P60] Keep In Band 28
+slider90:-120<-120,12,0.01>-[P61] Keep In Band 29
+slider91:-120<-120,12,0.01>-[P62] Keep In Band 30
+slider92:0<0,1,1{No,Yes}>-[Internal] Profile Saved Flag
+
+in_pin:Input L
+in_pin:Input R
+in_pin:Reference L
+in_pin:Reference R
+out_pin:Output L
+out_pin:Output R
+
+// Meter: IN L/R su pin 0/1, OUT L/R su pin 4/5 (Reference L/R su 2/3 non meterizzati)
+options:gfx_hz=30
+
+@init
+ext_noinit = 1;
+ext_nodenorm = 1;
+gfx_ext_retina = 1;
+slider19 = 0;
+ui_mode = 1;
+
+NUM_BANDS = 31;
+SHAPE_FILTERS = 7;
+NUM_PARAM_SLIDERS = 29;
+db2log = log(10) / 20;
+log2db = 20 / log(10);
+all_sliders_mask = (1 << NUM_PARAM_SLIDERS) - 1;
+view_slider_mask = 1 << 18;
+profile_mode_mask = 1 << 19;
+clear_cache_mask = 1 << 25;
+keep_static_mask = 1 << 27;
+
+bp_in = 0;
+bp_sc = 384;
+eqL_mem = 768;
+eqR_mem = 1152;
+band_freq = 1536;
+band_weight = 1600;
+eq_gain_db = 1664;
+eq_target_db = 1728;
+keep_avg = 1792;
+capture_sum = 1856;
+keep_in_avg = 1952;
+capture_in_sum = 2015;
+in_avg = 1920;
+sc_avg = 1984;
+gfx_eq_snapshot = 2048;
+tmp_in_db = 2112;
+tmp_sc_db = 2176;
+shapeL_mem = 2240;
+shapeR_mem = 2336;
+focusL_mem = 2432;
+focusR_mem = 2464;
+hp20L_mem = 2512;
+hp20R_mem = 2560;
+lp20kL_mem = 2608;
+lp20kR_mem = 2656;
+airlpL_mem = 2704;
+airlpR_mem = 2752;
+airlp2L_mem = 2800;
+airlp2R_mem = 2848;
+airhpL_mem = 2896;
+airhpR_mem = 2944;
+
+band_freq[0] = 20;
+band_freq[1] = 25;
+band_freq[2] = 31.5;
+band_freq[3] = 40;
+band_freq[4] = 50;
+band_freq[5] = 63;
+band_freq[6] = 80;
+band_freq[7] = 100;
+band_freq[8] = 125;
+band_freq[9] = 160;
+band_freq[10] = 200;
+band_freq[11] = 250;
+band_freq[12] = 315;
+band_freq[13] = 400;
+band_freq[14] = 500;
+band_freq[15] = 630;
+band_freq[16] = 800;
+band_freq[17] = 1000;
+band_freq[18] = 1250;
+band_freq[19] = 1600;
+band_freq[20] = 2000;
+band_freq[21] = 2500;
+band_freq[22] = 3150;
+band_freq[23] = 4000;
+band_freq[24] = 5000;
+band_freq[25] = 6300;
+band_freq[26] = 8000;
+band_freq[27] = 10000;
+band_freq[28] = 12500;
+band_freq[29] = 16000;
+band_freq[30] = 20000;
+
+i = 0;
+loop(NUM_BANDS,
+  edge_taper = (i < 3 || i > 27) ? 0.86 : (i < 6 || i > 24) ? 0.92 : 1.0;
+  band_weight[i] = edge_taper;
+  i += 1;
+);
+
+i = 0;
+loop(NUM_BANDS,
+  in_avg[i] = 0;
+  sc_avg[i] = 0;
+  eq_gain_db[i] = 0;
+  eq_target_db[i] = 0;
+  // Se c'era un profilo salvato, ripristina dai slider persistiti
+  slider92 >= 0.5 ? (
+    keep_avg[i] = slider(30 + i);
+    keep_in_avg[i] = slider(61 + i);
+  ) : (
+    keep_avg[i] = 0;
+    keep_in_avg[i] = 0;
+  );
+  capture_sum[i] = 0;
+  i += 1;
+);
+
+in_env = 0;
+sc_env = 0;
+out_env = 0;
+
+rms_dry = 0;
+rms_wet = 0;
+rms_ref = 0;
+rms_proc = 0;
+rms_out = 0;
+rms_dry_st = 0;
+rms_ref_st = 0;
+rms_proc_st = 0;
+gm_gain = 1;
+gm_target = 1;
+out_norm_gain = 1;
+gm_mix_state = 0;
+ref_mix_state = 0;
+last_gm_on = gm_on;
+safety_gain = 1;
+startup_mix = 0;
+follow_entry_mix = 0;
+init_guard_mix = 0;
+prev_outL = 0;
+prev_outR = 0;
+capture_ref_sum = 0;
+capture_dry_sum = 0;
+capture_weight_sum = 0;
+keep_ref_rms = 0;
+keep_dry_rms = 0;
+keep_delta_db = 0;
+speech_hp_hz = 70;
+speech_lp_hz = 17000;
+speech_presence_hz = 1200;
+speech_presence_q = 1.2;
+speech_presence_db = 0;
+speech_body_db = 0;
+speech_mix = 0;
+sibil_hf_lpL = 0;
+sibil_hf_lpR = 0;
+sibil_fast = 0;
+sibil_slow = 0;
+sibil_transient = 0;
+diag_mode = 0;
+diag_coeff = exp(-1 / max(1, srate * 0.35));
+diag_lp_coeff = 1 - exp(-2 * $pi * 1500 / max(1, srate));
+diag_hp_coeff = 1 - exp(-2 * $pi * 38 / max(1, srate));
+diag_rms_proc = 0;
+diag_rms_ref = 0;
+diag_rms_null = 0;
+diag_lp_proc = 0;
+diag_lp_ref = 0;
+diag_hp_proc = 0;
+diag_hp_ref = 0;
+diag_sum_wd = 0;
+diag_sum_ww = 0;
+diag_offset_db = 0;
+diag_null_rel_db = -120;
+
+harm_env = 0;
+harm_even = 0;
+harm_odd = 0;
+harm_low = 0;
+
+hp_lp_L = 0;
+hp_lp_R = 0;
+low_lp = 0;
+band_hp_memL = 0;
+band_hp_memR = 0;
+band_lp_memL = 0;
+band_lp_memR = 0;
+adaptive_hp_hz = 40;
+adaptive_lp_hz = 18000;
+band_shape_mix = 0;
+band_shape_settle = 0;
+low_shape_db = 0;
+mid_shape_db = 0;
+high_shape_db = 0;
+focus_freq_hz = 1450;
+focus_q_val = 1.2;
+focus_gain_db = 0;
+focus_stability_mix = 0;
+mirror_delta_slow = 0;
+mirror_peak_slow = 0;
+follow_hold_mix = 0;
+profile_live_coeff = 0.9999;
+
+read_curve_db = 0;
+read_ref_db = -120;
+read_out_db = -120;
+read_ref_hold_db = -240;
+read_delta_hold_db = 0;
+delta_live_db = 0;
+capture_delta_latch_db = 0;
+delta_deadband_db = 0.35;
+delta_slew_up_db_s = 0.40;
+delta_slew_dn_db_s = 0.25;
+last_ui_mode = -1;
+last_mouse_cap = 0;
+diag_ref_abs = 0;
+diag_same_abs = 0;
+routing_state = 0;
+ref_gate_env = 0;
+ref_hold_counter = 0;
+ref_active = 0;
+prog_gate_env = 0;
+prog_hold_counter = 0;
+prog_active = 0;
+follow_fill_counter = 0;
+follow_fill_ratio = 0;
+follow_fill_mix = 0;
+follow_fill_release_step = 0.08;
+profile_mode_prev = -1;
+follow_mode_prev = -1;
+capture_count = 0;
+capture_progress = 0;
+capture_match_latch = 0;
+capture_freeze_mode = 0;
+// Ripristina keep_ready se il profilo era stato salvato (persistenza tra stop/play)
+keep_ready = slider92 >= 0.5 ? 1 : 0;
+read_delta_db = 0;
+panic_flash_counter = 0;
+panic_count = 0;
+panic_cooldown_counter = 0;
+recover_flash_counter = 0;
+recover_count = 0;
+recover_cooldown_counter = 0;
+match_settle_db = 0;
+harm_settle_amt = 0;
+ui_status_state = 0;
+gfx_status_state = 0;
+gfx_follow_fill = 0;
+gfx_match_settle = 0;
+gfx_harm_settle = 0;
+gfx_follow_ready_keep = 0;
+transport_was_running = 0;
+dbg_clear_count = 0;
+dbg_mode_switch_count = 0;
+dbg_capture_done_count = 0;
+air_params_dirty = 1;
+engine_armed = 0; // Default: IDLE finche' utente non preme Follow/Capture
+idle_mode = 1;
+listen_ab_mix = 0;
+listen_xfade_coeff = 0.999;
+safe_preset_last = floor(slider105 + 0.5);
+safe_preset_last < 0 ? safe_preset_last = 0;
+safe_preset_last > 5 ? safe_preset_last = 5;
+
+slider_show(all_sliders_mask, 1);
+slider_show(view_slider_mask, 0);
+init_ui_mode = 1;
+slider_show(view_slider_mask, 0);
+last_ui_mode = 1;
+
+function clamp(x, lo, hi) (
+  x < lo ? lo : x > hi ? hi : x;
+);
+
+function safe_amp(x) (
+  x != x ? 0.000000000001 : clamp(abs(x), 0.000000000001, 1000000);
+);
+
+function safe_db(x) (
+  clamp(log(safe_amp(x)) * log2db, -240, 24);
+);
+
+function db_to_amp(x) (
+  exp(x * db2log);
+);
+
+function mean_range(base, first_idx, last_idx)
+local(i, sum, cnt) (
+  sum = 0;
+  cnt = max(1, last_idx - first_idx + 1);
+  i = first_idx;
+  loop(cnt,
+    sum += base[i];
+    i += 1;
+  );
+  sum / cnt;
+);
+
+function soft_deadband(x, thr)
+local(ax) (
+  ax = abs(x);
+  ax <= thr ? 0 : (x > 0 ? ax - thr : -(ax - thr));
+);
+
+function sanitize_audio(x) (
+  x != x ? 0 : x > 4 ? 4 : x < -4 ? -4 : x;
+);
+
+function is_bad_audio(x) (
+  (x != x) || abs(x) > 32;
+);
+
+function reset_filter_states_n(base, count)
+local(i, off) (
+  i = 0;
+  loop(count,
+    off = i * 9;
+    base[off + 5] = 0;
+    base[off + 6] = 0;
+    base[off + 7] = 0;
+    base[off + 8] = 0;
+    i += 1;
+  );
+);
+
+function panic_reset()
+local(i) (
+  reset_filter_states_n(bp_in, NUM_BANDS);
+  reset_filter_states_n(bp_sc, NUM_BANDS);
+  reset_filter_states_n(eqL_mem, NUM_BANDS);
+  reset_filter_states_n(eqR_mem, NUM_BANDS);
+  reset_filter_states_n(shapeL_mem, SHAPE_FILTERS);
+  reset_filter_states_n(shapeR_mem, SHAPE_FILTERS);
+  reset_filter_states_n(focusL_mem, 1);
+  reset_filter_states_n(focusR_mem, 1);
+  reset_filter_states_n(hp20L_mem, 1);
+  reset_filter_states_n(hp20R_mem, 1);
+  reset_filter_states_n(lp20kL_mem, 1);
+  reset_filter_states_n(lp20kR_mem, 1);
+  reset_filter_states_n(airlpL_mem, 1);
+  reset_filter_states_n(airlpR_mem, 1);
+  reset_filter_states_n(airlp2L_mem, 1);
+  reset_filter_states_n(airlp2R_mem, 1);
+  reset_filter_states_n(airhpL_mem, 1);
+  reset_filter_states_n(airhpR_mem, 1);
+  i = 0;
+  loop(NUM_BANDS,
+    in_avg[i] = 0;
+    sc_avg[i] = 0;
+    eq_gain_db[i] = 0;
+    eq_target_db[i] = 0;
+    i += 1;
+  );
+  in_env = 0; sc_env = 0; out_env = 0;
+  rms_dry = 0; rms_wet = 0; rms_ref = 0; rms_proc = 0; rms_out = 0;
+  rms_dry_st = 0; rms_ref_st = 0; rms_proc_st = 0;
+  gm_gain = 1; gm_target = 1; out_norm_gain = 1;
+  gm_mix_state = 0;
+  ref_mix_state = 0;
+  safety_gain = 1;
+  startup_mix = 0;
+  follow_entry_mix = 0;
+  init_guard_mix = 0;
+  prev_outL = 0;
+  prev_outR = 0;
+  capture_ref_sum = 0;
+  capture_dry_sum = 0;
+  diag_rms_proc = 0;
+  diag_rms_ref = 0;
+  diag_rms_null = 0;
+  diag_lp_proc = 0;
+  diag_lp_ref = 0;
+  diag_hp_proc = 0;
+  diag_hp_ref = 0;
+  diag_sum_wd = 0;
+  diag_sum_ww = 0;
+  harm_env = 0; harm_even = 0; harm_odd = 0; harm_low = 0;
+  hp_lp_L = 0; hp_lp_R = 0; low_lp = 0;
+  band_hp_memL = 0; band_hp_memR = 0;
+  band_lp_memL = 0; band_lp_memR = 0;
+  adaptive_hp_hz = 40;
+  adaptive_lp_hz = 18000;
+  band_shape_mix = 0;
+  band_shape_settle = 0;
+  low_shape_db = 0;
+  mid_shape_db = 0;
+  high_shape_db = 0;
+  focus_freq_hz = 1450;
+  focus_q_val = 1.2;
+  focus_gain_db = 0;
+  focus_activity_mix = 0;
+  focus_stability_mix = 0;
+  follow_hold_mix = 0;
+  mirror_delta_slow = 0;
+  mirror_peak_slow = 0;
+  speech_hp_hz = 70;
+  speech_lp_hz = 17000;
+  speech_presence_hz = 1200;
+  speech_presence_q = 1.2;
+  speech_presence_db = 0;
+  speech_body_db = 0;
+  speech_mix = 0;
+  sibil_hf_lpL = 0;
+  sibil_hf_lpR = 0;
+  sibil_fast = 0;
+  sibil_slow = 0;
+  sibil_transient = 0;
+  ref_gate_env = 0;
+  ref_hold_counter = 0;
+  ref_active = 0;
+  prog_gate_env = 0;
+  prog_hold_counter = 0;
+  prog_active = 0;
+  follow_fill_counter = 0;
+  follow_fill_ratio = 0;
+  follow_fill_mix = 0;
+  delta_live_db = 0;
+  capture_delta_latch_db = 0;
+  read_delta_hold_db = 0;
+  i = 0;
+  loop(NUM_BANDS,
+    capture_sum[i] = 0;
+    capture_in_sum[i] = 0;
+    i += 1;
+  );
+  capture_count = 0;
+  capture_ref_sum = 0;
+  capture_dry_sum = 0;
+  capture_weight_sum = 0;
+  capture_progress = keep_ready ? 100 : 0;
+  slider21 = capture_progress;
+  panic_flash_counter = panic_hold_samples;
+  panic_count += 1;
+  panic_cooldown_counter = panic_cooldown_samples;
+);
+
+function recover_dsp()
+local(i) (
+  reset_filter_states_n(eqL_mem, NUM_BANDS);
+  reset_filter_states_n(eqR_mem, NUM_BANDS);
+  reset_filter_states_n(shapeL_mem, SHAPE_FILTERS);
+  reset_filter_states_n(shapeR_mem, SHAPE_FILTERS);
+  reset_filter_states_n(focusL_mem, 1);
+  reset_filter_states_n(focusR_mem, 1);
+  reset_filter_states_n(hp20L_mem, 1);
+  reset_filter_states_n(hp20R_mem, 1);
+  reset_filter_states_n(lp20kL_mem, 1);
+  reset_filter_states_n(lp20kR_mem, 1);
+  reset_filter_states_n(airlpL_mem, 1);
+  reset_filter_states_n(airlpR_mem, 1);
+  reset_filter_states_n(airlp2L_mem, 1);
+  reset_filter_states_n(airlp2R_mem, 1);
+  reset_filter_states_n(airhpL_mem, 1);
+  reset_filter_states_n(airhpR_mem, 1);
+  i = 0;
+  loop(NUM_BANDS,
+    in_avg[i] = 0;
+    sc_avg[i] = 0;
+    eq_gain_db[i] = 0;
+    eq_target_db[i] = 0;
+    i += 1;
+  );
+  gm_mix_state = 0;
+  out_norm_gain = 1;
+  rms_dry_st = 0;
+  rms_ref_st = 0;
+  rms_proc_st = 0;
+  safety_gain = 1;
+  follow_entry_mix = 0;
+  harm_env = 0;
+  harm_even = 0;
+  harm_odd = 0;
+  harm_low = 0;
+  hp_lp_L = 0;
+  hp_lp_R = 0;
+  low_lp = 0;
+  band_hp_memL = 0;
+  band_hp_memR = 0;
+  band_lp_memL = 0;
+  band_lp_memR = 0;
+  band_shape_mix = 0;
+  band_shape_settle = 0;
+  low_shape_db = 0;
+  mid_shape_db = 0;
+  high_shape_db = 0;
+  focus_freq_hz = 1450;
+  focus_q_val = 1.2;
+  focus_gain_db = 0;
+  focus_activity_mix = 0;
+  focus_stability_mix = 0;
+  follow_hold_mix = 0;
+  mirror_delta_slow = 0;
+  mirror_peak_slow = 0;
+  speech_hp_hz = 70;
+  speech_lp_hz = 17000;
+  speech_presence_hz = 1200;
+  speech_presence_q = 1.2;
+  speech_presence_db = 0;
+  speech_body_db = 0;
+  speech_mix = 0;
+  sibil_hf_lpL = 0;
+  sibil_hf_lpR = 0;
+  sibil_fast = 0;
+  sibil_slow = 0;
+  sibil_transient = 0;
+  diag_rms_proc = 0;
+  diag_rms_ref = 0;
+  diag_rms_null = 0;
+  diag_lp_proc = 0;
+  diag_lp_ref = 0;
+  diag_hp_proc = 0;
+  diag_hp_ref = 0;
+  diag_sum_wd = 0;
+  diag_sum_ww = 0;
+  recover_flash_counter = recover_hold_samples;
+  recover_count += 1;
+  recover_cooldown_counter = recover_hold_samples;
+);
+
+function apply_ui_visibility(mode) (
+  slider_show(all_sliders_mask, 1);
+  slider_show(view_slider_mask, 0);
+  last_ui_mode = mode;
+);
+
+function set_ui_mode(new_mode)
+local(mask) (
+  ui_mode = clamp(floor(new_mode), 0, 1);
+  slider19 = ui_mode;
+  mask = view_slider_mask;
+  apply_ui_visibility(ui_mode);
+  sliderchange(mask);
+  slider_automate(mask);
+);
+
+function reset_capture_profile()
+local(i) (
+  i = 0;
+  loop(NUM_BANDS,
+    capture_sum[i] = 0;
+    capture_in_sum[i] = 0;
+    keep_avg[i] = 0;
+    keep_in_avg[i] = 0;
+    i += 1;
+  );
+  capture_count = 0;
+  capture_ref_sum = 0;
+  capture_dry_sum = 0;
+  capture_weight_sum = 0;
+  diag_rms_proc = 0;
+  diag_rms_ref = 0;
+  diag_rms_null = 0;
+  diag_lp_proc = 0;
+  diag_lp_ref = 0;
+  diag_hp_proc = 0;
+  diag_hp_ref = 0;
+  diag_sum_wd = 0;
+  diag_sum_ww = 0;
+  keep_ref_rms = 0;
+  keep_dry_rms = 0;
+  keep_delta_db = 0;
+  keep_ready = 0;
+  slider92 = 0; // Reset stato persistenza
+  read_ref_hold_db = -240;
+  read_delta_hold_db = 0;
+  capture_delta_latch_db = read_delta_db;
+  capture_progress = 0;
+  slider21 = 0;
+);
+
+function clear_live_cache()
+local(i) (
+  reset_filter_states_n(bp_in, NUM_BANDS);
+  reset_filter_states_n(bp_sc, NUM_BANDS);
+  reset_filter_states_n(eqL_mem, NUM_BANDS);
+  reset_filter_states_n(eqR_mem, NUM_BANDS);
+  reset_filter_states_n(shapeL_mem, SHAPE_FILTERS);
+  reset_filter_states_n(shapeR_mem, SHAPE_FILTERS);
+  reset_filter_states_n(focusL_mem, 1);
+  reset_filter_states_n(focusR_mem, 1);
+  reset_filter_states_n(hp20L_mem, 1);
+  reset_filter_states_n(hp20R_mem, 1);
+  reset_filter_states_n(lp20kL_mem, 1);
+  reset_filter_states_n(lp20kR_mem, 1);
+  reset_filter_states_n(airlpL_mem, 1);
+  reset_filter_states_n(airlpR_mem, 1);
+  reset_filter_states_n(airlp2L_mem, 1);
+  reset_filter_states_n(airlp2R_mem, 1);
+  reset_filter_states_n(airhpL_mem, 1);
+  reset_filter_states_n(airhpR_mem, 1);
+  i = 0;
+  loop(NUM_BANDS,
+    in_avg[i] = 0;
+    sc_avg[i] = 0;
+    eq_gain_db[i] = 0;
+    eq_target_db[i] = 0;
+    i += 1;
+  );
+  follow_fill_counter = 0;
+  follow_fill_ratio = 0;
+  follow_fill_mix = 0;
+  follow_hold_mix = 0;
+  follow_entry_mix = 0;
+  ref_mix_state = 0;
+  gm_mix_state = 0;
+  gm_gain = 1;
+  gm_target = 1;
+  out_norm_gain = 1;
+  rms_dry = 0;
+  rms_wet = 0;
+  rms_ref = 0;
+  rms_proc = 0;
+  rms_out = 0;
+  rms_dry_st = 0;
+  rms_ref_st = 0;
+  rms_proc_st = 0;
+  safety_gain = 1;
+  startup_mix = 0;
+  init_guard_mix = 0;
+  prev_outL = 0;
+  prev_outR = 0;
+  harm_env = 0;
+  harm_even = 0;
+  harm_odd = 0;
+  harm_low = 0;
+  hp_lp_L = 0;
+  hp_lp_R = 0;
+  low_lp = 0;
+  band_hp_memL = 0;
+  band_hp_memR = 0;
+  band_lp_memL = 0;
+  band_lp_memR = 0;
+  adaptive_hp_hz = 40;
+  adaptive_lp_hz = 18000;
+  band_shape_mix = 0;
+  band_shape_settle = 0;
+  low_shape_db = 0;
+  mid_shape_db = 0;
+  high_shape_db = 0;
+  focus_freq_hz = 1450;
+  focus_q_val = 1.2;
+  focus_gain_db = 0;
+  focus_activity_mix = 0;
+  focus_stability_mix = 0;
+  speech_hp_hz = 70;
+  speech_lp_hz = 17000;
+  speech_presence_hz = 1200;
+  speech_presence_q = 1.2;
+  speech_presence_db = 0;
+  speech_body_db = 0;
+  speech_mix = 0;
+  sibil_hf_lpL = 0;
+  sibil_hf_lpR = 0;
+  sibil_fast = 0;
+  sibil_slow = 0;
+  sibil_transient = 0;
+  diag_rms_proc = 0;
+  diag_rms_ref = 0;
+  diag_rms_null = 0;
+  diag_lp_proc = 0;
+  diag_lp_ref = 0;
+  diag_hp_proc = 0;
+  diag_hp_ref = 0;
+  diag_sum_wd = 0;
+  diag_sum_ww = 0;
+  mirror_delta_slow = 0;
+  mirror_peak_slow = 0;
+  delta_live_db = 0;
+  read_delta_hold_db = 0;
+  read_delta_db = 0;
+  slider24 = 0;
+  diag_ref_abs = 0;
+  diag_same_abs = 0;
+  ref_gate_env = 0;
+  ref_hold_counter = 0;
+  ref_active = 0;
+  prog_gate_env = 0;
+  prog_hold_counter = 0;
+  prog_active = 0;
+  profile_mode == 1 ? (
+    i = 0;
+    loop(NUM_BANDS,
+      capture_sum[i] = 0;
+      capture_in_sum[i] = 0;
+      i += 1;
+    );
+    capture_count = 0;
+    capture_ref_sum = 0;
+    capture_dry_sum = 0;
+    capture_weight_sum = 0;
+    capture_progress = 0;
+    slider21 = 0;
+  ) : (
+    capture_count = 0;
+    capture_weight_sum = 0;
+    capture_progress = keep_ready ? 100 : 0;
+    slider21 = capture_progress;
+  );
+);
+
+function commit_keep_snapshot_from_live()
+local(i) (
+  i = 0;
+  loop(NUM_BANDS,
+    keep_avg[i] = sc_avg[i];
+    keep_in_avg[i] = in_avg[i];
+    i += 1;
+  );
+  i = 0;
+  loop(NUM_BANDS,
+    slider(30 + i) = safe_db(sqrt(max(keep_avg[i], 0)));
+    slider(61 + i) = safe_db(sqrt(max(keep_in_avg[i], 0)));
+    i += 1;
+  );
+  keep_ref_rms = rms_ref;
+  keep_dry_rms = rms_dry;
+  keep_delta_db = read_delta_db;
+  keep_ready = 1;
+  slider92 = 1;
+  capture_count = 0;
+  capture_progress = 100;
+  slider21 = 100;
+);
+
+function commit_keep_snapshot_from_capture()
+local(i, inv_count) (
+  inv_count = 1 / max(0.000001, capture_weight_sum);
+
+  i = 0;
+  loop(NUM_BANDS,
+    keep_avg[i] = capture_sum[i] * inv_count;
+    keep_in_avg[i] = capture_in_sum[i] * inv_count;
+    i += 1;
+  );
+
+  i = 0;
+  loop(NUM_BANDS,
+    slider(30 + i) = safe_db(sqrt(max(keep_avg[i], 0)));
+    slider(61 + i) = safe_db(sqrt(max(keep_in_avg[i], 0)));
+    i += 1;
+  );
+
+  keep_ref_rms = capture_ref_sum * inv_count;
+  keep_dry_rms = capture_dry_sum * inv_count;
+  keep_delta_db = clamp(
+    safe_db(sqrt(max(keep_dry_rms, 0.0000001)))
+    - safe_db(sqrt(max(keep_ref_rms, 0.0000001))),
+    -24, 24
+  );
+
+  keep_ready = 1;
+  slider92 = 1;
+  capture_count = 0;
+  capture_weight_sum = 0;
+  capture_progress = 100;
+  slider21 = 100;
+);
+
+function set_profile_mode(new_mode)
+local(mask) (
+  new_mode != profile_mode ? (
+    dbg_mode_switch_count += 1;
+  );
+  // Arm DSP only on Follow/Capture. Keep non arma da solo.
+  (new_mode == 0 || new_mode == 1) ? (
+    engine_armed = 1;
+  );
+  new_mode == 0 ? (
+    // Follow: riparte live e sblocca eventuale profilo Keep
+    keep_ready = 0;
+    slider92 = 0;
+  );
+  new_mode == 1 ? (
+    // Capture Timed unico: flush Follow + reset accumulo
+    clear_live_cache();
+    reset_capture_profile();
+  );
+  new_mode == 2 && profile_mode != 2 ? (
+    // Keep manuale: congela lo stato live raggiunto in Follow/Capture
+    (engine_armed && (profile_mode == 0 || (profile_mode == 1 && capture_count < capture_target_samples))) ? (
+      commit_keep_snapshot_from_live();
+    );
+  );
+  slider20 = new_mode;
+  mask = profile_mode_mask;
+  sliderchange(mask);
+  slider_automate(mask);
+);
+
+function apply_safe_preset(preset_id) (
+  preset_id == 1 ? (
+    // Vicino
+    slider4 = 85;
+    slider5 = 9;
+    slider6 = 0.55;
+    slider7 = 0;
+    slider11 = 1;
+    slider22 = 0;
+    slider23 = 12;
+    slider97 = 0;
+    slider102 = 0;
+    slider103 = 20000;
+    slider106 = 20;
+  ) : preset_id == 2 ? (
+    // Distante
+    slider4 = 92;
+    slider5 = 12;
+    slider6 = 0.52;
+    slider7 = 0;
+    slider11 = 1;
+    slider22 = 0;
+    slider23 = 14;
+    slider97 = 1;
+    slider102 = -0.8;
+    slider103 = 18000;
+    slider106 = 30;
+  ) : preset_id == 3 ? (
+    // Voce Stabile
+    slider4 = 84;
+    slider5 = 9;
+    slider6 = 0.48;
+    slider7 = 0;
+    slider11 = 1;
+    slider22 = 0;
+    slider23 = 12;
+    slider97 = 1;
+    slider102 = -1.2;
+    slider103 = 17000;
+    slider106 = 40;
+  ) : preset_id == 4 ? (
+    // Basse Controllate
+    slider4 = 86;
+    slider5 = 8;
+    slider6 = 0.50;
+    slider7 = 0;
+    slider11 = 1;
+    slider22 = 0;
+    slider23 = 12;
+    slider97 = 1;
+    slider102 = -0.6;
+    slider103 = 17500;
+    slider106 = 75;
+  ) : preset_id == 5 ? (
+    // Aria Controllata
+    slider4 = 84;
+    slider5 = 8;
+    slider6 = 0.50;
+    slider7 = 0;
+    slider11 = 1;
+    slider22 = 0;
+    slider23 = 10;
+    slider97 = 0;
+    slider102 = -2.5;
+    slider103 = 14000;
+    slider106 = 35;
+  );
+  air_params_dirty = 1;
+  safe_preset_last = preset_id;
+  slider105 = preset_id;
+);
+
+function freq_to_norm(freq)
+local(minf, maxf, lmin, lmax) (
+  minf = 40;
+  maxf = 18000;
+  lmin = log(minf);
+  lmax = log(maxf);
+  clamp((log(clamp(freq, minf, maxf)) - lmin) / max(0.000001, lmax - lmin), 0, 1);
+);
+
+function ui_bar(x, y, w, h, val, r, g, b)
+local(fillw) (
+  gfx_r = 0.10; gfx_g = 0.11; gfx_b = 0.13; gfx_a = 1; gfx_rect(x, y, w, h);
+  fillw = clamp(val, 0, 1) * (w - 2);
+  gfx_r = r; gfx_g = g; gfx_b = b; gfx_a = 0.95; gfx_rect(x + 1, y + 1, fillw, h - 2);
+);
+
+function ui_button(id, x, y, w, h, txt, active)
+local(over, clicked, tw, th) (
+  over = mouse_x >= x && mouse_x < x + w && mouse_y >= y && mouse_y < y + h;
+  clicked = over && (mouse_cap & 1) && !last_mouse_cap;
+  active ? (
+    gfx_r = 0.16; gfx_g = 0.49; gfx_b = 0.85;
+  ) : over ? (
+    gfx_r = 0.22; gfx_g = 0.24; gfx_b = 0.28;
+  ) : (
+    gfx_r = 0.15; gfx_g = 0.16; gfx_b = 0.19;
+  );
+  gfx_a = 1; gfx_rect(x, y, w, h);
+  gfx_r = active ? 0.95 : 0.78; gfx_g = active ? 0.98 : 0.80; gfx_b = active ? 1.00 : 0.84;
+  gfx_setfont(1, "Arial", 15);
+  gfx_measurestr(txt, tw, th);
+  gfx_x = x + (w - tw) * 0.5;
+  gfx_y = y + (h - th) * 0.5 - 1;
+  gfx_drawstr(txt);
+  clicked ? (
+    set_ui_mode(id);
+  );
+);
+
+function ui_profile_button(id, x, y, w, h, txt, state)
+local(over, clicked, tw, th) (
+  over = mouse_x >= x && mouse_x < x + w && mouse_y >= y && mouse_y < y + h;
+  clicked = over && (mouse_cap & 1) && !last_mouse_cap;
+  // state: 0=off, 1=in progress (capture running), 2=active/complete
+  state == 2 ? (
+    gfx_r = 0.20; gfx_g = 0.58; gfx_b = 0.36;  // Verde - completo
+  ) : state == 1 ? (
+    gfx_r = 0.96; gfx_g = 0.64; gfx_b = 0.22;  // Arancio - in cattura
+  ) : over ? (
+    gfx_r = 0.22; gfx_g = 0.24; gfx_b = 0.28;  // Grigio hover
+  ) : (
+    gfx_r = 0.15; gfx_g = 0.16; gfx_b = 0.19;  // Grigio spento
+  );
+  gfx_a = 1; gfx_rect(x, y, w, h);
+  gfx_r = state >= 1 ? 0.96 : 0.80; gfx_g = state >= 1 ? 0.98 : 0.82; gfx_b = state >= 1 ? 0.96 : 0.86;
+  gfx_setfont(1, "Arial", 13);
+  gfx_measurestr(txt, tw, th);
+  gfx_x = x + (w - tw) * 0.5;
+  gfx_y = y + (h - th) * 0.5 - 1;
+  gfx_drawstr(txt);
+  clicked ? (
+    set_profile_mode(id);
+  );
+);
+
+function ui_action_button(x, y, w, h, txt)
+local(over, clicked, tw, th, disabled) (
+  disabled = 0;
+  over = mouse_x >= x && mouse_x < x + w && mouse_y >= y && mouse_y < y + h;
+  clicked = over && (mouse_cap & 1) && !last_mouse_cap && !disabled;
+  disabled ? (
+    gfx_r = 0.35; gfx_g = 0.35; gfx_b = 0.35;
+  ) : over ? (
+    gfx_r = 0.68; gfx_g = 0.33; gfx_b = 0.22;
+  ) : (
+    gfx_r = 0.56; gfx_g = 0.27; gfx_b = 0.19;
+  );
+  gfx_a = 1; gfx_rect(x, y, w, h);
+  gfx_r = disabled ? 0.60 : 0.96; 
+  gfx_g = disabled ? 0.60 : 0.90; 
+  gfx_b = disabled ? 0.60 : 0.86;
+  gfx_setfont(1, "Arial", 13);
+  gfx_measurestr(txt, tw, th);
+  gfx_x = x + (w - tw) * 0.5;
+  gfx_y = y + (h - th) * 0.5 - 1;
+  gfx_drawstr(txt);
+  clicked ? (
+    dbg_clear_count += 1;
+    reset_capture_profile();
+    clear_live_cache();
+    set_profile_mode(0);
+    profile_mode = 0;
+    engine_armed = 0;
+    idle_mode = 1;
+    slider26 = 0;
+    sliderchange(clear_cache_mask);
+    slider_automate(clear_cache_mask);
+  );
+);
+
+function ui_toggle_button(x, y, w, h, txt, active)
+local(over, clicked, tw, th) (
+  over = mouse_x >= x && mouse_x < x + w && mouse_y >= y && mouse_y < y + h;
+  clicked = over && (mouse_cap & 1) && !last_mouse_cap;
+  active ? (
+    gfx_r = 0.18; gfx_g = 0.56; gfx_b = 0.34;
+  ) : over ? (
+    gfx_r = 0.22; gfx_g = 0.24; gfx_b = 0.28;
+  ) : (
+    gfx_r = 0.15; gfx_g = 0.16; gfx_b = 0.19;
+  );
+  gfx_a = 1; gfx_rect(x, y, w, h);
+  gfx_r = active ? 0.96 : 0.82; gfx_g = active ? 0.98 : 0.84; gfx_b = active ? 0.96 : 0.88;
+  gfx_setfont(1, "Arial", 12);
+  gfx_measurestr(txt, tw, th);
+  gfx_x = x + (w - tw) * 0.5;
+  gfx_y = y + (h - th) * 0.5 - 1;
+  gfx_drawstr(txt);
+  clicked;
+);
+
+function biquad_process(base, idx, x)
+local(off, y) (
+  off = idx * 9;
+  y = base[off + 0] * x
+    + base[off + 1] * base[off + 5]
+    + base[off + 2] * base[off + 6]
+    - base[off + 3] * base[off + 7]
+    - base[off + 4] * base[off + 8];
+  base[off + 6] = base[off + 5];
+  base[off + 5] = x;
+  base[off + 8] = base[off + 7];
+  base[off + 7] = y;
+  y;
+);
+
+function set_bandpass(base, idx, freq, q)
+local(off, w0, sw, cw, alpha, a0inv) (
+  off = idx * 9;
+  w0 = 2 * $pi * clamp(freq, 20, 0.45 * srate) / srate;
+  sw = sin(w0);
+  cw = cos(w0);
+  alpha = sw / max(0.0001, (2 * q));
+  a0inv = 1 / max(0.000001, 1 + alpha);
+  base[off + 0] = alpha * a0inv;
+  base[off + 1] = 0;
+  base[off + 2] = -alpha * a0inv;
+  base[off + 3] = (-2 * cw) * a0inv;
+  base[off + 4] = (1 - alpha) * a0inv;
+);
+
+function set_lowpass(base, idx, freq, q)
+local(off, w0, sw, cw, alpha, b0, b1, b2, a0, a1, a2, a0inv) (
+  off = idx * 9;
+  w0 = 2 * $pi * clamp(freq, 20, 0.45 * srate) / srate;
+  sw = sin(w0);
+  cw = cos(w0);
+  alpha = sw / max(0.0001, (2 * q));
+  b0 = (1 - cw) * 0.5;
+  b1 = 1 - cw;
+  b2 = (1 - cw) * 0.5;
+  a0 = 1 + alpha;
+  a1 = -2 * cw;
+  a2 = 1 - alpha;
+  a0inv = 1 / max(0.000001, a0);
+  base[off + 0] = b0 * a0inv;
+  base[off + 1] = b1 * a0inv;
+  base[off + 2] = b2 * a0inv;
+  base[off + 3] = a1 * a0inv;
+  base[off + 4] = a2 * a0inv;
+);
+
+function set_highpass(base, idx, freq, q)
+local(off, w0, sw, cw, alpha, b0, b1, b2, a0, a1, a2, a0inv) (
+  off = idx * 9;
+  w0 = 2 * $pi * clamp(freq, 20, 0.45 * srate) / srate;
+  sw = sin(w0);
+  cw = cos(w0);
+  alpha = sw / max(0.0001, (2 * q));
+  b0 = (1 + cw) * 0.5;
+  b1 = -(1 + cw);
+  b2 = (1 + cw) * 0.5;
+  a0 = 1 + alpha;
+  a1 = -2 * cw;
+  a2 = 1 - alpha;
+  a0inv = 1 / max(0.000001, a0);
+  base[off + 0] = b0 * a0inv;
+  base[off + 1] = b1 * a0inv;
+  base[off + 2] = b2 * a0inv;
+  base[off + 3] = a1 * a0inv;
+  base[off + 4] = a2 * a0inv;
+);
+
+function set_peaking(base, idx, freq, q, gain_db)
+local(off, w0, sw, cw, alpha, A, a0, a0inv) (
+  off = idx * 9;
+  w0 = 2 * $pi * clamp(freq, 20, 0.45 * srate) / srate;
+  sw = sin(w0);
+  cw = cos(w0);
+  alpha = sw / max(0.0001, (2 * q));
+  A = 10 ^ (gain_db / 40);
+  a0 = 1 + alpha / max(0.000001, A);
+  a0inv = 1 / max(0.000001, a0);
+  base[off + 0] = (1 + alpha * A) * a0inv;
+  base[off + 1] = (-2 * cw) * a0inv;
+  base[off + 2] = (1 - alpha * A) * a0inv;
+  base[off + 3] = (-2 * cw) * a0inv;
+  base[off + 4] = (1 - alpha / max(0.000001, A)) * a0inv;
+);
+
+function set_lowshelf(base, idx, freq, gain_db)
+local(off, w0, sw, cw, A, alpha, beta, b0, b1, b2, a0, a1, a2, a0inv) (
+  off = idx * 9;
+  w0 = 2 * $pi * clamp(freq, 20, 0.45 * srate) / srate;
+  sw = sin(w0);
+  cw = cos(w0);
+  A = 10 ^ (gain_db / 40);
+  alpha = sw / 2 * sqrt(2);
+  beta = 2 * sqrt(max(0.000001, A)) * alpha;
+  b0 = A * ((A + 1) - (A - 1) * cw + beta);
+  b1 = 2 * A * ((A - 1) - (A + 1) * cw);
+  b2 = A * ((A + 1) - (A - 1) * cw - beta);
+  a0 = (A + 1) + (A - 1) * cw + beta;
+  a1 = -2 * ((A - 1) + (A + 1) * cw);
+  a2 = (A + 1) + (A - 1) * cw - beta;
+  a0inv = 1 / max(0.000001, a0);
+  base[off + 0] = b0 * a0inv;
+  base[off + 1] = b1 * a0inv;
+  base[off + 2] = b2 * a0inv;
+  base[off + 3] = a1 * a0inv;
+  base[off + 4] = a2 * a0inv;
+);
+
+function set_highshelf(base, idx, freq, gain_db)
+local(off, w0, sw, cw, A, alpha, beta, b0, b1, b2, a0, a1, a2, a0inv) (
+  off = idx * 9;
+  w0 = 2 * $pi * clamp(freq, 20, 0.45 * srate) / srate;
+  sw = sin(w0);
+  cw = cos(w0);
+  A = 10 ^ (gain_db / 40);
+  alpha = sw / 2 * sqrt(2);
+  beta = 2 * sqrt(max(0.000001, A)) * alpha;
+  b0 = A * ((A + 1) + (A - 1) * cw + beta);
+  b1 = -2 * A * ((A - 1) + (A + 1) * cw);
+  b2 = A * ((A + 1) + (A - 1) * cw - beta);
+  a0 = (A + 1) - (A - 1) * cw + beta;
+  a1 = 2 * ((A - 1) - (A + 1) * cw);
+  a2 = (A + 1) - (A - 1) * cw - beta;
+  a0inv = 1 / max(0.000001, a0);
+  base[off + 0] = b0 * a0inv;
+  base[off + 1] = b1 * a0inv;
+  base[off + 2] = b2 * a0inv;
+  base[off + 3] = a1 * a0inv;
+  base[off + 4] = a2 * a0inv;
+);
+
+@slider
+in_trim = db_to_amp(slider1);
+sc_trim = db_to_amp(slider29);
+profile_s = slider3;
+match_amt = slider4 / 100;
+max_curve_db = slider5;
+band_q = slider6;
+harm_amt = slider7 / 100;
+harm_color = slider8 / 100;
+harm_dyn = slider9 / 100;
+harm_hp_hz = slider10;
+gm_on = slider2 >= 0.5;  // Auto Level Match (Ref vs Proc)
+out_gain = db_to_amp(slider12);
+out_norm_on = slider11 >= 0.5;  // Automatic Gain Control (Output RMS)
+agc_trim_amp = db_to_amp(slider22);
+agc_range_db = max(1, slider23);
+mix_wet = slider13 / 100;
+mix_dry = 1 - mix_wet;
+monitor_mode = floor(slider14);
+ui_mode = clamp(floor(slider19 + 0.5), 0, 1);
+profile_mode = clamp(floor(slider20 + 0.5), 0, 2);
+target_offset_amp = db_to_amp(slider94);
+level_target_mode = floor(slider95);
+debug_overlay_on = slider96 >= 0.5;
+strict_eq_on = slider97 >= 0.5;
+delta_stability = clamp(slider25 / 100, 0, 1);
+auto_clean_on_start = slider27 >= 0.5;
+capture_mode = 0;  // Capture semplificato: solo Timed
+capture_sens = clamp(slider28 / 100, 0.25, 2.0);
+air_trim_db = slider102;
+air_lp_hz = slider103;
+air_hp_hz = slider106;
+air_params_dirty = 1;
+diag_mode = clamp(floor(slider107 + 0.5), 0, 3);
+diag_tc_s = clamp(0.22 + 0.012 * profile_s, 0.12, 1.20);
+diag_coeff = exp(-1 / max(1, srate * diag_tc_s));
+diag_lp_coeff = 1 - exp(-2 * $pi * 1500 / max(1, srate));
+diag_hp_coeff = 1 - exp(-2 * $pi * 38 / max(1, srate));
+listen_mode = floor(slider104);
+safe_preset_sel = clamp(floor(slider105 + 0.5), 0, 5);
+safe_preset_sel > 0 && safe_preset_sel != safe_preset_last ? (
+  apply_safe_preset(safe_preset_sel);
+);
+listen_xfade_coeff = exp(-1 / max(1, srate * 0.015));
+
+clear_cache_req = slider26 >= 0.5;
+clear_cache_req ? (
+  dbg_clear_count += 1;
+  reset_capture_profile();
+  clear_live_cache();
+  set_profile_mode(0);
+  profile_mode = 0;
+  engine_armed = 0;
+  idle_mode = 1;
+  slider26 = 0;
+  sliderchange(clear_cache_mask);
+  slider_automate(clear_cache_mask);
+);
+
+ui_mode != last_ui_mode ? (
+  apply_ui_visibility(ui_mode);
+);
+
+profile_coeff = exp(-1 / max(1, srate * max(8, profile_s)));
+profile_fast_coeff = exp(-1 / max(1, srate * max(2.5, profile_s * 0.45)));
+profile_hold_coeff = exp(-1 / max(1, srate * max(30, profile_s * 12)));
+rms_coeff = exp(-1 / max(1, srate * 1.20));
+lufs_s_coeff = exp(-1 / max(1, srate * 3.00));
+gm_att = exp(-1 / max(1, srate * 0.90));
+gm_rel = exp(-1 / max(1, srate * 2.80));
+gm_mix_att = exp(-1 / max(1, srate * 1.20));
+gm_mix_rel = exp(-1 / max(1, srate * 3.20));
+agc_att = exp(-1 / max(1, srate * 1.40));
+agc_rel = exp(-1 / max(1, srate * 4.20));
+agc_idle = exp(-1 / max(1, srate * 0.60));
+safety_att = exp(-1 / max(1, srate * 0.003));
+safety_rel = exp(-1 / max(1, srate * 0.090));
+startup_att = exp(-1 / max(1, srate * 0.040));
+follow_entry_att = exp(-1 / max(1, srate * 0.120));
+init_guard_att = exp(-1 / max(1, srate * 0.090));
+init_declick_coeff = exp(-1 / max(1, srate * 0.004));
+env_att = exp(-1 / max(1, srate * 0.01));
+env_rel = exp(-1 / max(1, srate * 0.20));
+ref_gate_att = exp(-1 / max(1, srate * 0.03));
+ref_gate_rel = exp(-1 / max(1, srate * 0.40));
+prog_gate_att = exp(-1 / max(1, srate * 0.02));
+prog_gate_rel = exp(-1 / max(1, srate * 0.25));
+ref_mix_att = exp(-1 / max(1, srate * 0.90));
+ref_mix_rel = exp(-1 / max(1, srate * 1.80));
+ref_hold_samples = floor(max(1, srate * 1.20));
+prog_hold_samples = floor(max(1, srate * 0.70));
+ref_on_thr = 0.00012;
+prog_on_thr = 0.00008;
+capture_target_samples = floor(max(1, srate * max(5, profile_s)));
+panic_hold_samples = floor(max(1, srate * 2.5));
+panic_cooldown_samples = floor(max(1, srate * (profile_s + 0.35)));
+recover_hold_samples = floor(max(1, srate * 0.12));
+follow_fill_target_samples = floor(max(1, srate * max(4, profile_s * 0.35)));
+follow_ready_samples = floor(max(1, srate * max(2, profile_s * 0.18)));
+follow_blend_samples = floor(max(1, srate * max(3, profile_s * 0.28)));
+follow_fill_release_step = 0.25;
+delta_att_sec = (1.5 + profile_s * 0.15) + delta_stability * (6.0 + profile_s * 1.0);
+delta_rel_sec = (2.5 + profile_s * 0.25) + delta_stability * (9.0 + profile_s * 1.4);
+delta_smooth_att = exp(-1 / max(1, srate * delta_att_sec));
+delta_smooth_rel = exp(-1 / max(1, srate * delta_rel_sec));
+delta_deadband_db = 0.10 + 0.50 * delta_stability;
+delta_slew_up_db_s = max(0.12, 2.50 - 2.32 * delta_stability);
+delta_slew_dn_db_s = max(0.08, 1.60 - 1.48 * delta_stability);
+// Detector transiente HF (sibilanti): attacco rapido, rilascio medio.
+sibil_hf_lp_coeff = 1 - exp(-2 * $pi * 4200 / srate);
+sibil_fast_att = exp(-1 / max(1, srate * 0.003));
+sibil_fast_rel = exp(-1 / max(1, srate * 0.040));
+sibil_slow_coeff = exp(-1 / max(1, srate * 0.120));
+
+profile_mode != profile_mode_prev ? (
+  profile_mode == 1 ? (
+    // Capture timed follow-like: reset cache e timer, poi segue live.
+    clear_live_cache();
+    reset_capture_profile();
+    capture_delta_latch_db = read_delta_db;
+  );
+  profile_mode_prev = profile_mode;
+);
+
+profile_mode != follow_mode_prev ? (
+  (profile_mode == 0 || profile_mode == 1) ? (
+    follow_entry_mix = 0;
+    follow_fill_counter = 0;
+    follow_fill_ratio = 0;
+    follow_fill_mix = 0;
+  ) : (
+    follow_entry_mix = 1;
+  );
+  follow_mode_prev = profile_mode;
+);
+
+hp_lp_coeff = 1 - exp(-2 * $pi * clamp(harm_hp_hz, 40, 0.45 * srate) / srate);
+low_lp_coeff = 1 - exp(-2 * $pi * 140 / srate);
+
+i = 0;
+loop(NUM_BANDS,
+  set_bandpass(bp_in, i, band_freq[i], band_q);
+  set_bandpass(bp_sc, i, band_freq[i], band_q);
+  i += 1;
+);
+
+// Configura filtri di protezione: HP 20Hz (Q 0.72) e LP 20kHz (Q 0.72)
+set_highpass(hp20L_mem, 0, 20, 0.72);
+set_highpass(hp20R_mem, 0, 20, 0.72);
+set_lowpass(lp20kL_mem, 0, 20000, 0.72);
+set_lowpass(lp20kR_mem, 0, 20000, 0.72);
+// Se Air Trim e' negativo, stringe leggermente anche il LP effettivo.
+air_lp_eff_hz = clamp(air_lp_hz + min(air_trim_db, 0) * 650, 5000, 20000);
+set_lowpass(airlpL_mem, 0, air_lp_eff_hz, 0.72);
+set_lowpass(airlpR_mem, 0, air_lp_eff_hz, 0.72);
+set_lowpass(airlp2L_mem, 0, air_lp_eff_hz, 0.72);
+set_lowpass(airlp2R_mem, 0, air_lp_eff_hz, 0.72);
+set_highpass(airhpL_mem, 0, air_hp_hz, 0.72);
+set_highpass(airhpR_mem, 0, air_hp_hz, 0.72);
+
+@block
+air_params_dirty ? (
+  air_trim_db = slider102;
+  air_lp_hz = slider103;
+  air_hp_hz = slider106;
+  air_lp_eff_hz = clamp(air_lp_hz + min(air_trim_db, 0) * 650, 5000, 20000);
+  set_lowpass(airlpL_mem, 0, air_lp_eff_hz, 0.72);
+  set_lowpass(airlpR_mem, 0, air_lp_eff_hz, 0.72);
+  set_lowpass(airlp2L_mem, 0, air_lp_eff_hz, 0.72);
+  set_lowpass(airlp2R_mem, 0, air_lp_eff_hz, 0.72);
+  set_highpass(airhpL_mem, 0, air_hp_hz, 0.72);
+  set_highpass(airhpR_mem, 0, air_hp_hz, 0.72);
+  air_params_dirty = 0;
+);
+
+idle_mode = engine_armed ? 0 : 1;
+diag_mode = clamp(floor(slider107 + 0.5), 0, 3);
+
+transport_running = ((play_state & 1) || (play_state & 4));
+auto_clean_on_start && transport_running && !transport_was_running ? (
+  clear_live_cache();
+);
+transport_was_running = transport_running;
+
+// Delta Stability ora controlla direttamente la velocita' di adattamento EQ.
+// Basso = piu' rapido, alto = piu' stabile/lento.
+curve_time_sec = 0.20 + 2.80 * delta_stability;
+curve_coeff = exp(-samplesblock / max(1, srate * curve_time_sec));
+harm_coeff = exp(-samplesblock / max(1, srate * 0.14));
+gm_mix_att_blk = exp(-samplesblock / max(1, srate * 1.20));
+gm_mix_rel_blk = exp(-samplesblock / max(1, srate * 3.20));
+ref_mix_att_blk = exp(-samplesblock / max(1, srate * 0.90));
+ref_mix_rel_blk = exp(-samplesblock / max(1, srate * 1.80));
+delta_slew_up_db_block = delta_slew_up_db_s * samplesblock / max(1, srate);
+delta_slew_dn_db_block = delta_slew_dn_db_s * samplesblock / max(1, srate);
+panic_flash_counter = max(0, panic_flash_counter - samplesblock);
+panic_cooldown_counter = max(0, panic_cooldown_counter - samplesblock);
+recover_flash_counter = max(0, recover_flash_counter - samplesblock);
+recover_cooldown_counter = max(0, recover_cooldown_counter - samplesblock);
+
+capture_live_mode = !idle_mode && profile_mode == 1 && !keep_ready;
+follow_live_mode = !idle_mode && profile_mode == 0;
+live_follow_mode = follow_live_mode || capture_live_mode;
+capture_freeze_mode = 0; // In Capture si deve sentire l'EQ che si muove
+keep_static_active = (!idle_mode && profile_mode == 2 && keep_ready);  // statico solo in Keep
+capture_freeze_mode ? (
+  curve_coeff = 1;
+  harm_coeff = 1;
+);
+
+profile_mode == 2 || (profile_mode == 1 && keep_ready) ? (
+  profile_live_weight = 0;
+) : (
+  profile_live_weight = 1;
+);
+
+live_follow_mode ? (
+  follow_profile_ready = follow_fill_counter >= follow_ready_samples;
+  follow_blend_ratio = clamp(follow_fill_counter / max(1, follow_blend_samples), 0, 1);
+  fill_t = clamp((follow_blend_ratio - 0.08) / 0.92, 0, 1);
+  profile_fill_mix = fill_t * fill_t * (3 - 2 * fill_t);
+) : (
+  follow_profile_ready = 1;
+  follow_blend_ratio = 1;
+  profile_fill_mix = 1;
+);
+
+profile_live_weight ? (
+  profile_ready = ref_active && follow_profile_ready;
+) : (
+  profile_ready = keep_ready;
+);
+idle_mode ? (
+  profile_ready = 0;
+);
+
+gm_on && profile_ready ? (
+  gm_mix_state = gm_mix_state * gm_mix_att_blk + (1 - gm_mix_att_blk);
+) : (
+  gm_mix_state = gm_mix_state * gm_mix_rel_blk;
+);
+
+profile_ready ? (
+  ref_mix_state = ref_mix_state * ref_mix_att_blk + (1 - ref_mix_att_blk);
+) : (
+  ref_mix_state = ref_mix_state * ref_mix_rel_blk;
+);
+eff_match_amt = match_amt * ref_mix_state * profile_fill_mix;
+live_follow_mode ? (
+  capture_live_mode ? (
+    // In Capture deve convergere e stabilizzarsi, non inseguire troppo.
+    follow_match_floor = 0.12 + 0.16 * capture_sens; // circa 0.16..0.44
+  ) : (
+    // In Follow resta reattivo ma meno aggressivo di prima.
+    follow_match_floor = 0.28 + 0.18 * capture_sens; // circa 0.33..0.64
+  );
+  follow_match_floor = clamp(follow_match_floor, 0.10, 0.64);
+  follow_match_drive = follow_match_floor + (1 - follow_match_floor) * mirror_error_mix;
+  eff_match_amt *= follow_match_drive;
+);
+// Se routing sidechain non e' valido in live mode, non applicare matching.
+live_follow_mode && routing_state != 0 ? (
+  eff_match_amt = 0;
+);
+// In Follow, quando siamo molto vicini al target, blocca il chasing fine.
+follow_live_mode && follow_fill_ratio >= 0.98 ? (
+  follow_settle_gate = clamp((mirror_error_mix - 0.03) / 0.18, 0, 1);
+  // Evita stallo: in zona "quasi match" riduce il chasing ma non lo blocca.
+  read_curve_db > 0.12 ? (
+    eff_match_amt *= (0.70 + 0.30 * follow_settle_gate);
+  );
+);
+
+sum_abs = 0;
+sum_sc = 0;
+sum_in = 0;
+mirror_err_sum = 0;
+raw_err_sum = 0;
+mirror_peak_err = 0;
+low_push = 0;
+mid_push = 0;
+high_push = 0;
+low_pull = 0;
+high_pull = 0;
+mid_focus = 0;
+eq_settle_sum = 0;
+sibil_ref_sum = 0;
+sibil_in_sum = 0;
+sibil_count = 0;
+ultrah_ref_sum = 0;
+ultrah_in_sum = 0;
+ultrah_count = 0;
+
+i = 0;
+loop(NUM_BANDS,
+  in_src = profile_live_weight ? in_avg[i] : keep_in_avg[i];
+  in_band_db = safe_db(sqrt(max(in_src, 0)));
+  src_ref = profile_live_weight ? sc_avg[i] : keep_avg[i];
+  sc_band_db = safe_db(sqrt(max(src_ref, 0)));
+  tmp_in_db[i] = in_band_db;
+  tmp_sc_db[i] = sc_band_db;
+  (band_freq[i] >= 5500 && band_freq[i] <= 8500) ? (
+    sibil_ref_sum += sc_band_db;
+    sibil_in_sum += in_band_db;
+    sibil_count += 1;
+  );
+  band_freq[i] >= 10000 ? (
+    ultrah_ref_sum += sc_band_db;
+    ultrah_in_sum += in_band_db;
+    ultrah_count += 1;
+  );
+  sum_in += in_band_db;
+  sum_sc += sc_band_db;
+  i += 1;
+);
+
+in_mean_db = sum_in / NUM_BANDS;
+sc_mean_db = sum_sc / NUM_BANDS;
+
+sub_ref_db = mean_range(tmp_sc_db, 0, 10);
+sub_in_db = mean_range(tmp_in_db, 0, 10);
+body_ref_db = mean_range(tmp_sc_db, 11, 17);
+body_in_db = mean_range(tmp_in_db, 11, 17);
+presence_ref_db = mean_range(tmp_sc_db, 18, 24);
+presence_in_db = mean_range(tmp_in_db, 18, 24);
+air_ref_db = mean_range(tmp_sc_db, 25, 30);
+air_in_db = mean_range(tmp_in_db, 25, 30);
+low_abs_err = sub_ref_db - sub_in_db;
+mid_abs_err = ((body_ref_db + presence_ref_db) * 0.5) - ((body_in_db + presence_in_db) * 0.5);
+high_abs_err = air_ref_db - air_in_db;
+low_shape_err = (sub_ref_db - sc_mean_db) - (sub_in_db - in_mean_db);
+mid_shape_err = (((body_ref_db + presence_ref_db) * 0.5) - sc_mean_db) - (((body_in_db + presence_in_db) * 0.5) - in_mean_db);
+high_shape_err = (air_ref_db - sc_mean_db) - (air_in_db - in_mean_db);
+speech_lowcut_err = (presence_ref_db - sub_ref_db) - (presence_in_db - sub_in_db);
+speech_highcut_err = (presence_ref_db - air_ref_db) - (presence_in_db - air_in_db);
+speech_body_err = body_ref_db - body_in_db;
+speech_presence_err = (presence_ref_db - ((body_ref_db + air_ref_db) * 0.5)) - (presence_in_db - ((body_in_db + air_in_db) * 0.5));
+sibil_ref_db = sibil_count > 0 ? (sibil_ref_sum / sibil_count) : air_ref_db;
+sibil_in_db = sibil_count > 0 ? (sibil_in_sum / sibil_count) : air_in_db;
+sibil_abs_err = sibil_ref_db - sibil_in_db;
+// Guard dinamico: attivo quando l'input e' gia' piu' brillante del riferimento sulle sibilanti.
+sibilance_guard = clamp((-sibil_abs_err - 0.35) / 3.50, 0, 1);
+ultrah_ref_db = ultrah_count > 0 ? (ultrah_ref_sum / ultrah_count) : air_ref_db;
+ultrah_in_db = ultrah_count > 0 ? (ultrah_in_sum / ultrah_count) : air_in_db;
+ultrah_abs_err = ultrah_ref_db - ultrah_in_db;
+// Guard dinamico altissime: attivo quando 10k+ supera il reference.
+ultrahigh_guard = clamp((-ultrah_abs_err - 0.05) / 3.20, 0, 1);
+ultra_ref_lo_db = mean_range(tmp_sc_db, 25, 26);   // 6.3k-8k
+ultra_ref_hi_db = mean_range(tmp_sc_db, 28, 30);   // 12.5k-20k
+ultra_in_lo_db = mean_range(tmp_in_db, 25, 26);
+ultra_in_hi_db = mean_range(tmp_in_db, 28, 30);
+ultra_tilt_ref_db = ultra_ref_hi_db - ultra_ref_lo_db;
+ultra_tilt_in_db = ultra_in_hi_db - ultra_in_lo_db;
+ultra_tilt_err_db = ultra_tilt_ref_db - ultra_tilt_in_db;
+// Quanto serve una discesa extra oltre 10k (reference piu' discendente dell'input).
+ultra_descend_need = clamp((-ultra_tilt_err_db - 0.20) / 5.00, 0, 1);
+// Confidenza presenza reale in alto nel reference: se bassa, vieta boost sopra 10k.
+ultra_ref_presence = clamp((ultra_ref_hi_db - (sc_mean_db - 22)) / 8, 0, 1);
+ultra_in_presence = clamp((ultra_in_hi_db - (in_mean_db - 22)) / 8, 0, 1);
+// Clamp "spalla" 9k-16k: quando input ha una shoulder piu' alta del reference, frena ulteriormente.
+ultra_shoulder_err_db = (ultra_in_hi_db - ultra_in_lo_db) - (ultra_ref_hi_db - ultra_ref_lo_db);
+ultra_shoulder_guard = clamp((ultra_shoulder_err_db - 0.10) / 3.00, 0, 1);
+// Lock pendenza diretta 10k -> 20k: evita "spalla alta" che resta dopo il matching.
+ultra_roll_ref_db = tmp_sc_db[27] - tmp_sc_db[30];
+ultra_roll_in_db = tmp_in_db[27] - tmp_in_db[30];
+ultra_roll_need = clamp((ultra_roll_ref_db - ultra_roll_in_db - 0.15) / 3.60, 0, 1);
+// Preview debug del cap HF effettivo (senza dipendere dal loop bande).
+dbg_ultrah_cap10_db = 0.20 + 0.03 * max_curve_db - ultrahigh_guard * (1.50 + 0.25 * max_curve_db);
+(ultra_descend_need > 0.18 || ultra_ref_presence < 0.32) ? (
+  dbg_ultrah_cap10_db = min(dbg_ultrah_cap10_db, -0.10);
+);
+dbg_ultrah_cap10_db -= ultra_shoulder_guard * (1.40 + 0.20 * max_curve_db);
+dbg_ultrah_cap10_db -= ultra_roll_need * (1.20 + 0.16 * max_curve_db);
+dbg_ultrah_cap12_db = min(dbg_ultrah_cap10_db, 0.06 + 0.02 * max_curve_db - ultra_roll_need * (1.10 + 0.18 * max_curve_db));
+ref_peak_idx = 0;
+ref_peak_rel = -240;
+ref_peak_err = 0;
+i = 0;
+loop(NUM_BANDS,
+  shape_err_probe = soft_deadband((tmp_sc_db[i] - sc_mean_db) - (tmp_in_db[i] - in_mean_db), 0.15);
+  abs_err_probe = soft_deadband(tmp_sc_db[i] - tmp_in_db[i], 0.25);
+  raw_err_sum += abs(tmp_sc_db[i] - tmp_in_db[i]);
+  mirror_err_sum += abs(abs_err_probe) + 0.60 * abs(shape_err_probe);
+  mirror_peak_err = max(mirror_peak_err, abs(abs_err_probe));
+  sc_rel_db = tmp_sc_db[i] - sc_mean_db;
+  peak_err_db = tmp_sc_db[i] - tmp_in_db[i];
+  sc_rel_db > ref_peak_rel ? (
+    ref_peak_rel = sc_rel_db;
+    ref_peak_idx = i;
+    ref_peak_err = peak_err_db;
+  );
+  i += 1;
+);
+mirror_delta = mirror_err_sum / NUM_BANDS;
+raw_err_avg_db = raw_err_sum / NUM_BANDS;
+mirror_broad_mix = clamp((mirror_delta - 0.45) / 1.40, 0, 1);
+mirror_peak_mix = clamp((mirror_peak_err - 1.80) / 5.50, 0, 1);
+mirror_error_mix = max(mirror_broad_mix, mirror_peak_mix * 0.90);
+mirror_flat = mirror_delta < 0.50 && mirror_peak_err < 1.80
+  && abs(low_abs_err) < 0.75
+  && abs(mid_abs_err) < 0.75
+  && abs(high_abs_err) < 0.75;
+mirror_flat ? (
+  mirror_error_mix = 0;
+);
+mirror_delta_err = abs(mirror_delta - mirror_delta_slow);
+mirror_peak_err_slow = abs(mirror_peak_err - mirror_peak_slow);
+mirror_follow_change = mirror_delta_err + mirror_peak_err_slow * 0.35;
+follow_stability_target = live_follow_mode && follow_fill_ratio >= 0.98 ? clamp((0.30 - mirror_follow_change) / 0.30, 0, 1) * clamp((mirror_error_mix - 0.08) / 0.45, 0, 1) : 0;
+follow_stability_coeff = exp(-samplesblock / max(1, srate * 1.20));
+focus_stability_mix = focus_stability_mix * follow_stability_coeff + follow_stability_target * (1 - follow_stability_coeff);
+mirror_slow_coeff = exp(-samplesblock / max(1, srate * 0.90));
+mirror_delta_slow = mirror_delta_slow * mirror_slow_coeff + mirror_delta * (1 - mirror_slow_coeff);
+mirror_peak_slow = mirror_peak_slow * mirror_slow_coeff + mirror_peak_err * (1 - mirror_slow_coeff);
+follow_change_drive = live_follow_mode ? clamp((mirror_follow_change - 0.018) / 0.16, 0, 1) * clamp((mirror_error_mix - 0.03) / 0.34, 0, 1) : 0;
+follow_hold_target = live_follow_mode && follow_fill_ratio >= 0.98 ? clamp((0.045 - mirror_follow_change) / 0.045, 0, 1) : 0;
+follow_hold_mix < follow_hold_target ? (
+  follow_hold_coeff = exp(-samplesblock / max(1, srate * 0.85));
+) : (
+  follow_hold_coeff = exp(-samplesblock / max(1, srate * 0.14));
+);
+follow_hold_mix = follow_hold_mix * follow_hold_coeff + follow_hold_target * (1 - follow_hold_coeff);
+profile_live_coeff = profile_coeff + (profile_fast_coeff - profile_coeff) * (follow_change_drive * 0.55);
+profile_live_coeff = profile_live_coeff * (1 - follow_hold_mix) + profile_hold_coeff * follow_hold_mix;
+live_follow_mode ? (
+  // Delta Stability ora influisce anche sulla velocita' reale di inseguimento.
+  // Alto = piu' stabile/lento, basso = piu' rapido.
+  profile_live_coeff = profile_live_coeff * (0.90 + 0.10 * delta_stability) + profile_hold_coeff * (0.10 * delta_stability);
+);
+strict_eq_on && live_follow_mode ? (
+  // In Strict EQ solo un leggero smoothing extra.
+  profile_live_coeff = profile_live_coeff * 0.96 + profile_hold_coeff * 0.04;
+);
+live_follow_mode ? (
+  // Cap della costante di analisi live: evita risposta troppo lenta con finestre lunghe.
+  live_analysis_tc = clamp(0.70 + 5.80 * delta_stability + 0.07 * min(profile_s, 30), 0.9, 9.5);
+  live_analysis_coeff = exp(-1 / max(1, srate * live_analysis_tc));
+  profile_live_coeff = min(profile_live_coeff, live_analysis_coeff);
+);
+// Gate transiente sibilanti: riduce SOLO i boost HF in presenza di "s/sc/x".
+hf_sibil_gate = 1 - 0.88 * sibil_transient;
+
+i = 0;
+loop(NUM_BANDS,
+  in_band_db = tmp_in_db[i] - in_mean_db;
+  sc_band_db = tmp_sc_db[i] - sc_mean_db;
+  shape_err_db = sc_band_db - in_band_db;
+  abs_err_db = tmp_sc_db[i] - tmp_in_db[i];
+  // Deadband piu' bassa: evita che il motore resti spento su differenze moderate.
+  shape_err_eff = soft_deadband(shape_err_db, strict_eq_on ? 0.40 : 0.28);
+  abs_err_eff = soft_deadband(abs_err_db, strict_eq_on ? 0.65 : 0.40);
+  // Favorisci leggermente il match assoluto per aderire di piu' al reference.
+  // In low-band evita che l'errore assoluto trascini tagli "tipo passa-alto".
+  abs_weight = (i <= 10) ? 0.65 : (i >= 27 ? 0.28 : (i >= 22 ? 0.78 : 1.20));
+  tone_err_db = shape_err_eff * 0.45 + abs_err_eff * abs_weight;
+  tone_drive = strict_eq_on ? 0.95 : (1.00 + 0.45 * clamp((abs(shape_err_eff) + abs(abs_err_eff)) / 7, 0, 1));
+  diff_db = tone_err_db * eff_match_amt * band_weight[i] * tone_drive;
+  // In follow privilegia una media tonale stabile: riduci micro-inseguimento articolazione.
+  live_follow_mode ? (
+    follow_tonal_focus = clamp((follow_fill_ratio - 0.20) / 0.80, 0, 1);
+    diff_db *= (0.75 + 0.25 * follow_tonal_focus);
+  );
+  // In Follow/Capture fai entrare le alte in modo progressivo: evita la "campana" transitoria.
+  high_stage = 1;
+  live_follow_mode ? (
+    band_freq[i] >= 10000 ? (
+      high_stage = clamp((follow_fill_ratio - 0.68) / 0.32, 0, 1);
+    ) : (band_freq[i] >= 6300) ? (
+      high_stage = clamp((follow_fill_ratio - 0.35) / 0.65, 0, 1);
+    );
+  );
+  diff_db *= high_stage;
+  // Protezione basse: evita high-pass "invisibile" troppo aggressivo.
+  i <= 6 ? (
+    diff_db = max(diff_db, -(0.7 + 0.08 * max_curve_db));
+  ) : i <= 10 ? (
+    diff_db = max(diff_db, -(1.2 + 0.10 * max_curve_db));
+  );
+  // Anti-gonfiore basse: se l'input e' gia' piu' carico sotto, frena boost e favorisci taglio lieve.
+  live_follow_mode && i <= 8 ? (
+    low_excess = clamp((-low_abs_err - 0.60) / 6.00, 0, 1);
+    diff_db > 0 ? (
+      diff_db *= (1 - 0.55 * low_excess);
+    ) : (
+      diff_db *= (1 + 0.30 * low_excess);
+    );
+  );
+  // Cap dinamico low-end: limita i boost sotto ~220 Hz quando il low risulta gia' sovra-rappresentato.
+  i <= 8 ? (
+    low_abs_guard = clamp((-low_abs_err - 0.45) / 5.50, 0, 1);
+    low_shape_guard = clamp((-low_shape_err - 0.35) / 4.50, 0, 1);
+    low_guard_mix = max(low_abs_guard, low_shape_guard * 0.85);
+    low_band_focus = clamp((220 - band_freq[i]) / 180, 0, 1);
+    low_guard_mix > 0 ? (
+      low_boost_cap_db = (0.95 + 0.06 * max_curve_db)
+        - low_guard_mix * (1.35 + 0.12 * max_curve_db)
+        - low_band_focus * 0.35;
+      diff_db = min(diff_db, low_boost_cap_db);
+    );
+  );
+  // Protezione voce: limita i tagli eccessivi nel range parlato (250 Hz - 4 kHz).
+  (i >= 11 && i <= 23) ? (
+    diff_db = max(diff_db, -(2.0 + 0.22 * max_curve_db));
+  );
+  // Protezione zona intelligibilita' (circa 800-1k): evita buco eccessivo.
+  (band_freq[i] >= 650 && band_freq[i] <= 1400) ? (
+    diff_db = max(diff_db, -(1.1 + 0.08 * max_curve_db));
+  );
+  // Protezione alte: evita low-pass implicito troppo aggressivo.
+  (i >= 22 && i <= 26) ? (
+    diff_db = max(diff_db, -(1.6 + 0.12 * max_curve_db));
+  );
+  i >= 27 ? (
+    ultrah_cut_guard_db = (1.0 + 0.10 * max_curve_db) + ultrahigh_guard * (2.8 + 0.35 * max_curve_db);
+    diff_db = max(diff_db, -ultrah_cut_guard_db);
+    // Cap boost molto conservativo nelle ultrahigh.
+    ultrah_boost_cap_db = 0.20 + 0.03 * max_curve_db - ultrahigh_guard * (1.50 + 0.25 * max_curve_db);
+    // Hard gate: se il reference scende o non c'e' presenza alta affidabile, vieta il boost.
+    (ultra_descend_need > 0.18 || ultra_ref_presence < 0.32) ? (
+      ultrah_boost_cap_db = min(ultrah_boost_cap_db, -0.10);
+    );
+    // Se la "spalla" 9k-16k e' gia' alta rispetto al reference, stringi ancora il cap boost.
+    ultrah_boost_cap_db -= ultra_shoulder_guard * (1.40 + 0.20 * max_curve_db);
+    // Se manca pendenza 10k->20k, limita ancora di piu' il boost ultrahigh.
+    ultrah_boost_cap_db -= ultra_roll_need * (1.20 + 0.16 * max_curve_db);
+    // Oltre 12.5k rendi il cap quasi neutro/negativo quando la discesa e' necessaria.
+    i >= 28 ? (
+      ultrah_boost_cap_db = min(ultrah_boost_cap_db, 0.06 + 0.02 * max_curve_db - ultra_roll_need * (1.10 + 0.18 * max_curve_db));
+    );
+    diff_db = min(diff_db, ultrah_boost_cap_db);
+    // Gate: non boostare dove l'input non ha contenuto reale.
+    in_content_gate = clamp((tmp_in_db[i] + 52) / 14, 0, 1);
+    hf_conf_gate = in_content_gate * clamp(0.15 + 0.85 * min(ultra_ref_presence, ultra_in_presence), 0, 1);
+    diff_db > 0 ? (
+      diff_db *= hf_conf_gate;
+    );
+    live_follow_mode && diff_db > 0 ? (
+      diff_db *= hf_sibil_gate;
+    );
+    // Se reference scende sopra 10k, impone pendenza discendente coerente.
+    diff_db -= ultra_descend_need * (0.30 + 0.10 * max_curve_db) * clamp((band_freq[i] - 9000) / 11000, 0, 1);
+    // Extra clamp shoulder: aiuta a evitare rialzi post-process oltre 9k.
+    diff_db -= ultra_shoulder_guard * (0.35 + 0.10 * max_curve_db) * clamp((band_freq[i] - 9000) / 11000, 0, 1);
+    // Lock addizionale sulla pendenza 10k->20k.
+    diff_db -= ultra_roll_need * (0.55 + 0.12 * max_curve_db) * clamp((band_freq[i] - 10000) / 10000, 0, 1);
+  );
+  // Protezione sibilanti: limita boost eccessivo in 6-8k.
+  (band_freq[i] >= 5500 && band_freq[i] <= 8500) ? (
+    sibil_boost_cap_db = (0.7 + 0.10 * max_curve_db) - sibilance_guard * (0.55 + 0.08 * max_curve_db);
+    diff_db = min(diff_db, sibil_boost_cap_db);
+  );
+  keep_static_active ? (
+    diff_db = eq_gain_db[i];
+  );
+  // Rifinitura manuale: applicata DOPO il freeze Keep, cosi' funziona anche in Keep.
+  band_freq[i] >= 10000 ? (
+    diff_db += air_trim_db * 1.35;
+  ) : (band_freq[i] >= 6300 && band_freq[i] < 10000) ? (
+    diff_db += air_trim_db * 0.70;
+  );
+  diff_db = clamp(diff_db, -max_curve_db, max_curve_db);
+  eq_target_db[i] = diff_db;
+  eq_gain_db[i] = eq_gain_db[i] * curve_coeff + diff_db * (1 - curve_coeff);
+  eq_settle_sum += abs(diff_db - eq_gain_db[i]);
+  band_q_use = band_q;
+  // In alta frequenza usa Q piu' largo per evitare picchi stretti artificiali.
+  band_freq[i] >= 6300 ? (
+    band_q_use = min(band_q_use, 0.48);
+  );
+  set_peaking(eqL_mem, i, band_freq[i], band_q_use, eq_gain_db[i]);
+  set_peaking(eqR_mem, i, band_freq[i], band_q_use, eq_gain_db[i]);
+  sum_abs += abs(eq_gain_db[i]);
+  i <= 10 ? (
+    low_push += max(0, eq_gain_db[i]);
+    low_pull += max(0, -eq_gain_db[i]);
+  );
+  (i >= 11 && i <= 21) ? (
+    mid_push += max(0, eq_gain_db[i]);
+    mid_focus += max(0, abs(eq_gain_db[i]));
+  );
+  i >= 22 ? (
+    high_push += max(0, eq_gain_db[i]);
+    high_pull += max(0, -eq_gain_db[i]);
+  );
+  i += 1;
+);
+
+low_norm = clamp(low_push / max(0.1, max_curve_db * 2), 0, 1);
+mid_norm = clamp(mid_push / max(0.1, max_curve_db * 3), 0, 1);
+high_norm = clamp(high_push / max(0.1, max_curve_db * 2), 0, 1);
+low_cut_norm = clamp(low_pull / max(0.1, max_curve_db * 2), 0, 1);
+high_cut_norm = clamp(high_pull / max(0.1, max_curve_db * 2), 0, 1);
+mid_focus_norm = clamp(mid_focus / max(0.1, max_curve_db * 3), 0, 1);
+
+warm_bias = 0.5 * (1 - harm_color);
+air_bias = 0.5 * (1 + harm_color);
+
+band_shape_target = clamp(max(low_cut_norm, high_cut_norm) * (0.26 + 0.24 * mid_focus_norm), 0, 1);
+// Guardie spettrali piu' conservative: evitano band-limiting eccessivo.
+hp_target_hz = 24 + 230 * low_cut_norm * (0.28 + 0.50 * mid_focus_norm);
+lp_target_hz = 19800 - 4200 * high_cut_norm * (0.28 + 0.50 * mid_focus_norm);
+lp_target_hz -= ultrahigh_guard * 3600;
+lp_target_hz = max(hp_target_hz + 1800, lp_target_hz);
+hp_target_hz = min(hp_target_hz, 85);
+lp_target_hz = max(lp_target_hz, 14000);
+(strict_eq_on || capture_live_mode) ? (
+  band_shape_target = 0;
+  hp_target_hz = 40;
+  lp_target_hz = 20000;
+);
+keep_static_active ? (
+  band_shape_target = band_shape_mix;
+  hp_target_hz = adaptive_hp_hz;
+  lp_target_hz = adaptive_lp_hz;
+);
+band_coeff = (capture_freeze_mode || keep_static_active) ? 1 : exp(-samplesblock / max(1, srate * 0.12));
+adaptive_hp_hz = adaptive_hp_hz * band_coeff + hp_target_hz * (1 - band_coeff);
+adaptive_lp_hz = adaptive_lp_hz * band_coeff + lp_target_hz * (1 - band_coeff);
+band_shape_mix = band_shape_mix * band_coeff + band_shape_target * (1 - band_coeff);
+band_shape_settle = abs(hp_target_hz - adaptive_hp_hz) / 1200 + abs(lp_target_hz - adaptive_lp_hz) / 6000 + abs(band_shape_target - band_shape_mix);
+post_shape_scale = (strict_eq_on || capture_live_mode) ? 0.0 : 0.45;
+shape_limit_db = max_curve_db * (strict_eq_on ? 1.0 : 0.70);
+low_shape_target = clamp((low_shape_err * 4.6 + low_abs_err * 1.2) * eff_match_amt * post_shape_scale, -shape_limit_db, shape_limit_db);
+mid_shape_target = clamp((mid_shape_err * 3.2 + mid_abs_err * 0.7) * eff_match_amt * post_shape_scale, -shape_limit_db * 0.45, shape_limit_db * 0.80);
+high_shape_target = clamp((high_shape_err * 3.6 + high_abs_err * 0.8) * eff_match_amt * post_shape_scale, -shape_limit_db, shape_limit_db * 0.65);
+high_shape_target > 0 ? (
+  high_shape_target *= (1 - 0.65 * sibilance_guard) * (1 - 0.70 * ultrahigh_guard) * (1 - 0.55 * ultra_descend_need);
+  // Guard: gap HF assoluto elevato = shelf meno affidabile.
+  hf_abs_gap = max(0, air_ref_db - air_in_db);
+  hf_shelf_suppress = clamp(1.0 - hf_abs_gap / 9.0, 0.0, 1.0);
+  high_shape_target *= hf_shelf_suppress;
+  // Guard addizionale: se il delta medio globale e' alto, riduci il contributo shelf.
+  large_delta_hf_gate = clamp(1.0 - (raw_err_avg_db - 3.5) / 7.0, 0.20, 1.0);
+  high_shape_target *= large_delta_hf_gate;
+);
+strict_eq_on ? (
+  low_shape_target = 0;
+  mid_shape_target = 0;
+  high_shape_target = 0;
+);
+keep_static_active ? (
+  low_shape_target = low_shape_db;
+  mid_shape_target = mid_shape_db;
+  high_shape_target = high_shape_db;
+);
+shape_coeff = (capture_freeze_mode || keep_static_active) ? 1 : exp(-samplesblock / max(1, srate * (0.11 + focus_stability_mix * 1.40)));
+low_shape_db = low_shape_db * shape_coeff + low_shape_target * (1 - shape_coeff);
+mid_shape_db = mid_shape_db * shape_coeff + mid_shape_target * (1 - shape_coeff);
+high_shape_db = high_shape_db * shape_coeff + high_shape_target * (1 - shape_coeff);
+speech_cut_drive = clamp(max(speech_lowcut_err, 0) / 6, 0, 1);
+speech_air_drive = clamp(max(speech_highcut_err, 0) / 6, 0, 1);
+speech_presence_drive = clamp(max(speech_presence_err, 0) / 6, 0, 1);
+peak_drive = clamp(ref_peak_rel / 8, 0, 1);
+speech_peak_err_eff = abs(soft_deadband(ref_peak_err, 1.10));
+speech_specificity = clamp((ref_peak_rel - 4.5) / 9.0, 0, 1) * clamp((speech_peak_err_eff - 0.20) / 5.0, 0, 1) * mirror_error_mix;
+speech_scale = (strict_eq_on || capture_live_mode) ? 0.0 : 0.16;
+speech_mix_target = clamp((max(max(speech_cut_drive, speech_air_drive), speech_presence_drive) * 0.45 + peak_drive * 0.35) * eff_match_amt * speech_specificity * speech_scale, 0, 1);
+speech_hp_target = 40 + 420 * speech_cut_drive * (0.30 + 0.70 * max(speech_presence_drive, peak_drive));
+speech_hp_target = min(speech_hp_target, 120);
+speech_lp_target = 19500 - 4200 * speech_air_drive * (0.20 + 0.55 * max(speech_presence_drive, peak_drive));
+speech_lp_target = max(speech_hp_target + 2000, speech_lp_target);
+speech_lp_target = max(speech_lp_target, 15000);
+speech_presence_freq_target = clamp(band_freq[ref_peak_idx], 220, 3200);
+speech_presence_q_target = 1.0 + 2.1 * peak_drive * speech_specificity;
+speech_presence_gain_target = clamp((soft_deadband(ref_peak_err, 0.85) * 2.0 + soft_deadband(speech_presence_err, 0.90) * 1.2) * eff_match_amt * speech_specificity * speech_scale, -shape_limit_db * 0.22, shape_limit_db * 0.25);
+speech_presence_gain_target > 0 ? (
+  speech_presence_gain_target *= (1 - 0.75 * sibilance_guard);
+);
+speech_body_gain_target = clamp((speech_body_err * 1.05 - max(0, speech_lowcut_err) * 0.75 - max(0, speech_highcut_err) * 0.25) * eff_match_amt * speech_specificity * speech_scale, -shape_limit_db * 0.18, shape_limit_db * 0.28);
+strict_eq_on ? (
+  speech_mix_target = 0;
+  speech_presence_gain_target = 0;
+  speech_body_gain_target = 0;
+);
+keep_static_active ? (
+  speech_hp_target = speech_hp_hz;
+  speech_lp_target = speech_lp_hz;
+  speech_presence_freq_target = speech_presence_hz;
+  speech_presence_q_target = speech_presence_q;
+  speech_presence_gain_target = speech_presence_db;
+  speech_body_gain_target = speech_body_db;
+  speech_mix_target = speech_mix;
+);
+speech_hp_hz = speech_hp_hz * shape_coeff + speech_hp_target * (1 - shape_coeff);
+speech_lp_hz = speech_lp_hz * shape_coeff + speech_lp_target * (1 - shape_coeff);
+speech_presence_hz = speech_presence_hz * shape_coeff + speech_presence_freq_target * (1 - shape_coeff);
+speech_presence_q = speech_presence_q * shape_coeff + speech_presence_q_target * (1 - shape_coeff);
+speech_presence_db = speech_presence_db * shape_coeff + speech_presence_gain_target * (1 - shape_coeff);
+speech_body_db = speech_body_db * shape_coeff + speech_body_gain_target * (1 - shape_coeff);
+speech_mix = speech_mix * shape_coeff + speech_mix_target * (1 - shape_coeff);
+shape_settle = (abs(low_shape_target - low_shape_db) + abs(mid_shape_target - mid_shape_db) + abs(high_shape_target - high_shape_db)) / 3
+  + abs(speech_hp_target - speech_hp_hz) / 1200
+  + abs(speech_lp_target - speech_lp_hz) / 6000
+  + abs(speech_presence_gain_target - speech_presence_db) / max(0.1, max_curve_db)
+  + abs(speech_body_gain_target - speech_body_db) / max(0.1, max_curve_db)
+  + abs(speech_mix_target - speech_mix);
+// Air Trim influenza anche lo shelf HF (non solo i peaking band).
+high_shape_applied = high_shape_db + air_trim_db * 0.90;
+set_lowshelf(shapeL_mem, 0, 220, low_shape_db);
+set_peaking(shapeL_mem, 1, 1300, 1.00, mid_shape_db * 0.70);
+set_highshelf(shapeL_mem, 2, 4800, high_shape_applied);
+set_highpass(shapeL_mem, 3, speech_hp_hz, 0.72);
+set_lowpass(shapeL_mem, 4, speech_lp_hz, 0.72);
+set_peaking(shapeL_mem, 5, clamp(speech_presence_hz * 0.62, 180, 1100), 0.95, speech_body_db * speech_mix);
+set_peaking(shapeL_mem, 6, speech_presence_hz, speech_presence_q, speech_presence_db * speech_mix);
+set_lowshelf(shapeR_mem, 0, 220, low_shape_db);
+set_peaking(shapeR_mem, 1, 1300, 1.00, mid_shape_db * 0.70);
+set_highshelf(shapeR_mem, 2, 4800, high_shape_applied);
+set_highpass(shapeR_mem, 3, speech_hp_hz, 0.72);
+set_lowpass(shapeR_mem, 4, speech_lp_hz, 0.72);
+set_peaking(shapeR_mem, 5, clamp(speech_presence_hz * 0.62, 180, 1100), 0.95, speech_body_db * speech_mix);
+set_peaking(shapeR_mem, 6, speech_presence_hz, speech_presence_q, speech_presence_db * speech_mix);
+focus_idx = 0;
+focus_score = 0;
+focus_locality_pick = 0;
+i = 0;
+loop(NUM_BANDS,
+  sc_rel_db = tmp_sc_db[i] - sc_mean_db;
+  in_rel_db = tmp_in_db[i] - in_mean_db;
+  focus_err_db = sc_rel_db - in_rel_db;
+  i > 0 ? (
+    focus_left_err = (tmp_sc_db[i - 1] - sc_mean_db) - (tmp_in_db[i - 1] - in_mean_db);
+  ) : (
+    focus_left_err = focus_err_db;
+  );
+  i < (NUM_BANDS - 1) ? (
+    focus_right_err = (tmp_sc_db[i + 1] - sc_mean_db) - (tmp_in_db[i + 1] - in_mean_db);
+  ) : (
+    focus_right_err = focus_err_db;
+  );
+  focus_locality = abs(focus_err_db - 0.5 * (focus_left_err + focus_right_err));
+  focus_anchor_penalty = abs(log(band_freq[i] / max(20, focus_freq_hz))) * 0.85 * focus_stability_mix;
+  score = abs(focus_err_db) * 2.9 + focus_locality * 2.2 + abs(sc_rel_db) * 0.35 - focus_anchor_penalty;
+  score > focus_score ? (
+    focus_score = score;
+    focus_idx = i;
+    focus_err_pick = focus_err_db;
+    sc_rel_pick = sc_rel_db;
+    focus_locality_pick = focus_locality;
+    focus_left_pick = focus_left_err;
+    focus_right_pick = focus_right_err;
+  );
+  i += 1;
+);
+focus_interp_den = focus_left_pick - 2 * focus_err_pick + focus_right_pick;
+focus_interp_offset = abs(focus_interp_den) > 0.0001 ? clamp(0.5 * (focus_left_pick - focus_right_pick) / focus_interp_den, -1, 1) : 0;
+focus_freq_target = band_freq[focus_idx];
+focus_idx > 0 && focus_interp_offset < 0 ? (
+  focus_log_step = log(band_freq[focus_idx] / band_freq[focus_idx - 1]);
+  focus_freq_target = exp(log(focus_freq_target) + focus_interp_offset * focus_log_step);
+);
+focus_idx < (NUM_BANDS - 1) && focus_interp_offset > 0 ? (
+  focus_log_step = log(band_freq[focus_idx + 1] / band_freq[focus_idx]);
+  focus_freq_target = exp(log(focus_freq_target) + focus_interp_offset * focus_log_step);
+);
+focus_activity_target = clamp((abs(focus_err_pick) + focus_locality_pick * 1.8 - 1.6) / 5.0, 0, 1) * mirror_peak_mix;
+focus_mix_coeff = capture_freeze_mode ? 1 : exp(-samplesblock / max(1, srate * 0.45));
+focus_activity_mix = focus_activity_mix * focus_mix_coeff + focus_activity_target * (1 - focus_mix_coeff);
+focus_q_target = 1.6 + 7.8 * clamp((abs(focus_err_pick) + focus_locality_pick * 2.5) / 8.8, 0, 1) * focus_activity_mix;
+focus_err_eff = soft_deadband(focus_err_pick, 1.05);
+focus_mix_drive = max(mirror_peak_mix * 0.65, focus_activity_mix);
+focus_drive = (7.0 + 5.0 * clamp(focus_locality_pick / 2.2, 0, 1)) * focus_activity_mix * (1 - 0.55 * focus_stability_mix);
+focus_scale = (strict_eq_on || capture_live_mode) ? 0.0 : 0.32;
+focus_gain_target = clamp((focus_err_eff * focus_drive) * eff_match_amt * focus_mix_drive * focus_scale, -shape_limit_db * 0.45, shape_limit_db * 0.45);
+focus_target_lock = clamp(focus_stability_mix * 0.82, 0, 0.82);
+focus_freq_target = focus_freq_target * (1 - focus_target_lock) + focus_freq_hz * focus_target_lock;
+focus_q_target = focus_q_target * (1 - focus_target_lock) + focus_q_val * focus_target_lock;
+focus_gain_target = focus_gain_target * (1 - focus_target_lock) + focus_gain_db * focus_target_lock;
+(focus_freq_target >= 5200 && focus_freq_target <= 9000 && focus_gain_target > 0) ? (
+  focus_gain_target *= (1 - 0.70 * sibilance_guard);
+);
+strict_eq_on ? (
+  focus_gain_target = 0;
+);
+keep_static_active ? (
+  focus_freq_target = focus_freq_hz;
+  focus_q_target = focus_q_val;
+  focus_gain_target = focus_gain_db;
+);
+focus_coeff = (capture_freeze_mode || keep_static_active) ? 1 : exp(-samplesblock / max(1, srate * (0.18 + focus_stability_mix * 2.20)));
+focus_freq_hz = focus_freq_hz * focus_coeff + focus_freq_target * (1 - focus_coeff);
+focus_q_val = focus_q_val * focus_coeff + focus_q_target * (1 - focus_coeff);
+focus_gain_db = focus_gain_db * focus_coeff + focus_gain_target * (1 - focus_coeff);
+focus_settle = abs(focus_freq_target - focus_freq_hz) / 1800 + abs(focus_q_target - focus_q_val) + abs(focus_gain_target - focus_gain_db) / max(0.1, max_curve_db);
+set_peaking(focusL_mem, 0, focus_freq_hz, focus_q_val, focus_gain_db);
+set_peaking(focusR_mem, 0, focus_freq_hz, focus_q_val, focus_gain_db);
+
+harm_amt_eff = (strict_eq_on || capture_live_mode) ? 0 : harm_amt;
+even_target = harm_amt_eff * (0.10 + 0.45 * warm_bias) * (0.30 + 0.70 * (low_norm * 0.55 + mid_norm * 0.45));
+odd_target = harm_amt_eff * (0.08 + 0.58 * air_bias) * (0.25 + 0.75 * (mid_norm * 0.35 + high_norm * 0.65));
+odd_target *= (1 - 0.70 * sibilance_guard);
+odd_target *= (1 - 0.80 * ultrahigh_guard);
+odd_target *= (1 - 0.55 * ultra_descend_need);
+low_target = harm_amt_eff * warm_bias * low_norm * 0.45;
+
+harm_even = harm_even * harm_coeff + even_target * (1 - harm_coeff);
+harm_odd = harm_odd * harm_coeff + odd_target * (1 - harm_coeff);
+harm_low = harm_low * harm_coeff + low_target * (1 - harm_coeff);
+harm_settle = abs(even_target - harm_even) + abs(odd_target - harm_odd) + abs(low_target - harm_low);
+match_settle_db = eq_settle_sum + band_shape_settle + shape_settle + focus_settle;
+harm_settle_amt = harm_settle;
+
+read_curve_db = sum_abs / NUM_BANDS + abs(focus_gain_db) * 0.35 + abs(speech_presence_db) * 0.20 + abs(speech_body_db) * 0.15;
+target_ref_power = profile_live_weight ? rms_ref : keep_ref_rms;
+raw_delta_db = clamp(safe_db(sqrt(max(rms_dry_st, 0))) - safe_db(sqrt(max(rms_ref_st, 0))), -24, 24);
+raw_delta_db > delta_live_db ? (
+  delta_live_db = delta_live_db * delta_smooth_att + raw_delta_db * (1 - delta_smooth_att);
+) : (
+  delta_live_db = delta_live_db * delta_smooth_rel + raw_delta_db * (1 - delta_smooth_rel);
+);
+target_delta_display = profile_live_weight ? delta_live_db : keep_delta_db;
+capture_live_mode ? (
+  target_delta_display = capture_delta_latch_db;
+);
+cur_ref_db = safe_db(sqrt(max(target_ref_power, 0)));
+ref_display_valid = profile_live_weight ? (ref_active || rms_ref > 0.0000001) : keep_ready;
+ref_display_valid ? (
+  read_ref_hold_db = cur_ref_db;
+  delta_diff_db = target_delta_display - read_delta_hold_db;
+  abs(delta_diff_db) <= delta_deadband_db ? (
+    delta_step_db = 0;
+  ) : delta_diff_db > 0 ? (
+    delta_step_db = min(delta_diff_db, delta_slew_up_db_block);
+  ) : (
+    delta_step_db = max(delta_diff_db, -delta_slew_dn_db_block);
+  );
+  read_delta_hold_db += delta_step_db;
+) : (
+  keep_ready ? (
+    read_ref_hold_db = cur_ref_db;
+    read_delta_hold_db = profile_live_weight ? read_delta_hold_db : keep_delta_db;
+  ) : (
+    read_ref_hold_db = -240;
+    read_delta_hold_db = 0;
+  );
+);
+read_ref_db = read_ref_hold_db;
+read_delta_db = read_delta_hold_db;
+slider15 = read_curve_db;
+slider17 = read_ref_db;
+slider16 = safe_db(gm_gain);
+read_out_db = safe_db(sqrt(max(rms_out, 0)));
+slider18 = read_out_db;
+slider24 = read_delta_db;
+diag_mode == 3 ? (
+  diag_null_ratio = diag_sum_ww > 0.000000000001 ? (diag_sum_wd / diag_sum_ww) : 1;
+  diag_offset_db = clamp(log(max(abs(diag_null_ratio), 0.000000000001)) * log2db, -60, 24);
+) : (
+  diag_offset_db = clamp(safe_db(sqrt(max(diag_rms_proc, 0.000000000001))) - safe_db(sqrt(max(diag_rms_ref, 0.000000000001))), -60, 24);
+);
+diag_null_rel_db = clamp(safe_db(sqrt(max(diag_rms_null, 0.000000000001))) - safe_db(sqrt(max(diag_rms_ref, 0.000000000001))), -120, 24);
+slider108 = diag_mode == 0 ? 0 : diag_offset_db;
+slider109 = diag_mode == 0 ? -120 : diag_null_rel_db;
+// Calcola e mostra il guadagno di normalizzazione RMS applicato
+out_norm_db = safe_db(out_norm_gain);
+slider93 = out_norm_db;
+i = 0;
+loop(NUM_BANDS,
+  gfx_eq_snapshot[i] = eq_gain_db[i];
+  i += 1;
+);
+gfx_read_curve_db = read_curve_db;
+gfx_read_ref_db = read_ref_db;
+gfx_read_out_db = read_out_db;
+gfx_read_match_db = safe_db(gm_gain);
+gfx_read_delta_db = read_delta_db;
+profile_mode == 1 ? (
+  capture_progress = 100 * capture_count / max(1, capture_target_samples);
+) : (
+  capture_progress = keep_ready ? 100 : 0;
+);
+slider21 = clamp(capture_progress, 0, 100);
+gfx_capture_progress = capture_progress;
+gfx_profile_mode = profile_mode;
+gfx_routing_state = routing_state;
+gfx_panic_flash = panic_flash_counter;
+gfx_panic_count = panic_count;
+gfx_recover_flash = recover_flash_counter;
+gfx_recover_count = recover_count;
+gfx_follow_fill = profile_mode == 0 ? max(follow_fill_ratio, ref_mix_state) : 1;
+gfx_match_settle = match_settle_db;
+gfx_harm_settle = harm_settle_amt;
+slider98 = clamp(eff_match_amt, 0, 1);
+slider99 = clamp(mirror_error_mix, 0, 1);
+slider100 = curve_time_sec;
+slider101 = clamp(raw_err_avg_db, 0, 12);
+follow_ready_keep = (!idle_mode && profile_mode == 0 && ref_active && prog_active
+  && gfx_follow_fill >= 0.82
+  && ref_mix_state >= 0.78
+  && match_settle_db <= 1.35
+  && harm_settle_amt <= 0.20
+  && mirror_error_mix <= 0.32);
+gfx_follow_ready_keep = follow_ready_keep;
+
+routing_wait = routing_state != 0 && !(profile_mode == 2 && keep_ready) && !idle_mode;
+ui_status_state = 2;
+(panic_flash_counter > 0 || recover_flash_counter > 0 || panic_cooldown_counter > 0 || recover_cooldown_counter > 0 || routing_wait) ? (
+  ui_status_state = 0;
+) : idle_mode ? (
+  ui_status_state = 0;
+) : profile_mode == 0 ? (
+  (!ref_active || !prog_active || gfx_follow_fill < 0.08) ? (
+    ui_status_state = 0;
+  ) : follow_ready_keep ? (
+    ui_status_state = 2;
+  ) : (
+    ui_status_state = 1;
+  );
+) : profile_mode == 1 ? (
+  (ref_active && prog_active && capture_progress < 99.5) ? (
+    ui_status_state = 1;
+  ) : (
+    ui_status_state = (capture_progress >= 99.5 || keep_ready) ? 2 : 0;
+  );
+) : (
+  ui_status_state = keep_ready ? 2 : 0;
+);
+gfx_status_state = ui_status_state;
+
+@sample
+raw_dryL = spl0;
+raw_dryR = spl1;
+raw_scL = spl2;
+raw_scR = spl3;
+dryL = raw_dryL * in_trim;
+dryR = raw_dryR * in_trim;
+scL = raw_scL * sc_trim;
+scR = raw_scR * sc_trim;
+
+in_mono = 0.5 * (dryL + dryR);
+sc_mono = 0.5 * (scL + scR);
+capture_dry_p = 0.5 * (dryL * dryL + dryR * dryR);
+capture_ref_p = 0.5 * (scL * scL + scR * scR);
+
+diag_ref_abs = diag_ref_abs * 0.999 + (0.5 * (abs(raw_scL) + abs(raw_scR))) * 0.001;
+diag_same_abs = diag_same_abs * 0.999 + (0.5 * (abs(raw_scL - raw_dryL) + abs(raw_scR - raw_dryR))) * 0.001;
+
+ref_ctrl = 0.5 * (abs(scL) + abs(scR));
+ref_ctrl > ref_gate_env ? (
+  ref_gate_env = ref_gate_att * ref_gate_env + (1 - ref_gate_att) * ref_ctrl;
+) : (
+  ref_gate_env = ref_gate_rel * ref_gate_env + (1 - ref_gate_rel) * ref_ctrl;
+);
+
+ref_gate_env > ref_on_thr ? (
+  ref_hold_counter = ref_hold_samples;
+) : (
+  ref_hold_counter = max(0, ref_hold_counter - 1);
+);
+ref_active = ref_hold_counter > 0;
+
+num_ch < 4 ? (
+  routing_state = 3; // track not wide enough for SC routing
+) : ref_active ? (
+  routing_state = diag_same_abs < (max(diag_ref_abs, 0.000001) * 0.12) ? 2 : 0;
+) : diag_ref_abs < 0.00002 ? (
+  routing_state = 1; // missing sidechain
+) : diag_same_abs < (diag_ref_abs * 0.12) ? (
+  routing_state = 2; // mirrored with main input
+) : (
+  routing_state = 0; // ok
+);
+
+abs_in = max(abs(dryL), abs(dryR));
+abs_sc = max(abs(scL), abs(scR));
+// Rilevazione transiente HF su dry: separa fricative rapide dal contenuto tonale.
+sibil_hf_lpL += (dryL - sibil_hf_lpL) * sibil_hf_lp_coeff;
+sibil_hf_lpR += (dryR - sibil_hf_lpR) * sibil_hf_lp_coeff;
+sibil_hf_probe = 0.5 * (abs(dryL - sibil_hf_lpL) + abs(dryR - sibil_hf_lpR));
+sibil_hf_probe > sibil_fast ? (
+  sibil_fast = sibil_fast * sibil_fast_att + (1 - sibil_fast_att) * sibil_hf_probe;
+) : (
+  sibil_fast = sibil_fast * sibil_fast_rel + (1 - sibil_fast_rel) * sibil_hf_probe;
+);
+sibil_slow = sibil_slow * sibil_slow_coeff + (1 - sibil_slow_coeff) * sibil_hf_probe;
+sibil_transient = clamp((sibil_fast - sibil_slow - 0.0025) / 0.020, 0, 1);
+
+prog_ctrl = 0.5 * (abs(dryL) + abs(dryR));
+prog_ctrl > prog_gate_env ? (
+  prog_gate_env = prog_gate_att * prog_gate_env + (1 - prog_gate_att) * prog_ctrl;
+) : (
+  prog_gate_env = prog_gate_rel * prog_gate_env + (1 - prog_gate_rel) * prog_ctrl;
+);
+
+prog_gate_env > prog_on_thr ? (
+  prog_hold_counter = prog_hold_samples;
+) : (
+  prog_hold_counter = max(0, prog_hold_counter - 1);
+);
+prog_active = prog_hold_counter > 0;
+
+live_follow_mode && ref_active && prog_active && abs_in > 0.00003 && abs_sc > 0.00003 ? (
+  follow_fill_counter = min(follow_fill_target_samples, follow_fill_counter + 1);
+) : live_follow_mode ? (
+  follow_fill_counter = max(0, follow_fill_counter - follow_fill_release_step);
+);
+follow_fill_ratio = clamp(follow_fill_counter / max(1, follow_fill_target_samples), 0, 1);
+
+abs_in > in_env ? (
+  in_env = env_att * in_env + (1 - env_att) * abs_in;
+) : (
+  in_env = env_rel * in_env + (1 - env_rel) * abs_in;
+);
+
+abs_sc > sc_env ? (
+  sc_env = env_att * sc_env + (1 - env_att) * abs_sc;
+) : (
+  sc_env = env_rel * sc_env + (1 - env_rel) * abs_sc;
+);
+
+capture_live_mode && ref_active && prog_active && abs_in > 0.00003 && abs_sc > 0.00003 ? (
+  capture_progress_ratio = capture_count / max(1, capture_target_samples);
+  capture_sample_weight = capture_progress_ratio > 0.90 ? (
+    1 - 0.55 * clamp((capture_progress_ratio - 0.90) / 0.10, 0, 1)
+  ) : 1;
+  capture_ref_sum += capture_ref_p * capture_sample_weight;
+  capture_dry_sum += capture_dry_p * capture_sample_weight;
+  capture_weight_sum += capture_sample_weight;
+);
+
+i = 0;
+loop(NUM_BANDS,
+  band_in = biquad_process(bp_in, i, in_mono);
+  band_sc = biquad_process(bp_sc, i, sc_mono);
+  band_in_p = band_in * band_in;
+  band_sc_p = band_sc * band_sc;
+  band_profile_coeff = live_follow_mode ? profile_live_coeff : profile_coeff;
+  valid_profile_sample = ref_active && prog_active && abs_in > 0.00003 && abs_sc > 0.00003;
+  live_follow_mode ? (
+    valid_profile_sample ? (
+      in_avg[i] = in_avg[i] * band_profile_coeff + band_in_p * (1 - band_profile_coeff);
+      sc_avg[i] = sc_avg[i] * band_profile_coeff + band_sc_p * (1 - band_profile_coeff);
+    );
+  ) : (
+    abs_in > 0.00003 ? (
+      in_avg[i] = in_avg[i] * band_profile_coeff + band_in_p * (1 - band_profile_coeff);
+    );
+    ref_active && abs_sc > 0.00003 ? (
+      sc_avg[i] = sc_avg[i] * band_profile_coeff + band_sc_p * (1 - band_profile_coeff);
+    );
+  );
+  capture_live_mode && ref_active && prog_active && abs_in > 0.00003 && abs_sc > 0.00003 ? (
+    capture_sum[i] += band_sc_p * capture_sample_weight;
+    capture_in_sum[i] += band_in_p * capture_sample_weight;
+  );
+  i += 1;
+);
+
+capture_live_mode && ref_active && prog_active && abs_in > 0.00003 && abs_sc > 0.00003 && capture_count < capture_target_samples ? (
+  capture_count += 1;
+  capture_count >= capture_target_samples ? (
+    // Capture timed completato: salva la media reale catturata in Keep.
+    dbg_capture_done_count += 1;
+    capture_count = capture_target_samples;
+    commit_keep_snapshot_from_capture();
+    slider21 = 100;
+    set_profile_mode(2);
+    profile_mode = 2;
+  );
+);
+
+eqL = dryL;
+eqR = dryR;
+dsp_active = (panic_cooldown_counter <= 0) && (recover_cooldown_counter <= 0) && (
+  !idle_mode &&
+  (profile_mode == 2 && keep_ready)
+  || (follow_live_mode && follow_profile_ready && ref_active)
+  || (capture_live_mode && follow_profile_ready && ref_active)
+);
+
+dsp_active ? (
+  i = 0;
+  loop(NUM_BANDS,
+    eqL = biquad_process(eqL_mem, i, eqL);
+    eqR = biquad_process(eqR_mem, i, eqR);
+    i += 1;
+  );
+  eqL = biquad_process(shapeL_mem, 0, eqL);
+  eqL = biquad_process(shapeL_mem, 1, eqL);
+  eqL = biquad_process(shapeL_mem, 2, eqL);
+  speechL = eqL;
+  speech_mix > 0.02 ? (
+    speechL = biquad_process(shapeL_mem, 3, speechL);
+    speechL = biquad_process(shapeL_mem, 4, speechL);
+    speechL = biquad_process(shapeL_mem, 5, speechL);
+    speechL = biquad_process(shapeL_mem, 6, speechL);
+    eqL += (speechL - eqL) * speech_mix;
+  );
+  eqL = biquad_process(focusL_mem, 0, eqL);
+  eqR = biquad_process(shapeR_mem, 0, eqR);
+  eqR = biquad_process(shapeR_mem, 1, eqR);
+  eqR = biquad_process(shapeR_mem, 2, eqR);
+  speechR = eqR;
+  speech_mix > 0.02 ? (
+    speechR = biquad_process(shapeR_mem, 3, speechR);
+    speechR = biquad_process(shapeR_mem, 4, speechR);
+    speechR = biquad_process(shapeR_mem, 5, speechR);
+    speechR = biquad_process(shapeR_mem, 6, speechR);
+    eqR += (speechR - eqR) * speech_mix;
+  );
+  eqR = biquad_process(focusR_mem, 0, eqR);
+
+  (is_bad_audio(eqL) || is_bad_audio(eqR)) ? (
+    recover_dsp();
+    eqL = dryL;
+    eqR = dryR;
+  );
+
+  env_src = max(abs(eqL), abs(eqR));
+  env_src > harm_env ? (
+    harm_env = env_att * harm_env + (1 - env_att) * env_src;
+  ) : (
+    harm_env = env_rel * harm_env + (1 - env_rel) * env_src;
+  );
+
+  dyn_scale = 1 + ((harm_env / 0.14) - 1) * harm_dyn;
+  keep_static_active ? (
+    dyn_scale = 1;
+  );
+  dyn_scale = clamp(dyn_scale, 0.55, 1.85);
+
+  hp_lp_L += (eqL - hp_lp_L) * hp_lp_coeff;
+  hp_lp_R += (eqR - hp_lp_R) * hp_lp_coeff;
+  hiL = eqL - hp_lp_L;
+  hiR = eqR - hp_lp_R;
+
+  even_drive = harm_even * dyn_scale;
+  odd_drive = harm_odd * dyn_scale;
+
+  odd_termL = (hiL - hiL * hiL * hiL) + (0.15 * hiL * abs(hiL));
+  odd_termR = (hiR - hiR * hiR * hiR) + (0.15 * hiR * abs(hiR));
+  even_termL = hiL * abs(hiL);
+  even_termR = hiR * abs(hiR);
+
+  harm_deltaL = even_drive * 0.32 * even_termL + odd_drive * 0.55 * odd_termL;
+  harm_deltaR = even_drive * 0.32 * even_termR + odd_drive * 0.55 * odd_termR;
+
+  low_src = 0.5 * (eqL + eqR);
+  low_lp += (low_src - low_lp) * low_lp_coeff;
+  low_sat = ((low_lp * 2.4) / (1 + abs(low_lp * 2.4))) * harm_low * dyn_scale;
+
+  wetL = eqL + harm_deltaL + low_sat;
+  wetR = eqR + harm_deltaR + low_sat;
+
+  band_hp_coeff = 1 - exp(-2 * $pi * clamp(adaptive_hp_hz, 20, 900) / srate);
+  band_lp_coeff2 = 1 - exp(-2 * $pi * clamp(adaptive_lp_hz, 6000, 20000) / srate);
+  band_hp_memL += (wetL - band_hp_memL) * band_hp_coeff;
+  band_hp_memR += (wetR - band_hp_memR) * band_hp_coeff;
+  band_passL = wetL - band_hp_memL;
+  band_passR = wetR - band_hp_memR;
+  band_lp_memL += (band_passL - band_lp_memL) * band_lp_coeff2;
+  band_lp_memR += (band_passR - band_lp_memR) * band_lp_coeff2;
+  wetL += (band_lp_memL - wetL) * band_shape_mix;
+  wetR += (band_lp_memR - wetR) * band_shape_mix;
+
+  // Filtri di protezione: HP 20Hz e LP 20kHz
+  wetL = biquad_process(airlpL_mem, 0, wetL);
+  wetR = biquad_process(airlpR_mem, 0, wetR);
+  wetL = biquad_process(airlp2L_mem, 0, wetL);
+  wetR = biquad_process(airlp2R_mem, 0, wetR);
+  wetL = biquad_process(airhpL_mem, 0, wetL);
+  wetR = biquad_process(airhpR_mem, 0, wetR);
+  wetL = biquad_process(hp20L_mem, 0, wetL);
+  wetR = biquad_process(hp20R_mem, 0, wetR);
+  wetL = biquad_process(lp20kL_mem, 0, wetL);
+  wetR = biquad_process(lp20kR_mem, 0, wetR);
+
+  (is_bad_audio(wetL) || is_bad_audio(wetR)) ? (
+    recover_dsp();
+    wetL = eqL;
+    wetR = eqR;
+  );
+) : (
+  harm_env = 0;
+  harm_even = 0;
+  harm_odd = 0;
+  harm_low = 0;
+  hp_lp_L = 0;
+  hp_lp_R = 0;
+  low_lp = 0;
+  band_hp_memL = 0;
+  band_hp_memR = 0;
+  band_lp_memL = 0;
+  band_lp_memR = 0;
+  band_shape_mix = 0;
+  wetL = dryL;
+  wetR = dryR;
+);
+
+// Diagnostica match read-only (non influenza il percorso audio)
+diag_valid = ref_active && prog_active && abs_in > 0.00003 && abs_sc > 0.00003;
+diag_proc_mono = 0.5 * (wetL + wetR);
+diag_ref_mono = 0.5 * (scL + scR);
+diag_mode == 2 ? (
+  // Perceptual mode: approssimazione leggera tipo K-weight (shelf+HP one-pole)
+  diag_lp_proc += (diag_proc_mono - diag_lp_proc) * diag_lp_coeff;
+  diag_lp_ref += (diag_ref_mono - diag_lp_ref) * diag_lp_coeff;
+  diag_hs_proc = diag_proc_mono + (diag_proc_mono - diag_lp_proc) * 1.6;
+  diag_hs_ref = diag_ref_mono + (diag_ref_mono - diag_lp_ref) * 1.6;
+  diag_hp_proc += (diag_hs_proc - diag_hp_proc) * diag_hp_coeff;
+  diag_hp_ref += (diag_hs_ref - diag_hp_ref) * diag_hp_coeff;
+  diag_kw_proc = diag_hs_proc - diag_hp_proc;
+  diag_kw_ref = diag_hs_ref - diag_hp_ref;
+  diag_det_proc_p = diag_kw_proc * diag_kw_proc;
+  diag_det_ref_p = diag_kw_ref * diag_kw_ref;
+) : (
+  diag_det_proc_p = 0.5 * (wetL * wetL + wetR * wetR);
+  diag_det_ref_p = 0.5 * (scL * scL + scR * scR);
+);
+diag_nullL = wetL - scL;
+diag_nullR = wetR - scR;
+diag_null_p = 0.5 * (diag_nullL * diag_nullL + diag_nullR * diag_nullR);
+diag_valid ? (
+  diag_rms_proc = diag_rms_proc * diag_coeff + (1 - diag_coeff) * diag_det_proc_p;
+  diag_rms_ref = diag_rms_ref * diag_coeff + (1 - diag_coeff) * diag_det_ref_p;
+  diag_rms_null = diag_rms_null * diag_coeff + (1 - diag_coeff) * diag_null_p;
+  diag_mode == 3 ? (
+    diag_sum_wd = diag_sum_wd * diag_coeff + (1 - diag_coeff) * (diag_proc_mono * diag_ref_mono);
+    diag_sum_ww = diag_sum_ww * diag_coeff + (1 - diag_coeff) * (diag_proc_mono * diag_proc_mono);
+  );
+) : (
+  diag_rms_proc *= diag_coeff;
+  diag_rms_ref *= diag_coeff;
+  diag_rms_null *= diag_coeff;
+  diag_sum_wd *= diag_coeff;
+  diag_sum_ww *= diag_coeff;
+);
+
+dry_p = capture_dry_p;
+wet_p = 0.5 * (wetL * wetL + wetR * wetR);
+rms_ref_src = capture_ref_p;
+prog_active ? (
+  rms_dry = rms_dry * rms_coeff + (1 - rms_coeff) * dry_p;
+  rms_wet = rms_wet * rms_coeff + (1 - rms_coeff) * wet_p;
+  rms_dry_st = rms_dry_st * lufs_s_coeff + (1 - lufs_s_coeff) * dry_p;
+) : (
+  rms_dry_st *= lufs_s_coeff;
+);
+ref_active ? (
+  rms_ref = rms_ref * rms_coeff + (1 - rms_coeff) * rms_ref_src;
+  rms_ref_st = rms_ref_st * lufs_s_coeff + (1 - lufs_s_coeff) * rms_ref_src;
+) : (
+  rms_ref_st *= lufs_s_coeff;
+);
+
+monL = monitor_mode == 1 ? (eqL - dryL)
+     : monitor_mode == 2 ? (wetL - eqL)
+     : (dryL * mix_dry + wetL * mix_wet);
+
+monR = monitor_mode == 1 ? (eqR - dryR)
+     : monitor_mode == 2 ? (wetR - eqR)
+     : (dryR * mix_dry + wetR * mix_wet);
+
+(follow_live_mode || capture_live_mode) ? (
+  follow_entry_mix = follow_entry_mix * follow_entry_att + (1 - follow_entry_att);
+  follow_baseL = monitor_mode == 0 ? dryL : 0;
+  follow_baseR = monitor_mode == 0 ? dryR : 0;
+  monL = follow_baseL + (monL - follow_baseL) * follow_entry_mix;
+  monR = follow_baseR + (monR - follow_baseR) * follow_entry_mix;
+) : (
+  follow_entry_mix = 1;
+);
+
+proc_p = 0.5 * (monL * monL + monR * monR);
+prog_active ? (
+  rms_proc = rms_proc * rms_coeff + (1 - rms_coeff) * proc_p;
+  rms_proc_st = rms_proc_st * lufs_s_coeff + (1 - lufs_s_coeff) * proc_p;
+) : (
+  rms_proc_st *= lufs_s_coeff;
+);
+
+gm_target = gm_gain;
+gm_on ? (
+  target_ref_power = profile_live_weight ? rms_ref : keep_ref_rms;
+  target_ref_power_st = profile_live_weight ? rms_ref_st : keep_ref_rms;
+  target_delta_gain = profile_live_weight ? read_delta_db : keep_delta_db;
+  target_proc_power_st = max(rms_proc_st, 0.0000001);
+  prog_active && profile_ready && target_ref_power_st > 0.0000001 ? (
+    gm_ref_db_st = safe_db(sqrt(max(target_ref_power_st, 0)));
+    gm_ref_db_lt = safe_db(sqrt(max(target_ref_power, 0)));
+    gm_proc_db_st = safe_db(sqrt(max(target_proc_power_st, 0)));
+    gm_proc_db_lt = safe_db(sqrt(max(rms_proc, 0.0000001)));
+    gm_err_db_st = gm_ref_db_st - gm_proc_db_st;
+    gm_err_db_lt = gm_ref_db_lt - gm_proc_db_lt;
+    gm_err_db = gm_err_db_st * 0.72 + gm_err_db_lt * 0.28;
+    abs(gm_err_db) <= 0.25 ? (
+      gm_err_db = 0;
+    ) : gm_err_db > 0 ? (
+      gm_err_db -= 0.25;
+    ) : (
+      gm_err_db += 0.25;
+    );
+    gm_err_db *= 0.82;
+    gm_err_db += safe_db(target_offset_amp);
+    level_target_mode == 1 ? (
+      gm_err_db += target_delta_gain;
+    );
+    gm_target = db_to_amp(gm_err_db);
+    gm_target = clamp(gm_target, 0.35, 2.80);
+  ) : (
+    gm_target = 1;
+  );
+);
+last_gm_on != gm_on ? (
+  // evita reset/strappi quando Auto Level viene attivato durante playback
+  gm_target = gm_gain;
+  last_gm_on = gm_on;
+);
+gm_target = 1 + (gm_target - 1) * gm_mix_state;
+
+gm_target < gm_gain ? (
+  gm_gain = gm_att * gm_gain + (1 - gm_att) * gm_target;
+) : (
+  gm_gain = gm_rel * gm_gain + (1 - gm_rel) * gm_target;
+);
+
+// ============================================
+// AUTOMATIC GAIN CONTROL: Mantiene il livello dell'input
+// ============================================
+// Questo stadio compensa automaticamente le variazioni di livello
+// causate da EQ, Harmonics e altri processi, mantenendo l'output
+// allo stesso livello RMS dell'input originale.
+// Applicato dopo tutti i processi ma prima del gain manuale.
+agc_lo = db_to_amp(-agc_range_db);
+agc_hi = db_to_amp(agc_range_db);
+out_norm_on && rms_proc > 0.0000001 && rms_dry > 0.0000001 ? (
+  // Quando AutoLvl e' attivo, allinea AGC allo stesso target (reference),
+  // evitando conflitto tra gm_gain e out_norm_gain.
+  rms_at_norm = rms_proc * gm_gain * gm_gain;
+  agc_ref_rms = (gm_on && profile_ready) ? (profile_live_weight ? rms_ref : keep_ref_rms) : rms_dry;
+  agc_ref_rms = max(agc_ref_rms, 0.0000001);
+  out_norm_target = sqrt(agc_ref_rms / max(rms_at_norm, 0.0000001));
+  out_norm_target *= agc_trim_amp;
+  out_norm_target = clamp(out_norm_target, agc_lo, agc_hi);
+  out_norm_gain < out_norm_target ? (
+    out_norm_gain = out_norm_gain * agc_att + (1 - agc_att) * out_norm_target;
+  ) : (
+    out_norm_gain = out_norm_gain * agc_rel + (1 - agc_rel) * out_norm_target;
+  );
+) : out_norm_on ? (
+  out_norm_gain = out_norm_gain * agc_idle + (1 - agc_idle) * 1.0;
+) : (
+  out_norm_gain = 1;
+);
+
+outL = monL * gm_gain * out_norm_gain * out_gain;
+outR = monR * gm_gain * out_norm_gain * out_gain;
+
+// Guard rail AGC: evita overshoot nel controllo RMS
+agc_peak = max(abs(outL), abs(outR));
+agc_floor = max(agc_lo, 0.40);
+agc_peak > 0.86 && out_norm_gain > agc_floor ? (
+  agc_safe = clamp(0.86 / max(0.000001, agc_peak), agc_floor / max(0.000001, out_norm_gain), 1.0);
+  out_norm_gain *= agc_safe;
+  out_norm_gain = clamp(out_norm_gain, agc_lo, agc_hi);
+  outL = monL * gm_gain * out_norm_gain * out_gain;
+  outR = monR * gm_gain * out_norm_gain * out_gain;
+);
+
+out_peak = max(abs(outL), abs(outR));
+safety_target = out_peak > 0.98 ? (0.98 / out_peak) : 1;
+safety_target < safety_gain ? (
+  safety_gain = safety_gain * safety_att + (1 - safety_att) * safety_target;
+) : (
+  safety_gain = safety_gain * safety_rel + (1 - safety_rel) * safety_target;
+);
+outL *= safety_gain;
+outR *= safety_gain;
+
+startup_mix = startup_mix * startup_att + (1 - startup_att);
+bypassL = dryL * out_gain;
+bypassR = dryR * out_gain;
+outL = bypassL + (outL - bypassL) * startup_mix;
+outR = bypassR + (outR - bypassR) * startup_mix;
+
+init_guard_mix = init_guard_mix * init_guard_att + (1 - init_guard_att);
+outL = bypassL + (outL - bypassL) * init_guard_mix;
+outR = bypassR + (outR - bypassR) * init_guard_mix;
+
+init_guard_mix < 0.9995 ? (
+  outL = prev_outL * init_declick_coeff + outL * (1 - init_declick_coeff);
+  outR = prev_outR * init_declick_coeff + outR * (1 - init_declick_coeff);
+);
+
+prev_outL = outL;
+prev_outR = outR;
+
+outL = sanitize_audio(outL);
+outR = sanitize_audio(outR);
+// A/B listen puro: POST FX vs Sidechain Ref.
+ref_listenL = sanitize_audio(scL);
+ref_listenR = sanitize_audio(scR);
+listen_target = listen_mode >= 1 ? 1 : 0;
+listen_ab_mix = listen_ab_mix * listen_xfade_coeff + listen_target * (1 - listen_xfade_coeff);
+outL = outL * (1 - listen_ab_mix) + ref_listenL * listen_ab_mix;
+outR = outR * (1 - listen_ab_mix) + ref_listenR * listen_ab_mix;
+
+out_p = 0.5 * (outL * outL + outR * outR);
+prog_active ? (
+  rms_out = rms_out * rms_coeff + (1 - rms_coeff) * out_p;
+);
+
+out_abs = max(abs(outL), abs(outR));
+read_out_db = safe_db(sqrt(max(rms_out, 0)));
+out_abs > out_env ? (
+  out_env = env_att * out_env + (1 - env_att) * out_abs;
+) : (
+  out_env = env_rel * out_env + (1 - env_rel) * out_abs;
+);
+
+spl0 = outL;
+spl1 = outR;
+spl2 = 0;
+spl3 = 0;
+
+@gfx 760 470
+gfx_set(0.08, 0.09, 0.11, 1);
+gfx_rect(0, 0, gfx_w, gfx_h);
+
+ui_mode = clamp(floor(slider19 + 0.5), 0, 1);
+mouse_down = mouse_cap & 1;
+profile_mode = clamp(floor(slider20 + 0.5), 0, 2);
+strict_eq_on = slider97 >= 0.5;
+diag_mode = clamp(floor(slider107 + 0.5), 0, 3);
+listen_mode = floor(slider104);
+
+gfx_setfont(1, "Arial", 18);
+gfx_r = 0.93; gfx_g = 0.95; gfx_b = 0.98; gfx_a = 1;
+gfx_x = 22; gfx_y = 18;
+gfx_drawstr("Tone Mirror EQ Pro");
+gfx_setfont(1, "Arial", 13);
+gfx_r = 0.60; gfx_g = 0.66; gfx_b = 0.74;
+gfx_x = 24; gfx_y = 42;
+gfx_drawstr("Profilo medio sidechain + broad EQ + harmonics + level match");
+
+gfx_setfont(1, "Arial", 12);
+routing_state == 0 ? (
+  gfx_r = 0.36; gfx_g = 0.84; gfx_b = 0.56;
+  gfx_x = 24; gfx_y = 60;
+  gfx_drawstr("Routing: Reference sidechain OK");
+) : routing_state == 3 ? (
+  gfx_r = 0.96; gfx_g = 0.72; gfx_b = 0.26;
+  gfx_x = 24; gfx_y = 60;
+  gfx_drawstr("Routing: la traccia deve avere 4 canali");
+) : routing_state == 1 ? (
+  gfx_r = 0.96; gfx_g = 0.72; gfx_b = 0.26;
+  gfx_x = 24; gfx_y = 60;
+  gfx_drawstr("Routing: nessun segnale su Reference 3/4");
+) : (
+  gfx_r = 0.96; gfx_g = 0.64; gfx_b = 0.26;
+  gfx_x = 24; gfx_y = 60;
+  gfx_drawstr("Routing: Reference sta leggendo lo stesso segnale di Input");
+);
+
+gfx_setfont(1, "Arial", 11);
+routing_state == 0 ? (
+  gfx_r = 0.54; gfx_g = 0.60; gfx_b = 0.68;
+  gfx_x = 24; gfx_y = 76;
+  gfx_drawstr("Ingresso audio su 1/2, reference su 3/4, uscita misurata su 1/2.");
+) : routing_state == 3 ? (
+  gfx_r = 0.82; gfx_g = 0.84; gfx_b = 0.88;
+  gfx_x = 24; gfx_y = 76;
+  gfx_drawstr("Quick fix: imposta Track channels = 4, poi assegna Reference L/R ai canali 3/4.");
+) : routing_state == 1 ? (
+  gfx_r = 0.82; gfx_g = 0.84; gfx_b = 0.88;
+  gfx_x = 24; gfx_y = 76;
+  gfx_drawstr("Quick fix: send della sorgente verso 3/4, non 1/2. In Keep puoi ancora usare il profilo catturato.");
+) : (
+  gfx_r = 0.82; gfx_g = 0.84; gfx_b = 0.88;
+  gfx_x = 24; gfx_y = 76;
+  gfx_drawstr("Quick fix: lascia il programma su 1/2 e manda il reference solo su 3/4.");
+);
+
+  jsfx_btn_w = 80;
+  lite_btn_w = 80;
+  ab_btn_w = 92;
+  strict_btn_w = 104;
+  profile_btn_w = 76;
+  top_gap = 10;
+  profile_gap = 8;
+  right_margin = 20;
+  mode_btn_y = 92;
+  lite_title_y = 132;
+  lite_text_y1 = 168;
+  lite_text_y2 = 190;
+  lite_text_y3 = 216;
+  lite_text_y4 = 238;
+  lite_text_y5 = 260;
+  status_y = 176;
+  metrics_box_y = 330;
+  metrics_box_h = 104;
+  metrics_y1 = 352;
+  metrics_y2 = 378;
+  metrics_y3 = 404;
+  metrics_warn_y = 424;
+  preset_btn_y = 286;
+  preset_btn_w = 104;
+  preset_btn_h = 22;
+  preset_btn_gap = 8;
+  preset_1_x = 30;
+  preset_2_x = preset_1_x + preset_btn_w + preset_btn_gap;
+  preset_3_x = preset_2_x + preset_btn_w + preset_btn_gap;
+  preset_row2_y = preset_btn_y + preset_btn_h + 6;
+  preset_4_x = 30;
+  preset_5_x = preset_4_x + preset_btn_w + preset_btn_gap;
+  preset_diag_x = preset_5_x + preset_btn_w + preset_btn_gap;
+  preset_diag_w = 118;
+
+  jsfx_btn_x = gfx_w - right_margin - jsfx_btn_w;
+  strict_btn_x = jsfx_btn_x - top_gap - strict_btn_w;
+  ab_btn_x = strict_btn_x - top_gap - ab_btn_w;
+  lite_btn_x = ab_btn_x - top_gap - lite_btn_w;
+  keep_btn_x = lite_btn_x - 14 - profile_btn_w;
+  capture_btn_x = keep_btn_x - profile_gap - profile_btn_w;
+  follow_btn_x = capture_btn_x - profile_gap - profile_btn_w;
+  clear_btn_x = follow_btn_x - profile_gap - profile_btn_w;
+
+  ui_action_button(clear_btn_x, mode_btn_y, profile_btn_w, 28, "Clear");
+  follow_btn_state = (!idle_mode && profile_mode == 0) ? 2 : 0;
+  ui_profile_button(0, follow_btn_x, mode_btn_y, profile_btn_w, 28, "Follow", follow_btn_state);
+  capture_state = (!idle_mode && profile_mode == 1) ? (
+    capture_count < capture_target_samples ? 1 : 2
+  ) : ((!idle_mode && profile_mode == 2) ? 2 : 0);
+  ui_profile_button(1, capture_btn_x, mode_btn_y, profile_btn_w, 28, "Capture", capture_state);
+  ui_profile_button(2, keep_btn_x, mode_btn_y, profile_btn_w, 28, "Keep", (!idle_mode && profile_mode == 2) ? 2 : 0);
+  ui_toggle_button(strict_btn_x, mode_btn_y, strict_btn_w, 28, strict_eq_on ? "Strict EQ ON" : "Strict EQ OFF", strict_eq_on) ? (
+    slider97 = strict_eq_on ? 0 : 1;
+  );
+  ui_toggle_button(ab_btn_x, mode_btn_y, ab_btn_w, 28, listen_mode ? "AB: REF" : "AB: POST", listen_mode) ? (
+    slider104 = listen_mode ? 0 : 1;
+  );
+  ui_button(0, lite_btn_x, mode_btn_y, lite_btn_w, 28, "Lite", ui_mode == 0);
+  ui_button(1, jsfx_btn_x, mode_btn_y, jsfx_btn_w, 28, "JSFX", ui_mode == 1);
+
+  gfx_setfont(1, "Arial", 22);
+  gfx_r = 0.93; gfx_g = 0.95; gfx_b = 0.98;
+  gfx_x = 28; gfx_y = lite_title_y;
+  gfx_drawstr("Lite Mode");
+  gfx_setfont(1, "Arial", 15);
+  gfx_r = 0.68; gfx_g = 0.72; gfx_b = 0.78;
+  gfx_x = 30; gfx_y = lite_text_y1;
+  gfx_drawstr("I controlli nativi dei slider sono visibili.");
+  gfx_x = 30; gfx_y = lite_text_y2;
+  gfx_drawstr("GUI pesante disattivata: usiamo solo il pannello leggero per stabilizzare il DSP.");
+  gfx_x = 30; gfx_y = lite_text_y3;
+  routing_state == 0 ? gfx_drawstr("Routing sidechain OK.") : routing_state == 3 ? gfx_drawstr("La traccia deve avere 4 canali per usare il sidechain.") : routing_state == 1 ? gfx_drawstr("Manca segnale su Reference 3/4.") : gfx_drawstr("Reference e Input stanno leggendo la stessa sorgente.");
+  gfx_x = 30; gfx_y = lite_text_y4;
+  idle_mode ? gfx_drawstr("Profile memory: Idle") : profile_mode == 0 ? gfx_drawstr("Profile memory: Follow") : profile_mode == 1 ? gfx_drawstr(sprintf(#,"Profile memory: Capture %.0f%%", slider21)) : gfx_drawstr("Profile memory: Keep");
+  gfx_x = 30; gfx_y = lite_text_y5;
+  gfx_drawstr("Capture: Timed");
+
+  gfx_setfont(1, "Arial", 11);
+  gfx_r = 0.58; gfx_g = 0.64; gfx_b = 0.72;
+  gfx_x = 30; gfx_y = preset_btn_y - 18;
+  gfx_drawstr("Preset guida");
+  ui_toggle_button(preset_1_x, preset_btn_y, preset_btn_w, preset_btn_h, "Vicino", safe_preset_last == 1) ? (
+    apply_safe_preset(1);
+  );
+  ui_toggle_button(preset_2_x, preset_btn_y, preset_btn_w, preset_btn_h, "Distante", safe_preset_last == 2) ? (
+    apply_safe_preset(2);
+  );
+  ui_toggle_button(preset_3_x, preset_btn_y, preset_btn_w, preset_btn_h, "Voce Stabile", safe_preset_last == 3) ? (
+    apply_safe_preset(3);
+  );
+  ui_toggle_button(preset_4_x, preset_row2_y, preset_btn_w, preset_btn_h, "Basse Ctrl", safe_preset_last == 4) ? (
+    apply_safe_preset(4);
+  );
+  ui_toggle_button(preset_5_x, preset_row2_y, preset_btn_w, preset_btn_h, "Aria Ctrl", safe_preset_last == 5) ? (
+    apply_safe_preset(5);
+  );
+  strcpy(#diag_btn_txt, diag_mode == 1 ? "Diag RMS" : diag_mode == 2 ? "Diag Perc" : diag_mode == 3 ? "Diag Null" : "Diag Off");
+  ui_toggle_button(preset_diag_x, preset_row2_y, preset_diag_w, preset_btn_h, #diag_btn_txt, diag_mode > 0) ? (
+    slider107 = (diag_mode + 1) % 4;
+  );
+  preset_hover = 0;
+  mouse_y >= preset_btn_y && mouse_y < preset_btn_y + preset_btn_h ? (
+    mouse_x >= preset_1_x && mouse_x < preset_1_x + preset_btn_w ? preset_hover = 1;
+    mouse_x >= preset_2_x && mouse_x < preset_2_x + preset_btn_w ? preset_hover = 2;
+    mouse_x >= preset_3_x && mouse_x < preset_3_x + preset_btn_w ? preset_hover = 3;
+  );
+  mouse_y >= preset_row2_y && mouse_y < preset_row2_y + preset_btn_h ? (
+    mouse_x >= preset_4_x && mouse_x < preset_4_x + preset_btn_w ? preset_hover = 4;
+    mouse_x >= preset_5_x && mouse_x < preset_5_x + preset_btn_w ? preset_hover = 5;
+    mouse_x >= preset_diag_x && mouse_x < preset_diag_x + preset_diag_w ? preset_hover = 6;
+  );
+  preset_hover > 0 ? (
+    overlay_y = gfx_h - 96;
+    gfx_r = 0.15; gfx_g = 0.16; gfx_b = 0.19; gfx_a = 0.98;
+    gfx_rect(22, overlay_y, gfx_w - 44, 18);
+    gfx_setfont(1, "Arial", 10);
+    gfx_r = 0.74; gfx_g = 0.80; gfx_b = 0.88; gfx_a = 1;
+    gfx_x = 30; gfx_y = overlay_y + 2;
+    preset_hover == 1 ? gfx_drawstr("Vicino: correzione morbida per materiali gia' simili.");
+    preset_hover == 2 ? gfx_drawstr("Distante: piu' spazio di correzione per mismatch evidente.");
+    preset_hover == 3 ? gfx_drawstr("Voce Stabile: meno inseguimento dell'articolazione in Follow.");
+    preset_hover == 4 ? gfx_drawstr("Basse Controllate: limita gonfiore low-end durante il match.");
+    preset_hover == 5 ? gfx_drawstr("Aria Controllata: attenua 10k+ e riduce altissime/sibilanti.");
+    preset_hover == 6 ? gfx_drawstr("Diag Match: clic per ciclare Off/RMS/Perceptual/Null Hunter.");
+  );
+
+  status_x = gfx_w - 190;
+  gfx_setfont(1, "Arial", 13);
+  gfx_r = 0.72; gfx_g = 0.76; gfx_b = 0.82;
+  gfx_x = status_x + 26; gfx_y = status_y - 2;
+  gfx_drawstr("Stato Preascolto");
+  gfx_status_state == 0 ? (
+    gfx_r = 0.94; gfx_g = 0.30; gfx_b = 0.24;
+    strcpy(#status_txt, "Rosso: aspetta");
+  ) : gfx_status_state == 1 ? (
+    gfx_r = 0.96; gfx_g = 0.76; gfx_b = 0.22;
+    strcpy(#status_txt, "Giallo: arrivo");
+  ) : (
+    gfx_r = 0.30; gfx_g = 0.84; gfx_b = 0.42;
+    (gfx_follow_ready_keep && profile_mode == 0) ? (
+      strcpy(#status_txt, "Verde: pronto Keep");
+    ) : (
+      strcpy(#status_txt, "Verde: ascolta");
+    );
+  );
+  gfx_a = 1;
+  gfx_circle(status_x + 10, status_y + 8, 8, 1, 1);
+  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96;
+  gfx_x = status_x + 26; gfx_y = status_y + 12;
+  gfx_drawstr(#status_txt);
+  gfx_setfont(1, "Arial", 11);
+  gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70;
+  gfx_x = status_x + 26; gfx_y = status_y + 32;
+  sprintf(#st1, "Fill %.0f%% | EQ %.2f dB", gfx_follow_fill * 100, gfx_match_settle); gfx_drawstr(#st1);
+  gfx_x = status_x + 26; gfx_y = status_y + 48;
+  sprintf(#st2, "Harm %.2f", gfx_harm_settle); gfx_drawstr(#st2);
+  // Controlli rapidi tono (piu' spaziosi): Air / LP / HP
+  ctrl_x = status_x + 26;
+  ctrl_y = status_y + 62;
+  ctrl_gap = 28;
+  ctrl_btn_w = 26;
+  ctrl_btn_h = 22;
+  ctrl_plus_x = ctrl_x + 76;
+  // Air
+  air_minus_over = mouse_x >= ctrl_x && mouse_x < ctrl_x + ctrl_btn_w && mouse_y >= ctrl_y && mouse_y < ctrl_y + ctrl_btn_h;
+  air_plus_over = mouse_x >= ctrl_plus_x && mouse_x < ctrl_plus_x + ctrl_btn_w && mouse_y >= ctrl_y && mouse_y < ctrl_y + ctrl_btn_h;
+  air_minus_click = air_minus_over && (mouse_cap & 1) && !last_mouse_cap;
+  air_plus_click = air_plus_over && (mouse_cap & 1) && !last_mouse_cap;
+  air_minus_click ? (slider102 = max(-12, slider102 - 0.5); air_params_dirty = 1;);
+  air_plus_click ? (slider102 = min(6, slider102 + 0.5); air_params_dirty = 1;);
+  gfx_r = air_minus_over ? 0.24 : 0.18; gfx_g = air_minus_over ? 0.28 : 0.22; gfx_b = air_minus_over ? 0.34 : 0.28; gfx_a = 1; gfx_rect(ctrl_x, ctrl_y, ctrl_btn_w, ctrl_btn_h);
+  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; gfx_setfont(1, "Arial", 15); gfx_x = ctrl_x + 9; gfx_y = ctrl_y + 2; gfx_drawstr("-");
+  gfx_r = air_plus_over ? 0.24 : 0.18; gfx_g = air_plus_over ? 0.28 : 0.22; gfx_b = air_plus_over ? 0.34 : 0.28; gfx_a = 1; gfx_rect(ctrl_plus_x, ctrl_y, ctrl_btn_w, ctrl_btn_h);
+  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; gfx_setfont(1, "Arial", 15); gfx_x = ctrl_plus_x + 8; gfx_y = ctrl_y + 2; gfx_drawstr("+");
+  gfx_setfont(1, "Arial", 11); gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70; gfx_x = ctrl_x + 32; gfx_y = ctrl_y + 4; sprintf(#airtxt, "Air %+.1f dB", slider102); gfx_drawstr(#airtxt);
+  // LP
+  lp_y = ctrl_y + ctrl_gap;
+  lp_minus_over = mouse_x >= ctrl_x && mouse_x < ctrl_x + ctrl_btn_w && mouse_y >= lp_y && mouse_y < lp_y + ctrl_btn_h;
+  lp_plus_over = mouse_x >= ctrl_plus_x && mouse_x < ctrl_plus_x + ctrl_btn_w && mouse_y >= lp_y && mouse_y < lp_y + ctrl_btn_h;
+  lp_minus_click = lp_minus_over && (mouse_cap & 1) && !last_mouse_cap;
+  lp_plus_click = lp_plus_over && (mouse_cap & 1) && !last_mouse_cap;
+  lp_minus_click ? (slider103 = max(5000, slider103 - 500); air_params_dirty = 1;);
+  lp_plus_click ? (slider103 = min(20000, slider103 + 500); air_params_dirty = 1;);
+  gfx_r = lp_minus_over ? 0.24 : 0.18; gfx_g = lp_minus_over ? 0.28 : 0.22; gfx_b = lp_minus_over ? 0.34 : 0.28; gfx_a = 1; gfx_rect(ctrl_x, lp_y, ctrl_btn_w, ctrl_btn_h);
+  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; gfx_setfont(1, "Arial", 15); gfx_x = ctrl_x + 9; gfx_y = lp_y + 2; gfx_drawstr("-");
+  gfx_r = lp_plus_over ? 0.24 : 0.18; gfx_g = lp_plus_over ? 0.28 : 0.22; gfx_b = lp_plus_over ? 0.34 : 0.28; gfx_a = 1; gfx_rect(ctrl_plus_x, lp_y, ctrl_btn_w, ctrl_btn_h);
+  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; gfx_setfont(1, "Arial", 15); gfx_x = ctrl_plus_x + 8; gfx_y = lp_y + 2; gfx_drawstr("+");
+  gfx_setfont(1, "Arial", 11); gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70; gfx_x = ctrl_x + 32; gfx_y = lp_y + 4; sprintf(#lptxt, "LP %.1fk", slider103 * 0.001); gfx_drawstr(#lptxt);
+  // HP
+  hp_y = lp_y + ctrl_gap;
+  hp_minus_over = mouse_x >= ctrl_x && mouse_x < ctrl_x + ctrl_btn_w && mouse_y >= hp_y && mouse_y < hp_y + ctrl_btn_h;
+  hp_plus_over = mouse_x >= ctrl_plus_x && mouse_x < ctrl_plus_x + ctrl_btn_w && mouse_y >= hp_y && mouse_y < hp_y + ctrl_btn_h;
+  hp_minus_click = hp_minus_over && (mouse_cap & 1) && !last_mouse_cap;
+  hp_plus_click = hp_plus_over && (mouse_cap & 1) && !last_mouse_cap;
+  hp_minus_click ? (slider106 = max(20, slider106 - 5); air_params_dirty = 1;);
+  hp_plus_click ? (slider106 = min(240, slider106 + 5); air_params_dirty = 1;);
+  gfx_r = hp_minus_over ? 0.24 : 0.18; gfx_g = hp_minus_over ? 0.28 : 0.22; gfx_b = hp_minus_over ? 0.34 : 0.28; gfx_a = 1; gfx_rect(ctrl_x, hp_y, ctrl_btn_w, ctrl_btn_h);
+  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; gfx_setfont(1, "Arial", 15); gfx_x = ctrl_x + 9; gfx_y = hp_y + 2; gfx_drawstr("-");
+  gfx_r = hp_plus_over ? 0.24 : 0.18; gfx_g = hp_plus_over ? 0.28 : 0.22; gfx_b = hp_plus_over ? 0.34 : 0.28; gfx_a = 1; gfx_rect(ctrl_plus_x, hp_y, ctrl_btn_w, ctrl_btn_h);
+  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; gfx_setfont(1, "Arial", 15); gfx_x = ctrl_plus_x + 8; gfx_y = hp_y + 2; gfx_drawstr("+");
+  gfx_setfont(1, "Arial", 11); gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70; gfx_x = ctrl_x + 32; gfx_y = hp_y + 4; sprintf(#hptxt, "HP %.0f Hz", slider106); gfx_drawstr(#hptxt);
+  
+  // Indicatore di Stabilità Profilo (disabilitato - usare per debug se necessario)
+  // gfx_x = status_x + 26; gfx_y = status_y + 64;
+  // gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70;
+  // gfx_drawstr("Stabilità");
+  // gfx_stability_ratio = clamp(1.0 - gfx_match_settle / 2.0, 0, 1);
+  // gfx_stability_ratio < 0.33 ? (
+  //   gfx_r = 0.94; gfx_g = 0.30; gfx_b = 0.24;
+  // ) : gfx_stability_ratio < 0.66 ? (
+  //   gfx_r = 0.96; gfx_g = 0.76; gfx_b = 0.22;
+  // ) : (
+  //   gfx_r = 0.30; gfx_g = 0.84; gfx_b = 0.42;
+  // );
+  // gfx_a = 1;
+  // gfx_circle(status_x + 10, status_y + 74, 6, 1, 1);
+  // gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96;
+  // gfx_x = status_x + 26; gfx_y = status_y + 78;
+  // sprintf(#st3, "%.0f%%", gfx_stability_ratio * 100); gfx_drawstr(#st3);
+
+  gfx_r = 0.12; gfx_g = 0.13; gfx_b = 0.16; gfx_a = 1;
+  gfx_rect(26, metrics_box_y, gfx_w - 52, metrics_box_h);
+  gfx_setfont(1, "Arial", 13);
+  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96;
+  gfx_x = 42; gfx_y = metrics_y1; sprintf(#js1, "Match %.0f%%  |  Harm %.0f%%  |  Air %+.1f dB  |  LP %.1fk  |  HP %.0f Hz  |  Win %.0fs", slider4, slider7, slider102, slider103 * 0.001, slider106, slider3); gfx_drawstr(#js1);
+  slider2 >= 0.5 ? (
+    strcpy(#lvl1, "AutoLvl:ON");
+  ) : (
+    strcpy(#lvl1, "AutoLvl:OFF");
+  );
+  slider11 >= 0.5 ? (
+    strcpy(#lvl2, sprintf(#,"AGC:ON %+.1fdB", slider93));
+  ) : (
+    strcpy(#lvl2, "AGC:OFF");
+  );
+  strcpy(#strict_lbl, strict_eq_on ? "StrictEQ:ON" : "StrictEQ:OFF");
+  strcpy(#listen_lbl, listen_mode ? "LISTEN:REF" : "LISTEN:POST");
+  strcpy(#diag_mode_lbl, diag_mode == 1 ? "RMS" : diag_mode == 2 ? "Perceptual" : diag_mode == 3 ? "Null" : "Off");
+  diag_off_abs = abs(slider108);
+  diag_null_db = slider109;
+  diag_mode == 0 ? (
+    strcpy(#diag_state_lbl, "Diag OFF");
+  ) : (
+    (diag_off_abs <= 1.0 && diag_null_db <= -12.0) ? (
+      strcpy(#diag_state_lbl, "Diag Buono");
+    ) : (diag_off_abs <= 2.5 && diag_null_db <= -8.0) ? (
+      strcpy(#diag_state_lbl, "Diag Quasi");
+    ) : (
+      strcpy(#diag_state_lbl, "Diag Da regolare");
+    );
+  );
+  gfx_x = 42; gfx_y = metrics_y2; sprintf(#js2, "Ref %.1f dB  |  Out %.1f dB  |  %s | %s | %s | %s", slider17, slider18, #lvl1, #lvl2, #strict_lbl, #listen_lbl); gfx_drawstr(#js2);
+  gfx_x = 42; gfx_y = metrics_y3; level_target_mode == 0 ? sprintf(#js3, "Mem %d  |  Cap %.0f%%  |  Curv %.1f dB  |  Diag:%s Off %+0.1f dB N %+0.1f dB | %s", slider20, slider21, slider15, #diag_mode_lbl, slider108, slider109, #diag_state_lbl) : sprintf(#js3, "Mem %d  |  Cap %.0f%%  |  Delta %+0.1f dB  |  Diag:%s Off %+0.1f dB N %+0.1f dB | %s", slider20, slider21, slider24 + slider94, #diag_mode_lbl, slider108, slider109, #diag_state_lbl); gfx_drawstr(#js3);
+  recover_flash_counter > 0 ? (
+    gfx_r = 0.98; gfx_g = 0.78; gfx_b = 0.30;
+    gfx_x = 42; gfx_y = metrics_warn_y; sprintf(#js4, "DSP Recover rilevato x%d", recover_count); gfx_drawstr(#js4);
+  ) : panic_flash_counter > 0 ? (
+    gfx_r = 0.96; gfx_g = 0.64; gfx_b = 0.30;
+    gfx_x = 42; gfx_y = metrics_warn_y; sprintf(#js4, "Safety Reset rilevato x%d", panic_count); gfx_drawstr(#js4);
+  );
+
+gfx_r = 0.12; gfx_g = 0.13; gfx_b = 0.16; gfx_a = 1;
+gfx_rect(22, gfx_h - 72, gfx_w - 44, 52);
+gfx_setfont(1, "Arial", 12);
+routing_state == 0 ? (
+  gfx_r = 0.82; gfx_g = 0.88; gfx_b = 0.84;
+  gfx_x = 34; gfx_y = gfx_h - 58;
+  gfx_drawstr("SC pronto. Per un workflow semplice: traccia a 4 canali, programma su 1/2, reference su 3/4.");
+  gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70;
+  gfx_x = 34; gfx_y = gfx_h - 38;
+  gfx_drawstr("Se il routing cambia per colpa delle automazioni di REAPER, guarda subito il messaggio colorato in alto.");
+) : routing_state == 3 ? (
+  gfx_r = 0.94; gfx_g = 0.80; gfx_b = 0.44;
+  gfx_x = 34; gfx_y = gfx_h - 58;
+  gfx_drawstr("1. Apri il pin connector del plugin e porta la traccia a 4 canali.");
+  gfx_r = 0.78; gfx_g = 0.82; gfx_b = 0.88;
+  gfx_x = 34; gfx_y = gfx_h - 38;
+  gfx_drawstr("2. Mappa Reference L/R su 3/4. 3. Invia la sorgente sidechain verso 3/4.");
+) : routing_state == 1 ? (
+  gfx_r = 0.94; gfx_g = 0.80; gfx_b = 0.44;
+  gfx_x = 34; gfx_y = gfx_h - 58;
+  gfx_drawstr("1. Verifica che il send della sorgente arrivi su 3/4.");
+  gfx_r = 0.78; gfx_g = 0.82; gfx_b = 0.88;
+  gfx_x = 34; gfx_y = gfx_h - 38;
+  gfx_drawstr("2. Se sei in Keep puoi continuare a usare il profilo gia' catturato anche senza SC live.");
+) : (
+  gfx_r = 0.94; gfx_g = 0.80; gfx_b = 0.44;
+  gfx_x = 34; gfx_y = gfx_h - 58;
+  gfx_drawstr("1. Il reference sta entrando anche su 1/2 insieme al programma.");
+  gfx_r = 0.78; gfx_g = 0.82; gfx_b = 0.88;
+  gfx_x = 34; gfx_y = gfx_h - 38;
+  gfx_drawstr("2. Sposta il reference solo su 3/4, lasciando il materiale da trattare su 1/2.");
+);
+
+debug_overlay_on ? (
+  dbg_h = 34;
+  dbg_y = gfx_h - dbg_h - 4;
+  gfx_r = 0.10; gfx_g = 0.11; gfx_b = 0.14; gfx_a = 0.96;
+  gfx_rect(22, dbg_y, gfx_w - 44, dbg_h);
+  gfx_setfont(1, "Arial", 10);
+  gfx_r = 0.64; gfx_g = 0.86; gfx_b = 0.98; gfx_a = 1;
+  gfx_x = 30; gfx_y = dbg_y + 4;
+  sprintf(#dbg, "DBG m:%d p:%d fill:%d%% cap:%d/%d keep:%d live:%d rd:%d rt:%d strict:%d clr:%d sw:%d cdone:%d em:%.2f me:%.2f re:%.2f ct:%.2fs",
+    profile_mode, profile_mode_prev, follow_fill_ratio * 100,
+    capture_count, capture_target_samples, keep_ready, live_follow_mode, follow_profile_ready, routing_state, strict_eq_on,
+    dbg_clear_count, dbg_mode_switch_count, dbg_capture_done_count, slider98, slider99, slider101, slider100);
+  gfx_drawstr(#dbg);
+  gfx_r = 0.84; gfx_g = 0.88; gfx_b = 0.96; gfx_a = 1;
+  gfx_x = 30; gfx_y = dbg_y + 17;
+  sprintf(#dbg2, "HF ug:%.2f sh:%.2f rl:%.2f cap10:%+.2f cap12:%+.2f lpEff:%.1fk air:%+.1f hs:%+.2f",
+    ultrahigh_guard, ultra_shoulder_guard, ultra_roll_need, dbg_ultrah_cap10_db, dbg_ultrah_cap12_db, air_lp_eff_hz * 0.001, air_trim_db, high_shape_applied);
+  gfx_drawstr(#dbg2);
+);
+
+last_mouse_cap = mouse_down;

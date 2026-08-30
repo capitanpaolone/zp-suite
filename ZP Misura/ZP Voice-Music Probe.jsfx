@@ -1,0 +1,152 @@
+desc:ZP Voice-Music Probe - Passive Bus Telemetry - Paolo Balestri
+// v1.1 Role Switch Fix: VOICE/MUSIC change works at STOP, from GUI and from Chain Builder.
+tags: analysis meter voice music probe telemetry zp paolo balestri
+options:gmem=ZPVoiceoverSharedBus
+
+slider1:probe_mode=0<0,1,1{Voice Probe,Music Probe}>Probe role
+
+// ZP Probe misura il risultato reale del bus. Non modifica audio, gain o latenza.
+
+@init
+ZP_BUS_MAGIC=905026;
+ZP_BUS_VERSION=220;
+ZP_BUS_FRESH_SEC=12;
+function clamp(x,lo,hi) ( x<lo?lo:(x>hi?hi:x); );
+function gain2db(x) ( 20*log(max(x,0.000000000001))/log(10); );
+function bus_boot() (
+  gmem[0] != ZP_BUS_MAGIC || gmem[1] < ZP_BUS_VERSION ? (
+    gmem[0]=ZP_BUS_MAGIC; gmem[1]=ZP_BUS_VERSION; gmem[2]=1; gmem[3]=0; gmem[4]=0;
+    gmem[10]=gmem[11]=gmem[12]=gmem[20]=gmem[21]=gmem[22]=0;
+    gmem[30]=gmem[31]=gmem[32]=gmem[40]=gmem[41]=gmem[42]=0;
+    gmem[50]=gmem[51]=gmem[52]=gmem[60]=gmem[61]=gmem[62]=0;
+  );
+);
+function bus_read() local(now) (
+  bus_boot(); now=time_precise();
+  bus_chain_conn=gmem[10]==905010 ? (now-gmem[11]<=ZP_BUS_FRESH_SEC?2:1) : 0;
+  bus_master_conn=gmem[40]==905040 ? (now-gmem[41]<=ZP_BUS_FRESH_SEC?2:1) : 0;
+  bus_connection_state=(bus_chain_conn==0 || bus_master_conn==0)?0:(bus_chain_conn==2 && bus_master_conn==2?2:1);
+);
+function bus_publish(base) (
+  bus_boot(); gmem[base]=905000+base; gmem[base+1]=time_precise(); gmem[base+2]+=1; bus_read();
+);
+function clear_role(role) (
+  role < 0.5 ? (
+    gmem[50]=0; gmem[51]=0; gmem[52]=0;
+    gmem[501]=0; gmem[502]=0; gmem[503]=0; gmem[504]=0; gmem[505]=0; gmem[506]=0;
+  ) : (
+    gmem[60]=0; gmem[61]=0; gmem[62]=0;
+    gmem[601]=0; gmem[602]=0; gmem[603]=0; gmem[604]=0; gmem[605]=0; gmem[606]=0;
+  );
+);
+function set_probe_role(v) local(new_role) (
+  new_role=max(0,min(1,floor(v+0.5)));
+  last_role>=0 && last_role!=new_role ? clear_role(last_role);
+  probe_mode=new_role;
+  slider1=new_role;
+  last_role=new_role;
+);
+bus_boot();
+rms_env=fast_env=high_env=low_env=0.000000001;
+peak_hold=0;
+speech_env=0;
+lp=0;
+last_role=-1;
+set_probe_role(slider1);
+
+@slider
+set_probe_role(slider1);
+
+@block
+// Chain Builder/automation may change slider1 while transport is stopped.
+// Synchronize here too, so role never depends solely on @slider delivery.
+_role_now=max(0,min(1,floor(slider1+0.5)));
+_role_now!=probe_mode ? set_probe_role(_role_now);
+
+probe_mode < 0.5 ? (
+  gmem[501]=probe_rms_db;
+  gmem[502]=probe_peak_db;
+  gmem[503]=probe_crest_db;
+  gmem[504]=probe_density;
+  gmem[505]=probe_brightness_db;
+  gmem[506]=probe_speech;
+  // Commit dopo il payload: nessun heartbeat nuovo con metriche precedenti.
+  bus_publish(50);
+) : (
+  gmem[601]=probe_rms_db;
+  gmem[602]=probe_peak_db;
+  gmem[603]=probe_crest_db;
+  gmem[604]=probe_density;
+  gmem[605]=probe_brightness_db;
+  gmem[606]=clamp((probe_density-45)*1.8,0,100); // glue/compression estimate, sola stima
+  bus_publish(60);
+);
+
+@sample
+// Passive detector: spl0/spl1 non vengono mai riscritti.
+mono=0.5*(spl0+spl1);
+p=max(abs(spl0),abs(spl1));
+pow=0.5*(spl0*spl0+spl1*spl1);
+rms_c=exp(-1/(0.300*srate));
+fast_c=exp(-1/(0.035*srate));
+peak_c=exp(-1/(0.700*srate));
+speech_c=exp(-1/(0.080*srate));
+lp_c=exp(-2*$pi*2500/srate);
+tone_c=exp(-1/(0.250*srate));
+rms_env=pow+rms_c*(rms_env-pow);
+fast_env=pow+fast_c*(fast_env-pow);
+peak_hold=max(p,peak_hold*peak_c);
+lp=mono+lp_c*(lp-mono);
+hi=mono-lp;
+high_env=hi*hi+tone_c*(high_env-hi*hi);
+low_env=lp*lp+tone_c*(low_env-lp*lp);
+probe_rms_db=gain2db(sqrt(max(rms_env,0.000000000001)));
+probe_peak_db=gain2db(max(peak_hold,0.000000000001));
+probe_crest_db=clamp(probe_peak_db-probe_rms_db,0,30);
+probe_density=clamp(100-probe_crest_db*5,0,100);
+probe_brightness_db=clamp(gain2db(sqrt(max(high_env,0.000000000001)))-gain2db(sqrt(max(low_env,0.000000000001))),-30,12);
+speech_target=probe_rms_db>-48 && fast_env>0.00000001 ? 1 : 0;
+speech_env=speech_target+(speech_env-speech_target)*speech_c;
+probe_speech=clamp(speech_env*100,0,100);
+
+@gfx 520 250
+// Keep GUI and externally-set parameter synchronized even when REAPER is stopped.
+_role_now=max(0,min(1,floor(slider1+0.5)));
+_role_now!=probe_mode ? set_probe_role(_role_now);
+
+gfx_set(0.055,0.06,0.075,1); gfx_rect(0,0,gfx_w,gfx_h);
+gfx_setfont(1,"Arial",20,'b'); gfx_set(0.86,0.89,0.94,1); gfx_x=18; gfx_y=16;
+probe_mode<0.5 ? gfx_drawstr("ZP VOICE PROBE") : gfx_drawstr("ZP MUSIC PROBE");
+
+// Real role controls: clickable and visible to REAPER/Chain Builder.
+_mouse_click=(mouse_cap&1)&&!(last_mouse_cap&1);
+_btn_y=47; _btn_w=76; _btn_h=22; _btn_gap=6; _voice_x=gfx_w-176; _music_x=_voice_x+_btn_w+_btn_gap;
+probe_mode<0.5 ? gfx_set(0.18,0.52,0.88,1) : gfx_set(0.12,0.14,0.18,1); gfx_rect(_voice_x,_btn_y,_btn_w,_btn_h);
+probe_mode>=0.5 ? gfx_set(0.42,0.28,0.72,1) : gfx_set(0.12,0.14,0.18,1); gfx_rect(_music_x,_btn_y,_btn_w,_btn_h);
+gfx_setfont(1,"Arial",10,'b'); gfx_set(0.92,0.94,0.98,1);
+gfx_x=_voice_x+18; gfx_y=_btn_y+6; gfx_drawstr("VOICE");
+gfx_x=_music_x+17; gfx_y=_btn_y+6; gfx_drawstr("MUSIC");
+_voice_hit=mouse_x>=_voice_x&&mouse_x<=_voice_x+_btn_w&&mouse_y>=_btn_y&&mouse_y<=_btn_y+_btn_h;
+_music_hit=mouse_x>=_music_x&&mouse_x<=_music_x+_btn_w&&mouse_y>=_btn_y&&mouse_y<=_btn_y+_btn_h;
+_mouse_click&&_voice_hit&&probe_mode!=0 ? (set_probe_role(0); sliderchange(slider1););
+_mouse_click&&_music_hit&&probe_mode!=1 ? (set_probe_role(1); sliderchange(slider1););
+last_mouse_cap=mouse_cap;
+
+bus_read();
+bus_connection_state==2 ? gfx_set(0.25,0.90,0.58,1) : bus_connection_state==1 ? gfx_set(1.0,0.72,0.20,1) : gfx_set(1.0,0.30,0.25,1);
+gfx_circle(220,27,5,1); gfx_setfont(1,"Arial",10,'b'); gfx_x=232; gfx_y=20;
+bus_connection_state==2 ? gfx_drawstr("BUS CONNECTED") : bus_connection_state==1 ? gfx_drawstr("BUS DATA OLD") : gfx_drawstr("BUS OFFLINE");
+gfx_setfont(1,"Arial",13);
+gfx_set(0.62,0.68,0.78,1); gfx_x=18; gfx_y=54; gfx_drawstr("Misura passiva post-chain.");
+function metric(label,val,unit,x,y) (
+  gfx_set(0.22,0.25,0.31,1); gfx_rect(x,y,150,52);
+  gfx_set(0.56,0.64,0.76,1); gfx_setfont(1,"Arial",10,'b'); gfx_x=x+10; gfx_y=y+7; gfx_drawstr(label);
+  gfx_set(0.92,0.93,0.96,1); gfx_setfont(1,"Arial",15,'b'); gfx_x=x+10; gfx_y=y+25; gfx_drawnumber(val,1); gfx_drawstr(unit);
+);
+metric("RMS",probe_rms_db," dBFS",18,82);
+metric("PEAK",probe_peak_db," dBFS",178,82);
+metric("CREST",probe_crest_db," dB",338,82);
+metric("DENSITY",probe_density," %",18,144);
+metric("BRIGHTNESS",probe_brightness_db," dB",178,144);
+probe_mode<0.5 ? metric("SPEECH",probe_speech," %",338,144) : metric("ROLE",1," MUSIC",338,144);
+gfx_set(0.40,0.44,0.52,1); gfx_setfont(1,"Arial",10); gfx_x=18; gfx_y=gfx_h-24; gfx_drawstr("ZP Shared Bus v2 | Probe deve essere l'ultimo FX del bus.");

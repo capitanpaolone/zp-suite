@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZP Master Pro - Glue Matrix Help</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #10100e;
+      --panel: #171916;
+      --line: #2c4f74;
+      --text: #e9edf2;
+      --muted: #a9b4bd;
+      --gold: #e2a03c;
+      --blue: #5c98e8;
+      --green: #6cc7a2;
+      --red: #df6868;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 32px 22px 48px;
+    }
+    h1, h2 {
+      line-height: 1.15;
+      margin: 0 0 12px;
+    }
+    h1 {
+      font-size: 30px;
+      border-bottom: 2px solid var(--line);
+      padding-bottom: 14px;
+    }
+    h2 {
+      color: var(--gold);
+      font-size: 19px;
+      margin-top: 28px;
+    }
+    p {
+      margin: 8px 0 14px;
+    }
+    .muted {
+      color: var(--muted);
+    }
+    .path {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin: 18px 0 10px;
+    }
+    .stage {
+      border: 1px solid #34404d;
+      background: var(--panel);
+      padding: 10px;
+      min-height: 78px;
+    }
+    .stage strong {
+      display: block;
+      color: var(--blue);
+      margin-bottom: 4px;
+    }
+    .callout {
+      border-left: 4px solid var(--gold);
+      background: #1c1710;
+      padding: 12px 14px;
+      margin: 18px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: var(--panel);
+    }
+    th, td {
+      border: 1px solid #303842;
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      color: var(--green);
+      font-weight: 700;
+    }
+    code {
+      color: #f0c26a;
+      background: #0b0d0f;
+      padding: 1px 4px;
+    }
+    @media (max-width: 760px) {
+      .path { grid-template-columns: 1fr; }
+      main { padding: 24px 16px 36px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>ZP Master Pro - Glue Matrix</h1>
+  <p class="muted">Guida rapida al modulo Glue/ISP della versione v2.19 Glue Matrix.</p>
+
+  <h2>Percorso del segnale</h2>
+  <div class="path">
+    <div class="stage"><strong>TAPE</strong>Tape glue, saturazione controllata, tilt, bump e flutter.</div>
+    <div class="stage"><strong>COMP</strong>Compressore principale: threshold, ratio, knee, RMS/Peak, feed mode e AMU.</div>
+    <div class="stage"><strong>GLUE</strong>Matrice multistadio che frammenta la compressione in macro, micro e crest.</div>
+    <div class="stage"><strong>TONE</strong>Tone Guard statico/dinamico e punti EQ.</div>
+    <div class="stage"><strong>LIMITER</strong>Limiter lookahead, output/auto dB e final safety.</div>
+  </div>
+
+  <div class="callout">
+    <strong>ISP non e' uno stadio audio separato.</strong>
+    E' una detection interpolata globale: quando e' attivo puo' guidare Glue/Comp, Limiter e Final Safety.
+  </div>
+
+  <h2>Come lavora la Glue Matrix</h2>
+  <p>La Glue Matrix nasce per evitare che un solo compressore faccia tutto il lavoro sui transienti. Divide la riduzione di gain in tre reazioni leggere:</p>
+  <table>
+    <tr><th>Parte</th><th>Ruolo</th></tr>
+    <tr><td><code>MACRO</code></td><td>Compressione lenta e musicale, basata sul corpo del segnale. Tiene insieme il master senza inseguire ogni picco.</td></tr>
+    <tr><td><code>MICRO</code></td><td>Controllo rapido e limitato sui picchi. Aiuta il limiter a non dover schiacciare troppo in un colpo solo.</td></tr>
+    <tr><td><code>CREST</code></td><td>Reazione al crest factor: quando i transienti sporgono troppo rispetto al corpo, interviene in modo progressivo.</td></tr>
+  </table>
+
+  <h2>Controlli</h2>
+  <table>
+    <tr><th>Controllo</th><th>Uso pratico</th></tr>
+    <tr><td><code>COMP</code></td><td>Accende o spegne il compressore principale.</td></tr>
+    <tr><td><code>GLUE</code></td><td>Accende o spegne la parte multistadio DEP/FRG/micro/crest. Con GLUE off resta il compressore principale.</td></tr>
+    <tr><td><code>DEP</code></td><td>Profondita' complessiva della Glue Matrix. Aumenta la quantita' di lavoro distribuito.</td></tr>
+    <tr><td><code>FRG</code></td><td>Frammentazione. Valori alti spostano piu' lavoro verso micro e crest, proteggendo i transienti dal limiter.</td></tr>
+    <tr><td><code>Texture</code></td><td>Fa parte di GLUE. <code>SM</code> morbido, <code>API</code> piu' punch, <code>SSA</code> piu' compatto e levigato.</td></tr>
+    <tr><td><code>ISP</code></td><td>Selettore unico della detection interpolata globale: <code>Off</code> la bypassa, <code>2x</code>/<code>4x</code> aumentano la risoluzione di controllo.</td></tr>
+  </table>
+
+  <h2>Texture: SM, API, SSA</h2>
+  <p>Le Texture non sono emulazioni ufficiali di macchine specifiche: sono tre profili di comportamento ispirati a famiglie di compressione da mix/master. Cambiano soprattutto tempi, densita' della riduzione e distribuzione fra macro, micro e crest.</p>
+  <table>
+    <tr><th>Texture</th><th>Ispirazione</th><th>Comportamento</th><th>Uso tipico</th></tr>
+    <tr>
+      <td><code>SM</code></td>
+      <td>Glue moderno da stereo bus e mastering pulito.</td>
+      <td>Attacco e rilascio piu' morbidi, minore aggressivita' sui transienti, immagine piu' naturale.</td>
+      <td>Podcast, voiceover, musica gia' compressa, mastering trasparente.</td>
+    </tr>
+    <tr>
+      <td><code>API</code></td>
+      <td>Compressori VCA/API-style da bus, con risposta piu' fisica e punchy.</td>
+      <td>Reazione piu' pronta, piu' grip sul medio, transienti presenti ma controllati.</td>
+      <td>Mix bus, rock/pop, materiale che deve restare avanti senza diventare piatto.</td>
+    </tr>
+    <tr>
+      <td><code>SSA</code></td>
+      <td>Solid State / SSL-style bus glue, compatto e levigato.</td>
+      <td>Compressione piu' ordinata, densita' maggiore, crest piu' controllato e finale piu' compatto.</td>
+      <td>Master loud, broadcast, radio, contenuti dove serve stabilita' e percezione piu' finita.</td>
+    </tr>
+  </table>
+
+  <h2>Loudness e A/B</h2>
+  <p>La Glue Matrix puo' far salire la loudness percepita perche' riduce il crest factor: i picchi scendono, il corpo resta piu' stabile e il meter LUFS puo' leggere piu' alto. Anche <code>AMU</code> del compressore aggiunge make-up gain.</p>
+  <p>Per confronti rapidi: prova prima <code>GLUE OFF</code>, poi <code>AMU OFF</code>, infine <code>ISP OFF</code>. In questo modo si capisce se il salto di loudness viene dalla matrice, dal make-up o dalla detection del limiter/safety.</p>
+
+  <h2>Auto dB e Target</h2>
+  <p><code>TARGET</code> non cambia il gain: mostra solo quanto il segnale e' sopra o sotto il riferimento scelto. La lettura <code>MATCH</code> usa una media lenta di circa 4,5 secondi su energia LUFS/RMS, quindi ignora molti transienti isolati.</p>
+  <p><code>AUTO</code> usa lo stesso riferimento, ma applica correzione di gain entro il limite <code>MAXTRM</code>. Il numero grande nel riquadro Auto dB indica la correzione applicata; <code>MATCH</code> indica l'errore residuo rispetto al target.</p>
+</main>
+</body>
+</html>
