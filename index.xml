@@ -1,2 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" name="ZP Suite"></index>
+<index version="1" name="ZP Suite" commit="f37c44e14f75148faf19a2e0817eb911641bdc3c">
+  <category name="ZP Master">
+    <reapack name="ZP Master Pro.jsfx" type="effect">
+      <version name="2.45" author="Paolo Balestri" time="2026-08-30T20:03:27Z">
+        <changelog><![CDATA[Anelli circolari di soglia su compressore e ceiling del limiter.
+ISP Guard: picchi interpolati 2x/4x per tenere limiter e safety lontani dal soffitto.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/9de95d5425ac33d00cff02065ed3a332fdc476d3/ZP%20Master/ZP%20Master%20Pro.jsfx</source>
+      </version>
+    </reapack>
+  </category>
+  <category name="ZP Misura">
+    <reapack name="ZP Loudness Meter Multichannel.jsfx" type="effect">
+      <version name="44.0" author="Paolo Balestri" time="2026-08-30T21:12:58Z">
+        <changelog><![CDATA[Channel Overview centrale con meter segmentati per canale.
+Mini UI dedicata per TCP/MCP embedded.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/f37c44e14f75148faf19a2e0817eb911641bdc3c/ZP%20Misura/ZP%20Loudness%20Meter%20Multichannel.jsfx</source>
+      </version>
+    </reapack>
+    <reapack name="ZP Voice-Music Probe.jsfx" type="effect" desc="ZP Voice-Music Probe - Passive Bus Telemetry - Paolo Balestri">
+      <version name="1.1" author="Paolo Balestri" time="2026-08-30T20:03:27Z">
+        <changelog><![CDATA[Role Switch Fix: il cambio VOICE/MUSIC funziona a trasporto fermo, dalla GUI e dal Chain Builder.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/9de95d5425ac33d00cff02065ed3a332fdc476d3/ZP%20Misura/ZP%20Voice-Music%20Probe.jsfx</source>
+      </version>
+    </reapack>
+  </category>
+  <category name="ZP Voce">
+    <reapack name="ZP BUS Chain.jsfx" type="effect" desc="ZP BUS Chain v1.2.3 - Voice/Music Processor - Paolo Balestri - BROWN-ANA">
+      <version name="1.2.3" author="Paolo Balestri" time="2026-08-30T21:12:58Z">
+        <changelog><![CDATA[Meter circolari di soglia su tutta la catena.
+Motore ANA ridotto a CALDO (Lush), CORPO (Punch), APERTO (Holo), collocato pre-limiter.
+LINK Drive/Gain: alzando il Drive il Gain scende in opposizione, per giudicare il colore senza salto di volume.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/f37c44e14f75148faf19a2e0817eb911641bdc3c/ZP%20Voce/ZP%20BUS%20Chain.jsfx</source>
+      </version>
+    </reapack>
+    <reapack name="ZP Spoken Finish.jsfx" type="effect" desc="ZP Spoken Finish v3.9.8 - Voice Harmonic Exciter / De-Exciter - Paolo Balestri">
+      <version name="3.9.8" author="Paolo Balestri" time="2026-08-30T21:12:58Z">
+        <changelog><![CDATA[Meter circolare true-peak sul ceiling del limiter.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/f37c44e14f75148faf19a2e0817eb911641bdc3c/ZP%20Voce/ZP%20Spoken%20Finish.jsfx</source>
+      </version>
+    </reapack>
+    <reapack name="ZP Stagekeeper Dialogue Director.jsfx" type="effect" desc="ZP Stagekeeper Dialogue Director AutoMixer v2.3 - Paolo Balestri">
+      <version name="2.3" author="Paolo Balestri - Zio Paolo" time="2026-08-30T21:12:58Z">
+        <changelog><![CDATA[Meter circolari di soglia sul gate dinamico.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/f37c44e14f75148faf19a2e0817eb911641bdc3c/ZP%20Voce/ZP%20Stagekeeper%20Dialogue%20Director.jsfx</source>
+      </version>
+    </reapack>
+    <reapack name="ZP Voiceover Unified Chain.jsfx" type="effect" desc="ZP Voiceover Unified Chain v4.1.5 - Voice Leveler - Paolo Balestri - BUS AUTO LIVE BROWNFIX3">
+      <version name="4.1.5" author="Paolo Balestri" time="2026-08-30T21:12:58Z">
+        <changelog><![CDATA[Anelli circolari di rilevamento dal vivo su Gate, 1175, Major Tom e Limiter Ceiling.
+Output AUTO calcola e applica la correzione anche quando Capture e' pronta.
+Capture resta memoria e display, non congela piu' out_trim_db.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/f37c44e14f75148faf19a2e0817eb911641bdc3c/ZP%20Voce/ZP%20Voiceover%20Unified%20Chain.jsfx</source>
+      </version>
+    </reapack>
+  </category>
+  <metadata>
+    <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
+{\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
+\widowctrl\hyphauto
+
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs36 ZP Suite\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Effetti JSFX per REAPER dedicati a voiceover, doppiaggio, podcast e broadcast. Sviluppati da {\b Paolo Balestri} \u8212- {\field{\*\fldinst{HYPERLINK "https://latocardioide.it"}}{\fldrslt{\ul
+latocardioide.it
+}}}
+ \u183 ? social@paolobalestri.com\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Ogni plugin ha una doppia vista: {\b GUI} grafica e {\b JSFX} a lista parametri. La vista JSFX \u232 ? il canale con cui OSARA legge i controlli, e diversi effetti espongono grandezze di sola lettura ({\f1 [Read]}) proprio perch\u233 ? un lettore di schermo possa annunciarle. L'accessibilit\u224 ? \u232 ? un requisito di progetto, non un'aggiunta.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Installazione\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\i (disponibile dalla Fase 3 \u8212- ReaPack)}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 In REAPER: {\b Extensions \u8594 ? ReaPack \u8594 ? Import repositories}, e incolla:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 https://github.com/capitanpaolone/zp-suite/raw/master/index.xml\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Poi {\b Extensions \u8594 ? ReaPack \u8594 ? Browse packages}, cerca {\f1 ZP} e installa quello che serve. Gli aggiornamenti arrivano da l\u236 ?, con changelog e possibilit\u224 ? di tornare indietro.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Cosa c'\u232 ? dentro\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 ZP Voce\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 | Effetto | Cosa fa | |---|---| | {\b ZP Voiceover Unified Chain} | Catena completa per la voce: Input Smart \u8594 ? Gate/Expander \u8594 ? 1175 \u8594 ? LA2 \u8594 ? MajorTom \u8594 ? Brown Guard \u8594 ? Limiter/Clipper \u8594 ? Output auto-trim \u8594 ? Safety Limiter. Sei profili di partenza, moduli accendibili singolarmente. | | {\b ZP BUS Chain} | La stessa catena sul bus, pi\u249 ? il motore ANA di colorazione console (CALDO / CORPO / APERTO). | | {\b ZP Spoken Finish} | Exciter e de-exciter armonico: pari e dispari da \u8722 ?100 a +100 %. Profili Voice Base e Extreme Trailer (Voice of God, Cinema Air). Limiter true-peak. | | {\b ZP Harmonic Space Carver} | Spazio fra voce e musica: carving dinamico multibanda, ducker VCA e Speech State Engine che riconosce pause e respiri. | | {\b ZP Stagekeeper Dialogue Director} | Automixer per dialogo a due canali, gate con trigger assoluto o delta sul rumore di fondo, tilt EQ e solo per lato. | | {\b ZP Subliminal Presence Layer} | Layer di presenza calibrato su cosa sopravvive alla codifica lossy. Tre controlli. |\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 ZP Master\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 | Effetto | Cosa fa | |---|---| | {\b ZP Master Pro} | Processore di master: Tape Glue \u8594 ? Glue Matrix Compressor \u8594 ? Tone Guard \u8594 ? Lookahead Limiter, pi\u249 ? metering LUFS/LRA/RMS/TP, auto-trim e Target Engine con sette profili di consegna. | | {\b ZP Reference Tone Mirror EQ Pro} | EQ di matching su un segnale di riferimento, con stadio armonico, AGC e strumenti diagnostici (Delta EQ, Delta Harm, Null Hunter). |\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 ZP Misura\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 | Effetto | Cosa fa | |---|---| | {\b ZP Loudness Meter Multichannel} | LUFS-I/S/M secondo ITU-R BS.1770, LRA, True Peak con oversampling, RMS-M, fino a 64 canali. | | {\b ZP Oscilloscope 16ch} | Oscilloscopio a 16 canali con nomi di traccia editabili e quattro modalit\u224 ? canale. | | {\b ZP Voice-Music Probe} | Telemetria passiva: misura RMS, peak, crest, densit\u224 ?, brillantezza e attivit\u224 ? di parlato senza toccare il segnale. Va messo come ultimo FX del bus. |\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 ZP Shared Bus\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Gli effetti si riconoscono fra loro attraverso una memoria condivisa ({\f1 gmem=ZPVoiceoverSharedBus}). Ogni plugin pubblica un battito con la propria identit\u224 ?; Master Pro li legge tutti e mostra lo stato della catena. Il Probe pubblica le metriche che il Target Engine confronta con il profilo di consegna scelto.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u200 ? diagnostica: nessun plugin modifica i parametri di un altro.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Slot: {\f1 10} catena \u183 ? {\f1 20} Space Carver \u183 ? {\f1 30} Spoken Finish \u183 ? {\f1 40} Master Pro \u183 ? {\f1 50} Probe voce \u183 ? {\f1 60} Probe musica.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Licenza\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 GPLv3 o successiva \u8212- vedi {\field{\*\fldinst{HYPERLINK "LICENSE"}}{\fldrslt{\ul
+{\f1 LICENSE}
+}}}
+. Le attribuzioni del DSP di terzi sono in {\field{\*\fldinst{HYPERLINK "NOTICE.md"}}{\fldrslt{\ul
+{\f1 NOTICE.md}
+}}}
+.\par}
+}
+]]></description>
+  </metadata>
+</index>
