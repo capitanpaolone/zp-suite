@@ -1,7 +1,7 @@
 # ZP Suite
 
 Effetti JSFX per REAPER dedicati a voiceover, doppiaggio, podcast e broadcast.
-Sviluppati da **Paolo Balestri** — [paolobalestri.com](https://paolobalestri.com) ·
+Sviluppati da **Paolo Balestri** — [latocardioide.it](https://latocardioide.it) ·
 social@paolobalestri.com
 
 Ogni plugin ha una doppia vista: **GUI** grafica e **JSFX** a lista parametri.
