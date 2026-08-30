@@ -6,6 +6,17 @@ nel suo insieme.
 
 ## Non rilasciato
 
+### Corretto
+- Quattro effetti non entravano nell'indice ReaPack: Reference Tone Mirror EQ Pro,
+  Oscilloscope 16ch, Harmonic Space Carver e Subliminal Presence Layer White.
+  Causa: `reapack-index` riconosce come tag anche `author:` e `version:` scritti
+  senza chiocciola nell'intestazione JSFX storica, e le righe di commento indentate
+  che li seguivano li rendevano multilinea. Entrambi i tag devono stare su una riga
+  sola. Le vecchie righe sono state rinominate in `// Autore:` e `// Versione:`:
+  l'informazione resta leggibile, il conflitto sparisce.
+- Stessa correzione applicata anche a Loudness Meter e Stagekeeper, che passavano
+  per caso ma avevano lo stesso difetto latente.
+
 ### Aggiunto
 - Repository unico per gli 11 effetti della Suite, in tre categorie: ZP Voce, ZP Master, ZP Misura.
 - `LICENSE` (GPLv3) e `NOTICE.md` con la catena di attribuzioni del DSP di terzi.
