@@ -1,3 +1,8 @@
+// @version 11.0
+// @author Paolo Balestri
+// @license GPL-3.0-or-later
+// @changelog
+//   Prima pubblicazione nella ZP Suite.
 desc:ZP Oscilloscope 16ch V11 - Paolo Balestri
 //tags: analysis scope meter multichannel
 //author: Cockos - Paolo Balestri

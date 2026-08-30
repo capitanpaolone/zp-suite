@@ -1,3 +1,8 @@
+// @version 2.4
+// @author Paolo Balestri
+// @license GPL-3.0-or-later
+// @changelog
+//   Meter circolari di soglia su carver e ducker VCA.
 desc: ZP Harmonic Space Carver Ducker - Paolo Balestri - Zio Paolo v2.4
 options:gmem=ZPVoiceoverSharedBus
 tags: zp dynamics sidechain multiband eq ducker voice podcast broadcast paolo balestri zio paolo

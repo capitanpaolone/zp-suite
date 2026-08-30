@@ -1,3 +1,10 @@
+// @version 4.1.5
+// @author Paolo Balestri
+// @license GPL-3.0-or-later
+// @changelog
+//   Anelli circolari di rilevamento dal vivo su Gate, 1175, Major Tom e Limiter Ceiling.
+//   Output AUTO calcola e applica la correzione anche quando Capture e' pronta.
+//   Capture resta memoria e display, non congela piu' out_trim_db.
 desc:ZP Voiceover Unified Chain v4.1.5 - Voice Leveler - Paolo Balestri - BUS AUTO LIVE BROWNFIX3
 options:gmem=ZPVoiceoverSharedBus
 tags: voiceover voice leveler compressor limiter gate expander brown guard lufs rms paolo balestri zio paolo

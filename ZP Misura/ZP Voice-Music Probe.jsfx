@@ -1,3 +1,8 @@
+// @version 1.1
+// @author Paolo Balestri
+// @license GPL-3.0-or-later
+// @changelog
+//   Role Switch Fix: il cambio VOICE/MUSIC funziona a trasporto fermo, dalla GUI e dal Chain Builder.
 desc:ZP Voice-Music Probe - Passive Bus Telemetry - Paolo Balestri
 // v1.1 Role Switch Fix: VOICE/MUSIC change works at STOP, from GUI and from Chain Builder.
 tags: analysis meter voice music probe telemetry zp paolo balestri

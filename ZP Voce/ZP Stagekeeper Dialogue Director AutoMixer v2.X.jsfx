@@ -1,3 +1,8 @@
+// @version 2.3
+// @author Paolo Balestri
+// @license GPL-3.0-or-later
+// @changelog
+//   Meter circolari di soglia sul gate dinamico.
 desc:ZP Stagekeeper Dialogue Director AutoMixer v2.3 - Paolo Balestri
 tags:dialogue gate utility paolo balestri zio ziopaolo stagekeeper voice spoken automatic mixer
 //author: Paolo Balestri - Zio Paolo

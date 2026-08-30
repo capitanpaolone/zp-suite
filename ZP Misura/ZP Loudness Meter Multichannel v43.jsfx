@@ -1,3 +1,9 @@
+// @version 44.0
+// @author Paolo Balestri
+// @license LGPL-2.1-or-later
+// @changelog
+//   Channel Overview centrale con meter segmentati per canale.
+//   Mini UI dedicata per TCP/MCP embedded.
 // This effect Copyright (C) 2021 and later Cockos Incorporated
 // Mod Paolo Balestri v44 - 18-05-2026
 // License: LGPL - http://www.gnu.org/licenses/lgpl.html
