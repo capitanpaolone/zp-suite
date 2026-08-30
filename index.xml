@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" name="ZP Suite" commit="f37c44e14f75148faf19a2e0817eb911641bdc3c">
+<index version="1" name="ZP Suite" commit="4f0a39383b1845e0435b7d4d388172a2200548d4">
   <category name="ZP Master">
     <reapack name="ZP Master Pro.jsfx" type="effect">
       <version name="2.45" author="Paolo Balestri" time="2026-08-30T20:03:27Z">
         <changelog><![CDATA[Anelli circolari di soglia su compressore e ceiling del limiter.
 ISP Guard: picchi interpolati 2x/4x per tenere limiter e safety lontani dal soffitto.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/9de95d5425ac33d00cff02065ed3a332fdc476d3/ZP%20Master/ZP%20Master%20Pro.jsfx</source>
+      </version>
+    </reapack>
+    <reapack name="ZP Reference Tone Mirror EQ Pro.jsfx" type="effect" desc="ZP Reference Tone Mirror EQ Pro - Paolo Balestri">
+      <version name="0.062" author="Paolo Balestri" time="2026-08-30T22:01:32Z">
+        <changelog><![CDATA[True capture, controllo delle basse e modalita' diagnostica Null Hunter.
+Versione ancora sotto la 1.0: interfaccia e set di parametri non sono stabili.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/4f0a39383b1845e0435b7d4d388172a2200548d4/ZP%20Master/ZP%20Reference%20Tone%20Mirror%20EQ%20Pro.jsfx</source>
       </version>
     </reapack>
   </category>
@@ -15,6 +22,12 @@ ISP Guard: picchi interpolati 2x/4x per tenere limiter e safety lontani dal soff
         <changelog><![CDATA[Channel Overview centrale con meter segmentati per canale.
 Mini UI dedicata per TCP/MCP embedded.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/f37c44e14f75148faf19a2e0817eb911641bdc3c/ZP%20Misura/ZP%20Loudness%20Meter%20Multichannel.jsfx</source>
+      </version>
+    </reapack>
+    <reapack name="ZP Oscilloscope 16ch.jsfx" type="effect" desc="ZP Oscilloscope 16ch V11 - Paolo Balestri">
+      <version name="11.0" author="Paolo Balestri" time="2026-08-30T22:01:32Z">
+        <changelog><![CDATA[Prima pubblicazione nella ZP Suite.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/4f0a39383b1845e0435b7d4d388172a2200548d4/ZP%20Misura/ZP%20Oscilloscope%2016ch.jsfx</source>
       </version>
     </reapack>
     <reapack name="ZP Voice-Music Probe.jsfx" type="effect" desc="ZP Voice-Music Probe - Passive Bus Telemetry - Paolo Balestri">
@@ -33,6 +46,62 @@ LINK Drive/Gain: alzando il Drive il Gain scende in opposizione, per giudicare i
         <source>https://github.com/capitanpaolone/zp-suite/raw/f37c44e14f75148faf19a2e0817eb911641bdc3c/ZP%20Voce/ZP%20BUS%20Chain.jsfx</source>
       </version>
     </reapack>
+    <reapack name="ZP Harmonic Space Carver.jsfx" type="effect" desc="ZP Harmonic Space Carver Ducker - Paolo Balestri - Zio Paolo v2.4">
+      <metadata>
+        <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
+{\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
+\widowctrl\hyphauto
+
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs36 =========================================================\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs36 ZP HARMONIC SPACE CARVER v2.4\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs36 =========================================================\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Space Carver \u232 ? uno strumento ibrido per creare spazio perfetto tra VOCE e MUSICA. Unisce:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Carving dinamico multibanda guidato da energia RMS, con Soft-Knee interno\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Ducker VCA intelligente (macro-dinamica)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Speech State Engine che comprende le pause e i respiri del parlato\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab SC RMS Stabiliz. pre-detection per un rilevamento solido e meno nervoso del Sidechain\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Meter circolari live attorno alle tre soglie principali: Carver Thresh, VCA Ceiling e Voice Trigger\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 1. ROUTING INIZIALE\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab In 1/2: Main (Musica / Base / Synth / Bus Musicale da abbassare)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab In 3/4: Sidechain (Voce / Mic / Dialogo che deve fare da guida)\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 2. INTERFACCIA (I Due Profili)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab SIMPLE: Workflow rapido per fare spazio alla voce in una base, con un equilibrio musicale tra Carver e VCA e una GUI pi\u249 ? chiara.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab ADVANCED: La macchina completa, con tutti i controlli originali e la lettura dettagliata del motore.\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 3. CARVE MODE (I Tre Profili, disponibili in Advanced)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab SCORE: Il Carver (EQ) fa il lavoro maggiore per fare spazio alla voce, proteggendo bassi e altissime frequenze. Il VCA interviene solo come rete di sicurezza sui picchi estremi (uso Cinematico/Trailer).\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab FLAT: Nessun automatismo. L'intervento \u232 ? lineare 1:1, pulito e manuale.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab VOCAL: Il VCA prende il comando, comportandosi come un fonico sul fader. L'EQ dinamico interviene meno e solo sulle medie frequenze per domare le consonanti, salvando la brillantezza della musica (uso Broadcast/Podcast).\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 3b. FLAT FOCUS (Nuovo in v2.1)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 In modalit\u224 ? FLAT, puoi scegliere il focus del processing:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab BOTH: Carver + VCA (comportamento classico)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab CARVER: solo carving dinamico\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab VCA: solo ducking VCA\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 3c. SC RMS STABILIZ. (Nuovo in v2.2-rms-gui-fix)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Lo stabilizzatore non \u232 ? pi\u249 ? un limiter peak: lavora sulla lettura RMS del sidechain prima di Voice Detect, Carver e VCA.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab 0% = detection pi\u249 ? reattiva.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab 100% = detection pi\u249 ? RMS/smussata/stabile.\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 3d. LOGICA VCA (Ceiling / Floor / Max)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab MUSIC CEILING: soglia target della musica; oltre questa soglia il VCA inizia a duckare.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab DUCK FLOOR: quantit\u224 ? minima di ducking quando la voce \u232 ? attiva.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab MAX REDUCTION: limite massimo di ducking consentito.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Nota: in modalit\u224 ? VOCAL, MAX REDUCTION \u232 ? bypassato per una gestione pi\u249 ? diretta tramite Ceiling + Priority + Floor.\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 3e. LISTEN\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab OUT: uscita normale processata.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab CARVER: ascolta solo ci\u242 ? che il Carver sta togliendo alla musica.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab VCA: ascolta solo ci\u242 ? che il VCA sta togliendo alla musica.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab ALL: ascolta tutto ci\u242 ? che viene rimosso dal processing.\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 3f. GLUE VINCOLATO\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Il Glue rifinisce solo quando il sidechain sta autorizzando un intervento o quando Carver/VCA stanno rientrando. Se non c'\u232 ? richiesta dal sidechain, Glue GR resta a 0 dB.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 4. ACCESSIBILIT\u192 ? (SCREEN READER) & AUTOMAZIONI\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Questo plugin \u232 ? dotato di una GUI custom. Per gli utenti non vedenti (OSARA / VoiceOver), e per scrivere automazioni sulla traccia, tutti i parametri operativi e i meter sono esposti e accessibili tramite la REAPER FX Parameter List (Tasto 'P' o 'Param').\par}
+}
+]]></description>
+      </metadata>
+      <version name="2.4" author="Paolo Balestri" time="2026-08-30T22:01:32Z">
+        <changelog><![CDATA[Meter circolari di soglia su carver e ducker VCA.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/4f0a39383b1845e0435b7d4d388172a2200548d4/ZP%20Voce/ZP%20Harmonic%20Space%20Carver.jsfx</source>
+      </version>
+    </reapack>
     <reapack name="ZP Spoken Finish.jsfx" type="effect" desc="ZP Spoken Finish v3.9.8 - Voice Harmonic Exciter / De-Exciter - Paolo Balestri">
       <version name="3.9.8" author="Paolo Balestri" time="2026-08-30T21:12:58Z">
         <changelog><![CDATA[Meter circolare true-peak sul ceiling del limiter.]]></changelog>
@@ -43,6 +112,12 @@ LINK Drive/Gain: alzando il Drive il Gain scende in opposizione, per giudicare i
       <version name="2.3" author="Paolo Balestri - Zio Paolo" time="2026-08-30T21:12:58Z">
         <changelog><![CDATA[Meter circolari di soglia sul gate dinamico.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/f37c44e14f75148faf19a2e0817eb911641bdc3c/ZP%20Voce/ZP%20Stagekeeper%20Dialogue%20Director.jsfx</source>
+      </version>
+    </reapack>
+    <reapack name="ZP Subliminal Presence Layer White.jsfx" type="effect" desc="ZP Subliminal Presence Layer White v3.2 - Paolo Balestri">
+      <version name="3.2" author="Paolo Balestri" time="2026-08-30T22:01:32Z">
+        <changelog><![CDATA[Prima pubblicazione nella ZP Suite.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/4f0a39383b1845e0435b7d4d388172a2200548d4/ZP%20Voce/ZP%20Subliminal%20Presence%20Layer%20White.jsfx</source>
       </version>
     </reapack>
     <reapack name="ZP Voiceover Unified Chain.jsfx" type="effect" desc="ZP Voiceover Unified Chain v4.1.5 - Voice Leveler - Paolo Balestri - BUS AUTO LIVE BROWNFIX3">
