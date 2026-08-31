@@ -4,3 +4,6 @@
 *.bak
 *.backup-*
 *-CONFLICT-*
+
+# strumento personale, non fa parte della suite
+Pubblica ZP Suite.command
