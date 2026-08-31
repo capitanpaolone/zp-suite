@@ -1,11 +1,15 @@
 // @version 11.0
 // @author Paolo Balestri
-// @license GPL-3.0-or-later
+// @license LGPL-2.1-or-later
 // @changelog
 //   Prima pubblicazione nella ZP Suite.
+// Basato su "Oscilloscope Meter (Cockos)" - analysis/gfxscope
+// Copyright (C) 2007 Cockos Incorporated
+// Mod Paolo Balestri V11 - 2026
+// License: LGPL - http://www.gnu.org/licenses/lgpl.html
 desc:ZP Oscilloscope 16ch V11 - Paolo Balestri
-//tags: analysis scope meter multichannel
-// Autore: Cockos - Paolo Balestri
+//tags: analysis scope meter multichannel cockos
+// Autore: Cockos/Paolo Balestri 2026
 // Contatto: social@paolobalestri.com
 /*
   Fix V3:
