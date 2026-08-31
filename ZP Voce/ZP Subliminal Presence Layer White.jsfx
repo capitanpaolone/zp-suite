@@ -10,29 +10,29 @@ options:no_menu
 /**
  * Subliminal Presence Layer (SPL) - DOCUMENTAZIONE TECNICA
  * ---------------------------------------------------------------------------
- * PROGETTO: "Hacking dell'Attenzione" per eLearning ad alta complessità[cite: 2, 3].
+ * PROGETTO: "Hacking dell'Attenzione" per eLearning ad alta complessità.
  * * 1. IL PROBLEMA: La "Modalità ECO" Cerebrale
- * Il cervello ottimizza l'energia filtrando la voce come rumore di fondo durante 
- * narrazioni lunghe[cite: 28, 29]. Questo plugin combatte la fatica cognitiva 
- * attraverso lo stimolo neurale costante[cite: 31, 33].
+ * Il cervello ottimizza l'energia filtrando la voce come rumore di fondo durante
+ * narrazioni lunghe. Questo plugin combatte la fatica cognitiva
+ * attraverso lo stimolo neurale costante.
  *
  * 2. FONDAMENTI PSICOACUSTICI
- * - Risonanza Stocastica: L'aggiunta di rumore sub-liminale migliora la 
- * rilevabilità dei micro-dettagli del parlato[cite: 36, 85].
- * - Modulazione Anarmonica: 4 LFO basati sulla Sezione Aurea (1.618) e radici 
- * irrazionali garantiscono un pattern mai ripetitivo (anti-assuefazione)[cite: 51, 87].
- * - Correlazione Dinamica: Il rumore "cavalca" l'inviluppo della voce[cite: 53, 88].
+ * - Risonanza Stocastica: L'aggiunta di rumore sub-liminale migliora la
+ * rilevabilità dei micro-dettagli del parlato.
+ * - Modulazione Anarmonica: 4 LFO basati sulla Sezione Aurea (1.618) e radici
+ * irrazionali garantiscono un pattern mai ripetitivo (anti-assuefazione).
+ * - Correlazione Dinamica: Il rumore "cavalca" l'inviluppo della voce.
  *
  * 3. PROFILI OPERATIVI
- * - MP3 128 MONO: Banda 2100-3500 Hz. Base -63 dBFS. Progettato per sopravvivere 
- * a ricompressioni distruttive (fino a 64kbps)[cite: 70, 83, 91].
- * - HQ: Banda 1500-8000 Hz. Base -67 dBFS. Per master ad alta risoluzione[cite: 93, 95].
+ * - MP3 128 MONO: Banda 2100-3500 Hz. Base -63 dBFS. Progettato per sopravvivere
+ * a ricompressioni distruttive (fino a 64kbps).
+ * - HQ: Banda 1500-8000 Hz. Base -67 dBFS. Per master ad alta risoluzione.
  *
- * 4. PROTOCOLLO DI CONSEGNA (Survival Guide) [cite: 72]
- * - Posizionamento: ULTIMO anello della catena (Post-Limiter)[cite: 49, 96].
- * - Target LRA: < 2.0 per stabilità assoluta[cite: 76].
- * - Peak: -3.0 dBFS per prevenire artefatti di inter-sample nei codec[cite: 48, 74].
- * - Intensità: 15% - 30% per un effetto sub-percettivo[cite: 97, 98].
+ * 4. PROTOCOLLO DI CONSEGNA (Survival Guide)
+ * - Posizionamento: ULTIMO anello della catena (Post-Limiter).
+ * - Target LRA: < 2.0 per stabilità assoluta.
+ * - Peak: -3.0 dBFS per prevenire artefatti di inter-sample nei codec.
+ * - Intensità: 15% - 30% per un effetto sub-percettivo.
  * ---------------------------------------------------------------------------
  */
 
@@ -128,7 +128,7 @@ active ? (
 
 @gfx 450 200
 gfx_set(0.05, 0.05, 0.06, 1); gfx_rect(0,0,gfx_w,gfx_h);
-gfx_t += 0.04; 
+gfx_t += 0.04;
 
 glow = (env_follow * intensity) * 3;
 vibration = env_follow * intensity * 2;
