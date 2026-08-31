@@ -1,7 +1,8 @@
 # NOTICE — attribuzioni e licenze a monte
 
 ZP Suite è distribuita nel suo insieme sotto **GNU GPL versione 3 o successiva**
-(testo completo in `LICENSE`).
+(testo completo in `LICENSE`). Due effetti restano sotto **LGPL 2.1**, la licenza con
+cui sono stati ricevuti: il testo integrale è in `LICENSE-LGPL-2.1.txt`.
 
 Alcuni effetti incorporano o derivano da DSP di terzi. Questo file elenca la catena
 di provenienza di ciascuno, come dichiarata nell'intestazione dei sorgenti.
@@ -28,14 +29,16 @@ Il motore ANA è la riduzione del bus-color a tre caratteri operativi
 - **Cockos Incorporated** — effetto originale, Copyright (C) 2021 e successivi — **LGPL**
 - **Paolo Balestri** — modifiche v43 / v44 — LGPL
 
-> Questo è l'unico file della Suite con una licenza a monte diversa. Mantiene la sua
-> intestazione LGPL: la LGPL consente l'uso all'interno di un'opera GPLv3, ma il file
-> in sé resta disponibile alle condizioni con cui è stato ricevuto.
+> Insieme a ZP Oscilloscope 16ch, questo è uno dei due file della Suite con una licenza
+> a monte diversa. Entrambi mantengono la loro intestazione LGPL: la LGPL consente l'uso
+> all'interno di un'opera GPLv3, ma i file in sé restano disponibili alle condizioni con
+> cui sono stati ricevuti.
 
 ## ZP Oscilloscope 16ch
 
-- **Cockos Incorporated** — scope JSFX di riferimento
-- **Paolo Balestri** — riscrittura interfaccia, gestione canali e memoria
+- **Cockos Incorporated** — effetto originale `analysis/gfxscope`,
+  Copyright (C) 2007 — **LGPL**
+- **Paolo Balestri** — riscrittura interfaccia, gestione canali e memoria — LGPL
 
 ## ZP Voiceover Unified Chain — riferimenti di studio
 
