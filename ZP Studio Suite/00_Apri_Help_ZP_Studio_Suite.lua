@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 1.0.5
+-- @version 1.0.6
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -10,6 +10,7 @@
 --   costruzione della catena audio ZP. Include il supporto screen reader su
 --   Windows tramite la libreria NVDA Controller Client (LGPL 2.1, di NV Access).
 -- @changelog
+--   Icone della toolbar consegnate nella cartella giusta di REAPER.
 --   Prima pubblicazione su ReaPack.
 --   SRT Tools rinumerato a 26, SOLO Recorder a 25.
 -- @provides
@@ -49,29 +50,29 @@
 --   VideoProcessor_Project_Timecode_Overlay.txt
 --   RB Voice Track.RTrackTemplate
 --   SRT Track.RTrackTemplate
---   [data] icons/ZP_tb_00_Help.png > Data/toolbar_icons/ZP_tb_00_Help.png
---   [data] icons/ZP_tb_01_Import_Video_SRT.png > Data/toolbar_icons/ZP_tb_01_Import_Video_SRT.png
---   [data] icons/ZP_tb_02_Gobbo_Verticale.png > Data/toolbar_icons/ZP_tb_02_Gobbo_Verticale.png
---   [data] icons/ZP_tb_03_Gobbo_Orizzontale.png > Data/toolbar_icons/ZP_tb_03_Gobbo_Orizzontale.png
---   [data] icons/ZP_tb_04_Marker_Item.png > Data/toolbar_icons/ZP_tb_04_Marker_Item.png
---   [data] icons/ZP_tb_05_Gestione_SRT.png > Data/toolbar_icons/ZP_tb_05_Gestione_SRT.png
---   [data] icons/ZP_tb_06_Import_SRT_Reference.png > Data/toolbar_icons/ZP_tb_06_Import_SRT_Reference.png
---   [data] icons/ZP_tb_07_Actor_Note.png > Data/toolbar_icons/ZP_tb_07_Actor_Note.png
---   [data] icons/ZP_tb_08_Export_SRT.png > Data/toolbar_icons/ZP_tb_08_Export_SRT.png
---   [data] icons/ZP_tb_09_OSARA_Corrente.png > Data/toolbar_icons/ZP_tb_09_OSARA_Corrente.png
---   [data] icons/ZP_tb_10_OSARA_Successiva.png > Data/toolbar_icons/ZP_tb_10_OSARA_Successiva.png
---   [data] icons/ZP_tb_11_OSARA_Precedente.png > Data/toolbar_icons/ZP_tb_11_OSARA_Precedente.png
---   [data] icons/ZP_tb_12_OSARA_Auto.png > Data/toolbar_icons/ZP_tb_12_OSARA_Auto.png
---   [data] icons/ZP_tb_13_Info_Item_SRT.png > Data/toolbar_icons/ZP_tb_13_Info_Item_SRT.png
---   [data] icons/ZP_tb_17_Gestore_Progetto.png > Data/toolbar_icons/ZP_tb_17_Gestore_Progetto.png
---   [data] icons/ZP_tb_18_Project_Viewer.png > Data/toolbar_icons/ZP_tb_18_Project_Viewer.png
---   [data] icons/ZP_tb_19_Report_Minuti.png > Data/toolbar_icons/ZP_tb_19_Report_Minuti.png
---   [data] icons/ZP_tb_20_Importa_Cartelle.png > Data/toolbar_icons/ZP_tb_20_Importa_Cartelle.png
---   [data] icons/ZP_tb_22_Voice_Cleaner.png > Data/toolbar_icons/ZP_tb_22_Voice_Cleaner.png
---   [data] icons/ZP_tb_23_Chain_Builder.png > Data/toolbar_icons/ZP_tb_23_Chain_Builder.png
---   [data] icons/ZP_tb_24_Probe_Guard.png > Data/toolbar_icons/ZP_tb_24_Probe_Guard.png
---   [data] icons/ZP_tb_25_SOLO_Recorder.png > Data/toolbar_icons/ZP_tb_25_SOLO_Recorder.png
---   [data] icons/ZP_tb_26_SRT_Tools.png > Data/toolbar_icons/ZP_tb_26_SRT_Tools.png
+--   [data] icons/ZP_tb_00_Help.png > toolbar_icons/ZP_tb_00_Help.png
+--   [data] icons/ZP_tb_01_Import_Video_SRT.png > toolbar_icons/ZP_tb_01_Import_Video_SRT.png
+--   [data] icons/ZP_tb_02_Gobbo_Verticale.png > toolbar_icons/ZP_tb_02_Gobbo_Verticale.png
+--   [data] icons/ZP_tb_03_Gobbo_Orizzontale.png > toolbar_icons/ZP_tb_03_Gobbo_Orizzontale.png
+--   [data] icons/ZP_tb_04_Marker_Item.png > toolbar_icons/ZP_tb_04_Marker_Item.png
+--   [data] icons/ZP_tb_05_Gestione_SRT.png > toolbar_icons/ZP_tb_05_Gestione_SRT.png
+--   [data] icons/ZP_tb_06_Import_SRT_Reference.png > toolbar_icons/ZP_tb_06_Import_SRT_Reference.png
+--   [data] icons/ZP_tb_07_Actor_Note.png > toolbar_icons/ZP_tb_07_Actor_Note.png
+--   [data] icons/ZP_tb_08_Export_SRT.png > toolbar_icons/ZP_tb_08_Export_SRT.png
+--   [data] icons/ZP_tb_09_OSARA_Corrente.png > toolbar_icons/ZP_tb_09_OSARA_Corrente.png
+--   [data] icons/ZP_tb_10_OSARA_Successiva.png > toolbar_icons/ZP_tb_10_OSARA_Successiva.png
+--   [data] icons/ZP_tb_11_OSARA_Precedente.png > toolbar_icons/ZP_tb_11_OSARA_Precedente.png
+--   [data] icons/ZP_tb_12_OSARA_Auto.png > toolbar_icons/ZP_tb_12_OSARA_Auto.png
+--   [data] icons/ZP_tb_13_Info_Item_SRT.png > toolbar_icons/ZP_tb_13_Info_Item_SRT.png
+--   [data] icons/ZP_tb_17_Gestore_Progetto.png > toolbar_icons/ZP_tb_17_Gestore_Progetto.png
+--   [data] icons/ZP_tb_18_Project_Viewer.png > toolbar_icons/ZP_tb_18_Project_Viewer.png
+--   [data] icons/ZP_tb_19_Report_Minuti.png > toolbar_icons/ZP_tb_19_Report_Minuti.png
+--   [data] icons/ZP_tb_20_Importa_Cartelle.png > toolbar_icons/ZP_tb_20_Importa_Cartelle.png
+--   [data] icons/ZP_tb_22_Voice_Cleaner.png > toolbar_icons/ZP_tb_22_Voice_Cleaner.png
+--   [data] icons/ZP_tb_23_Chain_Builder.png > toolbar_icons/ZP_tb_23_Chain_Builder.png
+--   [data] icons/ZP_tb_24_Probe_Guard.png > toolbar_icons/ZP_tb_24_Probe_Guard.png
+--   [data] icons/ZP_tb_25_SOLO_Recorder.png > toolbar_icons/ZP_tb_25_SOLO_Recorder.png
+--   [data] icons/ZP_tb_26_SRT_Tools.png > toolbar_icons/ZP_tb_26_SRT_Tools.png
 
 --[[
 ZP Studio Suite for REAPER
