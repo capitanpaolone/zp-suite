@@ -1,0 +1,67 @@
+// Timecode Overlay Pro - Project/SRT Time
+// Variante per mostrare il timecode della timeline REAPER, non il tempo locale dell'item.
+// Utile quando il video parte a 0 e l'SRT e' stato importato sugli stessi timecode.
+
+font="Arial";
+
+// --- Aspetto e Posizione ---
+//@param 1:size "Grandezza Testo" 0.1 0.01 0.5 0.15 0.01
+//@param 2:xpos "Posizione Orizzontale" 0.5 0 1 0.5 0.01
+//@param 3:ypos "Posizione Verticale" 0.9 0 1 0.5 0.01
+//@param 4:border "Bordo Sfondo" 0.2 0 1 0.1 0.01
+
+// --- Colore Testo (RGBA) ---
+//@param 6:fg_r "Testo: Rosso" 1.0 0 1 0.5 0.01
+//@param 7:fg_g "Testo: Verde" 1.0 0 1 0.5 0.01
+//@param 8:fg_b "Testo: Blu" 1.0 0 1 0.5 0.01
+//@param 9:fg_a "Testo: Opacita" 1.0 0 1 0.5 0.01
+
+// --- Colore Sfondo (RGBA) ---
+//@param 11:bg_r "Sfondo: Rosso" 0 0 1 0.5 0.01
+//@param 12:bg_g "Sfondo: Verde" 0 0 1 0.5 0.01
+//@param 13:bg_b "Sfondo: Blu" 0 0 1 0.5 0.01
+//@param 14:bg_a "Sfondo: Opacita" 0.7 0 1 0.5 0.01
+
+// --- Offset Temporale ---
+//@param 16:h_off "Ore Offset" 0 -23 23 0 1
+//@param 17:m_off "Minuti Offset" 0 -59 59 0 1
+//@param 18:s_off "Secondi Offset" 0 -59 59 0 1
+//@param 19:f_off "Frames Offset" 0 -29 29 0 1
+
+// Logica di calcolo
+// NOTA: project_time = posizione del progetto in secondi.
+//       time = tempo locale dell'item. Qui non lo usiamo apposta.
+offset = 3600*h_off + 60*m_off + s_off + f_off/framerate;
+time_val = project_time + offset;
+
+// Estrazione componenti
+h = floor(time_val / 3600);
+m = floor((time_val / 60) % 60);
+s = floor(time_val % 60);
+f = floor((time_val - floor(time_val)) * framerate);
+
+// Composizione stringa
+#tc = "";
+sprintf(#tc, "%02d:%02d:%02d:%02d", h, m, s, f);
+
+// Rendering grafico
+gfx_blit(0,1); // Mantiene il video originale sotto l'overlay
+
+gfx_setfont(size * project_h, font, 'B');
+gfx_str_measure(#tc, txtw, txth);
+
+// Calcolo coordinate con padding
+pad = txth * border;
+rect_w = txtw + (pad * 2);
+rect_h = txth + (pad * 2);
+
+draw_x = (project_w - rect_w) * xpos;
+draw_y = (project_h - rect_h) * ypos;
+
+// Disegno Sfondo
+gfx_set(bg_r, bg_g, bg_b, bg_a);
+gfx_fillrect(draw_x, draw_y, rect_w, rect_h);
+
+// Disegno Testo
+gfx_set(fg_r, fg_g, fg_b, fg_a);
+gfx_str_draw(#tc, draw_x + pad, draw_y + pad);

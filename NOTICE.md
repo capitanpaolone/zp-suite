@@ -1,8 +1,9 @@
 # NOTICE — attribuzioni e licenze a monte
 
 ZP Suite è distribuita nel suo insieme sotto **GNU GPL versione 3 o successiva**
-(testo completo in `LICENSE`). Due effetti restano sotto **LGPL 2.1**, la licenza con
-cui sono stati ricevuti: il testo integrale è in `LICENSE-LGPL-2.1.txt`.
+(testo completo in `LICENSE`). Due effetti e una libreria di terzi restano sotto
+**LGPL 2.1**, la licenza con cui sono stati ricevuti: il testo integrale è in
+`LICENSE-LGPL-2.1.txt`.
 
 Alcuni effetti incorporano o derivano da DSP di terzi. Questo file elenca la catena
 di provenienza di ciascuno, come dichiarata nell'intestazione dei sorgenti.
@@ -46,6 +47,18 @@ L'espansore downward è ispirato al comportamento del **Tukan DL24**. La catena 
 complesso è stata sviluppata studiando plugin di **Stillwell**, **Tukan** e **Geraint
 Luff**. Nessun codice di questi autori è incluso: sono riferimenti di progetto, non
 componenti.
+
+## ZP Studio Suite — supporto screen reader su Windows
+
+- **NV Access Limited e contributori** — *NVDA Controller Client API* — **LGPL 2.1**
+- File incluso: `ZP Studio Suite/nvdaControllerClient64.dll`
+- Libreria originale, non modificata. Testo della licenza in `LICENSE-LGPL-2.1.txt`.
+- Sorgente e documentazione:
+  https://github.com/nvaccess/nvda/tree/master/extras/controllerClient
+
+Fornisce parlato e braille agli script della Suite attraverso NVDA. Gli script
+Lua della Suite sono distribuiti sotto GPLv3 come il resto del repository; il
+DLL resta alle condizioni con cui è stato ricevuto.
 
 ---
 

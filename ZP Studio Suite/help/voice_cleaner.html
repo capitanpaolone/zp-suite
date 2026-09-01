@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZP Studio Suite - Split Silenzi / Voice Cleaner</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f7f4;
+      --paper: #ffffff;
+      --ink: #202024;
+      --muted: #5e6068;
+      --line: #d9d9d2;
+      --accent: #245ba6;
+      --accent-soft: #eaf1fb;
+      --code: #ecece8;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #101217;
+        --paper: #171a21;
+        --ink: #eceff4;
+        --muted: #adb2bd;
+        --line: #303541;
+        --accent: #77a9ff;
+        --accent-soft: #172236;
+        --code: #232834;
+      }
+    }
+    body {
+      margin: 0;
+      padding: 28px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.48;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    main { max-width: 980px; margin: 0 auto; }
+    h1 { font-size: 28px; margin: 0 0 8px; }
+    h2 { font-size: 21px; margin: 34px 0 10px; border-top: 1px solid var(--line); padding-top: 22px; }
+    h3 { font-size: 17px; margin: 18px 0 6px; }
+    p { margin: 8px 0; }
+    ul, ol { padding-left: 22px; }
+    li { margin: 6px 0; }
+    code {
+      background: var(--code);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.94em;
+    }
+    .lead { color: var(--muted); font-size: 16px; max-width: 760px; }
+    .note {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 10px 14px;
+      margin: 14px 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin: 12px 0;
+    }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>ZP Studio Suite - Split Silenzi / Voice Cleaner</h1>
+  <p class="lead">Mini suite per pulire code, separare frasi lunghe e preparare take voiceover senza lavorare a mano su ogni pausa.</p>
+
+  <h2>A Cosa Serve</h2>
+  <ul>
+    <li><strong>Pulizia code:</strong> rimuove silenzi lunghi all'inizio e alla fine di una registrazione.</li>
+    <li><strong>Split di file lunghi:</strong> divide una registrazione in frasi o blocchi parlati.</li>
+    <li><strong>Preparazione take voiceover:</strong> crea item ordinati, rinominati e con fade leggero.</li>
+  </ul>
+
+  <h2>Workflow Rapido</h2>
+  <ol>
+    <li>Seleziona uno o piu item audio nella timeline di REAPER.</li>
+    <li>Scegli <code>VO Smart</code>.</li>
+    <li>Premi <code>ANALIZZA</code>.</li>
+    <li>Controlla segmenti, durata parlato e stato <code>Audio OK</code>.</li>
+    <li>Usa <code>PREVIEW</code> per creare regioni temporanee e controllare i tagli.</li>
+    <li>Premi <code>APPLICA</code> solo quando il risultato e corretto.</li>
+  </ol>
+
+  <div class="note">
+    <p><strong>Regola pratica:</strong> se <code>Audio read</code> non e OK, il tool non applica modifiche. Prima si risolve la lettura audio, poi si lavora sui parametri.</p>
+  </div>
+
+  <div class="note">
+    <p><strong>Advanced chiuso:</strong> le opzioni avanzate non agiscono. Ignore click, Min segment, Merge gap, Separa in sequenza e Distanza tra file diventano effettivi solo quando apri <code>Opzioni avanzate / Output</code>.</p>
+  </div>
+
+  <h2>Modalita</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Trim testa/coda</h3>
+      <p>Rifila l'item dal primo parlato all'ultimo parlato. Utile per togliere silenzio iniziale e finale lasciando intatto il corpo della registrazione.</p>
+    </div>
+    <div class="card">
+      <h3>Split silenzi interni</h3>
+      <p>Crea item separati sulle porzioni sonore rilevate e rimuove i buchi lunghi tra una frase e l'altra.</p>
+    </div>
+  </div>
+
+  <h2>Preset</h2>
+  <ul>
+    <li><code>VO Smart</code>: uso normale voiceover, buon punto di partenza.</li>
+    <li><code>Gentle</code>: piu conservativo, lascia piu respiro e code.</li>
+    <li><code>Tight</code>: piu aggressivo, tagli piu stretti.</li>
+    <li><code>Manual</code>: controllo diretto della soglia.</li>
+  </ul>
+
+  <h2>Parametri In Lingua Naturale</h2>
+  <ul>
+    <li><strong>Auto/Manuale:</strong> in Auto il tool stima la soglia dal rumore di fondo; in Manuale usa il valore scelto da te.</li>
+    <li><strong>Soglia:</strong> livello minimo che il parlato deve superare. Piu alta = meno segmenti, piu bassa = piu sensibilita.</li>
+    <li><strong>Min silence:</strong> durata minima di silenzio per chiudere un segmento parlato.</li>
+    <li><strong>Gate open:</strong> quanto deve durare un suono prima di essere considerato parlato vero.</li>
+    <li><strong>Gate hold:</strong> quanto il gate resta aperto nelle micro-pause tra parole.</li>
+    <li><strong>Ignore click:</strong> opzione Advanced. A <code>OFF</code> non scarta eventi brevi; aumentando il valore ignora rumori troppo brevi, click e colpi isolati.</li>
+    <li><strong>Min segment:</strong> opzione Advanced. A <code>OFF</code> non filtra per durata minima; aumentando il valore scarta segmenti troppo corti.</li>
+    <li><strong>Merge gap:</strong> opzione Advanced. A <code>OFF</code> non fonde segmenti vicini; aumentando il valore unisce segmenti separati da pause molto brevi.</li>
+    <li><strong>Pre-roll:</strong> margine lasciato prima dell'inizio parlato.</li>
+    <li><strong>Post-roll:</strong> margine lasciato dopo la fine parlato.</li>
+    <li><strong>Fade:</strong> dissolvenza breve applicata agli item creati.</li>
+    <li><strong>Distanza tra file:</strong> opzione Advanced. Spazio tra i take creati quando scegli <code>Separa in sequenza</code>. Non si applica con <code>Posizione originale</code> o con Advanced chiuso.</li>
+  </ul>
+
+  <h2>Knob E Controlli</h2>
+  <ul>
+    <li>Trascina un knob verso l'alto o il basso per cambiare valore.</li>
+    <li>Tieni premuto <code>Shift</code> per regolazioni fini.</li>
+    <li>Doppio click o click destro su un knob per tornare al default del preset attivo.</li>
+    <li>La rotella del mouse cambia il valore quando il puntatore e sul knob.</li>
+  </ul>
+
+  <h2>Esempi Pratici</h2>
+  <h3>File lungo con molte frasi separate</h3>
+  <p>Usa <code>VO Smart</code> e <code>Split silenzi interni</code>. Se vedi frasi spezzate, aumenta <code>Gate hold</code>; se serve apri Advanced e prova <code>Merge gap</code>.</p>
+
+  <h3>Pulire solo testa e coda</h3>
+  <p>Usa <code>Trim testa/coda</code>. Il tool manterra tutto tra primo e ultimo segmento parlato.</p>
+
+  <h3>Tool troppo aggressivo</h3>
+  <p>Prova <code>Gentle</code>, abbassa la soglia, aumenta <code>Post-roll</code>, <code>Gate hold</code> o <code>Merge gap</code>.</p>
+
+  <h3>Tool non trova segmenti</h3>
+  <p>Controlla che <code>Audio OK</code> sia verde. Poi prova soglia piu bassa o preset <code>Manual</code>.</p>
+
+  <h3>Tool crea troppi segmenti</h3>
+  <p>Aumenta <code>Min silence</code>, <code>Gate hold</code> o <code>Merge gap</code>. Se prende rumori, alza la soglia.</p>
+
+  <h2>Sicurezza</h2>
+  <ul>
+    <li><code>PREVIEW</code> crea regioni rosse temporanee <code>ZPSS22_PREVIEW</code> sulla timeline originale.</li>
+    <li><code>PREVIEW</code> e disponibile solo con <code>Posizione originale</code>. Con <code>Separa in sequenza</code> il risultato viene riposizionato dopo Applica.</li>
+    <li><code>PULISCI PREVIEW</code> rimuove solo quelle regioni temporanee.</li>
+    <li><code>APPLICA</code> lavora dentro un blocco Undo di REAPER.</li>
+    <li>Se non ci sono segmenti validi, il tool non modifica e non cancella item.</li>
+    <li>Un solo Undo deve riportare indietro l'operazione applicata.</li>
+  </ul>
+
+  <h2>Troubleshooting</h2>
+  <ul>
+    <li><strong>Audio non leggibile:</strong> controlla che l'item selezionato sia audio e abbia un take valido.</li>
+    <li><strong>Max peak -120 dB:</strong> REAPER sta restituendo campioni tutti a zero; verifica file offline, take muto o source mancante.</li>
+    <li><strong>Nessun parlato rilevato:</strong> audio letto correttamente ma soglia/gate non trovano segmenti; prova soglia piu bassa.</li>
+    <li><strong>Soglia troppo alta:</strong> poche frasi o nessuna frase rilevata.</li>
+    <li><strong>Soglia troppo bassa:</strong> rumore di fondo e respiri diventano segmenti.</li>
+    <li><strong>Item offline:</strong> ricollega la media in REAPER e rilancia <code>ANALIZZA</code>.</li>
+    <li><strong>Take MIDI/non audio:</strong> seleziona un item audio reale.</li>
+    <li><strong>File mancante:</strong> verifica percorso source e media bay/project bay.</li>
+  </ul>
+
+  <h2>Debug</h2>
+  <p>Il toggle <code>Debug</code> e spento di default. Quando e OFF, il tool non apre la console e mostra solo lo stato compatto. Quando e ON, scrive in console mode AudioAccessor, chiamate, windows, max peak/RMS e test tecnico completo.</p>
+</main>
+</body>
+</html>

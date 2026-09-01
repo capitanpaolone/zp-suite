@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZP Studio Suite for REAPER v1.0.5</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f7f4;
+      --paper: #ffffff;
+      --ink: #202024;
+      --muted: #5e6068;
+      --line: #d9d9d2;
+      --accent: #245ba6;
+      --accent-soft: #eaf1fb;
+      --code: #ecece8;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #101217;
+        --paper: #171a21;
+        --ink: #eceff4;
+        --muted: #adb2bd;
+        --line: #303541;
+        --accent: #77a9ff;
+        --accent-soft: #172236;
+        --code: #232834;
+      }
+    }
+    body {
+      margin: 0;
+      padding: 28px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    main { max-width: 1040px; margin: 0 auto; }
+    h1 { font-size: 28px; margin: 0 0 6px; }
+    h2 { font-size: 21px; margin: 34px 0 10px; border-top: 1px solid var(--line); padding-top: 22px; }
+    h3 { font-size: 17px; margin: 0 0 6px; }
+    p { margin: 8px 0; }
+    a { color: var(--accent); }
+    code {
+      background: var(--code);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.94em;
+    }
+    .lead { color: var(--muted); font-size: 16px; max-width: 780px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin: 16px 0 6px;
+    }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .num {
+      display: inline-block;
+      min-width: 32px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .note {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 10px 14px;
+      margin: 14px 0;
+    }
+    ul, ol { padding-left: 22px; }
+    li { margin: 6px 0; }
+    .small { color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>ZP Studio Suite for REAPER</h1>
+  <p class="lead">Help operativo per tutti i Lua principali della suite. Versione <code>v1.0.5</code>.</p>
+
+  <div class="note">
+    <p><strong>Come usarlo:</strong> apri questo help dalla toolbar o dalla Action List con <code>00_Apri_Help_ZP_Studio_Suite.lua</code>. Le schede sotto seguono la numerazione dei Lua installati.</p>
+  </div>
+
+  <h2>Indice Rapido</h2>
+  <div class="grid">
+    <div class="card"><a href="#tool-01"><span class="num">01</span> Import video/SRT</a></div>
+    <div class="card"><a href="#tool-02"><span class="num">02</span> Gobbo verticale</a></div>
+    <div class="card"><a href="#tool-03"><span class="num">03</span> Gobbo orizzontale</a></div>
+    <div class="card"><a href="#tool-04"><span class="num">04</span> Marker da item</a></div>
+    <div class="card"><a href="#tool-05"><span class="num">05</span> Gestione SRT</a></div>
+    <div class="card"><a href="#tool-06"><span class="num">06</span> Import SRT reference</a></div>
+    <div class="card"><a href="#tool-07"><span class="num">07</span> Actor / Note</a></div>
+    <div class="card"><a href="#tool-08"><span class="num">08</span> Export SRT</a></div>
+    <div class="card"><a href="#tool-09"><span class="num">09-12</span> OSARA lettura</a></div>
+    <div class="card"><a href="#tool-13"><span class="num">13</span> Info Item SRT</a></div>
+    <div class="card"><a href="#tool-17"><span class="num">17</span> Gestore Progetto</a></div>
+    <div class="card"><a href="#tool-18"><span class="num">18</span> Project Viewer</a></div>
+    <div class="card"><a href="#tool-19"><span class="num">19</span> Report minuti voce</a></div>
+    <div class="card"><a href="#tool-20"><span class="num">20</span> Importa cartelle</a></div>
+    <div class="card"><a href="#tool-22"><span class="num">22</span> Split Silenzi / Voice Cleaner</a></div>
+    <div class="card"><a href="#zp-chain-builder"><span class="num">23</span> ZP Chain Builder</a></div>
+    <div class="card"><a href="#zp-probe-guard"><span class="num">24</span> ZP Probe Guard</a></div>
+    <div class="card"><a href="#tool-srt-tools"><span class="num">SRT</span> SRT Tools offline</a></div>
+    <div class="card"><a href="#tool-solo"><span class="num">SOLO</span> ZP SOLO Recorder</a></div>
+    <div class="card"><a href="#zp-shared-bus"><span class="num">FX</span> ZP Shared Bus</a></div>
+  </div>
+
+  <h2>Installazione</h2>
+  <ul>
+    <li>macOS: esegui <code>Installa_ZP_StudioSuite_mac.command</code>.</li>
+    <li>Windows: esegui <code>Installa_ZP_StudioSuite_windows.cmd</code>.</li>
+    <li>Linux: esegui <code>Installa_ZP_StudioSuite_linux.sh</code>.</li>
+    <li>Dopo l'installazione riavvia REAPER e cerca <strong>ZP Studio Suite</strong> in Action List.</li>
+  </ul>
+
+  <h2 id="tool-01">01 - Import Video/SRT</h2>
+  <p><code>01_Importa_Video_SRT.lua</code> importa video e sottotitoli nel progetto, creando le tracce e gli item necessari alla lavorazione in suite.</p>
+  <ul>
+    <li>Usalo quando parti da un video con uno o piu file SRT.</li>
+    <li>Controlla che i file siano nella cartella corretta prima di importare.</li>
+    <li>Dopo l'import verifica posizione video, traccia SRT e naming degli item.</li>
+  </ul>
+
+  <h2 id="tool-02">02 - Gobbo Verticale</h2>
+  <p><code>02_Gobbo_Verticale.lua</code> mostra il testo in formato verticale, pensato per lettura e doppiaggio con speaker/personaggi.</p>
+  <ul>
+    <li>I colori degli item rispettano quelli realmente visualizzati da REAPER.</li>
+    <li>I colori speaker/personaggio derivano dalle tracce voce associate.</li>
+    <li><strong>Mostra/Nascondi TC:</strong> abilita il timecode video/SRT nel gobbo.</li>
+    <li><strong>Tema e Contrasto:</strong> cambiano leggibilita', sfumato e modalita' ad alto contrasto.</li>
+    <li><strong>Flusso testi:</strong> le frecce cambiano tra traccia principale e reference/lingue SRT. Le tracce backup non vengono usate come flusso.</li>
+    <li><strong>Punto lettura:</strong> sposta il riferimento visivo alto/medio/centro.</li>
+    <li><strong>Parole ON/OFF:</strong> evidenzia progressivamente le parole durante la battuta.</li>
+    <li><strong>Scorri ON/OFF:</strong> con Scorri ON il copione segue la timeline; con Scorri OFF l'item attivo resta fermo sul punto lettura e il resto del copione rimane visibile.</li>
+    <li><strong>Countdown:</strong> mostra il preavviso numerico prima della battuta in arrivo.</li>
+    <li><strong>Note ON/OFF:</strong> apre o chiude il pannello note laterale.</li>
+    <li><strong>Track Note / Track Gobbo:</strong> mostra o nasconde le tracce operative in REAPER.</li>
+    <li><strong>+ Track Gobbo:</strong> crea o riusa una traccia <code>Rythmo Band Testi</code> e aggiunge un item testo pronto.</li>
+    <li><strong>Palette speaker:</strong> assegna colori a voce/personaggio e alle note collegate.</li>
+    <li><strong>Studio/Edit:</strong> ferma la riproduzione, abilita navigazione/edit sul testo e forza Scorri ON per evitare blocchi sospesi.</li>
+    <li><strong>Sync:</strong> in Studio/Edit decide se la navigazione del testo resta agganciata alla timeline.</li>
+    <li><strong>Cerca:</strong> apre la ricerca testuale tra le battute del flusso corrente.</li>
+    <li><strong>Nota, MOD NOTE, DEL NOTE:</strong> inserisce, modifica o cancella note operative vicino alla posizione corrente.</li>
+    <li><strong>Edit inline:</strong> doppio click su una battuta per modificarne il testo direttamente nel gobbo.</li>
+    <li><strong>OSARA Menu:</strong> apre un menu nativo leggibile da screen reader per comandare TC, flusso testi, parole, scorrimento, note, tema e corpo testo. Non legge il copione: serve a navigare i comandi del gobbo senza perdere il focus operativo.</li>
+  </ul>
+
+  <h2 id="tool-03">03 - Gobbo Orizzontale</h2>
+  <p><code>03_Gobbo_Orizzontale.lua</code> offre una lettura continua orizzontale, utile quando serve seguire il testo in avanzamento sul tempo progetto.</p>
+  <ul>
+    <li>Usa la timeline REAPER come riferimento di posizione.</li>
+    <li>Mantiene coerenza colori con item e tracce.</li>
+    <li>Il timecode e il nome suite sono separati per evitare sovrapposizioni.</li>
+  </ul>
+
+  <h2 id="tool-04">04 - Marker Da Item</h2>
+  <p><code>04_Crea_Marker_Item.lua</code> crea marker all'inizio degli item selezionati.</p>
+  <ul>
+    <li>Seleziona gli item prima di aprire il tool.</li>
+    <li>Scegli marker vuoti, nome fisso o numerazione progressiva.</li>
+    <li>Opzionalmente aggiunge timecode video o regione al nome marker.</li>
+  </ul>
+
+  <h2 id="tool-05">05 - Gestione SRT</h2>
+  <p><code>05_Aggiorna_SRT_Video.lua</code> aggiorna, sostituisce o aggiunge flussi SRT su video o regioni.</p>
+  <ul>
+    <li>Usalo per sostituire testi dentro blocchi video selezionati.</li>
+    <li>Puoi aggiungere reference senza toccare la traccia principale.</li>
+    <li>Le cue sovrapposte possono essere evidenziate per controllo.</li>
+  </ul>
+
+  <h2 id="tool-06">06 - Import SRT Reference</h2>
+  <p><code>06_Importa_SRT_Reference.lua</code> aggiunge un SRT di riferimento, per esempio lingua originale o adattamento alternativo.</p>
+  <ul>
+    <li>Non sostituisce necessariamente il flusso principale.</li>
+    <li>Utile per confronto tra testi, traduzione e controllo timing.</li>
+  </ul>
+
+  <h2 id="tool-07">07 - Actor / Note</h2>
+  <p><code>07_Note_Personaggio.lua</code> crea e gestisce tracce actor/note per il gobbo.</p>
+  <ul>
+    <li>Usalo per preparare personaggi, speaker e note operative.</li>
+    <li>Le tracce create diventano riferimento colore/personaggio per i gobbi.</li>
+    <li>Evita di creare duplicati se esiste gia una traccia voce corretta.</li>
+  </ul>
+
+  <h2 id="tool-08">08 - Export SRT</h2>
+  <p><code>08_Esporta_SRT.lua</code> esporta SRT da regioni, video o item testo.</p>
+  <ul>
+    <li>Controlla regioni e naming prima dell'export.</li>
+    <li>Utile a fine lavorazione per consegna o revisione.</li>
+    <li>Verifica sempre il file esportato con un player o editor SRT.</li>
+  </ul>
+
+  <h2 id="tool-09">09-12 - OSARA Lettura</h2>
+  <p>I Lua <code>09</code>, <code>10</code>, <code>11</code> e <code>12</code> sono pensati per la fase di doppiaggio/recording: lettura essenziale degli item SRT senza aprire il gobbo e senza portare il focus fuori dalla DAW.</p>
+  <ul>
+    <li><code>09_OSARA_Battuta_Corrente.lua</code>: legge la battuta sotto il cursore/playhead.</li>
+    <li><code>10_OSARA_Battuta_Successiva.lua</code>: passa alla battuta successiva.</li>
+    <li><code>11_OSARA_Battuta_Precedente.lua</code>: torna alla battuta precedente.</li>
+    <li><code>12_OSARA_Lettura_Automatica.lua</code>: abilita/disabilita lettura automatica.</li>
+    <li>La lettura OSARA restituisce solo il testo utile della battuta. Numeri cue SRT, timecode e intestazioni tecniche vengono filtrati.</li>
+    <li>Il gobbo resta utile per correzione, ricerca termini e controllo visivo del testo; durante la registrazione accessibile la lettura consigliata resta quella degli item SRT.</li>
+  </ul>
+
+  <h2 id="tool-13">13 - Info Item SRT</h2>
+  <p><code>13_Info_Item_SRT.lua</code> mostra informazioni tecniche sull'item SRT selezionato.</p>
+  <ul>
+    <li>Seleziona un item testo/SRT prima di lanciarlo.</li>
+    <li>Serve per controllare metadata, naming e contenuto senza modificare il progetto.</li>
+  </ul>
+
+  <h2 id="tool-srt-tools">SRT Tools offline</h2>
+  <p><code>26_SRT_Tools.lua</code> apre nel browser il convertitore locale <code>tools/srt_tools.html</code>.</p>
+  <ul>
+    <li>Converte e riordina testi SRT senza connessione Internet e senza modificare il progetto REAPER.</li>
+    <li>Riconosce timecode su righe separate e intervalli scritti sulla stessa riga del testo.</li>
+    <li>E' registrato nella Action List ma non occupa un pulsante nella toolbar principale.</li>
+  </ul>
+
+  <h2 id="tool-17">17 - Gestore Progetto</h2>
+  <p><code>17_Crea_Regioni_Export_da_Item_Nominati.lua</code> nomina e organizza regioni, gestisce le sezioni marker e prepara il mixdown del progetto aperto.</p>
+  <ul>
+    <li>Utile quando gli item contengono gia nomi di consegna o capitoli.</li>
+    <li>La vista distingue marker, regioni e righe item per evitare confusione; doppio click sui marker o sulle regioni permette di rinominarli.</li>
+    <li><strong>Prepara Mixdown:</strong> <code>1 Sezione</code> sceglie il marker/cartella. Le regioni incluse sono tutte quelle tra quel marker e il marker successivo.</li>
+    <li><strong>Preroll tecnico:</strong> Usa l'opzione nativa di REAPER <em>"Delay render start"</em> (nella finestra Render) per permettere ai plugin (es. compressori, iZotope) di inizializzarsi correttamente prima dell'esportazione.</li>
+    <li><strong>Lane marker/regioni:</strong> Lane 1 crea la cartella principale in <code>Mixdown/&lt;marker&gt;/</code>; Lane 2 crea una sottocartella sotto il Lane 1 precedente; Lane 3+ resta marker standard/metadati. Le regioni fuori Lane 1 sono ignorate da anteprima, selezione e render.</li>
+    <li><strong>CSV Mixdown (Log):</strong> Il pulsante <code>Log</code> attiva o disattiva la creazione del file <code>Mixdown_History.csv</code> nella cartella <code>Mixdown/</code> (o nella cartella di progetto). Si tratta di uno storico incrementale dei render effettuati, con colonne essenziali e senza valori audio stimati.</li>
+    <li><strong>Index Mixdown:</strong> Il pulsante <code>Index</code> abilita opzionalmente anche <code>Mixdown/&lt;Lane1&gt;/Mixdown_Index.csv</code> per la specifica sezione; la colonna <code>Presente</code> contiene <code>X</code> solo se il file esiste davvero. Utile per avere un file di spunta dentro la cartella dei render finali.</li>
+    <li><code>2 Render</code> imposta directory <code>Mixdown/&lt;marker&gt;/</code>, pattern <code>$region</code>, formato scelto, e apre la finestra nativa Render to File per controllo manuale.</li>
+    <li>Quando il rendering finisce e <code>Log</code> è acceso, lo script accoda i dati (regioni, tempi, destinazione) a <code>Mixdown_History.csv</code>. L'Index resta opzionale per non sporcare le cartelle quando usi l'HTML nativo di REAPER.</li>
+    <li><code>+ Queue</code> aggiunge alla Render Queue un solo job per la sezione scelta: non crea un job per ogni regione/file.</li>
+    <li>I nomi delle regioni e dei file finali non vengono normalizzati dallo script; viene sanitizzato solo il nome della cartella contenitore <code>Mixdown/&lt;marker&gt;/</code>.</li>
+    <li><strong>OSARA:</strong> se OSARA e' attivo, il tool apre un percorso guidato nativo per selezionare una sezione, creare le regioni oppure selezionare nel progetto le regioni gia esistenti / gli item da cui crearle. In questo modo non e' necessario cliccare la lista grafica.</li>
+    <li>Usa il pulsante interno <code>HELP ME</code> per il riepilogo operativo del pannello.</li>
+  </ul>
+
+  <h2 id="tool-18">18 - Project Viewer</h2>
+  <p><code>18_Project_Viewer.lua</code> mostra una vista cronologica di marker e regioni.</p>
+  <ul>
+    <li>Serve per navigare e verificare la struttura del progetto.</li>
+    <li>Marker e regioni sono separati su righe distinte.</li>
+    <li>Usalo prima di export o render complessi.</li>
+  </ul>
+
+  <h2 id="tool-19">19 - Report Minuti Voce</h2>
+  <p><code>19_Report_Minuti_Voce.lua</code> calcola minuti e parole stimate per voci/personaggi.</p>
+  <ul>
+    <li>Utile per consuntivi, stime e controllo carico speaker.</li>
+    <li>Controlla che le tracce voce siano nominate in modo coerente.</li>
+  </ul>
+
+  <h2 id="tool-20">20 - Importa cartelle</h2>
+  <p><code>20_Importa_Cartelle_Video_Mixdown.lua</code> importa cartelle contenenti audio o video e crea marker/regioni ordinati sulla timeline.</p>
+  <ul>
+    <li>Lavora bene quando i file sono organizzati per cartella/progetto.</li>
+    <li>Verifica i nomi prima dell'import per ottenere regioni ordinate.</li>
+    <li>La preparazione del progetto aperto e del render si svolge nel <strong>Gestore Progetto</strong>.</li>
+  </ul>
+
+  <h2 id="tool-22">22 - Split Silenzi / Voice Cleaner</h2>
+  <p><code>22_Pulisci_Code_Silenzi_e_Separa_Item.lua</code> analizza item audio, rileva parti sonore e prepara split puliti.</p>
+  <ul>
+    <li>Prima seleziona un item audio visibile in timeline.</li>
+    <li>Premi <code>ANALIZZA</code> e controlla la riga <code>Audio read</code>.</li>
+    <li><code>PREVIEW</code> e <code>APPLICA</code> restano disabilitati se la lettura audio fallisce.</li>
+    <li>Help dettagliato: <a href="voice_cleaner.html">voice_cleaner.html</a>.</li>
+  </ul>
+
+  <h2 id="zp-chain-builder">23 - ZP Chain Builder</h2>
+  <p><code>23_ZP_Chain_Builder.lua</code> prepara, controlla e ripara la struttura base di una ZP Voice Chain senza cambiare il suono dei plugin.</p>
+  <ul>
+    <li>I profili disponibili sono <strong>Voiceover, ADR, E-learning, Podcast, Spot e Radio</strong>.</li>
+    <li>Voiceover, ADR ed E-learning preparano Unified Chain, Voice Probe ultimo FX e Master Pro.</li>
+    <li>Podcast, Spot e Radio aggiungono o verificano anche Music Bus con Harmonic Space Carver e Music Probe opzionale.</li>
+    <li><strong>Trasforma progetto</strong> crea soltanto gli elementi mancanti. Non elimina, non riordina e non sostituisce FX esistenti.</li>
+    <li><strong>Check / Repair</strong> mostra prima il controllo e chiede conferma prima di riparare.</li>
+    <li>Il routing e il sidechain non vengono modificati automaticamente: per Spot/Podcast verifica l'invio VO verso i canali 3/4 del Music Bus.</li>
+    <li><strong>Analog flavor</strong> e <strong>Music Probe</strong> sono opzioni esplicite. L'analog flavor viene collocato prima della Voice Probe.</li>
+    <li><strong>Probe Guard</strong> viene attivato dal Chain Builder e controlla una volta al secondo che Voice Probe e Music Probe restino gli ultimi FX dei rispettivi bus.</li>
+  </ul>
+  <p>Shared Bus v2.2 separa due mondi: BUS Chain 1.2.2 e Spoken Finish 3.9.7 dichiarano cosa stanno facendo; Voice-Music Probe 1.1 misura cosa esce davvero; Master Pro confronta i dati con lo <strong>ZP Target Engine</strong>. Nessun warning modifica automaticamente il DSP.</p>
+
+  <h3>Voice-Music Probe</h3>
+  <p><code>ZP Voice-Music Probe.jsfx</code> è un analizzatore passivo. In modalità Voice pubblica RMS, peak, crest, density, brightness e speech activity. In modalità Music pubblica le stesse misure senza speech activity. Non scrive sui campioni audio e deve restare ultimo nella catena del bus osservato.</p>
+
+  <h3>Segnalazioni Master Pro</h3>
+  <ul>
+    <li>LED verde: catena coerente oppure analog flavor compatibile col risultato misurato.</li>
+    <li>LED giallo: eccesso o incoerenza, con suggerimento nel footer.</li>
+    <li>LED rosso: componente essenziale mancante oppure valore molto fuori target.</li>
+    <li>Harmonic Space Carver è un assistente mix/music bus e non viene trattato come stadio mastering.</li>
+  </ul>
+
+  <h3>ZP Target Engine</h3>
+  <p>Master Pro v2.44 legge la riduzione dei singoli stadi BUS Chain, l'attività ANA, l'attività armonica di Spoken Finish e le misure finali della Voice Probe. Confronta intenzione e risultato rispetto al profilo scelto, ma non invia comandi agli altri plugin e non applica correzioni.</p>
+  <ul>
+    <li>La matrice iniziale contiene target per compressione, densità, brillantezza, crest factor e limiter.</li>
+    <li>I target sono modificabili dai parametri <code>[Target]</code> di Master Pro e vengono salvati nel progetto.</li>
+    <li>Il footer mostra il motivo della segnalazione e una riga compatta con valori misurati e target.</li>
+    <li>Una densità alta con poca attività dichiarata dai plugin ZP viene indicata come possibile intervento di plugin esterni o analog flavor.</li>
+    <li>Il LED indica soltanto la connessione: verde recente, giallo dati vecchi/incompleti, rosso componente richiesto assente. Il livello audio usa esclusivamente i meter.</li>
+  </ul>
+  <h3>Navigator / Measure Engine</h3>
+  <p>Il pannello Navigator accumula soltanto intervalli con parlato utile e mantiene la misura attraverso Play, Stop e riapertura della GUI. Si azzera esclusivamente con <strong>RESET MEASURE</strong>.</p>
+  <ul>
+    <li><strong>MANUAL:</strong> usa esattamente i 10, 20 o 30 secondi scelti dal tecnico.</li>
+    <li><strong>AUTO SIMPLE:</strong> richiede più tempo utile, tollera maggiormente eventi isolati ed è pensato per voce, doppiaggio, audiolibri e segnali con pause.</li>
+    <li><strong>AUTO COMPLEX:</strong> usa una soglia di attività più permissiva e stabilizza più rapidamente spot, podcast, musica e mix densi.</li>
+    <li>MANUAL, AUTO SIMPLE e AUTO COMPLEX sono pulsanti separati; il tempo utile richiesto è sempre visibile.</li>
+    <li>La gravità è espressa come OK, ATTENZIONE o FUORI TARGET e non modifica il colore del LED di connessione.</li>
+    <li>Cambiare profilo non azzera la misura: l'ultima misura viene rivalutata immediatamente con le nuove soglie.</li>
+    <li>Mostra un solo messaggio principale con STATO, CAUSA, RAGIONAMENTO, CONTRIBUTI, SUGGERIMENTO e DATI.</li>
+    <li>La causalità confronta 1175, LA2, Major Tom, Brown, ANA, Limiter e Spoken Finish; mostra modulo principale, secondario e contributi relativi.</li>
+    <li>Spoken Finish viene indicato come causa di brightness soltanto quando la Voice Probe conferma un risultato finale brillante.</li>
+    <li>Allo Stop compare ULTIMA MISURA e i dati restano disponibili.</li>
+    <li>Connessione e misura sono indipendenti: dati vecchi, Probe temporaneamente assente, silenzio o Stop non cancellano l'ultima misura valida.</li>
+    <li>Quando la connessione degrada, il Navigator mostra <strong>ULTIMA MISURA VALIDA</strong> e mantiene stato, causa, ragionamento, contributi, suggerimento e dati fino a RESET MEASURE.</li>
+    <li>Il timeout heartbeat è tollerante alle pause; heartbeat significa plugin vivo e non presenza di segnale audio.</li>
+  </ul>
+
+  <h3>Controlli compressori BUS Chain</h3>
+  <p>I tre compressori condividono la stessa grammatica operativa: <strong>RED</strong> indica la quantità di riduzione e <strong>MAKEUP</strong> recupera il livello. Nei moduli 1175 e Major Tom, ruotare RED in senso orario aumenta la compressione. La soglia interna e i valori salvati nei progetti restano compatibili con le versioni precedenti.</p>
+
+
+  <h2 id="zp-probe-guard">24 - ZP Probe Guard</h2>
+  <p><code>24_ZP_Probe_Guard.lua</code> e' un controllo leggero per mantenere la Probe come ultimo FX del bus corretto.</p>
+  <ul>
+    <li>Su VO BUS controlla che <code>ZP Voice-Music Probe</code> in ruolo Voice Probe resti ultimo.</li>
+    <li>Su Music Bus controlla la Music Probe quando il profilo Spot/Podcast/Radio la richiede.</li>
+    <li>Non modifica il suono e non cancella plugin: riordina solo la Probe se l'utente inserisce qualcosa dopo.</li>
+    <li>Viene attivato dal Chain Builder; si puo' anche lanciare manualmente dalla Action List.</li>
+  </ul>
+
+  <h2 id="tool-solo">ZP SOLO Recorder</h2>
+  <p><code>25_ZP_SOLO_Recorder.lua</code> e' un helper di registrazione/controllo per flussi SOLO della suite. E' installato e registrato in Action List, ma non viene messo nella toolbar principale per non appesantirla.</p>
+
+  <h2 id="zp-shared-bus">Plugin ZP Shared Bus</h2>
+  <p>La suite include i plugin JSFX che dialogano tramite <code>options:gmem=ZPVoiceoverSharedBus</code>. Il bus non e' un meter audio: separa telemetria, stato connessione e misura del risultato finale.</p>
+  <div class="grid">
+    <div class="card">
+      <h3>ZP BUS Chain 1.2.2</h3>
+      <p>Catena VO principale. Pubblica telemetria granulare: Expander GR, 1175 GR, LA2 GR, Major Tom GR, Brown activity, ANA Drive/Gain/Mix, Limiter GR, output RMS/Peak, density e brightness estimate.</p>
+    </div>
+    <div class="card">
+      <h3>ZP Spoken Finish 3.9.7</h3>
+      <p>Finalizzatore armonico opzionale. Pubblica harmonic amount, body, presence, brightness, VOG activity e output activity. Master Pro usa questi dati per capire se l'energia armonica e' coerente col risultato della Probe.</p>
+    </div>
+    <div class="card">
+      <h3>ZP Harmonic Space Carver v2X</h3>
+      <p>Assistente mix/music bus. Lavora sul rapporto voce-musica e non e' uno stadio mastering. Viene usato nei profili Spot/Podcast/Radio quando serve scolpire spazio per la voce.</p>
+    </div>
+    <div class="card">
+      <h3>ZP Voice-Music Probe 1.1</h3>
+      <p>Probe passiva. In ruolo Voice misura RMS, peak, crest, density, brightness e speech activity del VO BUS. In ruolo Music misura il Music Bus. Deve stare ultima per misurare il risultato reale.</p>
+    </div>
+    <div class="card">
+      <h3>ZP Master Pro v2.44</h3>
+      <p>Supervisore finale. Legge telemetria plugin e Probe, mantiene l'ultima misura valida, applica il Target Engine per ADR, Voiceover, E-learning, Podcast, Spot e Radio, e mostra suggerimenti senza correggere automaticamente il DSP.</p>
+    </div>
+    <div class="card">
+      <h3>ZP Subliminal Presence Layer</h3>
+      <p>Strato opzionale di modulazione molto lenta e discreta. Introduce movimento percettivo controllato senza partecipare alla telemetria Shared Bus.</p>
+    </div>
+  </div>
+  <p>Il LED dei plugin indica solo stato connessione: verde dati recenti, giallo dati parziali/vecchi, rosso componente essenziale assente. Il livello audio resta sui meter separati.</p>
+
+  <h2>File Helper</h2>
+  <p>Alcuni file non sono azioni da lanciare direttamente ma supportano la suite: <code>ZP_UI.lua</code>, <code>lib_RythmoBand_Accessibile.lua</code>, worker SRT/marker, template traccia e asset toolbar. Non modificarli a mano durante una lavorazione attiva.</p>
+
+  <p class="small">ZP Studio Suite for REAPER - help locale incluso nel pacchetto distributivo.</p>
+</main>
+</body>
+</html>
