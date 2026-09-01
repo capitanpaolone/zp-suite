@@ -1,3 +1,5 @@
+-- @noindex
+
 -- ZP Studio Suite shared UI helpers
 -- Small gfx primitives shared by ZP Studio Suite Lua windows.
 

@@ -1,3 +1,5 @@
+-- @noindex
+
 -- ESPORTA SRT FINALI DA RYTHMOBAND
 -- Linea: ZP Paolo Balestri
 -- Suite: ZP Studio Suite for REAPER v1.0.5

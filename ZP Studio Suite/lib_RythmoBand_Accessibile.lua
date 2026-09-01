@@ -1,3 +1,5 @@
+-- @noindex
+
 local M = {}
 
 M.track_name = "Rythmo Band Testi"

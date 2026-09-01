@@ -1,3 +1,5 @@
+-- @noindex
+
 --[[
   ZP SOLO Recorder - Proof of Concept
   Autore: Paolo Balestri / ZP Studio Suite

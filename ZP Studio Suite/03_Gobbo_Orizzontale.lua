@@ -1,3 +1,5 @@
+-- @noindex
+
 --[[
    * ReaScript Name: ZP Studio Suite GUI Nativa
    * Linea: ZP Paolo Balestri

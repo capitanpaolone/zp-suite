@@ -1,3 +1,5 @@
+-- @noindex
+
 --[[
   ZP Studio Suite for REAPER v1.0.5
   Script: Importa cartelle

@@ -1,3 +1,5 @@
+-- @noindex
+
 --[[
    * ReaScript Name: ZP Studio Suite Teleprompter Nativo
    * Linea: ZP Paolo Balestri

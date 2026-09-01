@@ -1,3 +1,5 @@
+-- @noindex
+
 -- ZP PROBE GUARD
 -- Mantiene Voice e Music Probe come ultimo FX dei rispettivi BUS. Nessuna modifica audio/routing.
 -- Allineato alla pulizia completa e heartbeat autonomo del Guard (2026-06-24).

@@ -1,3 +1,5 @@
+-- @noindex
+
 --[[
 ZP Studio Suite for REAPER
 22_SRT_Tools.lua

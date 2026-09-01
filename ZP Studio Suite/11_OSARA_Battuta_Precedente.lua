@@ -1,3 +1,5 @@
+-- @noindex
+
 local script_dir = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
 local A = dofile(script_dir .. "lib_RythmoBand_Accessibile.lua")
 

@@ -1,3 +1,5 @@
+-- @noindex
+
 -- ZP CHAIN BUILDER
 -- ZP Studio Suite for REAPER
 -- v2 Profile Structures — 2026-06-24

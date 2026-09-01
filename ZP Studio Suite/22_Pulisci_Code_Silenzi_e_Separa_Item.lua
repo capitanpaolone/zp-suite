@@ -1,3 +1,5 @@
+-- @noindex
+
 --[[
 ZP Studio Suite - Split Silenzi / Voice Cleaner
 Versione: v1.0.5
