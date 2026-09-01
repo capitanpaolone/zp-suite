@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 1.0.6
+-- @version 1.0.7
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -10,6 +10,7 @@
 --   costruzione della catena audio ZP. Include il supporto screen reader su
 --   Windows tramite la libreria NVDA Controller Client (LGPL 2.1, di NV Access).
 -- @changelog
+--   Toolbar pronta: quattordici pulsanti con le icone della suite.
 --   Icone della toolbar consegnate nella cartella giusta di REAPER.
 --   Prima pubblicazione su ReaPack.
 --   SRT Tools rinumerato a 26, SOLO Recorder a 25.
