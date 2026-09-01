@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 1.0.7
+-- @version 1.0.8
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -10,6 +10,7 @@
 --   costruzione della catena audio ZP. Include il supporto screen reader su
 --   Windows tramite la libreria NVDA Controller Client (LGPL 2.1, di NV Access).
 -- @changelog
+--   Nuovo: 27 Pulisci installazione precedente, per chi arriva dal vecchio installer.
 --   Toolbar pronta: quattordici pulsanti con le icone della suite.
 --   Icone della toolbar consegnate nella cartella giusta di REAPER.
 --   Prima pubblicazione su ReaPack.
@@ -37,6 +38,7 @@
 --   [main] 24_ZP_Probe_Guard.lua
 --   [main] 25_ZP_SOLO_Recorder.lua
 --   [main] 26_SRT_Tools.lua
+--   [main] 27_Pulisci_Installazione_Precedente.lua
 --   [nomain] 04_worker_Crea_Marker_Item.lua
 --   [nomain] 05_worker_Gestione_SRT.lua
 --   [nomain] ZP_UI.lua
