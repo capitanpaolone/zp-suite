@@ -1,0 +1,16 @@
+ZP Lab
+
+Roba in lavorazione. Sta nel repository per avere una storia delle modifiche,
+NON per essere installata: questa cartella e' esclusa dall'indice ReaPack,
+quindi in Browse packages non compare niente di quello che c'e' qui dentro.
+
+ZP BrownSlope Dynamic Guard (v0.5-assist-dev)
+  Versione avanzata e visibile del modulo Brown che sta gia' dentro ZP BUS
+  Chain e ZP Master Pro. L'idea e' avere un brown sloper con cui equalizzare
+  tenendo quel riferimento sempre sotto gli occhi, invece che nascosto dentro
+  la catena.
+  Stato: non e' ancora una beta. Non va pubblicata finche' non regge una
+  sessione vera.
+  Origine: cartella "ZP_Paolo Balestri JSFX in uso", 16 giugno 2026.
+  Esiste anche una variante piu' piccola, "PRO" v0.4, tenuta fuori: questa
+  la comprende.

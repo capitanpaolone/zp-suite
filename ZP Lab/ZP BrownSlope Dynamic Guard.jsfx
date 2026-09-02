@@ -1,0 +1,1248 @@
+desc:ZP BrownSlope Dynamic Guard Assist - Paolo Balestri
+//author: Paolo Balestri / Codex prototype
+//version: 0.5-assist-dev
+// Contatto: social@paolobalestri.com
+//tags: dynamics eq broadcast brown slope multiband limiter-prep
+//
+// 4-band dynamic tonal guard for the end of a voice/music chain, intended
+// before the final output limiter. It gently steers long-term band energy
+// toward a brown-ish slope, then applies optional broadcast HPF/LPF guards.
+//
+// v0.5-assist-dev:
+//   - aggiunta analisi Stereo + M/S visibile: L, R, Mid, Side, Width e L/R Delta
+//   - la correzione audio resta linkata L/R per non alterare l'immagine stereo
+//
+// v0.4-assist-dev:
+//   - nuovo ramo separato: BrownSlope originale + correzione assistita
+//   - MATCH applica una pendenza statica dolce verso il target Brown
+//   - TOL introduce una zona morta: la dinamica interviene solo su deviazioni reali
+//   - BIAS sceglie Cut-only / Balanced / Gentle Boost
+//   - MID Focus aumenta il peso correttivo delle zone low-mid / mid-high
+//
+// v0.3-dev:
+//   - preset allineati alla Unified Chain v4: STD Flat, VO Balance, Darker, Brighter
+//   - Target Slope esteso anche in negativo e Amount fino a 150% per ricerca percettiva
+//   - HPF applicato anche prima della detection, cosi' i pop non guidano la mappa Brown
+//   - priming rapido su playback/render per evitare 3/4 secondi di assestamento
+//
+// v0.2 fixes:
+//   - fc4 decoupled from LPF (non cambia piu' il target banda alta girando il filtro)
+//   - gd1 boost band 1: rimosso cap hardcoded 0.35, ora segue max_boost pieno
+//   - e1-e4 inizializzati esplicitamente a eps in @init
+//   - Tile readout Input/Output Trim e Dry/Wet nel header BROWN view
+//   - Rimosso dead code gfx_measurestr in draw_control_tile
+//   - Grafico e tile non vengono renderizzati in JSFX view (risparmio CPU)
+
+slider1:0<0,4,1{Manual,STD Flat,VO Balance,Darker,Brighter}>-Preset Recall
+slider2:0<-24,24,0.1>-Input Trim (dB)
+slider3:1.0<-3,8,0.1>-Target Slope (dB/oct)
+slider4:60<0,150,1>-Amount (%)
+slider5:200<20,2000,1>-React Attack (ms)
+slider6:1400<100,6000,10>-React Release (ms)
+slider7:6<0,18,0.1>-Max Dynamic Cut (dB)
+slider8:1.5<0,6,0.1>-Max Dynamic Boost (dB)
+slider9:70<0,100,1>-Low Protect (%)
+slider10:120<40,400,1>-Xover Low/Mid (Hz)
+slider11:650<150,3000,1>-Xover Mid (Hz)
+slider12:3600<1000,10000,10>-Xover High (Hz)
+slider13:80<20,160,1>-Final HPF (Hz)
+slider14:3<0,4,1{Off,6 dB/oct,12 dB/oct,18 dB/oct,24 dB/oct}>-HPF Slope
+slider15:16000<9000,22000,100>-Final LPF (Hz)
+slider16:2<0,4,1{Off,6 dB/oct,12 dB/oct,18 dB/oct,24 dB/oct}>-LPF Slope
+slider17:0<-12,12,0.1>-Output Trim (dB)
+slider18:100<0,100,1>-Dry/Wet (%)
+slider19:2<0,2,1{Target+Actual,Correction,All}>-Graph View
+slider20:1.2<0.2,5,0.1>-Graph Glide (s)
+slider21:0<0,1,1{Brown Analyzer,JSFX Commands}>-View Profile
+slider22:0<0,1,1{Off,On}>-Bypass
+slider23:0<0,100,1>-Static Match (%)
+slider24:0.8<0,4,0.1>-Guard Tolerance (dB)
+slider25:1<0,2,1{Cut Only,Balanced,Gentle Boost}>-Correction Bias
+slider26:35<0,100,1>-Mid Focus (%)
+
+slider41:0<-60,24,0.1>-[Read] Low Actual (dB)
+slider42:0<-60,24,0.1>-[Read] Low-Mid Actual (dB)
+slider43:0<-60,24,0.1>-[Read] Mid-High Actual (dB)
+slider44:0<-60,24,0.1>-[Read] High Actual (dB)
+slider45:0<-18,6,0.1>-[Read] Low Dyn Gain (dB)
+slider46:0<-18,6,0.1>-[Read] Low-Mid Dyn Gain (dB)
+slider47:0<-18,6,0.1>-[Read] Mid-High Dyn Gain (dB)
+slider48:0<-18,6,0.1>-[Read] High Dyn Gain (dB)
+
+in_pin:left input
+in_pin:right input
+out_pin:left output
+out_pin:right output
+
+@init
+ext_tail_size = 2048;
+gfx_ext_retina = 1;
+two_pi = 2 * $pi;
+log2c = log(2);
+db2log = log(10) / 20;
+log2db = 20 / log(10);
+eps = 0.0000000001;
+detect_div = 32;
+detect_count = 0;
+
+g1 = g2 = g3 = g4 = 1;
+tg1 = tg2 = tg3 = tg4 = 1;
+gd1 = gd2 = gd3 = gd4 = 0;
+
+// FIX Bug 1: envelope follower inizializzati esplicitamente.
+// Se restassero 0, sqrt(0) darebbe -200 dB al primo ciclo di detect
+// e il target gain partirebbe da un valore errato per ~100ms.
+e1 = e2 = e3 = e4 = eps;
+eL = eR = eM = eS = eps;
+ui_L_db = ui_R_db = ui_M_db = ui_S_db = -120;
+ui_width_db = ui_lr_delta = 0;
+prime_pending = 1;
+just_primed = 0;
+prev_play_state = 0;
+
+d_actual1 = d_actual2 = d_actual3 = d_actual4 = 0;
+d_corr1 = d_corr2 = d_corr3 = d_corr4 = 0;
+d_t1 = d_t2 = d_t3 = d_t4 = 0;
+last_mouse_cap = 0;
+ui_drag_id = 0;
+ui_drag_start_y = 0;
+ui_drag_start_v = 0;
+ui_host_visibility_state = -1;
+ui_hover_id = 0;
+last_preset = -100;
+preset_guard = 0;
+preset_snap2 = 0;
+preset_snap3 = 1.0;
+preset_snap4 = 60;
+preset_snap5 = 200;
+preset_snap6 = 1400;
+preset_snap7 = 6;
+preset_snap8 = 1.5;
+preset_snap9 = 70;
+preset_snap10 = 120;
+preset_snap11 = 650;
+preset_snap12 = 3600;
+preset_snap13 = 80;
+preset_snap14 = 3;
+preset_snap15 = 16000;
+preset_snap16 = 2;
+preset_snap17 = 0;
+preset_snap18 = 100;
+preset_snap23 = 0;
+preset_snap24 = 0.8;
+preset_snap25 = 1;
+preset_snap26 = 35;
+
+function db2amp(db) (
+  exp(db * db2log);
+);
+
+function amp2db(v) (
+  v > eps ? log2db * log(v) : -200;
+);
+
+function clamp(v, lo, hi) (
+  min(max(v, lo), hi);
+);
+
+function slider_mask(sl_id) (
+  2 ^ (sl_id - 1);
+);
+
+function set_ui_slider(sl_idx, new_val)
+local(mask) (
+  preset_guard == 0 && ((sl_idx >= 2 && sl_idx <= 18) || (sl_idx >= 23 && sl_idx <= 26)) && floor(slider(1) + 0.5) > 0 ? (
+    slider(1) = 0;
+    sliderchange(slider_mask(1));
+    slider_automate(slider_mask(1));
+    last_preset = 0;
+  );
+  slider(sl_idx) = new_val;
+  mask = slider_mask(sl_idx);
+  sliderchange(mask);
+  slider_automate(mask);
+);
+
+function preset_set(sl_idx, new_val)
+local(mask) (
+  slider(sl_idx) = new_val;
+  mask = slider_mask(sl_idx);
+  sliderchange(mask);
+  slider_automate(mask);
+);
+
+function store_preset_snapshot() (
+  preset_snap2 = slider2;
+  preset_snap3 = slider3;
+  preset_snap4 = slider4;
+  preset_snap5 = slider5;
+  preset_snap6 = slider6;
+  preset_snap7 = slider7;
+  preset_snap8 = slider8;
+  preset_snap9 = slider9;
+  preset_snap10 = slider10;
+  preset_snap11 = slider11;
+  preset_snap12 = slider12;
+  preset_snap13 = slider13;
+  preset_snap14 = slider14;
+  preset_snap15 = slider15;
+  preset_snap16 = slider16;
+  preset_snap17 = slider17;
+  preset_snap18 = slider18;
+  preset_snap23 = slider23;
+  preset_snap24 = slider24;
+  preset_snap25 = slider25;
+  preset_snap26 = slider26;
+);
+
+function preset_params_changed()
+local(changed) (
+  changed = 0;
+  changed = changed || (abs(slider2 - preset_snap2) > 0.0001);
+  changed = changed || (abs(slider3 - preset_snap3) > 0.0001);
+  changed = changed || (abs(slider4 - preset_snap4) > 0.0001);
+  changed = changed || (abs(slider5 - preset_snap5) > 0.0001);
+  changed = changed || (abs(slider6 - preset_snap6) > 0.0001);
+  changed = changed || (abs(slider7 - preset_snap7) > 0.0001);
+  changed = changed || (abs(slider8 - preset_snap8) > 0.0001);
+  changed = changed || (abs(slider9 - preset_snap9) > 0.0001);
+  changed = changed || (abs(slider10 - preset_snap10) > 0.0001);
+  changed = changed || (abs(slider11 - preset_snap11) > 0.0001);
+  changed = changed || (abs(slider12 - preset_snap12) > 0.0001);
+  changed = changed || (abs(slider13 - preset_snap13) > 0.0001);
+  changed = changed || (abs(slider14 - preset_snap14) > 0.0001);
+  changed = changed || (abs(slider15 - preset_snap15) > 0.0001);
+  changed = changed || (abs(slider16 - preset_snap16) > 0.0001);
+  changed = changed || (abs(slider17 - preset_snap17) > 0.0001);
+  changed = changed || (abs(slider18 - preset_snap18) > 0.0001);
+  changed = changed || (abs(slider23 - preset_snap23) > 0.0001);
+  changed = changed || (abs(slider24 - preset_snap24) > 0.0001);
+  changed = changed || (abs(slider25 - preset_snap25) > 0.0001);
+  changed = changed || (abs(slider26 - preset_snap26) > 0.0001);
+  changed;
+);
+
+function apply_brown_preset(preset_idx) (
+  preset_guard = 1;
+
+  preset_idx == 1 ? (
+    preset_set(2, 0); preset_set(3, 1.0); preset_set(4, 0);
+    preset_set(5, 200); preset_set(6, 1400);
+    preset_set(7, 0); preset_set(8, 0); preset_set(9, 100);
+    preset_set(10, 120); preset_set(11, 650); preset_set(12, 3600);
+    preset_set(13, 80); preset_set(14, 0); preset_set(15, 16000); preset_set(16, 0);
+    preset_set(17, 0); preset_set(18, 100);
+    preset_set(23, 0); preset_set(24, 1.2); preset_set(25, 1); preset_set(26, 20);
+  );
+
+  preset_idx == 2 ? (
+    preset_set(2, 0); preset_set(3, 1.0); preset_set(4, 45);
+    preset_set(5, 160); preset_set(6, 950);
+    preset_set(7, 5); preset_set(8, 0.4); preset_set(9, 85);
+    preset_set(10, 140); preset_set(11, 850); preset_set(12, 3600);
+    preset_set(13, 80); preset_set(14, 3); preset_set(15, 16000); preset_set(16, 2);
+    preset_set(17, 0); preset_set(18, 100);
+    preset_set(23, 18); preset_set(24, 0.9); preset_set(25, 2); preset_set(26, 45);
+  );
+
+  preset_idx == 3 ? (
+    preset_set(2, 0); preset_set(3, 1.6); preset_set(4, 42);
+    preset_set(5, 180); preset_set(6, 1100);
+    preset_set(7, 5.5); preset_set(8, 0.25); preset_set(9, 88);
+    preset_set(10, 140); preset_set(11, 850); preset_set(12, 3400);
+    preset_set(13, 80); preset_set(14, 3); preset_set(15, 16000); preset_set(16, 3);
+    preset_set(17, 0); preset_set(18, 100);
+    preset_set(23, 22); preset_set(24, 1.0); preset_set(25, 0); preset_set(26, 55);
+  );
+
+  preset_idx == 4 ? (
+    preset_set(2, 0); preset_set(3, 0.6); preset_set(4, 36);
+    preset_set(5, 140); preset_set(6, 900);
+    preset_set(7, 4.5); preset_set(8, 0.8); preset_set(9, 90);
+    preset_set(10, 140); preset_set(11, 950); preset_set(12, 4200);
+    preset_set(13, 80); preset_set(14, 3); preset_set(15, 16000); preset_set(16, 2);
+    preset_set(17, 0); preset_set(18, 100);
+    preset_set(23, 16); preset_set(24, 1.0); preset_set(25, 2); preset_set(26, 35);
+  );
+
+  store_preset_snapshot();
+  preset_guard = 0;
+);
+
+function apply_host_slider_visibility(show_host)
+local(i) (
+  ui_host_visibility_state != show_host ? (
+    i = 1;
+    loop(48,
+      slider_show(slider_mask(i), 0);
+      i += 1;
+    );
+
+    show_host ? (
+      i = 1;
+      loop(26,
+        slider_show(slider_mask(i), 1);
+        i += 1;
+      );
+    );
+
+    // Read-only telemetry sliders stay out of the native host control list.
+    i = 41;
+    loop(8,
+      slider_show(slider_mask(i), 0);
+      i += 1;
+    );
+
+    ui_host_visibility_state = show_host;
+  );
+);
+
+function onepole_coef(freq) local(f) (
+  f = clamp(freq, 5, srate * 0.45);
+  1 - exp(-two_pi * f / srate);
+);
+
+function oct_from_1k(freq) (
+  log(max(freq, 1) / 1000) / log2c;
+);
+
+function deadband_error(err, tol) (
+  err > tol ? err - tol :
+  err < -tol ? err + tol : 0;
+);
+
+@slider
+preset_i = floor(slider1 + 0.5);
+(last_preset <= -99) ? (
+  last_preset = 0;
+  store_preset_snapshot();
+);
+preset_i != last_preset ? (
+  preset_i > 0 ? (
+    apply_brown_preset(preset_i);
+  ) : (
+    store_preset_snapshot();
+  );
+  last_preset = preset_i;
+) : (
+  preset_i > 0 && preset_guard == 0 && preset_params_changed() ? (
+    slider1 = 0;
+    sliderchange(slider_mask(1));
+    last_preset = 0;
+    store_preset_snapshot();
+  );
+);
+
+bypass = slider22;
+in_gain = db2amp(slider2);
+slope = slider3;
+amount = slider4 <= 100 ? slider4 / 100 : 1 + (slider4 - 100) * 0.02;
+amount_cap = slider4 <= 100 ? 1 : 1 + (slider4 - 100) * 0.02;
+max_cut = slider7 * amount_cap;
+max_boost = slider8 * amount_cap;
+low_protect = slider9 / 100;
+out_gain = db2amp(slider17);
+wet = slider18 / 100;
+dry = 1 - wet;
+static_match = slider23 / 100;
+guard_tol = slider24;
+bias_mode = floor(slider25 + 0.5);
+boost_bias = bias_mode == 0 ? 0 : (bias_mode == 2 ? 0.45 : 1);
+mid_focus = slider26 / 100;
+apply_host_slider_visibility(floor(slider21 + 0.5) == 1 ? 1 : 0);
+
+f1 = min(slider10, srate * 0.18);
+f2 = min(max(slider11, f1 + 40), srate * 0.30);
+f3 = min(max(slider12, f2 + 80), srate * 0.42);
+
+c1 = onepole_coef(f1);
+c2 = onepole_coef(f2);
+c3 = onepole_coef(f3);
+hp_c = onepole_coef(slider13);
+lp_c = onepole_coef(slider15);
+
+attack_coef = exp(-1 / (max(1, slider5) * 0.001 * srate));
+release_coef = exp(-1 / (max(1, slider6) * 0.001 * srate));
+env_attack = exp(-1 / (0.100 * srate));
+env_release = exp(-1 / (1.200 * srate));
+graph_coef = exp(-detect_div / (max(0.05, slider20) * srate));
+
+fc1 = sqrt(20 * f1);
+fc2 = sqrt(f1 * f2);
+fc3 = sqrt(f2 * f3);
+
+// FIX Bug 2: fc4 era sqrt(f3 * min(slider15, ...)) - il LPF non deve
+// influenzare il centro della banda alta ne' il suo target.
+// La banda alta arriva fino a 18kHz indipendentemente da dove taglia il LPF.
+fc4 = sqrt(f3 * min(18000, srate * 0.45));
+
+t1 = -slope * oct_from_1k(fc1);
+t2 = -slope * oct_from_1k(fc2);
+t3 = -slope * oct_from_1k(fc3);
+t4 = -slope * oct_from_1k(fc4);
+
+sg1 = db2amp(clamp(t1 * static_match, -6, 6));
+sg2 = db2amp(clamp(t2 * static_match, -6, 6));
+sg3 = db2amp(clamp(t3 * static_match, -6, 6));
+sg4 = db2amp(clamp(t4 * static_match, -6, 6));
+
+@sample
+play_now = play_state > 0 ? 1 : 0;
+play_now && !prev_play_state ? (
+  e1 = e2 = e3 = e4 = eps;
+  eL = eR = eM = eS = eps;
+  ui_L_db = ui_R_db = ui_M_db = ui_S_db = -120;
+  ui_width_db = ui_lr_delta = 0;
+  g1 = g2 = g3 = g4 = 1;
+  tg1 = tg2 = tg3 = tg4 = 1;
+  gd1 = gd2 = gd3 = gd4 = 0;
+  detect_count = detect_div;
+  prime_pending = 1;
+  just_primed = 0;
+);
+prev_play_state = play_now;
+
+dry_l = spl0;
+dry_r = spl1;
+
+bypass ? (
+  spl0 = dry_l;
+  spl1 = dry_r;
+) : (
+  in_l = dry_l * in_gain;
+  in_r = dry_r * in_gain;
+
+  // Mic-bus guard: HPF before detection so pops do not steer the Brown map.
+  slider14 >= 1 ? (
+    hpD1_l += hp_c * (in_l - hpD1_l); in_l -= hpD1_l;
+    hpD1_r += hp_c * (in_r - hpD1_r); in_r -= hpD1_r;
+  );
+  slider14 >= 2 ? (
+    hpD2_l += hp_c * (in_l - hpD2_l); in_l -= hpD2_l;
+    hpD2_r += hp_c * (in_r - hpD2_r); in_r -= hpD2_r;
+  );
+  slider14 >= 3 ? (
+    hpD3_l += hp_c * (in_l - hpD3_l); in_l -= hpD3_l;
+    hpD3_r += hp_c * (in_r - hpD3_r); in_r -= hpD3_r;
+  );
+  slider14 >= 4 ? (
+    hpD4_l += hp_c * (in_l - hpD4_l); in_l -= hpD4_l;
+    hpD4_r += hp_c * (in_r - hpD4_r); in_r -= hpD4_r;
+  );
+
+  lp1_l += c1 * (in_l - lp1_l);
+  lp1_r += c1 * (in_r - lp1_r);
+  b1_l = lp1_l;
+  b1_r = lp1_r;
+  rem1_l = in_l - b1_l;
+  rem1_r = in_r - b1_r;
+
+  lp2_l += c2 * (rem1_l - lp2_l);
+  lp2_r += c2 * (rem1_r - lp2_r);
+  b2_l = lp2_l;
+  b2_r = lp2_r;
+  rem2_l = rem1_l - b2_l;
+  rem2_r = rem1_r - b2_r;
+
+  lp3_l += c3 * (rem2_l - lp3_l);
+  lp3_r += c3 * (rem2_r - lp3_r);
+  b3_l = lp3_l;
+  b3_r = lp3_r;
+  b4_l = rem2_l - b3_l;
+  b4_r = rem2_r - b3_r;
+
+  p1 = 0.5 * (b1_l*b1_l + b1_r*b1_r);
+  p2 = 0.5 * (b2_l*b2_l + b2_r*b2_r);
+  p3 = 0.5 * (b3_l*b3_l + b3_r*b3_r);
+  p4 = 0.5 * (b4_l*b4_l + b4_r*b4_r);
+
+  pL = b1_l*b1_l + b2_l*b2_l + b3_l*b3_l + b4_l*b4_l;
+  pR = b1_r*b1_r + b2_r*b2_r + b3_r*b3_r + b4_r*b4_r;
+  m1 = (b1_l + b1_r) * 0.70710678; s1 = (b1_l - b1_r) * 0.70710678;
+  m2 = (b2_l + b2_r) * 0.70710678; s2 = (b2_l - b2_r) * 0.70710678;
+  m3 = (b3_l + b3_r) * 0.70710678; s3 = (b3_l - b3_r) * 0.70710678;
+  m4 = (b4_l + b4_r) * 0.70710678; s4 = (b4_l - b4_r) * 0.70710678;
+  pM = m1*m1 + m2*m2 + m3*m3 + m4*m4;
+  pS = s1*s1 + s2*s2 + s3*s3 + s4*s4;
+
+  prime_pending && (p1 + p2 + p3 + p4 > 0.00000001) ? (
+    e1 = p1; e2 = p2; e3 = p3; e4 = p4;
+    eL = max(pL, eps); eR = max(pR, eps); eM = max(pM, eps); eS = max(pS, eps);
+    prime_pending = 0;
+    just_primed = 1;
+    detect_count = detect_div;
+  ) : (
+    e1 = p1 > e1 ? env_attack * e1 + (1 - env_attack) * p1 : env_release * e1 + (1 - env_release) * p1;
+    e2 = p2 > e2 ? env_attack * e2 + (1 - env_attack) * p2 : env_release * e2 + (1 - env_release) * p2;
+    e3 = p3 > e3 ? env_attack * e3 + (1 - env_attack) * p3 : env_release * e3 + (1 - env_release) * p3;
+    e4 = p4 > e4 ? env_attack * e4 + (1 - env_attack) * p4 : env_release * e4 + (1 - env_release) * p4;
+    eL = pL > eL ? env_attack * eL + (1 - env_attack) * pL : env_release * eL + (1 - env_release) * pL;
+    eR = pR > eR ? env_attack * eR + (1 - env_attack) * pR : env_release * eR + (1 - env_release) * pR;
+    eM = pM > eM ? env_attack * eM + (1 - env_attack) * pM : env_release * eM + (1 - env_release) * pM;
+    eS = pS > eS ? env_attack * eS + (1 - env_attack) * pS : env_release * eS + (1 - env_release) * pS;
+  );
+
+  detect_count += 1;
+  detect_count >= detect_div ? (
+    detect_count = 0;
+
+    a1 = amp2db(sqrt(max(e1, eps)));
+    a2 = amp2db(sqrt(max(e2, eps)));
+    a3 = amp2db(sqrt(max(e3, eps)));
+    a4 = amp2db(sqrt(max(e4, eps)));
+    l_db = amp2db(sqrt(max(eL, eps)));
+    r_db = amp2db(sqrt(max(eR, eps)));
+    m_db = amp2db(sqrt(max(eM, eps)));
+    s_db = amp2db(sqrt(max(eS, eps)));
+
+    offset = ((a1 - t1) + (a2 - t2) + (a3 - t3) + (a4 - t4)) * 0.25;
+    r1 = a1 - offset;
+    r2 = a2 - offset;
+    r3 = a3 - offset;
+    r4 = a4 - offset;
+
+    err1 = deadband_error(r1 - t1, guard_tol);
+    err2 = deadband_error(r2 - t2, guard_tol);
+    err3 = deadband_error(r3 - t3, guard_tol);
+    err4 = deadband_error(r4 - t4, guard_tol);
+
+    // FIX Bug 3: il boost della banda bassa era cappato a max_boost*0.35
+    // con costante hardcoded, impedendo di recuperare le basse mancanti
+    // rispetto al copia. Ora il boost sale fino a max_boost pieno, simmetrico
+    // rispetto alle bande mid e high. low_protect governa solo il taglio.
+    w1 = 1;
+    w2 = 1 + mid_focus * 0.55;
+    w3 = 1 + mid_focus * 0.70;
+    w4 = 1 + mid_focus * 0.20;
+
+    gd1 = clamp(-err1 * amount * w1, -max_cut * (1 - low_protect), max_boost * boost_bias);
+    gd2 = clamp(-err2 * amount * w2, -max_cut, max_boost * boost_bias);
+    gd3 = clamp(-err3 * amount * w3, -max_cut, max_boost * boost_bias);
+    gd4 = clamp(-err4 * amount * w4, -max_cut, max_boost * boost_bias);
+
+    tg1 = db2amp(gd1);
+    tg2 = db2amp(gd2);
+    tg3 = db2amp(gd3);
+    tg4 = db2amp(gd4);
+
+    just_primed ? (
+      g1 = tg1; g2 = tg2; g3 = tg3; g4 = tg4;
+      just_primed = 0;
+    );
+
+    d_actual1 = d_actual1 * graph_coef + r1 * (1 - graph_coef);
+    d_actual2 = d_actual2 * graph_coef + r2 * (1 - graph_coef);
+    d_actual3 = d_actual3 * graph_coef + r3 * (1 - graph_coef);
+    d_actual4 = d_actual4 * graph_coef + r4 * (1 - graph_coef);
+    d_corr1 = d_corr1 * graph_coef + gd1 * (1 - graph_coef);
+    d_corr2 = d_corr2 * graph_coef + gd2 * (1 - graph_coef);
+    d_corr3 = d_corr3 * graph_coef + gd3 * (1 - graph_coef);
+    d_corr4 = d_corr4 * graph_coef + gd4 * (1 - graph_coef);
+    d_t1 = d_t1 * graph_coef + t1 * (1 - graph_coef);
+    d_t2 = d_t2 * graph_coef + t2 * (1 - graph_coef);
+    d_t3 = d_t3 * graph_coef + t3 * (1 - graph_coef);
+    d_t4 = d_t4 * graph_coef + t4 * (1 - graph_coef);
+    ui_L_db = ui_L_db * graph_coef + l_db * (1 - graph_coef);
+    ui_R_db = ui_R_db * graph_coef + r_db * (1 - graph_coef);
+    ui_M_db = ui_M_db * graph_coef + m_db * (1 - graph_coef);
+    ui_S_db = ui_S_db * graph_coef + s_db * (1 - graph_coef);
+    ui_width_db = ui_width_db * graph_coef + (s_db - m_db) * (1 - graph_coef);
+    ui_lr_delta = ui_lr_delta * graph_coef + (l_db - r_db) * (1 - graph_coef);
+
+    slider41 = a1;
+    slider42 = a2;
+    slider43 = a3;
+    slider44 = a4;
+    slider45 = gd1;
+    slider46 = gd2;
+    slider47 = gd3;
+    slider48 = gd4;
+  );
+
+  g1 = (tg1 < g1 ? attack_coef : release_coef) * g1 + (1 - (tg1 < g1 ? attack_coef : release_coef)) * tg1;
+  g2 = (tg2 < g2 ? attack_coef : release_coef) * g2 + (1 - (tg2 < g2 ? attack_coef : release_coef)) * tg2;
+  g3 = (tg3 < g3 ? attack_coef : release_coef) * g3 + (1 - (tg3 < g3 ? attack_coef : release_coef)) * tg3;
+  g4 = (tg4 < g4 ? attack_coef : release_coef) * g4 + (1 - (tg4 < g4 ? attack_coef : release_coef)) * tg4;
+
+  out_l = b1_l*g1*sg1 + b2_l*g2*sg2 + b3_l*g3*sg3 + b4_l*g4*sg4;
+  out_r = b1_r*g1*sg1 + b2_r*g2*sg2 + b3_r*g3*sg3 + b4_r*g4*sg4;
+
+  // HPF is applied before band split, so the wet signal is already protected
+  // and pop energy cannot drive the detector. Avoid a second HPF pass here.
+  slider16 >= 1 ? (lpO1_l += lp_c * (out_l - lpO1_l); out_l = lpO1_l; lpO1_r += lp_c * (out_r - lpO1_r); out_r = lpO1_r;);
+  slider16 >= 2 ? (lpO2_l += lp_c * (out_l - lpO2_l); out_l = lpO2_l; lpO2_r += lp_c * (out_r - lpO2_r); out_r = lpO2_r;);
+  slider16 >= 3 ? (lpO3_l += lp_c * (out_l - lpO3_l); out_l = lpO3_l; lpO3_r += lp_c * (out_r - lpO3_r); out_r = lpO3_r;);
+  slider16 >= 4 ? (lpO4_l += lp_c * (out_l - lpO4_l); out_l = lpO4_l; lpO4_r += lp_c * (out_r - lpO4_r); out_r = lpO4_r;);
+
+  out_l *= out_gain;
+  out_r *= out_gain;
+
+  spl0 = dry_l * dry + out_l * wet;
+  spl1 = dry_r * dry + out_r * wet;
+);
+
+@gfx 1125 775
+gfx_clear = 14 + 14*256 + 18*65536;
+mouse_down = mouse_cap & 1;
+mouse_click = mouse_down && !(last_mouse_cap & 1);
+mouse_right_click = (mouse_cap & 2) && !(last_mouse_cap & 2);
+fine_tune = (mouse_cap & 8) ? 0.05 : 1.0;
+ui_hover_id = 0;
+apply_host_slider_visibility(floor(slider(21) + 0.5) == 1 ? 1 : 0);
+
+function gx(freq) (
+  graph_x + (log(freq) - log(20)) / (log(20000) - log(20)) * graph_w;
+);
+
+function gy(db) (
+  graph_y + (graph_top_db - db) / (graph_top_db - graph_bot_db) * graph_h;
+);
+
+function line_to_band(fa, va, fb, vb) (
+  gfx_line(gx(fa), gy(va), gx(fb), gy(vb), 1);
+);
+
+function draw_curve(v1, v2, v3, v4) (
+  line_to_band(fc1, v1, fc2, v2);
+  line_to_band(fc2, v2, fc3, v3);
+  line_to_band(fc3, v3, fc4, v4);
+);
+
+function interp4(freq, v1, v2, v3, v4) local(lf, l1, l2, l3, l4, t) (
+  lf = log(freq);
+  l1 = log(fc1); l2 = log(fc2); l3 = log(fc3); l4 = log(fc4);
+  lf <= l1 ? v1 :
+  lf < l2 ? (t = (lf - l1) / max(0.0001, l2 - l1); v1 + (v2 - v1) * t) :
+  lf < l3 ? (t = (lf - l2) / max(0.0001, l3 - l2); v2 + (v3 - v2) * t) :
+  lf < l4 ? (t = (lf - l3) / max(0.0001, l4 - l3); v3 + (v4 - v3) * t) : v4;
+);
+
+function brown_display_db(freq) local(db, oct, hp, lp, low_oct, high_oct, ripple) (
+  oct = log(max(20, freq) / 1000) / log2c;
+  db = -50 - oct * slope * 0.18;
+  hp = max(20, slider13);
+  lp = min(max(slider15, 1000), 22000);
+  freq < hp ? (
+    low_oct = log(hp / max(1, freq)) / log2c;
+    db -= low_oct * (slider14 == 0 ? 10 : 14 + slider14 * 7);
+  );
+  freq > lp ? (
+    high_oct = log(freq / lp) / log2c;
+    db -= high_oct * (slider16 == 0 ? 8 : 12 + slider16 * 6);
+  );
+  ripple = sin(log(freq) * 3.7) * 2.0 + sin(log(freq) * 8.1) * 1.1;
+  clamp(db + ripple, graph_bot_db + 4, graph_top_db - 6);
+);
+
+function draw_panel(x, y, w, h, rr, gg, bb) (
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 1; gfx_rect(x, y, w, h);
+  gfx_r = 0.28; gfx_g = 0.29; gfx_b = 0.34; gfx_a = 0.95;
+  gfx_rect(x, y, w, 1); gfx_rect(x, y + h - 1, w, 1);
+  gfx_rect(x, y, 1, h); gfx_rect(x + w - 1, y, 1, h);
+);
+
+function draw_title_strip(x, y, w, label, rr, gg, bb) (
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.96; gfx_rect(x, y, w, 4);
+  gfx_setfont(3);
+  gfx_r = 0.84; gfx_g = 0.86; gfx_b = 0.90; gfx_a = 1;
+  gfx_x = x + 14; gfx_y = y + 13; gfx_drawstr(label);
+);
+
+function draw_h_meter(x, y, w, h, norm, rr, gg, bb) (
+  gfx_r = 0.08; gfx_g = 0.09; gfx_b = 0.12; gfx_a = 1; gfx_rect(x, y, w, h);
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95; gfx_rect(x, y, clamp(norm, 0, 1) * w, h);
+  gfx_r = 0.26; gfx_g = 0.27; gfx_b = 0.32; gfx_a = 1; gfx_rect(x, y, w, 1); gfx_rect(x, y + h - 1, w, 1);
+);
+
+function meter_norm_db(db) (
+  clamp((db + 60) / 60, 0, 1);
+);
+
+function draw_stereo_ms_panel(x, y, w, h)
+local(row_y, row_gap, bar_h, label_x, bar_x, bar_w, val_x, n, tw, th) (
+  gfx_r = 0.045; gfx_g = 0.052; gfx_b = 0.065; gfx_a = 0.94; gfx_rect(x, y, w, h);
+  gfx_r = 0.22; gfx_g = 0.24; gfx_b = 0.30; gfx_a = 0.95;
+  gfx_rect(x, y, w, 1); gfx_rect(x, y + h - 1, w, 1); gfx_rect(x, y, 1, h); gfx_rect(x + w - 1, y, 1, h);
+  gfx_r = 0.72; gfx_g = 0.55; gfx_b = 1.00; gfx_a = 0.95; gfx_rect(x, y, w, 4);
+
+  gfx_setfont(3);
+  gfx_r = 0.86; gfx_g = 0.88; gfx_b = 0.94; gfx_x = x + 12; gfx_y = y + 12; gfx_drawstr("STEREO / M-S");
+  gfx_setfont(2);
+  gfx_r = 0.62; gfx_g = 0.65; gfx_b = 0.72; gfx_x = x + 12; gfx_y = y + 36; gfx_drawstr("linked audio, visible channels");
+
+  label_x = x + 12; bar_x = x + 54; bar_w = w - 132; val_x = x + w - 66;
+  row_gap = h >= 220 ? 32 : 20;
+  bar_h = h >= 220 ? 16 : 12;
+
+  row_y = h >= 220 ? y + 72 : y + 42;
+  gfx_setfont(3); gfx_r = 0.78; gfx_g = 0.82; gfx_b = 0.90; gfx_x = label_x; gfx_y = row_y - 2; gfx_drawstr("L");
+  n = meter_norm_db(ui_L_db); draw_h_meter(bar_x, row_y, bar_w, bar_h, n, 0.14, 0.72, 0.83);
+  gfx_r = 0.86; gfx_g = 0.88; gfx_b = 0.92; gfx_x = val_x; gfx_y = row_y - 2; gfx_drawnumber(ui_L_db, 1);
+
+  row_y += row_gap;
+  gfx_r = 0.78; gfx_g = 0.82; gfx_b = 0.90; gfx_x = label_x; gfx_y = row_y - 2; gfx_drawstr("R");
+  n = meter_norm_db(ui_R_db); draw_h_meter(bar_x, row_y, bar_w, bar_h, n, 0.18, 0.52, 0.93);
+  gfx_r = 0.86; gfx_g = 0.88; gfx_b = 0.92; gfx_x = val_x; gfx_y = row_y - 2; gfx_drawnumber(ui_R_db, 1);
+
+  row_y += row_gap;
+  gfx_r = 0.78; gfx_g = 0.82; gfx_b = 0.90; gfx_x = label_x; gfx_y = row_y - 2; gfx_drawstr("M");
+  n = meter_norm_db(ui_M_db); draw_h_meter(bar_x, row_y, bar_w, bar_h, n, 0.18, 0.88, 0.48);
+  gfx_r = 0.86; gfx_g = 0.88; gfx_b = 0.92; gfx_x = val_x; gfx_y = row_y - 2; gfx_drawnumber(ui_M_db, 1);
+
+  row_y += row_gap;
+  gfx_r = 0.78; gfx_g = 0.82; gfx_b = 0.90; gfx_x = label_x; gfx_y = row_y - 2; gfx_drawstr("S");
+  n = meter_norm_db(ui_S_db); draw_h_meter(bar_x, row_y, bar_w, bar_h, n, 0.72, 0.55, 1.00);
+  gfx_r = 0.86; gfx_g = 0.88; gfx_b = 0.92; gfx_x = val_x; gfx_y = row_y - 2; gfx_drawnumber(ui_S_db, 1);
+
+  gfx_setfont(2);
+  gfx_r = 0.62; gfx_g = 0.65; gfx_b = 0.72; gfx_x = x + 12; gfx_y = y + h - 28; gfx_drawstr("WIDTH S-M ");
+  ui_width_db > -9 ? (gfx_r = 0.95; gfx_g = 0.62; gfx_b = 0.15;) : (gfx_r = 0.72; gfx_g = 0.55; gfx_b = 1.00;);
+  gfx_drawnumber(ui_width_db, 1); gfx_drawstr(" dB");
+  gfx_r = 0.62; gfx_g = 0.65; gfx_b = 0.72; gfx_x = x + w * 0.55; gfx_y = y + h - 28; gfx_drawstr("DELTA L-R ");
+  abs(ui_lr_delta) > 1.5 ? (gfx_r = 0.95; gfx_g = 0.62; gfx_b = 0.15;) : (gfx_r = 0.86; gfx_g = 0.88; gfx_b = 0.92;);
+  gfx_drawnumber(ui_lr_delta, 1); gfx_drawstr(" dB");
+);
+
+// FIX Bug 4: rimossa chiamata inutile a gfx_measurestr(unit, tw, th).
+// tw e th venivano misurati ma ignorati: l'unita' e' sempre stampata
+// a gfx_x+4 dopo gfx_drawnumber, indipendentemente dalla larghezza.
+function draw_control_tile(x, y, w, h, label, val, unit, rr, gg, bb) (
+  draw_panel(x, y, w, h, 0.09, 0.09, 0.12);
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95; gfx_rect(x, y, w, 3);
+  gfx_setfont(2);
+  gfx_r = 0.52; gfx_g = 0.55; gfx_b = 0.63; gfx_a = 1;
+  gfx_x = x + 10; gfx_y = y + 9; gfx_drawstr(label);
+  gfx_setfont(4);
+  gfx_r = 0.86; gfx_g = 0.88; gfx_b = 0.92;
+  gfx_x = x + 10; gfx_y = y + 27; gfx_drawnumber(val, abs(val - floor(val + 0.5)) < 0.05 ? 0 : 1);
+  gfx_setfont(2);
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_x += 4; gfx_drawstr(unit);
+);
+
+function ui_knob(sl_idx, kx, ky, r, min_v, max_v, def_v, label, unit, rr, gg, bb)
+local(val, norm, ang_min, ang_max, ang, hover, hover_mul, dy, sens, tw, th) (
+  val = slider(sl_idx);
+  hover = mouse_x >= kx-r-10 && mouse_x <= kx+r+10 && mouse_y >= ky-r-20 && mouse_y <= ky+r+24;
+  hover ? ui_hover_id = 1000 + sl_idx;
+  hover && mouse_click ? (ui_drag_id = sl_idx; ui_drag_start_y = mouse_y; ui_drag_start_v = val;);
+  hover && mouse_right_click ? (set_ui_slider(sl_idx, def_v); val = def_v;);
+
+  ui_drag_id == sl_idx && mouse_down ? (
+    sens = ((max_v - min_v) / 150.0) * fine_tune;
+    dy = ui_drag_start_y - mouse_y;
+    val = clamp(ui_drag_start_v + dy * sens, min_v, max_v);
+    set_ui_slider(sl_idx, val);
+  ) : (ui_drag_id == sl_idx ? ui_drag_id = 0;);
+
+  hover_mul = (hover || ui_drag_id == sl_idx) ? 1.35 : 0.82;
+  ang_min = 2.356; ang_max = 7.068;
+  norm = (val - min_v) / max(0.0001, max_v - min_v);
+  ang = ang_min + clamp(norm, 0, 1) * (ang_max - ang_min);
+
+  hover || ui_drag_id == sl_idx ? (
+    gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.09; gfx_circle(kx, ky, r+7, 1, 1);
+  );
+  gfx_r = 0.13; gfx_g = 0.14; gfx_b = 0.18; gfx_a = 1; gfx_circle(kx, ky, r, 1, 1);
+  gfx_r = min(1, rr * hover_mul); gfx_g = min(1, gg * hover_mul); gfx_b = min(1, bb * hover_mul); gfx_a = 1;
+  gfx_arc(kx, ky, r-2, ang_min, ang, 3);
+  gfx_arc(kx, ky, r-3, ang_min, ang, 2);
+  gfx_r = 0.86; gfx_g = 0.88; gfx_b = 0.92; gfx_a = 1;
+  gfx_line(kx, ky, kx + cos(ang) * (r - 1), ky + sin(ang) * (r - 1));
+
+  gfx_setfont(2);
+  gfx_r = 0.72; gfx_g = 0.74; gfx_b = 0.80; gfx_a = 1;
+  gfx_measurestr(label, tw, th); gfx_x = kx - tw/2; gfx_y = ky - r - 15; gfx_drawstr(label);
+  gfx_r = min(1, rr * hover_mul); gfx_g = min(1, gg * hover_mul); gfx_b = min(1, bb * hover_mul);
+  abs(val - floor(val + 0.5)) < 0.05 ? sprintf(#knob_v, "%.0f%s", val, unit) : sprintf(#knob_v, "%.1f%s", val, unit);
+  gfx_measurestr(#knob_v, tw, th); gfx_x = kx - tw/2; gfx_y = ky + r + 5; gfx_drawstr(#knob_v);
+);
+
+function ui_raw_slider(sl_idx, x, y, w, h, min_v, max_v, def_v, label, unit, rr, gg, bb)
+local(val, norm, hover, knob_x, val_x) (
+  val = slider(sl_idx);
+  hover = mouse_x >= x && mouse_x <= x+w && mouse_y >= y && mouse_y <= y+h;
+  hover ? ui_hover_id = 2000 + sl_idx;
+  hover && mouse_right_click ? (set_ui_slider(sl_idx, def_v); val = def_v;);
+  (hover && mouse_down) || ui_drag_id == (1000 + sl_idx) ? (
+    mouse_down ? (
+      ui_drag_id = 1000 + sl_idx;
+      norm = clamp((mouse_x - (x + 142)) / max(1, w - 242), 0, 1);
+      val = min_v + norm * (max_v - min_v);
+      set_ui_slider(sl_idx, val);
+    ) : (
+      ui_drag_id = 0;
+    );
+  );
+
+  norm = clamp((val - min_v) / max(0.0001, max_v - min_v), 0, 1);
+  knob_x = x + 142 + norm * (w - 242);
+  gfx_r = hover ? 0.12 : 0.10; gfx_g = hover ? 0.13 : 0.11; gfx_b = hover ? 0.17 : 0.14; gfx_a = 1; gfx_rect(x, y, w, h);
+  gfx_r = 0.20; gfx_g = 0.21; gfx_b = 0.26; gfx_rect(x, y+h-1, w, 1);
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95; gfx_rect(x, y, 4, h);
+  gfx_setfont(2);
+  gfx_r = 0.48; gfx_g = 0.50; gfx_b = 0.58; gfx_x = x + 12; gfx_y = y + 7; gfx_drawstr("S"); gfx_drawnumber(sl_idx, 0);
+  gfx_r = 0.80; gfx_g = 0.82; gfx_b = 0.88; gfx_x = x + 52; gfx_y = y + 7; gfx_drawstr(label);
+  gfx_r = 0.08; gfx_g = 0.09; gfx_b = 0.12; gfx_rect(x + 142, y + 9, w - 242, 6);
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95; gfx_rect(x + 142, y + 9, knob_x - (x + 142), 6);
+  gfx_r = 0.88; gfx_g = 0.90; gfx_b = 0.94; gfx_rect(knob_x - 2, y + 6, 4, 12);
+  val_x = x + w - 88;
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_x = val_x; gfx_y = y + 7;
+  gfx_drawnumber(val, abs(val - floor(val + 0.5)) < 0.05 ? 0 : 1);
+  gfx_r = 0.54; gfx_g = 0.56; gfx_b = 0.62; gfx_x += 4; gfx_drawstr(unit);
+);
+
+function draw_view_tab(x, y, w, h, label, target)
+local(active, hover, clicked, tw, th) (
+  active = floor(slider(21)) == target;
+  hover = mouse_x >= x && mouse_x <= x + w && mouse_y >= y && mouse_y <= y + h;
+  hover ? ui_hover_id = (target == 0 ? 101 : 102);
+  clicked = hover && (mouse_cap & 1) && !(last_mouse_cap & 1);
+  clicked ? set_ui_slider(21, target);
+
+  active ? (
+    gfx_r = target == 0 ? 0.14 : 0.18;
+    gfx_g = target == 0 ? 0.72 : 0.52;
+    gfx_b = target == 0 ? 0.83 : 0.93;
+  ) : hover ? (
+    gfx_r = 0.18; gfx_g = 0.19; gfx_b = 0.24;
+  ) : (
+    gfx_r = 0.11; gfx_g = 0.12; gfx_b = 0.16;
+  );
+  gfx_a = 1; gfx_rect(x, y, w, h);
+  gfx_r = 0.28; gfx_g = 0.29; gfx_b = 0.34; gfx_a = 0.95;
+  gfx_rect(x, y, w, 1); gfx_rect(x, y + h - 1, w, 1); gfx_rect(x, y, 1, h); gfx_rect(x + w - 1, y, 1, h);
+
+  gfx_setfont(3);
+  active ? (gfx_r = 0.05; gfx_g = 0.06; gfx_b = 0.08;) : (gfx_r = 0.76; gfx_g = 0.78; gfx_b = 0.84;);
+  gfx_measurestr(label, tw, th);
+  gfx_x = x + (w - tw) * 0.5; gfx_y = y + (h - th) * 0.5; gfx_drawstr(label);
+);
+
+function draw_preset_button(x, y, w, h, label, target, rr, gg, bb)
+local(active, hover, clicked, tw, th) (
+  active = floor(slider(1) + 0.5) == target;
+  hover = mouse_x >= x && mouse_x <= x + w && mouse_y >= y && mouse_y <= y + h;
+  hover ? ui_hover_id = 201 + target;
+  clicked = hover && (mouse_cap & 1) && !(last_mouse_cap & 1);
+  clicked ? (
+    set_ui_slider(1, target);
+    target > 0 ? apply_brown_preset(target) : store_preset_snapshot();
+    last_preset = target;
+  );
+
+  active ? (
+    gfx_r = rr * 0.55; gfx_g = gg * 0.50; gfx_b = bb * 0.55;
+  ) : hover ? (
+    gfx_r = 0.18; gfx_g = 0.19; gfx_b = 0.23;
+  ) : (
+    gfx_r = 0.11; gfx_g = 0.12; gfx_b = 0.15;
+  );
+  gfx_a = 1; gfx_rect(x, y, w, h);
+  gfx_r = active ? rr : 0.28; gfx_g = active ? gg : 0.29; gfx_b = active ? bb : 0.34; gfx_a = 0.95;
+  gfx_rect(x, y, w, 1); gfx_rect(x, y + h - 1, w, 1);
+  gfx_rect(x, y, 1, h); gfx_rect(x + w - 1, y, 1, h);
+
+  gfx_setfont(2);
+  active ? (gfx_r = 0.96; gfx_g = 0.97; gfx_b = 0.98;) : (gfx_r = 0.72; gfx_g = 0.74; gfx_b = 0.80;);
+  gfx_measurestr(label, tw, th);
+  gfx_x = x + (w - tw) * 0.5; gfx_y = y + (h - th) * 0.5; gfx_drawstr(label);
+);
+
+function draw_command_row(x, y, w, idx, label, val, unit, rr, gg, bb)
+local(num_w, val_x) (
+  gfx_r = 0.10; gfx_g = 0.11; gfx_b = 0.14; gfx_a = 1; gfx_rect(x, y, w, 24);
+  gfx_r = 0.20; gfx_g = 0.21; gfx_b = 0.26; gfx_a = 1; gfx_rect(x, y + 23, w, 1);
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95; gfx_rect(x, y, 4, 24);
+  gfx_setfont(2);
+  gfx_r = 0.48; gfx_g = 0.50; gfx_b = 0.58; gfx_x = x + 12; gfx_y = y + 7; gfx_drawstr("S"); gfx_drawnumber(idx, 0);
+  gfx_r = 0.80; gfx_g = 0.82; gfx_b = 0.88; gfx_x = x + 58; gfx_y = y + 7; gfx_drawstr(label);
+  val_x = x + w - 92;
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_x = val_x; gfx_y = y + 7; gfx_drawnumber(val, abs(val - floor(val + 0.5)) < 0.05 ? 0 : 1);
+  gfx_r = 0.54; gfx_g = 0.56; gfx_b = 0.62; gfx_x += 4; gfx_drawstr(unit);
+);
+
+function draw_eq_raw_box(x, y, w, h, title, value, unit, rr, gg, bb)
+local(tw, th) (
+  draw_panel(x, y, w, h, 0.09, 0.09, 0.12);
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95; gfx_rect(x, y, w, 4);
+  gfx_setfont(2);
+  gfx_r = 0.54; gfx_g = 0.56; gfx_b = 0.64; gfx_a = 1;
+  gfx_x = x + 10; gfx_y = y + 10; gfx_drawstr(title);
+  gfx_setfont(4);
+  gfx_r = 0.88; gfx_g = 0.90; gfx_b = 0.94;
+  gfx_x = x + 10; gfx_y = y + 31; gfx_drawnumber(value, abs(value - floor(value + 0.5)) < 0.05 ? 0 : 1);
+  gfx_setfont(2);
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_x += 5; gfx_drawstr(unit);
+);
+
+function draw_band_tile(x, y, w, h, label, actual_db, gain_db, rr, gg, bb, info_id)
+local(hover, cx, track_y, track_w, half_w, cut_norm, boost_norm, fill_w, status_y, tw, th) (
+  hover = mouse_x >= x && mouse_x <= x + w && mouse_y >= y && mouse_y <= y + h;
+  hover ? ui_hover_id = info_id;
+  draw_panel(x, y, w, h, 0.09, 0.09, 0.12);
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95; gfx_rect(x, y, w, 4);
+  gfx_setfont(3);
+  gfx_r = 0.72; gfx_g = 0.74; gfx_b = 0.80; gfx_a = 1; gfx_x = x + 10; gfx_y = y + 14; gfx_drawstr(label);
+
+  status_y = y + 34;
+  gfx_setfont(2);
+  abs(gain_db) < 0.7 ? (
+    gfx_r = 0.18; gfx_g = 0.88; gfx_b = 0.48; gfx_x = x + 10; gfx_y = status_y; gfx_drawstr("OK");
+  ) : gain_db < 0 ? (
+    gfx_r = 0.95; gfx_g = 0.28; gfx_b = 0.40; gfx_x = x + 10; gfx_y = status_y; gfx_drawstr("TOO MUCH");
+  ) : (
+    gfx_r = 0.18; gfx_g = 0.88; gfx_b = 0.48; gfx_x = x + 10; gfx_y = status_y; gfx_drawstr("LOW");
+  );
+
+  gfx_r = 0.82; gfx_g = 0.84; gfx_b = 0.90;
+  gain_db >= 0 ? sprintf(#band_corr, "+%.1f dB", gain_db) : sprintf(#band_corr, "%.1f dB", gain_db);
+  gfx_measurestr(#band_corr, tw, th);
+  gfx_x = x + w - tw - 10; gfx_y = status_y; gfx_drawstr(#band_corr);
+
+  track_y = y + 62;
+  track_w = w - 20;
+  cx = x + 10 + track_w * 0.5;
+  half_w = track_w * 0.5;
+  gfx_r = 0.08; gfx_g = 0.09; gfx_b = 0.12; gfx_a = 1; gfx_rect(x + 10, track_y, track_w, 14);
+  gfx_r = 0.24; gfx_g = 0.11; gfx_b = 0.15; gfx_a = 0.55; gfx_rect(x + 10, track_y, half_w, 14);
+  gfx_r = 0.08; gfx_g = 0.20; gfx_b = 0.13; gfx_a = 0.55; gfx_rect(cx, track_y, half_w, 14);
+  gfx_r = 0.32; gfx_g = 0.33; gfx_b = 0.38; gfx_a = 1; gfx_rect(cx - 1, track_y - 3, 2, 20);
+
+  gain_db < 0 ? (
+    cut_norm = clamp(abs(gain_db) / max(1, slider7), 0, 1);
+    fill_w = half_w * cut_norm;
+    gfx_r = 0.95; gfx_g = 0.28; gfx_b = 0.40; gfx_a = 0.95; gfx_rect(cx - fill_w, track_y, fill_w, 14);
+  ) : (
+    boost_norm = clamp(gain_db / max(0.1, slider8), 0, 1);
+    fill_w = half_w * boost_norm;
+    gfx_r = 0.18; gfx_g = 0.88; gfx_b = 0.48; gfx_a = 0.95; gfx_rect(cx, track_y, fill_w, 14);
+  );
+
+  gfx_r = 0.28; gfx_g = 0.29; gfx_b = 0.34; gfx_a = 1;
+  gfx_rect(x + 10, track_y, track_w, 1); gfx_rect(x + 10, track_y + 13, track_w, 1);
+  gfx_setfont(2);
+  gfx_r = 0.50; gfx_g = 0.52; gfx_b = 0.60;
+  gfx_x = x + 10; gfx_y = y + h - 28; gfx_drawstr("CUT");
+  gfx_measurestr("BOOST", tw, th);
+  gfx_x = x + w - tw - 10; gfx_y = y + h - 28; gfx_drawstr("BOOST");
+  gfx_r = 0.62; gfx_g = 0.64; gfx_b = 0.70;
+  sprintf(#band_actual, "actual %.1f", actual_db);
+  gfx_measurestr(#band_actual, tw, th);
+  gfx_x = x + (w - tw) * 0.5; gfx_y = y + h - 28; gfx_drawstr(#band_actual);
+);
+
+function draw_footer_bar(footer_y)
+local(err1, err2, err3, err4, worst, avg, tip_y, tw, th) (
+  err1 = abs(slider45); err2 = abs(slider46); err3 = abs(slider47); err4 = abs(slider48);
+  worst = max(max(err1, err2), max(err3, err4));
+  avg = (err1 + err2 + err3 + err4) * 0.25;
+
+  gfx_r = 0.09; gfx_g = 0.10; gfx_b = 0.13; gfx_a = 1; gfx_rect(0, footer_y, gfx_w, gfx_h - footer_y);
+  gfx_r = 0.14; gfx_g = 0.72; gfx_b = 0.83; gfx_a = 0.55; gfx_rect(0, footer_y, gfx_w, 1);
+
+  gfx_setfont(4);
+  bypass ? (
+    gfx_r = 0.95; gfx_g = 0.28; gfx_b = 0.40; gfx_x = 24; gfx_y = footer_y + 8; gfx_drawstr("BYPASS");
+  ) : worst < 1.0 ? (
+    gfx_r = 0.18; gfx_g = 0.88; gfx_b = 0.48; gfx_x = 24; gfx_y = footer_y + 8; gfx_drawstr("CURVE FIT OK");
+  ) : worst < 3.0 ? (
+    gfx_r = 0.95; gfx_g = 0.62; gfx_b = 0.15; gfx_x = 24; gfx_y = footer_y + 8; gfx_drawstr("CURVE WATCH");
+  ) : (
+    gfx_r = 0.95; gfx_g = 0.28; gfx_b = 0.40; gfx_x = 24; gfx_y = footer_y + 8; gfx_drawstr("OFF CURVE");
+  );
+
+  gfx_setfont(2);
+  gfx_r = 0.62; gfx_g = 0.64; gfx_b = 0.70; gfx_x = 170; gfx_y = footer_y + 10;
+  gfx_drawstr("Avg dev "); gfx_drawnumber(avg, 1); gfx_drawstr(" dB   Worst "); gfx_drawnumber(worst, 1);
+  gfx_drawstr(" dB   Match "); gfx_drawnumber(slider23, 0); gfx_drawstr("%   Guard "); gfx_drawnumber(slider4, 0); gfx_drawstr("%   Tol "); gfx_drawnumber(slider24, 1); gfx_drawstr(" dB");
+
+  tip_y = footer_y + 30;
+  gfx_r = 0.06; gfx_g = 0.07; gfx_b = 0.09; gfx_a = 1; gfx_rect(0, tip_y - 5, gfx_w, gfx_h - tip_y + 5);
+  gfx_r = 0.20; gfx_g = 0.23; gfx_b = 0.28; gfx_a = 1; gfx_rect(0, tip_y - 5, gfx_w, 1);
+  gfx_setfont(2);
+  gfx_r = 0.70; gfx_g = 0.74; gfx_b = 0.80; gfx_x = 14; gfx_y = tip_y;
+
+  ui_hover_id == 101 ? gfx_drawstr("BROWN: vista grafica. La linea cyan e' la forma raggiunta, la rossa e' la correzione dinamica.") :
+  ui_hover_id == 102 ? gfx_drawstr("JSFX: mostra gli slider nativi REAPER sopra la GUI per accessibilita' e automazioni.") :
+  ui_hover_id == 201 ? gfx_drawstr("MAN: nessun preset attivo. I valori correnti restano liberi.") :
+  ui_hover_id == 202 ? gfx_drawstr("STD: flat, solo HPF/LPF opzionali. Usa Manual o BAL per la correzione vera.") :
+  ui_hover_id == 203 ? gfx_drawstr("BAL: controllo VO bilanciato, medie e nasalita' sotto osservazione senza scurire troppo.") :
+  ui_hover_id == 204 ? gfx_drawstr("DRK: scurisce e contiene presenza/alte dure, mantenendo le medie sotto controllo.") :
+  ui_hover_id == 205 ? gfx_drawstr("BRT: schiarisce con prudenza e continua a tenere ferme le medie nasali.") :
+  ui_hover_id == 1010 ? gfx_drawstr("L/M: crossover tra basse e low-mid. Spostalo per decidere dove finisce il controllo del corpo.") :
+  ui_hover_id == 1011 ? gfx_drawstr("MID: crossover centrale. Utile per separare boxiness/nasalita' dalla presenza.") :
+  ui_hover_id == 1012 ? gfx_drawstr("M/H: crossover tra presenza e alte. Abbassalo se le alte dure iniziano prima.") :
+  ui_hover_id == 1003 ? gfx_drawstr("SLOPE: inclinazione target. Valori piu' alti scuriscono di piu' la curva attesa.") :
+  ui_hover_id == 1004 ? gfx_drawstr("AMT: forza della guardia dinamica dopo la tolleranza. Piu' alto = piu' intervento sulle deviazioni vere.") :
+  ui_hover_id == 1005 ? gfx_drawstr("ATK: velocita' di entrata della correzione dinamica.") :
+  ui_hover_id == 1006 ? gfx_drawstr("REL: velocita' di ritorno. Lento = forma piu' stabile e meno nervosa.") :
+  ui_hover_id == 1007 ? gfx_drawstr("CUT: taglio massimo dinamico. Se i meter restano rossi al limite, il materiale e' molto fuori curva.") :
+  ui_hover_id == 1008 ? gfx_drawstr("BOOST: boost massimo. Ora il LOW band usa lo stesso cap delle altre bande: utile per recuperare basse mancanti vs copia.") :
+  ui_hover_id == 1009 ? gfx_drawstr("LOW PROT: protegge le basse DAL TAGLIO. Alto = meno tagli sulle basse. Non limita il boost.") :
+  ui_hover_id == 1013 ? gfx_drawstr("HPF: filtro passa alto finale per broadcast/radio/TV o pulizia sub.") :
+  ui_hover_id == 1015 ? gfx_drawstr("LPF: filtro passa basso finale. Non influenza piu' il target della banda alta (fix v0.2).") :
+  ui_hover_id == 1023 ? gfx_drawstr("MATCH: pendenza statica verso il BrownSlope. Aggiunge equilibrio di base prima della guardia dinamica.") :
+  ui_hover_id == 1024 ? gfx_drawstr("TOL: zona morta in dB. Se la banda resta dentro questa tolleranza, la dinamica non la insegue.") :
+  ui_hover_id == 1025 ? gfx_drawstr("BIAS: 0 taglia soltanto, 1 bilanciato, 2 boost gentile. Sceglie quanto recuperare cio' che manca.") :
+  ui_hover_id == 1026 ? gfx_drawstr("MID: aumenta il peso di low-mid e mid-high, le zone piu' utili per correzione voce/parlato.") :
+  ui_hover_id == 3001 ? gfx_drawstr("LOW tile: centro = OK; rosso sinistra = troppe basse; verde destra = basse carenti.") :
+  ui_hover_id == 3002 ? gfx_drawstr("LOW MID tile: rosso = boxiness/corpo in eccesso; verde = zona troppo scavata.") :
+  ui_hover_id == 3003 ? gfx_drawstr("MID HIGH tile: rosso = presenza/harsh avanti; verde = parlato arretrato.") :
+  ui_hover_id == 3004 ? gfx_drawstr("HIGH tile: rosso = alte/sibilanza eccessive; verde = aria carente.") :
+  ui_hover_id == 4001 ? gfx_drawstr("IN: Input Trim in dB. Aggiusta il livello prima della correzione. Click destro = reset a 0.") :
+  ui_hover_id == 4002 ? gfx_drawstr("OUT: Output Trim in dB. Aggiusta il livello dopo la correzione. Click destro = reset a 0.") :
+  ui_hover_id == 4003 ? gfx_drawstr("W/D: Dry/Wet mix. 100% = solo segnale corretto. Riduci per blend piu' trasparente.") :
+  (ui_hover_id >= 2000 && ui_hover_id < 2100) ? gfx_drawstr("Slider JSFX mirror: stesso parametro esposto nella lista nativa REAPER.") :
+  gfx_drawstr("Guida: nei tile, centro = vicino alla curva; rosso a sinistra = banda troppo presente; verde a destra = banda carente. SHIFT = precisione, click destro = reset.");
+);
+
+// FIX Bug 5: mini-tile interattivi per IN/OUT Trim e Dry/Wet nella BROWN view.
+// Questi parametri prima erano accessibili solo dalla JSFX view.
+function draw_header_mini_tile(x, y, w, h, sl_idx, label, unit, min_v, max_v, def_v, rr, gg, bb, info_id)
+local(val, hover, clicked_l, clicked_r, norm, fill_w, tw, th) (
+  val = slider(sl_idx);
+  hover = mouse_x >= x && mouse_x <= x + w && mouse_y >= y && mouse_y <= y + h;
+  hover ? ui_hover_id = info_id;
+  hover && mouse_right_click ? (set_ui_slider(sl_idx, def_v); val = def_v;);
+  (hover && mouse_down) || ui_drag_id == (2000 + sl_idx) ? (
+    mouse_down ? (
+      ui_drag_id = 2000 + sl_idx;
+      norm = clamp((mouse_x - (x + 4)) / max(1, w - 8), 0, 1);
+      val = min_v + norm * (max_v - min_v);
+      set_ui_slider(sl_idx, val);
+    ) : (
+      ui_drag_id = 0;
+    );
+  );
+  norm = clamp((val - min_v) / max(0.0001, max_v - min_v), 0, 1);
+  draw_panel(x, y, w, h, 0.09, 0.09, 0.12);
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95; gfx_rect(x, y, w, 3);
+  gfx_r = 0.08; gfx_g = 0.09; gfx_b = 0.12; gfx_a = 1; gfx_rect(x + 4, y + h - 10, w - 8, 6);
+  fill_w = norm * (w - 8);
+  gfx_r = rr * (hover ? 1.0 : 0.75); gfx_g = gg * (hover ? 1.0 : 0.75); gfx_b = bb * (hover ? 1.0 : 0.75); gfx_a = 0.9;
+  gfx_rect(x + 4, y + h - 10, fill_w, 6);
+  gfx_setfont(2);
+  gfx_r = 0.52; gfx_g = 0.55; gfx_b = 0.63; gfx_a = 1;
+  gfx_x = x + 6; gfx_y = y + 6; gfx_drawstr(label);
+  gfx_setfont(3);
+  gfx_r = 0.86; gfx_g = 0.88; gfx_b = 0.92;
+  abs(val - floor(val + 0.5)) < 0.05 ? sprintf(#tile_v, "%.0f%s", val, unit) : sprintf(#tile_v, "%.1f%s", val, unit);
+  gfx_measurestr(#tile_v, tw, th);
+  gfx_x = x + w - tw - 6; gfx_y = y + 6; gfx_drawstr(#tile_v);
+);
+
+gfx_setfont(1, "Arial", 20, 'b');
+gfx_setfont(2, "Arial", 13);
+gfx_setfont(3, "Arial", 14, 'b');
+gfx_setfont(4, "Arial", 15, 'b');
+
+gfx_r = 0.06; gfx_g = 0.06; gfx_b = 0.08; gfx_a = 1; gfx_rect(0, 0, gfx_w, gfx_h);
+gfx_r = 0.09; gfx_g = 0.10; gfx_b = 0.13; gfx_a = 1; gfx_rect(0, 0, gfx_w, 110);
+
+gfx_setfont(1);
+gfx_r = 0.86; gfx_g = 0.88; gfx_b = 0.92; gfx_a = 1;
+gfx_x = 30; gfx_y = 20; gfx_drawstr("ZP BrownSlope Dynamic Guard Assist");
+gfx_setfont(2);
+gfx_r = 0.56; gfx_g = 0.59; gfx_b = 0.66; gfx_x = 30; gfx_y = 50;
+gfx_drawstr("Brown target  |  static match  |  dynamic correction assist");
+gfx_x = 30; gfx_y = 78; gfx_drawstr("Preset");
+
+draw_preset_button(92, 72, 66, 26, "MAN", 0, 0.48, 0.50, 0.58);
+draw_preset_button(166, 72, 70, 26, "STD", 1, 0.14, 0.72, 0.83);
+draw_preset_button(244, 72, 70, 26, "BAL", 2, 0.95, 0.62, 0.15);
+draw_preset_button(322, 72, 70, 26, "DRK", 3, 0.18, 0.52, 0.93);
+draw_preset_button(400, 72, 70, 26, "BRT", 4, 0.95, 0.28, 0.40);
+
+draw_view_tab(520, 22, 100, 30, "BROWN", 0);
+draw_view_tab(628, 22, 100, 30, "JSFX", 1);
+
+// FIX Bug 5: tile IN/OUT/W/D visibili nella view BROWN header destra.
+// Prima erano solo nella JSFX view. Ora accessibili sempre.
+floor(slider(21)) == 0 ? (
+  draw_header_mini_tile(gfx_w - 320, 10, 92, 42, 2,  "IN",  "dB", -24, 24,    0,  0.60, 0.62, 0.70, 4001);
+  draw_header_mini_tile(gfx_w - 218, 10, 92, 42, 17, "OUT", "dB", -12, 12,    0,  0.60, 0.62, 0.70, 4002);
+  draw_header_mini_tile(gfx_w - 116, 10, 92, 42, 18, "W/D", "%",    0, 100, 100,  0.14, 0.72, 0.83, 4003);
+);
+
+gfx_setfont(4);
+gfx_r = 0.14; gfx_g = 0.72; gfx_b = 0.83; gfx_a = 1;
+gfx_x = gfx_w - 320; gfx_y = 62; gfx_drawstr("SLOPE ");
+gfx_drawnumber(slider3, 1); gfx_drawstr(" dB/oct");
+gfx_r = 0.95; gfx_g = 0.62; gfx_b = 0.15; gfx_x = gfx_w - 320; gfx_y = 84;
+gfx_drawstr("HPF "); slider14 == 0 ? gfx_drawstr("OFF") : gfx_drawnumber(slider13, 0);
+gfx_drawstr("  LPF "); slider16 == 0 ? gfx_drawstr("OFF") : gfx_drawnumber(slider15, 0);
+
+floor(slider(21)) == 0 ? (
+  kgap = (gfx_w - 80) / 8; kx0 = 40 + kgap * 0.5;
+  knob_y = 142;
+  ui_knob(10, kx0 + kgap*0, knob_y, 15, 40, 400, 120, "L/M", "Hz", 0.72, 0.46, 0.15);
+  ui_knob(11, kx0 + kgap*1, knob_y, 15, 150, 3000, 650, "MID", "Hz", 0.72, 0.46, 0.15);
+  ui_knob(12, kx0 + kgap*2, knob_y, 15, 1000, 10000, 3600, "M/H", "Hz", 0.72, 0.46, 0.15);
+  ui_knob(3,  kx0 + kgap*3, knob_y, 15, -3, 8, 1.0, "SLOPE", "", 0.14, 0.72, 0.83);
+  ui_knob(23, kx0 + kgap*4, knob_y, 15, 0, 100, 0, "MATCH", "%", 0.14, 0.72, 0.83);
+  ui_knob(4,  kx0 + kgap*5, knob_y, 15, 0, 150, 60, "AMT", "%", 0.14, 0.72, 0.83);
+  ui_knob(24, kx0 + kgap*6, knob_y, 15, 0, 4, 0.8, "TOL", "dB", 0.95, 0.62, 0.15);
+  ui_knob(25, kx0 + kgap*7, knob_y, 15, 0, 2, 1, "BIAS", "", 0.72, 0.55, 1.00);
+
+  knob_y = 210;
+  ui_knob(5,  kx0 + kgap*0, knob_y, 15, 20, 2000, 200, "ATK", "ms", 0.18, 0.52, 0.93);
+  ui_knob(6,  kx0 + kgap*1, knob_y, 15, 100, 6000, 1400, "REL", "ms", 0.18, 0.52, 0.93);
+  ui_knob(7,  kx0 + kgap*2, knob_y, 15, 0, 18, 6, "CUT", "dB", 0.95, 0.28, 0.40);
+  ui_knob(8,  kx0 + kgap*3, knob_y, 15, 0, 6, 1.5, "BOOST", "dB", 0.18, 0.88, 0.48);
+  ui_knob(26, kx0 + kgap*4, knob_y, 15, 0, 100, 35, "MID", "%", 0.72, 0.55, 1.00);
+  ui_knob(9,  kx0 + kgap*5, knob_y, 15, 0, 100, 70, "LOW", "%", 0.18, 0.88, 0.48);
+  ui_knob(13, kx0 + kgap*6, knob_y, 15, 20, 160, 70, "HPF", "Hz", 0.95, 0.62, 0.15);
+  ui_knob(15, kx0 + kgap*7, knob_y, 15, 9000, 22000, 16000, "LPF", "Hz", 0.95, 0.62, 0.15);
+);
+
+graph_x = 40;
+graph_y = 252;
+stereo_x = gfx_w - 360;
+stereo_w = 320;
+graph_w = stereo_x - graph_x - 20;
+graph_h = 288;
+graph_top_db = 0;
+graph_bot_db = -140;
+
+// FIX Bug 6: grafico e tile renderizzati SOLO nella BROWN view.
+// Nella JSFX view venivano disegnati comunque e poi coperti dall'overlay,
+// sprecando tempo CPU per ogni frame.
+floor(slider(21)) == 0 ? (
+
+  draw_panel(graph_x, graph_y, graph_w, graph_h, 0.08, 0.08, 0.11);
+  draw_title_strip(graph_x, graph_y, graph_w, "LIVE TONAL SHAPE", 0.14, 0.72, 0.83);
+
+  fit_worst = max(max(abs(slider45), abs(slider46)), max(abs(slider47), abs(slider48)));
+  gfx_setfont(3);
+  fit_worst < 1.0 ? (
+    gfx_r = 0.18; gfx_g = 0.88; gfx_b = 0.48; gfx_x = graph_x + graph_w - 190; gfx_y = graph_y + 13; gfx_drawstr("CURVE FIT OK");
+  ) : fit_worst < 3.0 ? (
+    gfx_r = 0.95; gfx_g = 0.62; gfx_b = 0.15; gfx_x = graph_x + graph_w - 190; gfx_y = graph_y + 13; gfx_drawstr("CURVE WATCH");
+  ) : (
+    gfx_r = 0.95; gfx_g = 0.28; gfx_b = 0.40; gfx_x = graph_x + graph_w - 190; gfx_y = graph_y + 13; gfx_drawstr("OFF CURVE");
+  );
+  gfx_setfont(2);
+  gfx_r = 0.58; gfx_g = 0.60; gfx_b = 0.68; gfx_x = graph_x + graph_w - 190; gfx_y = graph_y + 32;
+  gfx_drawstr("max deviation "); gfx_drawnumber(fit_worst, 1); gfx_drawstr(" dB");
+
+  gfx_r = 0.34; gfx_g = 0.34; gfx_b = 0.36; gfx_a = 0.55;
+  db_line = 0;
+  loop(8,
+    y = gy(db_line);
+    gfx_line(graph_x, y, graph_x + graph_w, y, 0);
+    gfx_x = 8; gfx_y = y - 6; gfx_drawnumber(db_line, 0);
+    db_line -= 20;
+  );
+
+  gfx_r = 0.30; gfx_g = 0.30; gfx_b = 0.34; gfx_a = 0.7;
+  gfx_line(gx(20), graph_y, gx(20), graph_y + graph_h, 0);
+  gfx_line(gx(100), graph_y, gx(100), graph_y + graph_h, 0);
+  gfx_line(gx(1000), graph_y, gx(1000), graph_y + graph_h, 0);
+  gfx_line(gx(10000), graph_y, gx(10000), graph_y + graph_h, 0);
+  gfx_line(gx(20000), graph_y, gx(20000), graph_y + graph_h, 0);
+
+  bins = max(80, min(220, graph_w / 4));
+  log_min = log(20); log_max = log(20000);
+  prev_x = -1; prev_y = -1; i = 0;
+  loop(bins,
+    frac = i / max(1, bins - 1);
+    freq = exp(log_min + (log_max - log_min) * frac);
+    x = graph_x + frac * graph_w;
+    y = gy(brown_display_db(freq));
+    col_w = max(2, graph_w / bins + 1);
+    gfx_r = 0.70; gfx_g = 0.46; gfx_b = 0.22; gfx_a = 0.16;
+    gfx_rect(x, y, col_w, graph_y + graph_h - y);
+    gfx_r = 0.95; gfx_g = 0.70; gfx_b = 0.38; gfx_a = 0.10;
+    gfx_rect(x, max(graph_y, y - 10), col_w, graph_y + graph_h - max(graph_y, y - 10));
+    prev_x >= 0 ? (
+      gfx_r = 0.98; gfx_g = 0.72; gfx_b = 0.42; gfx_a = 0.90;
+      gfx_line(prev_x, prev_y, x, y, 1);
+    );
+    prev_x = x; prev_y = y;
+    i += 1;
+  );
+
+  gfx_r = 0.88; gfx_g = 0.90; gfx_b = 0.88; gfx_a = 0.78;
+  gfx_line(graph_x, gy(-50), graph_x + graph_w, gy(-50), 1);
+
+  a_disp1 = -50 + (d_actual1 - d_t1);
+  a_disp2 = -50 + (d_actual2 - d_t2);
+  a_disp3 = -50 + (d_actual3 - d_t3);
+  a_disp4 = -50 + (d_actual4 - d_t4);
+
+  gfx_r = 0.14; gfx_g = 0.72; gfx_b = 0.83; gfx_a = 1;
+  slider19 == 0 || slider19 == 2 ? draw_curve(a_disp1, a_disp2, a_disp3, a_disp4);
+
+  gfx_r = 0.95; gfx_g = 0.28; gfx_b = 0.40; gfx_a = 1;
+  slider19 == 1 || slider19 == 2 ? draw_curve(-50 + d_corr1 * 2, -50 + d_corr2 * 2, -50 + d_corr3 * 2, -50 + d_corr4 * 2);
+
+  gfx_setfont(2);
+  gfx_r = 0.72; gfx_g = 0.74; gfx_b = 0.80; gfx_a = 1;
+  gfx_x = graph_x + 14; gfx_y = graph_y + graph_h - 24;
+  gfx_drawstr("Brown field ");
+  gfx_r = 0.72; gfx_g = 0.46; gfx_b = 0.15; gfx_drawstr("- target  ");
+  gfx_r = 0.14; gfx_g = 0.72; gfx_b = 0.83; gfx_drawstr("Actual ");
+  gfx_r = 0.95; gfx_g = 0.28; gfx_b = 0.40; gfx_drawstr("- correction");
+
+  draw_stereo_ms_panel(stereo_x, graph_y, stereo_w, graph_h);
+
+  tile_y = 565; tile_w = (gfx_w - 80 - 42) / 4; tile_h = 140;
+  draw_band_tile(40, tile_y, tile_w, tile_h, "LOW", slider41, slider45, 0.14, 0.72, 0.83, 3001);
+  draw_band_tile(40 + tile_w + 14, tile_y, tile_w, tile_h, "LOW MID", slider42, slider46, 0.18, 0.52, 0.93, 3002);
+  draw_band_tile(40 + (tile_w + 14) * 2, tile_y, tile_w, tile_h, "MID HIGH", slider43, slider47, 0.14, 0.72, 0.83, 3003);
+  draw_band_tile(40 + (tile_w + 14) * 3, tile_y, tile_w, tile_h, "HIGH", slider44, slider48, 0.95, 0.62, 0.15, 3004);
+
+); // fine blocco BROWN view
+
+footer_y = gfx_h - 60;
+
+floor(slider(21)) == 1 ? (
+  gfx_r = 0.06; gfx_g = 0.06; gfx_b = 0.08; gfx_a = 1; gfx_rect(0, 110, gfx_w, gfx_h - 110);
+  view_x = 40; view_y = 130; view_w = gfx_w - 80; view_h = gfx_h - 210;
+  draw_panel(view_x, view_y, view_w, view_h, 0.08, 0.08, 0.11);
+  draw_title_strip(view_x, view_y, view_w, "JSFX RAW EQ PARAMETERS", 0.18, 0.52, 0.93);
+  gfx_setfont(2);
+  gfx_r = 0.58; gfx_g = 0.60; gfx_b = 0.68; gfx_x = view_x + 14; gfx_y = view_y + 36;
+  gfx_drawstr("Native REAPER sliders S1-S26 are exposed above; this panel mirrors the same controls.");
+
+  col1 = view_x + 14; col2 = view_x + view_w * 0.5 + 8; row_w = view_w * 0.5 - 24;
+  y0 = view_y + 70; step = 31;
+  ui_raw_slider(1,  col1, y0 + step*0, row_w, 28, 0, 4, 0, "Preset Recall", "mode", 0.14, 0.72, 0.83);
+  ui_raw_slider(22, col1, y0 + step*1, row_w, 28, 0, 1, 0, "Bypass", "", 0.95, 0.28, 0.40);
+  ui_raw_slider(2,  col1, y0 + step*2, row_w, 28, -24, 24, 0, "Input Trim", "dB", 0.60, 0.62, 0.70);
+  ui_raw_slider(3,  col1, y0 + step*3, row_w, 28, -3, 8, 1.0, "Target Slope", "dB/oct", 0.14, 0.72, 0.83);
+  ui_raw_slider(4,  col1, y0 + step*4, row_w, 28, 0, 150, 60, "Amount", "%", 0.14, 0.72, 0.83);
+  ui_raw_slider(5,  col1, y0 + step*5, row_w, 28, 20, 2000, 200, "React Attack", "ms", 0.18, 0.52, 0.93);
+  ui_raw_slider(6,  col1, y0 + step*6, row_w, 28, 100, 6000, 1400, "React Release", "ms", 0.18, 0.52, 0.93);
+  ui_raw_slider(7,  col1, y0 + step*7, row_w, 28, 0, 18, 6, "Max Dyn Cut", "dB", 0.95, 0.28, 0.40);
+  ui_raw_slider(8,  col1, y0 + step*8, row_w, 28, 0, 6, 1.5, "Max Dyn Boost", "dB", 0.18, 0.88, 0.48);
+  ui_raw_slider(9,  col1, y0 + step*9, row_w, 28, 0, 100, 70, "Low Protect", "%", 0.18, 0.88, 0.48);
+  ui_raw_slider(10, col1, y0 + step*10, row_w, 28, 40, 400, 120, "Xover Low/Mid", "Hz", 0.72, 0.46, 0.15);
+  ui_raw_slider(11, col1, y0 + step*11, row_w, 28, 150, 3000, 650, "Xover Mid", "Hz", 0.72, 0.46, 0.15);
+  ui_raw_slider(12, col1, y0 + step*12, row_w, 28, 1000, 10000, 3600, "Xover High", "Hz", 0.72, 0.46, 0.15);
+
+  ui_raw_slider(13, col2, y0 + step*0, row_w, 28, 20, 160, 70, "Final HPF", "Hz", 0.95, 0.62, 0.15);
+  ui_raw_slider(14, col2, y0 + step*1, row_w, 28, 0, 4, 3, "HPF Slope", "step", 0.95, 0.62, 0.15);
+  ui_raw_slider(15, col2, y0 + step*2, row_w, 28, 9000, 22000, 16000, "Final LPF", "Hz", 0.95, 0.62, 0.15);
+  ui_raw_slider(16, col2, y0 + step*3, row_w, 28, 0, 4, 2, "LPF Slope", "step", 0.95, 0.62, 0.15);
+  ui_raw_slider(17, col2, y0 + step*4, row_w, 28, -12, 12, 0, "Output Trim", "dB", 0.60, 0.62, 0.70);
+  ui_raw_slider(18, col2, y0 + step*5, row_w, 28, 0, 100, 100, "Dry/Wet", "%", 0.60, 0.62, 0.70);
+  ui_raw_slider(19, col2, y0 + step*6, row_w, 28, 0, 2, 2, "Graph View", "mode", 0.14, 0.72, 0.83);
+  ui_raw_slider(20, col2, y0 + step*7, row_w, 28, 0.2, 5, 1.2, "Graph Glide", "s", 0.14, 0.72, 0.83);
+  ui_raw_slider(21, col2, y0 + step*8, row_w, 28, 0, 1, 0, "View Profile", "mode", 0.18, 0.52, 0.93);
+  ui_raw_slider(23, col2, y0 + step*9, row_w, 28, 0, 100, 0, "Static Match", "%", 0.14, 0.72, 0.83);
+  ui_raw_slider(24, col2, y0 + step*10, row_w, 28, 0, 4, 0.8, "Guard Tolerance", "dB", 0.95, 0.62, 0.15);
+  ui_raw_slider(25, col2, y0 + step*11, row_w, 28, 0, 2, 1, "Correction Bias", "mode", 0.72, 0.55, 1.00);
+  ui_raw_slider(26, col2, y0 + step*12, row_w, 28, 0, 100, 35, "Mid Focus", "%", 0.72, 0.55, 1.00);
+
+  gfx_setfont(3);
+  gfx_r = 0.72; gfx_g = 0.74; gfx_b = 0.80; gfx_x = col1; gfx_y = y0 + step*14;
+  gfx_drawstr("READ METERS");
+  gfx_setfont(2);
+  gfx_r = 0.54; gfx_g = 0.56; gfx_b = 0.62; gfx_x = col1; gfx_y = y0 + step*15;
+  gfx_drawstr("S41-S44 Actual band energy   |   S45-S48 Dynamic gain per band");
+);
+
+draw_footer_bar(footer_y);
+
+last_mouse_cap = mouse_cap;

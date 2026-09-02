@@ -1,49 +1,73 @@
 // @description ZP Oscilloscope 16ch
-// @version 11.0.1
+// @version 12.0
 // @author Paolo Balestri
 // @license LGPL-2.1-or-later
 // @changelog
-//   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
-//   Prima pubblicazione nella ZP Suite.
+//   V12: Channel Mode con quattro modi - Auto, Manual, Mono selected, Mono sum.
+//   V12: pulsante MONO in testata, e come vero interruttore: il secondo click
+//     riporta ad Auto o Manual.
+//   V12: selettore colore CH1/MONO in testata - rosso, giallo, verde.
+//   V12: pulsante GESTIONE in testata, oltre alla freccia laterale.
+//   V12: il pannello di gestione parte aperto nelle nuove istanze.
+//   V12: View Size di default a 8s, che e' il limite reale di memoria.
+//   V12: testata rifatta, con nome, firma e stato operativo compatto.
 // Basato su "Oscilloscope Meter (Cockos)" - analysis/gfxscope
 // Copyright (C) 2007 Cockos Incorporated
-// Mod Paolo Balestri V11 - 2026
+// Mod Paolo Balestri V12 - 2026
 // License: LGPL - http://www.gnu.org/licenses/lgpl.html
 desc:ZP Oscilloscope 16ch - Paolo Balestri
 //tags: analysis scope meter multichannel cockos
 // Autore: Cockos/Paolo Balestri 2026
 // Contatto: social@paolobalestri.com
-/*
-  Fix V3:
-  - MEMORY: 16ch × 30s = 21M celle > limite JSFX 8M → tutto oltre 8M era zero
-    → forme d'onda nere, colori assenti. Ora max 8s (5.6M celle, sicuro).
-  - COLORI: palette a 16 colori ben distinti, distribuiti sulla ruota cromatica.
-    Memorizzati in un array compatto DENTRO il limite del pool.
-  - CANALI: selettore a cursore orizzontale drag nel pannello (non più click-ciclo).
-  - RESET: riga nel pannello che riporta Win=10s, Range=0dB, RMS=300ms.
-  - NOMI: #lbl0..#lbl15 (stringhe native JSFX), editabili con click.
 
-  Novità V8:
-  - SPINBOX: Win / Range / RMS / Channels hanno ora un campo valore cliccabile
-    che si illumina e accetta input da tastiera (cifre, punto, meno, Enter=conferma,
-    ESC=annulla, Backspace). Bottoni +/- laterali per incrementi rapidi.
-    Il mini-slider sottile rimane per il drag fine.
-  - RMS barra: ogni lane mostra ora una barra grafica RMS (colorata col canale)
-    nella fascia inferiore, oltre al valore numerico dB in alto a destra.
-  - RMS range esteso: finestra RMS ora va fino a 2000ms (era 300ms).
+/* Storia delle versioni
 
-  Novità V11:
-  - VISIBILITÀ CANALE: nel pannello Labels, click sul quadratino colorato
-    toglie/aggiunge il canale dalla vista. I canali visibili si spartiscono
-    l'intero schermo. Almeno 1 canale resta sempre visibile.
-    Click sul nome = modifica etichetta (invariato).
+   V12:
+   - Restyling ZP: testata con nome, firma e stato operativo compatto.
+   - Area scope piu' pulita: pannello e waveform partono sotto la testata.
+   - Default View Size allineato al limite reale di memoria: 8s.
+   - Channel Mode: AUTO segue i canali della traccia, MANUAL usa il valore
+     scelto, MONO CH mostra un canale selezionato, MONO SUM mostra la somma
+     mono normalizzata.
+   - Pulsante MONO in testata: passa subito a MONO CH 1 senza aprire il setup,
+     e il secondo click riporta ad AUTO o MANUAL.
+   - Selettore colore CH1/MONO in testata: rosso, giallo, verde.
+   - Pulsante GESTIONE visibile in testata, oltre alla freccia laterale.
+   - Il pannello di gestione parte aperto nelle nuove istanze.
+
+   V11:
+   - Visibilita' canale: nel pannello Labels, click sul quadratino colorato
+     toglie o aggiunge il canale dalla vista. I canali visibili si spartiscono
+     l'intero schermo, e almeno uno resta sempre visibile.
+     Click sul nome = modifica etichetta.
+
+   V8:
+   - Spinbox: Win / Range / RMS / Channels hanno un campo valore cliccabile che
+     accetta input da tastiera (cifre, punto, meno, Enter conferma, ESC annulla,
+     Backspace). Bottoni +/- laterali per incrementi rapidi, mini-slider per il
+     drag fine.
+   - RMS: ogni lane mostra una barra grafica RMS del colore del canale, oltre al
+     valore numerico in dB.
+   - Finestra RMS estesa fino a 2000 ms.
+
+   V3:
+   - Memoria: 16 canali x 30s = 21M celle, oltre il limite JSFX di 8M, quindi
+     tutto oltre 8M restava a zero e le forme d'onda uscivano nere. Massimo
+     portato a 8s (5,6M celle).
+   - Colori: palette di 16 colori distinti sulla ruota cromatica, in un array
+     compatto dentro il limite del pool.
+   - Canali: selettore a cursore orizzontale, non piu' click ciclico.
+   - Reset: riga nel pannello che riporta Win=8s, Range=0dB, RMS=300ms.
+   - Nomi: #lbl0..#lbl15, stringhe native JSFX, editabili con click.
 */
 
-slider1:view_msec=10000<100,8000,100>-View Size (ms)
+slider1:view_msec=8000<100,8000,100>-View Size (ms)
 slider2:view_maxdb=0<-144,36,.1>-Vertical Zoom (dB)
 slider3:view_retrig=0<0,3,1{instant,any,ascending,descending}>-Retrig
 slider4:num_channels=2<1,16,1>-Number of Channels
 slider5:rms_win_ms=300<10,2000,1>-RMS Window (ms)
+slider6:chan_mode=0<0,3,1{Auto,Manual,Mono selected,Mono sum}>-Channel Mode
+slider7:mono_selected=1<1,16,1>-Mono Selected Channel
 
 in_pin:CH1
 in_pin:CH2
@@ -85,9 +109,12 @@ memset(0, 0, histsize + rms_ring_max + 32);
 
 // Visibilità: solo alla prima istanza (flag scalare persiste, @serialize la protegge)
 _vis_inited ? 0 : (
-  _vis_inited = 1;
   _sv0=1;_sv1=1;_sv2=1;_sv3=1;_sv4=1;_sv5=1;_sv6=1;_sv7=1;
   _sv8=1;_sv9=1;_sv10=1;_sv11=1;_sv12=1;_sv13=1;_sv14=1;_sv15=1;
+  _scope_color_mode = 0;
+  _mono_return_mode = 0;
+  panel_open = 1;
+  _vis_inited = 1;
 );
 
 recpos = 0;
@@ -122,7 +149,6 @@ labels_init ? 0 : (
   strcpy(#lbl12,"CH13");strcpy(#lbl13,"CH14");strcpy(#lbl14,"CH15");strcpy(#lbl15,"CH16");
 );
 
-_vis_inited ? 0 : panel_open = 1;  // aperto solo al primo caricamento
 panel_w = 190;
 edit_ch = -1;
 edit_blink = 0;
@@ -143,7 +169,9 @@ panel_total_h = 800;
 edit_cur = 0;
 
 @slider
-// noop
+mono_selected=max(1,min(16,mono_selected|0));
+chan_mode=max(0,min(3,chan_mode|0));
+num_channels=max(1,min(16,num_channels|0));
 
 @block
 g_last_wr = time_precise();
@@ -158,18 +186,53 @@ new_rbs != rms_buf_size ? (
 );
 
 @sample
+track_ch = num_ch|0;
+track_ch < 1 ? track_ch = 1;
+track_ch > 16 ? track_ch = 16;
+mode_i = chan_mode|0;
+mode_i < 0 ? mode_i = 0; mode_i > 3 ? mode_i = 3;
+mono_idx = (mono_selected|0)-1;
+mono_idx < 0 ? mono_idx = 0;
+mono_idx >= track_ch ? mono_idx = track_ch-1;
+mono_v = 0;
+mode_i == 2 ? (
+  mono_v = mono_idx==0?spl0:mono_idx==1?spl1:mono_idx==2?spl2:mono_idx==3?spl3:
+           mono_idx==4?spl4:mono_idx==5?spl5:mono_idx==6?spl6:mono_idx==7?spl7:
+           mono_idx==8?spl8:mono_idx==9?spl9:mono_idx==10?spl10:mono_idx==11?spl11:
+           mono_idx==12?spl12:mono_idx==13?spl13:mono_idx==14?spl14:spl15;
+) : mode_i == 3 ? (
+  mi=0; mono_v=0;
+  loop(track_ch,
+    sv = mi==0?spl0:mi==1?spl1:mi==2?spl2:mi==3?spl3:
+         mi==4?spl4:mi==5?spl5:mi==6?spl6:mi==7?spl7:
+         mi==8?spl8:mi==9?spl9:mi==10?spl10:mi==11?spl11:
+         mi==12?spl12:mi==13?spl13:mi==14?spl14:spl15;
+    mono_v += sv;
+    mi += 1;
+  );
+  mono_v = mono_v / max(1,track_ch);
+);
+
 g_hard_hold ? (0;) : (
-  recpos[0]=spl0;   recpos[1]=spl1;   recpos[2]=spl2;   recpos[3]=spl3;
-  recpos[4]=spl4;   recpos[5]=spl5;   recpos[6]=spl6;   recpos[7]=spl7;
-  recpos[8]=spl8;   recpos[9]=spl9;   recpos[10]=spl10; recpos[11]=spl11;
-  recpos[12]=spl12; recpos[13]=spl13; recpos[14]=spl14; recpos[15]=spl15;
+  mode_i >= 2 ? (
+    recpos[0]=mono_v; recpos[1]=0; recpos[2]=0; recpos[3]=0;
+    recpos[4]=0; recpos[5]=0; recpos[6]=0; recpos[7]=0;
+    recpos[8]=0; recpos[9]=0; recpos[10]=0; recpos[11]=0;
+    recpos[12]=0; recpos[13]=0; recpos[14]=0; recpos[15]=0;
+  ) : (
+    recpos[0]=spl0;   recpos[1]=spl1;   recpos[2]=spl2;   recpos[3]=spl3;
+    recpos[4]=spl4;   recpos[5]=spl5;   recpos[6]=spl6;   recpos[7]=spl7;
+    recpos[8]=spl8;   recpos[9]=spl9;   recpos[10]=spl10; recpos[11]=spl11;
+    recpos[12]=spl12; recpos[13]=spl13; recpos[14]=spl14; recpos[15]=spl15;
+  );
   recpos = (recpos + CH_STRIDE) >= histsize ? 0 : (recpos + CH_STRIDE);
 );
 rms_off = rms_ptr * CH_STRIDE;
 rbase = histsize;
 i = 0;
 loop(16,
-  sv = i==0?spl0:i==1?spl1:i==2?spl2:i==3?spl3:
+  sv = mode_i >= 2 ? (i==0 ? mono_v : 0) :
+       i==0?spl0:i==1?spl1:i==2?spl2:i==3?spl3:
        i==4?spl4:i==5?spl5:i==6?spl6:i==7?spl7:
        i==8?spl8:i==9?spl9:i==10?spl10:i==11?spl11:
        i==12?spl12:i==13?spl13:i==14?spl14:spl15;
@@ -192,6 +255,8 @@ file_var(0,_sv0);  file_var(0,_sv1);  file_var(0,_sv2);  file_var(0,_sv3);
 file_var(0,_sv4);  file_var(0,_sv5);  file_var(0,_sv6);  file_var(0,_sv7);
 file_var(0,_sv8);  file_var(0,_sv9);  file_var(0,_sv10); file_var(0,_sv11);
 file_var(0,_sv12); file_var(0,_sv13); file_var(0,_sv14); file_var(0,_sv15);
+file_var(0,_scope_color_mode);
+file_var(0,_mono_return_mode);
 
 @gfx 820 520
 
@@ -225,7 +290,11 @@ function fmt_time(ms)(
 );
 
 function set_ch_color(ch)(
-  ch==0?(gfx_r=c0r;gfx_g=c0g;gfx_b=c0b;):
+  ch==0?(
+    (_scope_color_mode|0)==1?(gfx_r=1.00;gfx_g=0.88;gfx_b=0.12;):
+    (_scope_color_mode|0)==2?(gfx_r=0.25;gfx_g=1.00;gfx_b=0.28;):
+                               (gfx_r=c0r;gfx_g=c0g;gfx_b=c0b;);
+  ):
   ch==1?(gfx_r=c1r;gfx_g=c1g;gfx_b=c1b;):
   ch==2?(gfx_r=c2r;gfx_g=c2g;gfx_b=c2b;):
   ch==3?(gfx_r=c3r;gfx_g=c3g;gfx_b=c3b;):
@@ -395,20 +464,38 @@ function panel_row(tx,ty,pw,lh,active)
 rs = gfx_ext_retina > 1 ? gfx_ext_retina : 1;
 gfx_setfont(1,"Arial",12*rs);
 lh = 20*rs;
+HDR_H = max(42*rs, gfx_texth*3.15);
+p_hdr_mono_x=-9999; p_hdr_mono_y=-9999; p_hdr_mono_w=0; p_hdr_mono_h=0;
+p_hdr_color_x=-9999; p_hdr_color_y=-9999; p_hdr_color_w=0; p_hdr_color_h=0;
+p_hdr_manage_x=-9999; p_hdr_manage_y=-9999; p_hdr_manage_w=0; p_hdr_manage_h=0;
+_scope_color_mode=max(0,min(2,_scope_color_mode|0));
+_mono_return_mode=max(0,min(1,_mono_return_mode|0));
 
 pw = panel_open ? panel_w*rs : 14*rs;
 scope_x = pw + 1;
 scope_w = gfx_w - scope_x - 2; scope_w < 1 ? scope_w = 1;
+lane_label_w = max(64*rs,min(118*rs,scope_w*0.22));
+wave_x = scope_x + lane_label_w;
+wave_w = scope_w - lane_label_w; wave_w < 20 ? (lane_label_w=0; wave_x=scope_x; wave_w=scope_w;);
 
+track_view_ch = num_ch|0;
+track_view_ch < 1 ? track_view_ch=1; track_view_ch > 16 ? track_view_ch=16;
+chan_mode_i = chan_mode|0;
+chan_mode_i < 0 ? chan_mode_i=0; chan_mode_i > 3 ? chan_mode_i=3;
+mono_sel_i = mono_selected|0;
+mono_sel_i < 1 ? mono_sel_i=1; mono_sel_i > track_view_ch ? mono_sel_i=track_view_ch;
+
+chan_mode_i == 0 ? num_view_ch = track_view_ch :
+chan_mode_i == 2 || chan_mode_i == 3 ? num_view_ch = 1 :
 num_view_ch = (num_channels|0);
 num_view_ch < 1 ? num_view_ch=1; num_view_ch > 16 ? num_view_ch=16;
 
 // Conta canali visibili tra i primi num_view_ch
-n_vis_ch = count_vis(num_view_ch);
+chan_mode_i >= 2 ? n_vis_ch = 1 : n_vis_ch = count_vis(num_view_ch);
 n_vis_ch < 1 ? n_vis_ch = 1;
 
-scope_y = 0;
-scope_h = gfx_h; scope_h < 1 ? scope_h = 1;
+scope_y = HDR_H;
+scope_h = gfx_h - HDR_H; scope_h < 1 ? scope_h = 1;
 lane_h = (scope_h / n_vis_ch) | 0;
 lane_h < 4 ? lane_h = 4;
 
@@ -422,10 +509,10 @@ view_msec > g_maxlen_ms ? view_msec = g_maxlen_ms;
 
 viewsize_spls = (view_msec * srate * 0.001) | 0;
 viewsize_spls < 1 ? viewsize_spls = 1;
-viewadv = scope_w / viewsize_spls;
+viewadv = wave_w / viewsize_spls;
 viewadvn = floor(1/viewadv+0.5);
 viewadvn > 8 ? (
-  viewsize_spls = viewadvn * scope_w;
+  viewsize_spls = viewadvn * wave_w;
   viewadv = 1/viewadvn;
   view_msec_r = viewsize_spls * 1000 / srate;
   recpos_u = floor(recpos_u/(viewadvn*CH_STRIDE))*viewadvn*CH_STRIDE;
@@ -443,15 +530,126 @@ gfx_set(0.06,0.06,0.09,1);
 gfx_x=0; gfx_y=0; gfx_rectto(gfx_w,gfx_h);
 
 // ══════════════════════════════════════════════════════
+// HEADER v12
+// ══════════════════════════════════════════════════════
+gfx_set(0.050,0.056,0.066,1);
+gfx_rect(0,0,gfx_w,HDR_H);
+gfx_set(0.16,0.50,0.92,0.95);
+gfx_rect(0,0,gfx_w,max(2,3*rs));
+gfx_set(0.18,0.20,0.25,1);
+gfx_rect(0,HDR_H-1,gfx_w,1);
+
+gfx_setfont(2,"Arial",max(16*rs,min(22*rs,HDR_H*0.42)),'b');
+gfx_set(0.94,0.97,0.99,1);
+gfx_x=10*rs; gfx_y=5*rs;
+gfx_drawstr("ZP Oscilloscope 16ch");
+
+p_hdr_mono_w = 58*rs;
+p_hdr_mono_h = max(18*rs,gfx_texth+4*rs);
+p_hdr_mono_x = min(gfx_w-p_hdr_mono_w-12*rs, 214*rs);
+p_hdr_mono_y = 6*rs;
+p_hdr_mono_x > 120*rs ? (
+  mono_hdr_active = chan_mode_i == 2 && mono_sel_i == 1;
+  mono_hdr_hover = hit(mouse_x,mouse_y,p_hdr_mono_x,p_hdr_mono_y,p_hdr_mono_w,p_hdr_mono_h);
+  mono_hdr_active ? gfx_set(0.75,0.34,0.08,1) :
+  mono_hdr_hover  ? gfx_set(0.18,0.34,0.66,1) :
+                    gfx_set(0.08,0.15,0.30,1);
+  gfx_rect(p_hdr_mono_x,p_hdr_mono_y,p_hdr_mono_w,p_hdr_mono_h);
+  gfx_set(0.95,0.98,1,mono_hdr_active ? 1 : 0.92);
+  gfx_setfont(1,"Arial",max(10*rs,min(13*rs,HDR_H*0.25)),'b');
+  gfx_measurestr("MONO",_mbw,_mbh);
+  gfx_x=p_hdr_mono_x+(p_hdr_mono_w-_mbw)/2;
+  gfx_y=p_hdr_mono_y+(p_hdr_mono_h-_mbh)/2;
+  gfx_drawstr("MONO");
+);
+
+p_hdr_color_w = 64*rs;
+p_hdr_color_h = p_hdr_mono_h;
+p_hdr_color_x = p_hdr_mono_x + p_hdr_mono_w + 6*rs;
+p_hdr_color_y = p_hdr_mono_y;
+p_hdr_color_x + p_hdr_color_w < gfx_w - 12*rs && p_hdr_mono_x > 120*rs ? (
+  color_hdr_hover = hit(mouse_x,mouse_y,p_hdr_color_x,p_hdr_color_y,p_hdr_color_w,p_hdr_color_h);
+  color_hdr_hover ? gfx_set(0.18,0.34,0.66,1) : gfx_set(0.08,0.15,0.30,1);
+  gfx_rect(p_hdr_color_x,p_hdr_color_y,p_hdr_color_w,p_hdr_color_h);
+  (_scope_color_mode|0)==1 ? gfx_set(1.00,0.88,0.12,1) :
+  (_scope_color_mode|0)==2 ? gfx_set(0.25,1.00,0.28,1) :
+                              gfx_set(1.00,0.22,0.22,1);
+  gfx_rect(p_hdr_color_x+4*rs,p_hdr_color_y+4*rs,10*rs,p_hdr_color_h-8*rs);
+  gfx_setfont(1,"Arial",max(8*rs,min(11*rs,HDR_H*0.22)),'b');
+  (_scope_color_mode|0)==1 ? strcpy(#color_lbl,"GIALLO") :
+  (_scope_color_mode|0)==2 ? strcpy(#color_lbl,"VERDE") :
+                              strcpy(#color_lbl,"ROSSO");
+  gfx_set(0.95,0.98,1,0.92);
+  gfx_measurestr(#color_lbl,_cbw,_cbh);
+  gfx_x=p_hdr_color_x+17*rs;
+  gfx_y=p_hdr_color_y+(p_hdr_color_h-_cbh)/2;
+  gfx_drawstr(#color_lbl);
+);
+
+p_hdr_manage_w = 78*rs;
+p_hdr_manage_h = p_hdr_mono_h;
+p_hdr_manage_x = p_hdr_color_x + p_hdr_color_w + 6*rs;
+p_hdr_manage_y = p_hdr_mono_y;
+p_hdr_manage_x + p_hdr_manage_w < gfx_w - 12*rs && p_hdr_color_x > 120*rs ? (
+  manage_hdr_hover = hit(mouse_x,mouse_y,p_hdr_manage_x,p_hdr_manage_y,p_hdr_manage_w,p_hdr_manage_h);
+  panel_open ? gfx_set(0.16,0.43,0.72,1) :
+  manage_hdr_hover ? gfx_set(0.18,0.34,0.66,1) :
+                     gfx_set(0.08,0.15,0.30,1);
+  gfx_rect(p_hdr_manage_x,p_hdr_manage_y,p_hdr_manage_w,p_hdr_manage_h);
+  gfx_set(0.95,0.98,1,0.95);
+  gfx_setfont(1,"Arial",max(8*rs,min(11*rs,HDR_H*0.22)),'b');
+  gfx_measurestr("GESTIONE",_gbw,_gbh);
+  gfx_x=p_hdr_manage_x+(p_hdr_manage_w-_gbw)/2;
+  gfx_y=p_hdr_manage_y+(p_hdr_manage_h-_gbh)/2;
+  gfx_drawstr("GESTIONE");
+);
+
+gfx_setfont(1,"Arial",max(10*rs,min(13*rs,HDR_H*0.25)),'b');
+gfx_set(0.50,0.68,0.94,1);
+gfx_x=10*rs; gfx_y=max(24*rs,HDR_H-gfx_texth-7*rs);
+gfx_drawstr("Waveform Monitor | v12 beta3 - di Paolo Balestri");
+
+gfx_setfont(1,"Arial",max(10*rs,min(13*rs,HDR_H*0.25)),'b');
+gfx_set(0.72,0.82,0.90,0.98);
+strcpy(#_hdr_win,fmt_time(view_msec_r));
+chan_mode_i == 0 ? strcpy(#mode_lbl,"AUTO") :
+chan_mode_i == 1 ? strcpy(#mode_lbl,"MANUAL") :
+chan_mode_i == 2 ? sprintf(#mode_lbl,"MONO CH %d",mono_sel_i) :
+                   strcpy(#mode_lbl,"MONO SUM");
+sprintf(#hdr_state,"%s  |  Win %s  |  Range %+.1fdB  |  RMS %dms  |  %d CH",#mode_lbl,#_hdr_win,view_maxdb,rms_win_ms,num_view_ch);
+gfx_measurestr(#hdr_state,_htw,_hth);
+gfx_x=max(12*rs,gfx_w-_htw-12*rs);
+gfx_y=7*rs;
+gfx_drawstr(#hdr_state);
+g_hard_hold ? (
+  gfx_set(1.0,0.64,0.18,1);
+  gfx_measurestr("FROZEN",_htw,_hth);
+  gfx_x=gfx_w-_htw-12*rs; gfx_y=HDR_H-_hth-7*rs;
+  gfx_drawstr("FROZEN");
+) : g_hold >= 0 ? (
+  gfx_set(0.66,1.0,0.52,1);
+  gfx_measurestr("HOLD",_htw,_hth);
+  gfx_x=gfx_w-_htw-12*rs; gfx_y=HDR_H-_hth-7*rs;
+  gfx_drawstr("HOLD");
+);
+
+// ══════════════════════════════════════════════════════
 // DRAW SCOPE
 // ══════════════════════════════════════════════════════
-gfx_set(0.04,0.04,0.06,1);
+gfx_set(0.025,0.030,0.040,1);
 gfx_rect(scope_x, scope_y, scope_w, scope_h);
+lane_label_w > 0 ? (
+  gfx_set(0.040,0.048,0.060,1);
+  gfx_rect(scope_x,scope_y,lane_label_w,scope_h);
+  gfx_set(0.16,0.50,0.92,0.22);
+  gfx_rect(scope_x+lane_label_w-1,scope_y,1,scope_h);
+);
 
 ch_idx = 0;
 row_idx = 0;   // posizione visiva (0 = prima lane in alto)
 loop(num_view_ch,
-  get_vis(ch_idx) ? (
+  (chan_mode_i >= 2 || get_vis(ch_idx)) ? (
+    draw_ch_idx = chan_mode_i == 2 ? mono_sel_i-1 : chan_mode_i == 3 ? 6 : ch_idx;
     lt = scope_y + row_idx * lane_h;
     lb = lt + lane_h;
     lc = lt + (lane_h*0.5)|0;
@@ -468,12 +666,12 @@ loop(num_view_ch,
       a > 14 ? (
         a < ly ? (
           gfx_r=gfx_g=gfx_b=0.5; gfx_a=0.15;
-          gfx_line(scope_x,lc-a,scope_x+scope_w,lc-a);
-          gfx_line(scope_x,lc+a,scope_x+scope_w,lc+a);
+      gfx_line(wave_x,lc-a,scope_x+scope_w,lc-a);
+      gfx_line(wave_x,lc+a,scope_x+scope_w,lc+a);
           v != view_maxdb ? (
             sprintf(#tmp,"%+.0fdB",v);
             gfx_r=gfx_g=gfx_b=0.5; gfx_a=0.4;
-            gfx_x=scope_x+2; gfx_y=lc+a+2; gfx_drawstr(#tmp);
+            gfx_x=wave_x+2; gfx_y=lc+a+2; gfx_drawstr(#tmp);
           );
           ly = a - gfx_texth - 14;
         );
@@ -486,11 +684,6 @@ loop(num_view_ch,
       gfx_r=gfx_g=gfx_b=0.3; gfx_a=0.35;
       gfx_line(scope_x,lb,scope_x+scope_w,lb);
     );
-
-    // channel label
-    set_ch_color(ch_idx); gfx_a=0.85;
-    gfx_x=scope_x+4; gfx_y=lt+2;
-    get_ch_name(ch_idx); gfx_drawstr(#tmp_name);
 
     // waveform read pointer
     rdptr = recpos_u - viewsize_spls*CH_STRIDE;
@@ -513,10 +706,10 @@ loop(num_view_ch,
     rdptr >= histsize ? rdptr -= histsize;
 
     // draw waveform
-    set_ch_color(ch_idx);
-    x = scope_x;
+    set_ch_color(draw_ch_idx);
+    x = wave_x;
     viewadv < 1 ? (
-      lx=scope_x; minv=maxv=rdptr[ch_idx];
+      lx=wave_x; minv=maxv=rdptr[ch_idx];
       (rdptr+=CH_STRIDE)>=histsize?rdptr=0;
       loop(viewsize_spls,
         tx2=(x|0);
@@ -524,7 +717,7 @@ loop(num_view_ch,
           ymin=min(max(-1,(lc-minv*sc)|0),gfx_h+2);
           ymax=min(max(-1,(lc-maxv*sc)|0),gfx_h+2);
           ymin=max(lt,min(lb,ymin)); ymax=max(lt,min(lb,ymax));
-          set_ch_color(ch_idx);
+          set_ch_color(draw_ch_idx);
           gfx_a=0.22;
           ymax>lc?gfx_line(lx,ymax,lx,lc):ymin<lc?gfx_line(lx,ymin,lx,lc);
           gfx_a=0.85; gfx_line(lx,ymin,lx,ymax);
@@ -535,7 +728,7 @@ loop(num_view_ch,
       );
       ymin=min(max(-1,(lc-minv*sc)|0),gfx_h+2); ymax=min(max(-1,(lc-maxv*sc)|0),gfx_h+2);
       ymin=max(lt,min(lb,ymin)); ymax=max(lt,min(lb,ymax));
-      set_ch_color(ch_idx); gfx_a=0.85;
+      set_ch_color(draw_ch_idx); gfx_a=0.85;
       ymax>lc?gfx_line(lx,ymax,lx,lc):ymin<lc?gfx_line(lx,ymin,lx,lc);
       gfx_line(lx,ymin,lx,ymax);
     ) : (
@@ -543,7 +736,7 @@ loop(num_view_ch,
       loop(viewsize_spls,
         x1=(x|0); x2=((x+viewadv)|0);
         v=(rdptr[ch_idx]*sc)|0;
-        set_ch_color(ch_idx); gfx_a=0.20;
+        set_ch_color(draw_ch_idx); gfx_a=0.20;
         v<0?(v<-maxval?v=-maxval;gfx_rect(x1,lc,x2-x1,-v)):(v>maxval?v=maxval;gfx_rect(x1,lc-v,x2-x1,v));
         yp=max(lt,min(lb,lc-v));
         gfx_a=0.85; gfx_line(x1,prev_y,x2,yp);
@@ -557,13 +750,32 @@ loop(num_view_ch,
     rms_v = rms_buf_size>0 ? (rms_acc_base+ch_idx)[0]/rms_buf_size : 0;
     rms_v < 0 ? rms_v=0;
     rms_db = 20*log10(max(0.000001,sqrt(rms_v)));
-    rms_bar_w = (scope_w * max(0, min(1, (rms_db+72)/72))) | 0;
-    set_ch_color(ch_idx); gfx_a=0.13;
-    rms_bar_w > 0 ? gfx_rect(scope_x, lb-4, rms_bar_w, 3);
+    rms_bar_w = (wave_w * max(0, min(1, (rms_db+72)/72))) | 0;
+    set_ch_color(draw_ch_idx); gfx_a=0.13;
+    rms_bar_w > 0 ? gfx_rect(wave_x, lb-4, rms_bar_w, 3);
     gfx_set(1,0.3,0.3,0.5); gfx_line(scope_x+scope_w-1, lb-4, scope_x+scope_w-1, lb-1);
-    set_ch_color(ch_idx); gfx_a=0.72;
-    gfx_x=scope_x+scope_w-62*rs; gfx_y=lt+2;
-    gfx_drawstr(sprintf(#,"RMS %+.1fdB",rms_db));
+
+    lane_label_w > 0 ? (
+      gfx_set(0.030,0.036,0.046,0.92);
+      gfx_rect(scope_x,lt,lane_label_w,lane_h);
+      set_ch_color(draw_ch_idx); gfx_a=1;
+      gfx_rect(scope_x,lt,3*rs,lane_h);
+      chan_mode_i == 2 ? sprintf(#tmp_name,"MONO CH %d",mono_sel_i) :
+      chan_mode_i == 3 ? strcpy(#tmp_name,"MONO SUM") :
+                         get_ch_name(ch_idx);
+      gfx_setfont(1,"Arial",max(10*rs,min(13*rs,lane_h*0.24)),'b');
+      set_ch_color(draw_ch_idx); gfx_a=0.98;
+      gfx_x=scope_x+7*rs; gfx_y=lt+max(2*rs,lane_h*0.18);
+      gfx_drawstr(#tmp_name);
+      gfx_setfont(1,"Arial",max(8*rs,min(11*rs,lane_h*0.20)));
+      gfx_set(0.62,0.72,0.80,0.95);
+      gfx_x=scope_x+7*rs; gfx_y=min(lb-gfx_texth-3*rs,lt+lane_h*0.55);
+      gfx_drawstr(sprintf(#,"RMS %+.1f",rms_db));
+    ) : (
+      set_ch_color(draw_ch_idx); gfx_a=0.72;
+      gfx_x=scope_x+scope_w-62*rs; gfx_y=lt+2;
+      gfx_drawstr(sprintf(#,"RMS %+.1fdB",rms_db));
+    );
 
     row_idx += 1;
   );
@@ -573,7 +785,7 @@ loop(num_view_ch,
 // time grid
 gfx_r=gfx_g=gfx_b=0.4; gfx_a=0.3;
 gi=1; loop(4,
-  gx = scope_x + (gi*scope_w/5)|0;
+  gx = wave_x + (gi*wave_w/5)|0;
   gfx_line(gx,scope_y,gx,scope_y+scope_h);
   t_ms = view_msec_r * (1 - gi/5);
   gfx_set(0.5,0.55,0.6,0.6);
@@ -586,7 +798,7 @@ gi=1; loop(4,
 // frozen indicator
 g_hard_hold?(
   gfx_set(1,0.6,0.15,1);
-  gfx_x=scope_x+scope_w-68*rs; gfx_y=4;
+  gfx_x=scope_x+scope_w-68*rs; gfx_y=scope_y+4;
   gfx_drawstr("[ FROZEN ]");
 );
 
@@ -599,21 +811,23 @@ gfx_line(scope_x,scope_y+scope_h-1,scope_x+scope_w,scope_y+scope_h-1);
 // DRAW PANEL
 // ══════════════════════════════════════════════════════
 p_reset_y=-9999; p_hold_y=-9999; p_freeze_y=-9999; p_retrig_y=-9999;
+p_mode_y=-9999;
 p_win_y=-9999; p_range_y=-9999; p_rms_y=-9999;
 p_win_sx=-9999; p_win_sy=-9999; p_win_sw=0;
 p_range_sx=-9999; p_range_sy=-9999; p_range_sw=0;
 p_rms_sx=-9999; p_rms_sy=-9999; p_rms_sw=0;
 p_nch_slider_y=-9999; p_nch_slider_x=-9999; p_nch_slider_w=0;
+p_mono_slider_y=-9999; p_mono_slider_x=-9999; p_mono_slider_w=0;
 p_all16_bx=-9999; p_all16_by=-9999; p_all16_bw=0;
 p_lbl_y=-9999; p_lbl_tx=0; p_lbl_pw=0; p_swatch_xe=0; p_name_xs=9999;
 gfx_set(0.08,0.09,0.13,1);
-gfx_rect(0,0,pw,gfx_h);
+gfx_rect(0,HDR_H,pw,gfx_h-HDR_H);
 gfx_set(0.22,0.34,0.55,0.6);
-gfx_line(pw-1,0,pw-1,gfx_h);
+gfx_line(pw-1,HDR_H,pw-1,gfx_h);
 
 // freccia toggle
-tog_x=pw-11*rs; tog_cy=20*rs;
-hit(mouse_x,mouse_y,pw-14*rs,0,14*rs,36*rs)?gfx_set(0.65,0.85,1,1):gfx_set(0.3,0.52,0.8,1);
+tog_x=pw-11*rs; tog_cy=HDR_H+20*rs;
+hit(mouse_x,mouse_y,pw-14*rs,HDR_H,14*rs,36*rs)?gfx_set(0.65,0.85,1,1):gfx_set(0.3,0.52,0.8,1);
 gfx_a=0.9;
 panel_open?(
   gfx_line(tog_x+7*rs,tog_cy-7*rs,tog_x+1*rs,tog_cy);
@@ -625,10 +839,10 @@ panel_open?(
 
 panel_open ? (
   tx=7; pw_in=pw-tx-16*rs;
-  ty=8 - panel_scroll_y;
+  ty=HDR_H + 8 - panel_scroll_y;
 
   gfx_set(0.65,0.80,1,1); gfx_x=tx; gfx_y=ty;
-  gfx_drawstr("OSCILLOSCOPE 16ch"); ty+=gfx_texth+5;
+  gfx_drawstr("CONTROLS"); ty+=gfx_texth+5;
   gfx_set(0.18,0.28,0.48,0.5); gfx_line(tx,ty,pw-14*rs,ty); ty+=4;
 
   // RESET
@@ -656,6 +870,12 @@ panel_open ? (
   gfx_drawstr(sprintf(#,"Retrig: %s",(view_retrig|0)==1?"any":(view_retrig|0)==2?"asc":(view_retrig|0)==3?"desc":"off"));
   p_retrig_y=ty; ty+=lh+4;
 
+  // MODE
+  panel_row(tx,ty,pw_in,lh,chan_mode_i != 0);
+  gfx_set(0.72,0.88,1,1); gfx_x=tx+6; gfx_y=ty+3;
+  gfx_drawstr(sprintf(#,"Mode: %s",#mode_lbl));
+  p_mode_y=ty; ty+=lh+4;
+
   gfx_set(0.18,0.28,0.48,0.5); gfx_line(tx,ty,pw-14*rs,ty); ty+=4;
 
   // WIN
@@ -677,10 +897,17 @@ panel_open ? (
   p_rms_y=ty+gfx_texth+2; ty+=gfx_texth+2+lh+20;
 
   // CHANNELS
-  spx_ret_nch = draw_spinbox_row(tx,ty,pw_in,lh, 3, "Channels", sprintf(#,"%d",num_view_ch), spx_active==3);
+  spx_ret_nch = draw_spinbox_row(tx,ty,pw_in,lh, 3, chan_mode_i == 0 ? "Track CH" : "Channels", sprintf(#,"%d",num_view_ch), spx_active==3);
   p_nch_slider_x=tx; p_nch_slider_y=ty+gfx_texth+2; p_nch_slider_w=pw_in;
   draw_param_slider(tx,ty+gfx_texth+2+lh+2,pw_in,12, (num_channels-1)/15.0, 0, 1, cap_mode==11);
   ty += gfx_texth+2+lh+20;
+
+  chan_mode_i == 2 ? (
+    spx_ret_mono = draw_spinbox_row(tx,ty,pw_in,lh, 4, "Mono source", sprintf(#,"%d",mono_sel_i), spx_active==4);
+    p_mono_slider_x=tx; p_mono_slider_y=ty+gfx_texth+2; p_mono_slider_w=pw_in;
+    draw_param_slider(tx,ty+gfx_texth+2+lh+2,pw_in,12, track_view_ch > 1 ? (mono_sel_i-1)/(track_view_ch-1) : 0, 0, 1, cap_mode==12);
+    ty += gfx_texth+2+lh+20;
+  );
 
   // pulsante All 16
   hit(mouse_x,mouse_y,tx,ty,pw_in,lh-4) ? gfx_set(0.22,0.38,0.65,1) : gfx_set(0.10,0.18,0.35,1);
@@ -744,13 +971,14 @@ panel_open ? (
     ci+=1;
   );
   ty += num_view_ch * 16*rs + 4;
-  panel_total_h = ty + panel_scroll_y;
+  panel_total_h = ty + panel_scroll_y - HDR_H;
+  panel_area_h = max(1,gfx_h-HDR_H);
 
-  panel_total_h > gfx_h ? (
-    sb_h = max(20, (gfx_h / panel_total_h * gfx_h) | 0);
-    sb_y = (panel_scroll_y / (panel_total_h - gfx_h) * (gfx_h - sb_h)) | 0;
+  panel_total_h > panel_area_h ? (
+    sb_h = max(20, (panel_area_h / panel_total_h * panel_area_h) | 0);
+    sb_y = HDR_H + ((panel_scroll_y / (panel_total_h - panel_area_h) * (panel_area_h - sb_h)) | 0);
     gfx_set(0.20,0.30,0.50,0.4);
-    gfx_rect(pw-5, 0, 4, gfx_h);
+    gfx_rect(pw-5, HDR_H, 4, panel_area_h);
     gfx_set(0.45,0.65,0.90,0.7);
     gfx_rect(pw-5, sb_y, 4, sb_h);
   );
@@ -772,7 +1000,8 @@ spx_active >= 0 ? (
         spx_active==0?(v>0?(view_msec=max(100,min(g_maxlen_ms,v));slider_automate(view_msec););):
         spx_active==1?(view_maxdb=max(-144,min(36,v));slider_automate(view_maxdb);):
         spx_active==2?(v>0?(rms_win_ms=max(10,min(2000,v));slider_automate(rms_win_ms););):
-        spx_active==3?(v>0?(num_channels=max(1,min(16,v|0));slider_automate(num_channels);););
+        spx_active==3?(v>0?(chan_mode=1; num_channels=max(1,min(16,v|0));slider_automate(chan_mode); slider_automate(num_channels);););
+        spx_active==4?(v>0?(mono_selected=max(1,min(track_view_ch,v|0));slider_automate(mono_selected);););
         spx_active=-1; spx_selected=0;
       ):
       k==1004?(
@@ -897,12 +1126,27 @@ edit_ch >= 0 ? (
 // ══════════════════════════════════════════════════════
 (mouse_cap&1)?(
   !(last_mouse_cap&1)?(
-    cap_mode==8&&!cap_drag&&cap_timer<12?(view_msec=10000;cap_mode=0;slider_automate(view_msec);):
+    cap_mode==8&&!cap_drag&&cap_timer<12?(view_msec=8000;cap_mode=0;slider_automate(view_msec);):
     cap_mode==9&&!cap_drag&&cap_timer<12?(view_maxdb=0;cap_mode=0;slider_automate(view_maxdb);):
     cap_mode==10&&!cap_drag&&cap_timer<12?(rms_win_ms=300;cap_mode=0;slider_automate(rms_win_ms);):
     (
       cap_mode=cap_drag=cap_timer=0;
-      hit(mouse_x,mouse_y,pw-14*rs,0,14*rs,36*rs)?(
+      p_hdr_manage_x + p_hdr_manage_w < gfx_w - 12*rs && p_hdr_manage_x > 120*rs && hit(mouse_x,mouse_y,p_hdr_manage_x,p_hdr_manage_y,p_hdr_manage_w,p_hdr_manage_h)?(
+        panel_open=panel_open?0:1;
+      ):
+      p_hdr_color_x + p_hdr_color_w < gfx_w - 12*rs && p_hdr_color_x > 120*rs && hit(mouse_x,mouse_y,p_hdr_color_x,p_hdr_color_y,p_hdr_color_w,p_hdr_color_h)?(
+        _scope_color_mode = ((_scope_color_mode|0) + 1) % 3;
+      ):
+      p_hdr_mono_x > 120*rs && hit(mouse_x,mouse_y,p_hdr_mono_x,p_hdr_mono_y,p_hdr_mono_w,p_hdr_mono_h)?(
+        chan_mode_i == 2 && mono_sel_i == 1 ? (
+          chan_mode=_mono_return_mode;
+        ) : (
+          chan_mode_i < 2 ? _mono_return_mode=chan_mode_i : _mono_return_mode=0;
+          chan_mode=2; mono_selected=1;
+        );
+        slider_automate(chan_mode); slider_automate(mono_selected);
+      ):
+      hit(mouse_x,mouse_y,pw-14*rs,HDR_H,14*rs,36*rs)?(
         panel_open=panel_open?0:1;
       ):
       mouse_x<pw&&panel_open?(
@@ -910,7 +1154,7 @@ edit_ch >= 0 ? (
         spx_active>=0?spx_active=-1;
 
         hit(mouse_x,mouse_y,0,p_reset_y,pw-14*rs,lh)?(
-          view_msec=10000; view_maxdb=0; rms_win_ms=300;
+          view_msec=8000; view_maxdb=0; rms_win_ms=300;
           slider_automate(view_msec); slider_automate(view_maxdb);
           slider_automate(rms_win_ms);
         ):
@@ -923,6 +1167,10 @@ edit_ch >= 0 ? (
         hit(mouse_x,mouse_y,0,p_retrig_y,pw-14*rs,lh)?(
           view_retrig=(view_retrig|0)>=3?0:(view_retrig|0)+1;
           slider_automate(view_retrig);
+        ):
+        hit(mouse_x,mouse_y,0,p_mode_y,pw-14*rs,lh)?(
+          chan_mode=(chan_mode|0)>=3?0:(chan_mode|0)+1;
+          slider_automate(chan_mode);
         ):
 
         hit(mouse_x,mouse_y, p_win_sx, p_win_sy, p_win_sw, lh)?(
@@ -961,17 +1209,29 @@ edit_ch >= 0 ? (
         hit(mouse_x,mouse_y, p_nch_slider_x, p_nch_slider_y, p_nch_slider_w, lh)?(
           spx_active==3?0:(
             spx_active=3;
-            strcpy(#spx_str,sprintf(#,"%d",num_channels|0));
+            chan_mode=1; slider_automate(chan_mode);
+            strcpy(#spx_str,sprintf(#,"%d",num_view_ch|0));
             spx_selected=1; spx_cur=strlen(#spx_str);
           );
         ):
         hit(mouse_x,mouse_y, p_nch_slider_x, p_nch_slider_y+lh+2, p_nch_slider_w, 18)?(
+          chan_mode=1; slider_automate(chan_mode);
           cap_mode=11; cap_last_x=mouse_x; cap_drag=0;
+        ):
+        hit(mouse_x,mouse_y, p_mono_slider_x, p_mono_slider_y, p_mono_slider_w, lh)?(
+          spx_active==4?0:(
+            spx_active=4;
+            strcpy(#spx_str,sprintf(#,"%d",mono_sel_i));
+            spx_selected=1; spx_cur=strlen(#spx_str);
+          );
+        ):
+        hit(mouse_x,mouse_y, p_mono_slider_x, p_mono_slider_y+lh+2, p_mono_slider_w, 18)?(
+          cap_mode=12; cap_last_x=mouse_x; cap_drag=0;
         ):
 
         // ── All 16 visible: reimposta tutti i canali visibili ──
         hit(mouse_x,mouse_y, p_all16_bx, p_all16_by, p_all16_bw, lh)?(
-          num_channels=16; slider_automate(num_channels);
+          chan_mode=1; num_channels=16; slider_automate(chan_mode); slider_automate(num_channels);
           i=0; loop(16, set_vis(i,1); i+=1;);
         ):
 
@@ -1030,9 +1290,18 @@ edit_ch >= 0 ? (
       cap_drag=1;
     );
   );
+  cap_mode==12&&p_mono_slider_w>0?(
+    raw=(mouse_x-p_mono_slider_x)/p_mono_slider_w*max(1,track_view_ch-1)+1.5;
+    new_sel=max(1,min(track_view_ch,raw|0));
+    new_sel!=mono_selected?(
+      mono_selected=new_sel;
+      slider_automate(mono_selected);
+      cap_drag=1;
+    );
+  );
 ):(
   cap_mode==8||cap_mode==9||cap_mode==10?cap_mode=0;
-  cap_mode==11?cap_mode=0;
+  cap_mode==11||cap_mode==12?cap_mode=0;
 );
 
 cap_mode&&cap_timer<12?cap_timer+=1;
@@ -1042,7 +1311,8 @@ last_mouse_cap=mouse_cap;
 mouse_wheel?(
   mouse_x<pw&&panel_open?(
     _scroll_step = mouse_wheel * (1/120.0) * (-30);
-    panel_scroll_y = max(0, min(max(0,panel_total_h-gfx_h), panel_scroll_y + _scroll_step));
+    panel_area_h = max(1,gfx_h-HDR_H);
+    panel_scroll_y = max(0, min(max(0,panel_total_h-panel_area_h), panel_scroll_y + _scroll_step));
     mouse_wheel=0;
   ):
   mouse_x>=scope_x?(
