@@ -1,12 +1,13 @@
 // @description ZP BUS Chain
-// @version 1.2.3
+// @version 1.2.4
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
 //   Meter circolari di soglia su tutta la catena.
 //   Motore ANA ridotto a CALDO (Lush), CORPO (Punch), APERTO (Holo), collocato pre-limiter.
 //   LINK Drive/Gain: alzando il Drive il Gain scende in opposizione, per giudicare il colore senza salto di volume.
-desc:ZP BUS Chain v1.2.3 - Voice/Music Processor - Paolo Balestri - BROWN-ANA
+desc:ZP BUS Chain - Voice/Music Processor - Paolo Balestri
 options:gmem=ZPVoiceoverSharedBus
 tags: bus compression dynamics multiband voice podcast music paolo balestri zio paolo
 

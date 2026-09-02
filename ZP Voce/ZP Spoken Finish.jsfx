@@ -1,10 +1,11 @@
 // @description ZP Spoken Finish
-// @version 3.9.8
+// @version 3.9.9
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
 //   Meter circolare true-peak sul ceiling del limiter.
-desc:ZP Spoken Finish v3.9.8 - Voice Harmonic Exciter / De-Exciter - Paolo Balestri
+desc:ZP Spoken Finish - Voice Harmonic Exciter / De-Exciter - Paolo Balestri
 options:gmem=ZPVoiceoverSharedBus
 tags: exciter utility harmonics harmonic paolo balestri zio paolo voice tool VOG AIR
 //autror: Paolo Balestri - Zio Paolo

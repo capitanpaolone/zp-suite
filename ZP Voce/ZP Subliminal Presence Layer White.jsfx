@@ -1,10 +1,11 @@
 // @description ZP Subliminal Presence Layer White
-// @version 3.2
+// @version 3.2.1
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
 //   Prima pubblicazione nella ZP Suite.
-desc:ZP Subliminal Presence Layer White v3.2 - Paolo Balestri
+desc:ZP Subliminal Presence Layer White - Paolo Balestri
 options:no_menu
 // Autore: Paolo Balestri - Zio Paolo
 // Contatto: social@paolobalestri.com

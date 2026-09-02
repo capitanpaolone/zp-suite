@@ -1,15 +1,16 @@
 // @description ZP Loudness Meter Multichannel
-// @version 44.0
+// @version 44.0.1
 // @author Paolo Balestri
 // @license LGPL-2.1-or-later
 // @changelog
+//   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
 //   Channel Overview centrale con meter segmentati per canale.
 //   Mini UI dedicata per TCP/MCP embedded.
 // This effect Copyright (C) 2021 and later Cockos Incorporated
 // Mod Paolo Balestri v44 - 18-05-2026
 // License: LGPL - http://www.gnu.org/licenses/lgpl.html
 
-desc:ZP Loudness Meter Multichannel v44 - Paolo Balestri
+desc:ZP Loudness Meter Multichannel - Paolo Balestri
 //tags: analysis loudness meter cockos
 // Autore: Cockos/Paolo Balestri 2026
 // Contatto: social@paolobalestri.com
