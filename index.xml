@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" name="ZP Suite" commit="b95d12cfd973069874acd18e380222bfa1f63d55">
+<index version="1" name="ZP Suite" commit="4ead7e67f77295e5e5c50b45a0256563a26641c9">
   <category name="ZP Master">
-    <reapack name="ZP Master Pro.jsfx" type="effect">
+    <reapack name="ZP Master Pro.jsfx" type="effect" desc="ZP Master Pro">
       <version name="2.45" author="Paolo Balestri" time="2026-08-30T20:03:27Z">
         <changelog><![CDATA[Anelli circolari di soglia su compressore e ceiling del limiter.
 ISP Guard: picchi interpolati 2x/4x per tenere limiter e safety lontani dal soffitto.]]></changelog>
@@ -17,17 +17,28 @@ Versione ancora sotto la 1.0: interfaccia e set di parametri non sono stabili.]]
     </reapack>
   </category>
   <category name="ZP Misura">
-    <reapack name="ZP Loudness Meter Multichannel.jsfx" type="effect">
+    <reapack name="ZP Loudness Meter Multichannel.jsfx" type="effect" desc="ZP Loudness Meter Multichannel">
       <version name="44.0" author="Paolo Balestri" time="2026-08-30T21:12:58Z">
         <changelog><![CDATA[Channel Overview centrale con meter segmentati per canale.
 Mini UI dedicata per TCP/MCP embedded.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/f37c44e14f75148faf19a2e0817eb911641bdc3c/ZP%20Misura/ZP%20Loudness%20Meter%20Multichannel.jsfx</source>
       </version>
+      <version name="44.0.1" author="Paolo Balestri" time="2026-09-02T13:07:51Z">
+        <changelog><![CDATA[Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
+Channel Overview centrale con meter segmentati per canale.
+Mini UI dedicata per TCP/MCP embedded.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/4ead7e67f77295e5e5c50b45a0256563a26641c9/ZP%20Misura/ZP%20Loudness%20Meter%20Multichannel.jsfx</source>
+      </version>
     </reapack>
-    <reapack name="ZP Oscilloscope 16ch.jsfx" type="effect" desc="ZP Oscilloscope 16ch V11 - Paolo Balestri">
+    <reapack name="ZP Oscilloscope 16ch.jsfx" type="effect" desc="ZP Oscilloscope 16ch - Paolo Balestri">
       <version name="11.0" author="Paolo Balestri" time="2026-08-30T22:01:32Z">
         <changelog><![CDATA[Prima pubblicazione nella ZP Suite.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/4f0a39383b1845e0435b7d4d388172a2200548d4/ZP%20Misura/ZP%20Oscilloscope%2016ch.jsfx</source>
+      </version>
+      <version name="11.0.1" author="Paolo Balestri" time="2026-09-02T13:07:51Z">
+        <changelog><![CDATA[Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
+Prima pubblicazione nella ZP Suite.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/4ead7e67f77295e5e5c50b45a0256563a26641c9/ZP%20Misura/ZP%20Oscilloscope%2016ch.jsfx</source>
       </version>
     </reapack>
     <reapack name="ZP Voice-Music Probe.jsfx" type="effect" desc="ZP Voice-Music Probe - Passive Bus Telemetry - Paolo Balestri">
@@ -461,15 +472,22 @@ SRT Tools rinumerato a 26, SOLO Recorder a 25.]]></changelog>
     </reapack>
   </category>
   <category name="ZP Voce">
-    <reapack name="ZP BUS Chain.jsfx" type="effect" desc="ZP BUS Chain v1.2.3 - Voice/Music Processor - Paolo Balestri - BROWN-ANA">
+    <reapack name="ZP BUS Chain.jsfx" type="effect" desc="ZP BUS Chain - Voice/Music Processor - Paolo Balestri">
       <version name="1.2.3" author="Paolo Balestri" time="2026-08-30T21:12:58Z">
         <changelog><![CDATA[Meter circolari di soglia su tutta la catena.
 Motore ANA ridotto a CALDO (Lush), CORPO (Punch), APERTO (Holo), collocato pre-limiter.
 LINK Drive/Gain: alzando il Drive il Gain scende in opposizione, per giudicare il colore senza salto di volume.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/f37c44e14f75148faf19a2e0817eb911641bdc3c/ZP%20Voce/ZP%20BUS%20Chain.jsfx</source>
       </version>
+      <version name="1.2.4" author="Paolo Balestri" time="2026-09-02T13:07:51Z">
+        <changelog><![CDATA[Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
+Meter circolari di soglia su tutta la catena.
+Motore ANA ridotto a CALDO (Lush), CORPO (Punch), APERTO (Holo), collocato pre-limiter.
+LINK Drive/Gain: alzando il Drive il Gain scende in opposizione, per giudicare il colore senza salto di volume.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/4ead7e67f77295e5e5c50b45a0256563a26641c9/ZP%20Voce/ZP%20BUS%20Chain.jsfx</source>
+      </version>
     </reapack>
-    <reapack name="ZP Harmonic Space Carver.jsfx" type="effect" desc="ZP Harmonic Space Carver Ducker - Paolo Balestri - Zio Paolo v2.4">
+    <reapack name="ZP Harmonic Space Carver.jsfx" type="effect" desc="ZP Harmonic Space Carver Ducker - Paolo Balestri">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
@@ -524,31 +542,58 @@ LINK Drive/Gain: alzando il Drive il Gain scende in opposizione, per giudicare i
         <changelog><![CDATA[Meter circolari di soglia su carver e ducker VCA.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/4f0a39383b1845e0435b7d4d388172a2200548d4/ZP%20Voce/ZP%20Harmonic%20Space%20Carver.jsfx</source>
       </version>
+      <version name="2.4.1" author="Paolo Balestri" time="2026-09-02T13:07:51Z">
+        <changelog><![CDATA[Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
+Meter circolari di soglia su carver e ducker VCA.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/4ead7e67f77295e5e5c50b45a0256563a26641c9/ZP%20Voce/ZP%20Harmonic%20Space%20Carver.jsfx</source>
+      </version>
     </reapack>
-    <reapack name="ZP Spoken Finish.jsfx" type="effect" desc="ZP Spoken Finish v3.9.8 - Voice Harmonic Exciter / De-Exciter - Paolo Balestri">
+    <reapack name="ZP Spoken Finish.jsfx" type="effect" desc="ZP Spoken Finish - Voice Harmonic Exciter / De-Exciter - Paolo Balestri">
       <version name="3.9.8" author="Paolo Balestri" time="2026-08-30T21:12:58Z">
         <changelog><![CDATA[Meter circolare true-peak sul ceiling del limiter.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/f37c44e14f75148faf19a2e0817eb911641bdc3c/ZP%20Voce/ZP%20Spoken%20Finish.jsfx</source>
       </version>
+      <version name="3.9.9" author="Paolo Balestri" time="2026-09-02T13:07:51Z">
+        <changelog><![CDATA[Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
+Meter circolare true-peak sul ceiling del limiter.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/4ead7e67f77295e5e5c50b45a0256563a26641c9/ZP%20Voce/ZP%20Spoken%20Finish.jsfx</source>
+      </version>
     </reapack>
-    <reapack name="ZP Stagekeeper Dialogue Director.jsfx" type="effect" desc="ZP Stagekeeper Dialogue Director AutoMixer v2.3 - Paolo Balestri">
+    <reapack name="ZP Stagekeeper Dialogue Director.jsfx" type="effect" desc="ZP Stagekeeper Dialogue Director AutoMixer - Paolo Balestri">
       <version name="2.3" author="Paolo Balestri - Zio Paolo" time="2026-08-30T21:12:58Z">
         <changelog><![CDATA[Meter circolari di soglia sul gate dinamico.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/f37c44e14f75148faf19a2e0817eb911641bdc3c/ZP%20Voce/ZP%20Stagekeeper%20Dialogue%20Director.jsfx</source>
       </version>
+      <version name="2.3.1" author="Paolo Balestri" time="2026-09-02T13:07:51Z">
+        <changelog><![CDATA[Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
+Meter circolari di soglia sul gate dinamico.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/4ead7e67f77295e5e5c50b45a0256563a26641c9/ZP%20Voce/ZP%20Stagekeeper%20Dialogue%20Director.jsfx</source>
+      </version>
     </reapack>
-    <reapack name="ZP Subliminal Presence Layer White.jsfx" type="effect" desc="ZP Subliminal Presence Layer White v3.2 - Paolo Balestri">
+    <reapack name="ZP Subliminal Presence Layer White.jsfx" type="effect" desc="ZP Subliminal Presence Layer White - Paolo Balestri">
       <version name="3.2" author="Paolo Balestri" time="2026-08-30T22:01:32Z">
         <changelog><![CDATA[Prima pubblicazione nella ZP Suite.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/4f0a39383b1845e0435b7d4d388172a2200548d4/ZP%20Voce/ZP%20Subliminal%20Presence%20Layer%20White.jsfx</source>
       </version>
+      <version name="3.2.1" author="Paolo Balestri" time="2026-09-02T13:07:51Z">
+        <changelog><![CDATA[Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
+Prima pubblicazione nella ZP Suite.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/4ead7e67f77295e5e5c50b45a0256563a26641c9/ZP%20Voce/ZP%20Subliminal%20Presence%20Layer%20White.jsfx</source>
+      </version>
     </reapack>
-    <reapack name="ZP Voiceover Unified Chain.jsfx" type="effect" desc="ZP Voiceover Unified Chain v4.1.5 - Voice Leveler - Paolo Balestri - BUS AUTO LIVE BROWNFIX3">
+    <reapack name="ZP Voiceover Unified Chain.jsfx" type="effect" desc="ZP Voiceover Unified Chain - Voice Leveler - Paolo Balestri">
       <version name="4.1.5" author="Paolo Balestri" time="2026-08-30T21:12:58Z">
         <changelog><![CDATA[Anelli circolari di rilevamento dal vivo su Gate, 1175, Major Tom e Limiter Ceiling.
 Output AUTO calcola e applica la correzione anche quando Capture e' pronta.
 Capture resta memoria e display, non congela piu' out_trim_db.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/f37c44e14f75148faf19a2e0817eb911641bdc3c/ZP%20Voce/ZP%20Voiceover%20Unified%20Chain.jsfx</source>
+      </version>
+      <version name="4.1.6" author="Paolo Balestri" time="2026-09-02T13:07:51Z">
+        <changelog><![CDATA[Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
+Anelli circolari di rilevamento dal vivo su Gate, 1175, Major Tom e Limiter Ceiling.
+Output AUTO calcola e applica la correzione anche quando Capture e' pronta.
+Capture resta memoria e display, non congela piu' out_trim_db.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/4ead7e67f77295e5e5c50b45a0256563a26641c9/ZP%20Voce/ZP%20Voiceover%20Unified%20Chain.jsfx</source>
       </version>
     </reapack>
   </category>
