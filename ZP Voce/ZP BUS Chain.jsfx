@@ -1,8 +1,14 @@
 // @description ZP BUS Chain
-// @version 1.2.4
+// @version 1.2.5
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   Input Trim: il pomello IN adesso si prende col mouse. Tre controlli
+//     diversi - pomello, zona di presa e striscia - usavano lo stesso id di
+//     hover, e ui_knob riconosce il doppio click dall'id: due click su cose
+//     diverse passavano per doppio click, che azzera il valore e molla il
+//     trascinamento. Ora hanno tre id distinti e la zona di presa agisce
+//     dopo il pomello, non prima.
 //   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
 //   Meter circolari di soglia su tutta la catena.
 //   Motore ANA ridotto a CALDO (Lush), CORPO (Punch), APERTO (Holo), collocato pre-limiter.
@@ -4166,11 +4172,22 @@ local(ky, ki, ledx, ledy, trim_zone_hover, new_trim)
 
   ki = x + 24; ky = y + floor(h/2) + 2; 
 
-  // Input trim head control: keep the compact header hitbox centered on the
-  // visible red knob. The horizontal strip is only a meter/display here.
+  // Prima il pomello, con il suo id 3001 e la sua area circolare.
+  ui_knob_col(50, ki, ky, 14, -18, 18, 0, "IN", 3001, COL_GAIN_R, COL_GAIN_G, COL_GAIN_B);
+
+  // Poi la zona larga, che serve solo ad afferrare un pomello piccolo quando
+  // il mouse cade appena fuori. Va DOPO, e con un id di hover suo.
+  //
+  // Perche': ui_knob riconosce il doppio click confrontando hover_id con
+  // last_dbl_id. Questa zona e la striscia dell'Input Trim usavano tutte e due
+  // 3001, lo stesso id del pomello: cosi' due click su cose diverse
+  // sembravano un doppio click sul pomello, e il doppio click azzera il valore
+  // e molla il trascinamento. Risultato: la striscia regolava e il pomello
+  // "non si prendeva". Adesso: pomello 3001, zona 9101, striscia 9102.
+  // 3002 e 3003 erano gia' presi da MAX e Speed dello Smart trim.
   trim_zone_hover = hit(x, y, 48, h);
-  trim_zone_hover ? ui_set_hover(3001);
-  !ui_render_only && trim_zone_hover && mouse_click ? (
+  trim_zone_hover ? ui_set_hover(9101);
+  !ui_render_only && trim_zone_hover && mouse_click && knob_active_sl != 50 ? (
     knob_active_sl = 50;
     knob_drag_y0 = mouse_y;
     knob_drag_v0 = in_trim;
@@ -4182,8 +4199,6 @@ local(ky, ki, ledx, ledy, trim_zone_hover, new_trim)
       set_ui_slider(50, new_trim);
     );
   );
-
-  ui_knob_col(50, ki, ky, 14, -18, 18, 0, "IN", 3001, COL_GAIN_R, COL_GAIN_G, COL_GAIN_B);
 
   ledx = x + 48; ledy = y + floor(h/2) - 14;
   gfx_setfont(1,"Arial",11,'b');
@@ -4226,7 +4241,7 @@ function draw_panel_input(px,py,pw)  local(ky,ks,ki,m,ledx,ledy)
   gfx_setfont(1,"Arial",11); gfx_set(0.52,0.60,0.68,1);
   sprintf(#_ing,"Gain %+.1f dB",in_trim);
   gfx_x=ledx; gfx_y=ledy+24; gfx_drawstr(#_ing);
-  ui_in_trim_strip(ledx, ledy + 41, 130, 8, 3001);
+  ui_in_trim_strip(ledx, ledy + 41, 130, 8, 9102);
   sprintf(#_inpk,"RMS4 %.1f dB",ui_input_slow_rms_db);
   gfx_x=ledx; gfx_y=ledy+42; gfx_drawstr(#_inpk);
   sprintf(#_inwin,"%.0f%% window",100*ui_input_slow_rms_progress);
@@ -5148,6 +5163,8 @@ local(tip_y)
   ui_hover_id==229 ? strcpy(#_tip_msg,"7-ANA: pannello saturazione console. Drive aumenta il colore, Mix decide quanta parte colorata entra nel Limiter") :
   ui_hover_id==228 ? strcpy(#_tip_msg,"6-BRN: mostra/nasconde Brown Guard, Slope Map XY e AMU; non disattiva il DSP") :
   ui_hover_id==3001 ? strcpy(#_tip_msg,"IN: gain staging prima della catena. Regola il livello d'ingresso; la decisione LOW/OK/HOT e' lenta, su finestra RMS di 4 secondi") :
+  ui_hover_id==9101 ? strcpy(#_tip_msg,"IN: zona di presa allargata del pomello. Trascina su e giu' per il trim d'ingresso.") :
+  ui_hover_id==9102 ? strcpy(#_tip_msg,"IN: striscia del trim d'ingresso. Trascina su e giu'; doppio click riporta a 0.") :
   ui_hover_id==3002 ? strcpy(#_tip_msg,"MAX: tetto massimo del trim automatico Smart; resta inattivo finche' CAP non e' in corso o LOCK") :
   ui_hover_id==3003 ? strcpy(#_tip_msg,"Speed: rampa del trim Smart dopo la cattura; resta inattivo finche' CAP non e' in corso o LOCK") :
   ui_hover_id==3004 ? strcpy(#_tip_msg,"CAP/NEW: avvia manualmente la cattura RMS full range; durata regolabile da 20 a 90 secondi") :
