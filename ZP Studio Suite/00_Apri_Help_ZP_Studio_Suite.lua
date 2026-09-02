@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 1.2.6
+-- @version 1.2.7
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -14,6 +14,14 @@
 --   OSARA non sono richiesti: aggiungono funzioni, e quando mancano la suite
 --   usa da sola una strada alternativa. Il dettaglio e' in README.txt.
 -- @changelog
+--   SOLO Recorder: la riga in basso spiega il pulsante sotto il mouse.
+--     Pin, Hide, Park e gli altri non si indovinavano guardandoli.
+--   SOLO Recorder: TOGLI TAKE chiede conferma, e la conferma dice dove
+--     resta il file audio.
+--   SOLO Recorder: Video adesso apre E chiude la finestra video, e il
+--     pulsante mostra se e' aperta.
+--   SOLO Recorder: Expanded allarga davvero la finestra (prima gfx.init
+--     non la ridimensionava, quindi meta' comandi restavano fuori).
 --   SOLO Recorder: RIT - e RIT + alzano e abbassano il volume della traccia
 --     selezionata in REAPER (la reference, o l'audio del video), con il
 --     valore in dB sempre visibile. E' un cambio di mix e resta nel progetto:

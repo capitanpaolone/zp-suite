@@ -44,7 +44,7 @@ local RECORD_TRACK_KEYS = { "main", "inserts", "retakes", "alt" }
 
 local MINI_W, MINI_H = 430, 164
 local COMPACT_W, COMPACT_H = 720, 430
-local EXPANDED_W, EXPANDED_H = 920, 620
+local EXPANDED_W, EXPANDED_H = 980, 680
 local TOOLBAR_H = 96
 
 local NEXT_TAKE_GAP_SECONDS = 5.0
@@ -101,6 +101,7 @@ local state = {
   countdown = nil,
   reaper_hidden = false,
   last_take = nil,
+  hint = "",
   last_window_save = 0,
   last_pin_try = 0,
   toolbar_buttons = {},
@@ -253,6 +254,74 @@ local function draw_button(rect, label, active, enabled, clicked, style)
     return ZP_UI.draw_button(rect, label, active, enabled, clicked, style)
   end
   return draw_fallback_button(rect, label, active, enabled, clicked, style)
+end
+
+-- Suggerimenti: la riga in basso spiega il pulsante sotto il mouse.
+-- Pin, Hide, Park e compagnia non si indovinano guardandoli.
+local AIUTI = {
+  ["REC"] = "Registra sulla traccia scelta, dopo aver verificato che sia l'unica armata.",
+  ["STOP"] = "Ferma la registrazione e numera il take appena inciso.",
+  ["PLAY"] = "Riproduce dalla posizione del cursore.",
+  ["INDIETRO 5s"] = "Sposta il cursore indietro di cinque secondi.",
+  ["-5s"] = "Sposta il cursore indietro di cinque secondi.",
+  ["ULTIMO ITEM +5s"] = "Porta il cursore cinque secondi dopo la fine dell'ultimo item. Non cancella niente.",
+  ["FINE +5s"] = "Porta il cursore cinque secondi dopo la fine dell'ultimo item. Non cancella niente.",
+  ["MARK"] = "Mette un marker qui, senza chiedere il nome.",
+  ["MARK NAME"] = "Mette un marker qui e ti chiede come chiamarlo.",
+  ["REG PREV"] = "Va alla regione precedente.",
+  ["REG NEXT"] = "Va alla regione successiva.",
+  ["REG START"] = "Riporta il cursore all'inizio della regione in cui ti trovi.",
+  ["Preroll"] = "Secondi di conto alla rovescia prima che parta il REC. Premi per cambiarli.",
+  ["Toolbar"] = "Mostra o nasconde la fila di comandi REAPER in fondo al pannello.",
+  ["Pin"] = "Tiene questa finestra sempre sopra le altre.",
+  ["Hide 5s"] = "Sparisce per cinque secondi e torna da sola. Per liberare lo schermo un attimo.",
+  ["Park"] = "Sposta la finestra nell'angolo in alto a destra dello schermo.",
+  ["Nascondi REAPER"] = "Manda giu' la finestra di REAPER e lascia solo questo telecomando.",
+  ["Mostra REAPER"] = "Rimette su la finestra di REAPER.",
+  ["Monitor"] = "Ascolto dell'ingresso sulla traccia attiva. REAPER lo accende da solo quando armi.",
+  ["RIT -"] = "Abbassa di 1 dB il volume della traccia selezionata in REAPER. Cambia il mix.",
+  ["RIT +"] = "Alza di 1 dB il volume della traccia selezionata in REAPER. Cambia il mix.",
+  ["Mini"] = "Solo i comandi essenziali: REC, STOP, PLAY e i due spostamenti.",
+  ["Compact"] = "Tutto quello che serve durante una sessione normale.",
+  ["Expanded"] = "Anche i comandi da regia: take, marcatori di giudizio, navigatore, video.",
+  ["MAIN"] = "Registra sulla traccia principale VO_MAIN.",
+  ["INSERTS"] = "Registra sulla traccia degli inserti.",
+  ["RETAKES"] = "Registra sulla traccia dei rifacimenti.",
+  ["ALT"] = "Registra sulla traccia delle versioni alternative.",
+  ["NOME / NOTA TAKE"] = "Rinomina l'ultima regione take, per annotarci com'e' andata.",
+  ["RETAKE REGION"] = "Rifa' la regione corrente sulla traccia dei retake.",
+  ["INSERT"] = "Registra un inserto senza toccare quello che c'e' gia'.",
+  ["ALT TAKE"] = "Registra una versione alternativa sulla traccia ALT.",
+  ["NEXT TAKE"] = "Chiude il take, lascia cinque secondi di stacco e riparte a registrare.",
+  ["TOGLI TAKE"] = "Toglie dalla timeline il take appena registrato e torna al punto di partenza. Il file resta nella cartella Media.",
+  ["BAD"] = "Marca questo punto come da rifare.",
+  ["OK"] = "Marca questo punto come buono.",
+  ["NOISE"] = "Marca un rumore da sistemare.",
+  ["Navigator"] = "Apre il Navigator di ZP Master Pro.",
+  ["Video"] = "Apre e chiude la finestra video di REAPER.",
+  ["Espandi"] = "Passa alla vista Compact, con tutti i comandi di sessione.",
+  ["Folder Mode"] = "Organizza i take per cartella. Lane Mode non e' ancora attivo.",
+}
+
+local function aiuto_per(label)
+  if AIUTI[label] then return AIUTI[label] end
+  for chiave, testo in pairs(AIUTI) do
+    if label:sub(1, #chiave) == chiave then return testo end
+  end
+  return nil
+end
+
+local function sotto_il_mouse(rect)
+  local mx, my = gfx.mouse_x, gfx.mouse_y
+  return mx >= rect.x and mx <= rect.x + rect.w and my >= rect.y and my <= rect.y + rect.h
+end
+
+local function btn(rect, label, active, enabled, clicked, style)
+  if sotto_il_mouse(rect) then
+    local testo = aiuto_per(label)
+    if testo then state.hint = testo end
+  end
+  return draw_button(rect, label, active, enabled, clicked, style)
 end
 
 local function transport_state()
@@ -684,6 +753,15 @@ local function undo_last_take()
     warn("Nessun take di questa sessione da togliere. Per quelli di prima usa l'Undo di REAPER.")
     return
   end
+  local risposta = reaper.ShowMessageBox(
+    "Tolgo " .. (lt.region or "l'ultimo take") .. " dalla timeline e riporto il cursore" ..
+    " al punto di partenza.\n\nIl file audio NON viene cancellato: resta nella cartella" ..
+    " Media del progetto. E un Ctrl+Z rimette tutto com'era.",
+    "ZP SOLO Recorder - togli il take", 1)
+  if risposta ~= 1 then
+    state.status = "Non ho toccato niente."
+    return
+  end
   reaper.Undo_BeginBlock()
   local cercati = {}
   for _, g in ipairs(lt.guids) do cercati[g] = true end
@@ -826,10 +904,16 @@ local function master_meter()
   return meter_for_track(reaper.GetMasterTrack(0))
 end
 
+-- 50125 e' gia' un'azione a interruttore: prima la usavamo solo per aprire,
+-- e la finestra restava li' finche' non la cercavi a mano.
 local function show_video_window()
-  local state_before = reaper.GetToggleCommandState(ACTION.video_window)
-  if state_before == 0 then reaper.Main_OnCommand(ACTION.video_window, 0) end
-  state.status = "Video Window"
+  local prima = reaper.GetToggleCommandState(ACTION.video_window)
+  reaper.Main_OnCommand(ACTION.video_window, 0)
+  state.status = (prima == 1) and "Finestra video chiusa" or "Finestra video aperta"
+end
+
+local function video_aperta()
+  return reaper.GetToggleCommandState(ACTION.video_window) == 1
 end
 
 local function show_navigator()
@@ -986,7 +1070,12 @@ local function set_mode(mode)
   local w, h = mode_size(mode)
   if mode ~= "mini" and state.toolbar then h = h + TOOLBAR_H end
   local dock, x, y = gfx.dock(-1, 0, 0, 0, 0)
+  -- Su una finestra gia' aperta, gfx.init non sempre la ridimensiona: percio'
+  -- la chiudo e la riapro alla misura giusta, tenendo posizione e dock.
+  gfx.quit()
   gfx.init(SCRIPT_TITLE, w, h, dock or 0, x or 140, y or 120)
+  gfx.setfont(1, "Arial", 15)
+  state.last_pin_try = 0
   save_state()
 end
 
@@ -1050,17 +1139,17 @@ local function draw_transport(y, clicked)
   -- Meglio una parola corta e intera che una lunga con i puntini.
   local stretto = bw < 104
   local x = margin
-  if draw_button({x=x, y=y, w=bw, h=bh}, "REC", transport_state() == "REC", true, clicked, "rec") then
+  if btn({x=x, y=y, w=bw, h=bh}, "REC", transport_state() == "REC", true, clicked, "rec") then
     record_on_track(state.active_track_key, "REC")
   end
   x = x + bw + gap
-  if draw_button({x=x, y=y, w=bw, h=bh}, "STOP", false, true, clicked, "stop") then stop_transport() end
+  if btn({x=x, y=y, w=bw, h=bh}, "STOP", false, true, clicked, "stop") then stop_transport() end
   x = x + bw + gap
-  if draw_button({x=x, y=y, w=bw, h=bh}, "PLAY", transport_state() == "PLAY", true, clicked, "play") then play_transport() end
+  if btn({x=x, y=y, w=bw, h=bh}, "PLAY", transport_state() == "PLAY", true, clicked, "play") then play_transport() end
   x = x + bw + gap
-  if draw_button({x=x, y=y, w=bw, h=bh}, stretto and "-5s" or "INDIETRO 5s", false, true, clicked) then move_cursor(-5) end
+  if btn({x=x, y=y, w=bw, h=bh}, stretto and "-5s" or "INDIETRO 5s", false, true, clicked) then move_cursor(-5) end
   x = x + bw + gap
-  if draw_button({x=x, y=y, w=bw, h=bh}, stretto and "FINE +5s" or "ULTIMO ITEM +5s", false, true, clicked) then goto_after_last_item() end
+  if btn({x=x, y=y, w=bw, h=bh}, stretto and "FINE +5s" or "ULTIMO ITEM +5s", false, true, clicked) then goto_after_last_item() end
 end
 
 local function draw_track_selector(y, clicked)
@@ -1069,7 +1158,7 @@ local function draw_track_selector(y, clicked)
   for i, key in ipairs(RECORD_TRACK_KEYS) do
     local x = margin + (i - 1) * (bw + gap)
     local label = TRACK_NAMES[key]:gsub("^VO_", "")
-    if draw_button({x=x, y=y, w=bw, h=32}, label, state.active_track_key == key, true, clicked, "tab") then
+    if btn({x=x, y=y, w=bw, h=32}, label, state.active_track_key == key, true, clicked, "tab") then
       if arm_only_solo_target(key) then state.warning = "" end
     end
   end
@@ -1077,9 +1166,9 @@ end
 
 local function draw_mode_buttons(y, clicked)
   local x = gfx.w - 318
-  if draw_button({x=x, y=y, w=94, h=30}, "Mini", state.mode == "mini", true, clicked, "tab") then set_mode("mini") end
-  if draw_button({x=x+102, y=y, w=94, h=30}, "Compact", state.mode == "compact", true, clicked, "tab") then set_mode("compact") end
-  if draw_button({x=x+204, y=y, w=94, h=30}, "Expanded", state.mode == "expanded", true, clicked, "tab") then set_mode("expanded") end
+  if btn({x=x, y=y, w=94, h=30}, "Mini", state.mode == "mini", true, clicked, "tab") then set_mode("mini") end
+  if btn({x=x+102, y=y, w=94, h=30}, "Compact", state.mode == "compact", true, clicked, "tab") then set_mode("compact") end
+  if btn({x=x+204, y=y, w=94, h=30}, "Expanded", state.mode == "expanded", true, clicked, "tab") then set_mode("expanded") end
 end
 
 local function draw_compact(clicked)
@@ -1088,11 +1177,11 @@ local function draw_compact(clicked)
   local y = 204
   local bw, bh, gap = 128, 36, 10
   local x = 14
-  if draw_button({x=x, y=y, w=bw, h=bh}, "MARK", false, true, clicked) then add_marker_named("SOLO_MARK", false) end
-  if draw_button({x=x+bw+gap, y=y, w=bw, h=bh}, "MARK NAME", false, true, clicked) then add_marker_named("SOLO_MARK", true) end
-  if draw_button({x=x+(bw+gap)*2, y=y, w=bw, h=bh}, "REG PREV", false, true, clicked) then goto_region(-1) end
-  if draw_button({x=x+(bw+gap)*3, y=y, w=bw, h=bh}, "REG NEXT", false, true, clicked) then goto_region(1) end
-  if draw_button({x=x+(bw+gap)*4, y=y, w=bw, h=bh}, "REG START", false, true, clicked) then goto_region_start() end
+  if btn({x=x, y=y, w=bw, h=bh}, "MARK", false, true, clicked) then add_marker_named("SOLO_MARK", false) end
+  if btn({x=x+bw+gap, y=y, w=bw, h=bh}, "MARK NAME", false, true, clicked) then add_marker_named("SOLO_MARK", true) end
+  if btn({x=x+(bw+gap)*2, y=y, w=bw, h=bh}, "REG PREV", false, true, clicked) then goto_region(-1) end
+  if btn({x=x+(bw+gap)*3, y=y, w=bw, h=bh}, "REG NEXT", false, true, clicked) then goto_region(1) end
+  if btn({x=x+(bw+gap)*4, y=y, w=bw, h=bh}, "REG START", false, true, clicked) then goto_region_start() end
 
   y = 256
   local tr = active_track()
@@ -1108,21 +1197,21 @@ local function draw_compact(clicked)
   draw_meter(424, y - 4, 250, 24, master_peak, master_label)
 
   y = 302
-  if draw_button({x=14, y=y, w=112, h=34}, "Preroll " .. state.preroll .. "s", false, true, clicked) then cycle_preroll() end
-  if draw_button({x=138, y=y, w=112, h=34}, "Toolbar", state.toolbar, true, clicked, "tab") then state.toolbar = not state.toolbar; save_state(); set_mode(state.mode) end
-  if draw_button({x=262, y=y, w=88, h=34}, "Pin", state.pin, true, clicked, "tab") then state.pin = not state.pin; if not state.pin then try_unpin_window() end; save_state() end
-  if draw_button({x=362, y=y, w=96, h=34}, "Hide 5s", false, true, clicked) then hide_5s() end
-  if draw_button({x=470, y=y, w=88, h=34}, "Park", false, true, clicked) then park_window() end
-  if draw_button({x=570, y=y, w=136, h=34},
+  if btn({x=14, y=y, w=112, h=34}, "Preroll " .. state.preroll .. "s", false, true, clicked) then cycle_preroll() end
+  if btn({x=138, y=y, w=112, h=34}, "Toolbar", state.toolbar, true, clicked, "tab") then state.toolbar = not state.toolbar; save_state(); set_mode(state.mode) end
+  if btn({x=262, y=y, w=88, h=34}, "Pin", state.pin, true, clicked, "tab") then state.pin = not state.pin; if not state.pin then try_unpin_window() end; save_state() end
+  if btn({x=362, y=y, w=96, h=34}, "Hide 5s", false, true, clicked) then hide_5s() end
+  if btn({x=470, y=y, w=88, h=34}, "Park", false, true, clicked) then park_window() end
+  if btn({x=570, y=y, w=136, h=34},
                  state.reaper_hidden and "Mostra REAPER" or "Nascondi REAPER",
                  state.reaper_hidden, true, clicked, "tab") then toggle_reaper_window() end
   local yr = y + 44
   local mon_label, mon_on = monitoring_label()
-  if draw_button({x=14, y=yr, w=132, h=30}, mon_label, mon_on, true, clicked, "tab") then
+  if btn({x=14, y=yr, w=132, h=30}, mon_label, mon_on, true, clicked, "tab") then
     toggle_monitoring()
   end
-  if draw_button({x=156, y=yr, w=56, h=30}, "RIT -", false, true, clicked) then nudge_return(-1) end
-  if draw_button({x=218, y=yr, w=56, h=30}, "RIT +", false, true, clicked) then nudge_return(1) end
+  if btn({x=156, y=yr, w=56, h=30}, "RIT -", false, true, clicked) then nudge_return(-1) end
+  if btn({x=218, y=yr, w=56, h=30}, "RIT +", false, true, clicked) then nudge_return(1) end
   gfx.setfont(1, "Arial", 13, "b")
   gfx.set(0.74, 0.76, 0.82, 1)
   gfx.x, gfx.y = 284, yr + 8
@@ -1131,9 +1220,15 @@ local function draw_compact(clicked)
 
   y = 388
   gfx.setfont(1, "Arial", 13)
-  gfx.set(0.74, 0.76, 0.82, 1)
-  gfx.x, gfx.y = 16, y
-  gfx.drawstr(fit_text(state.warning ~= "" and state.warning or state.status, gfx.w - 32))
+  if state.hint ~= "" then
+    gfx.set(0.62, 0.78, 0.92, 1)
+    gfx.x, gfx.y = 16, y
+    gfx.drawstr(fit_text(state.hint, gfx.w - 32))
+  else
+    gfx.set(0.74, 0.76, 0.82, 1)
+    gfx.x, gfx.y = 16, y
+    gfx.drawstr(fit_text(state.warning ~= "" and state.warning or state.status, gfx.w - 32))
+  end
 end
 
 local function draw_expanded(clicked)
@@ -1151,22 +1246,22 @@ local function draw_expanded(clicked)
   for i, item in ipairs(labels) do
     local col = (i - 1) % 3
     local row = math.floor((i - 1) / 3)
-    if draw_button({x=14 + col * (bw + gap), y=y + row * 46, w=bw, h=bh}, item[1], false, true, clicked, item[3]) then item[2]() end
+    if btn({x=14 + col * (bw + gap), y=y + row * 46, w=bw, h=bh}, item[1], false, true, clicked, item[3]) then item[2]() end
   end
   local x2 = 466
-  if draw_button({x=x2, y=y, w=92, h=34}, "BAD", false, true, clicked, "danger") then add_marker_named("BAD", false) end
-  if draw_button({x=x2+102, y=y, w=92, h=34}, "OK", false, true, clicked, "save") then add_marker_named("OK", false) end
-  if draw_button({x=x2+204, y=y, w=92, h=34}, "ALT", false, true, clicked) then add_marker_named("ALT", false) end
-  if draw_button({x=x2+306, y=y, w=92, h=34}, "NOISE", false, true, clicked) then add_marker_named("NOISE", false) end
+  if btn({x=x2, y=y, w=92, h=34}, "BAD", false, true, clicked, "danger") then add_marker_named("BAD", false) end
+  if btn({x=x2+102, y=y, w=92, h=34}, "OK", false, true, clicked, "save") then add_marker_named("OK", false) end
+  if btn({x=x2+204, y=y, w=92, h=34}, "ALT", false, true, clicked) then add_marker_named("ALT", false) end
+  if btn({x=x2+306, y=y, w=92, h=34}, "NOISE", false, true, clicked) then add_marker_named("NOISE", false) end
 
   y = y + 50
-  if draw_button({x=x2, y=y, w=150, h=34}, state.folder_mode and "Folder Mode" or "Lane Mode TODO", state.folder_mode, true, clicked, "tab") then
+  if btn({x=x2, y=y, w=150, h=34}, state.folder_mode and "Folder Mode" or "Lane Mode TODO", state.folder_mode, true, clicked, "tab") then
     state.folder_mode = true
     warn("Lane Mode e' placeholder futuro nella POC.")
     save_state()
   end
-  if draw_button({x=x2+162, y=y, w=150, h=34}, "Navigator", false, true, clicked) then show_navigator() end
-  if draw_button({x=x2+324, y=y, w=150, h=34}, "Video", false, true, clicked) then show_video_window() end
+  if btn({x=x2+162, y=y, w=150, h=34}, "Navigator", false, true, clicked) then show_navigator() end
+  if btn({x=x2+324, y=y, w=150, h=34}, "Video", video_aperta(), true, clicked, "tab") then show_video_window() end
 
   y = y + 54
   set_color(colors.panel)
@@ -1188,7 +1283,7 @@ local function draw_mini(clicked)
   gfx.set(0.78, 0.80, 0.85, 1)
   gfx.x, gfx.y = 14, 126
   gfx.drawstr("Traccia: " .. (TRACK_NAMES[state.active_track_key] or "?"))
-  if draw_button({x=348, y=124, w=68, h=28}, "Espandi", false, true, clicked, "tab") then set_mode("compact") end
+  if btn({x=348, y=124, w=68, h=28}, "Espandi", false, true, clicked, "tab") then set_mode("compact") end
 end
 
 local function draw_toolbar(clicked)
@@ -1214,7 +1309,7 @@ local function draw_toolbar(clicked)
   local x, bw, bh, gap = 14, 78, 30, 8
   for _, b in ipairs(buttons) do
     if x + bw > gfx.w - 10 then x = 14; y = y + 38 end
-    if draw_button({x=x, y=y, w=bw, h=bh}, b[1], false, true, clicked, b[3]) then run_action(b[2], b[1]) end
+    if btn({x=x, y=y, w=bw, h=bh}, b[1], false, true, clicked, b[3]) then run_action(b[2], b[1]) end
     x = x + bw + gap
   end
 end
@@ -1233,6 +1328,8 @@ local function draw_countdown()
 end
 
 local function draw_gui()
+  -- Il suggerimento vale un giro solo: lo ricalcolano i pulsanti disegnati adesso.
+  state.hint = ""
   if state.hidden_until and reaper.time_precise() < state.hidden_until then
     set_color(colors.bg)
     gfx.rect(0, 0, gfx.w, gfx.h, true)
