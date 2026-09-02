@@ -12,7 +12,8 @@
   - registrazione esclusiva verificata sull'intero progetto;
   - regione Take automatica a ogni registrazione completata;
   - Lane Mode e' previsto come placeholder futuro;
-  - funzioni finestra always-on-top e minimize REAPER sono best-effort;
+  - always-on-top e Nascondi/Mostra REAPER sono best-effort: servono js_ReaScriptAPI;
+  - REAPER non viene mai nascosto da solo, solo col pulsante, e torna su alla chiusura;
   - NEXT TAKE usa la fine reale del nuovo item -> gap 5s -> REC.
 
   Riferimenti consultati, non usati come librerie:
@@ -98,7 +99,7 @@ local state = {
   mouse_was_down = false,
   pending = nil,
   countdown = nil,
-  attempted_reaper_hide = false,
+  reaper_hidden = false,
   last_window_save = 0,
   last_pin_try = 0,
   toolbar_buttons = {},
@@ -805,19 +806,49 @@ local function try_unpin_window()
   if hwnd then pcall(reaper.JS_Window_SetZOrder, hwnd, "NOTOPMOST") end
 end
 
-local function try_minimize_reaper_once()
-  if state.attempted_reaper_hide then return end
-  state.attempted_reaper_hide = true
-  -- Best-effort: REAPER/Lua non garantisce un iconize cross-platform.
-  -- Se js_ReaScriptAPI e' disponibile, proviamo a minimizzare la main window.
-  if reaper.GetMainHwnd and reaper.JS_Window_Show then
-    local hwnd = reaper.GetMainHwnd()
-    if hwnd then
-      local ok = pcall(reaper.JS_Window_Show, hwnd, "MINIMIZE")
-      if ok then state.status = "REAPER minimizzato se supportato"; return end
-    end
+-- Nascondi / mostra la finestra di REAPER. E' un interruttore, e non viene
+-- mai premuto da solo: all'avvio REAPER resta dov'e'.
+local function toggle_reaper_window()
+  if not (reaper.GetMainHwnd and reaper.JS_Window_Show) then
+    state.warning = "Serve js_ReaScriptAPI per nascondere e rimettere su REAPER."
+    return
   end
-  state.warning = "Minimize REAPER non disponibile: continuo con telecomando visibile."
+  local hwnd = reaper.GetMainHwnd()
+  if not hwnd then
+    state.warning = "Finestra di REAPER non trovata."
+    return
+  end
+  if state.reaper_hidden then
+    local ok = pcall(reaper.JS_Window_Show, hwnd, "RESTORE")
+    if not ok then
+      state.warning = "Non sono riuscito a rimettere su REAPER: usa il Dock."
+      return
+    end
+    if reaper.JS_Window_SetForeground then
+      pcall(reaper.JS_Window_SetForeground, hwnd)
+    end
+    state.reaper_hidden = false
+    state.warning = ""
+    state.status = "REAPER di nuovo visibile"
+  else
+    local ok = pcall(reaper.JS_Window_Show, hwnd, "MINIMIZE")
+    if not ok then
+      state.warning = "Minimize non disponibile su questo sistema."
+      return
+    end
+    state.reaper_hidden = true
+    state.warning = ""
+    state.status = "REAPER nascosto: premi Mostra REAPER per riportarlo su"
+  end
+end
+
+-- Se chiudi il telecomando mentre REAPER e' nascosto, non lo lascio sparito.
+local function restore_reaper_on_exit()
+  if not state.reaper_hidden then return end
+  if not (reaper.GetMainHwnd and reaper.JS_Window_Show) then return end
+  local hwnd = reaper.GetMainHwnd()
+  if hwnd then pcall(reaper.JS_Window_Show, hwnd, "RESTORE") end
+  state.reaper_hidden = false
 end
 
 local function park_window()
@@ -968,6 +999,9 @@ local function draw_compact(clicked)
   if draw_button({x=262, y=y, w=88, h=34}, "Pin", state.pin, true, clicked, "tab") then state.pin = not state.pin; if not state.pin then try_unpin_window() end; save_state() end
   if draw_button({x=362, y=y, w=96, h=34}, "Hide 5s", false, true, clicked) then hide_5s() end
   if draw_button({x=470, y=y, w=88, h=34}, "Park", false, true, clicked) then park_window() end
+  if draw_button({x=570, y=y, w=136, h=34},
+                 state.reaper_hidden and "Mostra REAPER" or "Nascondi REAPER",
+                 state.reaper_hidden, true, clicked, "tab") then toggle_reaper_window() end
   draw_mode_buttons(y + 44, clicked)
 
   y = 388
@@ -1106,7 +1140,6 @@ local function init_gui()
   local dock = tonumber(ext_get("window_dock", "")) or 0
   gfx.init(SCRIPT_TITLE, w, h, dock, x, y)
   gfx.setfont(1, "Arial", 15)
-  try_minimize_reaper_once()
 end
 
 local function main_loop()
@@ -1114,6 +1147,7 @@ local function main_loop()
   if char < 0 then
     save_window_state()
     save_state()
+    restore_reaper_on_exit()
     return
   end
   if char == 27 then
@@ -1130,6 +1164,10 @@ local function main_loop()
   state.mouse_was_down = (gfx.mouse_cap & 1) == 1
   reaper.defer(main_loop)
 end
+
+-- Rete di sicurezza: se lo script viene fermato in un altro modo
+-- (Action List, ReaScript ricaricato), REAPER torna comunque su.
+reaper.atexit(restore_reaper_on_exit)
 
 init_gui()
 main_loop()

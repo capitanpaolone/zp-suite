@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 1.2.2
+-- @version 1.2.3
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -14,6 +14,10 @@
 --   OSARA non sono richiesti: aggiungono funzioni, e quando mancano la suite
 --   usa da sola una strada alternativa. Il dettaglio e' in README.txt.
 -- @changelog
+--   SOLO Recorder: non minimizza piu' REAPER da solo quando si apre.
+--     Adesso c'e' un pulsante Nascondi/Mostra REAPER, e chiudendo il
+--     telecomando REAPER torna su comunque.
+--   Help: il rimando alla pagina della toolbar e' la prima cosa che si vede.
 --   Nuovo: pulsante Help sulla toolbar, e una pagina che spiega le icone
 --     una per una. Sedici pulsanti in tutto.
 --   Corretto: il pulsante Help e SRT Tools cercavano i loro file nella
