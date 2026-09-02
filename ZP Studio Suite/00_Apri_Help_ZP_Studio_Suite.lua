@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 1.1.0
+-- @version 1.2.0
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -9,7 +9,16 @@
 --   gestione SRT, lettura accessibile con OSARA, preparazione del mixdown e
 --   costruzione della catena audio ZP. Include il supporto screen reader su
 --   Windows tramite la libreria NVDA Controller Client (LGPL 2.1, di NV Access).
+--
+--   Funziona su un REAPER pulito, senza estensioni. SWS, js_ReaScriptAPI e
+--   OSARA non sono richiesti: aggiungono funzioni, e quando mancano la suite
+--   usa da sola una strada alternativa. Il dettaglio e' in README.txt.
 -- @changelog
+--   SOLO Recorder v0.2.0: cinque comandi, selettore VO_MAIN/INSERTS/RETAKES/ALT,
+--     esclusivita' della traccia verificata prima di registrare, take numerati
+--     automaticamente allo STOP, NEXT TAKE con gap di 5 secondi.
+--   SOLO Recorder: icona nuova sulla toolbar.
+--   README: cosa aggiungono SWS, js_ReaScriptAPI e OSARA, e cosa succede senza.
 --   Probe Guard: pannello di stato con spia, contatore riordini e apertura del log.
 --   Pulizia: corretto un falso positivo che poteva togliere una voce della versione nuova.
 --   Nuovo: 27 Pulisci installazione precedente, per chi arriva dal vecchio installer.
