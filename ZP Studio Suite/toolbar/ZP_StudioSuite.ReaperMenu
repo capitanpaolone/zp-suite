@@ -14,6 +14,7 @@ icon_15=ZP_tb_22_Voice_Cleaner.png
 icon_16=ZP_tb_23_Chain_Builder.png
 icon_17=ZP_tb_24_Probe_Guard.png
 icon_18=ZP_tb_25_SOLO_Recorder.png
+icon_20=ZP_tb_00_Help.png
 item_0=_RSa810ee67f9efcc7f32ab25686cd7d0e2fd4305a5 Script: ZP Studio Suite - Project Viewer
 item_1=-1
 item_2=_RS730f38cb6e28b97847f3abe2988be11e29677d98 Script: ZP Studio Suite - Gestore Progetto
@@ -33,4 +34,5 @@ item_15=_RSf4b420637c292a45b8e45ef1ef4efb9d8987ccee Script: ZP Studio Suite - Pu
 item_16=_RSd2187ad788d67e01197d704de8c5b219d32b44c0 Script: ZP Studio Suite - ZP Chain Builder
 item_17=_RS3bf78baf36db944ad5d294f5153bd52e6e8a59cc Script: ZP Studio Suite - ZP Probe Guard
 item_18=_RSe10b6b7edc6f9b24781eebd9572f6a514f92333b Script: ZP Studio Suite - SOLO Recorder
-
+item_19=-1
+item_20=_RS7891e4fd17d67e03f2d9fcccc561dd735982697f Script: ZP Studio Suite - Help

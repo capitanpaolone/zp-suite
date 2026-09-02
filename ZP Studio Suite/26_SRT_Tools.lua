@@ -12,8 +12,9 @@ local function join(a, b)
   return a .. sep .. b
 end
 
-local resource = reaper.GetResourcePath()
-local tool_path = join(join(join(join(resource, "Scripts"), "ZP_Studio_Suite"), "tools"), "srt_tools.html")
+-- La cartella dello script, qualunque sia il posto in cui e' installato.
+local script_dir = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\][^/\\]+$") or ".")
+local tool_path = join(join(script_dir, "tools"), "srt_tools.html")
 
 local f = io.open(tool_path, "r")
 if not f then

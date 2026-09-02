@@ -14,7 +14,12 @@
 --   OSARA non sono richiesti: aggiungono funzioni, e quando mancano la suite
 --   usa da sola una strada alternativa. Il dettaglio e' in README.txt.
 -- @changelog
---   Toolbar: aggiunto il pulsante del SOLO Recorder, quindici in tutto.
+--   Nuovo: pulsante Help sulla toolbar, e una pagina che spiega le icone
+--     una per una. Sedici pulsanti in tutto.
+--   Corretto: il pulsante Help e SRT Tools cercavano i loro file nella
+--     cartella del vecchio installer, quindi su un'installazione ReaPack
+--     dicevano "non trovato". Adesso partono dalla propria cartella.
+--   Toolbar: aggiunto il pulsante del SOLO Recorder.
 --   Toolbar: corretti due pulsanti che puntavano nel vuoto. Chain Builder
 --     richiamava per sbaglio il Probe Guard, e il Probe Guard un'azione che
 --     non esiste piu'. Adesso tutti i pulsanti aprono lo script giusto,
@@ -60,6 +65,7 @@
 --   [nomain] ZP_UI.lua
 --   [nomain] lib_RythmoBand_Accessibile.lua
 --   help/index.html
+--   help/toolbar.html
 --   help/voice_cleaner.html
 --   tools/srt_tools.html
 --   toolbar/ZP_StudioSuite.ReaperMenu
@@ -105,9 +111,11 @@ local function join(a, b)
   return a .. sep .. b
 end
 
-local resource = reaper.GetResourcePath()
-local help_path = join(join(join(resource, "Scripts"), "ZP_Studio_Suite"), "help")
-help_path = join(help_path, "index.html")
+-- La cartella dello script, qualunque sia il posto in cui e' installato.
+-- ReaPack lo mette in Scripts/ZP Suite/ZP Studio Suite, il vecchio installer
+-- in Scripts/ZP_Studio_Suite: chiederlo al file stesso funziona sempre.
+local script_dir = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\][^/\\]+$") or ".")
+local help_path = join(join(script_dir, "help"), "index.html")
 
 local f = io.open(help_path, "r")
 if not f then
