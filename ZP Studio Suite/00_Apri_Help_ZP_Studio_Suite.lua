@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 1.2.4
+-- @version 1.2.5
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -14,6 +14,11 @@
 --   OSARA non sono richiesti: aggiungono funzioni, e quando mancano la suite
 --   usa da sola una strada alternativa. Il dettaglio e' in README.txt.
 -- @changelog
+--   SOLO Recorder: interruttore Monitor sulla traccia attiva, senza dover
+--     aprire la finestra principale di REAPER per spegnerlo.
+--   SOLO Recorder: TOGLI TAKE toglie dalla timeline il take appena registrato
+--     e riporta il cursore dove era partito, pronto a rifarlo. Il file audio
+--     resta nella cartella del progetto, e Ctrl+Z rimette tutto com'era.
 --   SOLO Recorder: etichette che si accorciano invece di essere tagliate
 --     a meta' parola quando i pulsanti si stringono (Mini, o finestra
 --     rimpicciolita): INDIETRO 5s diventa -5s, ULTIMO ITEM +5s diventa FINE +5s.

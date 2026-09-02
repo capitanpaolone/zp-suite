@@ -100,6 +100,7 @@ local state = {
   pending = nil,
   countdown = nil,
   reaper_hidden = false,
+  last_take = nil,
   last_window_save = 0,
   last_pin_try = 0,
   toolbar_buttons = {},
@@ -673,13 +674,60 @@ local function next_take()
   state.status = "NEXT TAKE: stop e preparo nuovo take"
 end
 
+-- Toglie dalla timeline il take appena registrato e riporta il cursore
+-- dov'era partito, pronto a rifarlo. Il file audio NON viene cancellato:
+-- resta nella cartella del progetto. Tutto dentro un blocco di undo, quindi
+-- un Ctrl+Z lo rimette esattamente com'era.
 local function undo_last_take()
-  warn("UNDO LAST TAKE POC: nessuna cancellazione automatica. Usa BAD per marcarlo o Undo REAPER se sei sicuro.")
+  local lt = state.last_take
+  if not lt or not lt.guids or #lt.guids == 0 then
+    warn("Nessun take di questa sessione da togliere. Per quelli di prima usa l'Undo di REAPER.")
+    return
+  end
+  reaper.Undo_BeginBlock()
+  local cercati = {}
+  for _, g in ipairs(lt.guids) do cercati[g] = true end
+  local tolti = 0
+  for i = reaper.CountMediaItems(0) - 1, 0, -1 do
+    local item = reaper.GetMediaItem(0, i)
+    local guid = item and item_guid(item)
+    if guid and cercati[guid] then
+      local tr = reaper.GetMediaItemTrack(item)
+      if tr and reaper.DeleteTrackMediaItem(tr, item) then tolti = tolti + 1 end
+    end
+  end
+  if lt.region then
+    local i = 0
+    while true do
+      local retval, isrgn, _, _, nome, idx = reaper.EnumProjectMarkers(i)
+      if retval == 0 then break end
+      if isrgn and nome == lt.region then
+        reaper.DeleteProjectMarker(0, idx, true)
+        break
+      end
+      i = i + 1
+    end
+  end
+  if state.take_counter > 1 then
+    state.take_counter = state.take_counter - 1
+    proj_set("take_counter", state.take_counter)
+  end
+  if lt.start then reaper.SetEditCurPos(lt.start, true, false) end
+  reaper.UpdateArrange()
+  reaper.Undo_EndBlock("ZP SOLO: tolto " .. (lt.region or "l'ultimo take") .. " dalla timeline", -1)
+  state.last_take = nil
+  if tolti == 0 then
+    warn("Non ho trovato gli item di quel take: forse li hai gia' spostati o tolti a mano.")
+    return
+  end
+  state.status = (lt.region or "Ultimo take") ..
+    " tolto dalla timeline, cursore all'inizio. Il file resta nella cartella del progetto; Ctrl+Z lo rimette."
 end
 
 local function finalize_recording(session)
   if not session then return nil end
   local first_pos, final_end = nil, nil
+  local nuovi = {}
   for i = 0, reaper.CountMediaItems(0) - 1 do
     local item = reaper.GetMediaItem(0, i)
     local guid = item_guid(item)
@@ -689,6 +737,7 @@ local function finalize_recording(session)
       local item_end = pos + reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
       first_pos = not first_pos and pos or math.min(first_pos, pos)
       final_end = not final_end and item_end or math.max(final_end, item_end)
+      nuovi[#nuovi + 1] = guid
     end
   end
   if not first_pos or not final_end or final_end <= first_pos + EPS then
@@ -700,6 +749,9 @@ local function finalize_recording(session)
   reaper.AddProjectMarker2(0, true, first_pos, final_end, name, -1, native_color(70, 155, 220))
   state.take_counter = take_number + 1
   proj_set("take_counter", state.take_counter)
+  -- Mi segno cos'e' appena entrato in timeline: serve a TOGLI TAKE.
+  state.last_take = { guids = nuovi, start = first_pos, region = name,
+                      track_key = session.track_key }
   reaper.UpdateArrange()
   state.status = name .. " indicizzato — " .. TRACK_NAMES[session.track_key]
   return final_end, name
@@ -840,6 +892,30 @@ local function toggle_reaper_window()
     state.warning = ""
     state.status = "REAPER nascosto: premi Mostra REAPER per riportarlo su"
   end
+end
+
+-- Monitoring d'ingresso della traccia attiva. REAPER tende ad accenderlo
+-- da solo quando armi: qui si spegne e si riaccende senza aprire la finestra
+-- principale. I_RECMON: 0 spento, 1 acceso, 2 automatico.
+local function monitoring_label()
+  local tr = active_track()
+  if not tr then return "Monitor -", false end
+  local mon = reaper.GetMediaTrackInfo_Value(tr, "I_RECMON")
+  if mon == 2 then return "Monitor auto", true end
+  if mon == 1 then return "Monitor ON", true end
+  return "Monitor OFF", false
+end
+
+local function toggle_monitoring()
+  local tr, nome = active_track()
+  if not tr then
+    warn("Traccia non trovata: scegline un'altra o costruisci la catena.")
+    return
+  end
+  local mon = reaper.GetMediaTrackInfo_Value(tr, "I_RECMON")
+  local nuovo = (mon == 0) and 1 or 0
+  reaper.SetMediaTrackInfo_Value(tr, "I_RECMON", nuovo)
+  state.status = (nuovo == 1 and "Monitoring acceso su " or "Monitoring spento su ") .. (nome or "?")
 end
 
 -- Se chiudi il telecomando mentre REAPER e' nascosto, non lo lascio sparito.
@@ -1006,6 +1082,10 @@ local function draw_compact(clicked)
   if draw_button({x=570, y=y, w=136, h=34},
                  state.reaper_hidden and "Mostra REAPER" or "Nascondi REAPER",
                  state.reaper_hidden, true, clicked, "tab") then toggle_reaper_window() end
+  local mon_label, mon_on = monitoring_label()
+  if draw_button({x=14, y=y + 44, w=132, h=30}, mon_label, mon_on, true, clicked, "tab") then
+    toggle_monitoring()
+  end
   draw_mode_buttons(y + 44, clicked)
 
   y = 388
@@ -1025,7 +1105,7 @@ local function draw_expanded(clicked)
     {"INSERT", insert_record, nil},
     {"ALT TAKE", alt_take, nil},
     {"NEXT TAKE", next_take, "danger"},
-    {"UNDO LAST", undo_last_take, "danger"}
+    {"TOGLI TAKE", undo_last_take, "danger"}
   }
   for i, item in ipairs(labels) do
     local col = (i - 1) % 3
