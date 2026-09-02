@@ -918,6 +918,40 @@ local function toggle_monitoring()
   state.status = (nuovo == 1 and "Monitoring acceso su " or "Monitoring spento su ") .. (nome or "?")
 end
 
+-- Volume di ritorno: agisce sulla TRACCIA SELEZIONATA in REAPER, che in
+-- similsync e' la reference o l'audio del video. E' un cambio di mix vero,
+-- quindi resta nel progetto: per questo mostro sempre il valore e dico
+-- su quale traccia sto agendo.
+local function selected_track()
+  return reaper.GetSelectedTrack(0, 0)
+end
+
+local function track_db(tr)
+  local v = reaper.GetMediaTrackInfo_Value(tr, "D_VOL")
+  if v <= 0 then return -150 end
+  return 20 * math.log(v, 10)
+end
+
+local function return_db_label()
+  local tr = selected_track()
+  if not tr then return "--" end
+  return string.format("%+.1f dB", track_db(tr))
+end
+
+local function nudge_return(delta_db)
+  local tr = selected_track()
+  if not tr then
+    warn("Seleziona in REAPER la traccia che vuoi alzare o abbassare (la reference, o il video).")
+    return
+  end
+  local db = math.max(-60, math.min(12, track_db(tr) + delta_db))
+  reaper.SetMediaTrackInfo_Value(tr, "D_VOL", 10 ^ (db / 20))
+  local _, nome = reaper.GetSetMediaTrackInfo_String(tr, "P_NAME", "", false)
+  if nome == nil or nome == "" then nome = "traccia selezionata" end
+  reaper.UpdateArrange()
+  state.status = string.format("Ritorno: %s a %+.1f dB (e' un cambio di mix, resta nel progetto)", nome, db)
+end
+
 -- Se chiudi il telecomando mentre REAPER e' nascosto, non lo lascio sparito.
 local function restore_reaper_on_exit()
   if not state.reaper_hidden then return end
@@ -1082,11 +1116,18 @@ local function draw_compact(clicked)
   if draw_button({x=570, y=y, w=136, h=34},
                  state.reaper_hidden and "Mostra REAPER" or "Nascondi REAPER",
                  state.reaper_hidden, true, clicked, "tab") then toggle_reaper_window() end
+  local yr = y + 44
   local mon_label, mon_on = monitoring_label()
-  if draw_button({x=14, y=y + 44, w=132, h=30}, mon_label, mon_on, true, clicked, "tab") then
+  if draw_button({x=14, y=yr, w=132, h=30}, mon_label, mon_on, true, clicked, "tab") then
     toggle_monitoring()
   end
-  draw_mode_buttons(y + 44, clicked)
+  if draw_button({x=156, y=yr, w=56, h=30}, "RIT -", false, true, clicked) then nudge_return(-1) end
+  if draw_button({x=218, y=yr, w=56, h=30}, "RIT +", false, true, clicked) then nudge_return(1) end
+  gfx.setfont(1, "Arial", 13, "b")
+  gfx.set(0.74, 0.76, 0.82, 1)
+  gfx.x, gfx.y = 284, yr + 8
+  gfx.drawstr(fit_text(return_db_label(), 108))
+  draw_mode_buttons(yr, clicked)
 
   y = 388
   gfx.setfont(1, "Arial", 13)

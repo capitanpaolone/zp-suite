@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 1.2.5
+-- @version 1.2.6
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -14,6 +14,10 @@
 --   OSARA non sono richiesti: aggiungono funzioni, e quando mancano la suite
 --   usa da sola una strada alternativa. Il dettaglio e' in README.txt.
 -- @changelog
+--   SOLO Recorder: RIT - e RIT + alzano e abbassano il volume della traccia
+--     selezionata in REAPER (la reference, o l'audio del video), con il
+--     valore in dB sempre visibile. E' un cambio di mix e resta nel progetto:
+--     il pannello lo dice ogni volta.
 --   SOLO Recorder: interruttore Monitor sulla traccia attiva, senza dover
 --     aprire la finestra principale di REAPER per spegnerlo.
 --   SOLO Recorder: TOGLI TAKE toglie dalla timeline il take appena registrato
