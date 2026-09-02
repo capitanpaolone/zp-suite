@@ -935,6 +935,10 @@ local function draw_transport(y, clicked)
   local gap, margin, count = state.mode == "mini" and 5 or 9, 14, 5
   local bw = math.floor((gfx.w - margin * 2 - gap * (count - 1)) / count)
   local bh = state.mode == "mini" and 42 or 52
+  -- Le etichette lunghe venivano tagliate a meta' parola quando il pulsante
+  -- si stringe: in Mini, o quando rimpicciolisci la finestra a mano.
+  -- Meglio una parola corta e intera che una lunga con i puntini.
+  local stretto = bw < 104
   local x = margin
   if draw_button({x=x, y=y, w=bw, h=bh}, "REC", transport_state() == "REC", true, clicked, "rec") then
     record_on_track(state.active_track_key, "REC")
@@ -944,9 +948,9 @@ local function draw_transport(y, clicked)
   x = x + bw + gap
   if draw_button({x=x, y=y, w=bw, h=bh}, "PLAY", transport_state() == "PLAY", true, clicked, "play") then play_transport() end
   x = x + bw + gap
-  if draw_button({x=x, y=y, w=bw, h=bh}, "INDIETRO 5s", false, true, clicked) then move_cursor(-5) end
+  if draw_button({x=x, y=y, w=bw, h=bh}, stretto and "-5s" or "INDIETRO 5s", false, true, clicked) then move_cursor(-5) end
   x = x + bw + gap
-  if draw_button({x=x, y=y, w=bw, h=bh}, "ULTIMO ITEM +5s", false, true, clicked) then goto_after_last_item() end
+  if draw_button({x=x, y=y, w=bw, h=bh}, stretto and "FINE +5s" or "ULTIMO ITEM +5s", false, true, clicked) then goto_after_last_item() end
 end
 
 local function draw_track_selector(y, clicked)

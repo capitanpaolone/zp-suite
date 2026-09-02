@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 1.2.3
+-- @version 1.2.4
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -14,6 +14,9 @@
 --   OSARA non sono richiesti: aggiungono funzioni, e quando mancano la suite
 --   usa da sola una strada alternativa. Il dettaglio e' in README.txt.
 -- @changelog
+--   SOLO Recorder: etichette che si accorciano invece di essere tagliate
+--     a meta' parola quando i pulsanti si stringono (Mini, o finestra
+--     rimpicciolita): INDIETRO 5s diventa -5s, ULTIMO ITEM +5s diventa FINE +5s.
 --   SOLO Recorder: non minimizza piu' REAPER da solo quando si apre.
 --     Adesso c'e' un pulsante Nascondi/Mostra REAPER, e chiudendo il
 --     telecomando REAPER torna su comunque.
