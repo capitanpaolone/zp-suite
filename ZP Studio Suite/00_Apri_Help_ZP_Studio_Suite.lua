@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 1.2.0
+-- @version 1.2.1
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -14,6 +14,11 @@
 --   OSARA non sono richiesti: aggiungono funzioni, e quando mancano la suite
 --   usa da sola una strada alternativa. Il dettaglio e' in README.txt.
 -- @changelog
+--   Toolbar: aggiunto il pulsante del SOLO Recorder, quindici in tutto.
+--   Toolbar: corretti due pulsanti che puntavano nel vuoto. Chain Builder
+--     richiamava per sbaglio il Probe Guard, e il Probe Guard un'azione che
+--     non esiste piu'. Adesso tutti i pulsanti aprono lo script giusto,
+--     verificato uno per uno contro il reaper-kb.ini di un REAPER pulito.
 --   SOLO Recorder v0.2.0: cinque comandi, selettore VO_MAIN/INSERTS/RETAKES/ALT,
 --     esclusivita' della traccia verificata prima di registrare, take numerati
 --     automaticamente allo STOP, NEXT TAKE con gap di 5 secondi.
