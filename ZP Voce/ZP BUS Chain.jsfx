@@ -1,8 +1,17 @@
 // @description ZP BUS Chain
-// @version 1.2.5
+// @version 1.2.6
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   Preset NAT/BRD/DNS/WRM/MCH/FLT: stesso difetto gia' trovato sul pomello
+//     IN. Il repaint "sticky" della testata (quello che ridisegna sopra ai
+//     pannelli scrollati) ridisegnava la riga Preset 21px piu' in alto della
+//     passata interattiva, senza riusare le coordinate salvate come gia'
+//     fatto per il pomello IN: il pulsante si vedeva in un punto e si
+//     cliccava 21px sotto. Ora il repaint riusa le stesse coordinate.
+//   Nome in testata: tolto "1.2.2" scritto fisso nel titolo GUI (due punti)
+//     e nel tooltip, rimasto indietro di quattro versioni. Il titolo ora
+//     segue la stessa regola del nome nel browser FX: nessun numero fisso.
 //   Input Trim: il pomello IN adesso si prende col mouse. Tre controlli
 //     diversi - pomello, zona di presa e striscia - usavano lo stesso id di
 //     hover, e ui_knob riconosce il doppio click dall'id: due click su cose
@@ -5253,7 +5262,7 @@ local(tip_y)
   ui_hover_id==9031 ? strcpy(#_tip_msg,"+Off Ref: offset voce sopra la musica in dB; valore tipico +6 dB voce chiara, +4 dB narrazione") :
   ui_hover_id==9040 ? strcpy(#_tip_msg,"Final Limiter ON/OFF: OFF = bypass reale del limiter di sicurezza post-Output; il segnale puo' superare 0 dBFS floating point") :
   ui_hover_id==9015 ? strcpy(#_tip_msg,"RST: click singolo, azzera tutti i parametri Output ai valori di default e deseleziona il preset attivo") :
-  strcpy(#_tip_msg,"ZP BUS Chain 1.2.2 GPLv3 | BROWN + Chloe-derived ANA | Output gestito da LIM/Reaper");
+  strcpy(#_tip_msg,"ZP BUS Chain GPLv3 | BROWN + Chloe-derived ANA | Output gestito da LIM/Reaper");
 
   draw_tip_message(tip_y);
 );
@@ -5413,7 +5422,7 @@ gfx_set(0.18,0.20,0.24,1); gfx_rect(0,HDR_H+HDR_Y+2,gfx_w,1);
 
 // ── Title left ──────────────────────────────────────────────
 gfx_setfont(1,"Arial",19,'b'); gfx_set(0.94,0.96,0.98,1);
-gfx_x=16; gfx_y=HDR_Y+10; gfx_drawstr("ZP BUS CHAIN 1.2.2");
+gfx_x=16; gfx_y=HDR_Y+10; gfx_drawstr("ZP BUS CHAIN");
 // ZP circle removed to free up header space
 gfx_setfont(1,"Arial",12); gfx_set(0.46,0.60,0.76,1);
 gfx_x=16; gfx_y=HDR_Y+38; gfx_drawstr("BROWN + ANA - di Paolo Balestri");
@@ -5636,7 +5645,7 @@ gfx_view_i == 0 ? (
 
   // ── Title left ──────────────────────────────────────────────
   gfx_setfont(1,"Arial",19,'b'); gfx_set(0.94,0.96,0.98,1);
-  gfx_x=16; gfx_y=HDR_Y+10; gfx_drawstr("ZP BUS CHAIN 1.2.2");
+  gfx_x=16; gfx_y=HDR_Y+10; gfx_drawstr("ZP BUS CHAIN");
   // ZP circle removed to free up header space
   gfx_setfont(1,"Arial",12); gfx_set(0.46,0.60,0.76,1);
   gfx_x=16; gfx_y=HDR_Y+38; gfx_drawstr("BROWN + ANA - di Paolo Balestri");
@@ -5646,8 +5655,8 @@ gfx_view_i == 0 ? (
   // Preset recall buttons
   gfx_setfont(1,"Arial",13); gfx_set(0.42,0.72,0.34,0.95);
   profile_nm=profile==1?"Natural":profile==2?"Broadcast":profile==3?"Dense":profile==4?"Warm":profile==5?"Match":profile==6?"Flat":"Manual";
-  gfx_x=16; gfx_y=HDR_Y+61; gfx_drawstr("Preset:");
-  HPROF_W=36; HPROF_G=4; HPROF_X=66; HPROF_Y=HDR_Y+58;
+  gfx_x=16; gfx_y=HDR_Y+82; gfx_drawstr("Preset:");
+  HPROF_W=36; HPROF_G=4; HPROF_X=66; HPROF_Y=HDR_Y+79;
   ui_profile_button(1,HPROF_X+(HPROF_W+HPROF_G)*0,HPROF_Y,HPROF_W,20,"NAT",271);
   ui_profile_button(2,HPROF_X+(HPROF_W+HPROF_G)*1,HPROF_Y,HPROF_W,20,"BRD",272);
   ui_profile_button(3,HPROF_X+(HPROF_W+HPROF_G)*2,HPROF_Y,HPROF_W,20,"DNS",273);
