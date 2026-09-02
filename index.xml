@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" name="ZP Suite" commit="26b6d0f65990c56f8b4c1f792b1a2bd74eea160c">
+<index version="1" name="ZP Suite" commit="7a4313cec74501d1e3a2178dfe4792f598365b60">
   <category name="ZP Master">
     <reapack name="ZP Master Pro.jsfx" type="effect" desc="ZP Master Pro">
       <version name="2.45" author="Paolo Balestri" time="2026-08-30T20:03:27Z">
@@ -1411,6 +1411,28 @@ Meter circolari di soglia su tutta la catena.
 Motore ANA ridotto a CALDO (Lush), CORPO (Punch), APERTO (Holo), collocato pre-limiter.
 LINK Drive/Gain: alzando il Drive il Gain scende in opposizione, per giudicare il colore senza salto di volume.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/117b397582221807e0454789b26044fdb2fc6916/ZP%20Voce/ZP%20BUS%20Chain.jsfx</source>
+      </version>
+      <version name="1.2.6" author="Paolo Balestri" time="2026-09-02T23:35:18Z">
+        <changelog><![CDATA[Preset NAT/BRD/DNS/WRM/MCH/FLT: stesso difetto gia' trovato sul pomello
+  IN. Il repaint "sticky" della testata (quello che ridisegna sopra ai
+  pannelli scrollati) ridisegnava la riga Preset 21px piu' in alto della
+  passata interattiva, senza riusare le coordinate salvate come gia'
+  fatto per il pomello IN: il pulsante si vedeva in un punto e si
+  cliccava 21px sotto. Ora il repaint riusa le stesse coordinate.
+Nome in testata: tolto "1.2.2" scritto fisso nel titolo GUI (due punti)
+  e nel tooltip, rimasto indietro di quattro versioni. Il titolo ora
+  segue la stessa regola del nome nel browser FX: nessun numero fisso.
+Input Trim: il pomello IN adesso si prende col mouse. Tre controlli
+  diversi - pomello, zona di presa e striscia - usavano lo stesso id di
+  hover, e ui_knob riconosce il doppio click dall'id: due click su cose
+  diverse passavano per doppio click, che azzera il valore e molla il
+  trascinamento. Ora hanno tre id distinti e la zona di presa agisce
+  dopo il pomello, non prima.
+Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
+Meter circolari di soglia su tutta la catena.
+Motore ANA ridotto a CALDO (Lush), CORPO (Punch), APERTO (Holo), collocato pre-limiter.
+LINK Drive/Gain: alzando il Drive il Gain scende in opposizione, per giudicare il colore senza salto di volume.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/7a4313cec74501d1e3a2178dfe4792f598365b60/ZP%20Voce/ZP%20BUS%20Chain.jsfx</source>
       </version>
     </reapack>
     <reapack name="ZP Harmonic Space Carver.jsfx" type="effect" desc="ZP Harmonic Space Carver Ducker - Paolo Balestri">
