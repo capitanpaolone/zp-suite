@@ -6,12 +6,14 @@
 
   Telecomando operativo per registrazione voiceover in REAPER.
 
-  Note POC:
+  Funzioni principali:
   - modulo separato, non modifica gli altri script ZP;
   - Folder Mode e' il default;
+  - registrazione esclusiva verificata sull'intero progetto;
+  - regione Take automatica a ogni registrazione completata;
   - Lane Mode e' previsto come placeholder futuro;
   - funzioni finestra always-on-top e minimize REAPER sono best-effort;
-  - NEXT TAKE POC usa STOP -> +1s -> REC, senza split/take/lane distruttivi.
+  - NEXT TAKE usa la fine reale del nuovo item -> gap 5s -> REC.
 
   Riferimenti consultati, non usati come librerie:
   - ZP_UI.lua per stile UI;
@@ -24,7 +26,7 @@
 ]]
 
 local SCRIPT_TITLE = "ZP SOLO Recorder"
-local SCRIPT_VERSION = "v0.1.0-poc"
+local SCRIPT_VERSION = "v0.2.0"
 local EXT_SECTION = "ZP_SOLO_Recorder"
 local PROJ_SECTION = "ZP_SOLO_Recorder_Project"
 
@@ -44,7 +46,7 @@ local COMPACT_W, COMPACT_H = 720, 430
 local EXPANDED_W, EXPANDED_H = 920, 620
 local TOOLBAR_H = 96
 
-local NEXT_TAKE_GAP_SECONDS = 1.0
+local NEXT_TAKE_GAP_SECONDS = 5.0
 local DEBOUNCE_SECONDS = 0.35
 local STOP_REC_SETTLE_SECONDS = 0.45
 local EPS = 0.000001
@@ -99,7 +101,8 @@ local state = {
   attempted_reaper_hide = false,
   last_window_save = 0,
   last_pin_try = 0,
-  toolbar_buttons = {}
+  toolbar_buttons = {},
+  record_session = nil
 }
 
 local colors = {
@@ -406,28 +409,57 @@ local function arm_only_solo_target(key)
   local tracks = ensure_solo_structure()
   local target = tracks[key]
   if not target then warn("Traccia SOLO non trovata: " .. tostring(TRACK_NAMES[key] or key)); return nil end
-  for _, rec_key in ipairs(RECORD_TRACK_KEYS) do
-    if tracks[rec_key] then
-      reaper.SetMediaTrackInfo_Value(tracks[rec_key], "I_RECARM", rec_key == key and 1 or 0)
-      if rec_key == key then
-        reaper.SetMediaTrackInfo_Value(tracks[rec_key], "I_RECMON", 1)
-        if reaper.GetMediaTrackInfo_Value(tracks[rec_key], "I_RECINPUT") < 0 then
-          reaper.SetMediaTrackInfo_Value(tracks[rec_key], "I_RECINPUT", 0)
-        end
-      end
-    end
+  -- L'esclusivita' riguarda l'intero progetto, non soltanto le tracce SOLO.
+  for i = 0, reaper.CountTracks(0) - 1 do
+    local tr = reaper.GetTrack(0, i)
+    reaper.SetMediaTrackInfo_Value(tr, "I_RECARM", tr == target and 1 or 0)
+  end
+  reaper.SetMediaTrackInfo_Value(target, "I_RECMON", 1)
+  if reaper.GetMediaTrackInfo_Value(target, "I_RECINPUT") < 0 then
+    reaper.SetMediaTrackInfo_Value(target, "I_RECINPUT", 0)
   end
   reaper.SetOnlyTrackSelected(target)
   set_active_track_key(key)
+  local armed_count, armed_target = 0, false
+  for i = 0, reaper.CountTracks(0) - 1 do
+    local tr = reaper.GetTrack(0, i)
+    if reaper.GetMediaTrackInfo_Value(tr, "I_RECARM") == 1 then
+      armed_count = armed_count + 1
+      armed_target = armed_target or tr == target
+    end
+  end
+  if armed_count ~= 1 or not armed_target then
+    warn("REC BLOCCATO: impossibile garantire la registrazione esclusiva.")
+    return nil
+  end
+  state.status = "REC READY — " .. TRACK_NAMES[key]
   return target
 end
 
-local function has_armed_track()
-  for i = 0, reaper.CountTracks(0) - 1 do
-    local tr = reaper.GetTrack(0, i)
-    if reaper.GetMediaTrackInfo_Value(tr, "I_RECARM") == 1 then return true end
+local function item_guid(item)
+  if not item then return nil end
+  local _, guid = reaper.GetSetMediaItemInfo_String(item, "GUID", "", false)
+  return guid
+end
+
+local function snapshot_items()
+  local seen = {}
+  for i = 0, reaper.CountMediaItems(0) - 1 do
+    local guid = item_guid(reaper.GetMediaItem(0, i))
+    if guid then seen[guid] = true end
   end
-  return false
+  return seen
+end
+
+local function last_item_end()
+  local last_end = nil
+  for i = 0, reaper.CountMediaItems(0) - 1 do
+    local item = reaper.GetMediaItem(0, i)
+    local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+    local item_end = pos + reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+    if not last_end or item_end > last_end then last_end = item_end end
+  end
+  return last_end
 end
 
 local function can_click(id)
@@ -449,12 +481,21 @@ local function do_record_now()
     speak("REC gia' attivo.")
     return
   end
-  if not has_armed_track() then
-    warn("Nessuna traccia armata. Seleziono la traccia SOLO attiva.")
-    if not arm_only_solo_target(state.active_track_key) then return end
-  end
+  local target = arm_only_solo_target(state.active_track_key)
+  if not target then return end
+  state.record_session = {
+    before = snapshot_items(),
+    track = target,
+    track_key = state.active_track_key,
+    started_at = reaper.GetCursorPosition()
+  }
   reaper.Main_OnCommand(ACTION.record, 0)
-  state.status = "Registrazione avviata"
+  if (reaper.GetPlayState() & 4) ~= 4 then
+    state.record_session = nil
+    warn("REC BLOCCATO: REAPER non ha avviato la registrazione.")
+    return
+  end
+  state.status = "● REC — " .. TRACK_NAMES[state.active_track_key]
 end
 
 local function record_on_track(key, label)
@@ -469,8 +510,16 @@ end
 
 local function stop_transport()
   if not can_click("stop") then return end
+  local was_recording = (reaper.GetPlayState() & 4) == 4
   reaper.Main_OnCommand(ACTION.stop, 0)
-  state.status = "STOP"
+  if was_recording and state.record_session then
+    state.pending = { kind = "finalize_recording", due = reaper.time_precise() + STOP_REC_SETTLE_SECONDS,
+      session = state.record_session }
+    state.record_session = nil
+    state.status = "STOP — preparo indice take"
+  else
+    state.status = "STOP"
+  end
 end
 
 local function play_transport()
@@ -494,6 +543,18 @@ local function move_cursor(delta)
   local pos = math.max(0, current_position() + delta)
   reaper.SetEditCurPos(pos, true, false)
   state.status = delta < 0 and "Back 5s" or "Forward 5s"
+end
+
+local function goto_after_last_item()
+  if not can_click("after_last_item") then return end
+  local item_end = last_item_end()
+  if not item_end then
+    reaper.SetEditCurPos(0, true, false)
+    warn("Nessun item presente: cursore a 0:00.")
+    return
+  end
+  reaper.SetEditCurPos(item_end + NEXT_TAKE_GAP_SECONDS, true, false)
+  state.status = "Dopo ultimo item +" .. tostring(NEXT_TAKE_GAP_SECONDS) .. "s"
 end
 
 local function add_marker_named(prefix, prompt)
@@ -602,15 +663,60 @@ local function next_take()
   local key = state.active_track_key
   reaper.Main_OnCommand(ACTION.stop, 0)
   state.pending = {
-    kind = "next_take_after_stop",
+    kind = "finalize_and_next_take",
     due = reaper.time_precise() + STOP_REC_SETTLE_SECONDS,
-    track_key = key
+    track_key = key,
+    session = state.record_session
   }
+  state.record_session = nil
   state.status = "NEXT TAKE: stop e preparo nuovo take"
 end
 
 local function undo_last_take()
   warn("UNDO LAST TAKE POC: nessuna cancellazione automatica. Usa BAD per marcarlo o Undo REAPER se sei sicuro.")
+end
+
+local function finalize_recording(session)
+  if not session then return nil end
+  local first_pos, final_end = nil, nil
+  for i = 0, reaper.CountMediaItems(0) - 1 do
+    local item = reaper.GetMediaItem(0, i)
+    local guid = item_guid(item)
+    local belongs_to_target = reaper.GetMediaItemTrack(item) == session.track
+    if guid and not session.before[guid] and belongs_to_target then
+      local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+      local item_end = pos + reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+      first_pos = not first_pos and pos or math.min(first_pos, pos)
+      final_end = not final_end and item_end or math.max(final_end, item_end)
+    end
+  end
+  if not first_pos or not final_end or final_end <= first_pos + EPS then
+    warn("STOP: nessun nuovo item registrato identificato.")
+    return nil
+  end
+  local take_number = state.take_counter
+  local name = string.format("Take %03d", take_number)
+  reaper.AddProjectMarker2(0, true, first_pos, final_end, name, -1, native_color(70, 155, 220))
+  state.take_counter = take_number + 1
+  proj_set("take_counter", state.take_counter)
+  reaper.UpdateArrange()
+  state.status = name .. " indicizzato — " .. TRACK_NAMES[session.track_key]
+  return final_end, name
+end
+
+local function rename_last_take_region()
+  local regions = collect_regions()
+  if #regions == 0 then warn("Nessuna regione da rinominare."); return end
+  local r = regions[#regions]
+  local current_name = r.name ~= "" and r.name or "Take"
+  local ok, value = reaper.GetUserInputs("Nome / nota ultima registrazione", 1,
+    "Nome o nota,extrawidth=520", current_name)
+  if not ok then return end
+  value = trim(value)
+  if value == "" then return end
+  reaper.SetProjectMarker3(0, r.idx, true, r.pos, r.end_pos, value, r.color)
+  reaper.UpdateArrange()
+  state.status = "Ultima regione: " .. value
 end
 
 local function process_pending()
@@ -626,11 +732,16 @@ local function process_pending()
   if reaper.time_precise() < state.pending.due then return end
   local pending = state.pending
   state.pending = nil
-  if pending.kind == "next_take_after_stop" then
-    local pos = reaper.GetCursorPosition() + NEXT_TAKE_GAP_SECONDS
-    reaper.SetEditCurPos(pos, true, false)
-    state.take_counter = state.take_counter + 1
-    proj_set("take_counter", state.take_counter)
+  if pending.kind == "finalize_recording" then
+    finalize_recording(pending.session)
+  elseif pending.kind == "finalize_and_next_take" then
+    local recorded_end = finalize_recording(pending.session)
+    local base = recorded_end or last_item_end()
+    if not base then
+      warn("NEXT TAKE: nessun item da cui proseguire.")
+      return
+    end
+    reaper.SetEditCurPos(base + NEXT_TAKE_GAP_SECONDS, true, false)
     if not arm_only_solo_target(pending.track_key) then
       warn("NEXT TAKE: impossibile riarmare la traccia SOLO.")
       return
@@ -758,7 +869,8 @@ local function draw_status_header(clicked)
   gfx.setfont(1, "Arial", rec and 28 or 22, "b")
   gfx.set(1, 1, 1, 1)
   gfx.x, gfx.y = 14, rec and 10 or 12
-  gfx.drawstr(rec and "● REC" or label)
+  local active_name = TRACK_NAMES[state.active_track_key] or "?"
+  gfx.drawstr(rec and ("● REC — " .. active_name) or label)
   gfx.setfont(2, "Arial", state.mode == "mini" and 22 or 30, "b")
   local tc = format_time(current_position())
   local tw = gfx.measurestr(tc)
@@ -789,20 +901,32 @@ local function draw_meter(x, y, w, h, value, label)
 end
 
 local function draw_transport(y, clicked)
-  local bw, bh, gap = 94, 42, 10
-  local x = 14
-  if draw_button({x=x, y=y, w=bw, h=bh}, "REC", transport_state() == "REC", true, clicked, "rec") then record_on_track("main", "REC") end
+  local gap, margin, count = state.mode == "mini" and 5 or 9, 14, 5
+  local bw = math.floor((gfx.w - margin * 2 - gap * (count - 1)) / count)
+  local bh = state.mode == "mini" and 42 or 52
+  local x = margin
+  if draw_button({x=x, y=y, w=bw, h=bh}, "REC", transport_state() == "REC", true, clicked, "rec") then
+    record_on_track(state.active_track_key, "REC")
+  end
   x = x + bw + gap
   if draw_button({x=x, y=y, w=bw, h=bh}, "STOP", false, true, clicked, "stop") then stop_transport() end
   x = x + bw + gap
   if draw_button({x=x, y=y, w=bw, h=bh}, "PLAY", transport_state() == "PLAY", true, clicked, "play") then play_transport() end
   x = x + bw + gap
-  if draw_button({x=x, y=y, w=bw, h=bh}, "PAUSE", transport_state() == "PAUSE", true, clicked) then pause_transport() end
+  if draw_button({x=x, y=y, w=bw, h=bh}, "INDIETRO 5s", false, true, clicked) then move_cursor(-5) end
   x = x + bw + gap
-  if draw_button({x=x, y=y, w=bw, h=bh}, "BACK 5s", false, true, clicked) then move_cursor(-5) end
-  if state.mode ~= "mini" then
-    x = x + bw + gap
-    if draw_button({x=x, y=y, w=bw, h=bh}, "FWD 5s", false, true, clicked) then move_cursor(5) end
+  if draw_button({x=x, y=y, w=bw, h=bh}, "ULTIMO ITEM +5s", false, true, clicked) then goto_after_last_item() end
+end
+
+local function draw_track_selector(y, clicked)
+  local margin, gap = 14, 8
+  local bw = math.floor((gfx.w - margin * 2 - gap * (#RECORD_TRACK_KEYS - 1)) / #RECORD_TRACK_KEYS)
+  for i, key in ipairs(RECORD_TRACK_KEYS) do
+    local x = margin + (i - 1) * (bw + gap)
+    local label = TRACK_NAMES[key]:gsub("^VO_", "")
+    if draw_button({x=x, y=y, w=bw, h=32}, label, state.active_track_key == key, true, clicked, "tab") then
+      if arm_only_solo_target(key) then state.warning = "" end
+    end
   end
 end
 
@@ -815,7 +939,8 @@ end
 
 local function draw_compact(clicked)
   draw_transport(96, clicked)
-  local y = 154
+  draw_track_selector(158, clicked)
+  local y = 204
   local bw, bh, gap = 128, 36, 10
   local x = 14
   if draw_button({x=x, y=y, w=bw, h=bh}, "MARK", false, true, clicked) then add_marker_named("SOLO_MARK", false) end
@@ -824,7 +949,7 @@ local function draw_compact(clicked)
   if draw_button({x=x+(bw+gap)*3, y=y, w=bw, h=bh}, "REG NEXT", false, true, clicked) then goto_region(1) end
   if draw_button({x=x+(bw+gap)*4, y=y, w=bw, h=bh}, "REG START", false, true, clicked) then goto_region_start() end
 
-  y = 206
+  y = 256
   local tr = active_track()
   local peak, in_label = meter_for_track(tr)
   local master_peak, master_label = master_meter()
@@ -837,15 +962,15 @@ local function draw_compact(clicked)
   gfx.drawstr("RETURN")
   draw_meter(424, y - 4, 250, 24, master_peak, master_label)
 
-  y = 252
+  y = 302
   if draw_button({x=14, y=y, w=112, h=34}, "Preroll " .. state.preroll .. "s", false, true, clicked) then cycle_preroll() end
-  if draw_button({x=138, y=y, w=128, h=34}, "Toolbar", state.toolbar, true, clicked, "tab") then state.toolbar = not state.toolbar; save_state(); set_mode(state.mode) end
-  if draw_button({x=278, y=y, w=88, h=34}, "Pin", state.pin, true, clicked, "tab") then state.pin = not state.pin; if not state.pin then try_unpin_window() end; save_state() end
-  if draw_button({x=378, y=y, w=96, h=34}, "Hide 5s", false, true, clicked) then hide_5s() end
-  if draw_button({x=486, y=y, w=88, h=34}, "Park", false, true, clicked) then park_window() end
-  draw_mode_buttons(y + 2, clicked)
+  if draw_button({x=138, y=y, w=112, h=34}, "Toolbar", state.toolbar, true, clicked, "tab") then state.toolbar = not state.toolbar; save_state(); set_mode(state.mode) end
+  if draw_button({x=262, y=y, w=88, h=34}, "Pin", state.pin, true, clicked, "tab") then state.pin = not state.pin; if not state.pin then try_unpin_window() end; save_state() end
+  if draw_button({x=362, y=y, w=96, h=34}, "Hide 5s", false, true, clicked) then hide_5s() end
+  if draw_button({x=470, y=y, w=88, h=34}, "Park", false, true, clicked) then park_window() end
+  draw_mode_buttons(y + 44, clicked)
 
-  y = 306
+  y = 388
   gfx.setfont(1, "Arial", 13)
   gfx.set(0.74, 0.76, 0.82, 1)
   gfx.x, gfx.y = 16, y
@@ -854,10 +979,10 @@ end
 
 local function draw_expanded(clicked)
   draw_compact(clicked)
-  local y = 350
+  local y = 430
   local bw, bh, gap = 128, 36, 10
   local labels = {
-    {"REC REGION", function() rec_region("main") end, "play"},
+    {"NOME / NOTA TAKE", rename_last_take_region, "play"},
     {"RETAKE REGION", function() rec_region("retakes") end, "danger"},
     {"INSERT", insert_record, nil},
     {"ALT TAKE", alt_take, nil},
@@ -900,12 +1025,11 @@ end
 
 local function draw_mini(clicked)
   draw_transport(74, clicked)
-  if draw_button({x=14, y=124, w=92, h=28}, "MARK", false, true, clicked) then add_marker_named("SOLO_MARK", false) end
-  local tr = active_track()
-  local peak, label = meter_for_track(tr)
-  draw_meter(120, 126, 138, 22, peak, label)
-  if draw_button({x=270, y=124, w=66, h=28}, "Pin", state.pin, true, clicked, "tab") then state.pin = not state.pin; if not state.pin then try_unpin_window() end; save_state() end
-  if draw_button({x=348, y=124, w=68, h=28}, "Full", false, true, clicked, "tab") then set_mode("compact") end
+  gfx.setfont(1, "Arial", 12, "b")
+  gfx.set(0.78, 0.80, 0.85, 1)
+  gfx.x, gfx.y = 14, 126
+  gfx.drawstr("Traccia: " .. (TRACK_NAMES[state.active_track_key] or "?"))
+  if draw_button({x=348, y=124, w=68, h=28}, "Espandi", false, true, clicked, "tab") then set_mode("compact") end
 end
 
 local function draw_toolbar(clicked)
