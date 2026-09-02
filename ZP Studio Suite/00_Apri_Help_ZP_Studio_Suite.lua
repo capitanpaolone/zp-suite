@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 1.2.1
+-- @version 1.2.2
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
