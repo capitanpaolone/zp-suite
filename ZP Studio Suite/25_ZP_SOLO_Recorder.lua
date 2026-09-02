@@ -42,9 +42,9 @@ local TRACK_NAMES = {
 local TRACK_ORDER = { "main", "inserts", "retakes", "alt", "ref" }
 local RECORD_TRACK_KEYS = { "main", "inserts", "retakes", "alt" }
 
-local MINI_W, MINI_H = 430, 164
-local COMPACT_W, COMPACT_H = 720, 430
-local EXPANDED_W, EXPANDED_H = 980, 680
+local MINI_W, MINI_H = 620, 272
+local COMPACT_W, COMPACT_H = 740, 462
+local EXPANDED_W, EXPANDED_H = 1000, 640
 local TOOLBAR_H = 96
 
 local NEXT_TAKE_GAP_SECONDS = 5.0
@@ -300,13 +300,23 @@ local AIUTI = {
   ["Navigator"] = "Apre il Navigator di ZP Master Pro.",
   ["Video"] = "Apre e chiude la finestra video di REAPER.",
   ["Espandi"] = "Passa alla vista Compact, con tutti i comandi di sessione.",
+  ["REAPER"] = "Nasconde o rimette su la finestra di REAPER, senza cercarla nel Dock.",
+  ["?"] = "Apre l'help del SOLO Recorder: cosa fa ogni pulsante, livello per livello.",
   ["Folder Mode"] = "Organizza i take per cartella. Lane Mode non e' ancora attivo.",
+}
+
+-- Etichette che cambiano da sole: qui si cerca per inizio, non per uguaglianza.
+-- Tabella separata apposta, altrimenti una chiave corta come "R" pescherebbe
+-- anche "RIT +" e "RETAKE REGION".
+local AIUTI_INIZIO = {
+  {"Preroll", "Secondi di conto alla rovescia prima che parta il REC. Premi per cambiarli."},
+  {"Monitor", "Ascolto dell'ingresso sulla traccia attiva. REAPER lo accende da solo quando armi."},
 }
 
 local function aiuto_per(label)
   if AIUTI[label] then return AIUTI[label] end
-  for chiave, testo in pairs(AIUTI) do
-    if label:sub(1, #chiave) == chiave then return testo end
+  for _, voce in ipairs(AIUTI_INIZIO) do
+    if label:sub(1, #voce[1]) == voce[1] then return voce[2] end
   end
   return nil
 end
@@ -1036,6 +1046,28 @@ local function nudge_return(delta_db)
   state.status = string.format("Ritorno: %s a %+.1f dB (e' un cambio di mix, resta nel progetto)", nome, db)
 end
 
+-- Help dedicato al SOLO: sta accanto agli altri, nella cartella help/.
+local function apri_help_solo()
+  local sep = package.config:sub(1, 1)
+  local percorso = script_dir() .. sep .. "help" .. sep .. "solo_recorder.html"
+  local f = io.open(percorso, "r")
+  if not f then
+    warn("Help del SOLO non trovato: " .. percorso)
+    return
+  end
+  f:close()
+  if reaper.CF_ShellExecute then
+    reaper.CF_ShellExecute(percorso)
+  else
+    local osname = reaper.GetOS()
+    local quoted = string.format("%q", percorso)
+    if osname:match("OSX") or osname:match("macOS") then os.execute("open " .. quoted .. " &")
+    elseif osname:match("Win") then os.execute('start "" ' .. quoted)
+    else os.execute("xdg-open " .. quoted .. " >/dev/null 2>&1 &") end
+  end
+  state.status = "Help del SOLO aperto nel browser"
+end
+
 -- Se chiudi il telecomando mentre REAPER e' nascosto, non lo lascio sparito.
 local function restore_reaper_on_exit()
   if not state.reaper_hidden then return end
@@ -1089,29 +1121,55 @@ local function cycle_preroll()
   save_state()
 end
 
+-- Altezza della testata. I pulsanti di modalita' stanno qui e non si spostano
+-- mai: cambiando vista, il mouse li ritrova dov'erano.
+local function head_h()
+  return state.mode == "mini" and 76 or 102
+end
+
+local function draw_header_buttons(clicked)
+  local y, bh = 8, 24
+  local w1, w2, w3, wr, wq = 62, 84, 88, 72, 28
+  local tot = w1 + w2 + w3 + 8 + wr + 4 + wq
+  local x = gfx.w - tot - 14
+  if btn({x=x, y=y, w=w1, h=bh}, "Mini", state.mode == "mini", true, clicked, "tab") then set_mode("mini") end
+  x = x + w1 + 4
+  if btn({x=x, y=y, w=w2, h=bh}, "Compact", state.mode == "compact", true, clicked, "tab") then set_mode("compact") end
+  x = x + w2 + 4
+  if btn({x=x, y=y, w=w3, h=bh}, "Expanded", state.mode == "expanded", true, clicked, "tab") then set_mode("expanded") end
+  x = x + w3 + 12
+  if btn({x=x, y=y, w=wr, h=bh}, "REAPER", state.reaper_hidden, true, clicked, "tab") then toggle_reaper_window() end
+  x = x + wr + 4
+  if btn({x=x, y=y, w=wq, h=bh}, "?", false, true, clicked, "tab") then apri_help_solo() end
+end
+
 local function draw_status_header(clicked)
-  local label, ps = transport_state()
+  local label = transport_state()
   local rec = label == "REC"
+  local H = head_h()
   set_color(rec and colors.rec or colors.panel)
-  gfx.rect(0, 0, gfx.w, state.mode == "mini" and 56 or 78, true)
+  gfx.rect(0, 0, gfx.w, H, true)
   set_color(colors.border)
-  gfx.rect(0, state.mode == "mini" and 55 or 77, gfx.w, 1, true)
-  gfx.setfont(1, "Arial", rec and 28 or 22, "b")
+  gfx.rect(0, H - 1, gfx.w, 1, true)
+  draw_header_buttons(clicked)
+  gfx.setfont(1, "Arial", rec and 26 or 22, "b")
   gfx.set(1, 1, 1, 1)
-  gfx.x, gfx.y = 14, rec and 10 or 12
+  gfx.x, gfx.y = 14, 40
   local active_name = TRACK_NAMES[state.active_track_key] or "?"
-  gfx.drawstr(rec and ("● REC — " .. active_name) or label)
-  gfx.setfont(2, "Arial", state.mode == "mini" and 22 or 30, "b")
+  gfx.drawstr(rec and ("\u{25CF} REC \u{2014} " .. active_name) or label)
+  gfx.setfont(2, "Arial", state.mode == "mini" and 24 or 28, "b")
   local tc = format_time(current_position())
   local tw = gfx.measurestr(tc)
-  gfx.x, gfx.y = gfx.w - tw - 16, state.mode == "mini" and 17 or 18
+  gfx.x, gfx.y = gfx.w - tw - 16, 38
   gfx.drawstr(tc)
   if state.mode ~= "mini" then
     gfx.setfont(3, "Arial", 13)
     gfx.set(0.82, 0.84, 0.88, 1)
-    gfx.x, gfx.y = 16, 50
+    gfx.x, gfx.y = 16, 78
     local tr = TRACK_NAMES[state.active_track_key] or "?"
-    gfx.drawstr(fit_text("Track: " .. tr .. "   Region: " .. region_label() .. "   Take: " .. tostring(state.take_counter) .. "   Preroll: " .. tostring(state.preroll) .. "s", gfx.w - 32))
+    gfx.drawstr(fit_text("Track: " .. tr .. "   Region: " .. region_label() ..
+      "   Take: " .. tostring(state.take_counter) ..
+      "   Preroll: " .. tostring(state.preroll) .. "s", gfx.w - 32))
   end
 end
 
@@ -1164,76 +1222,84 @@ local function draw_track_selector(y, clicked)
   end
 end
 
-local function draw_mode_buttons(y, clicked)
-  local x = gfx.w - 318
-  if btn({x=x, y=y, w=94, h=30}, "Mini", state.mode == "mini", true, clicked, "tab") then set_mode("mini") end
-  if btn({x=x+102, y=y, w=94, h=30}, "Compact", state.mode == "compact", true, clicked, "tab") then set_mode("compact") end
-  if btn({x=x+204, y=y, w=94, h=30}, "Expanded", state.mode == "expanded", true, clicked, "tab") then set_mode("expanded") end
-end
-
-local function draw_compact(clicked)
-  draw_transport(96, clicked)
-  draw_track_selector(158, clicked)
-  local y = 204
-  local bw, bh, gap = 128, 36, 10
-  local x = 14
-  if btn({x=x, y=y, w=bw, h=bh}, "MARK", false, true, clicked) then add_marker_named("SOLO_MARK", false) end
-  if btn({x=x+bw+gap, y=y, w=bw, h=bh}, "MARK NAME", false, true, clicked) then add_marker_named("SOLO_MARK", true) end
-  if btn({x=x+(bw+gap)*2, y=y, w=bw, h=bh}, "REG PREV", false, true, clicked) then goto_region(-1) end
-  if btn({x=x+(bw+gap)*3, y=y, w=bw, h=bh}, "REG NEXT", false, true, clicked) then goto_region(1) end
-  if btn({x=x+(bw+gap)*4, y=y, w=bw, h=bh}, "REG START", false, true, clicked) then goto_region_start() end
-
-  y = 256
+-- Blocco monitoraggio: ingresso e ritorno, con il loro comando accanto.
+-- Sta nella vista Mini perche' e' roba che serve sempre sotto mano.
+local function draw_monitor_block(y, clicked)
   local tr = active_track()
   local peak, in_label = meter_for_track(tr)
-  local master_peak, master_label = master_meter()
+  local mpeak, mlabel = master_meter()
+  local mw = math.min(210, math.floor(gfx.w * 0.28))
+  local xm = 48 + mw + 14
+
   gfx.setfont(1, "Arial", 13, "b")
   gfx.set(0.86, 0.86, 0.90, 1)
-  gfx.x, gfx.y = 16, y
-  gfx.drawstr("INPUT")
-  draw_meter(78, y - 4, 250, 24, peak, in_label)
-  gfx.x, gfx.y = 350, y
-  gfx.drawstr("RETURN")
-  draw_meter(424, y - 4, 250, 24, master_peak, master_label)
-
-  y = 302
-  if btn({x=14, y=y, w=112, h=34}, "Preroll " .. state.preroll .. "s", false, true, clicked) then cycle_preroll() end
-  if btn({x=138, y=y, w=112, h=34}, "Toolbar", state.toolbar, true, clicked, "tab") then state.toolbar = not state.toolbar; save_state(); set_mode(state.mode) end
-  if btn({x=262, y=y, w=88, h=34}, "Pin", state.pin, true, clicked, "tab") then state.pin = not state.pin; if not state.pin then try_unpin_window() end; save_state() end
-  if btn({x=362, y=y, w=96, h=34}, "Hide 5s", false, true, clicked) then hide_5s() end
-  if btn({x=470, y=y, w=88, h=34}, "Park", false, true, clicked) then park_window() end
-  if btn({x=570, y=y, w=136, h=34},
-                 state.reaper_hidden and "Mostra REAPER" or "Nascondi REAPER",
-                 state.reaper_hidden, true, clicked, "tab") then toggle_reaper_window() end
-  local yr = y + 44
+  gfx.x, gfx.y = 16, y + 5
+  gfx.drawstr("IN")
+  draw_meter(48, y, mw, 24, peak, in_label)
   local mon_label, mon_on = monitoring_label()
-  if btn({x=14, y=yr, w=132, h=30}, mon_label, mon_on, true, clicked, "tab") then
+  if btn({x=xm, y=y - 3, w=132, h=30}, mon_label, mon_on, true, clicked, "tab") then
     toggle_monitoring()
   end
-  if btn({x=156, y=yr, w=56, h=30}, "RIT -", false, true, clicked) then nudge_return(-1) end
-  if btn({x=218, y=yr, w=56, h=30}, "RIT +", false, true, clicked) then nudge_return(1) end
+
+  local y2 = y + 38
+  gfx.setfont(1, "Arial", 13, "b")
+  gfx.set(0.86, 0.86, 0.90, 1)
+  gfx.x, gfx.y = 16, y2 + 5
+  gfx.drawstr("RIT")
+  draw_meter(48, y2, mw, 24, mpeak, mlabel)
+  if btn({x=xm, y=y2 - 3, w=58, h=30}, "RIT -", false, true, clicked) then nudge_return(-1) end
+  if btn({x=xm + 64, y=y2 - 3, w=58, h=30}, "RIT +", false, true, clicked) then nudge_return(1) end
   gfx.setfont(1, "Arial", 13, "b")
   gfx.set(0.74, 0.76, 0.82, 1)
-  gfx.x, gfx.y = 284, yr + 8
-  gfx.drawstr(fit_text(return_db_label(), 108))
-  draw_mode_buttons(yr, clicked)
-
-  y = 388
-  gfx.setfont(1, "Arial", 13)
-  if state.hint ~= "" then
-    gfx.set(0.62, 0.78, 0.92, 1)
-    gfx.x, gfx.y = 16, y
-    gfx.drawstr(fit_text(state.hint, gfx.w - 32))
-  else
-    gfx.set(0.74, 0.76, 0.82, 1)
-    gfx.x, gfx.y = 16, y
-    gfx.drawstr(fit_text(state.warning ~= "" and state.warning or state.status, gfx.w - 32))
-  end
+  gfx.x, gfx.y = xm + 132, y2 + 5
+  gfx.drawstr(return_db_label())
+  return y2 + 34
 end
 
+-- MINI - il livello semplice: si registra, si ascolta, si sente come si sta.
+local function draw_mini(clicked)
+  local y = head_h() + 10
+  draw_transport(y, clicked)
+  local fine = draw_monitor_block(y + 56, clicked)
+  gfx.setfont(1, "Arial", 12, "b")
+  gfx.set(0.78, 0.80, 0.85, 1)
+  gfx.x, gfx.y = 16, fine + 4
+  gfx.drawstr("Traccia: " .. (TRACK_NAMES[state.active_track_key] or "?"))
+end
+
+-- COMPACT - il livello medio: tutto quello che serve in una sessione normale.
+local function draw_compact(clicked)
+  local y = head_h() + 10
+  draw_transport(y, clicked)
+  draw_track_selector(y + 62, clicked)
+  local fine = draw_monitor_block(y + 106, clicked)
+
+  local yb = fine + 8
+  local bw, bh, gap = 128, 36, 10
+  local x = 14
+  if btn({x=x, y=yb, w=bw, h=bh}, "MARK", false, true, clicked) then add_marker_named("SOLO_MARK", false) end
+  if btn({x=x+bw+gap, y=yb, w=bw, h=bh}, "MARK NAME", false, true, clicked) then add_marker_named("SOLO_MARK", true) end
+  if btn({x=x+(bw+gap)*2, y=yb, w=bw, h=bh}, "REG PREV", false, true, clicked) then goto_region(-1) end
+  if btn({x=x+(bw+gap)*3, y=yb, w=bw, h=bh}, "REG NEXT", false, true, clicked) then goto_region(1) end
+  if btn({x=x+(bw+gap)*4, y=yb, w=bw, h=bh}, "REG START", false, true, clicked) then goto_region_start() end
+
+  local yw = yb + 46
+  if btn({x=14, y=yw, w=112, h=34}, "Preroll " .. state.preroll .. "s", false, true, clicked) then cycle_preroll() end
+  if btn({x=138, y=yw, w=112, h=34}, "Toolbar", state.toolbar, true, clicked, "tab") then
+    state.toolbar = not state.toolbar; save_state(); set_mode(state.mode)
+  end
+  if btn({x=262, y=yw, w=88, h=34}, "Pin", state.pin, true, clicked, "tab") then
+    state.pin = not state.pin; if not state.pin then try_unpin_window() end; save_state()
+  end
+  if btn({x=362, y=yw, w=96, h=34}, "Hide 5s", false, true, clicked) then hide_5s() end
+  if btn({x=470, y=yw, w=88, h=34}, "Park", false, true, clicked) then park_window() end
+  return yw + 44
+end
+
+-- EXPANDED - il livello avanzato: la regia del take.
 local function draw_expanded(clicked)
-  draw_compact(clicked)
-  local y = 430
+  local base = draw_compact(clicked)
+  local y = base + 6
   local bw, bh, gap = 128, 36, 10
   local labels = {
     {"NOME / NOTA TAKE", rename_last_take_region, "play"},
@@ -1246,44 +1312,25 @@ local function draw_expanded(clicked)
   for i, item in ipairs(labels) do
     local col = (i - 1) % 3
     local row = math.floor((i - 1) / 3)
-    if btn({x=14 + col * (bw + gap), y=y + row * 46, w=bw, h=bh}, item[1], false, true, clicked, item[3]) then item[2]() end
+    if btn({x=14 + col * (bw + gap), y=y + row * 46, w=bw, h=bh}, item[1], false, true, clicked, item[3]) then
+      item[2]()
+    end
   end
-  local x2 = 466
+
+  local x2 = 480
   if btn({x=x2, y=y, w=92, h=34}, "BAD", false, true, clicked, "danger") then add_marker_named("BAD", false) end
   if btn({x=x2+102, y=y, w=92, h=34}, "OK", false, true, clicked, "save") then add_marker_named("OK", false) end
   if btn({x=x2+204, y=y, w=92, h=34}, "ALT", false, true, clicked) then add_marker_named("ALT", false) end
   if btn({x=x2+306, y=y, w=92, h=34}, "NOISE", false, true, clicked) then add_marker_named("NOISE", false) end
 
-  y = y + 50
-  if btn({x=x2, y=y, w=150, h=34}, state.folder_mode and "Folder Mode" or "Lane Mode TODO", state.folder_mode, true, clicked, "tab") then
+  local y2 = y + 46
+  if btn({x=x2, y=y2, w=150, h=34}, state.folder_mode and "Folder Mode" or "Lane Mode TODO", state.folder_mode, true, clicked, "tab") then
     state.folder_mode = true
     warn("Lane Mode e' placeholder futuro nella POC.")
     save_state()
   end
-  if btn({x=x2+162, y=y, w=150, h=34}, "Navigator", false, true, clicked) then show_navigator() end
-  if btn({x=x2+324, y=y, w=150, h=34}, "Video", video_aperta(), true, clicked, "tab") then show_video_window() end
-
-  y = y + 54
-  set_color(colors.panel)
-  gfx.rect(14, y, gfx.w - 28, 64, true)
-  set_color(colors.border)
-  gfx.rect(14, y, gfx.w - 28, 64, false)
-  gfx.setfont(1, "Arial", 15, "b")
-  gfx.set(0.82, 0.84, 0.90, 1)
-  gfx.x, gfx.y = 28, y + 12
-  gfx.drawstr("Reference Wave Viewer")
-  gfx.setfont(1, "Arial", 13)
-  gfx.x, gfx.y = 28, y + 36
-  gfx.drawstr("Placeholder futuro: waveform reference, marker/regioni, playhead, zoom.")
-end
-
-local function draw_mini(clicked)
-  draw_transport(74, clicked)
-  gfx.setfont(1, "Arial", 12, "b")
-  gfx.set(0.78, 0.80, 0.85, 1)
-  gfx.x, gfx.y = 14, 126
-  gfx.drawstr("Traccia: " .. (TRACK_NAMES[state.active_track_key] or "?"))
-  if btn({x=348, y=124, w=68, h=28}, "Espandi", false, true, clicked, "tab") then set_mode("compact") end
+  if btn({x=x2+162, y=y2, w=150, h=34}, "Navigator", false, true, clicked) then show_navigator() end
+  if btn({x=x2+324, y=y2, w=150, h=34}, "Video", video_aperta(), true, clicked, "tab") then show_video_window() end
 end
 
 local function draw_toolbar(clicked)
@@ -1349,6 +1396,19 @@ local function draw_gui()
   elseif state.mode == "expanded" then draw_expanded(clicked)
   else draw_compact(clicked) end
   draw_toolbar(clicked)
+
+  -- Riga in basso: se il mouse e' su un pulsante spiega quel pulsante,
+  -- altrimenti dice come e' andata l'ultima cosa che hai premuto.
+  local yr = gfx.h - (state.toolbar and state.mode ~= "mini" and TOOLBAR_H or 0) - 24
+  gfx.setfont(1, "Arial", 13)
+  if state.hint ~= "" then
+    gfx.set(0.62, 0.78, 0.92, 1)
+  else
+    gfx.set(0.74, 0.76, 0.82, 1)
+  end
+  gfx.x, gfx.y = 16, yr
+  gfx.drawstr(fit_text(state.hint ~= "" and state.hint or
+    (state.warning ~= "" and state.warning or state.status), gfx.w - 32))
   draw_countdown()
   gfx.update()
 end

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZP SOLO Recorder - i comandi</title>
+<style>
+:root{
+  --carta:#f7f6f3; --inchiostro:#1f2b35; --tenue:#5d6a74;
+  --filo:#d8d5cd; --accento:#8f4630; --nota:#e9eef5;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --carta:#171a1d; --inchiostro:#e8e6e1; --tenue:#9aa4ac;
+         --filo:#2e3439; --accento:#d98b6f; --nota:#1e262e; }
+}
+*{box-sizing:border-box}
+body{margin:0;padding:2.5rem 1.25rem 4rem;background:var(--carta);color:var(--inchiostro);
+     font:16px/1.6 Georgia,"Times New Roman",serif}
+main{max-width:52rem;margin:0 auto}
+h1{font-size:1.75rem;line-height:1.2;margin:0 0 .25rem}
+.occhiello{margin:0 0 1.5rem;color:var(--tenue);font-size:.95rem}
+h2{font-size:1.15rem;margin:2.5rem 0 .5rem;padding-bottom:.35rem;border-bottom:1px solid var(--filo)}
+h2 .liv{float:right;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;
+        color:var(--tenue);font-weight:normal;padding-top:.35rem}
+h3{font-size:1rem;margin:1.6rem 0 .4rem}
+p{margin:0 0 1rem;max-width:44rem}
+code{font:.9em/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+     background:rgba(127,127,127,.14);padding:.15em .4em;border-radius:3px}
+.tabella-avvolta{overflow-x:auto;margin:0 0 1rem}
+table{border-collapse:collapse;width:100%;min-width:30rem}
+th,td{text-align:left;vertical-align:top;padding:.6rem .8rem;border-bottom:1px solid var(--filo)}
+thead th{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--tenue);font-weight:normal}
+tbody th{font-weight:bold;white-space:nowrap;width:11rem;font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+.nota{background:var(--nota);border-left:3px solid var(--accento);padding:.85rem 1rem;margin:1.25rem 0}
+.nota p:last-child{margin:0}
+.tenue{color:var(--tenue);font-size:.92rem}
+a{color:var(--accento)}
+</style>
+</head>
+<body>
+<main>
+
+<h1>ZP SOLO Recorder</h1>
+<p class="occhiello">Il telecomando di registrazione: cosa fa ogni pulsante.</p>
+
+<p>Serve a registrare senza tornare continuamente alla finestra di REAPER.
+Tiene la traccia esclusiva, numera i take da solo e ti lascia a portata di
+mano le poche cose che servono davvero mentre stai leggendo.</p>
+
+<h2>La testata</h2>
+<p>Sta sempre in alto e non si muove mai, in nessuna vista: i pulsanti li
+ritrovi dove li avevi lasciati.</p>
+<div class="tabella-avvolta"><table><thead><tr><th scope="col">Comando</th><th scope="col">Cosa fa</th></tr></thead><tbody><tr><th scope="row">Mini / Compact<br>Expanded</th><td>I tre livelli: semplice, medio, avanzato. Cambiano quanto vedi, non quello che il SOLO sa fare.</td></tr><tr><th scope="row">REAPER</th><td>Manda giù la finestra di REAPER e la rimette su. Comodo su un monitor solo. Chiudendo il telecomando, REAPER torna su comunque.</td></tr><tr><th scope="row">?</th><td>Apre questa pagina.</td></tr></tbody></table></div>
+
+<h2>Semplice <span class="liv">vista Mini</span></h2>
+<p>Quello che serve mentre stai effettivamente registrando. Se non tocchi
+nient'altro, il lavoro si fa tutto da qui.</p>
+<div class="tabella-avvolta"><table><thead><tr><th scope="col">Comando</th><th scope="col">Cosa fa</th></tr></thead><tbody><tr><th scope="row">REC</th><td>Registra sulla traccia scelta. Prima di partire verifica che sia davvero l'unica armata: se non lo è, si ferma e te lo dice invece di incidere sopra qualcos'altro.</td></tr><tr><th scope="row">STOP</th><td>Ferma la registrazione, riconosce gli item appena incisi e crea la regione <code>Take 001</code>, <code>Take 002</code> e così via.</td></tr><tr><th scope="row">PLAY</th><td>Riproduce dalla posizione del cursore.</td></tr><tr><th scope="row">INDIETRO 5s<br><span class="tenue">-5s</span></th><td>Sposta il cursore indietro di cinque secondi. Per riascoltare l'ultima battuta senza cercare col mouse.</td></tr><tr><th scope="row">ULTIMO ITEM +5s<br><span class="tenue">FINE +5s</span></th><td>Porta il cursore cinque secondi dopo la fine dell'ultimo item. <strong>Non cancella niente</strong>: sposta e basta.</td></tr><tr><th scope="row">IN + Monitor</th><td>Il meter dell'ingresso e l'interruttore dell'ascolto diretto. REAPER accende il monitoring da solo quando armi una traccia: da qui lo spegni senza tornare alla finestra principale.</td></tr><tr><th scope="row">RIT + RIT − / RIT +</th><td>Il meter del ritorno e due passi da 1&nbsp;dB sul volume della <strong>traccia selezionata in REAPER</strong>. Serve a bilanciare la reference con la voce quando lavori in similsync.</td></tr></tbody></table></div>
+
+<h2>Medio <span class="liv">vista Compact</span></h2>
+<p>Aggiunge la scelta della traccia, i marcatori e il comportamento della
+finestra. È la vista di una sessione normale.</p>
+<div class="tabella-avvolta"><table><thead><tr><th scope="col">Comando</th><th scope="col">Cosa fa</th></tr></thead><tbody><tr><th scope="row">MAIN INSERTS<br>RETAKES ALT</th><td>Sceglie su quale delle quattro tracce voce registri. Cambiando traccia, il SOLO riarma solo quella.</td></tr><tr><th scope="row">MARK</th><td>Mette un marker qui, senza chiedere il nome.</td></tr><tr><th scope="row">MARK NAME</th><td>Mette un marker qui e ti chiede come chiamarlo.</td></tr><tr><th scope="row">REG PREV / REG NEXT</th><td>Va alla regione precedente o successiva.</td></tr><tr><th scope="row">REG START</th><td>Riporta il cursore all'inizio della regione in cui ti trovi.</td></tr><tr><th scope="row">Preroll 0s</th><td>Secondi di conto alla rovescia prima che parta il REC. Premi per cambiarli.</td></tr><tr><th scope="row">Toolbar</th><td>Mostra o nasconde la fila di comandi REAPER in fondo al pannello: Save, Undo, Metronomo, Mixer, Routing e gli altri.</td></tr><tr><th scope="row">Pin</th><td>Tiene la finestra sempre sopra le altre.</td></tr><tr><th scope="row">Hide 5s</th><td>La finestra sparisce per cinque secondi e torna da sola. Per liberare lo schermo un attimo senza chiuderla.</td></tr><tr><th scope="row">Park</th><td>Sposta la finestra nell'angolo in alto a destra dello schermo.</td></tr></tbody></table></div>
+
+<h2>Avanzato <span class="liv">vista Expanded</span></h2>
+<p>La regia del take. Serve quando dirigi, non quando leggi.</p>
+<div class="tabella-avvolta"><table><thead><tr><th scope="col">Comando</th><th scope="col">Cosa fa</th></tr></thead><tbody><tr><th scope="row">NOME / NOTA TAKE</th><td>Rinomina l'ultima regione take: è lì che si annota com'è andata.</td></tr><tr><th scope="row">RETAKE REGION</th><td>Rifà la regione corrente sulla traccia dei retake.</td></tr><tr><th scope="row">INSERT</th><td>Registra un inserto senza toccare quello che c'è già.</td></tr><tr><th scope="row">ALT TAKE</th><td>Registra una versione alternativa sulla traccia ALT.</td></tr><tr><th scope="row">NEXT TAKE</th><td>Chiude il take, lascia cinque secondi di stacco e riparte a registrare. È il comando della sessione lunga: non devi toccare altro fra una battuta e l'altra.</td></tr><tr><th scope="row">TOGLI TAKE</th><td>Toglie dalla timeline il take appena registrato e riporta il cursore dove eri partito. Chiede conferma. <strong>Il file audio non viene cancellato.</strong></td></tr><tr><th scope="row">BAD OK ALT NOISE</th><td>Marcatori di giudizio: mettono un marker con quel nome nel punto in cui sei, così alla revisione sai dove tornare.</td></tr><tr><th scope="row">Navigator</th><td>Apre il Navigator di ZP Master Pro.</td></tr><tr><th scope="row">Video</th><td>Apre e chiude la finestra video di REAPER. Il pulsante resta acceso finché è aperta.</td></tr><tr><th scope="row">Folder Mode</th><td>Organizza i take per cartella. Lane Mode è previsto ma non è ancora attivo.</td></tr></tbody></table></div>
+
+<h2>I quattro modi di registrare</h2>
+<p>È la cosa meno ovvia della suite, quindi vale la pena dirla per intero.</p>
+<div class="tabella-avvolta"><table><thead><tr><th scope="col">Comando</th><th scope="col">Cosa fa</th></tr></thead><tbody><tr><th scope="row">REC</th><td>Registrazione normale sulla traccia scelta, dal punto in cui sei.</td></tr><tr><th scope="row">INSERT</th><td>Un inserto: registra senza toccare quello che c'è già intorno. Per rattoppare una parola o una frase dentro una presa buona.</td></tr><tr><th scope="row">ALT TAKE</th><td>Una versione alternativa, sulla traccia ALT. Per tenere due letture diverse della stessa battuta senza scegliere subito.</td></tr><tr><th scope="row">NEXT TAKE</th><td>Il ciclo continuo: ferma, indicizza il take, va alla fine reale dell'item, lascia cinque secondi e riparte a registrare. È quello che si usa per una sessione lunga.</td></tr></tbody></table></div>
+
+<h2>Cosa non viene mai cancellato</h2>
+<div class="nota">
+<p><strong>TOGLI TAKE toglie l'item dalla timeline, non il file dal disco.</strong>
+L'audio registrato resta nella cartella <code>Media</code> del progetto, dove
+REAPER lo aveva scritto. E siccome l'operazione è dentro un blocco di undo,
+un <code>Ctrl+Z</code> rimette anche l'item al suo posto.</p>
+<p>Nessun comando del SOLO cancella file audio. Se un take non ti serve
+davvero più, va tolto a mano dalla cartella del progetto.</p>
+</div>
+
+<h2>Se qualcosa non torna</h2>
+<p><strong>REC si rifiuta di partire</strong> — la traccia scelta non è
+l'unica armata. È voluto: il SOLO controlla l'esclusività prima di incidere.
+Cambia traccia dal selettore, che riarma solo quella.</p>
+<p><strong>RIT − e RIT + non fanno niente</strong> — non hai una traccia
+selezionata in REAPER. Selezionala una volta: da lì in poi i due pulsanti
+agiscono su quella.</p>
+<p><strong>Il pulsante Monitor dice "auto"</strong> — la traccia è in
+monitoring automatico, che è uno stato di REAPER. Premendo lo porti a spento.</p>
+<p><strong>Nascosto REAPER, non lo ritrovo</strong> — ripremi REAPER in
+testata. E comunque chiudendo il telecomando REAPER torna su da solo.</p>
+
+<p class="tenue"><a href="index.html">Torna alla guida della suite</a> &middot;
+<a href="toolbar.html">La toolbar, pulsante per pulsante</a></p>
+
+</main>
+</body>
+</html>

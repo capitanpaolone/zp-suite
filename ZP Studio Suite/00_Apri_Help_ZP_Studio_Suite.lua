@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 1.2.7
+-- @version 1.3.0
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -14,6 +14,14 @@
 --   OSARA non sono richiesti: aggiungono funzioni, e quando mancano la suite
 --   usa da sola una strada alternativa. Il dettaglio e' in README.txt.
 -- @changelog
+--   SOLO Recorder riorganizzato per livelli: Mini e' il semplice (trasporto
+--     piu' monitoraggio e ritorno, che servono sempre sotto mano), Compact
+--     il medio, Expanded l'avanzato.
+--   SOLO Recorder: i tre pulsanti di vista, Nascondi/Mostra REAPER e il
+--     punto interrogativo stanno in testata e non si spostano mai.
+--   SOLO Recorder: help suo, help/solo_recorder.html, aperto dal ? in testata.
+--   SOLO Recorder: tolto il riquadro "Reference Wave Viewer", che annunciava
+--     una funzione inesistente.
 --   SOLO Recorder: la riga in basso spiega il pulsante sotto il mouse.
 --     Pin, Hide, Park e gli altri non si indovinavano guardandoli.
 --   SOLO Recorder: TOGLI TAKE chiede conferma, e la conferma dice dove
@@ -90,6 +98,7 @@
 --   [nomain] lib_RythmoBand_Accessibile.lua
 --   help/index.html
 --   help/toolbar.html
+--   help/solo_recorder.html
 --   help/voice_cleaner.html
 --   tools/srt_tools.html
 --   toolbar/ZP_StudioSuite.ReaperMenu
