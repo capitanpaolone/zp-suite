@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 1.3.0
+-- @version 1.4.0
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -14,6 +14,10 @@
 --   OSARA non sono richiesti: aggiungono funzioni, e quando mancano la suite
 --   usa da sola una strada alternativa. Il dettaglio e' in README.txt.
 -- @changelog
+--   Nuovo: 14 Marker da timeline a item. Copia i marker di progetto che
+--     cadono dentro l'item selezionato come take marker dell'item, tenendo
+--     nome, posizione e colore. Non cancella i marker di progetto: li
+--     duplica, cosi' il testo viaggia con il file quando l'item si sposta.
 --   SOLO Recorder riorganizzato per livelli: Mini e' il semplice (trasporto
 --     piu' monitoraggio e ritorno, che servono sempre sotto mano), Compact
 --     il medio, Expanded l'avanzato.
@@ -82,6 +86,7 @@
 --   [main] 11_OSARA_Battuta_Precedente.lua
 --   [main] 12_OSARA_Lettura_Automatica.lua
 --   [main] 13_Info_Item_SRT.lua
+--   [main] 14_Marker_da_Timeline_a_Item.lua
 --   [main] 17_Crea_Regioni_Export_da_Item_Nominati.lua
 --   [main] 18_Project_Viewer.lua
 --   [main] 19_Report_Minuti_Voce.lua

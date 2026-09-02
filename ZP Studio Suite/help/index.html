@@ -101,6 +101,7 @@
     <div class="card"><a href="#tool-08"><span class="num">08</span> Export SRT</a></div>
     <div class="card"><a href="#tool-09"><span class="num">09-12</span> OSARA lettura</a></div>
     <div class="card"><a href="#tool-13"><span class="num">13</span> Info Item SRT</a></div>
+    <div class="card"><a href="#tool-14"><span class="num">14</span> Marker da timeline a item</a></div>
     <div class="card"><a href="#tool-17"><span class="num">17</span> Gestore Progetto</a></div>
     <div class="card"><a href="#tool-18"><span class="num">18</span> Project Viewer</a></div>
     <div class="card"><a href="#tool-19"><span class="num">19</span> Report minuti voce</a></div>
@@ -217,6 +218,11 @@
     <li>Seleziona un item testo/SRT prima di lanciarlo.</li>
     <li>Serve per controllare metadata, naming e contenuto senza modificare il progetto.</li>
   </ul>
+
+  <h2 id="tool-14">14 - Marker da timeline a item</h2>
+  <p>Copia i marker di progetto che cadono dentro l'item selezionato come <strong>take marker</strong> dell'item, tenendo nome, posizione e colore.</p>
+  <p>Serve quando il testo deve viaggiare insieme al file: i marker di progetto restano nella timeline, i take marker si spostano con l'item e sopravvivono alla consegna. Lo script <strong>non cancella niente</strong>: duplica.</p>
+  <p>Seleziona un item e lancialo. Alla fine dice quanti marker ha copiato. La conversione dei tempi tiene conto di start offset e playrate del take, quindi funziona anche su item tagliati o con velocita' diversa da 1.</p>
 
   <h2 id="tool-srt-tools">SRT Tools offline</h2>
   <p><code>26_SRT_Tools.lua</code> apre nel browser il convertitore locale <code>tools/srt_tools.html</code>.</p>
