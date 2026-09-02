@@ -44,11 +44,18 @@ end
 -- con gli SPAZI, quella del vecchio installer "ZP_Studio_Suite" con i
 -- TRATTINI BASSI. E' questa differenza che tiene al sicuro l'installazione
 -- nuova: nessuno di questi pattern la puo' intercettare.
+-- I pattern devono corrispondere a una CARTELLA, non a un pezzo di nome file:
+-- il capofila della versione nuova si chiama 00_Apri_Help_ZP_Studio_Suite.lua
+-- e contiene "ZP_Studio_Suite" nel proprio nome. Senza il separatore finale
+-- questo filtro cancellerebbe una voce dell'installazione corrente.
 local legacy_patterns = {
-  "ZP_Studio_Suite",
-  "Reaper_RythmoBand_Tools",
+  "ZP_Studio_Suite/",
+  "ZP_Studio_Suite\\",
+  "Reaper_RythmoBand_Tools/",
+  "Reaper_RythmoBand_Tools\\",
   "RythmoBandTools:",
-  "ZP_RythmoBand",
+  "ZP_RythmoBand/",
+  "ZP_RythmoBand\\",
 }
 
 local function is_legacy_line(line)
