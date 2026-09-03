@@ -1,8 +1,14 @@
 // @description ZP BUS Chain
-// @version 1.2.6
+// @version 1.2.7
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   Preset NAT/BRD/DNS/WRM/MCH/FLT spariti dopo la 1.2.6: allineare le due
+//     passate ha spostato la riga Preset dentro lo spazio del Live Monitor
+//     compatto (che parte a HDR_Y+HDR_H+4, cioe' 78px con la vecchia
+//     HDR_H=70), il monitor si ridisegna sopra e la cancella alla vista.
+//     HDR_H alzata a 102 cosi' la testata include davvero tutta la riga
+//     Preset (che arriva a y=99) prima che cominci il monitor.
 //   Preset NAT/BRD/DNS/WRM/MCH/FLT: stesso difetto gia' trovato sul pomello
 //     IN. Il repaint "sticky" della testata (quello che ridisegna sopra ai
 //     pannelli scrollati) ridisegnava la riga Preset 21px piu' in alto della
@@ -5410,7 +5416,7 @@ legacy_expert = 0; // Disattivato in modo reversibile
 
 // Global Layout
 RY_ON = 12; RY_WORK = 40;
-HDR_H = 70; HDR_Y = 4;
+HDR_H = 102; HDR_Y = 4;
 HBTN_W = 43; HBTN_G = 4; HBTN_N = 7;
 HBTN_BLOCK_W = HBTN_W*HBTN_N + HBTN_G*(HBTN_N-1);
 HBTN_X = PX + PW - HBTN_BLOCK_W;
