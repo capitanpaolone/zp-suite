@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" name="ZP Suite" commit="fe7f87442402b4ce6acf3e03adeab27706d30208">
+<index version="1" name="ZP Suite" commit="8535e12fb7844ccad351a1bd86b4ac56b3276b80">
   <category name="ZP Master">
     <reapack name="ZP Master Pro.jsfx" type="effect" desc="ZP Master Pro">
       <version name="2.45" author="Paolo Balestri" time="2026-08-30T20:03:27Z">
@@ -1494,6 +1494,54 @@ Meter circolari di soglia su tutta la catena.
 Motore ANA ridotto a CALDO (Lush), CORPO (Punch), APERTO (Holo), collocato pre-limiter.
 LINK Drive/Gain: alzando il Drive il Gain scende in opposizione, per giudicare il colore senza salto di volume.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/fe7f87442402b4ce6acf3e03adeab27706d30208/ZP%20Voce/ZP%20BUS%20Chain.jsfx</source>
+      </version>
+      <version name="1.2.9" author="Paolo Balestri" time="2026-09-03T11:35:02Z">
+        <changelog><![CDATA[Input Trim: trovata la vera causa per cui il pomello IN non si
+  prendeva col mouse (il debug della 1.2.8 serviva a isolarla). La
+  testata compatta viene ridisegnata due volte per frame - una
+  interattiva, una nel repaint della testata sticky, con
+  ui_render_only=1 apposta per non rielaborare hover/click una
+  seconda volta. Ogni altro controllo del file rispetta
+  ui_render_only prima di reagire al click; ui_knob (usata dal
+  pomello IN) no. Un click vero partiva il trascinamento nel
+  passaggio interattivo, e il passaggio di repaint - microsecondi
+  dopo, con last_dbl_id/last_dbl_time appena aggiornati - lo
+  scambiava per un doppio click su se stesso, azzerando il valore e
+  annullando il trascinamento nello stesso frame. Aggiunto
+  !ui_render_only dentro ui_knob nei due punti che modificano stato
+  (inizio click, continuazione trascinamento). Tolto anche l'overlay
+  di debug temporaneo della 1.2.8, non piu' necessario.
+DEBUG TEMPORANEO (1.2.8, rimosso in 1.2.9): contorno magenta intorno
+  alla zona larga 9101 e cerchio verde sull'area di click reale del
+  pomello IN, per vedere in uno screenshot dove sono davvero le due
+  zone attive rispetto a dove il pomello si vede. Nessun cambio
+  funzionale.
+Preset NAT/BRD/DNS/WRM/MCH/FLT spariti dopo la 1.2.6: allineare le due
+  passate ha spostato la riga Preset dentro lo spazio del Live Monitor
+  compatto (che parte a HDR_Y+HDR_H+4, cioe' 78px con la vecchia
+  HDR_H=70), il monitor si ridisegna sopra e la cancella alla vista.
+  HDR_H alzata a 102 cosi' la testata include davvero tutta la riga
+  Preset (che arriva a y=99) prima che cominci il monitor.
+Preset NAT/BRD/DNS/WRM/MCH/FLT: stesso difetto gia' trovato sul pomello
+  IN. Il repaint "sticky" della testata (quello che ridisegna sopra ai
+  pannelli scrollati) ridisegnava la riga Preset 21px piu' in alto della
+  passata interattiva, senza riusare le coordinate salvate come gia'
+  fatto per il pomello IN: il pulsante si vedeva in un punto e si
+  cliccava 21px sotto. Ora il repaint riusa le stesse coordinate.
+Nome in testata: tolto "1.2.2" scritto fisso nel titolo GUI (due punti)
+  e nel tooltip, rimasto indietro di quattro versioni. Il titolo ora
+  segue la stessa regola del nome nel browser FX: nessun numero fisso.
+Input Trim: il pomello IN adesso si prende col mouse. Tre controlli
+  diversi - pomello, zona di presa e striscia - usavano lo stesso id di
+  hover, e ui_knob riconosce il doppio click dall'id: due click su cose
+  diverse passavano per doppio click, che azzera il valore e molla il
+  trascinamento. Ora hanno tre id distinti e la zona di presa agisce
+  dopo il pomello, non prima.
+Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
+Meter circolari di soglia su tutta la catena.
+Motore ANA ridotto a CALDO (Lush), CORPO (Punch), APERTO (Holo), collocato pre-limiter.
+LINK Drive/Gain: alzando il Drive il Gain scende in opposizione, per giudicare il colore senza salto di volume.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/8535e12fb7844ccad351a1bd86b4ac56b3276b80/ZP%20Voce/ZP%20BUS%20Chain.jsfx</source>
       </version>
     </reapack>
     <reapack name="ZP Harmonic Space Carver.jsfx" type="effect" desc="ZP Harmonic Space Carver Ducker - Paolo Balestri">
