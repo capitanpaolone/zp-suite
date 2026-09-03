@@ -1,13 +1,28 @@
 // @description ZP BUS Chain
-// @version 1.2.8
+// @version 1.2.9
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
-//   DEBUG TEMPORANEO, da rimuovere in una versione successiva: contorno
-//     magenta intorno alla zona larga 9101 e cerchio verde sull'area di
-//     click reale del pomello IN, per vedere in uno screenshot dove sono
-//     davvero le due zone attive rispetto a dove il pomello si vede.
-//     Nessun cambio funzionale.
+//   Input Trim: trovata la vera causa per cui il pomello IN non si
+//     prendeva col mouse (il debug della 1.2.8 serviva a isolarla). La
+//     testata compatta viene ridisegnata due volte per frame - una
+//     interattiva, una nel repaint della testata sticky, con
+//     ui_render_only=1 apposta per non rielaborare hover/click una
+//     seconda volta. Ogni altro controllo del file rispetta
+//     ui_render_only prima di reagire al click; ui_knob (usata dal
+//     pomello IN) no. Un click vero partiva il trascinamento nel
+//     passaggio interattivo, e il passaggio di repaint - microsecondi
+//     dopo, con last_dbl_id/last_dbl_time appena aggiornati - lo
+//     scambiava per un doppio click su se stesso, azzerando il valore e
+//     annullando il trascinamento nello stesso frame. Aggiunto
+//     !ui_render_only dentro ui_knob nei due punti che modificano stato
+//     (inizio click, continuazione trascinamento). Tolto anche l'overlay
+//     di debug temporaneo della 1.2.8, non piu' necessario.
+//   DEBUG TEMPORANEO (1.2.8, rimosso in 1.2.9): contorno magenta intorno
+//     alla zona larga 9101 e cerchio verde sull'area di click reale del
+//     pomello IN, per vedere in uno screenshot dove sono davvero le due
+//     zone attive rispetto a dove il pomello si vede. Nessun cambio
+//     funzionale.
 //   Preset NAT/BRD/DNS/WRM/MCH/FLT spariti dopo la 1.2.6: allineare le due
 //     passate ha spostato la riga Preset dentro lo spazio del Live Monitor
 //     compatto (che parte a HDR_Y+HDR_H+4, cioe' 78px con la vecchia
@@ -3309,7 +3324,7 @@ local(val, hover, pct, angle, nx, ny, _tw, _th, new_val, rng, dbl, _vf, _lf,
   pct = max(0, min(1, (val-minv)/max(0.0001,rng)));
   hover = (mouse_x-cx)*(mouse_x-cx)+(mouse_y-cy)*(mouse_y-cy) <= (r+6)*(r+6);
   hover ? ui_set_hover(hover_id);
-  hover && mouse_click ? (
+  !ui_render_only && hover && mouse_click ? (
     dbl = (hover_id == last_dbl_id) && (time_precise() - last_dbl_time < 0.38);
     dbl ? (
       set_ui_slider(sl_idx, defv);
@@ -3324,7 +3339,7 @@ local(val, hover, pct, angle, nx, ny, _tw, _th, new_val, rng, dbl, _vf, _lf,
     last_dbl_id   = hover_id;
     last_dbl_time = time_precise();
   );
-  knob_active_sl==sl_idx && btn_down ? (
+  !ui_render_only && knob_active_sl==sl_idx && btn_down ? (
     new_val = max(minv, min(maxv, knob_drag_v0+(knob_drag_y0-mouse_y)*fine_tune*rng/160));
     abs(new_val-val) > 0.0002 ? (
       set_ui_slider(sl_idx, new_val);
@@ -4205,6 +4220,23 @@ local(ky, ki, ledx, ledy, trim_zone_hover, new_trim)
   // e molla il trascinamento. Risultato: la striscia regolava e il pomello
   // "non si prendeva". Adesso: pomello 3001, zona 9101, striscia 9102.
   // 3002 e 3003 erano gia' presi da MAX e Speed dello Smart trim.
+  //
+  // 1.2.9: la causa vera non era qui, era dentro ui_knob (la funzione usata
+  // dal pomello 3001 tramite ui_knob_col). Questa testata compatta viene
+  // ridisegnata due volte per frame: una volta interattiva, una volta nel
+  // repaint della testata sticky (con ui_render_only=1, apposta per non
+  // rielaborare hover/click una seconda volta). Tutti gli altri controlli
+  // di questo file controllano ui_render_only prima di reagire al click;
+  // ui_knob no. Risultato: un click vero sul pomello partiva nel passaggio
+  // interattivo, e microsecondi dopo il passaggio di repaint rivedeva lo
+  // stesso hover+click con last_dbl_id/last_dbl_time appena aggiornati e lo
+  // scambiava per un doppio click su se stesso - azzerando il valore e
+  // annullando il trascinamento appena iniziato, nello stesso frame. La
+  // zona larga qui sotto e la striscia non ne soffrivano perche' entrambe
+  // controllano gia' ui_render_only. Fix: aggiunto !ui_render_only anche
+  // dentro ui_knob (due punti: inizio click e continuazione trascinamento).
+  // Zona larga e striscia restano comunque utili come area di presa piu'
+  // comoda del solo cerchio del pomello, non erano la causa del difetto.
   trim_zone_hover = hit(x, y, 48, h);
   trim_zone_hover ? ui_set_hover(9101);
   !ui_render_only && trim_zone_hover && mouse_click && knob_active_sl != 50 ? (
@@ -4219,18 +4251,6 @@ local(ky, ki, ledx, ledy, trim_zone_hover, new_trim)
       set_ui_slider(50, new_trim);
     );
   );
-
-  // DEBUG TEMPORANEO 1.2.8 - da togliere: contorno magenta = zona larga 9101
-  // (hit(x,y,48,h)), cerchio verde = area di click del pomello (r+6 attorno
-  // a ki,ky). Serve solo a vedere in screenshot dove sono davvero le due
-  // zone attive rispetto al disegno.
-  gfx_set(1,0,1,1);
-  gfx_line(x,     y,     x+48,  y,     1);
-  gfx_line(x,     y+h-1, x+48,  y+h-1, 1);
-  gfx_line(x,     y,     x,     y+h-1, 1);
-  gfx_line(x+48,  y,     x+48,  y+h-1, 1);
-  gfx_set(0,1,0,1);
-  gfx_circle(ki, ky, 14+6, 0, 1);
 
   ledx = x + 48; ledy = y + floor(h/2) - 14;
   gfx_setfont(1,"Arial",11,'b');
