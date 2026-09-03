@@ -1,8 +1,13 @@
 // @description ZP BUS Chain
-// @version 1.2.7
+// @version 1.2.8
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   DEBUG TEMPORANEO, da rimuovere in una versione successiva: contorno
+//     magenta intorno alla zona larga 9101 e cerchio verde sull'area di
+//     click reale del pomello IN, per vedere in uno screenshot dove sono
+//     davvero le due zone attive rispetto a dove il pomello si vede.
+//     Nessun cambio funzionale.
 //   Preset NAT/BRD/DNS/WRM/MCH/FLT spariti dopo la 1.2.6: allineare le due
 //     passate ha spostato la riga Preset dentro lo spazio del Live Monitor
 //     compatto (che parte a HDR_Y+HDR_H+4, cioe' 78px con la vecchia
@@ -4214,6 +4219,18 @@ local(ky, ki, ledx, ledy, trim_zone_hover, new_trim)
       set_ui_slider(50, new_trim);
     );
   );
+
+  // DEBUG TEMPORANEO 1.2.8 - da togliere: contorno magenta = zona larga 9101
+  // (hit(x,y,48,h)), cerchio verde = area di click del pomello (r+6 attorno
+  // a ki,ky). Serve solo a vedere in screenshot dove sono davvero le due
+  // zone attive rispetto al disegno.
+  gfx_set(1,0,1,1);
+  gfx_line(x,     y,     x+48,  y,     1);
+  gfx_line(x,     y+h-1, x+48,  y+h-1, 1);
+  gfx_line(x,     y,     x,     y+h-1, 1);
+  gfx_line(x+48,  y,     x+48,  y+h-1, 1);
+  gfx_set(0,1,0,1);
+  gfx_circle(ki, ky, 14+6, 0, 1);
 
   ledx = x + 48; ledy = y + floor(h/2) - 14;
   gfx_setfont(1,"Arial",11,'b');
