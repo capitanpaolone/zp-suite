@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "api_version": "v1",
+  "kind": "transcript",
+  "source_id": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "source": {
+    "source_id": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "kind": "file",
+    "display_name": "intervista.wav",
+    "content_hash": {"algorithm": "sha256", "digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}
+  },
+  "engine": "fixture-engine",
+  "provider": "fixture-provider",
+  "model": "fixture-base",
+  "language": "it",
+  "capabilities": {
+    "segment_timestamps": true,
+    "word_timestamps": false,
+    "diarization": false,
+    "language_detection": false,
+    "streaming": false,
+    "input_formats": ["wav"],
+    "output_formats": ["json"]
+  },
+  "segments": [
+    {"start_ms": 0, "end_ms": 1800, "text": "Solo tempi di segmento."},
+    {"start_ms": 1800, "end_ms": 3100, "text": "Secondo segmento."}
+  ]
+}

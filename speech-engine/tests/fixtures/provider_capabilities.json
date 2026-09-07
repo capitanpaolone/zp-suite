@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "api_version": "v1",
+  "kind": "provider_capabilities",
+  "provider": "fixture-provider",
+  "engine": "fixture-engine",
+  "provider_version": "1.0.0",
+  "models": ["fixture-base", "fixture-small"],
+  "capabilities": {
+    "segment_timestamps": true,
+    "word_timestamps": true,
+    "diarization": false,
+    "language_detection": true,
+    "streaming": false,
+    "input_formats": ["wav", "m4a"],
+    "output_formats": ["json", "srt", "vtt", "txt"]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "api_version": "v1",
+  "kind": "search_result",
+  "query": "frase",
+  "normalized_query": "frase",
+  "source_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "matches": [
+    {
+      "source_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "start_ms": 2200,
+      "end_ms": 4380,
+      "segment_start_ms": 1250,
+      "segment_end_ms": 4380,
+      "text": "frase.",
+      "segment_text": "Questa è una frase.",
+      "confidence": 0.94
+    }
+  ]
+}

@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zp-suite.local/schemas/zp-speech-v1.schema.json",
+  "title": "ZP Speech API and Schema v1",
+  "description": "Provider-independent source-time documents. All intervals are integer milliseconds with half-open [start_ms, end_ms) semantics.",
+  "oneOf": [
+    {"$ref": "#/$defs/transcript"},
+    {"$ref": "#/$defs/providerCapabilitiesDocument"},
+    {"$ref": "#/$defs/errorDocument"},
+    {"$ref": "#/$defs/searchResult"}
+  ],
+  "$defs": {
+    "commonHeader": {
+      "type": "object",
+      "properties": {
+        "schema_version": {"const": 1},
+        "api_version": {"const": "v1"}
+      },
+      "required": ["schema_version", "api_version"]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "sourceId": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "contentHash": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": {"const": "sha256"},
+        "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "required": ["algorithm", "digest"]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {"$ref": "#/$defs/sourceId"},
+        "kind": {"enum": ["file", "render"]},
+        "display_name": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "media_type": {"type": "string", "minLength": 1},
+        "size_bytes": {"type": "integer", "minimum": 0},
+        "duration_ms": {"type": "integer", "minimum": 0},
+        "content_hash": {"$ref": "#/$defs/contentHash"}
+      },
+      "required": ["source_id", "kind", "display_name", "content_hash"]
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "segment_timestamps": {"type": "boolean"},
+        "word_timestamps": {"type": "boolean"},
+        "diarization": {"type": "boolean"},
+        "language_detection": {"type": "boolean"},
+        "streaming": {"type": "boolean"},
+        "input_formats": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "output_formats": {
+          "type": "array",
+          "items": {"enum": ["json", "srt", "vtt", "txt"]},
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": ["segment_timestamps", "word_timestamps", "diarization", "language_detection", "streaming", "input_formats", "output_formats"]
+    },
+    "word": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "start_ms": {"type": "integer", "minimum": 0},
+        "end_ms": {"type": "integer", "minimum": 1},
+        "text": {"type": "string", "minLength": 1},
+        "confidence": {"$ref": "#/$defs/confidence"}
+      },
+      "required": ["start_ms", "end_ms", "text"]
+    },
+    "segment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "start_ms": {"type": "integer", "minimum": 0},
+        "end_ms": {"type": "integer", "minimum": 1},
+        "text": {"type": "string", "minLength": 1},
+        "speaker": {"type": ["string", "null"], "minLength": 1},
+        "confidence": {"$ref": "#/$defs/confidence"},
+        "words": {"type": "array", "items": {"$ref": "#/$defs/word"}}
+      },
+      "required": ["start_ms", "end_ms", "text"]
+    },
+    "transcript": {
+      "allOf": [
+        {"$ref": "#/$defs/commonHeader"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {"const": 1},
+            "api_version": {"const": "v1"},
+            "kind": {"const": "transcript"},
+            "source_id": {"$ref": "#/$defs/sourceId"},
+            "source": {"$ref": "#/$defs/source"},
+            "engine": {"type": "string", "minLength": 1},
+            "provider": {"type": "string", "minLength": 1},
+            "model": {"type": "string", "minLength": 1},
+            "language": {"type": "string", "minLength": 1},
+            "capabilities": {"$ref": "#/$defs/capabilities"},
+            "segments": {"type": "array", "items": {"$ref": "#/$defs/segment"}}
+          },
+          "required": ["schema_version", "api_version", "kind", "source_id", "source", "engine", "provider", "model", "language", "capabilities", "segments"]
+        }
+      ]
+    },
+    "providerCapabilitiesDocument": {
+      "allOf": [
+        {"$ref": "#/$defs/commonHeader"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {"const": 1},
+            "api_version": {"const": "v1"},
+            "kind": {"const": "provider_capabilities"},
+            "provider": {"type": "string", "minLength": 1},
+            "engine": {"type": "string", "minLength": 1},
+            "provider_version": {"type": "string", "minLength": 1},
+            "models": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+            "capabilities": {"$ref": "#/$defs/capabilities"}
+          },
+          "required": ["schema_version", "api_version", "kind", "provider", "engine", "provider_version", "models", "capabilities"]
+        }
+      ]
+    },
+    "errorDocument": {
+      "allOf": [
+        {"$ref": "#/$defs/commonHeader"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {"const": 1},
+            "api_version": {"const": "v1"},
+            "kind": {"const": "error"},
+            "error": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "code": {"enum": ["provider_not_found", "provider_unavailable", "unsupported_capability", "unsupported_model", "transcription_failed", "invalid_source", "incompatible_api_schema", "timeout", "cancelled"]},
+                "message": {"type": "string", "minLength": 1},
+                "retryable": {"type": "boolean"},
+                "provider": {"type": ["string", "null"]},
+                "details": {"type": "object"}
+              },
+              "required": ["code", "message", "retryable"]
+            }
+          },
+          "required": ["schema_version", "api_version", "kind", "error"]
+        }
+      ]
+    },
+    "searchMatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {"$ref": "#/$defs/sourceId"},
+        "start_ms": {"type": "integer", "minimum": 0},
+        "end_ms": {"type": "integer", "minimum": 1},
+        "segment_start_ms": {"type": "integer", "minimum": 0},
+        "segment_end_ms": {"type": "integer", "minimum": 1},
+        "text": {"type": "string", "minLength": 1},
+        "segment_text": {"type": "string", "minLength": 1},
+        "speaker": {"type": ["string", "null"], "minLength": 1},
+        "confidence": {"$ref": "#/$defs/confidence"}
+      },
+      "required": ["source_id", "start_ms", "end_ms", "segment_start_ms", "segment_end_ms", "text", "segment_text"]
+    },
+    "searchResult": {
+      "allOf": [
+        {"$ref": "#/$defs/commonHeader"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {"const": 1},
+            "api_version": {"const": "v1"},
+            "kind": {"const": "search_result"},
+            "query": {"type": "string", "minLength": 1},
+            "normalized_query": {"type": "string", "minLength": 1},
+            "source_id": {"$ref": "#/$defs/sourceId"},
+            "matches": {"type": "array", "items": {"$ref": "#/$defs/searchMatch"}}
+          },
+          "required": ["schema_version", "api_version", "kind", "query", "normalized_query", "source_id", "matches"]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "api_version": "v1",
+  "kind": "error",
+  "error": {
+    "code": "unsupported_capability",
+    "message": "Il provider non supporta i timestamp per parola.",
+    "retryable": false,
+    "provider": "fixture-provider",
+    "details": {"capability": "word_timestamps"}
+  }
+}

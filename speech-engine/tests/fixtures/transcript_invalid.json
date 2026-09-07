@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "api_version": "v1",
+  "kind": "transcript",
+  "source_id": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "source": {
+    "source_id": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "kind": "file",
+    "display_name": "invalid.wav",
+    "content_hash": {"algorithm": "sha256", "digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"}
+  },
+  "engine": "fixture-engine",
+  "provider": "fixture-provider",
+  "model": "fixture-small",
+  "language": "it",
+  "capabilities": {
+    "segment_timestamps": true,
+    "word_timestamps": true,
+    "diarization": false,
+    "language_detection": false,
+    "streaming": false,
+    "input_formats": ["wav"],
+    "output_formats": ["json"]
+  },
+  "segments": [
+    {
+      "start_ms": 1000,
+      "end_ms": 2000,
+      "text": "Parola fuori segmento.",
+      "words": [{"start_ms": 900, "end_ms": 1200, "text": "Parola"}]
+    }
+  ]
+}

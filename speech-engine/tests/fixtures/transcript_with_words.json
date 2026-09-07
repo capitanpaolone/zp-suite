@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "api_version": "v1",
+  "kind": "transcript",
+  "source_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "source": {
+    "source_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "kind": "file",
+    "display_name": "voce.wav",
+    "path": "/fixtures/voce.wav",
+    "media_type": "audio/wav",
+    "size_bytes": 960044,
+    "duration_ms": 10000,
+    "content_hash": {"algorithm": "sha256", "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+  },
+  "engine": "fixture-engine",
+  "provider": "fixture-provider",
+  "model": "fixture-small",
+  "language": "it",
+  "capabilities": {
+    "segment_timestamps": true,
+    "word_timestamps": true,
+    "diarization": false,
+    "language_detection": true,
+    "streaming": false,
+    "input_formats": ["wav"],
+    "output_formats": ["json", "srt"]
+  },
+  "segments": [
+    {
+      "start_ms": 1250,
+      "end_ms": 4380,
+      "text": "Questa è una frase.",
+      "confidence": 0.94,
+      "words": [
+        {"start_ms": 1250, "end_ms": 1640, "text": "Questa", "confidence": 0.97},
+        {"start_ms": 1640, "end_ms": 1820, "text": "è"},
+        {"start_ms": 1820, "end_ms": 2200, "text": "una"},
+        {"start_ms": 2200, "end_ms": 4380, "text": "frase."}
+      ]
+    }
+  ]
+}
