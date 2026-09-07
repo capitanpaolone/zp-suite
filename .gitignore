@@ -4,9 +4,21 @@
 *.bak
 *.backup-*
 *-CONFLICT-*
+__pycache__/
+*.py[cod]
 
 # strumento personale, non fa parte della suite
 Pubblica ZP Suite.command
 
 # lista di lavoro personale
 STATO LAVORI.md
+
+# output runtime e diagnostica locale
+log_nogit/
+
+# bozze generate da assistenti; la documentazione canonica vive in docs/agent/
+Claude outputs/
+
+# inventari generati dell'archivio storico (decine di MB, rigenerabili)
+docs/agent/manifest_pre_migrazione_lacie.csv
+docs/agent/manifest_pre_migrazione_lacie.json

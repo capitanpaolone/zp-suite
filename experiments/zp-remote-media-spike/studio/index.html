@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZP Remote — Media Spike — Studio</title>
+<link rel="stylesheet" href="../shared/base.css" />
+<link rel="stylesheet" href="studio.css" />
+</head>
+<body>
+<div class="experimental-banner">EXPERIMENTAL / FASE 0 / NOT PRODUCT CODE — zp-remote-media-spike</div>
+
+<h1>ZP REMOTE — MEDIA SPIKE — STUDIO / CONTROL</h1>
+<p style="color:var(--text-dim); margin-top:0;">Fase 0.1 — spike browser↔browser, senza REAPER, senza Lua. Vedi <code>README.md</code>.</p>
+
+<section class="panel" id="connectionPanel">
+  <h2>Connessione WebRTC</h2>
+  <div class="row">
+    <button id="btnConnect" class="primary">1. Crea offerta (avvia connessione)</button>
+    <span class="status-pill" id="pcState">idle</span>
+    <span class="status-pill" id="iceState">ice: -</span>
+    <label class="check">Sessione: <span id="sessionTimer">00:00:00</span></label>
+    <span class="status-pill" id="audioCtxState">audio: -</span>
+    <button id="btnEnableAudio">Riattiva audio</button>
+  </div>
+  <div class="row" style="align-items:flex-start;">
+    <div style="flex:1; min-width:260px;">
+      <div style="font-size:11px; color:var(--text-dim);">Offerta locale (copia e incolla nella pagina Artist, oppure lascia fare al BroadcastChannel se è la stessa macchina/browser)</div>
+      <textarea class="sdp-box" id="localOfferBox" readonly placeholder="Comparirà qui dopo aver premuto 'Crea offerta'…"></textarea>
+    </div>
+    <div style="flex:1; min-width:260px;">
+      <div style="font-size:11px; color:var(--text-dim);">Risposta remota (incolla qui la risposta copiata dalla pagina Artist)</div>
+      <textarea class="sdp-box" id="remoteAnswerBox" placeholder="Incolla qui la risposta dell'Artist…"></textarea>
+      <button id="btnApplyAnswer">2. Applica risposta</button>
+    </div>
+  </div>
+</section>
+
+<div class="grid-2">
+  <section class="panel">
+    <h2>Program</h2>
+    <div class="row">
+      <select id="programSelect"></select>
+      <button id="programStart">Avvia</button>
+      <button id="programSwap">Cambia sorgente</button>
+      <span class="status-pill" id="programStatus">non avviato</span>
+    </div>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="programAec"> AEC</label>
+      <label class="check"><input type="checkbox" id="programNs"> NS</label>
+      <label class="check"><input type="checkbox" id="programAgc"> AGC</label>
+    </div>
+    <div class="row">
+      <div class="meter-track"><div class="meter-fill" id="programMeter"></div></div>
+      <span class="meter-db" id="programMeterDb">-inf</span>
+    </div>
+    <div class="row">
+      <label>Gain <input type="range" id="programGain" min="0" max="2" step="0.01" value="1"></label>
+      <span id="programGainReadout">1.00x</span>
+      <button id="programMute">MUTE</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Talkback</h2>
+    <div class="row">
+      <select id="talkbackSelect"></select>
+      <button id="talkbackStart">Avvia</button>
+      <button id="talkbackSwap">Cambia sorgente</button>
+      <span class="status-pill" id="talkbackStatus">non avviato</span>
+    </div>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="talkbackAec" checked> AEC</label>
+      <label class="check"><input type="checkbox" id="talkbackNs" checked> NS</label>
+      <label class="check"><input type="checkbox" id="talkbackAgc" checked> AGC</label>
+    </div>
+    <div class="row">
+      <div class="meter-track"><div class="meter-fill" id="talkbackMeter"></div></div>
+      <span class="meter-db" id="talkbackMeterDb">-inf</span>
+    </div>
+    <div class="row">
+      <label>Gain <input type="range" id="talkbackGain" min="0" max="2" step="0.01" value="1"></label>
+      <span id="talkbackGainReadout">1.00x</span>
+      <button id="talkbackMute">MUTE</button>
+      <button id="talkbackTalk" class="danger">TALK (tieni premuto)</button>
+    </div>
+    <p style="font-size:11px;color:var(--text-dim);margin:4px 0 0;">Talkback parte muto di default: si apre solo tenendo premuto TALK, salvo override MUTE.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Aux / Extra</h2>
+    <div class="row">
+      <select id="auxSelect"></select>
+      <button id="auxStart">Avvia</button>
+      <button id="auxSwap">Cambia sorgente</button>
+      <span class="status-pill" id="auxStatus">non avviato</span>
+    </div>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="auxAec"> AEC</label>
+      <label class="check"><input type="checkbox" id="auxNs"> NS</label>
+      <label class="check"><input type="checkbox" id="auxAgc"> AGC</label>
+    </div>
+    <div class="row">
+      <div class="meter-track"><div class="meter-fill" id="auxMeter"></div></div>
+      <span class="meter-db" id="auxMeterDb">-inf</span>
+    </div>
+    <div class="row">
+      <label>Gain <input type="range" id="auxGain" min="0" max="2" step="0.01" value="1"></label>
+      <span id="auxGainReadout">1.00x</span>
+      <button id="auxMute">MUTE</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Remote Mix (inviato via WebRTC)</h2>
+    <div class="row">
+      <div class="meter-track"><div class="meter-fill" id="mixMeter"></div></div>
+      <span class="meter-db" id="mixMeterDb">-inf</span>
+    </div>
+    <p style="font-size:11px;color:var(--text-dim);">Program + Talkback + Aux sommati in Web Audio → un solo MediaStreamTrack → un solo transceiver WebRTC (nessuno stem separato in questo spike).</p>
+    <div class="row">
+      <button id="testToneToggle">TEST TONE 440 Hz: OFF</button>
+      <label>Livello <input type="range" id="testToneLevel" min="0" max="0.5" step="0.01" value="0.05"></label>
+      <span id="testToneLevelReadout">0.05</span>
+      <span style="font-size:11px;color:var(--text-dim);">Diagnostico: isola il tubo Studio→Artist senza DAW/mic/routing fisico.</span>
+    </div>
+  </section>
+</div>
+
+<section class="panel">
+  <h2>Artist Return</h2>
+  <div class="row">
+    <div class="meter-track"><div class="meter-fill" id="returnMeter"></div></div>
+    <span class="meter-db" id="returnMeterDb">-inf</span>
+    <button id="returnMute">MUTE locale</button>
+    <label>Monitor <input type="range" id="returnGain" min="0" max="2" step="0.01" value="1"></label>
+  </div>
+  <p style="font-size:11px;color:var(--text-dim);">Concettualmente è la sorgente che in una fase futura verrà consegnata al Local Media I/O / alla DAW — qui resta solo nel browser.</p>
+  <video id="remoteVideo" class="preview" autoplay playsinline muted></video>
+
+  <h3 style="margin-bottom:4px;">AUDIO GRAPH — probe 0.1d (diagnostico, non permanente)</h3>
+  <p style="font-size:11px;color:var(--text-dim);margin-top:0;">Tre punti reali e distinti nel grafo Web Audio, dal track WebRTC in ingresso fino al nodo collegato a <code>ctx.destination</code>. Se un punto mostra "signal" e il successivo "silence", il segnale sparisce esattamente lì.</p>
+  <div class="row">
+    <div style="flex:1;min-width:180px;">
+      <div style="font-size:11px;color:var(--text-dim);">1. ARTIST_RTP_INPUT (subito dopo createMediaStreamSource, prima di ogni elaborazione)</div>
+      <div class="row"><div class="meter-track"><div class="meter-fill" id="probeRtpInput"></div></div><span class="meter-db" id="probeRtpInputDb">-inf</span><span class="status-pill" id="probeRtpInputState">-</span></div>
+    </div>
+    <div style="flex:1;min-width:180px;">
+      <div style="font-size:11px;color:var(--text-dim);">2. ARTIST_POST_SOURCE (dopo un nodo passthrough dedicato, prima del gain di monitor)</div>
+      <div class="row"><div class="meter-track"><div class="meter-fill" id="probePostSource"></div></div><span class="meter-db" id="probePostSourceDb">-inf</span><span class="status-pill" id="probePostSourceState">-</span></div>
+    </div>
+    <div style="flex:1;min-width:180px;">
+      <div style="font-size:11px;color:var(--text-dim);">3. ARTIST_RETURN (uscita del gain di monitor, esattamente ciò che è collegato a ctx.destination)</div>
+      <div class="row"><div class="meter-track"><div class="meter-fill" id="probeArtistReturn"></div></div><span class="meter-db" id="probeArtistReturnDb">-inf</span><span class="status-pill" id="probeArtistReturnState">-</span></div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:4px;">PHYSICAL OUTPUT — test locale indipendente da WebRTC</h3>
+  <div class="row">
+    <button id="localTestToneToggle">LOCAL TEST TONE (Studio, NON passa da WebRTC): OFF</button>
+    <label>Livello <input type="range" id="localTestToneLevel" min="0" max="0.5" step="0.01" value="0.05"></label>
+    <span style="font-size:11px;color:var(--text-dim);">Va dritto a ctx.destination: se non lo senti, il problema è nel monitor locale dello Studio (output di sistema/browser), non in WebRTC.</span>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>NETWORK — WebRTC stats</h2>
+  <p style="font-size:11px;color:var(--text-dim);margin-top:-4px;">OUTBOUND = Remote Mix inviato da Studio verso Artist. INBOUND = Artist Return ricevuto da Studio. "n/d" = non ancora disponibile (nessun sample raccolto), non "zero"/"rotto". <b>Attenzione</b>: packets/bytes &gt; 0 dimostra che RTP è stato trasmesso, NON che contenga audio reale — per quello guarda audioLevel/totalAudioEnergy.</p>
+  <div class="stats-grid" id="statsGrid">
+    <div><b>connection</b><span id="statConn">n/d</span></div>
+    <div><b>ice</b><span id="statIce">n/d</span></div>
+    <div><b>outbound: codec (→Artist)</b><span id="statCodecOut">n/d</span></div>
+    <div><b>inbound: codec (Artist Return)</b><span id="statCodecIn">n/d</span></div>
+    <div><b>outbound: bitrate</b><span id="statBitrateOut">n/d</span></div>
+    <div><b>inbound: bitrate</b><span id="statBitrateIn">n/d</span></div>
+    <div><b>outbound: packets/bytes sent</b><span id="statPktOut">n/d</span></div>
+    <div><b>inbound: packets/bytes received</b><span id="statPktIn">n/d</span></div>
+    <div><b>outbound: source audioLevel / totalAudioEnergy</b><span id="statEnergyOut">n/d</span></div>
+    <div><b>inbound: audioLevel / totalAudioEnergy</b><span id="statEnergyIn">n/d</span></div>
+    <div><b>inbound: jitter</b><span id="statJitter">n/d</span></div>
+    <div><b>inbound: packets lost</b><span id="statLoss">n/d</span></div>
+    <div><b>RTT</b><span id="statRtt">n/d</span></div>
+    <div><b>candidate pair</b><span id="statPair">n/d</span></div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Log / export</h2>
+  <div class="row">
+    <button id="btnExportLogTxt">Esporta log (.txt)</button>
+    <button id="btnExportLogJson">Esporta log (.json)</button>
+    <button id="btnExportStatsJson">Esporta stats WebRTC (.json)</button>
+  </div>
+  <div id="log"></div>
+</section>
+
+<script type="module" src="studio.js"></script>
+</body>
+</html>

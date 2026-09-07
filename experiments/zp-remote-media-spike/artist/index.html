@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZP Remote — Media Spike — Artist</title>
+<link rel="stylesheet" href="../shared/base.css" />
+<link rel="stylesheet" href="artist.css" />
+</head>
+<body>
+<div class="experimental-banner">EXPERIMENTAL / FASE 0 / NOT PRODUCT CODE — zp-remote-media-spike</div>
+
+<h1>ZP ARTIST — MEDIA SPIKE</h1>
+<p style="color:var(--text-dim); margin-top:0;">Nessun gobbo, nessun controllo DAW, nessun virtual cable richiesto: solo microfono/camera del sistema via API standard del browser.</p>
+
+<section class="panel" id="connectionPanel">
+  <h2>Connessione WebRTC</h2>
+  <div class="row">
+    <button id="btnReady" class="primary">1. Pronto (crea risposta quando arriva l'offerta)</button>
+    <span class="status-pill" id="pcState">idle</span>
+    <span class="status-pill" id="iceState">ice: -</span>
+    <label class="check">Sessione: <span id="sessionTimer">00:00:00</span></label>
+    <span class="status-pill" id="audioCtxState">audio: -</span>
+    <button id="btnEnableAudio">Abilita audio (clicca se non senti nulla)</button>
+  </div>
+  <div class="row" style="align-items:flex-start;">
+    <div style="flex:1; min-width:260px;">
+      <div style="font-size:11px; color:var(--text-dim);">Offerta remota (incolla qui l'offerta copiata dalla pagina Studio, oppure attendi il BroadcastChannel se stessa macchina)</div>
+      <textarea class="sdp-box" id="remoteOfferBox" placeholder="Incolla qui l'offerta dello Studio…"></textarea>
+      <button id="btnAcceptOffer">2. Accetta offerta e genera risposta</button>
+    </div>
+    <div style="flex:1; min-width:260px;">
+      <div style="font-size:11px; color:var(--text-dim);">Risposta locale (copiala nella pagina Studio, oppure lascia fare al BroadcastChannel)</div>
+      <textarea class="sdp-box" id="localAnswerBox" readonly placeholder="Comparirà qui dopo aver accettato l'offerta…"></textarea>
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Microfono</h2>
+  <div class="row">
+    <select id="micSelect"></select>
+    <button id="micStart">Avvia</button>
+    <button id="micSwap">Cambia sorgente</button>
+    <span class="status-pill" id="micStatus">non avviato</span>
+  </div>
+  <div class="row">
+    <label class="check"><input type="checkbox" id="micAec"> AEC (default OFF: fedeltà per la registrazione)</label>
+    <label class="check"><input type="checkbox" id="micNs"> NS</label>
+    <label class="check"><input type="checkbox" id="micAgc"> AGC</label>
+  </div>
+  <div class="row">
+    <div class="meter-track"><div class="meter-fill" id="micMeter"></div></div>
+    <span class="meter-db" id="micMeterDb">-inf</span>
+  </div>
+  <div class="row">
+    <label>Gain locale <input type="range" id="micGain" min="0" max="2" step="0.01" value="1"></label>
+    <span id="micGainReadout">1.00x</span>
+    <button id="micMute">MUTE (non invia, ma resta visibile nel meter)</button>
+  </div>
+  <div class="row">
+    <button id="localMonitorToggle">LOCAL MONITOR: OFF</button>
+    <label>Volume <input type="range" id="localMonitorVolume" min="0" max="0.5" step="0.01" value="0.1"></label>
+    <span style="font-size:11px;color:var(--text-dim);">Diagnostico: conferma che il mic selezionato produce davvero campioni. OFF di default (rischio feedback in cuffia).</span>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Camera (opzionale)</h2>
+  <div class="row">
+    <label class="check"><input type="checkbox" id="cameraEnable"> Includi camera (decidi PRIMA di premere "Pronto": niente rinegoziazione in questo spike)</label>
+    <select id="cameraSelect"></select>
+  </div>
+  <video id="localVideoPreview" class="preview" autoplay playsinline muted></video>
+</section>
+
+<section class="panel">
+  <h2>Remote Mix ricevuto → Output</h2>
+  <div class="row">
+    <select id="outputSelect"></select>
+    <span class="status-pill" id="outputSupport">setSinkId: -</span>
+    <span class="status-pill" id="playbackState">playback: -</span>
+  </div>
+
+  <div class="row">
+    <label class="check">Modalità playback (decidi PRIMA di "Pronto"/"Accetta offerta"):
+      <select id="playbackMode">
+        <option value="webaudio" selected>WEB AUDIO PATH (predefinito — passa dal grafo Web Audio)</option>
+        <option value="direct">DIRECT MEDIA ELEMENT (bypass Web Audio — remote stream diretto su &lt;audio&gt;)</option>
+      </select>
+    </label>
+  </div>
+  <p style="font-size:11px;color:var(--text-dim);margin:2px 0 8px;">Diagnostico 0.1d: se con DIRECT si sente e con WEB AUDIO no, il bug è nel grafo Web Audio, non in WebRTC/output.</p>
+
+  <div class="row">
+    <div style="flex:1;min-width:200px;">
+      <div style="font-size:11px;color:var(--text-dim);">Remote stream ricevuto (pre-gain, subito dopo ontrack)</div>
+      <div class="row"><div class="meter-track"><div class="meter-fill" id="remoteInMeter"></div></div><span class="meter-db" id="remoteInMeterDb">-inf</span></div>
+    </div>
+    <div style="flex:1;min-width:200px;">
+      <div style="font-size:11px;color:var(--text-dim);">Output playback (post-gain locale, quello che dovrebbe uscire in cuffia)</div>
+      <div class="row"><div class="meter-track"><div class="meter-fill" id="remoteMeter"></div></div><span class="meter-db" id="remoteMeterDb">-inf</span></div>
+    </div>
+  </div>
+  <div class="row">
+    <label>Volume <input type="range" id="remoteVolume" min="0" max="2" step="0.01" value="1"></label>
+  </div>
+  <audio id="remoteAudioSink"></audio>
+
+  <h3 style="margin-bottom:4px;">AUDIO GRAPH — probe 0.1d (diagnostico, non permanente)</h3>
+  <p style="font-size:11px;color:var(--text-dim);margin-top:0;">Quattro punti reali e distinti dal track WebRTC in ingresso fino al preciso <code>MediaStream</code> assegnato a <code>audioElement.srcObject</code>. Attivi solo in modalità WEB AUDIO PATH.</p>
+  <div class="row">
+    <div style="flex:1;min-width:160px;">
+      <div style="font-size:11px;color:var(--text-dim);">1. REMOTE_RTP_INPUT (subito dopo createMediaStreamSource)</div>
+      <div class="row"><div class="meter-track"><div class="meter-fill" id="probeRtpInput"></div></div><span class="meter-db" id="probeRtpInputDb">-inf</span><span class="status-pill" id="probeRtpInputState">-</span></div>
+    </div>
+    <div style="flex:1;min-width:160px;">
+      <div style="font-size:11px;color:var(--text-dim);">2. REMOTE_POST_SOURCE (dopo un passthrough dedicato, prima del gain di monitor)</div>
+      <div class="row"><div class="meter-track"><div class="meter-fill" id="probePostSource"></div></div><span class="meter-db" id="probePostSourceDb">-inf</span><span class="status-pill" id="probePostSourceState">-</span></div>
+    </div>
+    <div style="flex:1;min-width:160px;">
+      <div style="font-size:11px;color:var(--text-dim);">3. REMOTE_POST_GAIN (uscita del gain di monitor — stesso punto del meter "Output playback" sopra)</div>
+      <div class="row"><div class="meter-track"><div class="meter-fill" id="probePostGain"></div></div><span class="meter-db" id="probePostGainDb">-inf</span><span class="status-pill" id="probePostGainState">-</span></div>
+    </div>
+    <div style="flex:1;min-width:160px;">
+      <div style="font-size:11px;color:var(--text-dim);">4. REMOTE_PLAYBACK_DEST (ri-letto dal MediaStream reale assegnato a audioElement.srcObject — chiude il cerchio)</div>
+      <div class="row"><div class="meter-track"><div class="meter-fill" id="probePlaybackDest"></div></div><span class="meter-db" id="probePlaybackDestDb">-inf</span><span class="status-pill" id="probePlaybackDestState">-</span></div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:4px;">PHYSICAL OUTPUT — test locale indipendente da WebRTC</h3>
+  <div class="row">
+    <button id="localTestToneToggle">LOCAL TEST TONE / TEST OUTPUT: OFF</button>
+    <label>Volume <input type="range" id="localTestToneVolume" min="0" max="0.5" step="0.01" value="0.1"></label>
+    <span style="font-size:11px;color:var(--text-dim);">Oscillator → stesso monitorSink/audioElement/sink selezionato, NON passa da WebRTC. Se non lo senti, il problema è output/sink, non WebRTC.</span>
+  </div>
+  <div class="row">
+    <button id="btnInspectSink">Ispeziona output (log dettagliato)</button>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>NETWORK — WebRTC stats</h2>
+  <p style="font-size:11px;color:var(--text-dim);margin-top:-4px;">OUTBOUND = microfono inviato da Artist verso Studio. INBOUND = Remote Mix ricevuto da Artist. "n/d" = non ancora disponibile, non "zero"/"rotto". <b>Attenzione</b>: packets/bytes &gt; 0 dimostra solo che RTP è stato trasmesso, non che contenga audio reale — per quello guarda audioLevel/totalAudioEnergy.</p>
+  <div class="stats-grid" id="statsGrid">
+    <div><b>connection</b><span id="statConn">n/d</span></div>
+    <div><b>ice</b><span id="statIce">n/d</span></div>
+    <div><b>outbound: codec (mic→Studio)</b><span id="statCodecOut">n/d</span></div>
+    <div><b>inbound: codec (Remote Mix)</b><span id="statCodecIn">n/d</span></div>
+    <div><b>outbound: bitrate</b><span id="statBitrateOut">n/d</span></div>
+    <div><b>inbound: bitrate</b><span id="statBitrateIn">n/d</span></div>
+    <div><b>outbound: packets/bytes sent</b><span id="statPktOut">n/d</span></div>
+    <div><b>inbound: packets/bytes received</b><span id="statPktIn">n/d</span></div>
+    <div><b>outbound: source audioLevel / totalAudioEnergy</b><span id="statEnergyOut">n/d</span></div>
+    <div><b>inbound: audioLevel / totalAudioEnergy</b><span id="statEnergyIn">n/d</span></div>
+    <div><b>inbound: jitter</b><span id="statJitter">n/d</span></div>
+    <div><b>inbound: packets lost</b><span id="statLoss">n/d</span></div>
+    <div><b>RTT</b><span id="statRtt">n/d</span></div>
+    <div><b>candidate pair</b><span id="statPair">n/d</span></div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Log / export</h2>
+  <div class="row">
+    <button id="btnExportLogTxt">Esporta log (.txt)</button>
+    <button id="btnExportLogJson">Esporta log (.json)</button>
+    <button id="btnExportStatsJson">Esporta stats WebRTC (.json)</button>
+  </div>
+  <div id="log"></div>
+</section>
+
+<script type="module" src="artist.js"></script>
+</body>
+</html>

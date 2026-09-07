@@ -1199,6 +1199,32 @@ local function region_groups_for_marker_section(marker_row)
   return groups
 end
 
+-- Return the region rows already shown in the preview under this marker,
+-- stopping at the next represented marker. Unlike
+-- region_groups_for_marker_section(), this also includes prospective rows
+-- calculated from source items before their REAPER regions are created.
+local function preview_groups_for_marker_section(all_groups, marker_row)
+  if not (all_groups and marker_row and marker_row.marker_only) then return {} end
+  local marker_index = marker_row.__row_index
+  if not marker_index then
+    for i, group in ipairs(all_groups) do
+      if group == marker_row then
+        marker_index = i
+        break
+      end
+    end
+  end
+  if not marker_index then return {} end
+
+  local groups = {}
+  for i = marker_index + 1, #all_groups do
+    local group = all_groups[i]
+    if group.marker_only then break end
+    if is_region_row(group) then groups[#groups + 1] = group end
+  end
+  return groups
+end
+
 local function matching_export_regions(groups)
   local targets = region_rows_for_render(groups)
   local found = {}
@@ -2891,7 +2917,7 @@ local function open_window()
   end
 
   local function toggle_marker_section_selection(all_groups, marker_row, additive)
-    local section_groups = region_groups_for_marker_section(marker_row)
+    local section_groups = preview_groups_for_marker_section(all_groups, marker_row)
     if #section_groups == 0 then return false end
     if not additive then
       selected_rows = {}
@@ -2921,6 +2947,13 @@ local function open_window()
     chosen_mixdown_groups = selected_or_all_groups(all_groups, {})
     chosen_mixdown_info = render_folder_info(chosen_mixdown_groups)
     sync_preview_to_region_manager(all_groups)
+    if should_select and marker_row.marker_lane == 2 then
+      notify_status(string.format(
+        "Attenzione: %s e' in Lane 2. I file selezionati saranno creati nella sottocartella Mixdown/%s/.",
+        marker_row.marker_name or "questo marker",
+        raw_folder_path_parts(marker_row.marker_folder_parts or { marker_row.marker_name or "" })
+      ))
+    end
     return true
   end
 
@@ -3554,7 +3587,7 @@ local function open_window()
       local group = groups[selected_preview]
       if group and group.marker_only then
         chosen_mixdown_info = render_folder_info_from_marker_row(group)
-        chosen_mixdown_groups = region_groups_for_marker_section(group)
+        chosen_mixdown_groups = preview_groups_for_marker_section(groups, group)
         mark_selected_rows_for_render_groups(groups, chosen_mixdown_groups)
         selected_marker_indices = { [selected_preview] = true }
         selected_marker_index = selected_preview
@@ -3864,10 +3897,19 @@ local function open_window()
 	      local hovered = point_in_rect(gfx.mouse_x, gfx.mouse_y, row_rect.x, row_rect.y, row_rect.w, row_rect.h)
 	      local is_marker = group and group.marker_only
 	      if is_marker then
-	        gfx.set(0.18, 0.19, 0.24, 1)
+	        local is_subfolder_marker = group.marker_lane == 2
+	        if is_subfolder_marker then
+	          gfx.set(0.30, 0.17, 0.30, 1)
+	        else
+	          gfx.set(0.18, 0.19, 0.24, 1)
+	        end
 	        gfx.rect(row_rect.x, row_rect.y, row_rect.w, row_rect.h, true)
 	        if hovered then
-	          gfx.set(0.23, 0.22, 0.28, 1)
+	          if is_subfolder_marker then
+	            gfx.set(0.40, 0.21, 0.39, 1)
+	          else
+	            gfx.set(0.23, 0.22, 0.28, 1)
+	          end
 	          gfx.rect(row_rect.x, row_rect.y, row_rect.w, row_rect.h, true)
 	        end
 	        if clicked and hovered then
@@ -3930,7 +3972,11 @@ local function open_window()
 	            gfx.rect(preview_box.x + 10 + math.min(tw, preview_box.w - 24), y - 2, 2, 18, true)
 	          end
 	        else
-	          gfx.set(0.95, 0.68, 0.28, 1)
+	          if is_subfolder_marker then
+	            gfx.set(1.0, 0.52, 0.92, 1)
+	          else
+	            gfx.set(0.95, 0.68, 0.28, 1)
+	          end
 	          gfx.x = preview_box.x + 10
 	          gfx.y = y
 	          gfx.drawstr(fit_text(group.marker_label or group.name or "[Marker]", preview_box.w - 24))
