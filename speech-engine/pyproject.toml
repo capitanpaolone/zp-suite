@@ -5,9 +5,12 @@ build-backend = "hatchling.build"
 [project]
 name = "zp-speech-engine"
 version = "0.0.0"
-description = "Provider-independent contracts for ZP Speech Engine"
+description = "Provider-neutral contracts and local adapters for ZP Speech Engine"
 requires-python = ">=3.11"
 dependencies = ["jsonschema>=4.23,<5"]
+
+[project.scripts]
+zp-speech = "zp_speech.cli:main"
 
 [project.optional-dependencies]
 dev = [

@@ -72,7 +72,13 @@
           "uniqueItems": true
         }
       },
-      "required": ["segment_timestamps", "word_timestamps", "diarization", "language_detection", "streaming", "input_formats", "output_formats"]
+      "required": ["segment_timestamps", "word_timestamps", "diarization", "language_detection", "streaming", "input_formats", "output_formats"],
+      "allOf": [
+        {
+          "if": {"properties": {"word_timestamps": {"const": true}}},
+          "then": {"properties": {"segment_timestamps": {"const": true}}}
+        }
+      ]
     },
     "word": {
       "type": "object",

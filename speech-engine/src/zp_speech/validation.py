@@ -6,7 +6,7 @@ import json
 from collections.abc import Mapping, Sequence
 from functools import lru_cache
 from importlib.resources import files
-from typing import Any
+from typing import Any, cast
 
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError
@@ -95,6 +95,20 @@ def validate_document(document: Mapping[str, Any]) -> None:
     All time intervals use integer milliseconds and half-open semantics
     ``[start_ms, end_ms)``. Therefore every interval requires start_ms < end_ms.
     """
+
+    kind_before_schema = document.get("kind")
+    capabilities = document.get("capabilities")
+    if kind_before_schema in {"transcript", "provider_capabilities"} and isinstance(
+        capabilities, Mapping
+    ):
+        capability_map = cast(Mapping[str, object], capabilities)
+        word_timestamps = capability_map.get("word_timestamps")
+        segment_timestamps = capability_map.get("segment_timestamps")
+        if word_timestamps is True and segment_timestamps is False:
+            _fail(
+                "capabilities.word_timestamps",
+                "word timestamps require segment timestamps",
+            )
 
     try:
         _validator().validate(document)

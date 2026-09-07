@@ -117,6 +117,18 @@ def test_timed_transcript_requires_segment_timestamp_capability(load_fixture):
         validate_document(document)
 
 
+@pytest.mark.parametrize(
+    "fixture_name",
+    ("transcript_with_words.json", "provider_capabilities.json"),
+)
+def test_word_timestamps_imply_segment_timestamps(fixture_name, load_fixture):
+    document = load_fixture(fixture_name)
+    document["capabilities"]["word_timestamps"] = True
+    document["capabilities"]["segment_timestamps"] = False
+    with pytest.raises(ContractValidationError, match="segment timestamps"):
+        validate_document(document)
+
+
 def test_search_match_must_use_result_source(load_fixture):
     document = load_fixture("search_result.json")
     document["matches"][0]["source_id"] = "sha256:" + "e" * 64

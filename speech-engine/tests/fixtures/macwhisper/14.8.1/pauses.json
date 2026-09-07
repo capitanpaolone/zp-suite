@@ -1,0 +1,88 @@
+{
+  "segments" : [
+    {
+      "end" : 5940,
+      "id" : "52958820-8E9B-4598-BCF4-73B361C6F375",
+      "start" : 20,
+      "text" : "prima frase, poi una pausa. Infine, una domanda, il testo è chiaro? Sì, è chiaro.",
+      "words" : [
+        {
+          "end" : 180,
+          "start" : 20,
+          "text" : "prima"
+        },
+        {
+          "end" : 640,
+          "start" : 180,
+          "text" : "frase,"
+        },
+        {
+          "end" : 1160,
+          "start" : 1020,
+          "text" : "poi"
+        },
+        {
+          "end" : 1280,
+          "start" : 1160,
+          "text" : "una"
+        },
+        {
+          "end" : 1740,
+          "start" : 1280,
+          "text" : "pausa."
+        },
+        {
+          "end" : 2500,
+          "start" : 2060,
+          "text" : "Infine,"
+        },
+        {
+          "end" : 2920,
+          "start" : 2640,
+          "text" : "una"
+        },
+        {
+          "end" : 3460,
+          "start" : 2920,
+          "text" : "domanda,"
+        },
+        {
+          "end" : 3840,
+          "start" : 3720,
+          "text" : "il"
+        },
+        {
+          "end" : 4240,
+          "start" : 3840,
+          "text" : "testo"
+        },
+        {
+          "end" : 4300,
+          "start" : 4240,
+          "text" : "è"
+        },
+        {
+          "end" : 4740,
+          "start" : 4300,
+          "text" : "chiaro?"
+        },
+        {
+          "end" : 5240,
+          "start" : 4940,
+          "text" : "Sì,"
+        },
+        {
+          "end" : 5520,
+          "start" : 5320,
+          "text" : "è"
+        },
+        {
+          "end" : 5940,
+          "start" : 5520,
+          "text" : "chiaro."
+        }
+      ]
+    }
+  ],
+  "text" : "prima frase, poi una pausa. Infine, una domanda, il testo è chiaro? Sì, è chiaro."
+}

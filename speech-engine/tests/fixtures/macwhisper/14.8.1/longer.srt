@@ -1,0 +1,29 @@
+1
+00:00:00,020 --> 00:00:03,100
+Questo è un campione di parlato italiano leggermente più lungo.
+
+2
+00:00:03,600 --> 00:00:08,780
+Serve a verificare la segmentazione, le pause e la punteggiatura senza usare materiale personale.
+
+3
+00:00:09,140 --> 00:00:14,380
+Il sistema deve conservare i tempi della sorgente, produrre un documento indipendente dal motore
+
+4
+00:00:14,380 --> 00:00:16,160
+e generare sottotitoli coerenti.
+
+5
+00:00:16,600 --> 00:00:20,260
+Dopo una breve pausa, la lettura continua con una seconda parte.
+
+6
+00:00:20,600 --> 00:00:25,320
+Ogni frase è stata scritta soltanto per questo test tecnico e può essere condivisa come
+
+7
+00:00:25,480 --> 00:00:26,500
+fixture del provider.
+
+

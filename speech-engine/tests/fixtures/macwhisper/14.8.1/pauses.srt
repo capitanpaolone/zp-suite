@@ -1,0 +1,5 @@
+1
+00:00:00,020 --> 00:00:05,940
+prima frase, poi una pausa. Infine, una domanda, il testo è chiaro? Sì, è chiaro.
+
+

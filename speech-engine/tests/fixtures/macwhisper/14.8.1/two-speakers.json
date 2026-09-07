@@ -1,0 +1,101 @@
+{
+  "segments" : [
+    {
+      "end" : 3060,
+      "id" : "2F028901-2AE4-4A39-BFB0-9E7F72346602",
+      "start" : 20,
+      "text" : "Buongiorno Luca, come procede la registrazione di oggi?",
+      "words" : [
+        {
+          "end" : 520,
+          "start" : 20,
+          "text" : " Buongiorno"
+        },
+        {
+          "end" : 800,
+          "start" : 520,
+          "text" : " Luca,"
+        },
+        {
+          "end" : 1280,
+          "start" : 980,
+          "text" : " come"
+        },
+        {
+          "end" : 1800,
+          "start" : 1280,
+          "text" : " procede"
+        },
+        {
+          "end" : 1880,
+          "start" : 1800,
+          "text" : " la"
+        },
+        {
+          "end" : 2640,
+          "start" : 1880,
+          "text" : " registrazione"
+        },
+        {
+          "end" : 2780,
+          "start" : 2640,
+          "text" : " di"
+        },
+        {
+          "end" : 3060,
+          "start" : 2780,
+          "text" : " oggi?"
+        }
+      ]
+    },
+    {
+      "end" : 8900,
+      "id" : "0C62267B-DCEF-490D-BE5C-35FE77BA27D7",
+      "start" : 4160,
+      "text" : "Buongiorno Alice. La registrazione procede bene, possiamo continuare.",
+      "words" : [
+        {
+          "end" : 4740,
+          "start" : 4160,
+          "text" : " Buongiorno"
+        },
+        {
+          "end" : 5040,
+          "start" : 4740,
+          "text" : " Alice."
+        },
+        {
+          "end" : 5780,
+          "start" : 5440,
+          "text" : " La"
+        },
+        {
+          "end" : 6600,
+          "start" : 5780,
+          "text" : " registrazione"
+        },
+        {
+          "end" : 7180,
+          "start" : 6600,
+          "text" : " procede"
+        },
+        {
+          "end" : 7480,
+          "start" : 7180,
+          "text" : " bene,"
+        },
+        {
+          "end" : 8120,
+          "start" : 7720,
+          "text" : " possiamo"
+        },
+        {
+          "end" : 8900,
+          "start" : 8120,
+          "text" : " continuare."
+        }
+      ]
+    }
+  ],
+  "text" : "Buongiorno Luca, come procede la registrazione di oggi?\nBuongiorno Alice. La registrazione procede bene, possiamo continuare."
+}

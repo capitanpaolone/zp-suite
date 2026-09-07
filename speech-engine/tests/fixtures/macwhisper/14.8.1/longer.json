@@ -1,0 +1,416 @@
+{
+  "segments" : [
+    {
+      "end" : 3100,
+      "id" : "03030034-2E77-4012-88BD-45A7CBAD87A6",
+      "start" : 20,
+      "text" : "Questo è un campione di parlato italiano leggermente più lungo.",
+      "words" : [
+        {
+          "end" : 220,
+          "start" : 20,
+          "text" : "Questo"
+        },
+        {
+          "end" : 340,
+          "start" : 220,
+          "text" : "è"
+        },
+        {
+          "end" : 420,
+          "start" : 340,
+          "text" : "un"
+        },
+        {
+          "end" : 840,
+          "start" : 420,
+          "text" : "campione"
+        },
+        {
+          "end" : 1020,
+          "start" : 840,
+          "text" : "di"
+        },
+        {
+          "end" : 1400,
+          "start" : 1020,
+          "text" : "parlato"
+        },
+        {
+          "end" : 1860,
+          "start" : 1400,
+          "text" : "italiano"
+        },
+        {
+          "end" : 2520,
+          "start" : 1860,
+          "text" : "leggermente"
+        },
+        {
+          "end" : 2720,
+          "start" : 2520,
+          "text" : "più"
+        },
+        {
+          "end" : 3100,
+          "start" : 2720,
+          "text" : "lungo."
+        }
+      ]
+    },
+    {
+      "end" : 8780,
+      "id" : "9F795904-7E8D-4380-A994-BD557C27D95D",
+      "start" : 3600,
+      "text" : "Serve a verificare la segmentazione, le pause e la punteggiatura senza usare materiale personale.",
+      "words" : [
+        {
+          "end" : 3680,
+          "start" : 3600,
+          "text" : "Serve"
+        },
+        {
+          "end" : 3760,
+          "start" : 3680,
+          "text" : "a"
+        },
+        {
+          "end" : 4340,
+          "start" : 3760,
+          "text" : "verificare"
+        },
+        {
+          "end" : 4460,
+          "start" : 4340,
+          "text" : "la"
+        },
+        {
+          "end" : 5340,
+          "start" : 4460,
+          "text" : "segmentazione,"
+        },
+        {
+          "end" : 5740,
+          "start" : 5640,
+          "text" : "le"
+        },
+        {
+          "end" : 6040,
+          "start" : 5740,
+          "text" : "pause"
+        },
+        {
+          "end" : 6160,
+          "start" : 6040,
+          "text" : "e"
+        },
+        {
+          "end" : 6260,
+          "start" : 6160,
+          "text" : "la"
+        },
+        {
+          "end" : 6880,
+          "start" : 6260,
+          "text" : "punteggiatura"
+        },
+        {
+          "end" : 7240,
+          "start" : 6880,
+          "text" : "senza"
+        },
+        {
+          "end" : 7600,
+          "start" : 7240,
+          "text" : "usare"
+        },
+        {
+          "end" : 8200,
+          "start" : 7600,
+          "text" : "materiale"
+        },
+        {
+          "end" : 8780,
+          "start" : 8200,
+          "text" : "personale."
+        }
+      ]
+    },
+    {
+      "end" : 14380,
+      "id" : "93C9155E-3476-4E9C-ABC1-ADA7C6298C35",
+      "start" : 9140,
+      "text" : "Il sistema deve conservare i tempi della sorgente, produrre un documento indipendente dal motore",
+      "words" : [
+        {
+          "end" : 9220,
+          "start" : 9140,
+          "text" : "Il"
+        },
+        {
+          "end" : 9640,
+          "start" : 9220,
+          "text" : "sistema"
+        },
+        {
+          "end" : 9920,
+          "start" : 9640,
+          "text" : "deve"
+        },
+        {
+          "end" : 10600,
+          "start" : 9920,
+          "text" : "conservare"
+        },
+        {
+          "end" : 10660,
+          "start" : 10600,
+          "text" : "i"
+        },
+        {
+          "end" : 11040,
+          "start" : 10660,
+          "text" : "tempi"
+        },
+        {
+          "end" : 11220,
+          "start" : 11040,
+          "text" : "della"
+        },
+        {
+          "end" : 11840,
+          "start" : 11220,
+          "text" : "sorgente,"
+        },
+        {
+          "end" : 12560,
+          "start" : 12120,
+          "text" : "produrre"
+        },
+        {
+          "end" : 12640,
+          "start" : 12560,
+          "text" : "un"
+        },
+        {
+          "end" : 13200,
+          "start" : 12640,
+          "text" : "documento"
+        },
+        {
+          "end" : 13860,
+          "start" : 13200,
+          "text" : "indipendente"
+        },
+        {
+          "end" : 13980,
+          "start" : 13860,
+          "text" : "dal"
+        },
+        {
+          "end" : 14380,
+          "start" : 13980,
+          "text" : "motore"
+        }
+      ]
+    },
+    {
+      "end" : 16160,
+      "id" : "F41923C9-1C5B-48F3-BFC0-CB20D6593594",
+      "start" : 14380,
+      "text" : "e generare sottotitoli coerenti.",
+      "words" : [
+        {
+          "end" : 14460,
+          "start" : 14380,
+          "text" : "e"
+        },
+        {
+          "end" : 14900,
+          "start" : 14460,
+          "text" : "generare"
+        },
+        {
+          "end" : 15580,
+          "start" : 14900,
+          "text" : "sottotitoli"
+        },
+        {
+          "end" : 16160,
+          "start" : 15580,
+          "text" : "coerenti."
+        }
+      ]
+    },
+    {
+      "end" : 20260,
+      "id" : "57FC7D22-40D3-42FC-9AF1-0D89600A6C45",
+      "start" : 16600,
+      "text" : "Dopo una breve pausa, la lettura continua con una seconda parte.",
+      "words" : [
+        {
+          "end" : 16800,
+          "start" : 16600,
+          "text" : "Dopo"
+        },
+        {
+          "end" : 16900,
+          "start" : 16800,
+          "text" : "una"
+        },
+        {
+          "end" : 17220,
+          "start" : 16900,
+          "text" : "breve"
+        },
+        {
+          "end" : 17700,
+          "start" : 17220,
+          "text" : "pausa,"
+        },
+        {
+          "end" : 18100,
+          "start" : 17900,
+          "text" : "la"
+        },
+        {
+          "end" : 18460,
+          "start" : 18100,
+          "text" : "lettura"
+        },
+        {
+          "end" : 19000,
+          "start" : 18460,
+          "text" : "continua"
+        },
+        {
+          "end" : 19260,
+          "start" : 19000,
+          "text" : "con"
+        },
+        {
+          "end" : 19420,
+          "start" : 19260,
+          "text" : "una"
+        },
+        {
+          "end" : 19880,
+          "start" : 19420,
+          "text" : "seconda"
+        },
+        {
+          "end" : 20260,
+          "start" : 19880,
+          "text" : "parte."
+        }
+      ]
+    },
+    {
+      "end" : 25320,
+      "id" : "A387B26A-378C-4DC6-882A-116EEEACCDEF",
+      "start" : 20600,
+      "text" : "Ogni frase è stata scritta soltanto per questo test tecnico e può essere condivisa come",
+      "words" : [
+        {
+          "end" : 20880,
+          "start" : 20600,
+          "text" : "Ogni"
+        },
+        {
+          "end" : 21160,
+          "start" : 20880,
+          "text" : "frase"
+        },
+        {
+          "end" : 21320,
+          "start" : 21160,
+          "text" : "è"
+        },
+        {
+          "end" : 21620,
+          "start" : 21320,
+          "text" : "stata"
+        },
+        {
+          "end" : 22060,
+          "start" : 21620,
+          "text" : "scritta"
+        },
+        {
+          "end" : 22660,
+          "start" : 22060,
+          "text" : "soltanto"
+        },
+        {
+          "end" : 22840,
+          "start" : 22660,
+          "text" : "per"
+        },
+        {
+          "end" : 23100,
+          "start" : 22840,
+          "text" : "questo"
+        },
+        {
+          "end" : 23460,
+          "start" : 23100,
+          "text" : "test"
+        },
+        {
+          "end" : 23980,
+          "start" : 23460,
+          "text" : "tecnico"
+        },
+        {
+          "end" : 24080,
+          "start" : 23980,
+          "text" : "e"
+        },
+        {
+          "end" : 24220,
+          "start" : 24080,
+          "text" : "può"
+        },
+        {
+          "end" : 24480,
+          "start" : 24220,
+          "text" : "essere"
+        },
+        {
+          "end" : 25060,
+          "start" : 24480,
+          "text" : "condivisa"
+        },
+        {
+          "end" : 25320,
+          "start" : 25060,
+          "text" : "come"
+        }
+      ]
+    },
+    {
+      "end" : 26500,
+      "id" : "6F650716-FF50-4A6E-BE48-F7EB5A8D329B",
+      "start" : 25480,
+      "text" : "fixture del provider.",
+      "words" : [
+        {
+          "end" : 25680,
+          "start" : 25480,
+          "text" : "fixture"
+        },
+        {
+          "end" : 26000,
+          "start" : 25680,
+          "text" : "del"
+        },
+        {
+          "end" : 26500,
+          "start" : 26000,
+          "text" : "provider."
+        }
+      ]
+    }
+  ],
+  "text" : "Questo è un campione di parlato italiano leggermente più lungo.\nServe a verificare la segmentazione, le pause e la punteggiatura senza usare materiale personale.\nIl sistema deve conservare i tempi della sorgente, produrre un documento indipendente dal motore\ne generare sottotitoli coerenti.\nDopo una breve pausa, la lettura continua con una seconda parte.\nOgni frase è stata scritta soltanto per questo test tecnico e può essere condivisa come\nfixture del provider."
+}

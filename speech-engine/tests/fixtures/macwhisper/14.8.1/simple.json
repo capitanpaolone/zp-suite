@@ -1,0 +1,63 @@
+{
+  "segments" : [
+    {
+      "end" : 3640,
+      "id" : "26F5CDE4-C99C-4A0D-8BE1-FD1B2F5EEE22",
+      "start" : 20,
+      "text" : "Buongiorno, questa è una prova semplice dello ZP Speed Engine.",
+      "words" : [
+        {
+          "end" : 640,
+          "start" : 20,
+          "text" : "Buongiorno,"
+        },
+        {
+          "end" : 1140,
+          "start" : 780,
+          "text" : "questa"
+        },
+        {
+          "end" : 1280,
+          "start" : 1140,
+          "text" : "è"
+        },
+        {
+          "end" : 1400,
+          "start" : 1280,
+          "text" : "una"
+        },
+        {
+          "end" : 1680,
+          "start" : 1400,
+          "text" : "prova"
+        },
+        {
+          "end" : 2240,
+          "start" : 1680,
+          "text" : "semplice"
+        },
+        {
+          "end" : 2500,
+          "start" : 2240,
+          "text" : "dello"
+        },
+        {
+          "end" : 2980,
+          "start" : 2500,
+          "text" : "ZP"
+        },
+        {
+          "end" : 3220,
+          "start" : 2980,
+          "text" : "Speed"
+        },
+        {
+          "end" : 3640,
+          "start" : 3220,
+          "text" : "Engine."
+        }
+      ]
+    }
+  ],
+  "text" : "Buongiorno, questa è una prova semplice dello ZP Speed Engine."
+}
