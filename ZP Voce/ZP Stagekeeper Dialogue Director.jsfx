@@ -1,8 +1,10 @@
 // @description ZP Stagekeeper Dialogue Director
-// @version 2.3.1
+// @version 2.4.0
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   Monitor fail-safe MIX/CHECK L/CHECK R escluso dai preset, con allarme globale.
+//   Gerarchia tipografica e controlli riallineati alla leggibilita' di ZP Carver.
 //   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
 //   Meter circolari di soglia sul gate dinamico.
 desc:ZP Stagekeeper Dialogue Director AutoMixer - Paolo Balestri
@@ -69,7 +71,8 @@ about:
 //   - Low / Hi L-R: tilt semplice per correggere rapidamente un microfono troppo cupo o frizzante.
 //     Non e' un EQ chirurgico: interviene in modo lieve e coerente con l'uso live.
 //   - Phs +/-: inversione di polarita del singolo canale; utile solo per fase/polarita.
-//   - Solo L / Solo R: audition esclusivo di un microfono alla volta per controllare tono e livello.
+//   - Monitor MIX / CHECK L / CHECK R: MIX e' l'uscita normale; CHECK isola un
+//     ingresso post tone e pre gate per la taratura. CHECK non entra nei preset.
 //   - View Mode: Full mostra tutta la console; Compact lascia meter e stato essenziale;
 //     JSFX espone i cursori standard per accessibilita, debug o regolazione rapida.
 //   - Doppio click o click destro su un knob: reset al valore del preset attivo;
@@ -117,9 +120,12 @@ slider27:0<-12,12,0.5>-Left Low Tilt (dB)
 slider28:0<-12,12,0.5>-Left High Tilt (dB)
 slider29:0<-12,12,0.5>-Right Low Tilt (dB)
 slider30:0<-12,12,0.5>-Right High Tilt (dB)
-slider31:0<0,1,1{Off,On}>-Solo Left
-slider32:0<0,1,1{Off,On}>-Solo Right
+// Legacy: mantenuti negli stessi indici per non rompere vecchi progetti/automazioni.
+// Sono neutralizzati dal motore; il monitor operativo e' slider34.
+slider31:0<0,1,1{Off,On}>-Legacy Solo Left (disabled)
+slider32:0<0,1,1{Off,On}>-Legacy Solo Right (disabled)
 slider33:0<0,2,1{Full,Compact,JSFX}>-View Mode Internal
+slider34:0<0,2,1{MIX,CHECK L,CHECK R}>-Monitor State
 
 in_pin:left input
 in_pin:right input
@@ -175,16 +181,22 @@ lv_tgt = rv_tgt = master_tgt = 1;
 ctrl_smooth = 0.99; // aggiornato in @slider con srate reale
 tone_low_state_l = tone_low_state_r = 0;
 tone_high_state_l = tone_high_state_r = 0;
-solo_l_prev = solo_r_prev = 0;
+// Il monitor e' deliberatamente fail-safe: ogni inizializzazione parte da MIX.
+slider31 = slider32 = 0;
+slider34 = 0;
+monitor_mode = 0;
 
 // ---- Preset Manager ----
 // Memoria preset a partire da 1010000 (9 preset x 33 valori, sotto il limite 1048575)
 preset_mem   = 1010000;
 preset_slider_map = 1010500;
 num_presets  = 9;
-num_preset_sliders = 32;
+// Il formato storico resta di 33 celle per slot, ma solo gli slider audio 1..30
+// vengono salvati/caricati. Le vecchie celle Solo 31/32 restano ignorate.
+num_preset_sliders = 30;
 view_mode_slider_idx = 33;
-preset_size  = num_preset_sliders + 1;
+preset_size  = 33;
+preset_used_offset = 32;
 save_mode    = 0;
 active_preset = -1;
 last_mouse_cap = 0;
@@ -224,7 +236,9 @@ local(b, i)(
   preset_mem[b+16]=s17; preset_mem[b+17]=s18; preset_mem[b+18]=s19; preset_mem[b+19]=s20;
   preset_mem[b+20]=s21; preset_mem[b+21]=s22; preset_mem[b+22]=s23; preset_mem[b+23]=s24;
   preset_mem[b+24]=s25; preset_mem[b+25]=s26;
-  preset_mem[b + num_preset_sliders] = 1; // slot usato
+  preset_mem[b + 30] = 0; // vecchio Solo L: mai persistente
+  preset_mem[b + 31] = 0; // vecchio Solo R: mai persistente
+  preset_mem[b + preset_used_offset] = 1; // slot usato
 );
 
 // P1 – Dual Mic / Due Attori  (valori da screenshot)
@@ -435,6 +449,12 @@ local(slot_base, i, sl_idx)(
   );
   sync_preset_slider_display();
   refresh_runtime();
+  slider31 = slider32 = 0;
+  slider34 = 0;
+  monitor_mode = 0;
+  notify_slider_change(31, 0);
+  notify_slider_change(32, 0);
+  notify_slider_change(34, 0);
   active_preset = slot_idx;
 );
 
@@ -447,7 +467,9 @@ local(slot_base, i, sl_idx)(
     preset_mem[slot_base + (i - 1)] = slider(sl_idx);
     i += 1;
   );
-  preset_mem[slot_base + num_preset_sliders] = 1;
+  preset_mem[slot_base + 30] = 0;
+  preset_mem[slot_base + 31] = 0;
+  preset_mem[slot_base + preset_used_offset] = 1;
   active_preset = slot_idx;
 );
 
@@ -462,7 +484,7 @@ function get_knob_reset_value(sl_idx, def_v)
 local(slot_base, slot_used, slot_val, store_idx)(
   active_preset >= 0 ? (
     slot_base = active_preset * preset_size;
-    slot_used = preset_mem[slot_base + num_preset_sliders];
+    slot_used = preset_mem[slot_base + preset_used_offset];
     store_idx = preset_store_index_for_slider(sl_idx);
     slot_used >= 0.5 && store_idx >= 0 ? (
       slot_val = preset_mem[slot_base + store_idx];
@@ -575,6 +597,7 @@ local(tw, th, sy)(
 
 function ui_tab_button(sl_idx, target_val, bx, by, bw, bh, label, info_id, cr, cg, cb)
 local(cur, is_active, is_hover, tw, th, sy) (
+  bh = max(bh, 30);
   cur = floor(slider(sl_idx) + 0.5);
   is_active = cur == target_val;
   is_hover = hit(mouse_x, mouse_y, bx, by, bw, bh);
@@ -608,6 +631,7 @@ local(cur, is_active, is_hover, tw, th, sy) (
 
 function ui_toggle_button(sl_idx, bx, by, bw, bh, lbl_on, lbl_off, info_id, cr, cg, cb)
 local(val, is_on, is_hover, tw, th, sy) (
+  bh = max(bh, 30);
   val = slider(sl_idx);
   is_on = val >= 0.5;
   is_hover = hit(mouse_x, mouse_y, bx, by, bw, bh);
@@ -691,6 +715,7 @@ local(val, is_on, is_hover, tw, th, sy, other_on) (
 
 function ui_mode_button(mode_id, bx, by, bw, bh, label, info_id, cr, cg, cb)
 local(is_active, is_hover, tw, th)(
+  bh = max(bh, 30);
   is_active = ui_view_mode == mode_id;
   is_hover = mouse_x >= bx && mouse_x <= (bx + bw) && (mouse_y + ui_scroll_y) >= by && (mouse_y + ui_scroll_y) <= (by + bh);
 
@@ -727,6 +752,7 @@ local(is_active, is_hover, tw, th)(
 function ui_knob(sl_idx, kx, ky, r, min_v, max_v, def_v, label, unit, cr, cg, cb, info_id)
 local(val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_sens, tw, th, hover_mul, click_t, is_double, reset_v, sy,
       meter_on, meter_db, meter_norm, meter_ang, meter_r) (
+  r = max(r, 15);
   val = slider(sl_idx);
   is_hover = hit(mouse_x, mouse_y, kx - r - 8, ky - r - 20, (r + 8) * 2, (r + 20) * 2);
   sy = ky - ui_scroll_y;
@@ -823,17 +849,20 @@ file_mem(0, preset_mem, num_presets * preset_size);
 
 @slider
 ui_view_mode = max(0, min(2, floor(slider33 + 0.5)));
-(slider31 >= 0.5 && slider32 >= 0.5) ? (
-  solo_l_prev < 0.5 ? (
-    slider32 = 0;
-    notify_slider_change(32, 0);
-  ) : (
-    slider31 = 0;
-    notify_slider_change(31, 0);
-  );
+// I due vecchi Solo possono essere ripristinati da sessioni storiche: non devono
+// mai riattivare un preascolto. Il nuovo enum e' l'unica sorgente operativa.
+(slider31 != 0 || slider32 != 0) ? (
+  slider31 = slider32 = 0;
+  notify_slider_change(31, 0);
+  notify_slider_change(32, 0);
 );
-solo_l_prev = slider31 >= 0.5;
-solo_r_prev = slider32 >= 0.5;
+monitor_raw = slider34;
+monitor_mode = floor(monitor_raw + 0.5);
+(monitor_raw < 0 || monitor_raw > 2 || abs(monitor_raw-monitor_mode) > 0.001) ? (
+  monitor_mode = 0;
+  slider34 = 0;
+  notify_slider_change(34, 0);
+);
 refresh_runtime();
 
 @sample
@@ -1002,13 +1031,15 @@ slider5 ? (
 
 ) : (gate_l=gate_r=1; gate_diff_db=0; ext_gr_meter=0;);
 
-// ---- Solo monitor input stage (post tone, pre gate) ----
-solo_l = slider31 >= 0.5;
-solo_r = slider32 >= 0.5;
-solo_active = solo_l || solo_r;
-solo_l ? (
+// ---- Monitor esclusivo: MIX / CHECK L / CHECK R (post tone, pre gate) ----
+// Clamp anche nel percorso audio: automazioni o stati corrotti ricadono su MIX.
+monitor_raw = slider34;
+monitor_mode = floor(monitor_raw + 0.5);
+(monitor_raw < 0 || monitor_raw > 2 || abs(monitor_raw-monitor_mode) > 0.001) ? monitor_mode = 0;
+monitor_active = monitor_mode > 0;
+monitor_mode == 1 ? (
   s0 = dry0; s1 = dry0;
-) : solo_r ? (
+) : monitor_mode == 2 ? (
   s0 = dry1; s1 = dry1;
 );
 
@@ -1020,7 +1051,7 @@ s0 *= master_cur; s1 *= master_cur;
 // La divisione per 2 causava -6dB quando il gate muta un canale (segnale attivo
 // su un solo canale → (signal + ~0) / 2 = -6dB). Sommando direttamente si
 // recuperano i 6dB persi; il limiter a valle gestisce eventuali eccessi.
-!solo_active && slider17 ? (mm=(s0+s1); s0=mm; s1=mm;);
+!monitor_active && slider17 ? (mm=(s0+s1); s0=mm; s1=mm;);
 
 // ---- Limiter ----
 slider19 ? (
@@ -1084,6 +1115,10 @@ trigger_delta = slider6 >= 0.5;
 reaction_manual = slider10 >= 0.5;
 output_dual = slider17 >= 0.5;
 limiter_on = slider19 >= 0.5;
+monitor_raw = slider34;
+monitor_mode = floor(monitor_raw + 0.5);
+(monitor_raw < 0 || monitor_raw > 2 || abs(monitor_raw-monitor_mode) > 0.001) ? monitor_mode = 0;
+monitor_active = monitor_mode > 0;
 
 bg_r = 0.05; bg_g = 0.06; bg_b = 0.08;
 bg2_r = 0.08; bg2_g = 0.09; bg2_b = 0.12;
@@ -1097,34 +1132,44 @@ grp_gate_r = 0.95; grp_gate_g = 0.74; grp_gate_b = 0.18;
 grp_out_r = 0.30; grp_out_g = 0.82; grp_out_b = 0.66;
 grp_lim_r = 0.96; grp_lim_g = 0.50; grp_lim_b = 0.18;
 
-gfx_setfont(1, "Arial", 19, 'b');
-gfx_setfont(2, "Arial", 10);
-gfx_setfont(3, "Arial", 11, 'b');
-gfx_setfont(4, "Arial", 12, 'b');
-gfx_setfont(5, "Arial", 9);
+ui_room_scale = min(1.08, max(1.0, gfx_w / 980.0));
+ui_font_base = max(15, min(17, 15 * ui_room_scale));
+ui_font_title = max(18, min(20, 18 * ui_room_scale));
+gfx_setfont(1, "Arial", ui_font_title, 'b');
+gfx_setfont(2, "Arial", ui_font_base);
+gfx_setfont(3, "Arial", ui_font_base, 'b');
+gfx_setfont(4, "Arial", ui_font_base, 'b');
+gfx_setfont(5, "Arial", ui_font_base);
 
 ui_view_mode == 2 ? (
   show_preset_sliders(1);
   slider_show(slider_mask(view_mode_slider_idx), 1);
+  slider_show(slider_mask(34), 1);
 ) : (
   show_preset_sliders(0);
   slider_show(slider_mask(view_mode_slider_idx), 0);
+  slider_show(slider_mask(31), 0);
+  slider_show(slider_mask(32), 0);
+  slider_show(slider_mask(34), 0);
 );
+slider_show(slider_mask(31), 0);
+slider_show(slider_mask(32), 0);
 
-wheel_delta = mouse_wheel - last_mouse_wheel;
+// Come in Carver: mouse_wheel e' un delta da consumare a ogni frame.
+wheel_delta = mouse_wheel;
+mouse_wheel = 0;
 ui_view_mode == 0 ? (
   ui_scroll_y -= wheel_delta * 0.35;
   ui_scroll_y < 0 ? ui_scroll_y = 0;
 ) : (
   ui_scroll_y = 0;
 );
-last_mouse_wheel = mouse_wheel;
 
 pad = 16;
 gap = 14;
-footer_h = 28; footer_y = gfx_h - footer_h;
+footer_h = 44; footer_y = gfx_h - footer_h;
 
-header_x = pad; header_y = 14; header_w = gfx_w - pad * 2; header_h = 88;
+header_x = pad; header_y = 14; header_w = gfx_w - pad * 2; header_h = 132;
 
 input_w = 428; input_h = 286;
 output_w = 360; output_h = 286;
@@ -1142,7 +1187,7 @@ io_bottom = max(input_y + input_h, output_y + output_h);
 
 bottom_y = io_bottom + 14;
 bank_h = 206;
-live_h = 206;
+live_h = 244;
 stack_bottom = stack_io;
 bank_x = stack_bottom ? input_x : input_x;
 bank_w = input_w;
@@ -1171,9 +1216,9 @@ gfx_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
 gfx_x = header_x + 16; gfx_y = header_sy + 44;
 gfx_drawstr("Dual-mic dialogue control: dominance gate, scene hold and output safety in one console.");
 gfx_setfont(5); gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b;
-  gfx_x = header_x + 16; gfx_y = header_sy + 62; gfx_drawstr("v2.3");
+gfx_x = header_x + 16; gfx_y = header_sy + 68; gfx_drawstr("v2.4");
 gfx_r = grp_out_r; gfx_g = grp_out_g; gfx_b = grp_out_b;
-gfx_x = header_x + 82; gfx_y = header_sy + 62; gfx_drawstr("Paolo Balestri");
+gfx_x = header_x + 82; gfx_y = header_sy + 68; gfx_drawstr("Paolo Balestri");
 
 view_box_w = 244; view_box_h = 28;
 view_box_x = header_x + header_w - view_box_w - 14; view_box_y = header_y + 10;
@@ -1184,6 +1229,25 @@ gfx_rect(view_box_x, view_box_y - ui_scroll_y, 1, view_box_h); gfx_rect(view_box
 ui_mode_button(0, view_box_x + 4,   view_box_y + 3, 70, 22, "FULL",    230, grp_gate_r, grp_gate_g, grp_gate_b);
 ui_mode_button(1, view_box_x + 80,  view_box_y + 3, 86, 22, "COMPACT", 231, grp_out_r, grp_out_g, grp_out_b);
 ui_mode_button(2, view_box_x + 172, view_box_y + 3, 68, 22, "JSFX",    232, grp_in_r, grp_in_g, grp_in_b);
+
+// Monitor globale: sempre raggiungibile, in ogni vista custom.
+mon_ctl_x = header_x + header_w - 376;
+gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+gfx_x = mon_ctl_x - 92; gfx_y = header_sy + 61; gfx_drawstr("MONITOR");
+ui_tab_button(34, 0, mon_ctl_x,       header_y + 54, 92, 30, "MIX",     239, grp_out_r, grp_out_g, grp_out_b);
+ui_tab_button(34, 1, mon_ctl_x + 98,  header_y + 54, 130, 30, "CHECK L", 239, grp_lim_r, grp_lim_g, grp_lim_b);
+ui_tab_button(34, 2, mon_ctl_x + 234, header_y + 54, 130, 30, "CHECK R", 239, grp_lim_r, grp_lim_g, grp_lim_b);
+
+monitor_active ? (
+  gfx_r = 0.82; gfx_g = 0.15; gfx_b = 0.08; gfx_a = 1;
+  gfx_rect(header_x + 8, header_sy + 94, header_w - 16, 30);
+  gfx_setfont(3); gfx_r = 1; gfx_g = 0.97; gfx_b = 0.90;
+  monitor_mode == 1 ? strcpy(#monitor_warning, "ATTENZIONE - CHECK MIC L - PRE-GATE - PREMI MIX PER USCIRE") :
+                      strcpy(#monitor_warning, "ATTENZIONE - CHECK MIC R - PRE-GATE - PREMI MIX PER USCIRE");
+  gfx_measurestr(#monitor_warning, mon_tw, mon_th);
+  gfx_x = header_x + (header_w - mon_tw) * 0.5; gfx_y = header_sy + 94 + (30 - mon_th) * 0.5;
+  gfx_drawstr(#monitor_warning);
+);
 
 gate_on ? (
   trigger_delta ? #gate_lbl = "Delta" : #gate_lbl = "Absolute";
@@ -1218,13 +1282,15 @@ sprintf(#rms_lbl, "%.1f / %.1f", lin2db(max(sqrt(max(vu_out_l, 0)), 0.000001)), 
 sprintf(#gr_lbl, "%.1f dB", slider26);
 sprintf(#mst_lbl, "%.1f", slider18);
 sprintf(#delta_lbl, "%.1f", slider9);
+monitor_mode == 1 ? strcpy(#monitor_lbl, "CHECK L - PRE") :
+monitor_mode == 2 ? strcpy(#monitor_lbl, "CHECK R - PRE") : strcpy(#monitor_lbl, "MIX");
 
 ui_view_mode == 1 ? (
   ui_max_scroll = 0;
   compact_x = header_x;
   compact_y = header_y + header_h + 14;
   compact_w = header_w;
-  compact_h = 120;
+  compact_h = 154;
   draw_panel(compact_x, compact_y, compact_w, compact_h, panel_r, panel_g, panel_b, 1);
 
   cmx = compact_x + 18; cmy = compact_y + 18; cmh = 52;
@@ -1232,13 +1298,13 @@ ui_view_mode == 1 ? (
   draw_vbar(cmx + 24, cmy, 18, cmh, sqrt(max(vu_out_r, 0)), peak_out_r);
   draw_gr_bar(cmx + 48, cmy, 14, cmh, limiter_on ? slider26 : 0);
   gfx_setfont(5); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = cmx + 3; gfx_y = cmy + cmh + 4; gfx_drawstr("L");
-  gfx_x = cmx + 27; gfx_y = cmy + cmh + 4; gfx_drawstr("R");
+  gfx_x = cmx + 3; gfx_y = cmy + cmh + 4; monitor_active ? gfx_drawstr("ML") : gfx_drawstr("L");
+  gfx_x = cmx + 27; gfx_y = cmy + cmh + 4; monitor_active ? gfx_drawstr("MR") : gfx_drawstr("R");
   gfx_x = cmx + 48; gfx_y = cmy + cmh + 4; gfx_drawstr("GR");
 
   cx0 = compact_x + 98; cgap = 10; cbox_w = floor((compact_w - 112 - cgap * 2) / 3); cbox_h = 22;
   draw_inline_readout(cx0, compact_y + 18, cbox_w, cbox_h, "GATE", #gate_lbl, grp_gate_r, grp_gate_g, grp_gate_b, gate_on);
-  draw_inline_readout(cx0 + cbox_w + cgap, compact_y + 18, cbox_w, cbox_h, "STATE", #scene_lbl, scene_r, scene_g, scene_b, gate_on);
+  draw_inline_readout(cx0 + cbox_w + cgap, compact_y + 18, cbox_w, cbox_h, "PROCESS", #scene_lbl, scene_r, scene_g, scene_b, gate_on);
   draw_inline_readout(cx0 + 2 * (cbox_w + cgap), compact_y + 18, cbox_w, cbox_h, "OUT", #out_mini_lbl, grp_out_r, grp_out_g, grp_out_b, 1);
   draw_inline_readout(cx0, compact_y + 46, cbox_w, cbox_h, "MASTER", #mst_lbl, grp_out_r, grp_out_g, grp_out_b, 1);
   draw_inline_readout(cx0 + cbox_w + cgap, compact_y + 46, cbox_w, cbox_h, "DELTA", #delta_lbl, grp_gate_r, grp_gate_g, grp_gate_b, gate_on);
@@ -1246,10 +1312,14 @@ ui_view_mode == 1 ? (
   draw_inline_readout(cx0, compact_y + 74, cbox_w, cbox_h, "PEAK", #peak_lbl, grp_out_r, grp_out_g, grp_out_b, 1);
   draw_inline_readout(cx0 + cbox_w + cgap, compact_y + 74, cbox_w, cbox_h, "RMS", #rms_lbl, grp_out_r, grp_out_g, grp_out_b, 1);
   draw_inline_readout(cx0 + 2 * (cbox_w + cgap), compact_y + 74, cbox_w, cbox_h, "LIMITER GR", #gr_lbl, grp_lim_r, grp_lim_g, grp_lim_b, limiter_on);
+  draw_inline_readout(cx0, compact_y + 106, compact_w - 112, 30, "MONITOR STATE", #monitor_lbl,
+                      monitor_active ? grp_lim_r : grp_out_r,
+                      monitor_active ? grp_lim_g : grp_out_g,
+                      monitor_active ? grp_lim_b : grp_out_b, 1);
 ) : ui_view_mode == 2 ? (
   ui_max_scroll = 0;
   gfx_setfont(5); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = header_x + 16; gfx_y = header_sy + 74; gfx_drawstr("JSFX raw view active - tone and solo controls are available as standard sliders.");
+  gfx_x = header_x + 16; gfx_y = header_sy + 86; gfx_drawstr("JSFX raw view active - MONITOR remains visible and available as a standard slider.");
 ) : (
   draw_panel(dom_x, dom_y, dom_w, dom_h, panel_r, panel_g, panel_b, 1);
   draw_panel(input_x, input_y, input_w, input_h, panel_r, panel_g, panel_b, 1);
@@ -1293,8 +1363,11 @@ ui_view_mode == 1 ? (
   ui_knob(3, input_x + 320, input_y + 148, 18, -120, 24, 0, "Trim R", "dB", grp_in_r, grp_in_g, grp_in_b, 203);
   ui_toggle_button(2, input_x + 160, input_y + 190, 80, 22, "Phs -", "Phs +", 202, grp_in_r, grp_in_g, grp_in_b);
   ui_toggle_button(4, input_x + 280, input_y + 190, 80, 22, "Phs -", "Phs +", 204, grp_in_r, grp_in_g, grp_in_b);
-  ui_solo_button(31, 32, input_x + 160, input_y + 220, 80, 22, "Solo L", 237, grp_gate_r, grp_gate_g, grp_gate_b);
-  ui_solo_button(32, 31, input_x + 280, input_y + 220, 80, 22, "Solo R", 238, grp_gate_r, grp_gate_g, grp_gate_b);
+  gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+  gfx_x = input_x + 18; gfx_y = input_y + 226 - ui_scroll_y; gfx_drawstr("MONITOR");
+  ui_tab_button(34, 0, input_x + 116, input_y + 216, 82, 30, "MIX", 239, grp_out_r, grp_out_g, grp_out_b);
+  ui_tab_button(34, 1, input_x + 204, input_y + 216, 96, 30, "CHECK L", 239, grp_lim_r, grp_lim_g, grp_lim_b);
+  ui_tab_button(34, 2, input_x + 306, input_y + 216, 96, 30, "CHECK R", 239, grp_lim_r, grp_lim_g, grp_lim_b);
 
   // Dominance panel
   dom_mx = dom_x + 24; dom_my = dom_y + 54; dom_bh = 146; dom_bw = 18; dom_gap = 8;
@@ -1381,8 +1454,8 @@ ui_view_mode == 1 ? (
   draw_vbar(output_x + 46, out_mt, 20, out_mh, sqrt(max(vu_out_r, 0)), peak_out_r);
   draw_gr_bar(output_x + 74, out_mt, 16, out_mh, limiter_on ? slider26 : 0);
   gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = output_x + 21; gfx_y = out_mt + out_mh + 6 - ui_scroll_y; gfx_drawstr("L");
-  gfx_x = output_x + 49; gfx_y = out_mt + out_mh + 6 - ui_scroll_y; gfx_drawstr("R");
+  gfx_x = output_x + 21; gfx_y = out_mt + out_mh + 6 - ui_scroll_y; monitor_active ? gfx_drawstr("ML") : gfx_drawstr("L");
+  gfx_x = output_x + 49; gfx_y = out_mt + out_mh + 6 - ui_scroll_y; monitor_active ? gfx_drawstr("MR") : gfx_drawstr("R");
   gfx_x = output_x + 72; gfx_y = out_mt + out_mh + 6 - ui_scroll_y; gfx_drawstr("GR");
 
   ui_knob(18, output_x + 252, output_y + 148, 15, -20, 20, 0, "Master", "dB", grp_out_r, grp_out_g, grp_out_b, 218);
@@ -1396,15 +1469,19 @@ ui_view_mode == 1 ? (
   state_box_h = 26;
   state_box_x0 = live_x + 14;
   state_box_y0 = live_y + 44;
-  draw_inline_readout(state_box_x0, state_box_y0, state_box_w, state_box_h, "GATE", #gate_lbl, grp_gate_r, grp_gate_g, grp_gate_b, gate_on);
-  draw_inline_readout(state_box_x0 + state_box_w + state_gap_x, state_box_y0, state_box_w, state_box_h, "STATE", #scene_lbl, scene_r, scene_g, scene_b, gate_on);
-  draw_inline_readout(state_box_x0, state_box_y0 + (state_box_h + state_gap_y), state_box_w, state_box_h, "OUT", #out_mini_lbl, grp_out_r, grp_out_g, grp_out_b, 1);
-  draw_inline_readout(state_box_x0 + state_box_w + state_gap_x, state_box_y0 + (state_box_h + state_gap_y), state_box_w, state_box_h, "MASTER", #mst_lbl, grp_out_r, grp_out_g, grp_out_b, 1);
-  draw_inline_readout(state_box_x0, state_box_y0 + 2 * (state_box_h + state_gap_y), state_box_w, state_box_h, "PEAK", #peak_lbl, grp_out_r, grp_out_g, grp_out_b, 1);
-  draw_inline_readout(state_box_x0 + state_box_w + state_gap_x, state_box_y0 + 2 * (state_box_h + state_gap_y), state_box_w, state_box_h, "RMS", #rms_lbl, grp_out_r, grp_out_g, grp_out_b, 1);
-  draw_inline_readout(state_box_x0, state_box_y0 + 3 * (state_box_h + state_gap_y), state_box_w, state_box_h, "DELTA", #delta_lbl, grp_gate_r, grp_gate_g, grp_gate_b, gate_on);
-  draw_inline_readout(state_box_x0 + state_box_w + state_gap_x, state_box_y0 + 3 * (state_box_h + state_gap_y), state_box_w, state_box_h, "LIMIT", #lim_lbl, grp_lim_r, grp_lim_g, grp_lim_b, limiter_on);
-  draw_inline_readout(state_box_x0, state_box_y0 + 4 * (state_box_h + state_gap_y), live_w - 28, state_box_h, "LIMITER GR", #gr_lbl, grp_lim_r, grp_lim_g, grp_lim_b, limiter_on);
+  draw_inline_readout(state_box_x0, state_box_y0, live_w - 28, state_box_h, "MONITOR STATE", #monitor_lbl,
+                      monitor_active ? grp_lim_r : grp_out_r,
+                      monitor_active ? grp_lim_g : grp_out_g,
+                      monitor_active ? grp_lim_b : grp_out_b, 1);
+  draw_inline_readout(state_box_x0, state_box_y0 + (state_box_h + state_gap_y), state_box_w, state_box_h, "PROCESS GATE", #gate_lbl, grp_gate_r, grp_gate_g, grp_gate_b, gate_on);
+  draw_inline_readout(state_box_x0 + state_box_w + state_gap_x, state_box_y0 + (state_box_h + state_gap_y), state_box_w, state_box_h, "PROCESS DOM", #scene_lbl, scene_r, scene_g, scene_b, gate_on);
+  draw_inline_readout(state_box_x0, state_box_y0 + 2 * (state_box_h + state_gap_y), state_box_w, state_box_h, monitor_active ? "MON OUT" : "OUT", #out_mini_lbl, grp_out_r, grp_out_g, grp_out_b, 1);
+  draw_inline_readout(state_box_x0 + state_box_w + state_gap_x, state_box_y0 + 2 * (state_box_h + state_gap_y), state_box_w, state_box_h, "MASTER", #mst_lbl, grp_out_r, grp_out_g, grp_out_b, 1);
+  draw_inline_readout(state_box_x0, state_box_y0 + 3 * (state_box_h + state_gap_y), state_box_w, state_box_h, "PEAK", #peak_lbl, grp_out_r, grp_out_g, grp_out_b, 1);
+  draw_inline_readout(state_box_x0 + state_box_w + state_gap_x, state_box_y0 + 3 * (state_box_h + state_gap_y), state_box_w, state_box_h, "RMS", #rms_lbl, grp_out_r, grp_out_g, grp_out_b, 1);
+  draw_inline_readout(state_box_x0, state_box_y0 + 4 * (state_box_h + state_gap_y), state_box_w, state_box_h, "DELTA", #delta_lbl, grp_gate_r, grp_gate_g, grp_gate_b, gate_on);
+  draw_inline_readout(state_box_x0 + state_box_w + state_gap_x, state_box_y0 + 4 * (state_box_h + state_gap_y), state_box_w, state_box_h, "LIMIT", #lim_lbl, grp_lim_r, grp_lim_g, grp_lim_b, limiter_on);
+  draw_inline_readout(state_box_x0, state_box_y0 + 5 * (state_box_h + state_gap_y), live_w - 28, state_box_h, "LIMITER GR", #gr_lbl, grp_lim_r, grp_lim_g, grp_lim_b, limiter_on);
 
   preset_cols = 3;
   preset_gap_x = 10;
@@ -1421,7 +1498,7 @@ ui_view_mode == 1 ? (
   p_bx = pbx0 + p_col * (pbw + preset_gap_x);
   py = py0 + p_row * (pbh + preset_gap_y);
   p_base = p_i * preset_size;
-  p_used = preset_mem[p_base + num_preset_sliders];
+  p_used = preset_mem[p_base + preset_used_offset];
   p_hit = hit(mouse_x, mouse_y, p_bx, py, pbw, pbh);
 
   p_hit ? active_info_id = 222;
@@ -1473,7 +1550,7 @@ ui_view_mode == 1 ? (
 
   mouse_right_click && p_hit ? (
     p_i == active_preset && p_used ? (
-      preset_mem[p_base + num_preset_sliders] = 0;
+      preset_mem[p_base + preset_used_offset] = 0;
       active_preset = -1;
     ) : (
       save_current_to_preset_slot(p_i);
@@ -1519,9 +1596,8 @@ ui_view_mode == 0 ? (
   active_info_id == 234 ? gfx_drawstr("HI L: correzione semplice delle alte sul canale sinistro, utile se il microfono suona cupo o frizzante.") :
   active_info_id == 235 ? gfx_drawstr("LOW R: correzione semplice delle basse sul canale destro, post input e pre detection.") :
   active_info_id == 236 ? gfx_drawstr("HI R: correzione semplice delle alte sul canale destro, post input e pre detection.") :
-  active_info_id == 237 ? gfx_drawstr("SOLO L: isola il microfono sinistro per tarare tono e livello. E esclusivo rispetto a SOLO R.") :
-  active_info_id == 238 ? gfx_drawstr("SOLO R: isola il microfono destro per tarare tono e livello. E esclusivo rispetto a SOLO L.") :
-  gfx_drawstr("STAGEKEEPER - SHIFT per regolazione fine | Click destro o doppio click sui knob per reset | Rotella per scroll verticale.");
+  active_info_id == 239 ? gfx_drawstr("MONITOR: MIX ascolta il processo reale; CHECK L/R isola il mic post-tone e PRE-GATE. Torna sempre a MIX dopo la taratura.") :
+  gfx_drawstr("STAGEKEEPER - MIX e' l'ascolto normale | SHIFT regolazione fine | Click destro o doppio click reset | Rotella scroll.");
 );
 
 last_mouse_cap = mouse_cap;
