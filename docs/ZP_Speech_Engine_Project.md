@@ -15,7 +15,7 @@ ZP Speech Engine è il componente condiviso della ZP Suite dedicato a:
 - permettere a REAPER e ad altre applicazioni ZP di cercare parole o frasi negli audio;
 - astrarre il motore di trascrizione reale, così che le applicazioni non dipendano direttamente da MacWhisper, whisper.cpp o da un singolo provider.
 
-Il progetto nasce dal caso d'uso `Audio -> SRT` del tool `26_SRT_Tools.lua`, ma viene deliberatamente separato da quel tool perché dovrà servire anche Solo Recorder, ricerca testuale nella timeline, indicizzazione di sessioni e future applicazioni della ZP Suite.
+Il progetto nasce dal caso d'uso `Audio -> SRT` del tool `26_SRT_Tools.lua`, ma viene deliberatamente separato da quel tool perché dovrà servire anche Solo Recorder, Gobbo, ricerca testuale nella timeline, indicizzazione di sessioni e future applicazioni della ZP Suite.
 
 ## 2. Principio architetturale
 
@@ -58,6 +58,7 @@ ZP Suite
 +-- ZP Studio Suite
 |   +-- 26_SRT_Tools.lua
 |   +-- 25_ZP_SOLO_Recorder.lua
+|   +-- Gobbo verticale/orizzontale
 |   +-- futura ricerca testo nella timeline
 |
 +-- altre applicazioni ZP
@@ -120,6 +121,10 @@ SRT non è il formato interno del sistema.
 
 Il formato canonico deve essere un JSON versionato, capace di conservare segmenti, parole e metadati temporali.
 
+Principio fondamentale per REAPER: **il dato persistente deve essere ancorato alla sorgente audio e al tempo nella sorgente, non alla posizione corrente nella timeline del progetto**.
+
+`project_seconds` è un valore derivato e ricalcolabile. Non deve essere la chiave primaria dell'indice, perché un item può essere tagliato, spostato, duplicato o riutilizzato senza che la trascrizione della sorgente cambi.
+
 Esempio minimo:
 
 ```json
@@ -129,18 +134,19 @@ Esempio minimo:
   "model": "small",
   "language": "it",
   "source": {
+    "id": "source-sha256-or-stable-id",
     "path": "audio.wav",
     "hash": "..."
   },
   "segments": [
     {
-      "start_ms": 1250,
-      "end_ms": 4380,
+      "source_start_ms": 1250,
+      "source_end_ms": 4380,
       "text": "Questa e una frase.",
       "speaker": null,
       "words": [
-        {"start_ms": 1250, "end_ms": 1640, "text": "Questa"},
-        {"start_ms": 1640, "end_ms": 1820, "text": "e"}
+        {"source_start_ms": 1250, "source_end_ms": 1640, "text": "Questa"},
+        {"source_start_ms": 1640, "source_end_ms": 1820, "text": "e"}
       ]
     }
   ]
@@ -153,8 +159,9 @@ Campi opzionali futuri:
 - speaker;
 - token normalizzato;
 - identificatore item/take REAPER;
-- project time;
+- project time calcolato;
 - source offset;
+- playrate;
 - provider-specific metadata.
 
 Le applicazioni devono dipendere dallo schema ZP, non dallo schema nativo del provider.
@@ -187,22 +194,32 @@ Ogni trascrizione deve essere riutilizzabile.
 
 La cache deve poter determinare se un audio è cambiato usando almeno:
 
-- hash della sorgente o del render;
+- identificatore/hash della sorgente o del render;
 - impostazioni di trascrizione;
 - provider;
 - modello;
 - lingua.
 
-Per REAPER è utile associare inoltre:
+La trascrizione della sorgente deve restare valida anche se gli item REAPER che la usano vengono:
+
+- tagliati;
+- trimmati;
+- spostati;
+- duplicati;
+- distribuiti su tracce diverse.
+
+Per REAPER la relazione con il progetto deve essere mantenuta separatamente e può includere:
 
 - item GUID;
 - take GUID;
-- posizione nel progetto;
-- offset;
+- source id/hash;
+- posizione corrente dell'item nel progetto;
+- start offset del take;
 - playrate;
+- lunghezza dell'item;
 - eventuale origine da render temporaneo.
 
-Obiettivo: se l'audio non è cambiato, la ricerca deve essere immediata e non deve ritrascrivere il file.
+Obiettivo: se l'audio sorgente non è cambiato, la ricerca deve essere immediata e non deve ritrascrivere il file. La posizione in timeline deve essere ricalcolata dalla situazione corrente del progetto.
 
 ## 8. REAPER: ricerca di parole negli audio
 
@@ -211,27 +228,47 @@ Caso d'uso principale:
 ```text
 Utente cerca: "italiani"
     -> REAPER chiede a ZP Speech Engine
-    -> Speech Engine usa l'indice esistente
-       oppure trascrive solo gli audio mancanti/obsoleti
-    -> restituisce una lista di occorrenze
+    -> Speech Engine cerca nella trascrizione indicizzata della sorgente
+    -> per ogni occorrenza ottiene source_id + source_time
+    -> REAPER verifica quali item/take correnti contengono quel punto della sorgente
+    -> calcola la posizione attuale nella timeline
+    -> restituisce una o più occorrenze nel progetto
     -> REAPER porta il cursore al punto corretto
 ```
 
-Ogni risultato dovrebbe poter contenere:
+Una stessa parola della stessa sorgente può produrre più risultati se quel tratto audio è duplicato o riutilizzato più volte nel progetto.
+
+Risultato persistente dell'indice:
 
 ```json
 {
   "token": "italiani",
-  "start_ms": 240,
-  "end_ms": 600,
-  "project_seconds": 133.420,
+  "source_id": "...",
+  "source_start_ms": 240,
+  "source_end_ms": 600,
   "segment_text": "Gli italiani sotto la morsa...",
   "speaker": null,
-  "item_guid": "{...}",
-  "take_guid": "{...}",
   "source_hash": "..."
 }
 ```
+
+Risultato risolto nel progetto REAPER:
+
+```json
+{
+  "token": "italiani",
+  "source_id": "...",
+  "source_start_ms": 240,
+  "source_end_ms": 600,
+  "project_seconds": 133.420,
+  "track": "VO",
+  "item_guid": "{...}",
+  "take_guid": "{...}",
+  "segment_text": "Gli italiani sotto la morsa..."
+}
+```
+
+`project_seconds` appartiene quindi al risultato della risoluzione corrente, non alla trascrizione permanente.
 
 Azioni REAPER previste:
 
@@ -247,29 +284,45 @@ Non creare marker automaticamente per ogni parola.
 
 ## 9. Mappatura audio -> timeline REAPER
 
-Due modalità.
+Due modalità complementari.
 
-### 9.1 File sorgente del take
+### 9.1 Indice della sorgente del take — modalità preferita per normali edit
 
-Veloce, ma richiede mappatura fra tempo sorgente e progetto:
+La trascrizione viene associata alla sorgente originale. REAPER calcola dinamicamente la posizione nel progetto:
 
 ```text
 tempo_progetto = posizione_item + (tempo_sorgente - start_offset_take) / playrate_take
 ```
 
-Non è sufficiente per tutti i casi complessi.
+Questo consente di mantenere valida una sola trascrizione anche dopo tagli, trim, spostamenti e duplicazioni degli item.
 
-### 9.2 Render temporaneo
+La ricerca deve prima verificare che il `tempo_sorgente` cada realmente nell'intervallo della sorgente usato dall'item corrente. Se la stessa porzione è presente in più item, devono essere restituiti più risultati.
 
-Modalità raccomandata quando serve fedeltà assoluta a ciò che si ascolta.
+La formula semplice non copre tutti i casi complessi.
 
-REAPER produce un audio temporaneo e la trascrizione parte da zero rispetto all'inizio del render:
+### 9.2 Render temporaneo — modalità di precisione per casi complessi
+
+Quando la relazione sorgente/timeline non è affidabile o l'audio ascoltato non corrisponde più in modo semplice alla sorgente, REAPER produce un render temporaneo e la trascrizione parte da zero rispetto all'inizio del render:
 
 ```text
 tempo_progetto = inizio_render + tempo_trascrizione
 ```
 
-È la modalità preferita per il primo MVP robusto di ricerca nella timeline, soprattutto in presenza di tagli, stretch marker, playrate, take FX o montaggi complessi.
+È la modalità da usare in presenza di casi come:
+
+- stretch marker complessi;
+- reverse;
+- montaggi compositi;
+- elaborazioni che modificano sostanzialmente il contenuto o il tempo;
+- casi in cui serve indicizzare esattamente ciò che si ascolta.
+
+### 9.3 Regola di scelta
+
+Usare **source index** quando possibile, perché è persistente, economico e sopravvive all'editing.
+
+Usare **render index** quando necessario per rappresentare fedelmente il risultato effettivo della timeline.
+
+Queste due modalità non sono concorrenti: fanno parte dello stesso contratto ZP Speech.
 
 ## 10. CLI proposta
 
@@ -345,7 +398,31 @@ Flusso previsto:
 
 Questo permette di mantenere l'HTML come interfaccia e spostare tutto il lavoro di sistema nel Core.
 
-## 12. Integrazione con Solo Recorder e applicazioni future
+## 12. Integrazione con Gobbo, Solo Recorder e applicazioni future
+
+La stessa trascrizione deve poter essere consumata da più strumenti.
+
+### Gobbo
+
+Il Gobbo potrà avere una nuova sorgente:
+
+```text
+Sorgente:
+- Copione
+- SRT
+- Trascrizione REAPER
+```
+
+Funzioni possibili:
+
+- mostrare il testo continuo o segmentato della trascrizione;
+- seguire il cursore/playhead di REAPER;
+- evidenziare il segmento corrente;
+- cliccare una frase nel Gobbo e portare REAPER all'audio corrispondente;
+- mostrare solo l'item selezionato, una traccia o l'intero progetto;
+- riutilizzare la stessa trascrizione già prodotta per ricerca/SRT senza nuova elaborazione.
+
+### Solo Recorder e altri client
 
 Lo stesso motore potrà essere usato da:
 
@@ -358,7 +435,7 @@ Lo stesso motore potrà essere usato da:
 - verifica fra copione e registrato;
 - future applicazioni standalone della ZP Suite.
 
-Il principio è: una sola trascrizione deve poter servire più strumenti.
+Il principio è: **una sola trascrizione deve poter servire più strumenti e più rappresentazioni dello stesso audio**.
 
 ## 13. Gestione modelli
 
@@ -439,6 +516,7 @@ Gli aggiornamenti del provider non devono modificare silenziosamente il formato 
 
 - fissare struttura repository;
 - definire ZP Speech Schema v1;
+- rendere esplicita la distinzione fra `source_time` persistente e `project_time` calcolato;
 - definire CLI;
 - definire errori e stati;
 - definire directory condivise.
@@ -475,15 +553,25 @@ Obiettivo: validare l'architettura prima di aggiungere un secondo motore.
 
 ### Fase 4 — ricerca REAPER
 
-- indicizzazione item/progetto;
-- cache per GUID/hash;
+- indicizzazione sorgente audio;
+- mapping corrente source -> item/take -> timeline;
+- cache per source hash e relazione con GUID item/take;
 - ricerca parola/frase;
+- gestione di item tagliati/spostati/duplicati;
 - elenco risultati;
 - salto al punto;
 - preview;
-- time selection.
+- time selection;
+- fallback render-index per casi complessi.
 
-### Fase 5 — estensione
+### Fase 5 — Gobbo e condivisione trascrizione
+
+- sorgente `Trascrizione REAPER` nel Gobbo;
+- sincronizzazione col playhead;
+- click testo -> posizione REAPER;
+- riuso della cache Speech Engine senza nuova trascrizione.
+
+### Fase 6 — estensione
 
 - batch progetto;
 - ricerca fuzzy;
@@ -499,9 +587,11 @@ Il primo MVP è riuscito quando:
 2. il motore può usare MacWhisper sul sistema di sviluppo;
 3. il risultato viene convertito nello ZP Speech Schema v1;
 4. dallo stesso risultato si può generare un SRT valido;
-5. una parola cercata nel JSON restituisce almeno il segmento e il timestamp corretto;
+5. una parola cercata nel JSON restituisce almeno il segmento e il timestamp nella sorgente corretto;
 6. nessun codice del provider è incorporato nel 26;
 7. il Core è progettato per accettare whisper.cpp senza modificare i client.
+
+Il successivo MVP REAPER è riuscito quando una parola indicizzata in una sorgente continua a essere trovata nella posizione corretta del progetto dopo trim, taglio, spostamento o duplicazione dell'item, senza ritrascrivere inutilmente la sorgente.
 
 ## 19. Non-obiettivi iniziali
 
@@ -525,14 +615,18 @@ La catena concettuale è:
 ```text
 AUDIO
   -> TRASCRIZIONE
-  -> TIMESTAMP
+  -> SOURCE TIME
   -> INDICE
   -> RICERCA
+  -> MAPPING REAPER CORRENTE
+  -> PROJECT TIME
   -> LOCALIZZAZIONE
 ```
 
 SRT Tools usa la parte `audio -> trascrizione -> SRT`.
 
-REAPER usa la stessa base per `parola/frase -> risultato -> posizione nella timeline`.
+Gobbo usa la stessa trascrizione come rappresentazione testuale sincronizzabile dell'audio.
 
-Il provider reale può cambiare, ma il contratto ZP resta stabile.
+REAPER usa la stessa base per `parola/frase -> source time -> item corrente -> posizione nella timeline`.
+
+Il provider reale può cambiare, la timeline può cambiare, ma il contratto ZP e l'ancoraggio alla sorgente restano stabili.
