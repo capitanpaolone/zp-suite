@@ -8,6 +8,28 @@ Analizza gli item audio selezionati, rileva porzioni parlate con un gate RMS
 smart e permette preview/applicazione non distruttiva fino al comando APPLICA.
 ]]
 
+local function load_private_regions()
+  local path = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\]") or ".") .. "/ZP_Private_Regions.lua"
+  local ok, module = pcall(dofile, path)
+  if not ok or type(module) ~= "table" then
+    local detail = ok and "il modulo non ha restituito una tabella valida" or tostring(module)
+    reaper.MB(
+      "ERRORE CRITICO: il modulo Private Regions non è disponibile o non è caricabile.\n\n" ..
+      "Percorso atteso:\n" .. path .. "\n\n" ..
+      "Dettaglio: " .. detail .. "\n\n" ..
+      "Senza questo modulo una regione privata potrebbe essere trattata come pubblica.\n" ..
+      "Lo script è stato interrotto per sicurezza.",
+      "ZP Private Regions - modulo non disponibile",
+      0
+    )
+    return nil
+  end
+  return module
+end
+
+local ZP_Private = load_private_regions()
+if not ZP_Private then return end
+
 local SCRIPT_NAME = "ZP Studio Suite - Split Silenzi / Voice Cleaner"
 local PREVIEW_PREFIX = "ZPSS22_PREVIEW"
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
@@ -724,6 +746,7 @@ local function cleanup_preview()
   local _, markers, regions = reaper.CountProjectMarkers(0)
   for i = markers + regions - 1, 0, -1 do
     local ok, isrgn, pos, rgnend, name, idx = reaper.EnumProjectMarkers(i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and tostring(name or ""):find(PREVIEW_PREFIX, 1, true) == 1 then reaper.DeleteProjectMarker(0, idx, isrgn) end
   end
 end
@@ -733,6 +756,7 @@ local function count_preview_regions()
   local _, markers, regions = reaper.CountProjectMarkers(0)
   for i = markers + regions - 1, 0, -1 do
     local ok, _, _, _, name = reaper.EnumProjectMarkers(i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and tostring(name or ""):find(PREVIEW_PREFIX, 1, true) == 1 then count = count + 1 end
   end
   return count

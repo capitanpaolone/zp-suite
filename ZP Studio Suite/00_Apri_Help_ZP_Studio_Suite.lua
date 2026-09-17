@@ -97,6 +97,10 @@
 --   [main] 25_ZP_SOLO_Recorder.lua
 --   [main] 26_SRT_Tools.lua
 --   [main] 27_Pulisci_Installazione_Precedente.lua
+--   [main] 28_Stagekeeper_Private_SPACE.lua
+--   [main] 29_Stagekeeper_Private_IGNORE.lua
+--   [nomain] ZP_Private_Regions.lua
+--   [data] PRIVATE_REGIONS.md
 --   [nomain] 04_worker_Crea_Marker_Item.lua
 --   [nomain] 05_worker_Gestione_SRT.lua
 --   [nomain] ZP_UI.lua

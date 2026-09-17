@@ -7,6 +7,28 @@
 -- Raggruppa gli item in base al gap tra fine item e inizio item successivo.
 -- Crea regioni colorate e nominate da una lista testuale, senza modificare gli item.
 
+local function load_private_regions()
+  local path = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\]") or ".") .. "/ZP_Private_Regions.lua"
+  local ok, module = pcall(dofile, path)
+  if not ok or type(module) ~= "table" then
+    local detail = ok and "il modulo non ha restituito una tabella valida" or tostring(module)
+    reaper.MB(
+      "ERRORE CRITICO: il modulo Private Regions non è disponibile o non è caricabile.\n\n" ..
+      "Percorso atteso:\n" .. path .. "\n\n" ..
+      "Dettaglio: " .. detail .. "\n\n" ..
+      "Senza questo modulo una regione privata potrebbe essere trattata come pubblica.\n" ..
+      "Lo script è stato interrotto per sicurezza.",
+      "ZP Private Regions - modulo non disponibile",
+      0
+    )
+    return nil
+  end
+  return module
+end
+
+local ZP_Private = load_private_regions()
+if not ZP_Private then return end
+
 local SCRIPT_TITLE = "ZP Studio Suite v1.0.5 - Gestore Progetto"
 local EXT_SECTION = "ZP_RythmoBand_ExportRegions"
 local REGION_COLOR = reaper.ColorToNative(40, 170, 210) | 0x1000000
@@ -499,6 +521,7 @@ local function collect_existing_regions(items)
   local total = marker_count + region_count
   for i = 0, total - 1 do
     local ok, is_region, pos, rgn_end, name, idx, color = reaper.EnumProjectMarkers3(0, i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and is_region and is_lane1_enum_index(i) and not (trim(name or "") == WARMUP_REGION_NAME or color == WARMUP_COLOR) and ranges_overlap(pos, rgn_end, range_start, range_end) then
       local count = 0
       for _, item in ipairs(items) do
@@ -532,6 +555,7 @@ local function collect_project_markers()
   local marker_number = 0
   for i = 0, total - 1 do
     local ok, is_region, pos, _, name, idx, color = reaper.EnumProjectMarkers3(0, i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and not is_region then
       local lane = marker_lane_at_enum_index(i)
       -- Lane 1 = cartella Mixdown principale; Lane 2 = sottocartella della Lane 1 precedente.
@@ -687,6 +711,7 @@ local function count_own_regions()
   local count = 0
   for i = 0, total - 1 do
     local ok, is_region, _, _, _, _, color = reaper.EnumProjectMarkers3(0, i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and is_region and is_lane1_enum_index(i) and color == REGION_COLOR then count = count + 1 end
   end
   return count
@@ -698,6 +723,7 @@ local function delete_own_regions()
   local ids = {}
   for i = 0, total - 1 do
     local ok, is_region, _, _, _, idx, color = reaper.EnumProjectMarkers3(0, i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and is_region and is_lane1_enum_index(i) and color == REGION_COLOR then table.insert(ids, idx) end
   end
   for _, idx in ipairs(ids) do
@@ -728,6 +754,7 @@ local function delete_warmup_regions()
   local ids = {}
   for i = 0, marker_count + region_count - 1 do
     local ok, is_region, _, _, name, idx, color = reaper.EnumProjectMarkers3(0, i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and is_region and (is_warmup_region_name(name) or color == WARMUP_COLOR) then
       ids[#ids + 1] = idx
     end
@@ -1178,6 +1205,7 @@ local function region_groups_for_marker_section(marker_row)
   local total = marker_count + region_count
   for i = 0, total - 1 do
     local ok, is_region, pos, rgn_end, name, idx, color = reaper.EnumProjectMarkers3(0, i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and is_region and is_lane1_enum_index(i) and not (trim(name or "") == WARMUP_REGION_NAME or color == WARMUP_COLOR) and pos >= section_start - EPS and (not section_end or pos < section_end - EPS) then
       groups[#groups + 1] = {
         region_start = pos,
@@ -1208,6 +1236,7 @@ local function matching_export_regions(groups)
   local total = marker_count + region_count
   for i = 0, total - 1 do
     local ok, is_region, pos, rgn_end, name, idx, color = reaper.EnumProjectMarkers3(0, i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and is_region and is_lane1_enum_index(i) and not (trim(name or "") == WARMUP_REGION_NAME or color == WARMUP_COLOR) then
       for _, group in ipairs(targets) do
         local gs = group.region_start or group.start_pos or 0
@@ -1386,10 +1415,28 @@ end
 local function queue_with_only_regions(regions, callback)
   local keep = {}
   for _, region in ipairs(regions or {}) do keep[region.idx] = true end
+  if ZP_Private.has_private_regions(0) then
+    local selection = {}
+    for i = 0, reaper.GetNumRegionsOrMarkers(0) - 1 do
+      local object = reaper.GetRegionOrMarker(0, i, "")
+      selection[#selection + 1] = { object, reaper.GetRegionOrMarkerInfo_Value(0, object, "B_UISEL") }
+    end
+    local bounds = reaper.GetSetProjectInfo(0, "RENDER_BOUNDSFLAG", 0, false)
+    local ok, err = xpcall(function()
+      ZP_Private.select_render_regions(0, keep)
+      callback(5)
+    end, debug.traceback)
+    for _, entry in ipairs(selection) do
+      reaper.SetRegionOrMarkerInfo_Value(0, entry[1], "B_UISEL", entry[2])
+    end
+    reaper.GetSetProjectInfo(0, "RENDER_BOUNDSFLAG", bounds, true)
+    return ok, err, 0
+  end
   local hidden = {}
   local _, marker_count, region_count = reaper.CountProjectMarkers(0)
   for i = 0, marker_count + region_count - 1 do
     local ok, is_region, pos, region_end, name, idx, color = reaper.EnumProjectMarkers3(0, i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and is_region and not keep[idx] then
       hidden[#hidden + 1] = {
         idx = idx, pos = pos, region_end = region_end,
@@ -1938,7 +1985,16 @@ local function setup_mixdown_render_target(groups, folder_override, action_label
   save_render_settings_snapshot()
 
   local selected_ok, select_err, selected_count
-  if queue_snapshot_mode then
+  if ZP_Private.has_private_regions(0) then
+    local numbers = {}
+    for _, region in ipairs(regions) do numbers[region.idx] = true end
+    local native_ok, result = pcall(ZP_Private.select_render_regions, 0, numbers)
+    if not native_ok then
+      reaper.ShowMessageBox(tostring(result), SCRIPT_TITLE, 0)
+      return false
+    end
+    selected_ok, selected_count = true, #real_mixdown_regions(regions)
+  elseif queue_snapshot_mode then
     selected_ok, selected_count = true, #regions
     reaper.GetSetProjectInfo(0, "RENDER_BOUNDSFLAG", 3, true) -- sole regioni presenti nella snapshot del job
     render_debug_log("setup_mixdown_render_target | queue snapshot mode selected_count=" .. tostring(selected_count))
@@ -2047,9 +2103,9 @@ local function add_mixdown_section_to_queue(groups, folder_override)
   render_debug_log("add_mixdown_section_to_queue | before queue files=" .. tostring(before_count))
   -- Un solo job contiene tutte le regioni della sezione/cartella scelta.
   -- La snapshot temporanea esclude le altre sezioni senza alterare il progetto finale.
-  local snapshot_ok, snapshot_err = queue_with_only_regions(regions, function()
+  local snapshot_ok, snapshot_err = queue_with_only_regions(regions, function(bounds_mode)
     render_debug_project_state("add_mixdown_section_to_queue | inside snapshot before command")
-    reaper.GetSetProjectInfo(0, "RENDER_BOUNDSFLAG", 3, true) -- Project regions presenti nella snapshot
+    reaper.GetSetProjectInfo(0, "RENDER_BOUNDSFLAG", bounds_mode or 3, true) -- Selected regions quando sono presenti Private Regions
     reaper.GetSetProjectInfo_String(0, "RENDER_FILE", mixdown_folder_path(folder), true)
     reaper.GetSetProjectInfo_String(0, "RENDER_PATTERN", "$region", true)
     reaper.Main_OnCommand(ADD_TO_RENDER_QUEUE_CMD, 0)
@@ -2926,6 +2982,7 @@ local function open_window()
 
   local function sync_preview_from_region_manager(groups)
     if not (reaper.JS_Window_Find and reaper.JS_Window_FindChildByID and
+      reaper.JS_Window_GetFocus and
       reaper.JS_ListView_GetItemCount and reaper.JS_ListView_GetItemText and
       reaper.JS_ListView_GetItemState) then
       return
@@ -2939,6 +2996,10 @@ local function open_window()
     if not manager then return end
     local list = reaper.JS_Window_FindChildByID(manager, 1071)
     if not list then return end
+    -- Import only while the user is interacting with the native region list.
+    -- A background refresh (or a filtered list) must not erase a section
+    -- selected here once the half-second suppression interval expires.
+    if reaper.JS_Window_GetFocus() ~= list then return end
     local item_count = reaper.JS_ListView_GetItemCount(list)
     local selected_ids = {}
     for i = 0, item_count - 1 do

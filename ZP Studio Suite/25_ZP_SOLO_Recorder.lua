@@ -26,6 +26,28 @@
   - FTC Record takes without new splits per confermare che NEXT TAKE complesso e' fuori scope POC.
 ]]
 
+local function load_private_regions()
+  local path = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\]") or ".") .. "/ZP_Private_Regions.lua"
+  local ok, module = pcall(dofile, path)
+  if not ok or type(module) ~= "table" then
+    local detail = ok and "il modulo non ha restituito una tabella valida" or tostring(module)
+    reaper.MB(
+      "ERRORE CRITICO: il modulo Private Regions non è disponibile o non è caricabile.\n\n" ..
+      "Percorso atteso:\n" .. path .. "\n\n" ..
+      "Dettaglio: " .. detail .. "\n\n" ..
+      "Senza questo modulo una regione privata potrebbe essere trattata come pubblica.\n" ..
+      "Lo script è stato interrotto per sicurezza.",
+      "ZP Private Regions - modulo non disponibile",
+      0
+    )
+    return nil
+  end
+  return module
+end
+
+local ZP_Private = load_private_regions()
+if not ZP_Private then return end
+
 local SCRIPT_TITLE = "ZP SOLO Recorder"
 local SCRIPT_VERSION = "v0.2.0"
 local EXT_SECTION = "ZP_SOLO_Recorder"
@@ -668,6 +690,7 @@ local function collect_regions()
   local total = marker_count + region_count
   for i = 0, total - 1 do
     local ok, is_region, pos, rgn_end, name, idx, color = reaper.EnumProjectMarkers3(0, i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and is_region then
       regions[#regions + 1] = { pos = pos, end_pos = rgn_end, name = trim(name or ""), idx = idx, color = color or 0 }
     end
@@ -789,7 +812,7 @@ local function undo_last_take()
     while true do
       local retval, isrgn, _, _, nome, idx = reaper.EnumProjectMarkers(i)
       if retval == 0 then break end
-      if isrgn and nome == lt.region then
+      if isrgn and not ZP_Private.is_private(0, i) and nome == lt.region then
         reaper.DeleteProjectMarker(0, idx, true)
         break
       end

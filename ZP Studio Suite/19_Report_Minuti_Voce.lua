@@ -6,6 +6,28 @@
 -- Distribuzione gratuita.
 -- Calcola minuti reali e minuti arrotondati in eccesso da regioni o item audio.
 
+local function load_private_regions()
+  local path = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\]") or ".") .. "/ZP_Private_Regions.lua"
+  local ok, module = pcall(dofile, path)
+  if not ok or type(module) ~= "table" then
+    local detail = ok and "il modulo non ha restituito una tabella valida" or tostring(module)
+    reaper.MB(
+      "ERRORE CRITICO: il modulo Private Regions non è disponibile o non è caricabile.\n\n" ..
+      "Percorso atteso:\n" .. path .. "\n\n" ..
+      "Dettaglio: " .. detail .. "\n\n" ..
+      "Senza questo modulo una regione privata potrebbe essere trattata come pubblica.\n" ..
+      "Lo script è stato interrotto per sicurezza.",
+      "ZP Private Regions - modulo non disponibile",
+      0
+    )
+    return nil
+  end
+  return module
+end
+
+local ZP_Private = load_private_regions()
+if not ZP_Private then return end
+
 local SCRIPT_TITLE = "ZP Studio Suite v1.0.5 - Report Minuti Voce"
 local PROJECT_VIEWER_SECTION = "ZP_RythmoBand_ProjectViewer"
 local ROW_H = 30
@@ -230,6 +252,7 @@ local function collect_regions()
   local _, markers, regions = reaper.CountProjectMarkers(0)
   for i = 0, markers + regions - 1 do
     local ok, is_region, pos, rgn_end, name, idx = reaper.EnumProjectMarkers3(0, i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and is_region and rgn_end and rgn_end > pos then
       table.insert(out, {
         idx = idx,
@@ -285,6 +308,7 @@ local function marker_name_for_pos(pos)
   local _, markers, region_count = reaper.CountProjectMarkers(0)
   for i = 0, markers + region_count - 1 do
     local ok, is_region, marker_pos, _, name, idx = reaper.EnumProjectMarkers3(0, i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and not is_region and marker_pos <= (pos or 0) + 0.0001 then
       if not current or marker_pos >= current.pos then current = { pos = marker_pos, name = trim(name or ""), idx = idx } end
     end

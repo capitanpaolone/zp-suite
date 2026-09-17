@@ -17,6 +17,28 @@
   Non fa ancora render automatico.
 ]]
 
+local function load_private_regions()
+  local path = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\]") or ".") .. "/ZP_Private_Regions.lua"
+  local ok, module = pcall(dofile, path)
+  if not ok or type(module) ~= "table" then
+    local detail = ok and "il modulo non ha restituito una tabella valida" or tostring(module)
+    reaper.MB(
+      "ERRORE CRITICO: il modulo Private Regions non è disponibile o non è caricabile.\n\n" ..
+      "Percorso atteso:\n" .. path .. "\n\n" ..
+      "Dettaglio: " .. detail .. "\n\n" ..
+      "Senza questo modulo una regione privata potrebbe essere trattata come pubblica.\n" ..
+      "Lo script è stato interrotto per sicurezza.",
+      "ZP Private Regions - modulo non disponibile",
+      0
+    )
+    return nil
+  end
+  return module
+end
+
+local ZP_Private = load_private_regions()
+if not ZP_Private then return end
+
 local SCRIPT_TITLE = "ZP Studio Suite v1.0.5 - Import Cartelle"
 local EXT_SECTION = "ZP_VoiceOverStudio_FolderVideoMixdown"
 local MODE_IMPORT_AND_PREPARE = "import"
@@ -1012,6 +1034,7 @@ local function current_region_by_index(region_index)
   local _, markers, regions = reaper.CountProjectMarkers(0)
   for i = 0, markers + regions - 1 do
     local ok, is_region, pos, rgn_end, name, idx = reaper.EnumProjectMarkers3(0, i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and is_region and idx == region_index then
       return {
         region_index = idx,
@@ -1059,6 +1082,7 @@ local function infer_region_map_from_project()
   local _, marker_count, region_count = reaper.CountProjectMarkers(0)
   for i = 0, marker_count + region_count - 1 do
     local ok, is_region, pos, rgn_end, name, idx = reaper.EnumProjectMarkers3(0, i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and is_region and rgn_end and rgn_end > pos then
       regions[#regions + 1] = { pos = pos, rgn_end = rgn_end, name = name, idx = idx }
     elseif ok and not is_region then

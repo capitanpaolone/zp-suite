@@ -7,6 +7,28 @@
 -- Sostituisce, aggiunge reference/lingue, aggiorna regioni o fa batch omonimo.
 -- Copia sempre gli SRT usati nella cartella progetto e crea backup prima di sovrascrivere.
 
+local function load_private_regions()
+  local path = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\]") or ".") .. "/ZP_Private_Regions.lua"
+  local ok, module = pcall(dofile, path)
+  if not ok or type(module) ~= "table" then
+    local detail = ok and "il modulo non ha restituito una tabella valida" or tostring(module)
+    reaper.MB(
+      "ERRORE CRITICO: il modulo Private Regions non è disponibile o non è caricabile.\n\n" ..
+      "Percorso atteso:\n" .. path .. "\n\n" ..
+      "Dettaglio: " .. detail .. "\n\n" ..
+      "Senza questo modulo una regione privata potrebbe essere trattata come pubblica.\n" ..
+      "Lo script è stato interrotto per sicurezza.",
+      "ZP Private Regions - modulo non disponibile",
+      0
+    )
+    return nil
+  end
+  return module
+end
+
+local ZP_Private = load_private_regions()
+if not ZP_Private then return end
+
 local SUBTITLE_TRACK_NAME = "Rythmo Band Testi"
 local SRT_TEMPLATE_NAME = "SRT Track.RTrackTemplate"
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
@@ -436,6 +458,7 @@ local function region_at_position(pos)
   local total = num_markers + num_regions
   for i = 0, total - 1 do
     local ok, is_region, rgn_pos, rgn_end, name = reaper.EnumProjectMarkers(i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and is_region and pos >= rgn_pos and pos < rgn_end then
       return { name = trim(name or ""), start_pos = rgn_pos, end_pos = rgn_end }
     end

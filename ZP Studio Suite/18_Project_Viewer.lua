@@ -6,6 +6,28 @@
 -- Distribuzione gratuita.
 -- Vista cronologica editoriale di marker e regioni.
 
+local function load_private_regions()
+  local path = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\]") or ".") .. "/ZP_Private_Regions.lua"
+  local ok, module = pcall(dofile, path)
+  if not ok or type(module) ~= "table" then
+    local detail = ok and "il modulo non ha restituito una tabella valida" or tostring(module)
+    reaper.MB(
+      "ERRORE CRITICO: il modulo Private Regions non è disponibile o non è caricabile.\n\n" ..
+      "Percorso atteso:\n" .. path .. "\n\n" ..
+      "Dettaglio: " .. detail .. "\n\n" ..
+      "Senza questo modulo una regione privata potrebbe essere trattata come pubblica.\n" ..
+      "Lo script è stato interrotto per sicurezza.",
+      "ZP Private Regions - modulo non disponibile",
+      0
+    )
+    return nil
+  end
+  return module
+end
+
+local ZP_Private = load_private_regions()
+if not ZP_Private then return end
+
 local SCRIPT_TITLE = "ZP Studio Suite v1.0.5 - Project"
 local EXT_SECTION = "ZP_RythmoBand_ProjectViewer"
 local ROW_H = 29
@@ -114,6 +136,7 @@ local function collect_project_marks()
   local total = marker_count + region_count
   for i = 0, total - 1 do
     local ok, is_region, pos, rgn_end, name, idx, color = reaper.EnumProjectMarkers3(0, i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok then
       local entry = {
         is_region = is_region,
@@ -921,7 +944,17 @@ local function draw_project_window()
       select_all_visible_regions(visible)
       ch = 0
     elseif not edit_row and is_render_shortcut(ch) then
-      reaper.Main_OnCommand(ACTION_RENDER_PROJECT, 0)
+      local ready = true
+      if ZP_Private.has_private_regions(0) then
+        local numbers = {}
+        for _, row in ipairs(visible) do
+          if row.kind == "region" and render_selected[row_key(row)] then numbers[row.idx] = true end
+        end
+        local err
+        ready, err = pcall(ZP_Private.select_render_regions, 0, numbers)
+        if not ready then reaper.MB(tostring(err), SCRIPT_TITLE, 0) end
+      end
+      if ready then reaper.Main_OnCommand(ACTION_RENDER_PROJECT, 0) end
       ch = 0
     end
 

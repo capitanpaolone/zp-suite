@@ -9,6 +9,28 @@
 -- I sottotitoli vengono esportati con timecode relativo allo start della
 -- regione/video, non alla posizione assoluta in timeline.
 
+local function load_private_regions()
+  local path = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\]") or ".") .. "/ZP_Private_Regions.lua"
+  local ok, module = pcall(dofile, path)
+  if not ok or type(module) ~= "table" then
+    local detail = ok and "il modulo non ha restituito una tabella valida" or tostring(module)
+    reaper.MB(
+      "ERRORE CRITICO: il modulo Private Regions non è disponibile o non è caricabile.\n\n" ..
+      "Percorso atteso:\n" .. path .. "\n\n" ..
+      "Dettaglio: " .. detail .. "\n\n" ..
+      "Senza questo modulo una regione privata potrebbe essere trattata come pubblica.\n" ..
+      "Lo script è stato interrotto per sicurezza.",
+      "ZP Private Regions - modulo non disponibile",
+      0
+    )
+    return nil
+  end
+  return module
+end
+
+local ZP_Private = load_private_regions()
+if not ZP_Private then return end
+
 local SUBTITLE_TRACK_NAME = "Rythmo Band Testi"
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
 local ZP_UI = dofile(SCRIPT_DIR .. "ZP_UI.lua")
@@ -188,6 +210,7 @@ local function collect_regions()
   local total = num_markers + num_regions
   for i = 0, total - 1 do
     local ok, is_region, pos, rgn_end, name = reaper.EnumProjectMarkers(i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and is_region and name and name ~= "" and rgn_end > pos then
       table.insert(regions, {
         base = name,

@@ -12,6 +12,28 @@
 --   0 = non aggiunge timecode
 --   1 = aggiunge il timecode video al nome marker
 
+local function load_private_regions()
+  local path = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\]") or ".") .. "/ZP_Private_Regions.lua"
+  local ok, module = pcall(dofile, path)
+  if not ok or type(module) ~= "table" then
+    local detail = ok and "il modulo non ha restituito una tabella valida" or tostring(module)
+    reaper.MB(
+      "ERRORE CRITICO: il modulo Private Regions non è disponibile o non è caricabile.\n\n" ..
+      "Percorso atteso:\n" .. path .. "\n\n" ..
+      "Dettaglio: " .. detail .. "\n\n" ..
+      "Senza questo modulo una regione privata potrebbe essere trattata come pubblica.\n" ..
+      "Lo script è stato interrotto per sicurezza.",
+      "ZP Private Regions - modulo non disponibile",
+      0
+    )
+    return nil
+  end
+  return module
+end
+
+local ZP_Private = load_private_regions()
+if not ZP_Private then return end
+
 local DEBUG_LOG_PATH = "/tmp/RythmoBand_Marker_Item.log"
 
 local function debug_log(message)
@@ -63,6 +85,7 @@ local function find_region_for_position(pos)
   local total = num_markers + num_regions
   for i = 0, total - 1 do
     local ok, is_region, rgn_pos, rgn_end = reaper.EnumProjectMarkers(i)
+    ok = ok and not ZP_Private.is_private(0, i)
     if ok and is_region and pos >= rgn_pos and pos < rgn_end then
       return rgn_pos
     end
