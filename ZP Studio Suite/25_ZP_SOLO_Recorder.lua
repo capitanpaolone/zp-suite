@@ -65,7 +65,6 @@ local ACTION = {
   show_mixer = 40078,
   show_routing = 40293,
   show_fx_chain = 40291,
-  show_notes = 40850,
   region_marker_manager = 40326,
   navigator = 40268,
   video_window = 50125
@@ -323,8 +322,8 @@ local AIUTI = {
   ["INSERTS"] = "Registra sulla traccia degli inserti.",
   ["RETAKES"] = "Registra sulla traccia dei rifacimenti.",
   ["ALT"] = "Registra sulla traccia delle versioni alternative.",
-  ["Telecomando"] = "Registra sulle tracce del tuo progetto: non crea le tracce SOLO.",
-  ["Usa sessione SOLO"] = "Torna alla sessione SOLO, con la sua cartella e le sue tracce.",
+  ["Telecomando"] = "Telecomando: registra sulle tracce del tuo progetto, non crea le tracce SOLO.",
+  ["Sessione"] = "Sessione SOLO: la cartella ZP SOLO SESSION con le sue tracce voce.",
   ["Tracce"] = "Tracce del progetto con il loro ingresso: un clic arma o disarma.",
   ["Regioni"] = "Precedente / inizio / successivo si muovono tra le regioni.",
   ["Item"] = "Precedente / inizio / successivo si muovono tra gli item della traccia di destinazione.",
@@ -360,7 +359,7 @@ local AIUTI = {
   ["Mixer"] = "Apre il mixer di REAPER.",
   ["Routing"] = "Apre il routing della traccia selezionata.",
   ["FX Chain"] = "Apre la catena effetti della traccia selezionata.",
-  ["Notes"] = "Apre le note del progetto.",
+  ["Notes"] = "Apre le note del progetto (finestra Notes di SWS; senza SWS, Project settings).",
   ["Markers"] = "Apre il gestore di marker e regioni.",
   ["Navigator"] = "Apre il Navigator di REAPER.",
 }
@@ -373,6 +372,7 @@ local DETTAGLI = {
   ["Preroll"] = "Secondi di conto alla rovescia prima che parta il REC: da 0 a 5. Trascina o usa la rotella; doppio clic = 0.",
   ["Ingresso"] = "L'ingresso della scheda audio da cui registra la traccia di destinazione: In 1, In 1/2 per lo stereo, e cosi' via. Clic: scegli da un elenco.",
   ["Monitor"] = "Ascolto in cuffia dell'ingresso sulla traccia attiva. Auto vuol dire che REAPER lo accende da solo quando la traccia e' armata.",
+  ["Sessione"] = "Sessione SOLO: il SOLO lavora nella sua cartella ZP SOLO SESSION, con le tracce MAIN, INSERTS, RETAKES e ALT; arma solo quella scelta. La spia accesa dice in che modalita' sei; clic sull'altra per cambiare.",
   ["Telecomando"] = "Telecomando: il SOLO registra sulle tracce del tuo progetto, quelle che armi tu. Non crea la cartella SOLO e non cambia l'armamento. Retake, Insert, Alt take ed Effetti qui sono spenti, perche' usano le tracce della sessione SOLO.",
   ["Next take"] = "Chiude il take in corso, lascia cinque secondi di stacco dopo la fine reale dell'audio e riparte subito a registrare.",
   ["Togli take"] = "Toglie dalla timeline il take appena registrato (e la sua regione) e riporta il cursore dov'era. Il file audio resta nella cartella Media: se serve, lo ritrovi.",
@@ -388,9 +388,9 @@ local ZONE_AIUTO = {
   testata = "Stato del trasporto, timecode, traccia, regione e take. A destra le tre viste, REAPER e questa guida.",
   trasporto = "I comandi di ogni secondo. REC e' il piu' grande; il lucchetto sul REC decide se la barra spaziatrice puo' fermarlo.",
   ingresso = "Cosa entra e cosa senti: meter dell'ingresso e del ritorno, da dove pesca la traccia, monitor. I pomelli regolano il ritorno e il preroll.",
-  traccia = "Dove registri: le tracce della sessione SOLO, oppure il Telecomando sulle tracce del tuo progetto.",
+  traccia = "Dove registri. A destra il selettore Sessione / Telecomando: la meta' accesa e' la modalita' in uso.",
   vai = "Muoversi tra regioni o item, e mettere marker.",
-  take = "La regia del take: nominare, ripartire, togliere, rifare, inserti e alternative.",
+  take = "In alto i comandi che registrano (pallino rosso): Next take, Retake, Insert, Alt take. Sotto quelli che gestiscono il take appena fatto: Nome / nota e Togli take.",
   etichette = "Marker di giudizio nel punto in cui sei: OK, BAD, ALT, NOISE.",
   navigatore = "Il progetto in una striscia. Lo zoom e la posizione della testina sono in alto a destra.",
   sessione = "Interruttori della sessione e della finestra: la spia verde vuol dire acceso.",
@@ -1320,6 +1320,20 @@ local function run_action(action_id, label)
   state.status = label or ("Action " .. tostring(action_id))
 end
 
+-- Note del progetto. REAPER non ha un'azione che le apra da sole (stanno nella scheda
+-- Notes di File > Project settings; 40850 sono le note degli ITEM). Con SWS c'e' la
+-- finestra Notes sulle note del progetto: si apre anche se sono vuote e ci si scrive.
+local function open_project_notes()
+  local cmd = reaper.NamedCommandLookup and reaper.NamedCommandLookup("_S&M_SHOWNOTESHELP") or 0
+  if cmd and cmd > 0 then
+    reaper.Main_OnCommand(cmd, 0)
+    state.status = "Note del progetto (finestra Notes di SWS): apri/chiudi"
+  else
+    reaper.Main_OnCommand(40021, 0)   -- File: Project settings...
+    state.status = "Senza SWS: le note del progetto sono nella scheda Notes di Project settings."
+  end
+end
+
 local function try_pin_window()
   if not state.pin then return end
   if reaper.time_precise() - state.last_pin_try < 1.0 then return end
@@ -1837,37 +1851,57 @@ end
 Z.traccia = { id = "traccia", n = 4, title = "Traccia di destinazione", min_w = 500, weight = 2,
   h = function() return 62 end }
 function Z.traccia.draw(c, clicked)
-  local switch_w = 132
-  if remote_mode() then
+  -- Selettore doppio, come Regioni / Item: la meta' accesa e' la modalita' in uso.
+  local remote = remote_mode()
+  local sw1, sw2 = 82, 104
+  local sx = c.x + c.w - sw1 - sw2 - 2
+  if btn({x=sx, y=c.y, w=sw1, h=32}, "Sessione", not remote, true, clicked, "tab") and remote then
+    set_target("solo")
+    return
+  end
+  if btn({x=sx + sw1 + 2, y=c.y, w=sw2, h=32}, "Telecomando", remote, true, clicked, "tab") and not remote then
+    set_target("progetto")
+    return
+  end
+  local avail = sx - 12 - c.x
+  if remote then
     local armed = armed_tracks()
     local arm_w = 110
     gfx.setfont(1, "Arial", 13, "b")
     gfx.set(0.86, 0.90, 0.96, 1)
     gfx.x, gfx.y = c.x, c.y + 8
-    gfx.drawstr(fit_text(#armed > 0 and ("Telecomando: registra su " .. target_name())
-      or "Telecomando: nessuna traccia armata", c.w - switch_w - arm_w - 16))
-    if btn({x=c.x + c.w - switch_w - 8 - arm_w, y=c.y, w=arm_w, h=32}, "Tracce \u{25BE}", false, true, clicked, "tab", "Tracce") then
+    gfx.drawstr(fit_text(#armed > 0 and ("Registra su " .. target_name())
+      or "Nessuna traccia armata", avail - arm_w - 10))
+    if btn({x=sx - 12 - arm_w, y=c.y, w=arm_w, h=32}, "Tracce \u{25BE}", false, true, clicked, "tab", "Tracce") then
       choose_tracks_menu()
     end
-    if btn({x=c.x + c.w - switch_w, y=c.y, w=switch_w, h=32}, "Usa sessione SOLO", false, true, clicked, "tab") then
-      set_target("solo")
-    end
     return
   end
-  if btn({x=c.x + c.w - switch_w, y=c.y, w=switch_w, h=32}, "Telecomando", false, true, clicked, "tab") then
-    set_target("progetto")
-    return
-  end
+  -- tracce della sessione: nome sopra, ingresso sotto in piccolo
   local n = #RECORD_TRACK_KEYS
-  local bw = math.floor((c.w - switch_w - 12 - 6 * (n - 1)) / n)
+  local bw = math.floor((avail - 6 * (n - 1)) / n)
   for i, key in ipairs(RECORD_TRACK_KEYS) do
     local x = c.x + (i - 1) * (bw + 6)
     local corto = TRACK_NAMES[key]:gsub("^VO_", "")
-    local label = corto
     local solo_tr = find_track_exact(TRACK_NAMES[key])
-    if solo_tr then label = label .. " \u{00B7} " .. input_short(solo_tr) end
-    if btn({x=x, y=c.y, w=bw, h=32}, label, state.active_track_key == key, true, clicked, "tab", corto) then
+    local r = {x=x, y=c.y, w=bw, h=32}
+    if btn(r, "", state.active_track_key == key, true, clicked, "tab", corto,
+        solo_tr and (AIUTI[corto] .. " Ingresso: " .. input_long(solo_tr) .. ".") or nil) then
       if arm_only_solo_target(key) then state.warning = "" end
+    end
+    gfx.setfont(1, "Arial", 12, "b")
+    gfx.set(0.96, 0.96, 0.98, 1)
+    local t = fit_text(corto, bw - 8)
+    local tw = gfx.measurestr(t)
+    gfx.x, gfx.y = x + (bw - tw) / 2, c.y + (solo_tr and 3 or 9)
+    gfx.drawstr(t)
+    if solo_tr then
+      gfx.setfont(1, "Arial", 10)
+      gfx.set(0.70, 0.76, 0.86, 1)
+      t = fit_text(input_short(solo_tr), bw - 8)
+      tw = gfx.measurestr(t)
+      gfx.x, gfx.y = x + (bw - tw) / 2, c.y + 18
+      gfx.drawstr(t)
     end
   end
 end
@@ -1905,26 +1939,45 @@ function Z.vai.draw(c, clicked)
 end
 
 -- 6 TAKE ------------------------------------------------------------------
-Z.take = { id = "take", n = 6, title = "Take", min_w = 330, weight = 2,
+Z.take = { id = "take", n = 6, title = "Take", min_w = 400, weight = 2,
   h = function() return 96 end }
+
+-- Pulsante che REGISTRA: pallino rosso a sinistra, cosi' non si confonde con i comandi
+-- che spostano o segnano. Spento (pallino grigio) quando non si puo' usare.
+local function recbtn(rect, label, enabled, clicked)
+  note(rect, label)
+  local hit = ZP_UI.draw_button(rect, "", false, enabled, clicked, nil)
+  local cy = rect.y + rect.h / 2
+  if enabled then gfx.set(0.95, 0.16, 0.12, 1) else gfx.set(0.38, 0.38, 0.40, 1) end
+  gfx.circle(rect.x + 13, cy, 5, true, true)
+  gfx.setfont(1, "Arial", 13, "b")
+  local v = enabled and 0.95 or 0.48
+  gfx.set(v, v, v + 0.02, 1)
+  local t = fit_text(label, rect.w - 30)
+  local _, th = gfx.measurestr(t)
+  gfx.x, gfx.y = rect.x + 24, cy - th / 2
+  gfx.drawstr(t)
+  return hit
+end
+
 function Z.take.draw(c, clicked)
-  local voci = {
-    {"Nome / nota", rename_last_take_region},
+  -- riga 1: registrano (true = usa le tracce della sessione SOLO -> spento in Telecomando)
+  local registra = {
     {"Next take", next_take},
-    {"Togli take", undo_last_take, "danger"},
-    -- true: usa le tracce della sessione SOLO -> spento in Telecomando
-    {"Retake", function() rec_region("retakes") end, nil, true},
-    {"Insert", insert_record, nil, true},
-    {"Alt take", alt_take, nil, true},
+    {"Retake", function() rec_region("retakes") end, true},
+    {"Insert", insert_record, true},
+    {"Alt take", alt_take, true},
   }
-  local bw = math.floor((c.w - 12) / 3)
-  for i, v in ipairs(voci) do
-    local col, row = (i - 1) % 3, (i - 1) // 3
-    if btn({x=c.x + col * (bw + 6), y=c.y + row * 36, w=bw, h=30}, v[1], false,
-        not (v[4] and remote_mode()), clicked, v[3]) then
+  local bw = math.floor((c.w - 18) / 4)
+  for i, v in ipairs(registra) do
+    if recbtn({x=c.x + (i - 1) * (bw + 6), y=c.y, w=bw, h=30}, v[1], not (v[3] and remote_mode()), clicked) then
       v[2]()
     end
   end
+  -- riga 2: gestiscono il take appena fatto
+  local hw = math.floor((c.w - 6) / 2)
+  if btn({x=c.x, y=c.y + 36, w=hw, h=30}, "Nome / nota", false, true, clicked) then rename_last_take_region() end
+  if btn({x=c.x + hw + 6, y=c.y + 36, w=c.w - hw - 6, h=30}, "Togli take", false, true, clicked, "danger") then undo_last_take() end
 end
 
 -- 7 ETICHETTE -------------------------------------------------------------
@@ -1967,7 +2020,7 @@ local function sessione_voci()
   }
 end
 
-Z.sessione = { id = "sessione", n = 9, title = "Sessione e finestra", min_w = 440, weight = 2 }
+Z.sessione = { id = "sessione", n = 9, title = "Sessione e finestra", min_w = 300, weight = 2 }
 function Z.sessione.h(w)
   local _, h = flow(0, 0, w - 20, sessione_voci(), 28, 6)
   return h + 30
@@ -2172,7 +2225,7 @@ local function draw_toolbar(clicked)
     {"Mixer", ACTION.show_mixer},
     {"Routing", ACTION.show_routing},
     {"FX Chain", ACTION.show_fx_chain},
-    {"Notes", ACTION.show_notes},
+    {"Notes", open_project_notes},
     {"Markers", ACTION.region_marker_manager},
     {"Navigator", ACTION.navigator},
     {"Video", ACTION.video_window}
@@ -2180,7 +2233,9 @@ local function draw_toolbar(clicked)
   local x, bw, bh, gap = 14, 78, 30, 8
   for _, b in ipairs(buttons) do
     if x + bw > gfx.w - 10 then x = 14; y = y + 38 end
-    if btn({x=x, y=y, w=bw, h=bh}, b[1], false, true, clicked, b[3]) then run_action(b[2], b[1]) end
+    if btn({x=x, y=y, w=bw, h=bh}, b[1], false, true, clicked, b[3]) then
+      if type(b[2]) == "function" then b[2]() else run_action(b[2], b[1]) end
+    end
     x = x + bw + gap
   end
 end
