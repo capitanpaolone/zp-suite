@@ -16,6 +16,9 @@
 --   4 Segui i tagli   dopo 10 s senza modifiche al progetto i testi seguono l'audio
 --
 -- Un file gia' in timeline con i suoi marker salta direttamente alla tappa 3.
+-- Ritrascrivi...: per un file che ha gia' marker o SRT ma va riletto da capo (es. dopo un
+-- glue, o se i tempi sono cambiati): toglie i take marker degli item selezionati, mette da
+-- parte l'SRT vecchio e lo tratta come un file nuovo (trascrivi, abbina, gobbo).
 -- Gli script delle tappe non vengono riscritti: la finestra li lancia con dofile.
 
 local M = {}
@@ -58,6 +61,23 @@ function M.to_transcribe(rows)
     end
   end
   return queue
+end
+
+-- Item da RIleggere da capo: tutti i WAV selezionati, anche con SRT o marker, una volta sola.
+-- Restituisce i percorsi e quanti hanno marker / SRT (per la domanda di conferma).
+function M.to_retranscribe(rows)
+  local queue, seen, with_markers, with_srt = {}, {}, 0, 0
+  for _, r in ipairs(rows) do
+    if r.wav then
+      if r.markers > 0 then with_markers = with_markers + 1 end
+      if not seen[r.path] then
+        seen[r.path] = true
+        queue[#queue + 1] = r.path
+        if r.srt then with_srt = with_srt + 1 end
+      end
+    end
+  end
+  return queue, with_markers, with_srt
 end
 
 -- "m:ss" per i messaggi
@@ -356,6 +376,54 @@ local function do_transcribe()
   return true
 end
 
+-- Ritrascrivi: il file ha gia' marker o SRT ma va riletto (glue, tempi cambiati).
+-- Prima chiede; poi toglie i take marker degli item selezionati (Undo li rimette), rinomina
+-- l'SRT accanto al file in .srt.bak-<data> (non lo cancella) e percorre la strada da capo.
+local function do_retranscribe()
+  if running then status = "Una trascrizione e' gia' in corso."; return end
+  refresh_rows()
+  local list, n_mark, n_srt = M.to_retranscribe(rows)
+  if #list == 0 then status = "Niente da ritrascrivere: seleziona item WAV."; return end
+  if not speech_ready() then return end
+  local msg = string.format(
+    "Ritrascrivo da capo %d file, come se fossero nuovi.\n\n" ..
+    "Prima:\n- tolgo i take marker da %d item selezionati (solo da questi; Annulla li rimette)\n" ..
+    "- l'SRT accanto al file (%d) lo rinomino in .srt.bak-<data>: non lo cancello\n\n" ..
+    "Poi: trascrizione, Abbina e testi nel gobbo.\n" ..
+    "I testi del gobbo legati ai vecchi marker: quelli mai toccati spariscono,\n" ..
+    "quelli corretti a mano restano in mute.\n\nProcedo?", #list, n_mark, n_srt)
+  if reaper.ShowMessageBox(msg, "ZP Trascrizione - Ritrascrivi", 4) ~= 6 then
+    status = "Ritrascrivi annullato."
+    return
+  end
+  local wanted = {}
+  for _, p in ipairs(list) do wanted[p] = true end
+  reaper.Undo_BeginBlock()
+  local removed = 0
+  for i = 0, reaper.CountSelectedMediaItems(0) - 1 do
+    local take = reaper.GetActiveTake(reaper.GetSelectedMediaItem(0, i))
+    local src = take and reaper.GetMediaItemTake_Source(take)
+    local path = src and reaper.GetMediaSourceFileName(src, "") or ""
+    if wanted[path] then
+      for m = reaper.GetNumTakeMarkers(take) - 1, 0, -1 do
+        reaper.DeleteTakeMarker(take, m); removed = removed + 1
+      end
+    end
+  end
+  reaper.Undo_EndBlock("ZP Trascrizione: togli i take marker per ritrascrivere", -1)
+  reaper.UpdateArrange()
+  local stamp = os.date("%Y%m%d_%H%M%S")
+  for _, p in ipairs(list) do
+    local sc = sidecar(p)
+    if exists(sc) then os.rename(sc, sc .. ".bak-" .. stamp) end
+  end
+  refresh_rows()
+  chain = true
+  queue = list
+  start_next()
+  status = string.format("Ritrascrivo: tolti %d marker. ", removed) .. status
+end
+
 local function walk_road()
   if #rows == 0 then status = "Seleziona prima gli item audio."; return end
   chain = true
@@ -431,7 +499,12 @@ local function draw_step(i, s, is_next, y, clicked)
   local b = { x = gfx.w - pad - 160, y = y + 6, w = 160, h = 34 }
   local busy = running ~= nil or chain
   if i == 1 then
-    if UI.draw_button(b, running and "Trascrivo..." or "Trascrivi", running ~= nil, not busy and not s.done, clicked, "play_now") then do_transcribe() end
+    -- tappa gia' fatta (SRT o marker): il pulsante diventa Ritrascrivi, per rileggere da capo
+    local redo = s.done and not running
+    local label = running and "Trascrivo..." or (redo and "Ritrascrivi..." or "Trascrivi")
+    if UI.draw_button(b, label, running ~= nil, not busy and #rows > 0, clicked, redo and "play_select" or "play_now") then
+      if redo then do_retranscribe() else do_transcribe() end
+    end
   elseif i == 2 then
     if UI.draw_button(b, "Abbina da...", false, not busy and #rows > 0, clicked, "play_select") then abbina_menu() end
   elseif i == 3 then
