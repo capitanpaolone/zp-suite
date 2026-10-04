@@ -530,6 +530,39 @@ local function arm_selected_track()
   return tr
 end
 
+-- Telecomando, REC senza tracce armate: chiede su quale registrare invece di indovinare.
+-- Menu con le tracce del progetto, la selezionata gia' spuntata; niente scelta = niente REC.
+local function choose_track_to_arm()
+  local n = reaper.CountTracks(0)
+  if n == 0 then
+    warn("Telecomando: il progetto non ha tracce su cui registrare.")
+    return nil
+  end
+  local selected = reaper.GetSelectedTrack(0, 0)
+  local entries, tracks = { "#Nessuna traccia armata: su quale registro?" }, {}
+  for i = 0, n - 1 do
+    local tr = reaper.GetTrack(0, i)
+    local name = track_name(tr)
+    if name == "" then name = "(senza nome)" end
+    name = name:gsub("[|#!<>]", " ")
+    entries[#entries + 1] = (tr == selected and "!" or "") .. string.format("%d   %s", i + 1, name)
+    tracks[#tracks + 1] = tr
+  end
+  gfx.x, gfx.y = gfx.mouse_x, gfx.mouse_y
+  local choice = gfx.showmenu(table.concat(entries, "|"))
+  local tr = tracks[(choice or 0) - 1]   -- la prima voce e' il titolo
+  if not tr then
+    warn("REC annullato: nessuna traccia scelta.")
+    return nil
+  end
+  reaper.SetMediaTrackInfo_Value(tr, "I_RECARM", 1)
+  if reaper.GetMediaTrackInfo_Value(tr, "I_RECINPUT") < 0 then
+    reaper.SetMediaTrackInfo_Value(tr, "I_RECINPUT", 0)
+  end
+  reaper.SetOnlyTrackSelected(tr)
+  return tr
+end
+
 local function target_name()
   local _, name = active_track()
   return name or "?"
@@ -555,11 +588,7 @@ local function arm_only_solo_target(key)
   if remote_mode() then
     local armed = armed_tracks()
     if not armed[1] then
-      -- nessuna traccia armata: arma quella selezionata, se c'e'
-      if not arm_selected_track() then
-        warn("Telecomando: seleziona o arma la traccia su cui registrare (o passa a Sessione SOLO).")
-        return nil
-      end
+      if not choose_track_to_arm() then return nil end
       armed = armed_tracks()
     end
     state.status = "REC READY — " .. target_name()
