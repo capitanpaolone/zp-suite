@@ -23,11 +23,24 @@ local MIN_LEN = 0.3      -- secondi: durata minima di una battuta
 
 -- markers: { {src, text}, ... } anche da piu' item della stessa sorgente.
 -- Tiene una sola battuta per punto (entro 1 ms): la prima trovata.
+-- Marker di servizio (non sono testo): segnaposto "#...", azioni "!...", marker del SOLO
+-- Recorder (SOLO_MARK_001, OK_001, BAD_001, ALT_001, NOISE_001, INSERT_001). Stessa regola del 14.
+local SERVICE_PREFIXES = { "SOLO_MARK", "OK", "BAD", "ALT", "NOISE", "INSERT" }
+function M.is_service(name)
+  name = tostring(name or ""):gsub("^%s+", ""):gsub("%s+$", "")
+  local c = name:sub(1, 1)
+  if c == "#" or c == "!" then return true end
+  for _, p in ipairs(SERVICE_PREFIXES) do
+    if name:match("^" .. p .. "_%d+$") then return true end
+  end
+  return false
+end
+
 function M.cues(markers, source_len)
   local list = {}
   for _, m in ipairs(markers) do
     local text = (m.text or ""):gsub("^%s+", ""):gsub("%s+$", "")
-    if text ~= "" and m.src >= 0 then list[#list + 1] = { start = m.src, text = text } end
+    if text ~= "" and not M.is_service(text) and m.src >= 0 then list[#list + 1] = { start = m.src, text = text } end
   end
   table.sort(list, function(a, b) return a.start < b.start end)
   local cues = {}

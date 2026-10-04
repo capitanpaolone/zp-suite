@@ -14,6 +14,13 @@
 --
 -- Il tempo dei take marker e' quello della sorgente, non della timeline:
 -- la conversione tiene conto di start offset e playrate del take.
+--
+-- Marker di servizio: una registrazione puo' partire prima di un marker e portarselo
+-- dentro. Non sono testo, quindi NON si copiano e NON si cancellano mai:
+--   - segnaposto: nome che comincia con "#" (es. "#scena 2", "#riprendere da qui")
+--   - azioni di marker di REAPER: nome che comincia con "!"
+--   - marker del SOLO Recorder: SOLO_MARK_001, OK_001, BAD_001, ALT_001, NOISE_001, INSERT_001
+--   - marker senza nome
 
 local M = {}
 local TITLE = "Project Markers -> Take Markers"
@@ -23,12 +30,27 @@ local SAME_POS = 0.001   -- secondi: entro 1 ms e' lo stesso punto della sorgent
 -- LOGICA PURA (collaudabile con lua fuori da REAPER)
 ---------------------------------------------------------------------------
 
+-- Marker che non sono testo (vedi sopra). Restituisce il motivo, oppure nil.
+local SOLO_PREFIXES = { "SOLO_MARK", "OK", "BAD", "ALT", "NOISE", "INSERT" }
+function M.service_reason(name)
+  name = tostring(name or ""):gsub("^%s+", ""):gsub("%s+$", "")
+  if name == "" then return "senza nome" end
+  if name:sub(1, 1) == "#" then return "segnaposto" end
+  if name:sub(1, 1) == "!" then return "azione" end
+  for _, p in ipairs(SOLO_PREFIXES) do
+    if name:match("^" .. p .. "_%d+$") then return "SOLO" end
+  end
+  return nil
+end
+
 -- items:   { {pos, len, startoffs, rate, existing = { {src, name}, ... }}, ... }
 -- markers: { {pos, name, id, color}, ... }  marker di progetto (non regioni)
 -- Restituisce per ogni item i marker da aggiungere e quanti sono gia' presenti,
 -- e l'elenco degli id dei marker di progetto fissati in almeno un item.
+-- I marker di servizio dentro gli item vanno in skipped (id unici) e non si toccano.
 function M.plan(items, markers)
   local result, fixed, fixed_seen = {}, {}, {}
+  local skipped, skipped_seen = {}, {}
   for i, it in ipairs(items) do
     local rate = (it.rate and it.rate > 0) and it.rate or 1
     local add, already = {}, 0
@@ -36,7 +58,10 @@ function M.plan(items, markers)
     for _, e in ipairs(it.existing or {}) do present[#present + 1] = e end
     for _, m in ipairs(markers) do
       -- [inizio, fine): un marker sul bordo appartiene all'item che comincia li'
-      if m.pos >= it.pos and m.pos < it.pos + it.len then
+      local reason = (m.pos >= it.pos and m.pos < it.pos + it.len) and M.service_reason(m.name) or nil
+      if reason then
+        if not skipped_seen[m.id] then skipped_seen[m.id] = true; skipped[#skipped + 1] = { id = m.id, name = m.name, reason = reason } end
+      elseif m.pos >= it.pos and m.pos < it.pos + it.len then
         local src = it.startoffs + (m.pos - it.pos) * rate
         local name = m.name or ""
         local dup = false
@@ -54,7 +79,7 @@ function M.plan(items, markers)
     end
     result[i] = { add = add, already = already }
   end
-  return result, fixed
+  return result, fixed, skipped
 end
 
 if not reaper then return M end
@@ -125,17 +150,26 @@ for i = 0, num_markers + num_regions - 1 do
   end
 end
 
-local plan, fixed = M.plan(items, markers)
+local plan, fixed, skipped = M.plan(items, markers)
+local skipped_note = ""
+if #skipped > 0 then
+  local names = {}
+  for k, sk in ipairs(skipped) do
+    if k > 6 then names[#names + 1] = "..."; break end
+    names[#names + 1] = (sk.name ~= "" and sk.name or "(senza nome)")
+  end
+  skipped_note = string.format("\nMarker di servizio lasciati in timeline e non copiati: %d (%s)", #skipped, table.concat(names, ", "))
+end
 local to_add, already = 0, 0
 for _, p in ipairs(plan) do to_add = to_add + #p.add; already = already + p.already end
 
 if #fixed == 0 then
-  return report("Nessun marker di progetto dentro " .. (#items > 1 and "gli item selezionati." or "l'item selezionato."))
+  return report("Nessun marker di testo dentro " .. (#items > 1 and "gli item selezionati." or "l'item selezionato.") .. skipped_note)
 end
 
 -- Tutte le domande prima di modificare: un Annulla non lascia lavori a meta'.
 local remove = (_G.ZP_14_REMOVE == true and 6) or (_G.ZP_14_REMOVE == false and 7) or reaper.MB(string.format(
-  "Marker da fissare negli item: %d\nGia' presenti negli item (saltati): %d\n\nCancellare dalla timeline i %d marker di progetto fissati negli item?\n\nSì: cancella dalla timeline.\nNo: lasciali anche in timeline.\nAnnulla: esci senza modifiche.",
+  "Marker da fissare negli item: %d\nGia' presenti negli item (saltati): %d" .. skipped_note .. "\n\nCancellare dalla timeline i %d marker di progetto fissati negli item?\n\nSì: cancella dalla timeline.\nNo: lasciali anche in timeline.\nAnnulla: esci senza modifiche.",
   to_add, already, #fixed), TITLE, 3)
 if remove == 2 then return end
 
@@ -162,4 +196,4 @@ reaper.Undo_EndBlock("Copia Project Markers come Take Markers", -1)
 return report(string.format(
   "Item lavorati: %d%s\nMarker fissati: %d\nGia' presenti, saltati: %d\nCancellati dalla timeline: %d",
   #items, no_take > 0 and string.format(" (%d senza take, saltati)", no_take) or "",
-  to_add, already, removed))
+  to_add, already, removed) .. skipped_note)

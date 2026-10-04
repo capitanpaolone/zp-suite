@@ -20,4 +20,8 @@ local back = P.parse_srt(M.srt(M.cues(orig, 209)))
 local same = #back == 3
 for i, b in ipairs(back) do same = same and math.abs(b.start - orig[i].src) < 0.001 and b.text == orig[i].text end
 check("giro completo con il parser del 28: identico", same)
+do
+  local cues = M.cues({ { src = 1, text = "Uno" }, { src = 2, text = "BAD_001" }, { src = 3, text = "#nota" }, { src = 4, text = "Due" } }, 10)
+  check("servizio: segnaposto e marker SOLO esclusi dall'SRT", #cues == 2 and cues[1].text == "Uno" and cues[2].text == "Due")
+end
 print(fails == 0 and "\nTUTTI OK" or ("\nFALLITI: " .. fails)); os.exit(fails == 0 and 0 or 1)

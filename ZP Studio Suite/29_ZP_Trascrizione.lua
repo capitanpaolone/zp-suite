@@ -385,13 +385,15 @@ local function do_retranscribe()
   local list, n_mark, n_srt = M.to_retranscribe(rows)
   if #list == 0 then status = "Niente da ritrascrivere: seleziona item WAV."; return end
   if not speech_ready() then return end
+  -- l'SRT vecchio esiste solo se rileggi un file gia' trascritto (un file glued ha un nome
+  -- nuovo e non ce l'ha): solo allora lo metto da parte e lo dico
   local msg = string.format(
     "Ritrascrivo da capo %d file, come se fossero nuovi.\n\n" ..
-    "Prima:\n- tolgo i take marker da %d item selezionati (solo da questi; Annulla li rimette)\n" ..
-    "- l'SRT accanto al file (%d) lo rinomino in .srt.bak-<data>: non lo cancello\n\n" ..
+    "Prima tolgo i take marker da %d item selezionati (solo da questi; Annulla li rimette).%s\n\n" ..
     "Poi: trascrizione, Abbina e testi nel gobbo.\n" ..
     "I testi del gobbo legati ai vecchi marker: quelli mai toccati spariscono,\n" ..
-    "quelli corretti a mano restano in mute.\n\nProcedo?", #list, n_mark, n_srt)
+    "quelli corretti a mano restano in mute.\n\nProcedo?", #list, n_mark,
+    n_srt > 0 and string.format("\nL'SRT gia' accanto a %d file lo rinomino in .srt.bak-<data>, non lo cancello.", n_srt) or "")
   if reaper.ShowMessageBox(msg, "ZP Trascrizione - Ritrascrivi", 4) ~= 6 then
     status = "Ritrascrivi annullato."
     return

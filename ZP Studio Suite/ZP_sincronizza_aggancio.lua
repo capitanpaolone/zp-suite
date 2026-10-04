@@ -40,6 +40,19 @@ end
 -- Battuta in corso: se il pezzo comincia a meta' di una battuta (nessun marker proprio
 -- all'inizio), la battuta iniziata prima viene ripetuta all'inizio del pezzo, con "… "
 -- davanti e carry = true. Cosi' anche un pezzo tagliato senza marker ha il suo testo.
+-- Marker di servizio (non sono testo): segnaposto "#...", azioni "!...", marker del SOLO
+-- Recorder (SOLO_MARK_001, OK_001, BAD_001, ALT_001, NOISE_001, INSERT_001). Stessa regola del 14.
+local SERVICE_PREFIXES = { "SOLO_MARK", "OK", "BAD", "ALT", "NOISE", "INSERT" }
+function M.is_service(name)
+  name = tostring(name or ""):gsub("^%s+", ""):gsub("%s+$", "")
+  local c = name:sub(1, 1)
+  if c == "#" or c == "!" then return true end
+  for _, p in ipairs(SERVICE_PREFIXES) do
+    if name:match("^" .. p .. "_%d+$") then return true end
+  end
+  return false
+end
+
 M.CARRY_PREFIX = "\226\128\166 "   -- "… "
 function M.item_lines(item, markers)
   local rate = item.rate
@@ -49,7 +62,7 @@ function M.item_lines(item, markers)
   local min_len = item.min_len or 0.1
   local list, before = {}, nil
   for _, m in ipairs(markers) do
-    if m.text and m.text ~= "" then
+    if m.text and m.text ~= "" and not M.is_service(m.text) then
       if m.src >= s0 and m.src < s1 then
         list[#list + 1] = { src = m.src, text = m.text }
       elseif m.src < s0 and (not before or m.src > before.src) then

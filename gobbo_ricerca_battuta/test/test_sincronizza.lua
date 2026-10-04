@@ -63,5 +63,12 @@ check("item duplicato: nasce un item testo nuovo", #plan.create == 1)
 plan = M.plan({ { key = "k1", srckey = "f|k1", track = "T2", pos = 1, len = 1, text = "uno" } }, { e("k1", "uno", "uno") })
 check("item spostato su un'altra voce: cambia traccia testo", plan.update[1].move == true)
 
+-- marker di servizio dentro l'item: non diventano testo e non spezzano la battuta
+do
+  local out = M.item_lines({ pos = 0, len = 10, startoffs = 0, rate = 1 },
+    { { src = 1, text = "Battuta uno" }, { src = 3, text = "#segnaposto" }, { src = 5, text = "OK_002" }, { src = 7, text = "Battuta due" } })
+  check("servizio: solo le due battute, la prima dura fino alla seconda",
+    #out == 2 and out[1].text == "Battuta uno" and math.abs(out[1].len - 6) < 1e-9 and out[2].text == "Battuta due")
+end
 print(fails == 0 and "\nTUTTI OK" or ("\nFALLITI: " .. fails))
 os.exit(fails == 0 and 0 or 1)
