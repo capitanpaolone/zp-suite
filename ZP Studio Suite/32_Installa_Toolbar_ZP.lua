@@ -15,6 +15,9 @@
 -- spiega come importarlo. Non tocca le toolbar che stai usando.
 -- Catene: se in FXChains c'e' gia' una catena con lo stesso nome non viene sovrascritta
 -- (puo' essere la tua, personalizzata).
+-- Preset: aggiunge in REAPER/presets i preset dei JSFX usati dal Chain Builder (BUS Chain
+-- Voiceover_Body1..., Master Pro Flat -19). REAPER li lega al percorso del JSFX installato
+-- da ReaPack. Si aggiungono solo i preset con un nome che non c'e' gia': i tuoi restano.
 
 local M = {}
 
@@ -22,6 +25,12 @@ local M = {}
 M.CHAINS = {
   { "fxchains/ZP_Bus_VoiceChain.RfxChain", "ZP Bus VoiceChain.RfxChain" },
   { "fxchains/ZP_MasterChain.RfxChain", "ZP MasterChain.RfxChain" },
+}
+
+-- preset dei JSFX: file nel pacchetto -> stesso nome in REAPER/presets (unione per nome)
+M.PRESETS = {
+  "js-ZP Suite_ZP Voce_ZP BUS Chain_jsfx.ini",
+  "js-ZP Suite_ZP Master_ZP Master Pro_jsfx.ini",
 }
 
 -- La toolbar: script, testo del pulsante, icona. "-" = separatore.
@@ -91,6 +100,56 @@ function M.menu_text(layout, ids, title)
   for i, l in ipairs(items) do out[#out + 1] = string.format("item_%d=%s", i - 1, l) end
   out[#out + 1] = "title=" .. (title or "ZP Studio Suite")
   return table.concat(out, "\n") .. "\n"
+end
+
+-- Preset di un file .ini di REAPER: elenco di { name, body } (body = righe sotto [PresetN]).
+function M.preset_entries(text)
+  local out, cur = {}, nil
+  for line in (tostring(text or ""):gsub("\r", "") .. "\n"):gmatch("([^\n]*)\n") do
+    if line:match("^%[Preset%d+%]$") then
+      cur = { name = nil, body = {} }
+      out[#out + 1] = cur
+    elseif line:match("^%[") then
+      cur = nil
+    elseif cur and line ~= "" then
+      cur.body[#cur.body + 1] = line
+      local n = line:match("^Name=(.*)$")
+      if n then cur.name = n end
+    end
+  end
+  return out
+end
+
+-- Unisce i preset del pacchetto a quelli dell'utente: aggiunge solo i nomi che mancano,
+-- in coda, e aggiorna NbPresets. Restituisce il testo nuovo e i nomi aggiunti.
+function M.merge_presets(user, pkg)
+  user = user and tostring(user):gsub("\r", "") or ""
+  local pkg_entries = M.preset_entries(pkg)
+  if not user:match("%S") then
+    local names = {}
+    for _, e in ipairs(pkg_entries) do names[#names + 1] = e.name end
+    return pkg, names
+  end
+  local have = {}
+  local user_entries = M.preset_entries(user)
+  for _, e in ipairs(user_entries) do if e.name then have[e.name] = true end end
+  local n = tonumber(user:match("NbPresets=(%d+)")) or #user_entries
+  local add, names = {}, {}
+  for _, e in ipairs(pkg_entries) do
+    if e.name and not have[e.name] then
+      add[#add + 1] = "[Preset" .. n .. "]\n" .. table.concat(e.body, "\n") .. "\n"
+      names[#names + 1] = e.name
+      n = n + 1
+    end
+  end
+  if #add == 0 then return user, names end
+  if user:match("NbPresets=%d+") then
+    user = user:gsub("NbPresets=%d+", "NbPresets=" .. n, 1)
+  else
+    user = user:gsub("%[General%]\n", "[General]\nNbPresets=" .. n .. "\n", 1)
+  end
+  if not user:match("\n\n$") then user = user:gsub("\n*$", "") .. "\n\n" end
+  return user .. table.concat(add, "\n") .. "\n", names
 end
 
 if not reaper then return M end
@@ -167,6 +226,33 @@ for _, c in ipairs(M.CHAINS) do
   end
 end
 
+-- preset dei JSFX in REAPER/presets
+local preset_dir = resource .. sep .. "presets"
+reaper.RecursiveCreateDirectory(preset_dir, 0)
+local preset_lines = {}
+for _, name in ipairs(M.PRESETS) do
+  local pkg = read(here .. sep .. "presets" .. sep .. name)
+  local dest = preset_dir .. sep .. name
+  if not pkg then
+    preset_lines[#preset_lines + 1] = name .. ": non trovato nel pacchetto"
+  else
+    local user = read(dest)
+    local merged, added = M.merge_presets(user, pkg)
+    if #added == 0 then
+      preset_lines[#preset_lines + 1] = "gia' presenti: " .. table.concat((function()
+        local t = {} for _, e in ipairs(M.preset_entries(pkg)) do t[#t + 1] = e.name end return t end)(), ", ")
+    else
+      if user then
+        local b = io.open(dest .. ".ZPSS_backup_" .. os.date("%Y%m%d_%H%M%S"), "wb")
+        if b then b:write(user); b:close() end
+      end
+      local out = io.open(dest, "wb")
+      if out then out:write(merged); out:close(); preset_lines[#preset_lines + 1] = "aggiunti: " .. table.concat(added, ", ")
+      else preset_lines[#preset_lines + 1] = name .. ": non riesco a scriverlo" end
+    end
+  end
+end
+
 local buttons = 0
 for _ in pairs(ids) do buttons = buttons + 1 end
 local msg = string.format(
@@ -175,4 +261,5 @@ local msg = string.format(
 if #registered > 0 then msg = msg .. "\n\nRegistrati ora nell'Action List: " .. table.concat(registered, ", ") end
 if #missing > 0 then msg = msg .. "\n\nNON trovati (pulsante saltato): " .. table.concat(missing, ", ") end
 msg = msg .. "\n\nCatene di effetti per il SOLO Recorder (REAPER/FXChains):\n" .. table.concat(chain_lines, "\n")
+msg = msg .. "\n\nPreset per il Chain Builder (REAPER/presets):\n" .. table.concat(preset_lines, "\n")
 reaper.MB(msg, "ZP Installa toolbar ed effetti", 0)

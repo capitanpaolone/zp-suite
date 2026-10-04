@@ -115,6 +115,8 @@
 --   help/collega_marker.html
 --   fxchains/ZP_Bus_VoiceChain.RfxChain
 --   fxchains/ZP_MasterChain.RfxChain
+--   presets/js-ZP Suite_ZP Voce_ZP BUS Chain_jsfx.ini
+--   presets/js-ZP Suite_ZP Master_ZP Master Pro_jsfx.ini
 --   tools/srt_tools.html
 --   toolbar/ZP_StudioSuite.ReaperMenu
 --   ZP_NVDA_Speech.py

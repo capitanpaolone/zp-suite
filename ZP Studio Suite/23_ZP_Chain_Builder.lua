@@ -31,8 +31,8 @@ local PROFILES = {
       "  ZP VO BUS\n" ..
       "    REC\n" ..
       "    EDIT\n\n" ..
-      "Sul VO BUS inserisce BUS Chain e Probe VOICE come ultimo FX.\n" ..
-      "Sul Master inserisce ZP Master Pro.\n\n" ..
+      "Sul VO BUS inserisce BUS Chain (preset Voiceover_Body1) e Probe VOICE come ultimo FX.\n" ..
+      "Sul Master inserisce ZP Master Pro con il preset Flat -19.\n\n" ..
       "Target Master: -18 LUFS | Ceiling: -3 dB."
   },
   {
@@ -55,8 +55,8 @@ local PROFILES = {
       "  ZP VO BUS\n" ..
       "    REC\n" ..
       "    EDIT\n\n" ..
-      "Sul VO BUS inserisce BUS Chain e Probe VOICE come ultimo FX.\n" ..
-      "Sul Master inserisce ZP Master Pro.\n\n" ..
+      "Sul VO BUS inserisce BUS Chain (preset Voiceover_Body1) e Probe VOICE come ultimo FX.\n" ..
+      "Sul Master inserisce ZP Master Pro con il preset Flat -19.\n\n" ..
       "Target Master: -14 LUFS | Ceiling: -3 dB."
   },
   {
@@ -85,22 +85,31 @@ local PROFILES = {
   },
 }
 
+-- Preset: li installa "32 Installa toolbar ed effetti" in REAPER/presets (cartella presets/
+-- della Suite), perche' REAPER lega i preset al percorso del JSFX installato da ReaPack.
 local FX = {
-  unified = {
-    label = "ZP BUS / Voiceover Unified Chain",
-    match = { "zp bus chain", "zp voiceover unified chain" },
+  bus = {
+    label = "ZP BUS Chain - Voice/Music Processor",
+    match = "zp bus chain",
     candidates = {
-      "JS: ZP_Paolo Balestri JSFX/ZP BUS Chain 1.0_BROWN-ANA.jsfx",
-      "ZP_Paolo Balestri JSFX/ZP BUS Chain 1.0_BROWN-ANA.jsfx",
-      "ZP BUS Chain 1.0_BROWN-ANA",
-      "JS: ZP_Paolo Balestri JSFX/ZP Voiceover Unified Chain v4.0-dev.jsfx",
-      "ZP Voiceover Unified Chain",
+      "JS: ZP Suite/ZP Voce/ZP BUS Chain.jsfx",
+      "ZP Suite/ZP Voce/ZP BUS Chain.jsfx",
+      "ZP BUS Chain - Voice/Music Processor",
     },
+    preset = "Voiceover_Body1_BG80HzDyn_-3dBLim",
+  },
+  -- la vecchia catena unica: se c'e' sul VO BUS la sostituisce la BUS Chain (resta, in bypass)
+  unified = {
+    label = "ZP Voiceover Unified Chain",
+    match = "zp voiceover unified chain",
   },
   master = {
     label = "ZP Master Pro",
     match = "zp master pro",
+    preset = "Flat -19",
     candidates = {
+      "JS: ZP Suite/ZP Master/ZP Master Pro.jsfx",
+      "ZP Suite/ZP Master/ZP Master Pro.jsfx",
       "JS: ZP_Paolo Balestri JSFX/ZP Master Pro.jsfx",
       "ZP_Paolo Balestri JSFX/ZP Master Pro.jsfx",
       "ZP Master Pro",
@@ -110,6 +119,8 @@ local FX = {
     label = "ZP Harmonic Space Carver",
     match = "zp harmonic space carver",
     candidates = {
+      "JS: ZP Suite/ZP Voce/ZP Harmonic Space Carver.jsfx",
+      "ZP Suite/ZP Voce/ZP Harmonic Space Carver.jsfx",
       "JS: ZP_Paolo Balestri JSFX/ZP Harmonic Space Carver Access View v2X.jsfx",
       "ZP_Paolo Balestri JSFX/ZP Harmonic Space Carver Access View v2X.jsfx",
       "ZP Harmonic Space Carver Access View v2X",
@@ -121,6 +132,8 @@ local FX = {
     label = "ZP Voice-Music Probe",
     match = "zp voice-music probe",
     candidates = {
+      "JS: ZP Suite/ZP Misura/ZP Voice-Music Probe.jsfx",
+      "ZP Suite/ZP Misura/ZP Voice-Music Probe.jsfx",
       "JS: ZP_Paolo Balestri JSFX/ZP Voice-Music Probe.jsfx",
       "ZP_Paolo Balestri JSFX/ZP Voice-Music Probe.jsfx",
       "ZP Voice-Music Probe",
@@ -196,6 +209,7 @@ end
 
 local function find_vo_bus()
   return find_track_by_role("VO_BUS")
+    or find_track_with_fx(FX.bus.match)
     or find_track_with_fx(FX.unified.match)
     or find_named({ ["zp vo bus"] = true, ["zp vo"] = true, ["vo bus"] = true })
 end
@@ -222,6 +236,36 @@ local function add_fx_if_missing(track, spec)
     if index and index >= 0 then return "added", index end
   end
   return "missing", -1
+end
+
+-- Carica un preset del JSFX. Se REAPER non lo conosce, lo dice nel rapporto.
+local function apply_preset(track, fx, name, report)
+  if reaper.TrackFX_SetPreset(track, fx, name) then
+    report[#report + 1] = "PRESET    " .. name
+    return true
+  end
+  report[#report + 1] = "MANCA     preset " .. name .. " (lancia 32 Installa toolbar ed effetti)"
+  return false
+end
+
+-- BUS Chain sul VO BUS. Appena inserita prende il preset Voiceover; se sul bus c'era la
+-- vecchia Unified Chain, la BUS Chain prende il suo posto e la Unified resta in bypass
+-- (non si cancella niente). Una BUS Chain gia' presente non viene toccata.
+local function ensure_bus_chain(vo, report)
+  local result, index = add_fx_if_missing(vo, FX.bus)
+  report[#report + 1] =
+    (result == "found" and "TROVATO   " or result == "added" and "AGGIUNTO  " or "MANCA     ")
+    .. FX.bus.label
+  if result ~= "added" then return result end
+  local old = find_fx(vo, FX.unified.match)
+  if old >= 0 then
+    reaper.TrackFX_CopyToTrack(vo, index, vo, old, true)
+    index = old
+    reaper.TrackFX_SetEnabled(vo, old + 1, false)
+    report[#report + 1] = "BYPASS    " .. FX.unified.label .. " (sostituita, non cancellata)"
+  end
+  apply_preset(vo, index, FX.bus.preset, report)
+  return result
 end
 
 local function ensure_probe_last(track, mode)
@@ -398,6 +442,8 @@ local function configure_master(profile, report)
     .. FX.master.label .. " sul Master"
 
   if fx and fx >= 0 then
+    -- In tutti i profili: prima il preset Flat -19, poi target e ceiling del profilo.
+    apply_preset(master, fx, FX.master.preset, report)
     -- JSFX parameter indices are zero-based:
     -- slider2 Ceiling, slider23 Target LUFS, slider30 Final Limiter.
     reaper.TrackFX_SetParam(master, fx, 1, profile.ceiling_db)
@@ -471,7 +517,7 @@ local function inspect(profile)
     edit = vo and find_direct_child(vo, { ["edit"] = true, ["editing"] = true }) or nil,
     music = music,
     video = video,
-    vo_fx = vo and find_fx(vo, FX.unified.match) >= 0 or false,
+    vo_fx = vo and find_fx(vo, FX.bus.match) >= 0 or false,
     voice_probe = vo and find_fx(vo, FX.probe.match) >= 0 or false,
     voice_probe_last = vo and find_fx(vo, FX.probe.match) == reaper.TrackFX_GetCount(vo) - 1 or false,
     music_fx = music and find_fx(music, FX.space.match) >= 0 or false,
@@ -537,10 +583,7 @@ local function apply_profile(profile)
   if rec then set_role(rec, "VO_REC") end
   if edit then set_role(edit, "VO_EDIT") end
 
-  local bus_result = add_fx_if_missing(vo, FX.unified)
-  report[#report + 1] =
-    (bus_result == "found" and "TROVATO   " or bus_result == "added" and "AGGIUNTO  " or "MANCA     ")
-    .. FX.unified.label
+  local bus_result = ensure_bus_chain(vo, report)
   changed = changed or bus_result == "added"
 
   local voice_probe_result = ensure_probe_last(vo, 0)
@@ -597,7 +640,9 @@ local HELP_TEXT =
   "ZP CHAIN BUILDER\n\n" ..
   "TRASFORMA PROGETTO\n" ..
   "Crea o completa la struttura scelta, aggiunge i plugin mancanti, assegna i ruoli dei Probe " ..
-  "e configura target LUFS e ceiling di ZP Master Pro.\n\n" ..
+  "e configura ZP Master Pro: preset Flat -19, poi target LUFS e ceiling del profilo.\n" ..
+  "La BUS Chain appena inserita parte dal preset Voiceover_Body1_BG80HzDyn_-3dBLim;\n" ..
+  "una vecchia Voiceover Unified Chain sul VO BUS resta in bypass. I preset li installa la 32.\n\n" ..
   "CHECK / REPAIR\n" ..
   "Controlla la struttura attuale. Se mancano elementi, propone di crearli senza cancellare item o FX.\n\n" ..
   "VO BUS\n" ..

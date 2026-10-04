@@ -375,7 +375,7 @@
 
   <!-- ================================================================== -->
   <h2 id="zp-chain-builder">Chain Builder</h2>
-  <p><strong>A cosa serve.</strong> Monta in un progetto la struttura di tracce e plugin ZP adatta al tipo di lavoro, e imposta il target di loudness del master. Non tocca il suono dei plugin e non cancella niente.</p>
+  <p><strong>A cosa serve.</strong> Monta in un progetto la struttura di tracce e plugin ZP adatta al tipo di lavoro, e imposta il target di loudness del master. Non cancella niente.</p>
   <p class="when">Quando: all'inizio di un progetto, oppure su un progetto esistente per controllare che la catena sia completa.</p>
   <div class="wrap"><table>
     <tr><th>Profilo</th><th>Cosa crea</th><th>Target master</th></tr>
@@ -386,7 +386,9 @@
     <tr><td>Spot</td><td>Come Podcast.</td><td>-9 LUFS, ceiling -1 dB</td></tr>
   </table></div>
   <ul>
-    <li><strong>Trasforma progetto</strong> crea solo quello che manca. Non elimina, non riordina, non sostituisce FX o item.</li>
+    <li><strong>Trasforma progetto</strong> crea solo quello che manca. Non elimina FX o item.</li>
+    <li><strong>Preset.</strong> La <em>ZP BUS Chain - Voice/Music Processor</em>, quando la inserisce, parte dal preset <code>Voiceover_Body1_BG80HzDyn_-3dBLim</code>; una BUS Chain già presente resta com'è. Su <em>ZP Master Pro</em>, in tutti i profili, carica il preset <code>Flat -19</code> e poi imposta target e ceiling del profilo. I due preset li installa <a href="#tool-32">32 Installa toolbar ed effetti</a>; se mancano, il rapporto lo dice.</li>
+    <li><strong>Vecchia Unified Chain.</strong> Se sul VO BUS c'è la <em>ZP Voiceover Unified Chain</em>, la BUS Chain prende il suo posto e la Unified resta lì in bypass, non cancellata.</li>
     <li><strong>Check / Repair</strong> elenca cosa c'è (TROVATO), cosa manca (MANCA) e cosa è fuori posto (DA RIPARARE), e chiede prima di sistemare.</li>
     <li>Gli invii e il sidechain voce&rarr;musica non vengono creati: per Podcast e Spot controllali tu.</li>
     <li>Alla fine avvia il <a href="#zp-probe-guard">Probe Guard</a>.</li>
@@ -530,7 +532,7 @@
   <!-- ================================================================== -->
   <h2 id="installazione">Installazione e componenti opzionali</h2>
   <p>La suite si installa e si aggiorna con <strong>ReaPack</strong>: <em>Extensions &rarr; ReaPack &rarr; Import repositories</em>, incolla <code>https://github.com/capitanpaolone/zp-suite/raw/master/index.xml</code>, poi <em>Browse packages</em>, cerca <em>ZP</em> e installa <em>ZP Studio Suite</em> e i plugin che ti servono. Le azioni compaiono nell'Action List come <em>ZP Studio Suite - …</em>.</p>
-  <p id="tool-32"><strong>Toolbar ed effetti:</strong> dopo l'installazione lancia dall'Action List <strong>32 Installa toolbar ZP</strong>. Scrive la toolbar con gli identificativi delle azioni del tuo REAPER e ti dice come importarla; mette anche in REAPER/FXChains le catene di effetti del SOLO Recorder (ZP Bus VoiceChain e ZP MasterChain), senza sovrascrivere quelle che hai già. Rilancialo se un pulsante resta vuoto o dopo un aggiornamento che aggiunge strumenti. <a href="toolbar.html">I pulsanti, uno per uno</a>.</p>
+  <p id="tool-32"><strong>Toolbar ed effetti:</strong> dopo l'installazione lancia dall'Action List <strong>32 Installa toolbar ZP</strong>. Scrive la toolbar con gli identificativi delle azioni del tuo REAPER e ti dice come importarla; mette anche in REAPER/FXChains le catene di effetti del SOLO Recorder (ZP Bus VoiceChain e ZP MasterChain), senza sovrascrivere quelle che hai già. Aggiunge in REAPER/presets i preset usati dal Chain Builder (BUS Chain <code>Voiceover_Body1_BG80HzDyn_-3dBLim</code>, Master Pro <code>Flat -19</code>): solo se non hai già un preset con lo stesso nome, e i tuoi restano. Rilancialo se un pulsante resta vuoto o dopo un aggiornamento che aggiunge strumenti. <a href="toolbar.html">I pulsanti, uno per uno</a>.</p>
   <p>In alternativa c'è il file pronto <code>toolbar/ZP_StudioSuite.ReaperMenu</code> nella cartella della suite (Options &rarr; Customize menus/toolbars &rarr; Import), ma è fatto con gli identificativi di un altro REAPER: i pulsanti degli strumenti più recenti possono restare vuoti. Meglio la 32. <a href="toolbar.html">Cosa fa ogni pulsante &rarr;</a></p>
   <p>Funziona su un REAPER pulito. Queste estensioni non sono obbligatorie, ma aggiungono qualcosa:</p>
   <div class="wrap"><table>
