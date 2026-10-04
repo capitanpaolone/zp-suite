@@ -1965,7 +1965,7 @@ local function setup_mixdown_render_target(groups, folder_override, action_label
       reaper.ShowMessageBox(
         "Selezione regioni non coerente: REAPER ha selezionato " .. tostring(selected_count) ..
         " regioni reali, ma il render ne richiede " .. tostring(expected_selected_count) .. ".\n\n" ..
-        "Fermo il render per evitare nomi scalati o file mancanti. Ho gia' aggiornato il Region/Marker Manager prima del controllo; riprova una volta. Se il problema resta, spegni Ghost per questa sessione.",
+        "Fermo il render per evitare nomi scalati o file mancanti. Ho gia' aggiornato il Region/Marker Manager prima del controllo; riprova una volta.",
         SCRIPT_TITLE,
         0
       )
@@ -2396,8 +2396,6 @@ local function draw_help_overlay(clicked)
     "",
     "Index ON: aggiorna anche Mixdown/<Lane1>/Mixdown_Index.csv con colonna Presente = X se il file esiste.",
     "Index OFF: aggiorna solo Mixdown/Mixdown_Report.csv.",
-    "Ghost ON: aggiunge una regione tecnica di preroll per scaldare i plugin prima del primo file.",
-    "Ghost OFF: nessuna regione o file fantasma viene aggiunto.",
     "",
     "Directory: Lane 1 = Mixdown/<marker>/; Lane 2 = Mixdown/<Lane1>/<Lane2>/.",
     "Le regioni fuori Lane 1 sono ignorate da anteprima, selezione e render. Pattern file: $region.",
