@@ -330,7 +330,7 @@ local function speech_ready()
     return false
   end
   if not exists((speech_cli())) then
-    reaper.ShowMessageBox("ZP Speech non e' installato.\nAvvia install_speech_service.sh da ZP Tools, oppure crea l'SRT con il tuo whisper e parti dalla tappa Abbina.", "ZP Trascrizione", 0)
+    reaper.ShowMessageBox("ZP Speech non e' installato.\nNel repo zp-suite lancia: bash speech-engine/install_macos.sh\n(serve Python 3.11+ e MacWhisper). Oppure crea l'SRT con il tuo whisper e parti dalla tappa Abbina.", "ZP Trascrizione", 0)
     return false
   end
   -- il servizio va avviato se non gira (come in 26_SRT_Tools.lua)

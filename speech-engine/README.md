@@ -1,5 +1,20 @@
 # ZP Speech Engine — contract foundation
 
+## Installazione (macOS)
+
+Dalla radice del repo, su questo Mac o su un altro dopo `git clone`:
+
+```bash
+bash speech-engine/install_macos.sh
+```
+
+Serve Python 3.11 o più recente (quello di serie su macOS è spesso 3.9: lo script lo
+cerca da sé e, se manca, dice cosa installare) e MacWhisper per trascrivere. Rilanciarlo
+aggiorna il motore e riavvia il servizio su `127.0.0.1:8770`.
+
+Su Windows e Linux lo script si ferma subito e spiega l'alternativa: SRT creato con il
+proprio Whisper, accanto al WAV con lo stesso nome, poi «Abbina da…» nella 29.
+
 This directory contains ZP Speech API/Schema v1, the MacWhisper provider adapter,
 the singleton loopback service, and its CLI client for REAPER and ZP applications.
 
