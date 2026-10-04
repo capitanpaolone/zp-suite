@@ -4,8 +4,9 @@
 -- 30 ZP SRT: tutto quello che si fa con gli SRT, in una finestra, nell'ordine
 -- in cui si lavora: porta dentro, controlla, porta fuori.
 --
--- Non rifa' il lavoro degli script: sceglie lo strumento giusto, si chiude e lo apre
--- (come fa gia' 05 con il suo motore). Gli script restano utilizzabili anche da soli.
+-- Non rifa' il lavoro degli script: apre lo strumento giusto come azione a se' (dall'Action
+-- List), cosi' questa finestra RESTA APERTA e la chiudi tu. Solo se lo script non si trova
+-- tra le azioni si chiude e lo apre direttamente. Gli script restano utilizzabili da soli.
 
 local sep = package.config:sub(1, 1)
 local here = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\][^/\\]+$") or ".")
@@ -18,7 +19,7 @@ if not exists(path_of("ZP_UI.lua")) then
 end
 local UI = dofile(path_of("ZP_UI.lua"))
 
--- Colonne e strumenti. op = operazione preselezionata nel 05 (vedi _G.ZP_SRT_OP).
+-- Colonne e strumenti. op = operazione preselezionata nel 05 (ExtState SRT_OP).
 local COLUMNS = {
   { title = "1  Porta dentro", items = {
     { label = "Video + SRT", script = "01_Importa_Video_SRT.lua",
@@ -53,18 +54,49 @@ local COLUMNS = {
       hint = "video, regioni o tutto",
       help = "Scrive gli SRT finali dai testi in timeline: per video selezionati, regione al cursore, tutte le regioni o tutti i video." },
     { label = "SRT dall'audio", script = "31_SRT_da_Marker_Audio.lua",
-      hint = "marker -> SRT accanto al file",
-      help = "Dai marker degli item audio selezionati scrive l'SRT accanto al file sorgente (anche dopo tagli o Glue). Da consegnare al fonico o da riusare." },
+      hint = "marker -> SRT, scegli la cartella",
+      help = "Dai marker degli item audio selezionati scrive l'SRT nella cartella che scegli (anche dopo tagli o Glue). Da consegnare al fonico o da riusare." },
   } },
 }
 
 local last_down = false
 local hover_help = nil
 
+-- Identificativo d'azione dello script: dal file delle azioni (reaper-kb.ini) o, se non
+-- c'e', registrandolo adesso nell'Action List (come fa la 32). 0 = non disponibile.
+local function norm(p) return (tostring(p):gsub("\\", "/"):gsub("/+", "/"):lower()) end
+local function command_for(path)
+  local f = io.open(reaper.GetResourcePath() .. sep .. "reaper-kb.ini", "rb")
+  local kb = f and f:read("*a") or ""
+  if f then f:close() end
+  local want, scripts = norm(path), reaper.GetResourcePath() .. "/Scripts/"
+  for line in kb:gmatch("[^\n]+") do
+    local section, id, rest = line:match('^SCR%s+%d+%s+(%d+)%s+(RS%x+)%s+"[^"]*"%s+(.-)%s*$')
+    if section == "0" and rest then
+      local p = rest:match('^"(.*)"$') or rest
+      if not p:match("^/") and not p:match("^%a:[/\\]") then p = scripts .. p end
+      if norm(p) == want then
+        local cmd = reaper.NamedCommandLookup("_" .. id)
+        if cmd and cmd > 0 then return cmd end
+      end
+    end
+  end
+  local cmd = reaper.AddRemoveReaScript(true, 0, path, true)
+  return cmd or 0
+end
+
+-- true = questa finestra si e' chiusa (ripiego)
 local function launch(entry)
   local p = path_of(entry.script)
   if not exists(p) then
     reaper.ShowMessageBox("Non trovo " .. entry.script .. " accanto a questo script.", "ZP SRT", 0)
+    return false
+  end
+  if entry.op then reaper.SetExtState("ZP_STUDIO_SUITE", "SRT_OP", tostring(entry.op), false)
+  else reaper.DeleteExtState("ZP_STUDIO_SUITE", "SRT_OP", false) end
+  local cmd = command_for(p)
+  if cmd > 0 then
+    reaper.Main_OnCommand(cmd, 0)
     return false
   end
   gfx.quit()
@@ -85,7 +117,7 @@ local function loop()
 
   UI.fill_background()
   UI.draw_header({ title = "ZP SRT", credit = "ZP Studio Suite - 30",
-    description = "Scegli cosa vuoi fare con gli SRT: la finestra si chiude e apre lo strumento giusto." })
+    description = "Scegli cosa vuoi fare con gli SRT: apre lo strumento giusto e resta aperta, la chiudi tu." })
   UI.draw_help_button({ x = gfx.w - 54, y = 16, w = 34, h = 28 }, clicked, "tool-30")
 
   local pad, gap = 22, 18
