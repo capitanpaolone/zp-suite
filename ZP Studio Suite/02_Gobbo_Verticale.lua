@@ -29,6 +29,7 @@ local character_lane_by_key = {}
 local last_proj_state = -1
 local last_track_guid = ""
 local selected_text_track_guid = ""
+local READ_ALL = "ALL"   -- flusso virtuale "Tutti" (Leggi tutto): tutte le tracce testo insieme
 local current_text_track = nil
 local last_win_w = 0
 local active_media_item = nil
@@ -208,6 +209,7 @@ function SaveSettings()
 end
 
 function LoadSettings()
+    if reaper.GetExtState(settings_section, "read_all") == "1" then selected_text_track_guid = READ_ALL end
     local saved_theme = reaper.GetExtState(settings_section, "theme_mode")
     if saved_theme == "dark" or saved_theme == "medium" or saved_theme == "light" then
         theme_mode = saved_theme
@@ -304,6 +306,14 @@ function FindTextFlowByGuid(guid)
 end
 
 function GetRythmoTrack()
+    if selected_text_track_guid == READ_ALL then
+        -- Leggi tutto: i testi nuovi vanno nella traccia principale, la lettura le prende tutte
+        local tracks = CollectTextFlowTracks()
+        for _, entry in ipairs(tracks) do
+            if trim(entry.name) == default_track_name then return entry.track end
+        end
+        return tracks[1] and tracks[1].track or nil
+    end
     local selected = FindTextFlowByGuid(selected_text_track_guid)
     if selected then
         current_text_track = selected.track
@@ -360,7 +370,7 @@ function AddEmptyGobboTextItem()
         return
     end
 
-    selected_text_track_guid = reaper.GetTrackGUID(track)
+    if selected_text_track_guid ~= READ_ALL then selected_text_track_guid = reaper.GetTrackGUID(track) end
     SetTrackVisible(track, true, true)
 
     local pos = GetCurrentProjectPosition()
@@ -407,6 +417,7 @@ function CurrentTextFlowEntry()
 end
 
 function CurrentTextFlowLabel()
+    if selected_text_track_guid == READ_ALL then return "Tutti" end
     local entry = CurrentTextFlowEntry()
     if not entry then return "Nessun testo" end
     return TextFlowDisplayName(entry.name)
@@ -415,6 +426,8 @@ end
 function CycleTextFlow(delta)
     local tracks = CollectTextFlowTracks()
     if #tracks == 0 then return end
+    -- con due o piu' flussi c'e' anche "Tutti" (Leggi tutto)
+    if #tracks >= 2 then tracks[#tracks + 1] = {guid=READ_ALL} end
 
     local current_guid = selected_text_track_guid or ""
     local current_index = 1
@@ -425,6 +438,7 @@ function CycleTextFlow(delta)
     local next_index = ((current_index - 1 + delta) % #tracks) + 1
     selected_text_track_guid = tracks[next_index].guid
     current_text_track = tracks[next_index].track
+    reaper.SetExtState(settings_section, "read_all", selected_text_track_guid == READ_ALL and "1" or "0", true)
     active_media_item = nil
     cached_items = {}
     cached_notes = {}
@@ -2302,7 +2316,13 @@ function UpdateItems()
     cached_character_notes = CollectCharacterNotes()
     BuildCharacterLanes()
     cached_items = {}
-    if track then
+    local flow_tracks = {}
+    if selected_text_track_guid == READ_ALL then
+        for _, entry in ipairs(CollectTextFlowTracks()) do flow_tracks[#flow_tracks + 1] = entry.track end
+    elseif track then
+        flow_tracks[1] = track
+    end
+    for flow_index, track in ipairs(flow_tracks) do
         for i=0, reaper.CountTrackMediaItems(track)-1 do
             local item = reaper.GetTrackMediaItem(track, i)
             local pos   = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
@@ -2316,11 +2336,14 @@ function UpdateItems()
             
             local r, g, b = ColorToRGB(color, COLOR_SUBS)
             
-            table.insert(cached_items, {item=item, pos=pos, len=len, notes=notes, highlights=ParseHighlightTerms(highlight_raw), has_note=has_note, person_notes=person_notes, r=r, g=g, b=b})
+            table.insert(cached_items, {item=item, pos=pos, len=len, notes=notes, highlights=ParseHighlightTerms(highlight_raw), has_note=has_note, person_notes=person_notes, r=r, g=g, b=b, flow=flow_index})
         end
-        -- Ordine cronologico rigidissimo! È un copione.
-        table.sort(cached_items, function(a, b) return a.pos < b.pos end)
     end
+    -- Ordine cronologico rigidissimo! È un copione. A parita' di tempo, l'ordine delle tracce.
+    table.sort(cached_items, function(a, b)
+        if a.pos ~= b.pos then return a.pos < b.pos end
+        return a.flow < b.flow
+    end)
     
     RecalculateDocumentLayout()
 end
@@ -3147,7 +3170,7 @@ function DrawGUI()
     end
 
     local track = GetRythmoTrack()
-    local track_guid = track and reaper.GetTrackGUID(track) or ""
+    local track_guid = selected_text_track_guid == READ_ALL and READ_ALL or (track and reaper.GetTrackGUID(track) or "")
     local proj_state = reaper.GetProjectStateChangeCount(0)
 
     if proj_state ~= last_proj_state or track_guid ~= last_track_guid then
