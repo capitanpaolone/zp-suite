@@ -1,34 +1,34 @@
-# ZP Harmonic Space Carver — idea: pulsante "rientro rapido" legato alla timeline
+# ZP Harmonic Space Carver — cue di rientro rapido
 
-Richiesta di Paolo, 2026-10-04. Stato: **da progettare, nessun codice**. Plugin: `ZP Voce/ZP Harmonic Space Carver.jsfx` (v2.4.1).
+Richiesta di Paolo, 2026-10-04. Implementazione sorgente v2.4.4 (v2.4.3 di Codex, corretta il 2026-10-05) in `ZP Voce/ZP Harmonic Space Carver.jsfx`, installata in REAPER.
 
-## Cosa vuole Paolo
-Un pulsante nel plugin. Quando lo clicco, in quel punto della timeline il plugin
-**memorizza un rientro più veloce del volume che sta gestendo** (la musica che torna su
-quando la voce finisce). Così non devo andare a cercare nelle automazioni **tre lane diverse**
-e scriverle a mano.
+## Interfaccia e comportamento
 
-## Le tre lane di oggi (parametri che governano il rientro)
-- `slider27` VCA Hold (ms) — quanto resta giù dopo la fine della voce
-- `slider28` VCA Release (ms) — quanto ci mette a tornare su
-- `slider18` Carver Release (ms) — rientro dello scavo multibanda
-(da confermare con Paolo: forse conta anche `slider50` VCA Return Mode, Standard/Gradual)
+- Il cue manager usa lo spazio libero a destra dei controlli Advanced.
+- Le frecce `<` e `>` saltano al cue precedente o successivo. Il pulsante centrale mostra il cue selezionato (numero in ordine di tempo e minuti:secondi) e ci salta.
+- `Timeline: SALTA / RESTA FERMO`: con RESTA FERMO le frecce scorrono i cue senza muovere il playhead (helper non usato). Salvato con il progetto.
+- `ADD / REMOVE` (solo in Play) memorizza o rimuove un cue sul playhead; a trasporto fermo dice "PLAY PER AGGIUNGERE" e non resta in sospeso.
+- `UNDO LAST` annulla l'ultima aggiunta, rimozione o cancellazione totale.
+- `CLEAR ALL` cancella tutti i cue: primo clic arma (CONFERMA?), secondo clic entro 3 s cancella; UNDO LAST li rimette (solo nella sessione).
+- Si possono salvare fino a 64 cue nello stato serializzato del plugin.
+- Al cue, VCA, bande Carver e Glue tornano a unity con rampa morbida regolabile da 10 a 250 ms (iniziale 200 ms). Per 500 ms il processing resta aperto e ignora il sidechain; poi il ducking riprende normalmente.
 
-## Ipotesi di progetto (da decidere con Paolo)
-1. **Automazione interna**: il plugin tiene una lista di "punti di rientro rapido" (tempo del
-   progetto) salvata con `@serialize`; durante la riproduzione legge la posizione
-   (`play_position`) e, vicino a un punto, usa per quel rientro Hold/Release più corti.
-   Niente lane di REAPER da gestire.
-2. **Oppure** il pulsante scrive davvero i tre punti nelle tre lane di automazione
-   (serve uno script Lua o l'automazione del JSFX con `slider_automate`): più trasparente
-   in REAPER, ma torna il problema delle tre lane.
-3. Da chiarire:
-   - "più veloce" di quanto: un preset fisso (es. Hold 0, Release 1/3) o una manopola
-     "Rientro rapido" che regola insieme le tre?
-   - vale per il singolo rientro successivo al clic, o per un tratto (da/a)?
-   - come si vedono e si cancellano i punti salvati (lista, marker nel grafico)?
-   - comportamento in render offline (il punto deve funzionare anche senza play live).
-   - accessibilità: pulsante e lista dei punti raggiungibili con OSARA (vista JSFX).
+## Helper REAPER
 
-## Prossimo passo
-Paolo completa o corregge questa memoria; poi proposta grafica e prova su una sessione vera.
+`ZP Voce/ZP Harmonic Space Carver Cue Navigator.lua` (sorgente) e `Scripts/ZP Suite/ZP Harmonic Space Carver Cue Navigator.lua` (installato) collega i pulsanti di navigazione al playhead mediante la memoria condivisa JSFX/ReaScript. È installato e impostato come azione globale di avvio SWS; la verifica REAPER ha confermato che non era già definita un’altra azione globale.
+
+## Verifica rimanente
+
+Il ReaScript è stato caricato nell’Action List, avviato e configurato all’avvio globale. Restano da verificare il caricamento della nuova GUI JSFX e i salti reali su cue in un progetto di prova, oltre al salvataggio/riapertura dei cue e alla protezione DSP durante la riproduzione.
+
+## Correzioni 2026-10-05 (v2.4.4)
+- I cue non avevano una memoria propria (`quick_points` partiva da 0) e finivano sugli stati dei filtri
+  SVF del crossover (celle 0-15): aggiungere un cue poteva far saltare il filtro, e il DSP riscriveva i cue.
+  Ora i cue stanno da 1024, il backup per CLEAR ALL da 1152.
+- REAPER rilancia `@init` a ogni Play (il plugin non usa `ext_noinit`): i cue venivano azzerati a ogni
+  avvio della riproduzione. Ora sono inizializzati una volta sola (guardia `quick_inited`).
+- I cue restano ordinati per tempo (prima la rimozione scambiava l'ultimo al suo posto e la numerazione
+  "CUE n / N" non corrispondeva all'ordine). I progetti vecchi si riordinano al caricamento.
+- Un cue appena aggiunto non fa ripartire la rampa una seconda volta; i messaggi di stato spariscono dopo 2,5 s.
+- Su take FX o input FX il salto e' disattivato (l'indirizzo gmem non sarebbe univoco).
+- Helper 1.1: rilegge l'elenco degli FX una volta al secondo invece che a ogni giro.

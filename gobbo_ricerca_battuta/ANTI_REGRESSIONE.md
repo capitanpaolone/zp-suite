@@ -44,6 +44,11 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 - Niente notazione scientifica (`1e-30`): calcolare la costante in @init.
 - Assegnazioni dentro `?:` sempre tra parentesi. `slider_show` vuole la maschera `2^(n-1)`.
 
+- Ogni array in memoria (`x[i]`) deve avere un indirizzo base assegnato in @init, in una zona libera:
+  una variabile mai assegnata vale 0 e scrive sopra la memoria del DSP (Carver: cue sugli stati SVF).
+- Senza `ext_noinit=1` REAPER rilancia @init a ogni Play: lo stato da conservare (cue, liste, scelte
+  dell'utente) va protetto da una guardia "inizializza una volta sola", non azzerato in @init.
+
 ## Marker e testi
 - Marker di servizio, mai testo, mai copiati/cancellati dal 14, mai nel gobbo o nell'SRT:
   nome che comincia con `#` (segnaposto) o `!` (azioni), marker del SOLO

@@ -1,11 +1,8 @@
 // @description ZP Harmonic Space Carver
-// @version 2.4.4
+// @version 2.4.3
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
-//   Cue: corretti la memoria (i cue finivano negli stati dei filtri), l'azzeramento a ogni Play,
-//     la numerazione (ora in ordine di tempo) e ADD a trasporto fermo. Nuovi CLEAR ALL (con
-//     conferma e UNDO) e Timeline SALTA / RESTA FERMO. Pannello ridisegnato nello stile Advanced.
 //   Navigator precedente/cue selezionato/successivo, undo dell’ultima modifica e helper gmem/ReaScript.
 //   Cue di rientro rapido sul playhead con rampa regolabile e protezione sidechain di 500 ms.
 //   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
@@ -208,44 +205,14 @@ meter_gr_l = 1; meter_gr_m = 1; meter_gr_h = 1;
 sc_act_l = 0; sc_act_m = 0; sc_act_h = 0;
 w_pos = 0; last_srate = srate;
 last_play_pos = play_position; was_playing = play_state & 1;
-// Cue di rientro rapido. Memoria propria da 1024 (0-15 sono gli stati dei filtri SVF) e
-// inizializzazione UNA volta sola: REAPER rilancia @init a ogni Play (niente ext_noinit),
-// e prima questo azzerava tutti i cue a ogni avvio della riproduzione.
-quick_points = 1024; quick_backup = 1152;
-function quick_insert(t) local(i) (
-  quick_point_count < 64 ? (
-    i = quick_point_count;
-    while (i > 0 && quick_points[i-1] > t) ( quick_points[i] = quick_points[i-1]; i -= 1; );
-    quick_points[i] = t; quick_point_count += 1; i;
-  ) : -1;
-);
-function quick_delete(idx) local(i) (
-  idx >= 0 && idx < quick_point_count ? (
-    i = idx; loop(quick_point_count - idx - 1, quick_points[i] = quick_points[i+1]; i += 1;);
-    quick_point_count -= 1; quick_points[quick_point_count] = -1;
-  );
-);
-function quick_sort() local(i, j, v) (
-  i = 1;
-  loop(max(0, quick_point_count - 1),
-    v = quick_points[i]; j = i;
-    while (j > 0 && quick_points[j-1] > v) ( quick_points[j] = quick_points[j-1]; j -= 1; );
-    quick_points[j] = v; i += 1;
-  );
-);
-function quick_set_status(st) ( quick_status = st; quick_status_t = time_precise(); );
-quick_inited != 2404 ? (
-  quick_inited = 2404;
-  quick_point_count = 0; quick_backup_count = 0; quick_nav_jump = 1; quick_sel = -1;
-  quick_last_action = 0; quick_last_action_pos = -1; quick_status = 0; quick_status_t = 0; quick_clear_arm_t = -10;
-  qpi = 0; loop(128, quick_points[qpi] = -1; qpi += 1;);
-);
-quick_request = 0; quick_ui_pos = 0;
+quick_point_count = 0; quick_request = 0; quick_ui_pos = 0;
 quick_total_samples = max(1, floor(0.200 * srate));
 quick_samples_left = 0; quick_guard_samples_left = 0; quick_start_gr = 1.0;
 quick_carver_start_l = 1.0; quick_carver_start_m = 1.0; quick_carver_start_h = 1.0;
-quick_last_event_pos = -1;
+quick_status = 0; quick_last_event_pos = -1;
+quick_last_action = 0; quick_last_action_pos = -1;
 quick_gmem_base = -1; quick_selected_index = -1;
+qpi = 0; loop(64, quick_points[qpi] = -1; qpi += 1;);
 last_mouse_cap = 0;
 last_click_time = -1;
 last_click_sl_idx = -1;
@@ -422,23 +389,26 @@ quick_request ? (
     );
     quick_point_action >= 0 ? (
       quick_action_pos = quick_points[quick_point_action];
-      quick_delete(quick_point_action);
+      quick_point_count -= 1;
+      quick_points[quick_point_action] = quick_points[quick_point_count];
+      quick_points[quick_point_count] = -1;
       quick_last_action = 2; quick_last_action_pos = quick_action_pos;
-      quick_sel = -1; quick_gmem_base>=0 ? gmem[quick_gmem_base+2]=-1;
-      quick_set_status(2);
+      quick_gmem_base>=0 ? gmem[quick_gmem_base+2]=-1;
+      quick_status = 2;
     ) : quick_point_count < 64 ? (
-      quick_sel = quick_insert(play_position);
+      quick_points[quick_point_count] = play_position;
+      quick_point_count += 1;
       quick_last_action = 1; quick_last_action_pos = play_position;
-      quick_gmem_base>=0 ? gmem[quick_gmem_base+2]=quick_sel;
+      quick_gmem_base>=0 ? gmem[quick_gmem_base+2]=-1;
       quick_fire = 1;
-      quick_set_status(1);
-    ) : quick_set_status(3);
-  ) : quick_set_status(4);
+      quick_status = 1;
+    ) : quick_status = 3;
+  ) : quick_status = 4;
 );
 !is_jumping && is_playing ? (
   qpi = 0;
   loop(quick_point_count,
-    quick_points[qpi] > last_play_pos && quick_points[qpi] <= play_position ? quick_fire = 1;
+    quick_points[qpi] >= last_play_pos && quick_points[qpi] <= play_position ? quick_fire = 1;
     qpi += 1;
   );
 );
@@ -839,11 +809,11 @@ speech_was_active = speech_active;
 
 // ================================================================
 @serialize
-quick_serialize_version = 2404;
+quick_serialize_version = 2403;
 file_avail(0) >= 0 ? (
   file_avail(0) > 0 ? (
     file_var(0, quick_serialize_version);
-    quick_serialize_version >= 2402 && quick_serialize_version <= 2404 ? (
+    quick_serialize_version == 2402 || quick_serialize_version == 2403 ? (
       file_var(0, quick_point_count);
       quick_point_count = max(0, min(64, floor(quick_point_count)));
       qpi = 0;
@@ -853,8 +823,6 @@ file_avail(0) >= 0 ? (
         file_var(0, quick_last_action_pos);
         quick_last_action = max(0, min(2, floor(quick_last_action)));
       ) : (quick_last_action = 0; quick_last_action_pos = -1;);
-      quick_serialize_version >= 2404 ? (file_var(0, quick_nav_jump); quick_nav_jump = quick_nav_jump ? 1 : 0;) : (quick_nav_jump = 1;);
-      quick_sort(); quick_sel = -1; quick_backup_count = 0;
     ) : (quick_point_count = 0; quick_last_action = 0; quick_last_action_pos = -1;);
   ) : (quick_point_count = 0; quick_last_action = 0; quick_last_action_pos = -1;);
 ) : (
@@ -862,10 +830,8 @@ file_avail(0) >= 0 ? (
   file_var(0, quick_point_count);
   qpi = 0;
   loop(quick_point_count, file_var(0, quick_points[qpi]); qpi += 1;);
-  quick_la_w = quick_last_action == 3 ? 0 : quick_last_action;   // "cancella tutti" si annulla solo in sessione
-  file_var(0, quick_la_w);
+  file_var(0, quick_last_action);
   file_var(0, quick_last_action_pos);
-  file_var(0, quick_nav_jump);
 );
 
 @gfx 900 700
@@ -977,27 +943,6 @@ function ui_tab_button(sl_idx, target_val, bx, by, bw, bh, label, info_id) local
               show_simple ? (gfx_r=0.28; gfx_g=0.31; gfx_b=0.35;) : (gfx_r=0.7; gfx_g=0.7; gfx_b=0.7;);
   gfx_measurestr(label, tw, th);
   gfx_x = bx + (bw-tw)/2; gfx_y = sy + (bh-th)/2; gfx_drawstr(label);
-);
-
-function ui_cue_button(bx, by, bw, bh, label, state, enabled, info_id) local(is_hover, tw, th, sy, my, clicked) (
-  sy = ui_sy(by);
-  my = ui_scroll_widgets ? (mouse_y + ui_scroll_y) : mouse_y;
-  is_hover = (mouse_x >= bx && mouse_x <= bx+bw && my >= by && my <= by+bh);
-  is_hover ? active_info_id = info_id;
-  clicked = is_hover && mouse_click && enabled;
-  gfx_a = 1;
-  !enabled ? ( gfx_r=0.10; gfx_g=0.10; gfx_b=0.12; ) :
-  state == 2 ? ( gfx_r=0.78; gfx_g=0.22; gfx_b=0.18; ) :
-  state == 1 ? ( gfx_r=0.14; gfx_g=0.72; gfx_b=0.83; ) :
-  is_hover ? ( gfx_r=0.22; gfx_g=0.22; gfx_b=0.26; ) : ( gfx_r=0.15; gfx_g=0.15; gfx_b=0.18; );
-  gfx_rect(bx, sy, bw, bh);
-  gfx_r=0.3; gfx_g=0.3; gfx_b=0.3; gfx_line(bx, sy, bx+bw, sy); gfx_line(bx, sy, bx, sy+bh);
-  gfx_setfont(3);
-  !enabled ? ( gfx_r=0.38; gfx_g=0.38; gfx_b=0.42; ) :
-  state == 1 ? ( gfx_r=0.05; gfx_g=0.05; gfx_b=0.06; ) : ( gfx_r=0.86; gfx_g=0.88; gfx_b=0.92; );
-  gfx_measurestr(label, tw, th);
-  gfx_x = bx + max(4, (bw-tw)/2); gfx_y = sy + (bh-th)/2; gfx_drawstr(label);
-  clicked;
 );
 
 function ui_knob(sl_idx, kx, ky, r, min_v, max_v, def_v, label, unit, cr, cg, cb, info_id)
@@ -1263,95 +1208,70 @@ show_simple ? (
   gfx_r=0.11; gfx_g=0.11; gfx_b=0.14; gfx_a=1; gfx_rect(378, ui_sy(427), 74, 8);
   gfx_r=0.95; gfx_g=0.62; gfx_b=0.15; gfx_a= is_fat_active ? 0.9 : 0.3; gfx_rect(378, ui_sy(427), 74 * fat_density_disp, 8);
 
-  // ---- QUICK RETURN CUES: pannello a destra, tra oscilloscopio e sezione Listen ----
-  // gmem condivisa con l'helper "ZP Harmonic Space Carver Cue Navigator.lua" (sposta il playhead).
+  // Timeline cue manager in the unused right-hand panel.
   quick_host_chain=0; quick_host_flags=0;
   quick_host_track=get_host_placement(quick_host_chain,quick_host_flags);
-  // solo FX di traccia/master: per take FX o input FX l'indirizzo non sarebbe univoco
-  quick_gmem_base = (quick_host_flags & 3) ? -1 : 4096+((quick_host_track+2)*4096)+(quick_host_chain*72);
+  quick_gmem_base=4096+((quick_host_track+2)*4096)+(quick_host_chain*72);
   quick_gmem_base>=0 && quick_gmem_base<8300000 ? (
     gmem[quick_gmem_base+69]!=905243 ? (
       gmem[quick_gmem_base+69]=905243; gmem[quick_gmem_base+1]=0; gmem[quick_gmem_base+2]=-1; gmem[quick_gmem_base+3]=0;
     );
     gmem[quick_gmem_base+4]=quick_point_count;
     qpi=0; loop(64, gmem[quick_gmem_base+5+qpi]=qpi<quick_point_count ? quick_points[qpi] : -1; qpi+=1;);
-    // con il salto attivo la selezione la decide l'helper (cue rispetto al playhead)
-    quick_nav_jump ? (quick_sel=floor(gmem[quick_gmem_base+2]+0.5);) : (gmem[quick_gmem_base+2]=quick_sel;);
-  ) : (quick_nav_jump=0;);
-  quick_sel>=quick_point_count ? quick_sel=-1;
-  quick_now=time_precise();
-  quick_status!=0 && quick_now-quick_status_t>2.5 ? quick_status=0;
-  quick_now-quick_clear_arm_t>3 ? quick_clear_arm_t=-10;
+    quick_selected_index=floor(gmem[quick_gmem_base+2]+0.5);
+    quick_selected_index>=quick_point_count ? quick_selected_index=-1;
+  ) : quick_selected_index=-1;
 
-  quick_panel_x=515; quick_panel_y=288; quick_panel_w=max(365, min(620, gfx_w - quick_panel_x - 20)); quick_panel_h=184;
-  gfx_r=0.08; gfx_g=0.08; gfx_b=0.10; gfx_a=1; gfx_rect(quick_panel_x,ui_sy(quick_panel_y),quick_panel_w,quick_panel_h);
-  gfx_r=0.3; gfx_g=0.3; gfx_b=0.3; gfx_line(quick_panel_x,ui_sy(quick_panel_y),quick_panel_x+quick_panel_w,ui_sy(quick_panel_y));
-  gfx_setfont(3); gfx_r=0.14; gfx_g=0.72; gfx_b=0.83; gfx_x=quick_panel_x+12; gfx_y=ui_sy(quick_panel_y+8); gfx_drawstr("QUICK RETURN CUES");
-  sprintf(#quick_count_txt,"%d / 64",quick_point_count); gfx_r=0.62; gfx_g=0.66; gfx_b=0.73;
-  gfx_measurestr(#quick_count_txt,quick_tw,quick_th); gfx_x=quick_panel_x+quick_panel_w-quick_tw-12; gfx_y=ui_sy(quick_panel_y+8); gfx_drawstr(#quick_count_txt);
+  quick_panel_x=515; quick_panel_y=340; quick_panel_w=max(320,gfx_w-535); quick_panel_h=112;
+  gfx_r=0.075; gfx_g=0.08; gfx_b=0.10; gfx_a=1; gfx_rect(quick_panel_x,ui_sy(quick_panel_y),quick_panel_w,quick_panel_h);
+  gfx_r=0.24; gfx_g=0.26; gfx_b=0.31; gfx_line(quick_panel_x,ui_sy(quick_panel_y),quick_panel_x+quick_panel_w,ui_sy(quick_panel_y));
+  gfx_setfont(3); gfx_r=0.14; gfx_g=0.72; gfx_b=0.83; gfx_x=quick_panel_x+12; gfx_y=ui_sy(quick_panel_y+7); gfx_drawstr("QUICK RETURN CUES");
+  sprintf(#quick_count_txt,"%d CUES",quick_point_count); gfx_r=0.62; gfx_g=0.66; gfx_b=0.73; gfx_measurestr(#quick_count_txt,quick_tw,quick_th); gfx_x=quick_panel_x+quick_panel_w-quick_tw-12; gfx_y=ui_sy(quick_panel_y+7); gfx_drawstr(#quick_count_txt);
+  quick_mouse_y=ui_scroll_widgets ? mouse_y+ui_scroll_y : mouse_y;
+  cue_nav_y=quick_panel_y+29; cue_nav_h=25; cue_arrow_w=37; cue_mid_x=quick_panel_x+cue_arrow_w+22; cue_mid_w=max(130,quick_panel_w-2*cue_arrow_w-44);
+  cue_prev_x=quick_panel_x+12; cue_next_x=cue_mid_x+cue_mid_w+10;
+  cue_prev_hover=mouse_x>=cue_prev_x && mouse_x<=cue_prev_x+cue_arrow_w && quick_mouse_y>=cue_nav_y && quick_mouse_y<=cue_nav_y+cue_nav_h;
+  cue_next_hover=mouse_x>=cue_next_x && mouse_x<=cue_next_x+cue_arrow_w && quick_mouse_y>=cue_nav_y && quick_mouse_y<=cue_nav_y+cue_nav_h;
+  cue_mid_hover=mouse_x>=cue_mid_x && mouse_x<=cue_mid_x+cue_mid_w && quick_mouse_y>=cue_nav_y && quick_mouse_y<=cue_nav_y+cue_nav_h;
+  (cue_prev_hover || cue_next_hover || cue_mid_hover) ? active_info_id=56;
+  quick_gmem_base>=0 && quick_gmem_base<8300000 ? (
+    cue_prev_hover && mouse_click ? (gmem[quick_gmem_base]=1;gmem[quick_gmem_base+1]+=1;);
+    cue_next_hover && mouse_click ? (gmem[quick_gmem_base]=2;gmem[quick_gmem_base+1]+=1;);
+    cue_mid_hover && mouse_click ? (gmem[quick_gmem_base]=3;gmem[quick_gmem_base+1]+=1;);
+  );
+  gfx_r=0.13;gfx_g=0.16;gfx_b=0.20;gfx_a=1;
+  gfx_rect(cue_prev_x,ui_sy(cue_nav_y),cue_arrow_w,cue_nav_h);
+  gfx_rect(cue_mid_x,ui_sy(cue_nav_y),cue_mid_w,cue_nav_h);
+  gfx_rect(cue_next_x,ui_sy(cue_nav_y),cue_arrow_w,cue_nav_h);
+  gfx_setfont(3);gfx_r=0.9;gfx_g=0.92;gfx_b=0.96;
+  gfx_x=cue_prev_x+13;gfx_y=ui_sy(cue_nav_y+5);gfx_drawstr("<");
+  quick_selected_index>=0 ? sprintf(#quick_sel_txt,"CUE %d / %d",quick_selected_index+1,quick_point_count) : sprintf(#quick_sel_txt,"CURRENT / NO CUE");
+  gfx_measurestr(#quick_sel_txt,quick_tw,quick_th);gfx_x=cue_mid_x+(cue_mid_w-quick_tw)*0.5;gfx_y=ui_sy(cue_nav_y+5);gfx_drawstr(#quick_sel_txt);
+  gfx_x=cue_next_x+13;gfx_y=ui_sy(cue_nav_y+5);gfx_drawstr(">");
 
-  // riga 1: < cue selezionato >
-  qx=quick_panel_x+12; qw=quick_panel_w-24; qy=quick_panel_y+32;
-  quick_btn_w=40; quick_mid_w=qw-2*quick_btn_w-12;
-  ui_cue_button(qx, qy, quick_btn_w, 26, "<", 0, quick_point_count>0, 56) ? (
-    quick_nav_jump ? (gmem[quick_gmem_base]=1; gmem[quick_gmem_base+1]+=1;)
-                   : (quick_sel = quick_sel<=0 ? quick_point_count-1 : quick_sel-1;);
-  );
-  quick_sel>=0 ? (
-    quick_m=floor(quick_points[quick_sel]/60); quick_s=quick_points[quick_sel]-quick_m*60;
-    sprintf(#quick_sel_txt,"CUE %d / %d   %d:%04.1f",quick_sel+1,quick_point_count,quick_m,quick_s);
-  ) : quick_point_count>0 ? sprintf(#quick_sel_txt,"NESSUN CUE SELEZIONATO") : sprintf(#quick_sel_txt,"NESSUN CUE");
-  ui_cue_button(qx+quick_btn_w+6, qy, quick_mid_w, 26, #quick_sel_txt, quick_sel>=0, quick_nav_jump && quick_point_count>0, 56) ? (
-    gmem[quick_gmem_base]=3; gmem[quick_gmem_base+1]+=1;
-  );
-  ui_cue_button(qx+quick_btn_w+quick_mid_w+12, qy, quick_btn_w, 26, ">", 0, quick_point_count>0, 56) ? (
-    quick_nav_jump ? (gmem[quick_gmem_base]=2; gmem[quick_gmem_base+1]+=1;)
-                   : (quick_sel = quick_sel<0 || quick_sel>=quick_point_count-1 ? 0 : quick_sel+1;);
-  );
-
-  // riga 2: ADD/REMOVE  UNDO  CLEAR ALL
-  qy=quick_panel_y+68; quick_aw=floor((qw-12)/3);
-  quick_status==4 ? (#quick_add_txt="PLAY PER AGGIUNGERE";) : quick_status==2 ? (#quick_add_txt="CUE TOLTO";) :
-    quick_status==1 ? (#quick_add_txt="CUE AGGIUNTO";) : quick_status==3 ? (#quick_add_txt="PIENO (64)";) : (#quick_add_txt="ADD / REMOVE";);
-  ui_cue_button(qx, qy, quick_aw, 26, #quick_add_txt, quick_status==1, 1, 56) ? (
-    (play_state & 1) ? (quick_request=1;) : (quick_set_status(4););   // a trasporto fermo non resta in sospeso
-  );
-  ui_cue_button(qx+quick_aw+6, qy, quick_aw, 26, quick_status==5 ? "ANNULLATO" : quick_status==6 ? "RIPRISTINATO" : "UNDO LAST", 0, quick_last_action>0, 56) ? (
+  cue_action_y=quick_panel_y+64; cue_action_h=25; cue_add_x=quick_panel_x+12; cue_add_w=128; cue_undo_x=cue_add_x+cue_add_w+8; cue_undo_w=112;
+  cue_add_hover=mouse_x>=cue_add_x && mouse_x<=cue_add_x+cue_add_w && quick_mouse_y>=cue_action_y && quick_mouse_y<=cue_action_y+cue_action_h;
+  cue_undo_hover=mouse_x>=cue_undo_x && mouse_x<=cue_undo_x+cue_undo_w && quick_mouse_y>=cue_action_y && quick_mouse_y<=cue_action_y+cue_action_h;
+  (cue_add_hover || cue_undo_hover) ? active_info_id=56;
+  cue_add_hover && mouse_click ? quick_request=1;
+  cue_undo_hover && mouse_click ? (
     quick_last_action==1 ? (
       qpi=0; quick_undo_idx=-1;
-      loop(quick_point_count, abs(quick_points[qpi]-quick_last_action_pos)<0.001 ? quick_undo_idx=qpi; qpi+=1;);
-      quick_undo_idx>=0 ? (quick_delete(quick_undo_idx); quick_set_status(5););
-    ) : quick_last_action==2 ? (quick_insert(quick_last_action_pos)>=0 ? quick_set_status(6);
-    ) : quick_last_action==3 ? (
-      quick_point_count=0; qpi=0; loop(quick_backup_count, quick_insert(quick_backup[qpi]); qpi+=1;);
-      quick_set_status(6);
-    );
-    quick_last_action=0; quick_last_action_pos=-1; quick_sel=-1;
+      loop(quick_point_count,abs(quick_points[qpi]-quick_last_action_pos)<0.001 ? quick_undo_idx=qpi;qpi+=1;);
+      quick_undo_idx>=0 ? (quick_point_count-=1;quick_points[quick_undo_idx]=quick_points[quick_point_count];quick_points[quick_point_count]=-1;quick_status=5;);
+    ) : quick_last_action==2 && quick_point_count<64 ? (quick_points[quick_point_count]=quick_last_action_pos;quick_point_count+=1;quick_status=6;);
+    quick_last_action=0;quick_last_action_pos=-1;
     quick_gmem_base>=0 ? gmem[quick_gmem_base+2]=-1;
   );
-  quick_clear_armed = quick_clear_arm_t > 0;
-  ui_cue_button(qx+2*quick_aw+12, qy, qw-2*quick_aw-12, 26, quick_clear_armed ? "CONFERMA?" : "CLEAR ALL", quick_clear_armed ? 2 : 0, quick_point_count>0, 57) ? (
-    quick_clear_armed ? (
-      quick_backup_count=quick_point_count; qpi=0; loop(quick_point_count, quick_backup[qpi]=quick_points[qpi]; quick_points[qpi]=-1; qpi+=1;);
-      quick_point_count=0; quick_sel=-1; quick_last_action=3; quick_last_action_pos=-1; quick_clear_arm_t=-10;
-      quick_gmem_base>=0 ? gmem[quick_gmem_base+2]=-1;
-      quick_set_status(7);
-    ) : (quick_clear_arm_t=quick_now;);
-  );
-
-  // riga 3: salto nella timeline acceso/spento + rampa
-  qy=quick_panel_y+104;
-  gfx_setfont(3); gfx_r=0.60; gfx_g=0.60; gfx_b=0.72; gfx_x=qx; gfx_y=ui_sy(qy+6); gfx_drawstr("Timeline");
-  ui_cue_button(qx+70, qy, 70, 26, "SALTA", quick_nav_jump, quick_gmem_base>=0, 58) ? (quick_nav_jump=1; quick_sel=-1;);
-  ui_cue_button(qx+144, qy, 84, 26, "RESTA FERMO", !quick_nav_jump, 1, 58) ? (quick_nav_jump=0;);
-  ui_knob(56, quick_panel_x+quick_panel_w-46, qy+16, 13, 10, 250, 200, "Rampa", "ms", 0.95, 0.42, 0.20, 56);
-
-  // riga 4: stato
-  gfx_setfont(3); gfx_x=qx; gfx_y=ui_sy(quick_panel_y+quick_panel_h-24);
-  quick_gmem_base<0 ? (gfx_r=0.85; gfx_g=0.60; gfx_b=0.25; gfx_drawstr("Salto non disponibile (take/input FX).");) :
-  quick_status==7 ? (gfx_r=0.95; gfx_g=0.55; gfx_b=0.45; gfx_drawstr("Cue cancellati: UNDO LAST li rimette.");) :
-  quick_nav_jump ? (gfx_r=0.55; gfx_g=0.58; gfx_b=0.66; gfx_drawstr("< > saltano: serve l'helper Navigator.");) :
-                   (gfx_r=0.55; gfx_g=0.58; gfx_b=0.66; gfx_drawstr("Resta fermo: < > non muovono il playhead."););
+  gfx_r=quick_status==1 ? 0.12 : 0.13;gfx_g=quick_status==1 ? 0.42 : 0.16;gfx_b=quick_status==1 ? 0.28 : 0.20;gfx_a=1;
+  gfx_rect(cue_add_x,ui_sy(cue_action_y),cue_add_w,cue_action_h);
+  gfx_r=0.9;gfx_g=0.92;gfx_b=0.96;gfx_x=cue_add_x+8;gfx_y=ui_sy(cue_action_y+5);
+  quick_status==4 ? gfx_drawstr("PLAY TO ADD") : quick_status==2 ? gfx_drawstr("CUE REMOVED") : gfx_drawstr("ADD / REMOVE");
+  (quick_last_action>0) ? (gfx_r=0.16;gfx_g=0.19;gfx_b=0.24;) : (gfx_r=0.10;gfx_g=0.11;gfx_b=0.13;);
+  gfx_a=1;gfx_rect(cue_undo_x,ui_sy(cue_action_y),cue_undo_w,cue_action_h);
+  gfx_r=0.84;gfx_g=0.86;gfx_b=0.90;gfx_x=cue_undo_x+8;gfx_y=ui_sy(cue_action_y+5);
+  quick_status==5 ? gfx_drawstr("UNDONE") : quick_status==6 ? gfx_drawstr("RESTORED") : gfx_drawstr("UNDO LAST");
+  ui_knob(56,quick_panel_x+quick_panel_w-57,quick_panel_y+79,12,10,250,200,"Fast","ms",0.95,0.42,0.20,56);
   is_fat_active ? (gfx_r=0.95; gfx_g=0.62; gfx_b=0.15; gfx_a=1;) : (gfx_r=0.45; gfx_g=0.45; gfx_b=0.52; gfx_a=1;);
   sprintf(#fatstr, "%.0f%% %.1f dB", sc_rms_stab_amt * 100.0, fat_db_disp); gfx_x=378; gfx_y=ui_sy(440); gfx_drawstr(#fatstr);
 
@@ -1636,9 +1556,7 @@ view_mode == 0 ? (
   active_info_id == 21 ? gfx_drawstr("SIMPLE MIX: quantita' globale di processamento nella versione rapida.") :
   active_info_id == 51 ? gfx_drawstr("VIEW MODE: FULL mantiene la GUI completa, STATUS compatta la finestra.") :
   active_info_id == 52 ? gfx_drawstr("FLAT FOCUS: in modalita' FLAT scegli BOTH (Carver+VCA), CARVER (solo carving) o VCA (solo ducking).") :
-  active_info_id == 56 ? gfx_drawstr("QUICK RETURN: ADD/REMOVE (in Play) mette o toglie un cue al playhead; al cue la musica rientra con la Rampa. < > e il cue centrale saltano nella timeline (Salta) o solo selezionano (Resta fermo). UNDO LAST annulla l'ultima modifica.") :
-  active_info_id == 57 ? gfx_drawstr("CLEAR ALL: cancella tutti i cue. Primo clic arma (CONFERMA?), secondo clic entro 3 s cancella. UNDO LAST li rimette.") :
-  active_info_id == 58 ? gfx_drawstr("TIMELINE: SALTA sposta il playhead sui cue (helper Cue Navigator); RESTA FERMO scorre i cue senza muoverti nella timeline.") :
+  active_info_id == 56 ? gfx_drawstr("QUICK RETURN: le frecce saltano ai cue precedenti/successivi; il controllo centrale va al cue selezionato. ADD/REMOVE richiede la riproduzione. UNDO LAST annulla l’ultima modifica.") :
   active_info_id == 50 ? gfx_drawstr("VCA RETURN: STANDARD usa il rientro classico, GRADUAL riapre la base con una curva piu' morbida dopo l'hold.") :
   active_info_id == 22 ? gfx_drawstr("MUSIC CEILING: soglia del ducking VCA. Anello esterno = livello corrente della musica.") :
   active_info_id == 23 ? gfx_drawstr("DUCK FLOOR: quantita' minima di ducking quando la voce e' attiva (riferimento FLR).") :
