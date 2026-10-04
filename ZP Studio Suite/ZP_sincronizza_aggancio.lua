@@ -37,23 +37,38 @@ end
 
 -- Marker di un item che cadono nella parte usata, con posizione/durata in timeline.
 -- item = {pos, len, startoffs, rate}; markers = { {src=, text=}, ... }
+-- Battuta in corso: se il pezzo comincia a meta' di una battuta (nessun marker proprio
+-- all'inizio), la battuta iniziata prima viene ripetuta all'inizio del pezzo, con "… "
+-- davanti e carry = true. Cosi' anche un pezzo tagliato senza marker ha il suo testo.
+M.CARRY_PREFIX = "\226\128\166 "   -- "… "
 function M.item_lines(item, markers)
   local rate = item.rate
   if not rate or rate <= 0 then rate = 1 end
   local s0 = item.startoffs
   local s1 = s0 + item.len * rate
-  local list = {}
+  local min_len = item.min_len or 0.1
+  local list, before = {}, nil
   for _, m in ipairs(markers) do
-    if m.src >= s0 and m.src < s1 and m.text and m.text ~= "" then
-      list[#list + 1] = { src = m.src, text = m.text }
+    if m.text and m.text ~= "" then
+      if m.src >= s0 and m.src < s1 then
+        list[#list + 1] = { src = m.src, text = m.text }
+      elseif m.src < s0 and (not before or m.src > before.src) then
+        before = m
+      end
     end
   end
   table.sort(list, function(a, b) return a.src < b.src end)
   local out = {}
+  if before and (not list[1] or list[1].src > s0 + 0.0005) then
+    local nxt = list[1] and list[1].src or s1
+    local len = (nxt - s0) / rate
+    if len < min_len then len = min_len end
+    out[1] = { src = before.src, text = M.CARRY_PREFIX .. before.text, pos = item.pos, len = len, carry = true }
+  end
   for k, m in ipairs(list) do
     local nxt = list[k + 1] and list[k + 1].src or s1
     local len = (nxt - m.src) / rate
-    if len < (item.min_len or 0.1) then len = item.min_len or 0.1 end
+    if len < min_len then len = min_len end
     out[#out + 1] = { src = m.src, text = m.text, pos = item.pos + (m.src - s0) / rate, len = len }
   end
   return out
@@ -221,7 +236,10 @@ for t = 0, reaper.CountTracks(0) - 1 do
           local ttr = text_track_for(voice, true)
           for _, l in ipairs(lines) do
             wanted[#wanted + 1] = {
-              key = M.make_key(tguid, l.src), srckey = M.make_srckey(fname, l.src),
+              -- la battuta in corso ha chiavi sue: se il pezzo si allarga e il marker
+              -- rientra, l'item "…" sparisce e nasce quello normale
+              key = M.make_key(tguid, l.src) .. (l.carry and "|c" or ""),
+              srckey = M.make_srckey(fname, l.src) .. (l.carry and "|c" or ""),
               track = ttr, pos = l.pos, len = l.len, text = l.text,
             }
           end
