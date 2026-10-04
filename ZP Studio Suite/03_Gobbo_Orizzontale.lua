@@ -29,6 +29,8 @@ local cached_video_items = {}
 local last_proj_state = -1
 local last_track_guid = ""
 local selected_text_track_guid = ""
+local READ_ALL = "ALL"   -- flusso virtuale "Tutti" (Leggi tutto): tutte le tracce testo insieme
+local WINDOW_TITLE = "ZP Studio Suite v1.0.5 - Gobbo Orizzontale"
 local current_text_track = nil
 local current_text_flow_label = "Nessun testo"
 local cached_project_fps = 25
@@ -182,6 +184,7 @@ function SetStudioEditMode(value)
 end
 
 function LoadHorizontalSettings()
+    if reaper.GetExtState(gobbo_settings_section, "read_all") == "1" then selected_text_track_guid = READ_ALL end
     local saved_lead = tonumber(reaper.GetExtState(gobbo_settings_section, speech_lead_key))
     if saved_lead then accessibility_speech_lead = math.max(0, math.min(10, saved_lead)) end
     local saved_studio = reaper.GetExtState(gobbo_settings_section, studio_mode_key)
@@ -230,7 +233,7 @@ end
 
 function InitGUI()
     gfx.clear = 0x111111 
-    gfx.init("ZP Studio Suite v1.0.5 - Gobbo Orizzontale", 1100, 300, 0, 100, 100)
+    gfx.init(WINDOW_TITLE, 1100, 300, 0, 100, 100)
     gfx.setfont(1, default_font, master_font_size, 'b')
 end
 
@@ -753,6 +756,13 @@ function RecalculateLayout()
 end
 
 function GetRythmoTrack()
+    if selected_text_track_guid == READ_ALL then
+        -- Leggi tutto: i testi nuovi vanno nella traccia principale, la lettura le prende tutte
+        local exact = FindTrackByName(default_track_name)
+        if exact and IsTextFlowTrackName(GetTrackName(exact)) then return exact end
+        local tracks = CollectTextFlowTracks()
+        return tracks[1] and tracks[1].track or nil
+    end
     local selected = FindTextFlowByGuid(selected_text_track_guid)
     if selected then return selected.track end
 
@@ -774,12 +784,26 @@ function CurrentTextFlowLabel()
     return current_text_flow_label or "Nessun testo"
 end
 
+-- Titolo della finestra con il flusso letto: si vede anche a menu chiuso.
+-- gfx.init(nome) a finestra aperta cambia solo il titolo; prima dell'apertura non fa nulla.
+local window_title_shown = ""
+function UpdateWindowTitle()
+    if not gfx.w or gfx.w <= 0 then return end
+    local title = WINDOW_TITLE .. " - Flusso: " .. CurrentTextFlowLabel()
+    if title ~= window_title_shown then
+        window_title_shown = title
+        gfx.init(title)
+    end
+end
+
 function CycleTextFlow(delta)
     local tracks = CollectTextFlowTracks()
     if #tracks == 0 then return end
+    -- con due o piu' flussi c'e' anche "Tutti" (Leggi tutto)
+    if #tracks >= 2 then tracks[#tracks + 1] = {guid=READ_ALL} end
 
     local current = CurrentTextFlowEntry()
-    local current_guid = current and current.guid or ""
+    local current_guid = selected_text_track_guid == READ_ALL and READ_ALL or (current and current.guid or "")
     local current_index = 1
     for i, entry in ipairs(tracks) do
         if entry.guid == current_guid then current_index = i break end
@@ -787,6 +811,7 @@ function CycleTextFlow(delta)
 
     local next_index = ((current_index - 1 + delta) % #tracks) + 1
     selected_text_track_guid = tracks[next_index].guid
+    reaper.SetExtState(gobbo_settings_section, "read_all", selected_text_track_guid == READ_ALL and "1" or "0", true)
     current_text_track = nil
     active_media_item = nil
     cached_items = {}
@@ -930,6 +955,7 @@ function UpdateItems()
     local track = GetRythmoTrack()
     current_text_track = track
     current_text_flow_label = track and TextFlowDisplayName(GetTrackName(track)) or "Nessun testo"
+    if selected_text_track_guid == READ_ALL then current_text_flow_label = "Tutti" end
 
     cached_project_fps = GetProjectFPS()
     cached_regions = CollectRegions()
@@ -939,7 +965,13 @@ function UpdateItems()
     BuildCharacterLanes()
     
     cached_items = {}
-    if track then
+    local flow_tracks = {}
+    if selected_text_track_guid == READ_ALL then
+        for _, entry in ipairs(CollectTextFlowTracks()) do flow_tracks[#flow_tracks + 1] = entry.track end
+    elseif track then
+        flow_tracks[1] = track
+    end
+    for flow_index, track in ipairs(flow_tracks) do
         for i=0, reaper.CountTrackMediaItems(track)-1 do
             local item = reaper.GetTrackMediaItem(track, i)
             local pos   = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
@@ -951,10 +983,14 @@ function UpdateItems()
             
             local r, g, b = ColorToRGB(color, COLOR_SUBS)
             
-            table.insert(cached_items, {item=item, pos=pos, len=len, notes=notes, highlights=ParseHighlightTerms(highlight_raw), person_notes=person_notes, r=r, g=g, b=b})
+            table.insert(cached_items, {item=item, pos=pos, len=len, notes=notes, highlights=ParseHighlightTerms(highlight_raw), person_notes=person_notes, r=r, g=g, b=b, flow=flow_index})
         end
-        table.sort(cached_items, function(a, b) return a.pos < b.pos end)
     end
+    -- in ordine di tempo; a parita' di tempo, l'ordine delle tracce
+    table.sort(cached_items, function(a, b)
+        if a.pos ~= b.pos then return a.pos < b.pos end
+        return a.flow < b.flow
+    end)
     
     RecalculateLayout()
 end
@@ -2030,13 +2066,14 @@ function DrawGUI()
         current_text_track = nil
         track = nil
     end
-    local track_guid = track and reaper.GetTrackGUID(track) or ""
+    local track_guid = selected_text_track_guid == READ_ALL and READ_ALL or (track and reaper.GetTrackGUID(track) or "")
     local proj_state = reaper.GetProjectStateChangeCount(0)
 
     if proj_state ~= last_proj_state or track_guid ~= last_track_guid then
         last_proj_state = proj_state
         last_track_guid = track_guid
         UpdateItems()
+        UpdateWindowTitle()
     end
 
     local smoothed_play_pos, is_playing = GetContinuousPlayPosition()

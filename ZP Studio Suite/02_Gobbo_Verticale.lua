@@ -29,6 +29,7 @@ local character_lane_by_key = {}
 local last_proj_state = -1
 local last_track_guid = ""
 local selected_text_track_guid = ""
+local WINDOW_TITLE = "ZP Studio Suite v1.0.5 - Gobbo"
 local READ_ALL = "ALL"   -- flusso virtuale "Tutti" (Leggi tutto): tutte le tracce testo insieme
 local current_text_track = nil
 local last_win_w = 0
@@ -421,6 +422,18 @@ function CurrentTextFlowLabel()
     local entry = CurrentTextFlowEntry()
     if not entry then return "Nessun testo" end
     return TextFlowDisplayName(entry.name)
+end
+
+-- Titolo della finestra con il flusso letto: si vede anche a menu chiuso.
+-- gfx.init(nome) a finestra aperta cambia solo il titolo; prima dell'apertura non fa nulla.
+local window_title_shown = ""
+function UpdateWindowTitle()
+    if not gfx.w or gfx.w <= 0 then return end
+    local title = WINDOW_TITLE .. " - Flusso: " .. CurrentTextFlowLabel()
+    if title ~= window_title_shown then
+        window_title_shown = title
+        gfx.init(title)
+    end
 end
 
 function CycleTextFlow(delta)
@@ -1182,7 +1195,7 @@ end
 
 function InitGUI()
     gfx.clear = 0x111111 
-    gfx.init("ZP Studio Suite v1.0.5 - Gobbo", window_w, window_h, window_dock, window_x, window_y)
+    gfx.init(WINDOW_TITLE, window_w, window_h, window_dock, window_x, window_y)
     gfx.setfont(1, default_font, master_font_size)
     last_saved_window_state = ""
     SaveWindowStateIfChanged()
@@ -3177,6 +3190,7 @@ function DrawGUI()
         last_proj_state = proj_state
         last_track_guid = track_guid
         UpdateItems()
+        UpdateWindowTitle()
     end
 
     local is_playing = (reaper.GetPlayState() & 1) == 1
