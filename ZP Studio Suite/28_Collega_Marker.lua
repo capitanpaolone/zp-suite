@@ -60,6 +60,13 @@ local function show(message, title)
   reaper.ShowMessageBox(message, title or "ZP Collega marker", 0)
 end
 
+-- Lanciato dalla finestra ZP Trascrizione (_G.ZP_COLLEGA_QUIET): niente messaggio
+-- finale, il riepilogo viene restituito e la finestra lo mostra nella sua strada.
+local function report(message)
+  if _G.ZP_COLLEGA_QUIET then return message end
+  show(message)
+end
+
 local function main()
   local count = reaper.CountSelectedMediaItems(0)
   if count == 0 then show("Seleziona uno o più item audio.") return end
@@ -95,7 +102,9 @@ local function main()
       end
       local existing = reaper.GetNumTakeMarkers(take)
       local replace = false
-      if existing > 0 then
+      if existing > 0 and _G.ZP_COLLEGA_SKIP_EXISTING then
+        skipped = skipped + 1   -- la strada intera non riapre item gia' collegati
+      elseif existing > 0 then
         local answer = reaper.ShowMessageBox(
           string.format("L'item selezionato contiene già %d take marker.\n\nSì: sostituiscili con i cue SRT.\nNo: salta questo item.\nAnnulla: interrompi senza modifiche.", existing),
           "ZP Collega marker", 3)
@@ -108,7 +117,7 @@ local function main()
     end
   end
 
-  if #plans == 0 then show("Nessun item pronto da collegare. Item saltati: " .. skipped .. ".") return end
+  if #plans == 0 then return report("Nessun item pronto da collegare. Item saltati: " .. skipped .. ".") end
   local applied, cue_count = 0, 0
   reaper.Undo_BeginBlock()
   reaper.PreventUIRefresh(1)
@@ -127,9 +136,9 @@ local function main()
   reaper.PreventUIRefresh(-1)
   reaper.UpdateArrange()
   reaper.Undo_EndBlock("ZP: collega cue SRT come take marker", -1)
-  show(string.format("Collegamento completato.\n\nItem aggiornati: %d\nCue importati: %d\nItem saltati: %d\n\nI marker sono riferiti al tempo sorgente e seguono l'audio quando sposti o tagli l'item.", applied, cue_count, skipped))
+  return report(string.format("Collegamento completato.\n\nItem aggiornati: %d\nCue importati: %d\nItem saltati: %d\n\nI marker sono riferiti al tempo sorgente e seguono l'audio quando sposti o tagli l'item.", applied, cue_count, skipped))
 end
 
 -- Espone il parser per prove Lua fuori da REAPER.
 if not reaper then return { parse_time = parse_time, parse_srt = parse_srt, sidecar = sidecar } end
-main()
+return main()

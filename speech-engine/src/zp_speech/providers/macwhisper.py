@@ -129,25 +129,23 @@ def normalize_macwhisper_json(
                 _normalize_word(word, f"{path}.words[{word_index}]")
                 for word_index, word in enumerate(words)
             ]
-            for word_index, word in enumerate(normalized_words):
-                # Word timestamps can drift past their segment by more than rounding:
-                # real Whisper output overshoots by hundreds of ms. The segment is
-                # authoritative for SRT and markers, so clamp the word into it; only a
-                # word lying entirely outside its segment is an error.
-                word["start_ms"] = max(word["start_ms"], segment["start_ms"])
-                word["end_ms"] = min(word["end_ms"], segment["end_ms"])
-                # Whisper emits zero-length words when it splits elisions ("l" + "'ha").
-                # Schema v1 intervals are half-open, so give them 1 ms inside the segment.
-                if word["start_ms"] == word["end_ms"]:
-                    if word["end_ms"] < segment["end_ms"]:
-                        word["end_ms"] += 1
-                    else:
-                        word["start_ms"] -= 1
+            for word in normalized_words:
+                # The segment is authoritative: the editor listens to the segment, word
+                # times are only a working aid. Never fail on a word; keep it inside its
+                # segment, even if imprecise. Overshoots are clamped; zero-length words
+                # (elisions: "l" + "'ha") and words outside the segment get 1 ms placed
+                # just BEFORE their anchor point (schema v1 intervals are half-open).
+                seg_start, seg_end = segment["start_ms"], segment["end_ms"]
+                anchor = min(max(word["start_ms"], seg_start), seg_end)
+                word["start_ms"] = max(word["start_ms"], seg_start)
+                word["end_ms"] = min(word["end_ms"], seg_end)
                 if word["start_ms"] >= word["end_ms"]:
-                    raise ProviderError(
-                        "transcription_failed",
-                        f"{path}.words[{word_index}] lies outside its segment",
-                    )
+                    if anchor > seg_start:
+                        word["start_ms"], word["end_ms"] = anchor - 1, anchor
+                    else:
+                        word["start_ms"], word["end_ms"] = seg_start, seg_start + 1
+            # Moved words must still be ordered for the contract; sort is stable.
+            normalized_words.sort(key=lambda word: (word["start_ms"], word["end_ms"]))
             segment["words"] = normalized_words
             has_words = True
         speaker = item.get("speaker")

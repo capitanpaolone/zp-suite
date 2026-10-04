@@ -196,27 +196,36 @@ def test_normalize_widens_zero_length_words(tmp_path: Path) -> None:
     document = normalize_macwhisper_json(raw, source=source, model=MODEL, language="it")
     assert document["segments"][0]["words"] == [
         {"start_ms": 0, "end_ms": 500, "text": "l"},
-        {"start_ms": 500, "end_ms": 501, "text": "'ha"},
+        {"start_ms": 499, "end_ms": 500, "text": "'ha"},
         {"start_ms": 500, "end_ms": 1000, "text": "resa"},
         {"start_ms": 999, "end_ms": 1000, "text": "."},
     ]
 
 
-def test_normalize_rejects_word_outside_its_segment(tmp_path: Path) -> None:
+def test_normalize_keeps_outside_words_inside_their_segment(tmp_path: Path) -> None:
+    # The editor listens to the segment: a misplaced word is moved inside it, never fatal.
     source = tmp_path / "source.wav"
     source.write_bytes(b"x")
     raw = {
         "segments": [
             {
-                "start": 0,
+                "start": 100,
                 "end": 1000,
-                "text": "Ciao",
-                "words": [{"start": 1200, "end": 1300, "text": "Ciao"}],
+                "text": "prima Ciao dopo",
+                "words": [
+                    {"start": 0, "end": 50, "text": "prima"},
+                    {"start": 200, "end": 600, "text": "Ciao"},
+                    {"start": 1200, "end": 1300, "text": "dopo"},
+                ],
             }
         ]
     }
-    with pytest.raises(ProviderError, match="lies outside its segment"):
-        normalize_macwhisper_json(raw, source=source, model=MODEL, language="it")
+    document = normalize_macwhisper_json(raw, source=source, model=MODEL, language="it")
+    assert document["segments"][0]["words"] == [
+        {"start_ms": 100, "end_ms": 101, "text": "prima"},
+        {"start_ms": 200, "end_ms": 600, "text": "Ciao"},
+        {"start_ms": 999, "end_ms": 1000, "text": "dopo"},
+    ]
 
 
 @pytest.mark.parametrize(
