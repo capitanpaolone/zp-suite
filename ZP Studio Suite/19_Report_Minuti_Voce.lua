@@ -244,6 +244,32 @@ local function collect_regions()
   return out
 end
 
+local function selected_regions_from_native_ui()
+  if not (reaper.GetNumRegionsOrMarkers and reaper.GetRegionOrMarker and
+    reaper.GetRegionOrMarkerInfo_Value) then
+    return {}
+  end
+
+  local by_idx = {}
+  for _, region in ipairs(collect_regions()) do by_idx[region.idx] = region end
+
+  local selected = {}
+  local count = reaper.GetNumRegionsOrMarkers(0) or 0
+  for i = 0, count - 1 do
+    local marker = reaper.GetRegionOrMarker(0, i, "")
+    if marker and
+      (reaper.GetRegionOrMarkerInfo_Value(0, marker, "B_ISREGION") or 0) > 0.5 and
+      (reaper.GetRegionOrMarkerInfo_Value(0, marker, "B_UISEL") or 0) > 0.5 then
+      local region_id = reaper.GetRegionOrMarkerInfo_Value(0, marker, "I_NUMBER")
+      region_id = region_id and math.floor(region_id + 0.5) or nil
+      local region = region_id and by_idx[region_id] or nil
+      if region then selected[#selected + 1] = region end
+    end
+  end
+  table.sort(selected, function(a, b) return a.pos < b.pos end)
+  return selected
+end
+
 local function listview_region_id(list, row_index)
   for col = 0, 4 do
     local text = reaper.JS_ListView_GetItemText(list, row_index, col) or ""
@@ -841,6 +867,46 @@ local function save_report_file(detail_rows)
   return html_path, added, skipped
 end
 
+local function save_session_report_file(detail_rows, label)
+  local suffix_parts = { "Sessione" }
+  label = trim(label or "")
+  if label ~= "" then suffix_parts[#suffix_parts + 1] = label end
+  suffix_parts[#suffix_parts + 1] = os.date("%Y-%m-%d_%H-%M-%S")
+
+  local html_path = project_report_path("html", table.concat(suffix_parts, " - "), true)
+  if not html_path then return nil, "Cartella progetto non disponibile." end
+
+  local session_rows = {}
+  local keys = {}
+  local saved_at = os.date("%d/%m/%Y %H:%M:%S")
+  for _, row in ipairs(detail_rows or {}) do
+    if row.id and not keys[row.id] then
+      local marker_cartella = trim(row.marker or "")
+      if marker_cartella == "" and trim(row.scope or "") ~= "" then
+        marker_cartella = trim(row.scope)
+      end
+      local progetto = trim(row.project or "")
+      local cartella = marker_cartella ~= "" and marker_cartella or progetto
+
+      session_rows[#session_rows + 1] = {
+        id = row.id,
+        cartella = cartella,
+        nome = row.name,
+        durata_sec = row.seconds or 0,
+        durata_str = format_time(row.seconds),
+        minuti = row.billed or 0,
+        data = saved_at
+      }
+      keys[row.id] = true
+    end
+  end
+
+  if #session_rows == 0 then return nil, "Nessun dato da salvare." end
+  local ok, html_err = build_html_report(session_rows, html_path)
+  if not ok then return nil, html_err end
+  return html_path, #session_rows
+end
+
 local function open_window()
   if not gfx or not gfx.init then return false end
   local mode = 2
@@ -865,8 +931,11 @@ local function open_window()
 
   local function calculate()
     if mode == 1 then
-      local regions = selected_regions_from_region_manager()
+      local regions = selected_regions_from_native_ui()
       local label = "Regioni selezionate"
+      if #regions == 0 then
+        regions = selected_regions_from_region_manager()
+      end
       if #regions == 0 then
         regions = selected_regions_from_project_viewer()
       end
@@ -1082,7 +1151,7 @@ local function open_window()
       gfx.set(0.72, 0.78, 0.88, 1)
       gfx.x = mx + 22
       gfx.y = my + 50
-      gfx.drawstr("Controlla il report. Se confermi, lo copio e aggiorno CSV + HTML qui:")
+      gfx.drawstr(fit_text("Controlla il report, poi scegli se aggiornare lo storico o salvare solo questa sessione:", modal_w - 44))
       gfx.setfont(1, "Arial", 13)
       gfx.set(0.56, 0.72, 0.86, 1)
       gfx.x = mx + 22
@@ -1117,7 +1186,7 @@ local function open_window()
         gfx.rect(preview.x + preview.w - 8, sb_y, 5, sb_h, true)
       end
 
-      if ZP_UI.draw_button({ x = mx + modal_w - 336, y = my + modal_h - 58, w = 170, h = 36 }, "Conferma e salva", false, true, clicked, "save") then
+      if ZP_UI.draw_button({ x = mx + modal_w - 478, y = my + modal_h - 58, w = 170, h = 36 }, "Aggiungi allo storico", false, true, clicked, "save") then
         set_clipboard(pending_report_text)
         local html_path, added, skipped = save_report_file(pending_detail_rows)
         copied_message = html_path and ("Report HTML aggiornato: +" .. tostring(added or 0) .. " nuove righe") or ("Report copiato. File non salvato: " .. tostring(added or "errore"))
@@ -1132,7 +1201,23 @@ local function open_window()
         pending_report_label = ""
         pending_report_suffix = ""
       end
-      if ZP_UI.draw_button({ x = mx + modal_w - 152, y = my + modal_h - 58, w = 130, h = 36 }, "Annulla", false, true, clicked, "danger") then
+      if ZP_UI.draw_button({ x = mx + modal_w - 296, y = my + modal_h - 58, w = 160, h = 36 }, "Salva questa sessione", false, true, clicked, "copy") then
+        set_clipboard(pending_report_text)
+        local session_label = trim(pending_report_suffix) ~= "" and pending_report_suffix or pending_report_label
+        local html_path, saved_or_err = save_session_report_file(pending_detail_rows, session_label)
+        copied_message = html_path and ("Report sessione salvato: " .. tostring(saved_or_err or 0) .. " righe") or ("Report copiato. File non salvato: " .. tostring(saved_or_err or "errore"))
+        if html_path then
+          reaper.ShowMessageBox("Report della sola sessione salvato in:\n\n" .. html_path .. "\n\nRighe: " .. tostring(saved_or_err or 0) .. "\nLo storico generale non è stato modificato.", "ZP Studio Suite", 0)
+        else
+          reaper.ShowMessageBox("Non sono riuscito a salvare il file:\n\n" .. tostring(saved_or_err or "errore"), "ZP Studio Suite", 0)
+        end
+        copied_time = reaper.time_precise()
+        pending_report_text = nil
+        pending_detail_rows = {}
+        pending_report_label = ""
+        pending_report_suffix = ""
+      end
+      if ZP_UI.draw_button({ x = mx + modal_w - 124, y = my + modal_h - 58, w = 102, h = 36 }, "Annulla", false, true, clicked, "danger") then
         pending_report_text = nil
         pending_detail_rows = {}
         pending_report_label = ""
