@@ -120,7 +120,10 @@ local colors = {
   yellow = {0.88, 0.66, 0.20, 1},
   orange = {0.76, 0.32, 0.12, 1},
   red = {0.72, 0.06, 0.04, 1},
-  rec = {0.95, 0.02, 0.02, 1}
+  rec = {0.95, 0.02, 0.02, 1},
+  -- Telecomando: grigio antracite, cosi' si capisce a colpo d'occhio che non e' la sessione SOLO
+  remote_bg = {0.20, 0.21, 0.22, 1},
+  remote_panel = {0.27, 0.28, 0.295, 1}
 }
 
 local function set_color(c)
@@ -1344,7 +1347,7 @@ local function draw_status_header(clicked)
   local label = transport_state()
   local rec = label == "REC"
   local H = head_h()
-  set_color(rec and colors.rec or colors.panel)
+  set_color(rec and colors.rec or (state.target == "progetto" and colors.remote_panel or colors.panel))
   gfx.rect(0, 0, gfx.w, H, true)
   set_color(colors.border)
   gfx.rect(0, H - 1, gfx.w, 1, true)
@@ -1607,7 +1610,7 @@ local function draw_gui()
   -- Il suggerimento vale un giro solo: lo ricalcolano i pulsanti disegnati adesso.
   state.hint = ""
   if state.hidden_until and reaper.time_precise() < state.hidden_until then
-    set_color(colors.bg)
+    set_color(state.target == "progetto" and colors.remote_bg or colors.bg)
     gfx.rect(0, 0, gfx.w, gfx.h, true)
     gfx.setfont(1, "Arial", 18, "b")
     gfx.set(0.75, 0.78, 0.84, 1)
@@ -1617,7 +1620,7 @@ local function draw_gui()
     return
   end
 
-  set_color(colors.bg)
+  set_color(state.target == "progetto" and colors.remote_bg or colors.bg)
   gfx.rect(0, 0, gfx.w, gfx.h, true)
   local clicked = mouse_clicked()
   draw_status_header(clicked)
