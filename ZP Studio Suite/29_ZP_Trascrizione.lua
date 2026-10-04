@@ -1,4 +1,7 @@
--- ZP Trascrizione -> Gobbo: la strada (bozza di collaudo, non ancora nella Suite)
+-- @noindex
+
+-- ZP Studio Suite for REAPER
+-- 29 ZP Trascrizione: la strada dall'audio al Gobbo
 --
 -- Una finestra sola che mostra il flusso come una strada a quattro tappe, sugli item
 -- audio selezionati. Ogni tappa dice a che punto sei e ha il suo pulsante; la tappa
@@ -384,7 +387,7 @@ local HINTS = {
 }
 local GREEN, BLUE, GRAY = { 0.20, 0.62, 0.34, 1 }, { 0.24, 0.52, 0.80, 1 }, { 0.36, 0.36, 0.42, 1 }
 
-gfx.init("ZP Trascrizione", 660, 600, 0)
+gfx.init("ZP Studio Suite - ZP Trascrizione", 660, 600, 0)
 
 local function draw_step(i, s, is_next, y, clicked)
   local pad = 22
@@ -459,9 +462,9 @@ local function loop()
   end
 
   UI.fill_background()
-  UI.draw_header({ title = "Trascrizione -> Gobbo", credit = "ZP Studio Suite - bozza di collaudo",
+  UI.draw_header({ title = "Trascrizione -> Gobbo", credit = "ZP Studio Suite - 29",
     description = "Seleziona gli item audio e segui la strada. Ogni tappa si puo' fare anche a mano." })
-  UI.draw_help_button({ x = gfx.w - 54, y = 16, w = 34, h = 28 }, clicked, nil)
+  UI.draw_help_button({ x = gfx.w - 54, y = 16, w = 34, h = 28 }, clicked, "tool-29")
 
   local steps, next_step = M.road(rows, follow)
   local y = 96

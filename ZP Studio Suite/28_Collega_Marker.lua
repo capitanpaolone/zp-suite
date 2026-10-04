@@ -1,5 +1,8 @@
+-- @noindex
+
 -- ZP Collega marker: importa i cue SRT come take marker negli item selezionati.
--- Bozza di collaudo: non ancora registrata nella Suite/ReaPack.
+-- Parte interna della strada 29 ZP Trascrizione (tappa 2, Abbina da...); si puo' ancora
+-- lanciare da solo, ma non ha piu' un pulsante proprio.
 -- I timestamp SRT sono riferiti all'intero file sorgente e restano tali nei take marker.
 
 local function parse_time(value)

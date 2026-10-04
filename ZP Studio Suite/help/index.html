@@ -111,7 +111,7 @@
     <div class="card"><a href="#zp-probe-guard"><span class="num">24</span> ZP Probe Guard</a></div>
     <div class="card"><a href="#tool-srt-tools"><span class="num">SRT</span> SRT Tools offline</a></div>
     <div class="card"><a href="collega_marker.html"><span class="num">28</span> Collega marker SRT</a></div>
-    <div class="card"><a href="pannello_trascrizione.html"><span class="num">BOZZA</span> Pannello Trascrizione e Gobbo</a></div>
+    <div class="card"><a href="pannello_trascrizione.html"><span class="num">29</span> ZP Trascrizione: dall'audio al Gobbo</a></div>
     <div class="card"><a href="#tool-solo"><span class="num">SOLO</span> ZP SOLO Recorder</a></div>
     <div class="card"><a href="#zp-shared-bus"><span class="num">FX</span> ZP Shared Bus</a></div>
   </div>
@@ -226,6 +226,9 @@
   <p>Serve quando il testo deve viaggiare insieme al file: i take marker si spostano con l'item, sopravvivono a tagli e consegna, e la finestra ZP Trascrizione li porta nel Gobbo come testo (tappa 3).</p>
   <p>Seleziona uno o più item e lancialo. Con più item selezionati chiede se lavorare su <strong>tutti</strong> o solo sul primo. Un marker già presente nell'item (stesso punto, stesso nome) viene <strong>saltato</strong>: puoi rilanciarlo senza creare doppioni. Prima di modificare qualcosa propone di <strong>cancellare dalla timeline</strong> i marker di progetto fissati negli item; se rispondi No restano dove sono. Tutto si annulla con un solo Undo.</p>
   <p>Un marker che cade esattamente sulla fine di un item appartiene all'item che comincia lì. La conversione dei tempi tiene conto di start offset e playrate del take, quindi funziona anche su item tagliati o con velocità diversa da 1.</p>
+
+  <h2 id="tool-29">29 - ZP Trascrizione</h2>
+  <p>La strada dall'audio al Gobbo in una finestra sola: <strong>Trascrivi</strong>, <strong>Abbina da…</strong> (SRT, SRT tradotto, marker di progetto, cue del WAV), <strong>Porta nel gobbo</strong>, <strong>Segui i tagli</strong>. Seleziona gli item audio: la tappa da fare è segnata. <a href="pannello_trascrizione.html">Guida completa</a>.</p>
 
   <h2 id="tool-collega-marker">28 - Collega marker</h2>
   <p><code>28_Collega_Marker.lua</code> importa i cue SRT come take marker negli item audio selezionati.</p>
