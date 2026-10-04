@@ -4,6 +4,18 @@ Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
 ciascun file e nel gestore pacchetti. Questo file registra la storia della Suite
 nel suo insieme.
 
+## ZP Studio Suite 2.0.0 — 2026-10-04
+
+- Trascrizione con whisper (29 ZP Trascrizione), gobbo che segue i tagli, Ritrascrivi.
+- ZP SRT (30), SRT dall'audio (31), Info item SRT e Esporta SRT rinnovati.
+- Marker: 04 e 14 uniti; marker di servizio mai trattati come testo.
+- 32 Installa toolbar ed effetti (toolbar, catene di effetti, preset).
+- SOLO Recorder: pulsantiera a zone, pomelli, guida rapida, Telecomando, lucchetto REC.
+- Chain Builder: BUS Chain con preset Voiceover, Master Pro con Flat -19.
+- Report minuti voce: report della sola sessione.
+- ZP Stagekeeper Dialogue Director 2.5.0 (la 2.3.1 resta come riferimento in
+  `gobbo_ricerca_battuta/backup/`).
+
 ## Non rilasciato
 
 ### Corretto

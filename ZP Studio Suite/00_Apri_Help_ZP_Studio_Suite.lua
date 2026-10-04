@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 1.4.0
+-- @version 2.0.0
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -14,64 +14,38 @@
 --   OSARA non sono richiesti: aggiungono funzioni, e quando mancano la suite
 --   usa da sola una strada alternativa. Il dettaglio e' in README.txt.
 -- @changelog
---   Nuovo: 14 Marker da timeline a item. Copia i marker di progetto che
---     cadono dentro l'item selezionato come take marker dell'item, tenendo
---     nome, posizione e colore. Non cancella i marker di progetto: li
---     duplica, cosi' il testo viaggia con il file quando l'item si sposta.
---   SOLO Recorder riorganizzato per livelli: Mini e' il semplice (trasporto
---     piu' monitoraggio e ritorno, che servono sempre sotto mano), Compact
---     il medio, Expanded l'avanzato.
---   SOLO Recorder: i tre pulsanti di vista, Nascondi/Mostra REAPER e il
---     punto interrogativo stanno in testata e non si spostano mai.
---   SOLO Recorder: help suo, help/solo_recorder.html, aperto dal ? in testata.
---   SOLO Recorder: tolto il riquadro "Reference Wave Viewer", che annunciava
---     una funzione inesistente.
---   SOLO Recorder: la riga in basso spiega il pulsante sotto il mouse.
---     Pin, Hide, Park e gli altri non si indovinavano guardandoli.
---   SOLO Recorder: TOGLI TAKE chiede conferma, e la conferma dice dove
---     resta il file audio.
---   SOLO Recorder: Video adesso apre E chiude la finestra video, e il
---     pulsante mostra se e' aperta.
---   SOLO Recorder: Expanded allarga davvero la finestra (prima gfx.init
---     non la ridimensionava, quindi meta' comandi restavano fuori).
---   SOLO Recorder: RIT - e RIT + alzano e abbassano il volume della traccia
---     selezionata in REAPER (la reference, o l'audio del video), con il
---     valore in dB sempre visibile. E' un cambio di mix e resta nel progetto:
---     il pannello lo dice ogni volta.
---   SOLO Recorder: interruttore Monitor sulla traccia attiva, senza dover
---     aprire la finestra principale di REAPER per spegnerlo.
---   SOLO Recorder: TOGLI TAKE toglie dalla timeline il take appena registrato
---     e riporta il cursore dove era partito, pronto a rifarlo. Il file audio
---     resta nella cartella del progetto, e Ctrl+Z rimette tutto com'era.
---   SOLO Recorder: etichette che si accorciano invece di essere tagliate
---     a meta' parola quando i pulsanti si stringono (Mini, o finestra
---     rimpicciolita): INDIETRO 5s diventa -5s, ULTIMO ITEM +5s diventa FINE +5s.
---   SOLO Recorder: non minimizza piu' REAPER da solo quando si apre.
---     Adesso c'e' un pulsante Nascondi/Mostra REAPER, e chiudendo il
---     telecomando REAPER torna su comunque.
---   Help: il rimando alla pagina della toolbar e' la prima cosa che si vede.
---   Nuovo: pulsante Help sulla toolbar, e una pagina che spiega le icone
---     una per una. Sedici pulsanti in tutto.
---   Corretto: il pulsante Help e SRT Tools cercavano i loro file nella
---     cartella del vecchio installer, quindi su un'installazione ReaPack
---     dicevano "non trovato". Adesso partono dalla propria cartella.
---   Toolbar: aggiunto il pulsante del SOLO Recorder.
---   Toolbar: corretti due pulsanti che puntavano nel vuoto. Chain Builder
---     richiamava per sbaglio il Probe Guard, e il Probe Guard un'azione che
---     non esiste piu'. Adesso tutti i pulsanti aprono lo script giusto,
---     verificato uno per uno contro il reaper-kb.ini di un REAPER pulito.
---   SOLO Recorder v0.2.0: cinque comandi, selettore VO_MAIN/INSERTS/RETAKES/ALT,
---     esclusivita' della traccia verificata prima di registrare, take numerati
---     automaticamente allo STOP, NEXT TAKE con gap di 5 secondi.
---   SOLO Recorder: icona nuova sulla toolbar.
---   README: cosa aggiungono SWS, js_ReaScriptAPI e OSARA, e cosa succede senza.
---   Probe Guard: pannello di stato con spia, contatore riordini e apertura del log.
---   Pulizia: corretto un falso positivo che poteva togliere una voce della versione nuova.
---   Nuovo: 27 Pulisci installazione precedente, per chi arriva dal vecchio installer.
---   Toolbar pronta: quattordici pulsanti con le icone della suite.
---   Icone della toolbar consegnate nella cartella giusta di REAPER.
---   Prima pubblicazione su ReaPack.
---   SRT Tools rinumerato a 26, SOLO Recorder a 25.
+--   Versione 2: trascrizione, gobbo che segue i tagli, SRT in una finestra.
+--   Nuovo: 29 ZP Trascrizione, la strada in quattro tappe sugli item audio:
+--     Trascrivi (whisper, ZP Speech su macOS), Abbina da... (SRT accanto al
+--     file, SRT esterno o tradotto, marker di progetto, cue del WAV), Porta
+--     nel gobbo, Segui i tagli. Ritrascrivi rilegge da capo un file che ha
+--     gia' marker o SRT (per esempio dopo un glue).
+--   Gobbi: Leggi tutto (flusso Tutti), flusso letto nel titolo, Segui i tagli
+--     anche nel Gobbo orizzontale, ricerca.
+--   Nuovo: 30 ZP SRT, una finestra per tutto quello che si fa con gli SRT
+--     (porta dentro, controlla, porta fuori). Resta aperta: la chiudi tu.
+--   Nuovo: 31 SRT dall'audio: i marker delle battute diventano un SRT, nella
+--     cartella che scegli. Finestra che segue la selezione.
+--   13 Info item SRT: finestra che resta aperta e si aggiorna con la selezione.
+--   08 Esporta SRT ricorda la destinazione scelta.
+--   Marker: 04 e 14 nella stessa finestra (Crea dagli item / Fissa negli item).
+--     I marker di servizio (#segnaposto, !azioni, marker del SOLO) non diventano
+--     mai testo e non vengono cancellati.
+--   Nuovo: 32 Installa toolbar ed effetti: scrive la toolbar con gli
+--     identificativi di questo REAPER, installa le catene di effetti del SOLO e
+--     i preset del Chain Builder, senza toccare quelli che hai gia'.
+--   SOLO Recorder: pulsantiera a zone (trasporto tondo, pomelli Ritorno,
+--     Preroll e Zoom, interruttori con spia), guida rapida con il ?,
+--     Telecomando sulle tracce del progetto con selettore Sessione|Telecomando,
+--     scelta dell'ingresso, navigatore interno con zoom, Regioni take on/off,
+--     sessione con effetti, lucchetto del REC sulla barra spaziatrice, Notes
+--     sulle note del progetto, niente messaggi in console.
+--   Chain Builder: ZP BUS Chain con il preset Voiceover_Body1_BG80HzDyn_-3dBLim
+--     al posto della Unified Chain (che resta in bypass), ZP Master Pro con
+--     Flat -19 in tutti i profili, percorsi ReaPack.
+--   19 Report minuti voce: regioni selezionate anche dalla timeline; oltre ad
+--     aggiungere allo storico, si puo' salvare il report della sola sessione.
+--   Help: ogni finestra ha il suo ?, help riscritto e aggiornato.
 -- @provides
 --   [main] 01_Importa_Video_SRT.lua
 --   [main] 02_Gobbo_Verticale.lua

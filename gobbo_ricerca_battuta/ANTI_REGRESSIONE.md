@@ -55,3 +55,8 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 - Lucchetto REC spento di default (chiave ExtState `rec_lock2`). Nascondi 5s / Parcheggia tolti.
 - Il SOLO richiede `ZP_UI.lua` con `draw_knob`: ZP_UI e SOLO si aggiornano insieme.
 - Dopo modifiche alla pulsantiera: simulazione fuori REAPER (nessun comando fuori finestra o sovrapposto).
+
+## Riferimenti per confronti (anti-regressione)
+- ZP Stagekeeper Dialogue Director 2.3.1 (ultima pubblicata prima della 2.5.0):
+  `gobbo_ricerca_battuta/backup/ZP Stagekeeper Dialogue Director 2.3.1.jsfx`. Se la 2.5.x
+  peggiora qualcosa, confrontare con questa.
