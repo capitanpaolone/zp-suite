@@ -174,6 +174,34 @@ def test_normalize_clamps_word_overshoot_beyond_rounding(tmp_path: Path) -> None
     ]
 
 
+def test_normalize_widens_zero_length_words(tmp_path: Path) -> None:
+    # Real Whisper output: "l'ha" split into "l" and a zero-length "'ha".
+    source = tmp_path / "source.wav"
+    source.write_bytes(b"x")
+    raw = {
+        "segments": [
+            {
+                "start": 0,
+                "end": 1000,
+                "text": "l'ha resa",
+                "words": [
+                    {"start": 0, "end": 500, "text": "l"},
+                    {"start": 500, "end": 500, "text": "'ha"},
+                    {"start": 500, "end": 1000, "text": "resa"},
+                    {"start": 1000, "end": 1000, "text": "."},
+                ],
+            }
+        ]
+    }
+    document = normalize_macwhisper_json(raw, source=source, model=MODEL, language="it")
+    assert document["segments"][0]["words"] == [
+        {"start_ms": 0, "end_ms": 500, "text": "l"},
+        {"start_ms": 500, "end_ms": 501, "text": "'ha"},
+        {"start_ms": 500, "end_ms": 1000, "text": "resa"},
+        {"start_ms": 999, "end_ms": 1000, "text": "."},
+    ]
+
+
 def test_normalize_rejects_word_outside_its_segment(tmp_path: Path) -> None:
     source = tmp_path / "source.wav"
     source.write_bytes(b"x")

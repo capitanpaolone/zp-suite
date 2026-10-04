@@ -136,6 +136,13 @@ def normalize_macwhisper_json(
                 # word lying entirely outside its segment is an error.
                 word["start_ms"] = max(word["start_ms"], segment["start_ms"])
                 word["end_ms"] = min(word["end_ms"], segment["end_ms"])
+                # Whisper emits zero-length words when it splits elisions ("l" + "'ha").
+                # Schema v1 intervals are half-open, so give them 1 ms inside the segment.
+                if word["start_ms"] == word["end_ms"]:
+                    if word["end_ms"] < segment["end_ms"]:
+                        word["end_ms"] += 1
+                    else:
+                        word["start_ms"] -= 1
                 if word["start_ms"] >= word["end_ms"]:
                     raise ProviderError(
                         "transcription_failed",
