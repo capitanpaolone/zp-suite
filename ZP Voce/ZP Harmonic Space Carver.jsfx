@@ -1,8 +1,10 @@
 // @description ZP Harmonic Space Carver
-// @version 2.4.4
+// @version 2.4.5
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   Pannello cue nello spazio libero (sotto Mix/In/Out/SC/Voice Ret, sopra la sezione bassa):
+//     niente sovrapposizioni; cue spostati a 8192 (16-6159 e' il buffer dell'oscilloscopio).
 //   Cue: corretti la memoria (i cue finivano negli stati dei filtri), l'azzeramento a ogni Play,
 //     la numerazione (ora in ordine di tempo) e ADD a trasporto fermo. Nuovi CLEAR ALL (con
 //     conferma e UNDO) e Timeline SALTA / RESTA FERMO. Pannello ridisegnato nello stile Advanced.
@@ -208,10 +210,10 @@ meter_gr_l = 1; meter_gr_m = 1; meter_gr_h = 1;
 sc_act_l = 0; sc_act_m = 0; sc_act_h = 0;
 w_pos = 0; last_srate = srate;
 last_play_pos = play_position; was_playing = play_state & 1;
-// Cue di rientro rapido. Memoria propria da 1024 (0-15 sono gli stati dei filtri SVF) e
+// Cue di rientro rapido. Memoria propria da 8192 (0-15 stati SVF, 16-6159 buffer dell'oscilloscopio) e
 // inizializzazione UNA volta sola: REAPER rilancia @init a ogni Play (niente ext_noinit),
 // e prima questo azzerava tutti i cue a ogni avvio della riproduzione.
-quick_points = 1024; quick_backup = 1152;
+quick_points = 8192; quick_backup = 8320;
 function quick_insert(t) local(i) (
   quick_point_count < 64 ? (
     i = quick_point_count;
@@ -996,6 +998,7 @@ function ui_cue_button(bx, by, bw, bh, label, state, enabled, info_id) local(is_
   !enabled ? ( gfx_r=0.38; gfx_g=0.38; gfx_b=0.42; ) :
   state == 1 ? ( gfx_r=0.05; gfx_g=0.05; gfx_b=0.06; ) : ( gfx_r=0.86; gfx_g=0.88; gfx_b=0.92; );
   gfx_measurestr(label, tw, th);
+  tw > bw - 8 ? ( gfx_setfont(5); gfx_measurestr(label, tw, th); );   // finestra stretta: font piccolo
   gfx_x = bx + max(4, (bw-tw)/2); gfx_y = sy + (bh-th)/2; gfx_drawstr(label);
   clicked;
 );
@@ -1283,40 +1286,46 @@ show_simple ? (
   quick_status!=0 && quick_now-quick_status_t>2.5 ? quick_status=0;
   quick_now-quick_clear_arm_t>3 ? quick_clear_arm_t=-10;
 
-  quick_panel_x=515; quick_panel_y=288; quick_panel_w=max(365, min(620, gfx_w - quick_panel_x - 20)); quick_panel_h=184;
+  // Spazio libero della colonna destra: tra la fila Mix/In/Out/SC/Voice Ret (fino a ~345)
+  // e la linea che apre la sezione bassa (464). Tre righe compatte + pomello Rampa a destra.
+  quick_panel_x=515; quick_panel_y=350; quick_panel_w=max(365, min(620, gfx_w - quick_panel_x - 20)); quick_panel_h=106;
   gfx_r=0.08; gfx_g=0.08; gfx_b=0.10; gfx_a=1; gfx_rect(quick_panel_x,ui_sy(quick_panel_y),quick_panel_w,quick_panel_h);
   gfx_r=0.3; gfx_g=0.3; gfx_b=0.3; gfx_line(quick_panel_x,ui_sy(quick_panel_y),quick_panel_x+quick_panel_w,ui_sy(quick_panel_y));
-  gfx_setfont(3); gfx_r=0.14; gfx_g=0.72; gfx_b=0.83; gfx_x=quick_panel_x+12; gfx_y=ui_sy(quick_panel_y+8); gfx_drawstr("QUICK RETURN CUES");
+  gfx_setfont(3); gfx_r=0.14; gfx_g=0.72; gfx_b=0.83; gfx_x=quick_panel_x+10; gfx_y=ui_sy(quick_panel_y+5); gfx_drawstr("QUICK RETURN CUES");
   sprintf(#quick_count_txt,"%d / 64",quick_point_count); gfx_r=0.62; gfx_g=0.66; gfx_b=0.73;
-  gfx_measurestr(#quick_count_txt,quick_tw,quick_th); gfx_x=quick_panel_x+quick_panel_w-quick_tw-12; gfx_y=ui_sy(quick_panel_y+8); gfx_drawstr(#quick_count_txt);
+  quick_knob_w=66;
+  gfx_measurestr(#quick_count_txt,quick_tw,quick_th); gfx_x=quick_panel_x+quick_panel_w-quick_knob_w-quick_tw-6; gfx_y=ui_sy(quick_panel_y+5); gfx_drawstr(#quick_count_txt);
+
+  qx=quick_panel_x+10; qw=quick_panel_w-20-quick_knob_w; qh=22;
 
   // riga 1: < cue selezionato >
-  qx=quick_panel_x+12; qw=quick_panel_w-24; qy=quick_panel_y+32;
-  quick_btn_w=40; quick_mid_w=qw-2*quick_btn_w-12;
-  ui_cue_button(qx, qy, quick_btn_w, 26, "<", 0, quick_point_count>0, 56) ? (
+  qy=quick_panel_y+24;
+  quick_btn_w=34; quick_mid_w=qw-2*quick_btn_w-8;
+  ui_cue_button(qx, qy, quick_btn_w, qh, "<", 0, quick_point_count>0, 56) ? (
     quick_nav_jump ? (gmem[quick_gmem_base]=1; gmem[quick_gmem_base+1]+=1;)
                    : (quick_sel = quick_sel<=0 ? quick_point_count-1 : quick_sel-1;);
   );
+  quick_status==7 ? sprintf(#quick_sel_txt,"TUTTI CANCELLATI") :
   quick_sel>=0 ? (
     quick_m=floor(quick_points[quick_sel]/60); quick_s=quick_points[quick_sel]-quick_m*60;
     sprintf(#quick_sel_txt,"CUE %d / %d   %d:%04.1f",quick_sel+1,quick_point_count,quick_m,quick_s);
   ) : quick_point_count>0 ? sprintf(#quick_sel_txt,"NESSUN CUE SELEZIONATO") : sprintf(#quick_sel_txt,"NESSUN CUE");
-  ui_cue_button(qx+quick_btn_w+6, qy, quick_mid_w, 26, #quick_sel_txt, quick_sel>=0, quick_nav_jump && quick_point_count>0, 56) ? (
+  ui_cue_button(qx+quick_btn_w+4, qy, quick_mid_w, qh, #quick_sel_txt, quick_sel>=0, quick_nav_jump && quick_point_count>0, 56) ? (
     gmem[quick_gmem_base]=3; gmem[quick_gmem_base+1]+=1;
   );
-  ui_cue_button(qx+quick_btn_w+quick_mid_w+12, qy, quick_btn_w, 26, ">", 0, quick_point_count>0, 56) ? (
+  ui_cue_button(qx+quick_btn_w+quick_mid_w+8, qy, quick_btn_w, qh, ">", 0, quick_point_count>0, 56) ? (
     quick_nav_jump ? (gmem[quick_gmem_base]=2; gmem[quick_gmem_base+1]+=1;)
                    : (quick_sel = quick_sel<0 || quick_sel>=quick_point_count-1 ? 0 : quick_sel+1;);
   );
 
-  // riga 2: ADD/REMOVE  UNDO  CLEAR ALL
-  qy=quick_panel_y+68; quick_aw=floor((qw-12)/3);
-  quick_status==4 ? (#quick_add_txt="PLAY PER AGGIUNGERE";) : quick_status==2 ? (#quick_add_txt="CUE TOLTO";) :
-    quick_status==1 ? (#quick_add_txt="CUE AGGIUNTO";) : quick_status==3 ? (#quick_add_txt="PIENO (64)";) : (#quick_add_txt="ADD / REMOVE";);
-  ui_cue_button(qx, qy, quick_aw, 26, #quick_add_txt, quick_status==1, 1, 56) ? (
+  // riga 2: ADD/REMOVE  UNDO  CLEAR ALL (il messaggio compare nel pulsante stesso)
+  qy=quick_panel_y+52; quick_aw=floor((qw-8)/3);
+  quick_status==4 ? (#quick_add_txt="PREMI PLAY";) : quick_status==2 ? (#quick_add_txt="TOLTO";) :
+    quick_status==1 ? (#quick_add_txt="AGGIUNTO";) : quick_status==3 ? (#quick_add_txt="PIENO";) : (#quick_add_txt="ADD / REMOVE";);
+  ui_cue_button(qx, qy, quick_aw, qh, #quick_add_txt, quick_status==1, 1, 56) ? (
     (play_state & 1) ? (quick_request=1;) : (quick_set_status(4););   // a trasporto fermo non resta in sospeso
   );
-  ui_cue_button(qx+quick_aw+6, qy, quick_aw, 26, quick_status==5 ? "ANNULLATO" : quick_status==6 ? "RIPRISTINATO" : "UNDO LAST", 0, quick_last_action>0, 56) ? (
+  ui_cue_button(qx+quick_aw+4, qy, quick_aw, qh, (quick_status==5 || quick_status==6) ? "FATTO" : "UNDO", 0, quick_last_action>0, 56) ? (
     quick_last_action==1 ? (
       qpi=0; quick_undo_idx=-1;
       loop(quick_point_count, abs(quick_points[qpi]-quick_last_action_pos)<0.001 ? quick_undo_idx=qpi; qpi+=1;);
@@ -1330,7 +1339,7 @@ show_simple ? (
     quick_gmem_base>=0 ? gmem[quick_gmem_base+2]=-1;
   );
   quick_clear_armed = quick_clear_arm_t > 0;
-  ui_cue_button(qx+2*quick_aw+12, qy, qw-2*quick_aw-12, 26, quick_clear_armed ? "CONFERMA?" : "CLEAR ALL", quick_clear_armed ? 2 : 0, quick_point_count>0, 57) ? (
+  ui_cue_button(qx+2*quick_aw+8, qy, qw-2*quick_aw-8, qh, quick_clear_armed ? "CONFERMA?" : "CLEAR ALL", quick_clear_armed ? 2 : 0, quick_point_count>0, 57) ? (
     quick_clear_armed ? (
       quick_backup_count=quick_point_count; qpi=0; loop(quick_point_count, quick_backup[qpi]=quick_points[qpi]; quick_points[qpi]=-1; qpi+=1;);
       quick_point_count=0; quick_sel=-1; quick_last_action=3; quick_last_action_pos=-1; quick_clear_arm_t=-10;
@@ -1339,19 +1348,15 @@ show_simple ? (
     ) : (quick_clear_arm_t=quick_now;);
   );
 
-  // riga 3: salto nella timeline acceso/spento + rampa
-  qy=quick_panel_y+104;
-  gfx_setfont(3); gfx_r=0.60; gfx_g=0.60; gfx_b=0.72; gfx_x=qx; gfx_y=ui_sy(qy+6); gfx_drawstr("Timeline");
-  ui_cue_button(qx+70, qy, 70, 26, "SALTA", quick_nav_jump, quick_gmem_base>=0, 58) ? (quick_nav_jump=1; quick_sel=-1;);
-  ui_cue_button(qx+144, qy, 84, 26, "RESTA FERMO", !quick_nav_jump, 1, 58) ? (quick_nav_jump=0;);
-  ui_knob(56, quick_panel_x+quick_panel_w-46, qy+16, 13, 10, 250, 200, "Rampa", "ms", 0.95, 0.42, 0.20, 56);
+  // riga 3: Timeline SALTA / RESTA FERMO
+  qy=quick_panel_y+80;
+  gfx_setfont(3); gfx_r=0.60; gfx_g=0.60; gfx_b=0.72; gfx_x=qx; gfx_y=ui_sy(qy+4); gfx_drawstr("Timeline");
+  quick_tl_x=qx+70; quick_tl_w=floor((qw-70-4)/2);
+  ui_cue_button(quick_tl_x, qy, quick_tl_w, qh, "SALTA", quick_nav_jump, quick_gmem_base>=0, 58) ? (quick_nav_jump=1; quick_sel=-1;);
+  ui_cue_button(quick_tl_x+quick_tl_w+4, qy, qw-70-quick_tl_w-4, qh, "RESTA FERMO", !quick_nav_jump, 1, 58) ? (quick_nav_jump=0;);
 
-  // riga 4: stato
-  gfx_setfont(3); gfx_x=qx; gfx_y=ui_sy(quick_panel_y+quick_panel_h-24);
-  quick_gmem_base<0 ? (gfx_r=0.85; gfx_g=0.60; gfx_b=0.25; gfx_drawstr("Salto non disponibile (take/input FX).");) :
-  quick_status==7 ? (gfx_r=0.95; gfx_g=0.55; gfx_b=0.45; gfx_drawstr("Cue cancellati: UNDO LAST li rimette.");) :
-  quick_nav_jump ? (gfx_r=0.55; gfx_g=0.58; gfx_b=0.66; gfx_drawstr("< > saltano: serve l'helper Navigator.");) :
-                   (gfx_r=0.55; gfx_g=0.58; gfx_b=0.66; gfx_drawstr("Resta fermo: < > non muovono il playhead."););
+  // pomello Rampa nella colonna a destra delle tre righe
+  ui_knob(56, quick_panel_x+quick_panel_w-quick_knob_w*0.5-4, quick_panel_y+60, 13, 10, 250, 200, "Rampa", "ms", 0.95, 0.42, 0.20, 56);
   is_fat_active ? (gfx_r=0.95; gfx_g=0.62; gfx_b=0.15; gfx_a=1;) : (gfx_r=0.45; gfx_g=0.45; gfx_b=0.52; gfx_a=1;);
   sprintf(#fatstr, "%.0f%% %.1f dB", sc_rms_stab_amt * 100.0, fat_db_disp); gfx_x=378; gfx_y=ui_sy(440); gfx_drawstr(#fatstr);
 
@@ -1638,7 +1643,8 @@ view_mode == 0 ? (
   active_info_id == 52 ? gfx_drawstr("FLAT FOCUS: in modalita' FLAT scegli BOTH (Carver+VCA), CARVER (solo carving) o VCA (solo ducking).") :
   active_info_id == 56 ? gfx_drawstr("QUICK RETURN: ADD/REMOVE (in Play) mette o toglie un cue al playhead; al cue la musica rientra con la Rampa. < > e il cue centrale saltano nella timeline (Salta) o solo selezionano (Resta fermo). UNDO LAST annulla l'ultima modifica.") :
   active_info_id == 57 ? gfx_drawstr("CLEAR ALL: cancella tutti i cue. Primo clic arma (CONFERMA?), secondo clic entro 3 s cancella. UNDO LAST li rimette.") :
-  active_info_id == 58 ? gfx_drawstr("TIMELINE: SALTA sposta il playhead sui cue (helper Cue Navigator); RESTA FERMO scorre i cue senza muoverti nella timeline.") :
+  active_info_id == 58 ? (quick_gmem_base < 0 ? gfx_drawstr("TIMELINE: salto non disponibile, il Carver e' su un take o sull'input FX. RESTA FERMO scorre i cue.") :
+    gfx_drawstr("TIMELINE: SALTA sposta il playhead sui cue (serve l'helper Cue Navigator); RESTA FERMO scorre i cue senza muovere il playhead.")) :
   active_info_id == 50 ? gfx_drawstr("VCA RETURN: STANDARD usa il rientro classico, GRADUAL riapre la base con una curva piu' morbida dopo l'hold.") :
   active_info_id == 22 ? gfx_drawstr("MUSIC CEILING: soglia del ducking VCA. Anello esterno = livello corrente della musica.") :
   active_info_id == 23 ? gfx_drawstr("DUCK FLOOR: quantita' minima di ducking quando la voce e' attiva (riferimento FLR).") :

@@ -46,6 +46,10 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 
 - Ogni array in memoria (`x[i]`) deve avere un indirizzo base assegnato in @init, in una zona libera:
   una variabile mai assegnata vale 0 e scrive sopra la memoria del DSP (Carver: cue sugli stati SVF).
+  Per trovare gli array cerca anche i nomi con maiuscole (es. `buf_main_L[`): mappa TUTTA la memoria
+  usata prima di scegliere la base (Carver: 0-15 SVF, 16-6159 oscilloscopio, cue da 8192).
+- GUI JSFX: prima di aggiungere un pannello, mappa le coordinate di TUTTO cio' che e' gia' disegnato
+  in quella zona (anche etichette e valori dei knob, che sporgono sopra e sotto il cerchio).
 - Senza `ext_noinit=1` REAPER rilancia @init a ogni Play: lo stato da conservare (cue, liste, scelte
   dell'utente) va protetto da una guardia "inizializza una volta sola", non azzerato in @init.
 

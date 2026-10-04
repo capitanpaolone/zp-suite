@@ -1,6 +1,6 @@
 # ZP Harmonic Space Carver — cue di rientro rapido
 
-Richiesta di Paolo, 2026-10-04. Implementazione sorgente v2.4.4 (v2.4.3 di Codex, corretta il 2026-10-05) in `ZP Voce/ZP Harmonic Space Carver.jsfx`, installata in REAPER.
+Richiesta di Paolo, 2026-10-04. Implementazione sorgente v2.4.5 (v2.4.3 di Codex, corretta il 2026-10-05) in `ZP Voce/ZP Harmonic Space Carver.jsfx`, installata in REAPER.
 
 ## Interfaccia e comportamento
 
@@ -24,7 +24,8 @@ Il ReaScript è stato caricato nell’Action List, avviato e configurato all’a
 ## Correzioni 2026-10-05 (v2.4.4)
 - I cue non avevano una memoria propria (`quick_points` partiva da 0) e finivano sugli stati dei filtri
   SVF del crossover (celle 0-15): aggiungere un cue poteva far saltare il filtro, e il DSP riscriveva i cue.
-  Ora i cue stanno da 1024, il backup per CLEAR ALL da 1152.
+  Ora i cue stanno da 8192, il backup per CLEAR ALL da 8320 (in 2.4.4 erano a 1024, dentro il buffer
+  dell'oscilloscopio 16-6159: corretto in 2.4.5).
 - REAPER rilancia `@init` a ogni Play (il plugin non usa `ext_noinit`): i cue venivano azzerati a ogni
   avvio della riproduzione. Ora sono inizializzati una volta sola (guardia `quick_inited`).
 - I cue restano ordinati per tempo (prima la rimozione scambiava l'ultimo al suo posto e la numerazione
@@ -32,3 +33,6 @@ Il ReaScript è stato caricato nell’Action List, avviato e configurato all’a
 - Un cue appena aggiunto non fa ripartire la rampa una seconda volta; i messaggi di stato spariscono dopo 2,5 s.
 - Su take FX o input FX il salto e' disattivato (l'indirizzo gmem non sarebbe univoco).
 - Helper 1.1: rilegge l'elenco degli FX una volta al secondo invece che a ogni giro.
+- 2.4.5: pannello spostato nello spazio libero (y 350-456, sotto la fila Mix/In/Out/SC/Voice Ret) dopo lo
+  screenshot di Paolo con sovrapposizioni; tre righe compatte, pomello Rampa a destra, messaggi dentro i
+  pulsanti, font piccolo automatico se il testo non entra.
