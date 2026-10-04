@@ -25,4 +25,7 @@ ZP BrownSlope Prism (v0.1-lab, 4 ottobre 2026)
   "Forma" per confrontare solo l'EQ. Calibra/Default per legare il
   riferimento a un file suonato nel progetto.
   Verifica: calcolo rifatto in Python sui due loop (scarti entro 0,03 dB;
-  un +3 dB sopra 4 kHz si legge negli Alti). Non ancora provato in REAPER.
+  un +3 dB sopra 4 kHz si legge negli Alti). Provato in REAPER da Paolo (v0.1).
+  v0.2: comandi in stile Suite: pomelli Media, Pendenza, Scala; pulsanti
+  Rif./Forma/Reset/Calibra/Default; ? apre la guida sovrapposta; Vista GUI/JSFX
+  (in JSFX torna la lista parametri con le letture [Read], per OSARA).

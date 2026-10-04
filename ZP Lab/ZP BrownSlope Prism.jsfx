@@ -20,6 +20,8 @@ slider2:1<0,1,1{Livello,Forma (solo EQ)}>Confronto
 slider3:3<0,3,1{Veloce 0.3 s,Media 1 s,Lenta 3 s,Lunga (fino a Reset)}>Media
 slider4:2<0,3,1{0 dB/oct,3 dB/oct,4.5 dB/oct,6 dB/oct}>Pendenza grafico
 slider5:0<0,1,1{-,Reset}>Reset media
+slider6:0<0,1,1{GUI,JSFX (lista parametri, OSARA)}>Vista
+slider7:18<6,30,1>Scala grafico (+/- dB)
 slider10:0<-30,30,0.1>[Read] Bassi 40-160 Hz (dB)
 slider11:0<-30,30,0.1>[Read] Medio-bassi 160-800 Hz (dB)
 slider12:0<-30,30,0.1>[Read] Medio-alti 800 Hz-4 kHz (dB)
@@ -37,7 +39,7 @@ out_pin:right output
 ext_noinit = 1;   // la media lunga non si azzera a ogni Play
 // JSFX non accetta la notazione scientifica (1e-30): costanti calcolate qui
 TINY = 10 ^ (-30); SILENCE = 10 ^ (-8); EPSDEN = 10 ^ (-9);
-target = slider1; compare = slider2; avgmode = slider3; slopesel = slider4;
+target = slider1; compare = slider2; avgmode = slider3; slopesel = slider4; RANGE = slider7;
 N = 8192; half = N / 2; hop = N / 2;
 ringL = 0; ringR = N; buf = 2 * N; win = 3 * N; avg = 4 * N; cur = 5 * N;
 NB = 63; KMIN = -36;
@@ -149,18 +151,122 @@ function analyze() local(k, tot, alpha, p) (
   );
 );
 
+// Vista: in GUI la lista parametri di REAPER sparisce (restano Vista e i comandi
+// grafici); in JSFX torna tutta, letture [Read] comprese, per OSARA e screen reader.
+function update_visibility() local(show, n) (
+  show = slider6 >= 0.5;
+  // slider_show vuole una maschera di bit: 2^(n-1) = sliderN
+  n = 1; loop(5, slider_show(2 ^ (n - 1), show); n += 1;);
+  slider_show(2 ^ 5, 1); slider_show(2 ^ 6, show);
+  n = 10; loop(7, slider_show(2 ^ (n - 1), show); n += 1;);
+);
+
+function sync_params() (
+  slider3 != avgmode ? (avgmode = slider3; reset_avg(););
+  target = slider1; compare = slider2; slopesel = slider4; RANGE = slider7;
+  update_visibility();
+  have_data ? compute_bands();
+);
+
+// cambia un parametro dalla GUI come lo cambierebbe l'utente (automazione e undo)
+function set_param(idx, v) local(m) (
+  slider(idx) = v; m = 2 ^ (idx - 1); sliderchange(m); slider_automate(m);
+  sync_params();
+);
+
+// pulsante stile Suite: restituisce 1 al clic (btn_click decide se i clic valgono)
+function ui_button(x, y, w, h, label, on, hint) local(hov) (
+  hov = mouse_x >= x && mouse_x <= x + w && mouse_y >= y && mouse_y <= y + h;
+  hov ? strcpy(#hint, hint);
+  on ? gfx_set(0.16, 0.40, 0.34, 1) : hov ? gfx_set(0.18, 0.20, 0.25, 1) : gfx_set(0.12, 0.13, 0.16, 1);
+  gfx_rect(x, y, w, h);
+  on ? gfx_set(0.40, 0.88, 0.60, 1) : hov ? gfx_set(0.75, 0.80, 0.88, 1) : gfx_set(0.32, 0.33, 0.40, 1);
+  gfx_line(x, y, x + w - 1, y); gfx_line(x, y + h - 1, x + w - 1, y + h - 1);
+  gfx_line(x, y, x, y + h - 1); gfx_line(x + w - 1, y, x + w - 1, y + h - 1);
+  gfx_setfont(1, "Arial", 14); gfx_measurestr(label, tw, th);
+  gfx_x = x + (w - tw) / 2; gfx_y = y + (h - th) / 2;
+  gfx_set(0.92, 0.94, 0.96, 1); gfx_drawstr(label);
+  hov && btn_click;
+);
+
+// pomello stile Suite: trascina in verticale; doppio clic o clic destro = valore di partenza.
+// steps > 0: valori interi (pomello a scatti).
+function ui_knob(idx, cx, cy, r, minv, maxv, defv, steps, label, valstr, hint) local(v, hov, n, a, a0, a1, k, x1, y1, x2, y2, now)
+(
+  v = slider(idx);
+  hov = mouse_x >= cx - r - 8 && mouse_x <= cx + r + 8 && mouse_y >= cy - r - 8 && mouse_y <= cy + r + 30;
+  hov ? strcpy(#hint, hint);
+  hov && btn_click ? (
+    now = time_precise();
+    kn_last == idx && now - kn_last_t < 0.35 ? (set_param(idx, defv); kn_drag = 0;) : (kn_drag = idx; kn_y = mouse_y; kn_v = v;);
+    kn_last = idx; kn_last_t = now;
+  );
+  hov && rclick && !help_open ? set_param(idx, defv);
+  kn_drag == idx ? (
+    mouse_cap & 1 ? (
+      n = kn_v + (kn_y - mouse_y) * (maxv - minv) / (steps > 0 ? 70 : 160);
+      n = max(minv, min(maxv, n));
+      steps > 0 ? (n = floor(n + 0.5));
+      n != slider(idx) ? set_param(idx, n);
+    ) : (kn_drag = 0);
+  );
+  v = slider(idx);
+  a0 = 0.75 * $pi; a1 = 2.25 * $pi;
+  a = a0 + (v - minv) / max(maxv - minv, 0.0001) * (a1 - a0);
+  (hov || kn_drag == idx) ? (gfx_set(0.40, 0.88, 0.60, 0.12); gfx_circle(cx, cy, r + 7, 1, 1););
+  gfx_set(0.16, 0.17, 0.20, 1); gfx_circle(cx, cy, r, 1, 1);
+  gfx_set(0.30, 0.31, 0.36, 1); gfx_circle(cx, cy, r, 0, 1);
+  k = 0;   // arco del valore, a segmenti
+  loop(40,
+    x1 = a0 + (a - a0) * k / 40; x2 = a0 + (a - a0) * (k + 1) / 40;
+    gfx_set(0.40, 0.88, 0.60, 1);
+    gfx_line(cx + cos(x1) * (r - 3), cy + sin(x1) * (r - 3), cx + cos(x2) * (r - 3), cy + sin(x2) * (r - 3), 1);
+    gfx_line(cx + cos(x1) * (r - 4), cy + sin(x1) * (r - 4), cx + cos(x2) * (r - 4), cy + sin(x2) * (r - 4), 1);
+    k += 1;
+  );
+  gfx_set(0.92, 0.92, 0.92, 1);
+  gfx_line(cx + cos(a) * (r * 0.25), cy + sin(a) * (r * 0.25), cx + cos(a) * (r - 6), cy + sin(a) * (r - 6), 1);
+  gfx_setfont(1, "Arial", 12); gfx_set(0.62, 0.66, 0.72, 1);
+  gfx_measurestr(label, tw, th); gfx_x = cx - tw / 2; gfx_y = cy + r + 4; gfx_drawstr(label);
+  gfx_set(0.92, 0.94, 0.96, 1);
+  gfx_measurestr(valstr, tw, th); gfx_x = cx - tw / 2; gfx_y = cy + r + 17; gfx_drawstr(valstr);
+);
+
+// guida sovrapposta, come nei pannelli di Master Pro
+function help_overlay() local(px, py, pw, ph, cx, cy, hc, ly) (
+  pw = min(820, max(520, gfx_w - 48)); px = floor((gfx_w - pw) / 2); py = 60; ph = min(470, gfx_h - 90);
+  gfx_set(0.025, 0.027, 0.030, 0.96); gfx_rect(px, py, pw, ph);
+  gfx_set(0.40, 0.88, 0.60, 1); gfx_rect(px, py, pw, 2); gfx_rect(px, py + ph - 2, pw, 2); gfx_rect(px, py, 2, ph); gfx_rect(px + pw - 2, py, 2, ph);
+  gfx_setfont(2, "Arial", 22, 'b'); gfx_set(0.94, 0.96, 0.98, 1); gfx_x = px + 24; gfx_y = py + 16; gfx_drawstr("BrownSlope Prism - come si legge");
+  cx = px + pw - 44; cy = py + 16;
+  hc = mouse_x >= cx && mouse_x <= cx + 28 && mouse_y >= cy && mouse_y <= cy + 28;
+  hc ? gfx_set(0.28, 0.12, 0.10, 1) : gfx_set(0.14, 0.12, 0.12, 1); gfx_rect(cx, cy, 28, 28);
+  gfx_setfont(1, "Arial", 16, 'b'); gfx_set(0.94, 0.80, 0.78, 1); gfx_measurestr("X", tw, th); gfx_x = cx + (28 - tw) / 2; gfx_y = cy + (28 - th) / 2; gfx_drawstr("X");
+  hc && click ? (help_open = 0);
+  ly = py + 58; gfx_setfont(1, "Arial", 15);
+  gfx_set(0.84, 0.86, 0.86, 1);
+  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Il grafico compensa 4,5 dB per ottava: un rumore brown diventa una linea piatta."); ly += 24;
+  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Verde: i riferimenti -18 e -24 LUFS (misurati dai loop brown). Arancio: il tuo audio."); ly += 24;
+  gfx_set(0.98, 0.74, 0.32, 1);
+  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Sei pareggiato quando l'arancio e' piatto e sta sulla linea scelta."); ly += 34;
+  gfx_set(0.84, 0.86, 0.86, 1);
+  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Zone: scarto medio in dB. Verde entro 1,5 - giallo entro 3 - rosso oltre."); ly += 24;
+  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Pendenza residua: + = piu' brillante del brown, - = piu' scuro."); ly += 24;
+  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Forma: toglie la differenza di livello e confronta solo l'EQ. Livello: conta anche il volume."); ly += 34;
+  gfx_set(0.72, 0.92, 0.82, 1);
+  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Media lunga: misura tutto il brano finche' non premi Reset; nei silenzi si ferma."); ly += 24;
+  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Pomelli: trascina in verticale; doppio clic o clic destro = valore di partenza."); ly += 24;
+  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Calibra: suona il loop di riferimento con media lunga e premi Calibra. Default la toglie."); ly += 34;
+  gfx_set(0.62, 0.72, 0.82, 1);
+  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Vista JSFX: riporta la lista parametri di REAPER, letture comprese, per OSARA."); ly += 24;
+  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Passivo: l'audio passa intatto.");
+);
+
+update_visibility();
+
 // funzioni del grafico (definite qui, usate in @gfx)
 function xf(f) ( gx0 + (log(f / 15) / log(20000 / 15)) * (gx1 - gx0); );
 function yv(v) ( gy0 + (RANGE - (v - ymid)) / (2 * RANGE) * (gy1 - gy0); );
-function button(x, y, w, h, label, on) local(hit) (
-  hit = mouse_x >= x && mouse_x <= x + w && mouse_y >= y && mouse_y <= y + h;
-  gfx_set(on ? 0.20 : 0.13, on ? 0.42 : 0.15, on ? 0.36 : 0.19, 1); gfx_rect(x, y, w, h);
-  gfx_set(hit ? 0.95 : 0.55, hit ? 0.98 : 0.60, hit ? 1 : 0.66, 1);
-  gfx_line(x, y, x + w, y); gfx_line(x, y + h, x + w, y + h); gfx_line(x, y, x, y + h); gfx_line(x + w, y, x + w, y + h);
-  gfx_measurestr(label, tw, th); gfx_x = x + (w - tw) / 2; gfx_y = y + (h - th) / 2;
-  gfx_set(0.92, 0.94, 0.96, 1); gfx_drawstr(label);
-  click && hit;
-);
 function zone_box(x, y, w, label, v) local(c) (
   c = abs(v) <= 1.5 ? 0 : abs(v) <= 3 ? 1 : 2;
   gfx_set(0.12, 0.13, 0.15, 1); gfx_rect(x, y, w, 52);
@@ -173,10 +279,8 @@ function zone_box(x, y, w, label, v) local(c) (
 
 
 @slider
-avgmode != slider3 ? (avgmode = slider3; reset_avg(););
-target = slider1; compare = slider2; slopesel = slider4;
 slider5 ? (reset_avg(); slider5 = 0; sliderchange(slider5););
-have_data ? compute_bands();
+sync_params();
 
 @block
 // letture per OSARA e per la vista a parametri, aggiornate ~4 volte al secondo
@@ -201,36 +305,66 @@ file_mem(0, cal18, NB);
 file_mem(0, cal24, NB);
 cal_init = 1;
 
-@gfx 900 540
+@gfx 900 600
 click = (mouse_cap & 1) && !last_cap; last_cap = mouse_cap & 1;
+rclick = (mouse_cap & 2) && !last_rcap; last_rcap = mouse_cap & 2;
 gfx_set(0.07, 0.08, 0.09, 1); gfx_rect(0, 0, gfx_w, gfx_h);
-RANGE = 18;
+#hint = "";
+btn_click = click && !help_open;
 
 // testata
 gfx_setfont(2, "Arial", 18, 'b'); gfx_set(0.92, 0.88, 0.78, 1); gfx_x = 16; gfx_y = 12;
 gfx_drawstr("ZP BrownSlope Prism");
-gfx_setfont(1, "Arial", 13); gfx_set(0.56, 0.72, 0.86, 1); gfx_x = 16; gfx_y = 34;
-sprintf(#st, "passivo - slope %.1f dB/oct - %s - analizzati %.0f s%s", slope_db(),
-  avgmode == 0 ? "veloce" : avgmode == 1 ? "media 1 s" : avgmode == 2 ? "lenta" : "media lunga",
-  seconds, cal18_ok || cal24_ok ? " - calibrato" : "");
-gfx_drawstr(#st);
+
+// pulsanti in alto a destra
 bx = gfx_w - 16;
-bx -= 84; button(bx, 12, 80, 28, "Default", 0) ? (target == 0 ? (cal18_ok = 0) : (cal24_ok = 0); compute_bands(););
-bx -= 84; button(bx, 12, 80, 28, "Calibra", 0) && have_data ? (
+bx -= 34; btn_click = click;
+ui_button(bx, 12, 30, 28, "?", help_open, "Guida: come leggere il grafico e come usarlo.") ? (help_open = !help_open);
+btn_click = click && !help_open;
+bx -= 116; ui_button(bx, 12, 112, 28, slider6 >= 0.5 ? "Vista: JSFX" : "Vista: GUI", slider6 >= 0.5,
+  "JSFX riporta la lista parametri di REAPER (letture comprese) per OSARA e screen reader.") ? set_param(6, slider6 >= 0.5 ? 0 : 1);
+
+// striscia comandi: pulsanti e pomelli
+cy0 = 52;
+gfx_set(0.10, 0.11, 0.13, 1); gfx_rect(12, cy0, gfx_w - 24, 74);
+x = 24;
+ui_button(x, cy0 + 10, 96, 26, target == 0 ? "Rif. -18" : "Rif. -24", 1,
+  "Riferimento: brown a -18 o -24 LUFS. Clic per cambiare.") ? set_param(1, !target);
+ui_button(x, cy0 + 40, 96, 26, compare == 1 ? "Forma" : "Livello", compare == 1,
+  "Forma: confronta solo l'EQ. Livello: conta anche il volume.") ? set_param(2, !compare);
+x += 110;
+ui_button(x, cy0 + 10, 84, 26, "Reset", 0, "Riparte la media da zero.") ? reset_avg();
+ui_button(x, cy0 + 40, 84, 26, "Calibra", (target == 0 ? cal18_ok : cal24_ok),
+  "Memorizza la curva misurata come riferimento (suona il loop brown con media lunga).") && have_data ? (
   i = 0; sd = slope_db(); cbase = target == 0 ? cal18 : cal24;
   loop(NB, cbase[i] = bdb[i] - (sd - 4.5) * log(bfc[i] / 1000) / LOG2; i += 1;);
   target == 0 ? (cal18_ok = 1) : (cal24_ok = 1); compute_bands();
 );
-bx -= 84; button(bx, 12, 80, 28, "Reset", 0) ? reset_avg();
-bx -= 118; button(bx, 12, 114, 28, avgmode == 0 ? "Media: veloce" : avgmode == 1 ? "Media: 1 s" : avgmode == 2 ? "Media: lenta" : "Media: lunga", 0) ? (
-  avgmode = (avgmode + 1) % 4; slider3 = avgmode; sliderchange(slider3); reset_avg(););
-bx -= 98; button(bx, 12, 94, 28, compare == 1 ? "Forma" : "Livello", compare == 1) ? (
-  compare = !compare; slider2 = compare; sliderchange(slider2); have_data ? compute_bands(););
-bx -= 98; button(bx, 12, 94, 28, target == 0 ? "Rif. -18" : "Rif. -24", 1) ? (
-  target = !target; slider1 = target; sliderchange(slider1); have_data ? compute_bands(););
+x += 98;
+ui_button(x, cy0 + 40, 84, 26, "Default", 0, "Toglie la calibrazione del riferimento scelto.") ? (
+  target == 0 ? (cal18_ok = 0) : (cal24_ok = 0); compute_bands(););
+x += 130;
+ui_knob(3, x, cy0 + 26, 17, 0, 3, 3, 1, "Media",
+  avgmode == 0 ? "veloce" : avgmode == 1 ? "1 s" : avgmode == 2 ? "lenta" : "lunga",
+  "Media: veloce 0,3 s, 1 s, lenta 3 s, lunga fino a Reset.");
+x += 96;
+ui_knob(4, x, cy0 + 26, 17, 0, 3, 2, 1, "Pendenza",
+  slopesel == 0 ? "0 dB/oct" : slopesel == 1 ? "3 dB/oct" : slopesel == 2 ? "4,5 dB/oct" : "6 dB/oct",
+  "Compensazione del grafico. 4,5 = come Prism: il brown e' piatto.");
+x += 96;
+sprintf(#scala, "+/- %d dB", RANGE);
+ui_knob(7, x, cy0 + 26, 17, 6, 30, 18, 1, "Scala", #scala, "Quanti dB mostra il grafico sopra e sotto il riferimento.");
+
+// riga di stato: il suggerimento del comando sotto il mouse, altrimenti lo stato
+gfx_setfont(1, "Arial", 13); gfx_x = 220; gfx_y = 18;
+strlen(#hint) ? (gfx_set(0.62, 0.78, 0.92, 1); gfx_drawstr(#hint);) : (
+  gfx_set(0.56, 0.72, 0.86, 1);
+  sprintf(#st, "passivo - analizzati %.0f s%s", seconds, cal18_ok || cal24_ok ? " - calibrato" : "");
+  gfx_drawstr(#st);
+);
 
 // grafico
-gx0 = 56; gx1 = gfx_w - 18; gy0 = 58; gy1 = gfx_h - 96;
+gx0 = 56; gx1 = gfx_w - 18; gy0 = 138; gy1 = gfx_h - 96;
 // centro verticale: la media del riferimento scelto
 i = 0; ymid = 0; loop(NB, ymid += ref_at(i, target); i += 1;); ymid /= NB;
 gfx_set(0.10, 0.11, 0.12, 1); gfx_rect(gx0, gy0, gx1 - gx0, gy1 - gy0);
@@ -306,3 +440,5 @@ gfx_setfont(2, "Arial", 16, 'b'); gfx_x = rx + 10; gfx_y = zy + 35;
 verdict == 2 ? (gfx_set(0.40, 0.88, 0.60, 1); gfx_drawstr("PAREGGIATO");)
 : verdict == 1 ? (gfx_set(0.95, 0.78, 0.35, 1); gfx_drawstr("QUASI");)
 : (gfx_set(0.98, 0.45, 0.35, 1); gfx_drawstr(have_data ? (tilt > 0.5 ? "PIU' BRILLANTE" : tilt < -0.5 ? "PIU' SCURO" : "NON PAREGGIATO") : "--"););
+
+help_open ? help_overlay();
