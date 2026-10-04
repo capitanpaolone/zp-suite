@@ -162,6 +162,20 @@ local function load_state()
   state.preroll = tonumber(ext_get("preroll", "")) or 0
   state.folder_mode = bool_from_state(ext_get("folder_mode", ""), state.folder_mode)
   state.active_track_key = proj_get("active_track_key", state.active_track_key)
+  -- Destinazione: "solo" = sessione SOLO (crea le sue tracce); "progetto" = telecomando
+  -- (registra sulle tracce che arma l'utente, non crea e non tocca niente).
+  -- Prima volta in questo progetto: vuoto o gia' con la sessione SOLO -> solo; altrimenti telecomando.
+  local saved_target = proj_get("target", "")
+  if saved_target == "solo" or saved_target == "progetto" then
+    state.target = saved_target
+  else
+    local has_solo = false   -- (find_track_exact e' definita piu' sotto: controllo qui)
+    for i = 0, reaper.CountTracks(0) - 1 do
+      local _, n = reaper.GetSetMediaTrackInfo_String(reaper.GetTrack(0, i), "P_NAME", "", false)
+      if n == FOLDER_NAME then has_solo = true break end
+    end
+    state.target = (reaper.CountTracks(0) == 0 or has_solo) and "solo" or "progetto"
+  end
   state.take_counter = tonumber(proj_get("take_counter", "")) or state.take_counter
 end
 
@@ -173,6 +187,7 @@ local function save_state()
   ext_set("folder_mode", state.folder_mode and "1" or "0")
   proj_set("active_track_key", state.active_track_key)
   proj_set("take_counter", state.take_counter)
+  proj_set("target", state.target or "solo")
 end
 
 local function save_window_state()
@@ -474,9 +489,44 @@ local function ensure_solo_structure()
   return solo_tracks()
 end
 
+local function remote_mode()
+  return state.target == "progetto"
+end
+
+-- Telecomando: tracce armate dall'utente nel progetto, nell'ordine delle tracce.
+local function armed_tracks()
+  local out = {}
+  for i = 0, reaper.CountTracks(0) - 1 do
+    local tr = reaper.GetTrack(0, i)
+    if reaper.GetMediaTrackInfo_Value(tr, "I_RECARM") == 1 then out[#out + 1] = tr end
+  end
+  return out
+end
+
 local function active_track()
+  if remote_mode() then
+    local armed = armed_tracks()
+    if not armed[1] then return nil, "nessuna traccia armata" end
+    local name = track_name(armed[1])
+    if #armed > 1 then name = name .. " + " .. tostring(#armed - 1) end
+    return armed[1], name
+  end
   local tracks = solo_tracks()
   return tracks[state.active_track_key], TRACK_NAMES[state.active_track_key]
+end
+
+local function target_name()
+  local _, name = active_track()
+  return name or "?"
+end
+
+local function set_target(mode)
+  state.target = mode
+  proj_set("target", mode)
+  state.warning = ""
+  state.status = mode == "progetto"
+    and "Telecomando: registra sulle tracce che armi tu nel progetto. Non crea tracce."
+    or "Sessione SOLO: al primo REC crea la cartella ZP SOLO SESSION con le sue tracce."
 end
 
 local function set_active_track_key(key)
@@ -487,6 +537,15 @@ local function set_active_track_key(key)
 end
 
 local function arm_only_solo_target(key)
+  if remote_mode() then
+    local armed = armed_tracks()
+    if not armed[1] then
+      warn("Telecomando: arma in REAPER la traccia su cui registrare (o passa a Sessione SOLO).")
+      return nil
+    end
+    state.status = "REC READY — " .. target_name()
+    return armed[1]
+  end
   local tracks = ensure_solo_structure()
   local target = tracks[key]
   if not target then warn("Traccia SOLO non trovata: " .. tostring(TRACK_NAMES[key] or key)); return nil end
@@ -576,7 +635,7 @@ local function do_record_now()
     warn("REC BLOCCATO: REAPER non ha avviato la registrazione.")
     return
   end
-  state.status = "● REC — " .. TRACK_NAMES[state.active_track_key]
+  state.status = "● REC — " .. target_name()
 end
 
 local function record_on_track(key, label)
@@ -1155,7 +1214,7 @@ local function draw_status_header(clicked)
   gfx.setfont(1, "Arial", rec and 26 or 22, "b")
   gfx.set(1, 1, 1, 1)
   gfx.x, gfx.y = 14, 40
-  local active_name = TRACK_NAMES[state.active_track_key] or "?"
+  local active_name = target_name()
   gfx.drawstr(rec and ("\u{25CF} REC \u{2014} " .. active_name) or label)
   gfx.setfont(2, "Arial", state.mode == "mini" and 24 or 28, "b")
   local tc = format_time(current_position())
@@ -1166,7 +1225,7 @@ local function draw_status_header(clicked)
     gfx.setfont(3, "Arial", 13)
     gfx.set(0.82, 0.84, 0.88, 1)
     gfx.x, gfx.y = 16, 78
-    local tr = TRACK_NAMES[state.active_track_key] or "?"
+    local tr = (remote_mode() and "Telecomando · " or "") .. target_name()
     gfx.drawstr(fit_text("Track: " .. tr .. "   Region: " .. region_label() ..
       "   Take: " .. tostring(state.take_counter) ..
       "   Preroll: " .. tostring(state.preroll) .. "s", gfx.w - 32))
@@ -1212,7 +1271,25 @@ end
 
 local function draw_track_selector(y, clicked)
   local margin, gap = 14, 8
-  local bw = math.floor((gfx.w - margin * 2 - gap * (#RECORD_TRACK_KEYS - 1)) / #RECORD_TRACK_KEYS)
+  local switch_w = 150
+  if remote_mode() then
+    local armed = armed_tracks()
+    gfx.setfont(1, "Arial", 14, "b")
+    gfx.set(0.86, 0.90, 0.96, 1)
+    gfx.x, gfx.y = margin, y + 8
+    gfx.drawstr(fit_text(#armed > 0
+      and ("Telecomando: registra su " .. target_name() .. " (tracce armate da te)")
+      or "Telecomando: arma in REAPER la traccia su cui registrare", gfx.w - margin * 2 - switch_w - 12))
+    if btn({x=gfx.w - margin - switch_w, y=y, w=switch_w, h=32}, "Usa sessione SOLO", false, true, clicked, "tab") then
+      set_target("solo")
+    end
+    return
+  end
+  if btn({x=gfx.w - margin - switch_w, y=y, w=switch_w, h=32}, "Telecomando", false, true, clicked, "tab") then
+    set_target("progetto")
+    return
+  end
+  local bw = math.floor((gfx.w - margin * 2 - switch_w - gap * #RECORD_TRACK_KEYS) / #RECORD_TRACK_KEYS)
   for i, key in ipairs(RECORD_TRACK_KEYS) do
     local x = margin + (i - 1) * (bw + gap)
     local label = TRACK_NAMES[key]:gsub("^VO_", "")
@@ -1264,7 +1341,7 @@ local function draw_mini(clicked)
   gfx.setfont(1, "Arial", 12, "b")
   gfx.set(0.78, 0.80, 0.85, 1)
   gfx.x, gfx.y = 16, fine + 4
-  gfx.drawstr("Traccia: " .. (TRACK_NAMES[state.active_track_key] or "?"))
+  gfx.drawstr((remote_mode() and "Telecomando: " or "Traccia: ") .. target_name())
 end
 
 -- COMPACT - il livello medio: tutto quello che serve in una sessione normale.
