@@ -151,13 +151,14 @@ function analyze() local(k, tot, alpha, p) (
   );
 );
 
-// Vista: in GUI la lista parametri di REAPER sparisce (restano Vista e i comandi
-// grafici); in JSFX torna tutta, letture [Read] comprese, per OSARA e screen reader.
+// Vista: in GUI la lista parametri di REAPER sparisce del tutto (restano i comandi
+// grafici; i parametri esistono comunque e OSARA li raggiunge); in JSFX torna tutta,
+// letture [Read] comprese.
 function update_visibility() local(show, n) (
   show = slider6 >= 0.5;
   // slider_show vuole una maschera di bit: 2^(n-1) = sliderN
   n = 1; loop(5, slider_show(2 ^ (n - 1), show); n += 1;);
-  slider_show(2 ^ 5, 1); slider_show(2 ^ 6, show);
+  slider_show(2 ^ 5, show); slider_show(2 ^ 6, show);   // in GUI anche Vista sparisce: OSARA la raggiunge lo stesso
   n = 10; loop(7, slider_show(2 ^ (n - 1), show); n += 1;);
 );
 
