@@ -1,5 +1,7 @@
+-- @noindex
+
 -- ZP Sincronizza (ad aggancio): take marker -> tracce testo nascoste, una per traccia voce
--- (bozza, NON ancora nella Suite)
+-- (helper della Suite: lo usano la finestra ZP Trascrizione e i Gobbi per "Segui i tagli")
 --
 -- Differenza dalla prima bozza: NON cancella e riscrive tutto. Ogni item testo ricorda
 -- da quale marker nasce (GUID del take + tempo sorgente) e a ogni lancio viene solo
@@ -157,6 +159,7 @@ end
 
 -- Traccia testo di una traccia voce (cercata per GUID della voce, quindi regge i rename)
 local text_tracks = {}   -- voice_guid -> track
+local tracks_changed = false   -- creata o rinominata una traccia testo
 local function text_track_for(voice, create)
   local vguid = reaper.GetTrackGUID(voice)
   local want = TEXT_PREFIX .. " " .. track_s(voice, "P_NAME")
@@ -171,12 +174,13 @@ local function text_track_for(voice, create)
     local idx = reaper.CountTracks(0)
     reaper.InsertTrackAtIndex(idx, true)
     tr = reaper.GetTrack(0, idx)
+    tracks_changed = true
     reaper.GetSetMediaTrackInfo_String(tr, "P_EXT:ZP_VOICE", vguid, true)
     reaper.SetMediaTrackInfo_Value(tr, "B_SHOWINTCP", 0)      -- nascosta: la mostri tu dal gestore tracce
     reaper.SetMediaTrackInfo_Value(tr, "B_SHOWINMIXER", 0)
   end
   if tr then
-    if track_s(tr, "P_NAME") ~= want then reaper.GetSetMediaTrackInfo_String(tr, "P_NAME", want, true) end
+    if track_s(tr, "P_NAME") ~= want then reaper.GetSetMediaTrackInfo_String(tr, "P_NAME", want, true); tracks_changed = true end
     text_tracks[vguid] = tr
   end
   return tr
@@ -191,7 +195,6 @@ local function take_markers(take)
   return out
 end
 
-reaper.Undo_BeginBlock()
 reaper.PreventUIRefresh(1)
 
 -- A) cosa chiedono i marker (item audio non muted, fuori dalle tracce testo)
@@ -249,6 +252,27 @@ end
 
 -- C) decido e applico
 local plan = M.plan(wanted, existing)
+
+-- Niente da allineare: esco senza punto di Undo. Segui i tagli gira da solo dopo ogni
+-- modifica al progetto e non deve riempire la cronologia di Undo vuoti.
+local function differs(u)
+  if u.move or u.rebind or u.unmute or u.set_text then return true end
+  return math.abs(reaper.GetMediaItemInfo_Value(u.e.id, "D_POSITION") - u.w.pos) > EPS
+      or math.abs(reaper.GetMediaItemInfo_Value(u.e.id, "D_LENGTH") - u.w.len) > EPS
+end
+local dirty = tracks_changed or #plan.create > 0 or #plan.delete > 0 or #plan.mute > 0
+for _, u in ipairs(plan.update) do
+  if dirty then break end
+  dirty = differs(u)
+end
+if not dirty then
+  reaper.PreventUIRefresh(-1)
+  local summary = string.format("gia' allineati, %d battute.", #wanted)
+  if not _G.ZP_SYNC_QUIET then reaper.ShowConsoleMsg("Sincronizza: " .. summary .. "\n") end
+  return summary
+end
+
+reaper.Undo_BeginBlock()
 local n_upd, n_moved = 0, 0
 
 for _, u in ipairs(plan.update) do

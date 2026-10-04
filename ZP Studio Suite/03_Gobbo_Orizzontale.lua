@@ -796,6 +796,56 @@ function UpdateWindowTitle()
     end
 end
 
+-- Segui i tagli: dopo 10 s senza modifiche al progetto riporta i testi sull'audio
+-- (ZP_sincronizza_aggancio.lua, accanto a questo script). Stesso interruttore della
+-- finestra ZP Trascrizione. Non gira durante la registrazione; se non c'e' niente da
+-- allineare non crea punti di Undo.
+local FOLLOW_SECTION, FOLLOW_KEY, FOLLOW_DELAY = "ZP_STUDIO_SUITE", "PanelAutofollow", 10.0
+local follow_last_count, follow_last_change, follow_pending, follow_script = -1, 0, false, nil
+
+function FollowScriptPath()
+    if follow_script == nil then
+        local p = SCRIPT_DIR .. "ZP_sincronizza_aggancio.lua"
+        local f = io.open(p, "r")
+        if f then f:close(); follow_script = p else follow_script = false end
+    end
+    return follow_script or nil
+end
+
+function FollowEnabled()
+    return reaper.GetExtState(FOLLOW_SECTION, FOLLOW_KEY) == "1"
+end
+
+function ToggleFollow()
+    reaper.SetExtState(FOLLOW_SECTION, FOLLOW_KEY, FollowEnabled() and "0" or "1", true)
+    follow_pending = false
+    follow_last_count = reaper.GetProjectStateChangeCount(0)
+end
+
+function FollowLabel()
+    if not FollowScriptPath() then return "Segui: manca script" end
+    return FollowEnabled() and "Segui tagli ON" or "Segui tagli OFF"
+end
+
+function FollowTick()
+    if not FollowEnabled() or not FollowScriptPath() then return end
+    local count = reaper.GetProjectStateChangeCount(0)
+    local now = reaper.time_precise()
+    if follow_last_count < 0 then follow_last_count = count return end
+    if count ~= follow_last_count then
+        follow_last_count = count
+        follow_last_change = now
+        follow_pending = true
+    end
+    if follow_pending and now - follow_last_change >= FOLLOW_DELAY and (reaper.GetPlayState() & 4) == 0 then
+        follow_pending = false
+        _G.ZP_SYNC_QUIET = true
+        pcall(dofile, follow_script)
+        _G.ZP_SYNC_QUIET = nil
+        follow_last_count = reaper.GetProjectStateChangeCount(0)   -- i cambi del sync non contano
+    end
+end
+
 function CycleTextFlow(delta)
     local tracks = CollectTextFlowTracks()
     if #tracks == 0 then return end
@@ -1799,6 +1849,13 @@ function DrawAlertStrip(w, strip_h, play_pos, attack_x)
     gfx.set(0.80, 0.86, 1.0, 1)
     gfx.x, gfx.y = 76, 34
     gfx.drawstr("Testi: " .. flow_label)
+    -- Segui i tagli: accanto al flusso, solo se c'e' spazio prima di Studio/Edit
+    local follow_x = 76 + gfx.measurestr("Testi: " .. flow_label) + 14
+    if follow_x + 120 < w - 290 then
+        if DrawButton(follow_x, 30, 120, 22, FollowLabel(), 0.22, 0.38, 0.52, FollowEnabled()) then
+            if FollowScriptPath() then ToggleFollow() end
+        end
+    end
 
     if show_timecode then
         local tc = FormatVideoTimecode(play_pos)
@@ -2061,6 +2118,7 @@ function DrawGUI()
         end
     end
 
+    FollowTick()
     local track = IsValidTrack(current_text_track) and current_text_track or GetRythmoTrack()
     if not IsValidTrack(track) then
         current_text_track = nil

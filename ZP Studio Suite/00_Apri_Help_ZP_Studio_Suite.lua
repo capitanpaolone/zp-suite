@@ -100,6 +100,7 @@
 --   [nomain] 04_worker_Crea_Marker_Item.lua
 --   [nomain] 05_worker_Gestione_SRT.lua
 --   [nomain] ZP_UI.lua
+--   [nomain] ZP_sincronizza_aggancio.lua
 --   [nomain] lib_RythmoBand_Accessibile.lua
 --   help/index.html
 --   help/toolbar.html

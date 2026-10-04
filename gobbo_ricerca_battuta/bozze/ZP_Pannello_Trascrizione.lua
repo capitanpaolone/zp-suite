@@ -380,7 +380,7 @@ local HINTS = {
   "whisper crea l'SRT accanto al file audio",
   "SRT, SRT tradotto, marker di progetto o cue -> marker sull'item",
   "i marker diventano testi magnetici per il gobbo",
-  "dopo 10 s di quiete i testi seguono l'audio",
+  "dopo 10 s di quiete i testi seguono l'audio (interruttore anche nei Gobbi)",
 }
 local GREEN, BLUE, GRAY = { 0.20, 0.62, 0.34, 1 }, { 0.24, 0.52, 0.80, 1 }, { 0.36, 0.36, 0.42, 1 }
 
