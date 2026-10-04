@@ -63,9 +63,11 @@ if not reaper then return M end
 -- PARTE REAPER
 ---------------------------------------------------------------------------
 
--- Lanciato dalla finestra ZP Trascrizione: _G.ZP_14_ALL usa tutti gli item selezionati
--- senza chiedere, _G.ZP_14_QUIET restituisce il riepilogo invece di mostrarlo.
--- La domanda sulla cancellazione dalla timeline resta sempre: e' una scelta tua.
+-- Lanciato da un'altra finestra (29 ZP Trascrizione, 04 Marker):
+--   _G.ZP_14_ALL    true = tutti gli item selezionati, false = solo il primo, senza chiedere
+--   _G.ZP_14_REMOVE true/false = cancella o no dalla timeline, senza chiedere
+--                   (se manca, la domanda resta: e' una scelta tua)
+--   _G.ZP_14_QUIET  restituisce il riepilogo invece di mostrarlo
 local function report(message)
   if _G.ZP_14_QUIET then return message end
   reaper.MB(message, TITLE, 0)
@@ -77,8 +79,8 @@ if count == 0 then
 end
 
 local use = 1
-if count > 1 and _G.ZP_14_ALL then
-  use = count
+if count > 1 and _G.ZP_14_ALL ~= nil then
+  use = _G.ZP_14_ALL and count or 1
 elseif count > 1 then
   local answer = reaper.MB(string.format(
     "Ci sono %d item selezionati.\n\nSì: fissa i marker in tutti.\nNo: solo nel primo.\nAnnulla: esci senza modifiche.", count),
@@ -132,7 +134,7 @@ if #fixed == 0 then
 end
 
 -- Tutte le domande prima di modificare: un Annulla non lascia lavori a meta'.
-local remove = reaper.MB(string.format(
+local remove = (_G.ZP_14_REMOVE == true and 6) or (_G.ZP_14_REMOVE == false and 7) or reaper.MB(string.format(
   "Marker da fissare negli item: %d\nGia' presenti negli item (saltati): %d\n\nCancellare dalla timeline i %d marker di progetto fissati negli item?\n\nSì: cancella dalla timeline.\nNo: lasciali anche in timeline.\nAnnulla: esci senza modifiche.",
   to_add, already, #fixed), TITLE, 3)
 if remove == 2 then return end

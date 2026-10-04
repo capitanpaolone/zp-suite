@@ -6,9 +6,13 @@
 -- Distribuzione gratuita.
 -- Finestra ponte moderna. Raccoglie le opzioni, si chiude, poi lancia
 -- 04_worker_Crea_Marker_Item.lua che crea realmente i marker.
+--
+-- Seconda scheda "Fissa negli item": fa il lavoro del 14 (marker di progetto ->
+-- marker dell'item) senza domande bloccanti; la finestra resta aperta e mostra l'esito.
 
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
 local WORKER_PATH = SCRIPT_DIR .. "04_worker_Crea_Marker_Item.lua"
+local FIX_PATH = SCRIPT_DIR .. "14_Marker_da_Timeline_a_Item.lua"
 local ZP_UI = dofile(SCRIPT_DIR .. "ZP_UI.lua")
 
 local function trim(s)
@@ -138,6 +142,11 @@ end
 local function open_marker_bridge()
   if not gfx or not gfx.init then return false end
 
+  local tab = 1                 -- 1 crea marker dagli item, 2 fissa i marker negli item (14)
+  local fix_all = true
+  local fix_remove = false
+  local fix_status = ""
+  local fix_info_t, fix_items, fix_markers = -1, 0, 0
   local mode = 2
   local base_name = "NOME"
   local add_video_tc = true
@@ -238,7 +247,7 @@ local function open_marker_bridge()
     gfx.x = 66
     gfx.y = 18
     gfx.setfont(1, "Arial", 20)
-    gfx.drawstr("Marker da item")
+    gfx.drawstr("Marker")
 
     gfx.setfont(1, "Arial", 12)
     gfx.set(0.56, 0.72, 0.86, 1)
@@ -250,8 +259,82 @@ local function open_marker_bridge()
     gfx.set(0.68, 0.66, 0.74, 1)
     gfx.x = 22
     gfx.y = 60
-    gfx.drawstr("Crea marker all'inizio degli item selezionati. La finestra si chiude prima di scrivere in timeline.")
-    ZP_UI.draw_help_button({ x = gfx.w - 54, y = 18, w = 34, h = 28 }, clicked, "zp-regia-ruoli")
+    gfx.drawstr(tab == 1 and "Crea marker all'inizio degli item selezionati. La finestra si chiude prima di scrivere in timeline."
+      or "Marker di progetto dentro gli item -> marker dell'item: seguono tagli e spostamenti.")
+    ZP_UI.draw_help_button({ x = gfx.w - 54, y = 18, w = 34, h = 28 }, clicked, tab == 1 and "tool-04" or "tool-14")
+    if draw_button({ x = 300, y = 16, w = 128, h = 30 }, "Crea dagli item", tab == 1, true, clicked, "tab") then tab = 1 end
+    if draw_button({ x = 434, y = 16, w = 128, h = 30 }, "Fissa negli item", tab == 2, true, clicked, "tab") then
+      tab = 2; input_active = false; fix_info_t = -1
+    end
+
+    if tab == 2 then
+      -- quanti item e quanti marker di progetto ci cadono dentro (aggiornato ogni mezzo secondo)
+      local now = reaper.time_precise()
+      if now - fix_info_t > 0.5 then
+        fix_info_t = now
+        local n = reaper.CountSelectedMediaItems(0)
+        fix_items = fix_all and n or math.min(n, 1)
+        local ranges = {}
+        for i = 0, fix_items - 1 do
+          local it = reaper.GetSelectedMediaItem(0, i)
+          local pos = reaper.GetMediaItemInfo_Value(it, "D_POSITION")
+          ranges[#ranges + 1] = { pos, pos + reaper.GetMediaItemInfo_Value(it, "D_LENGTH") }
+        end
+        fix_markers = 0
+        local _, nm, nr = reaper.CountProjectMarkers(0)
+        for i = 0, nm + nr - 1 do
+          local rv, isrgn, pos = reaper.EnumProjectMarkers3(0, i)
+          if rv > 0 and not isrgn then
+            for _, r in ipairs(ranges) do
+              if pos >= r[1] and pos < r[2] then fix_markers = fix_markers + 1; break end
+            end
+          end
+        end
+      end
+
+      gfx.set(0.86, 0.82, 0.70, 1)
+      gfx.x, gfx.y = 22, 96
+      gfx.drawstr("Item")
+      local r_all, r_first = { x = 22, y = 112, w = 180, h = 36 }, { x = 210, y = 112, w = 180, h = 36 }
+      if point_in_rect(gfx.mouse_x, gfx.mouse_y, r_all.x, r_all.y, r_all.w, r_all.h) then help_text = "Fissa i marker in tutti gli item selezionati." end
+      if point_in_rect(gfx.mouse_x, gfx.mouse_y, r_first.x, r_first.y, r_first.w, r_first.h) then help_text = "Solo nel primo item selezionato." end
+      if draw_button(r_all, "Tutti i selezionati", fix_all, true, clicked, "tab") then fix_all = true; fix_info_t = -1 end
+      if draw_button(r_first, "Solo il primo", not fix_all, true, clicked, "tab") then fix_all = false; fix_info_t = -1 end
+
+      gfx.set(0.86, 0.82, 0.70, 1)
+      gfx.x, gfx.y = 22, 174
+      gfx.drawstr("Dopo")
+      local r_rm = { x = 22, y = 198, w = 368, h = 36 }
+      if point_in_rect(gfx.mouse_x, gfx.mouse_y, r_rm.x, r_rm.y, r_rm.w, r_rm.h) then
+        help_text = "ON: i marker di progetto copiati spariscono dalla timeline. OFF: restano anche li'. Si annulla con un Undo."
+      end
+      if draw_button(r_rm, fix_remove and "Cancella dalla timeline: ON" or "Cancella dalla timeline: OFF", fix_remove, true, clicked, "tab") then
+        fix_remove = not fix_remove
+      end
+
+      gfx.set(0.74, 0.72, 0.80, 1)
+      gfx.x, gfx.y = 22, 256
+      gfx.drawstr(fit_text(string.format("Item: %d   Marker di progetto dentro: %d   (quelli gia' presenti nell'item vengono saltati)",
+        fix_items, fix_markers), gfx.w - 44))
+      gfx.set(0.92, 0.88, 0.78, 1)
+      gfx.x, gfx.y = 22, 280
+      gfx.drawstr(fit_text(help_text ~= "" and help_text or fix_status, gfx.w - 44))
+
+      if draw_button({ x = 372, y = 320, w = 96, h = 38 }, "Fissa", false, fix_items > 0 and fix_markers > 0, clicked, "save") then
+        _G.ZP_14_ALL, _G.ZP_14_REMOVE, _G.ZP_14_QUIET = fix_all, fix_remove, true
+        local ok, res = pcall(dofile, FIX_PATH)
+        _G.ZP_14_ALL, _G.ZP_14_REMOVE, _G.ZP_14_QUIET = nil, nil, nil
+        fix_status = ok and (tostring(res or "Nessuna modifica."):gsub("\n", "   ")) or ("Errore: " .. tostring(res))
+        fix_info_t = -1
+      end
+      if draw_button({ x = 486, y = 320, w = 96, h = 38 }, "Chiudi", false, true, clicked) then
+        gfx.quit()
+        return
+      end
+      gfx.update()
+      reaper.defer(loop)
+      return
+    end
 
     gfx.set(0.86, 0.82, 0.70, 1)
     gfx.x = 22

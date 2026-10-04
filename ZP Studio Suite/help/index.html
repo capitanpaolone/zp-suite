@@ -94,7 +94,7 @@
     <div class="card"><a href="#tool-01"><span class="num">01</span> Import video/SRT</a></div>
     <div class="card"><a href="#tool-02"><span class="num">02</span> Gobbo verticale</a></div>
     <div class="card"><a href="#tool-03"><span class="num">03</span> Gobbo orizzontale</a></div>
-    <div class="card"><a href="#tool-04"><span class="num">04</span> Marker da item</a></div>
+    <div class="card"><a href="#tool-04"><span class="num">04</span> Marker: crea e fissa</a></div>
     <div class="card"><a href="#tool-05"><span class="num">05</span> Gestione SRT</a></div>
     <div class="card"><a href="#tool-06"><span class="num">06</span> Import SRT reference</a></div>
     <div class="card"><a href="#tool-07"><span class="num">07</span> Actor / Note</a></div>
@@ -126,7 +126,7 @@
     <li>Dopo l'installazione riavvia REAPER e cerca <strong>ZP Studio Suite</strong> in Action List.</li>
   </ul>
 
-  <h2 id="tool-01">01 - Import Video/SRT</h2>
+  <a id="zp-import"></a><h2 id="tool-01">01 - Import Video/SRT</h2>
   <p><code>01_Importa_Video_SRT.lua</code> importa video e sottotitoli nel progetto, creando le tracce e gli item necessari alla lavorazione in suite.</p>
   <ul>
     <li>Usalo quando parti da un video con uno o piu file SRT.</li>
@@ -166,15 +166,14 @@
     <li>Il timecode e il nome suite sono separati per evitare sovrapposizioni.</li>
   </ul>
 
-  <h2 id="tool-04">04 - Marker Da Item</h2>
-  <p><code>04_Crea_Marker_Item.lua</code> crea marker all'inizio degli item selezionati.</p>
+  <h2 id="tool-04">04 - Marker</h2>
+  <p>Una finestra, due schede.</p>
   <ul>
-    <li>Seleziona gli item prima di aprire il tool.</li>
-    <li>Scegli marker vuoti, nome fisso o numerazione progressiva.</li>
-    <li>Opzionalmente aggiunge timecode video o regione al nome marker.</li>
+  <li><strong>Crea dagli item:</strong> crea marker di progetto all'inizio degli item selezionati: vuoti, con un nome fisso o numerati (NOME 001, 002…), con il timecode del video se vuoi. La finestra si chiude prima di scrivere in timeline.</li>
+  <li><strong>Fissa negli item:</strong> i marker di progetto che cadono dentro gli item selezionati diventano marker dell'item (lo stesso lavoro del 14). Scegli tutti i selezionati o solo il primo, e se cancellarli dalla timeline. Nessuna domanda bloccante: la finestra resta aperta e mostra l'esito. I marker già presenti vengono saltati, quindi puoi ripetere.</li>
   </ul>
 
-  <h2 id="tool-05">05 - Gestione SRT</h2>
+  <a id="zp-gestione-srt"></a><h2 id="tool-05">05 - Gestione SRT</h2>
   <p><code>05_Aggiorna_SRT_Video.lua</code> aggiorna, sostituisce o aggiunge flussi SRT su video o regioni.</p>
   <ul>
     <li>Usalo per sostituire testi dentro blocchi video selezionati.</li>
@@ -189,7 +188,7 @@
     <li>Utile per confronto tra testi, traduzione e controllo timing.</li>
   </ul>
 
-  <h2 id="tool-07">07 - Actor / Note</h2>
+  <a id="zp-regia-ruoli"></a><h2 id="tool-07">07 - Actor / Note</h2>
   <p><code>07_Note_Personaggio.lua</code> crea e gestisce tracce actor/note per il gobbo.</p>
   <ul>
     <li>Usalo per preparare personaggi, speaker e note operative.</li>
@@ -224,6 +223,7 @@
   </ul>
 
   <h2 id="tool-14">14 - Marker da timeline a item</h2>
+  <p class="note">Lo trovi anche nella finestra <a href="#tool-04">04 Marker</a>, scheda «Fissa negli item», senza domande bloccanti.</p>
   <p>Copia i marker di progetto che cadono dentro l'item selezionato come <strong>take marker</strong> dell'item, tenendo nome, posizione e colore.</p>
   <p>Serve quando il testo deve viaggiare insieme al file: i take marker si spostano con l'item, sopravvivono a tagli e consegna, e la finestra ZP Trascrizione li porta nel Gobbo come testo (tappa 3).</p>
   <p>Seleziona uno o più item e lancialo. Con più item selezionati chiede se lavorare su <strong>tutti</strong> o solo sul primo. Un marker già presente nell'item (stesso punto, stesso nome) viene <strong>saltato</strong>: puoi rilanciarlo senza creare doppioni. Prima di modificare qualcosa propone di <strong>cancellare dalla timeline</strong> i marker di progetto fissati negli item; se rispondi No restano dove sono. Tutto si annulla con un solo Undo.</p>
@@ -280,7 +280,7 @@
     <li>Usa il pulsante interno <code>HELP ME</code> per il riepilogo operativo del pannello.</li>
   </ul>
 
-  <h2 id="tool-18">18 - Project Viewer</h2>
+  <a id="zp-project-viewer"></a><h2 id="tool-18">18 - Project Viewer</h2>
   <p><code>18_Project_Viewer.lua</code> mostra una vista cronologica di marker e regioni.</p>
   <ul>
     <li>Serve per navigare e verificare la struttura del progetto.</li>
@@ -288,7 +288,7 @@
     <li>Usalo prima di export o render complessi.</li>
   </ul>
 
-  <h2 id="tool-19">19 - Report Minuti Voce</h2>
+  <a id="zp-report-minuti"></a><h2 id="tool-19">19 - Report Minuti Voce</h2>
   <p><code>19_Report_Minuti_Voce.lua</code> calcola minuti e parole stimate per voci/personaggi.</p>
   <ul>
     <li>Utile per consuntivi, stime e controllo carico speaker.</li>
@@ -297,7 +297,7 @@
     <li><strong>Salva questa sessione</strong> crea invece un HTML autonomo con il solo conteggio corrente, senza modificare lo storico generale.</li>
   </ul>
 
-  <h2 id="tool-20">20 - Importa cartelle</h2>
+  <a id="zp-mixdown-render"></a><h2 id="tool-20">20 - Importa cartelle</h2>
   <p><code>20_Importa_Cartelle_Video_Mixdown.lua</code> importa cartelle contenenti audio o video e crea marker/regioni ordinati sulla timeline.</p>
   <ul>
     <li>Lavora bene quando i file sono organizzati per cartella/progetto.</li>

@@ -194,19 +194,29 @@ local function script_dir_from_debug()
   return source:match("^(.*)[/\\]") or "."
 end
 
-function UI.open_help(anchor)
-  local help_path = script_dir_from_debug() .. "/help/index.html"
-  local suffix = ""
-  if anchor and anchor ~= "" then suffix = "#" .. tostring(anchor):gsub("#", "") end
+-- Indirizzo file:// codificato: con il percorso "nudo" su macOS il comando open cerca un file
+-- chiamato letteralmente "index.html#sezione" e non apre niente.
+function UI.help_url(path, anchor)
+  path = tostring(path):gsub("\\", "/")
+  if not path:match("^/") then path = "/" .. path end          -- Windows: C:/... -> /C:/...
+  local encoded = path:gsub("[^%w%-%._~/:]", function(c) return string.format("%%%02X", c:byte()) end)
+  local suffix = (anchor and anchor ~= "") and ("#" .. tostring(anchor):gsub("#", "")) or ""
+  return "file://" .. encoded .. suffix
+end
+
+function UI.open_url(url)
   local os_name = reaper.GetOS and reaper.GetOS() or ""
-  local target = help_path .. suffix
   if os_name:match("Win") then
-    os.execute('start "" "' .. target:gsub('"', '\\"') .. '"')
+    os.execute('start "" "' .. url .. '"')
   elseif os_name:match("OSX") or os_name:match("macOS") then
-    os.execute("open " .. string.format("%q", target))
+    os.execute("open " .. string.format("%q", url))
   else
-    os.execute("xdg-open " .. string.format("%q", target) .. " >/dev/null 2>&1 &")
+    os.execute("xdg-open " .. string.format("%q", url) .. " >/dev/null 2>&1 &")
   end
+end
+
+function UI.open_help(anchor, page)
+  UI.open_url(UI.help_url(script_dir_from_debug() .. "/help/" .. (page or "index.html"), anchor))
 end
 
 function UI.draw_help_button(rect, clicked, anchor)

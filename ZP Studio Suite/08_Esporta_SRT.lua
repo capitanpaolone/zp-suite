@@ -416,7 +416,7 @@ local function open_export_settings_visual(tracks, on_done)
     gfx.x = 22
     gfx.y = 60
     gfx.drawstr("Scegli cosa esportare e quale flusso testi usare.")
-    ZP_UI.draw_help_button({ x = gfx.w - 54, y = 18, w = 34, h = 28 }, clicked, "zp-gestione-srt")
+    ZP_UI.draw_help_button({ x = gfx.w - 54, y = 18, w = 34, h = 28 }, clicked, "tool-08")
 
     gfx.set(0.86, 0.82, 0.70, 1)
     gfx.x = 22
