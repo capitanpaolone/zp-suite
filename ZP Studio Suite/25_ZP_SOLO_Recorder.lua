@@ -101,12 +101,11 @@ local state = {
   nav_zoom = 0,          -- navigatore: 0 = tutto il progetto, poi finestre sempre piu' corte
   nav_focus = "terzo",   -- testina a 1/3 da sinistra ("terzo") o al centro ("centro")
   fx_session = false,    -- sessione SOLO con le catene di effetti ZP (bus voci + master)
-  rec_lock = true,       -- durante il REC la barra spaziatrice non ferma la registrazione
+  rec_lock = false,      -- acceso: durante il REC la barra spaziatrice non ferma la registrazione
   active_track_key = "main",
   take_counter = 1,
   status = "Pronto",
   warning = "",
-  hidden_until = nil,
   last_click = {},
   mouse_was_down = false,
   pending = nil,
@@ -185,7 +184,8 @@ local function load_state()
   state.nav_zoom = tonumber(ext_get("nav_zoom", "")) or state.nav_zoom
   state.nav_focus = ext_get("nav_focus", state.nav_focus) == "centro" and "centro" or "terzo"
   state.fx_session = bool_from_state(ext_get("fx_session", ""), state.fx_session)
-  state.rec_lock = bool_from_state(ext_get("rec_lock", ""), state.rec_lock)
+  -- "rec_lock2": la chiave vecchia conteneva il default di prima (acceso), non una scelta
+  state.rec_lock = bool_from_state(ext_get("rec_lock2", ""), state.rec_lock)
   state.active_track_key = proj_get("active_track_key", state.active_track_key)
   -- Destinazione: "solo" = sessione SOLO (crea le sue tracce); "progetto" = telecomando
   -- (registra sulle tracce che arma l'utente, non crea e non tocca niente).
@@ -215,7 +215,7 @@ local function save_state()
   ext_set("nav_zoom", state.nav_zoom)
   ext_set("nav_focus", state.nav_focus)
   ext_set("fx_session", state.fx_session and "1" or "0")
-  ext_set("rec_lock", state.rec_lock and "1" or "0")
+  ext_set("rec_lock2", state.rec_lock and "1" or "0")
   proj_set("active_track_key", state.active_track_key)
   proj_set("take_counter", state.take_counter)
   proj_set("target", state.target or "solo")
@@ -348,8 +348,6 @@ local AIUTI = {
   ["Pin"] = "Tiene questa finestra sempre sopra le altre.",
   ["Toolbar"] = "Mostra o nasconde la fila di comandi REAPER in fondo al pannello.",
   ["Video"] = "Apre e chiude la finestra video di REAPER.",
-  ["Nascondi 5s"] = "Sparisce per cinque secondi e torna da sola.",
-  ["Parcheggia"] = "Sposta la finestra nell'angolo in alto a destra dello schermo.",
   ["Zoom"] = "Quanto tempo mostra il navigatore: da tutto il progetto a 10 secondi.",
   ["1/3"] = "Testina a un terzo da sinistra: vedi di piu' di quello che arriva.",
   ["centro"] = "Testina al centro della striscia.",
@@ -369,7 +367,7 @@ local AIUTI = {
 
 local DETTAGLI = {
   ["REC"] = "Registra sulla traccia di destinazione (zona 4). Prima controlla che sia l'unica armata, poi, se il Preroll e' sopra zero, fa il conto alla rovescia. In Telecomando, se non c'e' nessuna traccia armata, ti chiede quale armare.",
-  ["Lock"] = "Il lucchetto sul REC protegge la registrazione. Acceso (giallo, chiuso): durante il REC la barra spaziatrice non ferma niente, solo il pulsante STOP. Spento (grigio, aperto): la barra ferma anche il REC, come in REAPER. Vale quando la finestra del SOLO e' in primo piano.",
+  ["Lock"] = "Il lucchetto sul REC protegge la registrazione. Parte spento. Acceso (giallo, chiuso): durante il REC la barra spaziatrice non ferma niente, solo il pulsante STOP. Spento (grigio, aperto): la barra ferma anche il REC, come in REAPER. Vale quando la finestra del SOLO e' in primo piano.",
   ["STOP"] = "Ferma la registrazione o la riproduzione. Dopo un REC numera il take e, se Regioni take e' acceso, crea la sua regione.",
   ["Ritorno"] = "Volume della traccia selezionata in REAPER: di solito la reference o l'audio del video. Trascina in su o in giu' (con Shift e' piu' fine), oppure usa la rotella; doppio clic = 0 dB. E' un cambio di mix vero: resta nel progetto.",
   ["Preroll"] = "Secondi di conto alla rovescia prima che parta il REC: da 0 a 5. Trascina o usa la rotella; doppio clic = 0.",
@@ -382,7 +380,6 @@ local DETTAGLI = {
   ["Effetti"] = "Acceso: quando nasce la sessione SOLO inserisce ZP Bus VoiceChain sul bus delle voci e ZP MasterChain sul master. Le catene le installa il comando 32. Non le duplica se ci sono gia'. Spegnendo, quelle gia' inserite restano.",
   ["Zoom"] = "Quanto tempo mostra il navigatore: tutto il progetto, poi 10, 5, 2, 1 minuto, 30 e 10 secondi. Con lo zoom la striscia segue la testina. Trascina o rotella; doppio clic = tutto.",
   ["Navigatore"] = "Tutto il progetto (o la finestra di zoom) in una striscia: in alto, tenui, gli item di tutte le tracce; in verde quelli della traccia di destinazione. Regioni in blu, marker in giallo, il riquadro e' la parte visibile della timeline. Clic o trascina per spostare il cursore; durante il REC non si muove.",
-  ["Nascondi 5s"] = "La finestra sparisce per cinque secondi e torna da sola: per guardare un attimo cosa c'e' sotto.",
   ["Pin"] = "Tiene la finestra del SOLO sempre sopra le altre (serve js_ReaScriptAPI).",
 }
 
@@ -396,7 +393,7 @@ local ZONE_AIUTO = {
   take = "La regia del take: nominare, ripartire, togliere, rifare, inserti e alternative.",
   etichette = "Marker di giudizio nel punto in cui sei: OK, BAD, ALT, NOISE.",
   navigatore = "Il progetto in una striscia. Lo zoom e la posizione della testina sono in alto a destra.",
-  sessione = "Interruttori della sessione (la spia verde vuol dire acceso) e comandi della finestra.",
+  sessione = "Interruttori della sessione e della finestra: la spia verde vuol dire acceso.",
 }
 
 local function aiuto_per(key)
@@ -1280,12 +1277,6 @@ local function process_pending()
       return
     end
     start_preroll(state.preroll, do_record_now, "NEXT TAKE")
-  elseif pending.kind == "show_after_hide" then
-    state.hidden_until = nil
-    if gfx.init then
-      -- gfx non espone una vera hide/show cross-platform; il POC ridisegna la finestra e prova a riportarla davanti.
-      state.status = "Recorder richiamato"
-    end
   end
 end
 
@@ -1467,19 +1458,6 @@ local function restore_reaper_on_exit()
   local hwnd = reaper.GetMainHwnd()
   if hwnd then pcall(reaper.JS_Window_Show, hwnd, "RESTORE") end
   state.reaper_hidden = false
-end
-
-local function park_window()
-  local w, h = gfx.w, gfx.h
-  local _, _, screen_w, screen_h = reaper.my_getViewport(0, 0, 0, 0, 0, 0, 0, 0, true)
-  gfx.init(SCRIPT_TITLE, w, h, 0, math.max(0, screen_w - w - 24), 42)
-  state.status = "Finestra parcheggiata"
-end
-
-local function hide_5s()
-  state.hidden_until = reaper.time_precise() + 5
-  state.pending = { kind = "show_after_hide", due = state.hidden_until }
-  state.status = "Hide 5s"
 end
 
 local function mode_size(mode)
@@ -1986,8 +1964,6 @@ local function sessione_voci()
       state.toolbar = not state.toolbar; save_state(); set_mode(state.mode)
     end},
     {w = 80, kind = "tgl", label = "Video", on = video_aperta(), act = show_video_window},
-    {w = 104, kind = "btn", label = "Nascondi 5s", act = hide_5s},
-    {w = 100, kind = "btn", label = "Parcheggia", act = park_window},
   }
 end
 
@@ -2225,17 +2201,6 @@ end
 local function draw_gui()
   -- Il suggerimento vale un giro solo: lo ricalcolano i pulsanti disegnati adesso.
   state.hint = ""
-  if state.hidden_until and reaper.time_precise() < state.hidden_until then
-    set_color(state.target == "progetto" and colors.remote_bg or colors.bg)
-    gfx.rect(0, 0, gfx.w, gfx.h, true)
-    gfx.setfont(1, "Arial", 18, "b")
-    gfx.set(0.75, 0.78, 0.84, 1)
-    gfx.x, gfx.y = 20, 20
-    gfx.drawstr("ZP SOLO nascosto per pochi secondi...")
-    gfx.update()
-    return
-  end
-
   set_color(state.target == "progetto" and colors.remote_bg or colors.bg)
   gfx.rect(0, 0, gfx.w, gfx.h, true)
   state.ctrls = {}
