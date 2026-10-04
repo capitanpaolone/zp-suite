@@ -113,6 +113,8 @@
 --   help/voice_cleaner.html
 --   help/pannello_trascrizione.html
 --   help/collega_marker.html
+--   fxchains/ZP_Bus_VoiceChain.RfxChain
+--   fxchains/ZP_MasterChain.RfxChain
 --   tools/srt_tools.html
 --   toolbar/ZP_StudioSuite.ReaperMenu
 --   ZP_NVDA_Speech.py

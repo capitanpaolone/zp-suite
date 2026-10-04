@@ -1,8 +1,10 @@
 -- @noindex
 
 -- ZP Studio Suite for REAPER
--- 32 Installa toolbar ZP: scrive la toolbar della suite con gli identificativi
--- delle azioni di QUESTO REAPER.
+-- 32 Installa toolbar ed effetti ZP: da lanciare dopo la prima installazione o un
+-- aggiornamento. Scrive la toolbar della suite con gli identificativi delle azioni di
+-- QUESTO REAPER e mette in REAPER/FXChains le catene di effetti usate dal SOLO Recorder
+-- (Effetti ON): ZP Bus VoiceChain (bus voci) e ZP MasterChain (master).
 --
 -- Perche': ogni pulsante richiama uno script con un identificativo che REAPER assegna
 -- quando registra lo script, e che cambia da un Mac all'altro. Un file toolbar fisso
@@ -11,8 +13,16 @@
 --   2. altrimenti lo registra adesso nell'Action List.
 -- Poi scrive MenuSets/ZP_StudioSuite.ReaperMenu (con copia del file precedente) e
 -- spiega come importarlo. Non tocca le toolbar che stai usando.
+-- Catene: se in FXChains c'e' gia' una catena con lo stesso nome non viene sovrascritta
+-- (puo' essere la tua, personalizzata).
 
 local M = {}
+
+-- catene di effetti: file nel pacchetto -> nome in REAPER/FXChains
+M.CHAINS = {
+  { "fxchains/ZP_Bus_VoiceChain.RfxChain", "ZP Bus VoiceChain.RfxChain" },
+  { "fxchains/ZP_MasterChain.RfxChain", "ZP MasterChain.RfxChain" },
+}
 
 -- La toolbar: script, testo del pulsante, icona. "-" = separatore.
 M.LAYOUT = {
@@ -136,6 +146,27 @@ end
 f:write(M.menu_text(M.LAYOUT, ids))
 f:close()
 
+-- catene di effetti in REAPER/FXChains
+local chain_dir = resource .. sep .. "FXChains"
+reaper.RecursiveCreateDirectory(chain_dir, 0)
+local chain_lines = {}
+for _, c in ipairs(M.CHAINS) do
+  local data = read(here .. sep .. c[1]:gsub("/", sep))
+  local dest = chain_dir .. sep .. c[2]
+  local existing = read(dest)
+  if not data then
+    chain_lines[#chain_lines + 1] = c[2] .. ": non trovata nel pacchetto"
+  elseif existing == data then
+    chain_lines[#chain_lines + 1] = c[2] .. ": gia' aggiornata"
+  elseif existing then
+    chain_lines[#chain_lines + 1] = c[2] .. ": ce n'e' gia' una con questo nome, non toccata"
+  else
+    local out = io.open(dest, "wb")
+    if out then out:write(data); out:close(); chain_lines[#chain_lines + 1] = c[2] .. ": installata"
+    else chain_lines[#chain_lines + 1] = c[2] .. ": non riesco a scriverla" end
+  end
+end
+
 local buttons = 0
 for _ in pairs(ids) do buttons = buttons + 1 end
 local msg = string.format(
@@ -143,4 +174,5 @@ local msg = string.format(
   buttons, target)
 if #registered > 0 then msg = msg .. "\n\nRegistrati ora nell'Action List: " .. table.concat(registered, ", ") end
 if #missing > 0 then msg = msg .. "\n\nNON trovati (pulsante saltato): " .. table.concat(missing, ", ") end
-reaper.MB(msg, "ZP Installa toolbar", 0)
+msg = msg .. "\n\nCatene di effetti per il SOLO Recorder (REAPER/FXChains):\n" .. table.concat(chain_lines, "\n")
+reaper.MB(msg, "ZP Installa toolbar ed effetti", 0)

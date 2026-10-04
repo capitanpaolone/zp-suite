@@ -96,6 +96,7 @@ local state = {
   nav_zoom = 0,          -- navigatore: 0 = tutto il progetto, poi finestre sempre piu' corte
   nav_focus = "terzo",   -- testina a 1/3 da sinistra ("terzo") o al centro ("centro")
   fx_session = false,    -- sessione SOLO con le catene di effetti ZP (bus voci + master)
+  rec_lock = true,       -- durante il REC la barra spaziatrice non ferma la registrazione
   active_track_key = "main",
   take_counter = 1,
   status = "Pronto",
@@ -175,6 +176,7 @@ local function load_state()
   state.nav_zoom = tonumber(ext_get("nav_zoom", "")) or state.nav_zoom
   state.nav_focus = ext_get("nav_focus", state.nav_focus) == "centro" and "centro" or "terzo"
   state.fx_session = bool_from_state(ext_get("fx_session", ""), state.fx_session)
+  state.rec_lock = bool_from_state(ext_get("rec_lock", ""), state.rec_lock)
   state.active_track_key = proj_get("active_track_key", state.active_track_key)
   -- Destinazione: "solo" = sessione SOLO (crea le sue tracce); "progetto" = telecomando
   -- (registra sulle tracce che arma l'utente, non crea e non tocca niente).
@@ -204,6 +206,7 @@ local function save_state()
   ext_set("nav_zoom", state.nav_zoom)
   ext_set("nav_focus", state.nav_focus)
   ext_set("fx_session", state.fx_session and "1" or "0")
+  ext_set("rec_lock", state.rec_lock and "1" or "0")
   proj_set("active_track_key", state.active_track_key)
   proj_set("take_counter", state.take_counter)
   proj_set("target", state.target or "solo")
@@ -225,11 +228,9 @@ end
 local function speak(text)
   text = tostring(text or "")
   state.status = text
-  if reaper.osara_outputMessage then
-    reaper.osara_outputMessage(text)
-  else
-    reaper.ShowConsoleMsg(SCRIPT_TITLE .. ": " .. text .. "\n")
-  end
+  -- Solo OSARA, se c'e'. Niente console di ReaScript: il messaggio sta gia' nella riga
+  -- di stato e la console aperta di continuo e' solo disturbo.
+  if reaper.osara_outputMessage then reaper.osara_outputMessage(text) end
 end
 
 local function warn(text)
@@ -352,6 +353,8 @@ local AIUTI = {
   ["centro"] = "Testina al centro della striscia. Clic: a un terzo da sinistra.",
   ["Effetti ON"] = "Sessione con effetti: ZP Bus VoiceChain sul bus voci (cartella SOLO) e ZP MasterChain sul master. Clic: spegni.",
   ["Effetti OFF"] = "Clic: la sessione SOLO avra' le catene ZP Bus VoiceChain (bus voci) e ZP MasterChain (master).",
+  ["Lock REC"] = "Lock acceso: durante il REC la barra spaziatrice non ferma la registrazione (lo fa solo STOP). Clic: spegni.",
+  ["Lock off"] = "Lock spento: la barra spaziatrice ferma anche il REC, come in REAPER. Clic: accendi.",
   ["Tracce \u{25BE}"] = "Elenco delle tracce del progetto con il loro ingresso: spuntate le armate, un clic arma o disarma.",
   ["Folder Mode"] = "Organizza i take per cartella. Lane Mode non e' ancora attivo.",
 }
@@ -499,7 +502,7 @@ local FX_CHAIN_MASTER = "ZP MasterChain.RfxChain"
 local function read_fx_chain(name)
   local path = reaper.GetResourcePath() .. "/FXChains/" .. name
   local f = io.open(path, "rb")
-  if not f then return nil, "manca " .. name end
+  if not f then return nil, "manca " .. name .. " (lancia 32 Installa toolbar ed effetti)" end
   local text = f:read("*a"); f:close()
   local out = {}
   -- via gli FXID: REAPER ne assegna di nuovi, cosi' non ci sono doppioni
@@ -1484,8 +1487,8 @@ end
 
 local function draw_header_buttons(clicked)
   local y, bh = 8, 24
-  local w1, w2, w3, wr, wq = 62, 84, 88, 72, 28
-  local tot = w1 + w2 + w3 + 8 + wr + 4 + wq
+  local w1, w2, w3, wl, wr, wq = 62, 84, 88, 84, 72, 28
+  local tot = w1 + w2 + w3 + 8 + wl + 4 + wr + 4 + wq
   local x = gfx.w - tot - 14
   if btn({x=x, y=y, w=w1, h=bh}, "Mini", state.mode == "mini", true, clicked, "tab") then set_mode("mini") end
   x = x + w1 + 4
@@ -1493,6 +1496,12 @@ local function draw_header_buttons(clicked)
   x = x + w2 + 4
   if btn({x=x, y=y, w=w3, h=bh}, "Expanded", state.mode == "expanded", true, clicked, "tab") then set_mode("expanded") end
   x = x + w3 + 12
+  if btn({x=x, y=y, w=wl, h=bh}, state.rec_lock and "Lock REC" or "Lock off", state.rec_lock, true, clicked, state.rec_lock and "danger" or "tab") then
+    state.rec_lock = not state.rec_lock; save_state()
+    state.status = state.rec_lock and "Lock REC: durante il REC la barra spaziatrice non ferma la registrazione."
+      or "Lock spento: la barra spaziatrice ferma anche il REC, come in REAPER."
+  end
+  x = x + wl + 4
   if btn({x=x, y=y, w=wr, h=bh}, "REAPER", state.reaper_hidden, true, clicked, "tab") then toggle_reaper_window() end
   x = x + wr + 4
   if btn({x=x, y=y, w=wq, h=bh}, "?", false, true, clicked, "tab") then apri_help_solo() end
@@ -1969,7 +1978,19 @@ local function main_loop()
     -- Esc non chiude: evita chiusure accidentali durante sessione.
     state.status = "Esc ignorato: chiudi dalla X finestra se necessario."
   elseif char == 32 and not state.countdown then
-    play_transport()
+    -- Barra: come in REAPER (avvia / ferma). Durante il REC, con Lock REC acceso, non ferma.
+    local ps = reaper.GetPlayState()
+    if ps & 4 == 4 then
+      if state.rec_lock then
+        state.status = "REC protetto (Lock REC): per fermare premi STOP."
+      else
+        stop_transport()
+      end
+    elseif ps & 1 == 1 then
+      stop_transport()
+    else
+      play_transport()
+    end
   end
 
   process_pending()

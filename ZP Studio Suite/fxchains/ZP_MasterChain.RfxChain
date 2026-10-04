@@ -1,0 +1,35 @@
+BYPASS 0 0
+<JS "ZP Suite/ZP Master/ZP Master Pro.jsfx" ""
+  0.45625 -3.0025 90 8 0 0.4625 -9.875 2.71875 3625 0.668716 0 0.05625 1 1 1 1 1 0 1 0.5 68.75 1 -16 -18 10 0 0.8 0 -17 1 30 0 -100 0 1 -0.9625 35 250 1800 0.5 0.5 132.679076 425 2120 20000 0 5.239726 0 0 0 50 0 2 60 1 0 5 45 65 -11 5 7 17 2 "Flat -19" 15 1
+>
+JS_DIMS 992 1015
+<JS_SER
+  AACAPwAAgD8AAAAAAACAPwAAAAAAAAAAAADIwgAAAEAAAAAAAAAAAAAAAAAAAIA/AAAAAAAAgD8AAAAAAAAAAAAAAAAAAAAAAACAPwAAgD8AAIA/AAAAQAAAcEEAAAAA
+  PzVeQbR0lUH3ZZJBDQ9IQAAAAAASl4c/T8ElRAgffET9vAxEj51ZRADMLMPqJxFDAAAAAAAAAABxPRxEAAAAAJqZrUQAAAAAAAAAAD0K80MAAAAAmpmtQ/bLmcNWo1I+
+  vKl+wz81XkEjlNFB9s5OQh8d/kaC7wxFuIBNP7IYkkUAAIA/uFWKP6jHiT8qvxc+AAAAAPC1iz0TdD1CFE6PQsCqIEKCiXRCnKZJwfFvKEEAAAAAAAAAAAAANEIAAAAA
+  AADIQgAAAAAAAAAAAAAMQgAAAAAAAMhBN/uwwQxdk8GMLu0/nsDCQgAAAEE=
+>
+PRESETNAME "Flat -19"
+WAK 0 0
+BYPASS 0 0
+<JS "ZP Suite/ZP Voce/ZP Subliminal Presence Layer White.jsfx" ""
+  0 30 1 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+>
+WAK 0 0
+BYPASS 0 0
+<JS "ZP Suite/ZP Misura/ZP Loudness Meter Multichannel.jsfx" ""
+  4 0 0 2 1 1 1 0 -12 -6 1 1 0 1.8 0 0 1 0 0 0 0 0.3 0 1 -14 1 0 -1 0 -3.216319 -171.448293 -18.603713 -164.377262 -103 -18.425074 2.1 -1 2 -18 3 0.65 1 - - - - - - - - - - - - - - - - - - - - - -
+>
+<JS_SER
+  AACAPw==
+>
+WAK 0 0
+BYPASS 0 0
+<JS "ZP Suite/ZP Misura/ZP Oscilloscope 16ch.jsfx" ""
+  8000 0 0 2 300 2 1 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+>
+JS_DIMS 1072 298
+<JS_SER
+  AACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AAAAAAAAAAA=
+>
+WAK 0 0
