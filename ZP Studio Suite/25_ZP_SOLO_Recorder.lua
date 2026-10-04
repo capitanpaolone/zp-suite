@@ -95,6 +95,7 @@ local state = {
   nav = "regioni",       -- PREV/NEXT/START: "regioni" oppure "item"
   nav_zoom = 0,          -- navigatore: 0 = tutto il progetto, poi finestre sempre piu' corte
   nav_focus = "terzo",   -- testina a 1/3 da sinistra ("terzo") o al centro ("centro")
+  fx_session = false,    -- sessione SOLO con le catene di effetti ZP (bus voci + master)
   active_track_key = "main",
   take_counter = 1,
   status = "Pronto",
@@ -173,6 +174,7 @@ local function load_state()
   state.nav = ext_get("nav", state.nav) == "item" and "item" or "regioni"
   state.nav_zoom = tonumber(ext_get("nav_zoom", "")) or state.nav_zoom
   state.nav_focus = ext_get("nav_focus", state.nav_focus) == "centro" and "centro" or "terzo"
+  state.fx_session = bool_from_state(ext_get("fx_session", ""), state.fx_session)
   state.active_track_key = proj_get("active_track_key", state.active_track_key)
   -- Destinazione: "solo" = sessione SOLO (crea le sue tracce); "progetto" = telecomando
   -- (registra sulle tracce che arma l'utente, non crea e non tocca niente).
@@ -201,6 +203,7 @@ local function save_state()
   ext_set("nav", state.nav)
   ext_set("nav_zoom", state.nav_zoom)
   ext_set("nav_focus", state.nav_focus)
+  ext_set("fx_session", state.fx_session and "1" or "0")
   proj_set("active_track_key", state.active_track_key)
   proj_set("take_counter", state.take_counter)
   proj_set("target", state.target or "solo")
@@ -347,6 +350,8 @@ local AIUTI = {
   ["+"] = "Navigatore: zoom avanti; la finestra segue la testina.",
   ["1/3"] = "Testina a un terzo da sinistra: vedi piu' di quello che arriva. Clic: al centro.",
   ["centro"] = "Testina al centro della striscia. Clic: a un terzo da sinistra.",
+  ["Effetti ON"] = "Sessione con effetti: ZP Bus VoiceChain sul bus voci (cartella SOLO) e ZP MasterChain sul master. Clic: spegni.",
+  ["Effetti OFF"] = "Clic: la sessione SOLO avra' le catene ZP Bus VoiceChain (bus voci) e ZP MasterChain (master).",
   ["Tracce \u{25BE}"] = "Elenco delle tracce del progetto con il loro ingresso: spuntate le armate, un clic arma o disarma.",
   ["Folder Mode"] = "Organizza i take per cartella. Lane Mode non e' ancora attivo.",
 }
@@ -486,6 +491,79 @@ local function normalize_solo_folder_depths(tracks)
   end
 end
 
+-- Sessione con effetti: due catene salvate in REAPER/FXChains. La cartella ZP SOLO SESSION
+-- fa da bus delle voci; la seconda va sul master.
+local FX_CHAIN_BUS = "ZP Bus VoiceChain.RfxChain"
+local FX_CHAIN_MASTER = "ZP MasterChain.RfxChain"
+
+local function read_fx_chain(name)
+  local path = reaper.GetResourcePath() .. "/FXChains/" .. name
+  local f = io.open(path, "rb")
+  if not f then return nil, "manca " .. name end
+  local text = f:read("*a"); f:close()
+  local out = {}
+  -- via gli FXID: REAPER ne assegna di nuovi, cosi' non ci sono doppioni
+  for line in (text:gsub("\r\n", "\n") .. "\n"):gmatch("([^\n]*)\n") do
+    if not line:match("^%s*FXID ") then out[#out + 1] = line end
+  end
+  return table.concat(out, "\n")
+end
+
+local function track_has_fx(track, needle)
+  for i = 0, reaper.TrackFX_GetCount(track) - 1 do
+    local _, name = reaper.TrackFX_GetFXName(track, i, "")
+    if (name or ""):lower():find(needle:lower(), 1, true) then return true end
+  end
+  return false
+end
+
+-- L'API non carica i file .RfxChain: la catena passa da una traccia temporanea
+-- (blocco FXCHAIN nel suo stato) e gli effetti si spostano, con i loro parametri,
+-- sulla traccia di destinazione (anche il master). Poi la temporanea sparisce.
+local function load_fx_chain(dest, name)
+  local chain, err = read_fx_chain(name)
+  if not chain then return nil, err end
+  local idx = reaper.CountTracks(0)
+  reaper.InsertTrackAtIndex(idx, false)
+  local tmp = reaper.GetTrack(0, idx)
+  local _, chunk = reaper.GetTrackStateChunk(tmp, "", false)
+  chunk = chunk:gsub(">%s*$", "<FXCHAIN\nSHOW 0\nLASTSEL 0\nDOCKED 0\n" .. chain .. "\n>\n>\n")
+  reaper.SetTrackStateChunk(tmp, chunk, false)
+  local n = reaper.TrackFX_GetCount(tmp)
+  for _ = 1, n do
+    reaper.TrackFX_CopyToTrack(tmp, 0, dest, reaper.TrackFX_GetCount(dest), true)
+  end
+  reaper.DeleteTrack(tmp)
+  return n
+end
+
+local function apply_fx_session()
+  local folder = find_track_exact(FOLDER_NAME)
+  if not folder then return false end
+  local parts = {}
+  reaper.Undo_BeginBlock()
+  reaper.PreventUIRefresh(1)
+  if track_has_fx(folder, "ZP BUS Chain") then
+    parts[#parts + 1] = "bus voci gia' pronto"
+  else
+    local n, err = load_fx_chain(folder, FX_CHAIN_BUS)
+    parts[#parts + 1] = n and ("bus voci: " .. n .. " effetti") or ("bus voci: " .. err)
+  end
+  local master = reaper.GetMasterTrack(0)
+  if track_has_fx(master, "ZP Master Pro") then
+    parts[#parts + 1] = "master gia' pronto"
+  else
+    local n, err = load_fx_chain(master, FX_CHAIN_MASTER)
+    parts[#parts + 1] = n and ("master: " .. n .. " effetti") or ("master: " .. err)
+  end
+  reaper.PreventUIRefresh(-1)
+  reaper.Undo_EndBlock("ZP SOLO: effetti della sessione (bus voci + master)", -1)
+  reaper.TrackList_AdjustWindows(false)
+  reaper.UpdateArrange()
+  state.status = "Effetti: " .. table.concat(parts, " - ")
+  return true
+end
+
 local function ensure_solo_structure()
   reaper.Undo_BeginBlock()
   reaper.PreventUIRefresh(1)
@@ -522,6 +600,7 @@ local function ensure_solo_structure()
     -- (su un REAPER vuoto lo zoom di partenza e' troppo largo). Non cambia nient'altro.
     local start = math.max(0, reaper.GetCursorPosition() - 5)
     reaper.GetSet_ArrangeView2(0, true, 0, 0, start, start + SESSION_VIEW_SECONDS)
+    if state.fx_session then apply_fx_session() end
   end
   reaper.UpdateArrange()
   return solo_tracks()
@@ -1759,21 +1838,29 @@ local function draw_expanded(clicked)
   if btn({x=x2+306, y=y, w=92, h=34}, "NOISE", false, true, clicked) then add_marker_named("NOISE", false) end
 
   local y2 = y + 46
-  if btn({x=x2, y=y2, w=150, h=34}, state.auto_regions and "Regioni take ON" or "Regioni take OFF", state.auto_regions, true, clicked, "tab") then
+  if btn({x=x2, y=y2, w=136, h=34}, state.auto_regions and "Regioni take ON" or "Regioni take OFF", state.auto_regions, true, clicked, "tab") then
     state.auto_regions = not state.auto_regions; save_state()
     state.status = state.auto_regions and "A ogni REC crea la regione Take NNN." or "REC senza regione: il take resta, la regione no."
   end
   -- zoom del navigatore qui sotto (al posto del pulsante che apriva quello di REAPER)
-  if btn({x=x2+162, y=y2, w=40, h=34}, "\u{2212}", false, state.nav_zoom > 0, clicked) then
+  if btn({x=x2+142, y=y2, w=40, h=34}, "\u{2212}", false, state.nav_zoom > 0, clicked) then
     state.nav_zoom = state.nav_zoom - 1; save_state(); state.status = "Navigatore: " .. nav_zoom_label()
   end
-  if btn({x=x2+206, y=y2, w=40, h=34}, "+", false, state.nav_zoom < #NAV_ZOOM_SECONDS, clicked) then
+  if btn({x=x2+186, y=y2, w=40, h=34}, "+", false, state.nav_zoom < #NAV_ZOOM_SECONDS, clicked) then
     state.nav_zoom = state.nav_zoom + 1; save_state(); state.status = "Navigatore: " .. nav_zoom_label()
   end
-  if btn({x=x2+250, y=y2, w=62, h=34}, state.nav_focus == "centro" and "centro" or "1/3", false, state.nav_zoom > 0, clicked, "tab") then
+  if btn({x=x2+230, y=y2, w=58, h=34}, state.nav_focus == "centro" and "centro" or "1/3", false, state.nav_zoom > 0, clicked, "tab") then
     state.nav_focus = state.nav_focus == "centro" and "terzo" or "centro"; save_state()
   end
-  if btn({x=x2+324, y=y2, w=150, h=34}, "Video", video_aperta(), true, clicked, "tab") then show_video_window() end
+  if btn({x=x2+294, y=y2, w=80, h=34}, "Video", video_aperta(), true, clicked, "tab") then show_video_window() end
+  if btn({x=x2+380, y=y2, w=120, h=34}, state.fx_session and "Effetti ON" or "Effetti OFF", state.fx_session, not remote_mode(), clicked, "tab") then
+    state.fx_session = not state.fx_session; save_state()
+    if state.fx_session then
+      if not apply_fx_session() then state.status = "Effetti ON: li inserisco quando nasce la sessione SOLO." end
+    else
+      state.status = "Effetti OFF: non inserisco piu' le catene; quelli gia' inseriti restano."
+    end
+  end
 
   local nav_y = y2 + 46
   draw_navigator(14, nav_y, gfx.w - 28, gfx.h - (state.toolbar and TOOLBAR_H or 0) - 30 - nav_y)
