@@ -846,6 +846,14 @@ function FollowTick()
     end
 end
 
+-- Help: apre la guida della suite sulla sezione di questa finestra (via ZP_UI, che
+-- usa un indirizzo file:// codificato: con il percorso nudo macOS non apre il #segnalibro).
+local function zp_open_help_section(anchor)
+    local ok, ui = pcall(dofile, SCRIPT_DIR .. "ZP_UI.lua")
+    if ok and type(ui) == "table" and ui.open_help then ui.open_help(anchor) return true end
+    return false
+end
+
 function CycleTextFlow(delta)
     local tracks = CollectTextFlowTracks()
     if #tracks == 0 then return end
@@ -1840,6 +1848,7 @@ function DrawAlertStrip(w, strip_h, play_pos, attack_x)
     if DrawButton(w - 282, 29, 138, 24, studio_label, 0.20, 0.48, 0.40, studio_edit_mode) then
         SetStudioEditMode(not studio_edit_mode)
     end
+    if DrawButton(w - 138, 29, 28, 24, "?", 0.22, 0.30, 0.42) then zp_open_help_section("tool-03") end
 
     local flow_label = CurrentTextFlowLabel()
     if #flow_label > 20 then flow_label = flow_label:sub(1, 19) .. "." end

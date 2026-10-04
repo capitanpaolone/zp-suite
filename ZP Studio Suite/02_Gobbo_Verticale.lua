@@ -2444,7 +2444,16 @@ function DrawButton(x, y, w, h, label, hover_r, hover_g, hover_b, active)
     return hover and (gfx.mouse_cap == 0) and mouse_was_down
 end
 
+-- Help: apre la guida della suite sulla sezione di questa finestra (via ZP_UI, che
+-- usa un indirizzo file:// codificato: con il percorso nudo macOS non apre il #segnalibro).
+local function zp_open_help_section(anchor)
+    local ok, ui = pcall(dofile, SCRIPT_DIR .. "ZP_UI.lua")
+    if ok and type(ui) == "table" and ui.open_help then ui.open_help(anchor) return true end
+    return false
+end
+
 function OpenSuiteHelp()
+    if zp_open_help_section("tool-02") then return end
     local help_path = SCRIPT_DIR .. "help/index.html"
     local f = io.open(help_path, "r")
     if f then

@@ -1098,7 +1098,7 @@ local function draw_gui()
   if button(x + 164, y, 140, 38, "PREVIEW", false, nil, can_preview, preview_reason, "preview") then preview() end
   if button(x + 318, y, 140, 38, "APPLICA", false, "go", can_apply, "Non ci sono segmenti validi da applicare.", "apply") then apply() end
   if button(x + 472, y, 154, 38, "PULISCI PREVIEW", false, nil, preview_count > 0, "Nessuna regione preview da rimuovere.", "clean_preview") then cleanup_preview(); state.status = "Preview rimossa." end
-  if button(x + 640, y, 90, 38, "HELP", false, nil, true, nil, "help") then open_help() end
+  if button(x + 692, y, 38, 38, "?", false, nil, true, nil, "help") then open_help() end
   if button(x + 744, y, 120, 38, "CANCELLA", false, "danger", true, nil, "cancel") then cleanup_preview(); gfx.quit(); return end
 
   if state.help_title ~= "" then

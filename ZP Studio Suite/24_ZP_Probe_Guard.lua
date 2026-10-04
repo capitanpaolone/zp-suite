@@ -71,6 +71,12 @@ local W, H = 340, 168
 gfx.init("ZP Probe Guard", W, H, 0, 200, 200)
 
 local BTN = { x = 232, y = 132, w = 92, h = 24 }
+local HELP_BTN = { x = 340 - 34, y = 8, w = 24, h = 22 }
+local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
+local function apri_help()
+  local ok, ui = pcall(dofile, SCRIPT_DIR .. "ZP_UI.lua")
+  if ok and type(ui) == "table" and ui.open_help then ui.open_help("zp-probe-guard") end
+end
 local mouse_giu = false
 
 local function riga(y, etichetta, valore, acceso)
@@ -113,6 +119,15 @@ local function disegna()
   gfx.rect(BTN.x, BTN.y, BTN.w, BTN.h, false)
   gfx.x, gfx.y = BTN.x + 16, BTN.y + 5
   gfx.drawstr("Apri log")
+
+  local sopra_h = gfx.mouse_x >= HELP_BTN.x and gfx.mouse_x <= HELP_BTN.x + HELP_BTN.w
+                 and gfx.mouse_y >= HELP_BTN.y and gfx.mouse_y <= HELP_BTN.y + HELP_BTN.h
+  if sopra_h then gfx.set(0.24, 0.27, 0.31) else gfx.set(0.17, 0.19, 0.22) end
+  gfx.rect(HELP_BTN.x, HELP_BTN.y, HELP_BTN.w, HELP_BTN.h, true)
+  gfx.set(0.80, 0.83, 0.86)
+  gfx.rect(HELP_BTN.x, HELP_BTN.y, HELP_BTN.w, HELP_BTN.h, false)
+  gfx.x, gfx.y = HELP_BTN.x + 8, HELP_BTN.y + 4
+  gfx.drawstr("?")
 
   gfx.update()
 end
@@ -171,6 +186,9 @@ local function guard()
       if gfx.mouse_x >= BTN.x and gfx.mouse_x <= BTN.x + BTN.w
          and gfx.mouse_y >= BTN.y and gfx.mouse_y <= BTN.y + BTN.h then
         apri_log()
+      elseif gfx.mouse_x >= HELP_BTN.x and gfx.mouse_x <= HELP_BTN.x + HELP_BTN.w
+         and gfx.mouse_y >= HELP_BTN.y and gfx.mouse_y <= HELP_BTN.y + HELP_BTN.h then
+        apri_help()
       end
     end
   else

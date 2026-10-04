@@ -641,7 +641,7 @@ local function run_ui()
     })
 
     if ZP_UI.draw_button({ x = gfx.w - 54, y = 18, w = 34, h = 28 }, "?", false, true, clicked) then
-      reaper.ShowMessageBox(HELP_TEXT, TITLE .. " - Istruzioni", 0)
+      ZP_UI.open_help("zp-chain-builder")
     end
 
     gfx.setfont(1, "Arial", 14)

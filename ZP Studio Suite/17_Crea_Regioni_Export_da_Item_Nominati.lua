@@ -3530,8 +3530,9 @@ local function open_window()
     })
 
     local content_right = FIXED_WINDOW_W - 22
-    if draw_button({ x = content_right - 100, y = 22, w = 100, h = 34 }, "HELP ME", show_help, true, clicked) then
-      show_help = not show_help
+    -- il vecchio pannello HELP ME e' sostituito dalla guida, aperta sulla sezione del Gestore
+    if draw_button({ x = content_right - 34, y = 22, w = 34, h = 34 }, "?", false, true, clicked) then
+      ZP_UI.open_help("tool-17")
     end
 
     local render_info = chosen_mixdown_info or render_folder_info(groups)
