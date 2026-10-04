@@ -442,6 +442,11 @@ local function open_srt_bridge()
       }
     }
 
+    -- Aperto dalla finestra 30 ZP SRT su un'operazione precisa (_G.ZP_SRT_OP = id).
+    if _G.ZP_SRT_OP and not selected_op then
+      selected_op = _G.ZP_SRT_OP
+      _G.ZP_SRT_OP = nil
+    end
     if not selected_op then
       if #selected_videos > 0 then selected_op = 1
       elseif cursor_region then selected_op = 3

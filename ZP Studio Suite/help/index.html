@@ -112,6 +112,8 @@
     <div class="card"><a href="#tool-srt-tools"><span class="num">SRT</span> SRT Tools offline</a></div>
     <div class="card"><a href="collega_marker.html"><span class="num">28</span> Collega marker SRT</a></div>
     <div class="card"><a href="pannello_trascrizione.html"><span class="num">29</span> ZP Trascrizione: dall'audio al Gobbo</a></div>
+    <div class="card"><a href="#tool-30"><span class="num">30</span> ZP SRT: tutti gli SRT in una finestra</a></div>
+    <div class="card"><a href="#tool-31"><span class="num">31</span> SRT dall'audio</a></div>
     <div class="card"><a href="#tool-solo"><span class="num">SOLO</span> ZP SOLO Recorder</a></div>
     <div class="card"><a href="#zp-shared-bus"><span class="num">FX</span> ZP Shared Bus</a></div>
   </div>
@@ -229,6 +231,18 @@
 
   <h2 id="tool-29">29 - ZP Trascrizione</h2>
   <p>La strada dall'audio al Gobbo in una finestra sola: <strong>Trascrivi</strong>, <strong>Abbina da…</strong> (SRT, SRT tradotto, marker di progetto, cue del WAV), <strong>Porta nel gobbo</strong>, <strong>Segui i tagli</strong>. Seleziona gli item audio: la tappa da fare è segnata. <a href="pannello_trascrizione.html">Guida completa</a>.</p>
+
+  <h2 id="tool-30">30 - ZP SRT</h2>
+  <p>Tutto quello che si fa con gli SRT, nell'ordine in cui si lavora. Scegli, la finestra si chiude e apre lo strumento giusto; passando col mouse su un pulsante leggi quando usarlo.</p>
+  <ul>
+  <li><strong>Porta dentro:</strong> Video + SRT (01), Sostituisci testi (05), Aggiungi lingua (05), Collega a un audio (29), Da testo o traduzione (26).</li>
+  <li><strong>Controlla:</strong> Info item SRT (13), Traccia gobbo vuota (05), Leggi nel Gobbo (02).</li>
+  <li><strong>Porta fuori:</strong> Esporta SRT (08), SRT dall'audio (31).</li>
+  </ul>
+  <p>Due mondi: i sottotitoli del <strong>video</strong> usano i tempi della timeline; l'<strong>audio</strong> (29 e 31) usa i tempi del file, e il testo segue tagli e spostamenti.</p>
+
+  <h2 id="tool-31">31 - SRT dall'audio</h2>
+  <p>Seleziona gli item audio con i marker delle battute e lancialo: scrive un SRT accanto al file sorgente, con lo stesso nome. Pezzi dello stesso file danno un solo SRT. Funziona anche su un file nato da un Glue, che tiene solo i marker della parte usata. Se l'SRT esiste già chiede: sostituirlo (con copia <code>.srt.bak</code>) oppure salvarne uno nuovo <code>(marker).srt</code>. Fine di ogni battuta = inizio della successiva; l'ultima dura al massimo 8 secondi. Ricollegato con 29 «Abbina da…» torna identico.</p>
 
   <h2 id="tool-collega-marker">28 - Collega marker</h2>
   <p><code>28_Collega_Marker.lua</code> importa i cue SRT come take marker negli item audio selezionati.</p>

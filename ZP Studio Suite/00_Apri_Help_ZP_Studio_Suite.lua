@@ -98,6 +98,8 @@
 --   [main] 26_SRT_Tools.lua
 --   [main] 27_Pulisci_Installazione_Precedente.lua
 --   [main] 29_ZP_Trascrizione.lua
+--   [main] 30_ZP_SRT.lua
+--   [main] 31_SRT_da_Marker_Audio.lua
 --   [nomain] 04_worker_Crea_Marker_Item.lua
 --   [nomain] 05_worker_Gestione_SRT.lua
 --   [nomain] 28_Collega_Marker.lua
@@ -143,6 +145,7 @@
 --   [data] icons/ZP_tb_25_SOLO_Recorder.png > toolbar_icons/ZP_tb_25_SOLO_Recorder.png
 --   [data] icons/ZP_tb_26_SRT_Tools.png > toolbar_icons/ZP_tb_26_SRT_Tools.png
 --   [data] icons/ZP_tb_29_Pannello_Trascrizione.png > toolbar_icons/ZP_tb_29_Pannello_Trascrizione.png
+--   [data] icons/ZP_tb_30_ZP_SRT.png > toolbar_icons/ZP_tb_30_ZP_SRT.png
 
 --[[
 ZP Studio Suite for REAPER
