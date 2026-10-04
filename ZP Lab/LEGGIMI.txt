@@ -14,3 +14,15 @@ ZP BrownSlope Dynamic Guard (v0.5-assist-dev)
   Origine: cartella "ZP_Paolo Balestri JSFX in uso", 16 giugno 2026.
   Esiste anche una variante piu' piccola, "PRO" v0.4, tenuta fuori: questa
   la comprende.
+
+ZP BrownSlope Prism (v0.1-lab, 4 ottobre 2026)
+  Analizzatore PASSIVO in stile TDR Prism: l'audio passa intatto. Spettro
+  con pendenza compensata 4,5 dB/ottava, cosi' il rumore brown diventa una
+  linea piatta; due linee di riferimento misurate dai loop
+  "-4.5dB_octave -18LUFS" e "-24LUFS" (~/AudioCheck) con lo stesso calcolo
+  del plugin. Letture: scarto per zona (Bassi, Medio-bassi, Medio-alti,
+  Alti), pendenza residua, livello, esito Pareggiato/Quasi/No; modalita'
+  "Forma" per confrontare solo l'EQ. Calibra/Default per legare il
+  riferimento a un file suonato nel progetto.
+  Verifica: calcolo rifatto in Python sui due loop (scarti entro 0,03 dB;
+  un +3 dB sopra 4 kHz si legge negli Alti). Non ancora provato in REAPER.

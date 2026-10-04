@@ -1,0 +1,306 @@
+desc:ZP BrownSlope Prism - Passive Brown Slope Analyzer - Paolo Balestri
+// Autore: Paolo Balestri
+// Versione: 0.1-lab
+//
+// Analizzatore PASSIVO: l'audio passa intatto. Mostra lo spettro del programma
+// come TDR Prism con "Slope 4.5 dB/oct": compensando 4,5 dB per ottava, un rumore
+// brown diventa una linea piatta. Le due linee di riferimento sono i loop
+// "-4.5 dB/octave" a -18 e -24 LUFS misurati con lo stesso calcolo di questo
+// plugin (FFT 8192 Hann, densita' per Hz, media L/R, bande da 1/6 di ottava).
+// Sei "pareggiato" quando la curva arancione e' piatta e sta sulla linea scelta.
+//
+// Letture: scarto in dB per zona (Bassi, Medio-bassi, Medio-alti, Alti),
+// pendenza residua in dB/ottava (positiva = piu' brillante del brown) e
+// livello rispetto al riferimento. In "Forma" il livello viene tolto: conta solo l'EQ.
+// Calibra: suonando il file di riferimento con media Lunga, Calibra memorizza la
+// curva misurata per il riferimento scelto (salvata col progetto); Default la toglie.
+
+slider1:0<0,1,1{-18 LUFS,-24 LUFS}>Riferimento
+slider2:1<0,1,1{Livello,Forma (solo EQ)}>Confronto
+slider3:3<0,3,1{Veloce 0.3 s,Media 1 s,Lenta 3 s,Lunga (fino a Reset)}>Media
+slider4:2<0,3,1{0 dB/oct,3 dB/oct,4.5 dB/oct,6 dB/oct}>Pendenza grafico
+slider5:0<0,1,1{-,Reset}>Reset media
+slider10:0<-30,30,0.1>[Read] Bassi 40-160 Hz (dB)
+slider11:0<-30,30,0.1>[Read] Medio-bassi 160-800 Hz (dB)
+slider12:0<-30,30,0.1>[Read] Medio-alti 800 Hz-4 kHz (dB)
+slider13:0<-30,30,0.1>[Read] Alti 4-14 kHz (dB)
+slider14:0<-6,6,0.01>[Read] Pendenza residua (dB/oct)
+slider15:0<-40,40,0.1>[Read] Livello vs riferimento (dB)
+slider16:0<0,2,1{Non pareggiato,Quasi,Pareggiato}>[Read] Esito
+
+in_pin:left input
+in_pin:right input
+out_pin:left output
+out_pin:right output
+
+@init
+ext_noinit = 1;   // la media lunga non si azzera a ogni Play
+target = slider1; compare = slider2; avgmode = slider3; slopesel = slider4;
+N = 8192; half = N / 2; hop = N / 2;
+ringL = 0; ringR = N; buf = 2 * N; win = 3 * N; avg = 4 * N; cur = 5 * N;
+NB = 63; KMIN = -36;
+bfc = 6 * N; blo = bfc + 64; bhi = blo + 64; bdb = bhi + 64; dev = bdb + 64;
+ref = dev + 64; cal18 = ref + 64; cal24 = cal18 + 64; reft = cal24 + 64;
+REF24_OFFSET = 5.91;
+LOG2 = log(2);
+
+// Riferimento -18 LUFS misurato dal loop "-4.5dB_octave -18LUFS" (gia' compensato
+// 4.5 dB/oct, lisciato su ~1/2 ottava). Bande 1000*2^(k/6), k = -36..26.
+i = 0;
+ref[i] = -61.22; i += 1; ref[i] = -61.18; i += 1; ref[i] = -61.03; i += 1; ref[i] = -60.97; i += 1;
+ref[i] = -61.05; i += 1; ref[i] = -61.12; i += 1; ref[i] = -61.04; i += 1; ref[i] = -61.00; i += 1;
+ref[i] = -60.89; i += 1; ref[i] = -60.90; i += 1; ref[i] = -60.95; i += 1; ref[i] = -60.78; i += 1;
+ref[i] = -60.69; i += 1; ref[i] = -60.55; i += 1; ref[i] = -60.51; i += 1; ref[i] = -60.55; i += 1;
+ref[i] = -60.58; i += 1; ref[i] = -60.55; i += 1; ref[i] = -60.58; i += 1; ref[i] = -60.57; i += 1;
+ref[i] = -60.67; i += 1; ref[i] = -60.70; i += 1; ref[i] = -60.68; i += 1; ref[i] = -60.61; i += 1;
+ref[i] = -60.54; i += 1; ref[i] = -60.45; i += 1; ref[i] = -60.41; i += 1; ref[i] = -60.32; i += 1;
+ref[i] = -60.28; i += 1; ref[i] = -60.25; i += 1; ref[i] = -60.30; i += 1; ref[i] = -60.26; i += 1;
+ref[i] = -60.24; i += 1; ref[i] = -60.20; i += 1; ref[i] = -60.14; i += 1; ref[i] = -60.03; i += 1;
+ref[i] = -59.96; i += 1; ref[i] = -59.87; i += 1; ref[i] = -59.86; i += 1; ref[i] = -59.82; i += 1;
+ref[i] = -59.78; i += 1; ref[i] = -59.73; i += 1; ref[i] = -59.73; i += 1; ref[i] = -59.69; i += 1;
+ref[i] = -59.66; i += 1; ref[i] = -59.60; i += 1; ref[i] = -59.54; i += 1; ref[i] = -59.52; i += 1;
+ref[i] = -59.49; i += 1; ref[i] = -59.46; i += 1; ref[i] = -59.44; i += 1; ref[i] = -59.42; i += 1;
+ref[i] = -59.41; i += 1; ref[i] = -59.41; i += 1; ref[i] = -59.43; i += 1; ref[i] = -59.44; i += 1;
+ref[i] = -59.45; i += 1; ref[i] = -59.49; i += 1; ref[i] = -59.53; i += 1; ref[i] = -59.59; i += 1;
+ref[i] = -59.61; i += 1; ref[i] = -59.64; i += 1; ref[i] = -59.68;
+
+// finestra di Hann simmetrica e sua energia
+wsum2 = 0; i = 0;
+loop(N, win[i] = 0.5 - 0.5 * cos(2 * $pi * i / (N - 1)); wsum2 += win[i] * win[i]; i += 1;);
+psd_scale = 2 / (srate * wsum2) * 0.5;   // densita' unilaterale per Hz, media L/R
+
+// bande da 1/6 di ottava: bin compresi in [fc*2^-1/12, fc*2^1/12)
+binw = srate / N; b = 0;
+loop(NB,
+  fc = 1000 * 2 ^ ((b + KMIN) / 6);
+  bfc[b] = fc;
+  lo = max(1, ceil(fc * 2 ^ (-1 / 12) / binw));
+  hi = min(half - 1, ceil(fc * 2 ^ (1 / 12) / binw) - 1);
+  hi < lo ? (lo = hi = max(1, min(half - 1, floor(fc / binw + 0.5))););
+  blo[b] = lo; bhi[b] = hi;
+  b += 1;
+);
+
+pos = 0; hopc = 0; frames = 0; seconds = 0; have_data = 0;
+memset(avg, 0, half + 1);
+!cal_init ? (cal18_ok = 0; cal24_ok = 0; cal_init = 1;);
+
+function slope_db() ( slopesel == 0 ? 0 : slopesel == 1 ? 3 : slopesel == 2 ? 4.5 : 6; );
+
+function reset_avg() ( memset(avg, 0, half + 1); frames = 0; seconds = 0; have_data = 0; );
+
+function do_channel(ring) local(i, j, re, im, k) (
+  i = 0; j = pos;
+  loop(N, buf[i] = ring[j] * win[i]; i += 1; j += 1; j >= N ? j = 0;);
+  fft_real(buf, N);
+  fft_permute(buf, N / 2);
+  k = 1;
+  loop(half - 1, re = buf[2 * k]; im = buf[2 * k + 1]; cur[k] += re * re + im * im; k += 1;);
+);
+
+// riferimento attivo per la banda b, con la stessa pendenza del grafico
+function ref_at(b, which) local(base) (
+  which == 0 ? (base = cal18_ok ? cal18[b] : ref[b];)
+             : (base = cal24_ok ? cal24[b] : ref[b] - REF24_OFFSET;);
+  base + (slope_db() - 4.5) * log(bfc[b] / 1000) / LOG2;
+);
+
+function compute_bands() local(b, k, s, n, sd, x, sx, sy, sxx, sxy, cnt, z1, z2, z3, z4, c1, c2, c3, c4, f, d, okz) (
+  sd = slope_db();
+  b = 0; sx = sy = sxx = sxy = cnt = 0; z1 = z2 = z3 = z4 = c1 = c2 = c3 = c4 = 0;
+  loop(NB,
+    s = 0; n = 0; k = blo[b];
+    loop(bhi[b] - blo[b] + 1, s += avg[k]; n += 1; k += 1;);
+    bdb[b] = 10 * log10(max(s / max(n, 1), 1e-30)) + sd * log(bfc[b] / 1000) / LOG2;
+    reft[b] = ref_at(b, target);
+    dev[b] = bdb[b] - reft[b];
+    f = bfc[b]; d = dev[b];
+    f >= 50 && f <= 12000 ? (x = log(f / 1000) / LOG2; sx += x; sy += d; sxx += x * x; sxy += x * d; cnt += 1;);
+    f >= 40 && f < 160 ? (z1 += d; c1 += 1;);
+    f >= 160 && f < 800 ? (z2 += d; c2 += 1;);
+    f >= 800 && f < 4000 ? (z3 += d; c3 += 1;);
+    f >= 4000 && f <= 14000 ? (z4 += d; c4 += 1;);
+    b += 1;
+  );
+  level = cnt > 0 ? sy / cnt : 0;
+  tilt = cnt > 1 ? (cnt * sxy - sx * sy) / max(cnt * sxx - sx * sx, 1e-9) : 0;
+  off = compare == 1 ? level : 0;
+  zb = z1 / max(c1, 1) - off; zlm = z2 / max(c2, 1) - off; zmh = z3 / max(c3, 1) - off; zh = z4 / max(c4, 1) - off;
+  okz = abs(zb) <= 1.5 && abs(zlm) <= 1.5 && abs(zmh) <= 1.5 && abs(zh) <= 1.5 && abs(tilt) <= 0.5;
+  verdict = !have_data ? 0 : okz && (compare == 1 || abs(level) <= 1.5) ? 2
+          : (abs(zb) <= 3 && abs(zlm) <= 3 && abs(zmh) <= 3 && abs(zh) <= 3 && abs(tilt) <= 1) ? 1 : 0;
+);
+
+function analyze() local(k, tot, alpha, p) (
+  memset(cur, 0, half + 1);
+  do_channel(ringL);
+  do_channel(ringR);
+  tot = 0; k = 1;
+  loop(half - 1, tot += cur[k]; k += 1;);
+  tot *= psd_scale * binw;   // potenza media del frame (circa il valore quadratico medio)
+  tot > 1e-8 ? (             // sotto -80 dB: silenzio, la misura resta ferma
+    frames += 1; seconds += hop / srate; have_data = 1;
+    alpha = avgmode == 3 ? 1 / frames : 1 - exp(-hop / (srate * (avgmode == 0 ? 0.3 : avgmode == 1 ? 1 : 3)));
+    k = 1;
+    loop(half - 1, p = cur[k] * psd_scale; avg[k] += alpha * (p - avg[k]); k += 1;);
+    compute_bands();
+  );
+);
+
+// funzioni del grafico (definite qui, usate in @gfx)
+function xf(f) ( gx0 + (log(f / 15) / log(20000 / 15)) * (gx1 - gx0); );
+function yv(v) ( gy0 + (RANGE - (v - ymid)) / (2 * RANGE) * (gy1 - gy0); );
+function button(x, y, w, h, label, on) local(hit) (
+  hit = mouse_x >= x && mouse_x <= x + w && mouse_y >= y && mouse_y <= y + h;
+  gfx_set(on ? 0.20 : 0.13, on ? 0.42 : 0.15, on ? 0.36 : 0.19, 1); gfx_rect(x, y, w, h);
+  gfx_set(hit ? 0.95 : 0.55, hit ? 0.98 : 0.60, hit ? 1 : 0.66, 1);
+  gfx_line(x, y, x + w, y); gfx_line(x, y + h, x + w, y + h); gfx_line(x, y, x, y + h); gfx_line(x + w, y, x + w, y + h);
+  gfx_measurestr(label, tw, th); gfx_x = x + (w - tw) / 2; gfx_y = y + (h - th) / 2;
+  gfx_set(0.92, 0.94, 0.96, 1); gfx_drawstr(label);
+  click && hit;
+);
+function zone_box(x, y, w, label, v) local(c) (
+  c = abs(v) <= 1.5 ? 0 : abs(v) <= 3 ? 1 : 2;
+  gfx_set(0.12, 0.13, 0.15, 1); gfx_rect(x, y, w, 52);
+  gfx_set(0.62, 0.66, 0.72, 1); gfx_x = x + 10; gfx_y = y + 6; gfx_setfont(1, "Arial", 13); gfx_drawstr(label);
+  c == 0 ? gfx_set(0.40, 0.88, 0.60, 1) : c == 1 ? gfx_set(0.95, 0.78, 0.35, 1) : gfx_set(0.98, 0.45, 0.35, 1);
+  gfx_setfont(2, "Arial", 22, 'b'); gfx_x = x + 10; gfx_y = y + 24;
+  have_data ? sprintf(#zs, "%+.1f dB", v) : #zs = "--";
+  gfx_drawstr(#zs);
+);
+
+
+@slider
+avgmode != slider3 ? (avgmode = slider3; reset_avg(););
+target = slider1; compare = slider2; slopesel = slider4;
+slider5 ? (reset_avg(); slider5 = 0; sliderchange(slider5););
+have_data ? compute_bands();
+
+@block
+// letture per OSARA e per la vista a parametri, aggiornate ~4 volte al secondo
+(rd_t += samplesblock) >= srate * 0.25 ? (
+  rd_t = 0;
+  slider10 = zb; slider11 = zlm; slider12 = zmh; slider13 = zh;
+  slider14 = tilt; slider15 = level; slider16 = verdict;
+  sliderchange(slider10); sliderchange(slider11); sliderchange(slider12); sliderchange(slider13);
+  sliderchange(slider14); sliderchange(slider15); sliderchange(slider16);
+);
+
+@sample
+ringL[pos] = spl0;
+ringR[pos] = num_ch > 1 ? spl1 : spl0;
+pos += 1; pos >= N ? pos = 0;
+(hopc += 1) >= hop ? (hopc = 0; analyze(););
+
+@serialize
+file_var(0, cal18_ok);
+file_var(0, cal24_ok);
+file_mem(0, cal18, NB);
+file_mem(0, cal24, NB);
+cal_init = 1;
+
+@gfx 900 540
+click = (mouse_cap & 1) && !last_cap; last_cap = mouse_cap & 1;
+gfx_set(0.07, 0.08, 0.09, 1); gfx_rect(0, 0, gfx_w, gfx_h);
+RANGE = 18;
+
+// testata
+gfx_setfont(2, "Arial", 18, 'b'); gfx_set(0.92, 0.88, 0.78, 1); gfx_x = 16; gfx_y = 12;
+gfx_drawstr("ZP BrownSlope Prism");
+gfx_setfont(1, "Arial", 13); gfx_set(0.56, 0.72, 0.86, 1); gfx_x = 16; gfx_y = 34;
+sprintf(#st, "passivo - slope %.1f dB/oct - %s - analizzati %.0f s%s", slope_db(),
+  avgmode == 0 ? "veloce" : avgmode == 1 ? "media 1 s" : avgmode == 2 ? "lenta" : "media lunga",
+  seconds, cal18_ok || cal24_ok ? " - calibrato" : "");
+gfx_drawstr(#st);
+bx = gfx_w - 16;
+bx -= 84; button(bx, 12, 80, 28, "Default", 0) ? (target == 0 ? (cal18_ok = 0) : (cal24_ok = 0); compute_bands(););
+bx -= 84; button(bx, 12, 80, 28, "Calibra", 0) && have_data ? (
+  i = 0; sd = slope_db(); cbase = target == 0 ? cal18 : cal24;
+  loop(NB, cbase[i] = bdb[i] - (sd - 4.5) * log(bfc[i] / 1000) / LOG2; i += 1;);
+  target == 0 ? (cal18_ok = 1) : (cal24_ok = 1); compute_bands();
+);
+bx -= 84; button(bx, 12, 80, 28, "Reset", 0) ? reset_avg();
+bx -= 118; button(bx, 12, 114, 28, avgmode == 0 ? "Media: veloce" : avgmode == 1 ? "Media: 1 s" : avgmode == 2 ? "Media: lenta" : "Media: lunga", 0) ? (
+  avgmode = (avgmode + 1) % 4; slider3 = avgmode; sliderchange(slider3); reset_avg(););
+bx -= 98; button(bx, 12, 94, 28, compare == 1 ? "Forma" : "Livello", compare == 1) ? (
+  compare = !compare; slider2 = compare; sliderchange(slider2); have_data ? compute_bands(););
+bx -= 98; button(bx, 12, 94, 28, target == 0 ? "Rif. -18" : "Rif. -24", 1) ? (
+  target = !target; slider1 = target; sliderchange(slider1); have_data ? compute_bands(););
+
+// grafico
+gx0 = 56; gx1 = gfx_w - 18; gy0 = 58; gy1 = gfx_h - 96;
+// centro verticale: la media del riferimento scelto
+i = 0; ymid = 0; loop(NB, ymid += ref_at(i, target); i += 1;); ymid /= NB;
+gfx_set(0.10, 0.11, 0.12, 1); gfx_rect(gx0, gy0, gx1 - gx0, gy1 - gy0);
+gfx_setfont(1, "Arial", 12);
+v = -RANGE;
+loop(7,
+  y = yv(ymid + v); gfx_set(0.20, 0.21, 0.23, 1); gfx_line(gx0, y, gx1, y);
+  gfx_set(0.55, 0.58, 0.62, 1); gfx_x = 8; gfx_y = y - 6; sprintf(#lb, "%+d", v); v == 0 ? #lb = "0"; gfx_drawstr(#lb);
+  v += 6;
+);
+f = 20;
+loop(10,
+  x = xf(f); gfx_set(0.20, 0.21, 0.23, 1); gfx_line(x, gy0, x, gy1);
+  gfx_set(0.55, 0.58, 0.62, 1); gfx_x = x - 10; gfx_y = gy1 + 4;
+  f >= 1000 ? sprintf(#lb, "%dk", f / 1000) : sprintf(#lb, "%d", f); gfx_drawstr(#lb);
+  f = f == 20 ? 50 : f == 50 ? 100 : f == 100 ? 200 : f == 200 ? 500 : f == 500 ? 1000 : f == 1000 ? 2000 : f == 2000 ? 5000 : f == 5000 ? 10000 : 20000;
+);
+// zone
+gfx_set(0.16, 0.17, 0.19, 1);
+gfx_line(xf(160), gy0, xf(160), gy1); gfx_line(xf(800), gy0, xf(800), gy1); gfx_line(xf(4000), gy0, xf(4000), gy1);
+
+// riferimenti: quello scelto pieno, l'altro tenue
+w2 = 0;
+loop(2,
+  which = w2 == 0 ? (target == 0 ? 1 : 0) : target;
+  which == target ? gfx_set(0.40, 0.88, 0.60, 1) : gfx_set(0.40, 0.88, 0.60, 0.35);
+  i = 1;
+  loop(NB - 1,
+    gfx_line(xf(bfc[i - 1]), yv(ref_at(i - 1, which)), xf(bfc[i]), yv(ref_at(i, which)), 1);
+    which == target ? gfx_line(xf(bfc[i - 1]), yv(ref_at(i - 1, which)) + 1, xf(bfc[i]), yv(ref_at(i, which)) + 1, 1);
+    i += 1;
+  );
+  gfx_x = gx1 - 70; gfx_y = yv(ref_at(NB - 1, which)) - 16;
+  gfx_drawstr(which == 0 ? "-18 LUFS" : "-24 LUFS");
+  w2 += 1;
+);
+
+// programma (arancio), in "Forma" spostato del suo livello medio
+have_data ? (
+  shift = compare == 1 ? -level : 0;
+  i = 0;
+  loop(NB,
+    y = max(gy0, min(gy1, yv(bdb[i] + shift)));
+    gfx_set(1.0, 0.72, 0.45, 0.10); gfx_line(xf(bfc[i]), y, xf(bfc[i]), gy1);
+    i > 0 ? (
+      gfx_set(1.0, 0.72, 0.45, 1);
+      gfx_line(xf(bfc[i - 1]), max(gy0, min(gy1, yv(bdb[i - 1] + shift))), xf(bfc[i]), y, 1);
+      gfx_line(xf(bfc[i - 1]), max(gy0, min(gy1, yv(bdb[i - 1] + shift))) + 1, xf(bfc[i]), y + 1, 1);
+    );
+    i += 1;
+  );
+) : (
+  gfx_set(0.62, 0.66, 0.72, 1); gfx_setfont(1, "Arial", 15);
+  gfx_x = gx0 + 20; gfx_y = (gy0 + gy1) / 2 - 8;
+  gfx_drawstr("In attesa di segnale (sotto -80 dB la misura resta ferma)");
+);
+
+// letture
+zw = (gfx_w - 32 - 3 * 8 - 250) / 4; zy = gfx_h - 70;
+zone_box(16, zy, zw, "Bassi 40-160", zb);
+zone_box(16 + (zw + 8), zy, zw, "Medio-bassi 160-800", zlm);
+zone_box(16 + 2 * (zw + 8), zy, zw, "Medio-alti 800-4k", zmh);
+zone_box(16 + 3 * (zw + 8), zy, zw, "Alti 4k-14k", zh);
+rx = 16 + 4 * (zw + 8);
+gfx_set(0.12, 0.13, 0.15, 1); gfx_rect(rx, zy, gfx_w - 16 - rx, 52);
+gfx_setfont(1, "Arial", 13); gfx_set(0.62, 0.66, 0.72, 1); gfx_x = rx + 10; gfx_y = zy + 6;
+have_data ? sprintf(#t1, "Pendenza residua %+.2f dB/oct", tilt) : #t1 = "Pendenza residua --";
+gfx_drawstr(#t1);
+gfx_x = rx + 10; gfx_y = zy + 21;
+have_data ? sprintf(#t2, "Livello vs rif. %+.1f dB%s", level, compare == 1 ? " (ignorato)" : "") : #t2 = "Livello --";
+gfx_drawstr(#t2);
+gfx_setfont(2, "Arial", 16, 'b'); gfx_x = rx + 10; gfx_y = zy + 35;
+verdict == 2 ? (gfx_set(0.40, 0.88, 0.60, 1); gfx_drawstr("PAREGGIATO");)
+: verdict == 1 ? (gfx_set(0.95, 0.78, 0.35, 1); gfx_drawstr("QUASI");)
+: (gfx_set(0.98, 0.45, 0.35, 1); gfx_drawstr(have_data ? (tilt > 0.5 ? "PIU' BRILLANTE" : tilt < -0.5 ? "PIU' SCURO" : "NON PAREGGIATO") : "--"););
