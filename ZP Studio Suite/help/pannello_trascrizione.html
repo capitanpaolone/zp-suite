@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZP Pannello Trascrizione — guida</title><style>
+:root{color-scheme:light dark;--bg:#f7f7f4;--paper:#fff;--ink:#202024;--muted:#5e6068;--line:#d9d9d2;--accent:#245ba6}
+@media(prefers-color-scheme:dark){:root{--bg:#101217;--paper:#171a21;--ink:#eceff4;--muted:#adb2bd;--line:#303541;--accent:#77a9ff}}
+body{margin:0;padding:28px;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}main{max-width:900px;margin:auto}h1{margin:0 0 6px}h2{margin-top:30px;border-top:1px solid var(--line);padding-top:18px}h3{margin-bottom:4px}p,li{max-width:78ch}.lead,.muted{color:var(--muted)}.card{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:14px;margin:12px 0}code{background:rgba(127,127,127,.16);padding:2px 5px;border-radius:4px}.icon{width:180px;height:60px;image-rendering:pixelated}.note{border-left:4px solid var(--accent);padding:10px 14px;background:color-mix(in srgb,var(--accent) 10%,var(--bg))}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{text-align:left;vertical-align:top;padding:9px;border-bottom:1px solid var(--line)}
+</style></head>————–<0h1>Pannello Trascrizione e Gobbo</h1>
+<p class="lead">Guida al pannello sperimentale che coordina la trascrizione degli item audio selezionati, il collegamento degli SRT ai take marker e l'aggiornamento degli item di testo del Gobbo.</p>
+<div class="note"><strong>Stato:</strong> lo script si trova in <code>gobbo_ricerca_battuta/bozze/ZP_Pannello_Trascrizione.lua</code> ed è ancora una bozza di collaudo: non è integrato nel menu/toolbar della Suite. La guida descrive il comportamento atteso del codice; i controlli gfx e l'autofollow richiedono ancora una prova manuale in REAPER. Su questo Mac la trascrizione non è stata verificata perché MacWhisper non risulta disponibile.</div>
+
+<h2>Icona REAPER</h2>
+<div class="card"><img class="icon" src="../icons/ZP_tb_29_Pannello_Trascrizione.png" alt="Icona del pannello: audio collegato a righe di trascrizione"><p>L'onda rappresenta gli item audio selezionati; il foglio con le righe rappresenta l'SRT/trascrizione; la freccia indica il passaggio dei cue verso il Gobbo. Le tre miniature affiancate sono i normali stati del pulsante toolbar REAPER: riposo, puntatore sopra e premuto. Non sono tre funzioni diverse.</p></div>
+
+<h2>Prima di iniziare</h2><ol>
+<li>Seleziona in REAPER gli item audio da elaborare. Il pannello lavora sulla selezione, non cerca autonomamente altre registrazioni nel progetto.</li>
+<li>Per trascrivere automaticamente, il WAV deve essere accessibile e ZP Speech deve essere installato e configurato con un provider funzionante. La funzione attuale è configurata solo per macOS.</li>
+<li>Per importare un file già trascritto, colloca il file SRT accanto all'audio con lo stesso nome base, per esempio <code>Dialogo.wav</code> e <code>Dialogo.srt</code>. In alternativa, <em>Collega marker</em> consente di scegliere un SRT esterno.</li>
+</ol>
+
+<h2>Legenda dei comandi e dei simboli</h2><table><thead><tr><th>Elemento</th><th>Simbolo/stile</th><th>Cosa rappresenta e cosa fa</th></tr></thead><tbody>
+<tr><th>1 — Trascrivi</th><td>Triangolo ▶; pulsante verde</td><td>Avvia la coda di trascrizione dei WAV selezionati senza SRT accanto. Salta i file che hanno già il sidecar SRT; non li sostituisce. Invia i file uno alla volta a ZP Speech. Se è in corso un job, il pulsante segnala lo stato occupato.</td></tr>
+<tr><th>2 — Collega marker</th><td>Simbolo di avvio/selezione; pulsante blu</td><td>Lancia <code>28_Collega_Marker.lua</code>. Importa i cue SRT come take marker sugli item selezionati. Se non trova il sidecar, lo script di import può chiedere un file SRT. Eventuali marker esistenti sono gestiti dalla conferma dello script collegato.</td></tr>
+<tr><th>3 — Sincronizza</th><td>Dischetto stilizzato; pulsante verde</td><td>Lancia <code>ZP_sincronizza_aggancio.lua</code> per aggiornare/agganciare gli item di testo generati del Gobbo ai marker. La logica mantiene i testi modificati a mano e gestisce marker rimossi secondo le regole dello script.</td></tr>
+<tr><th>Autofollow spento</th><td>Pulsante scuro</td><td>La sincronizzazione avviene solo quando premi <em>Sincronizza</em>.</td></tr>
+<tr><th>Autofollow acceso (10 s)</th><td>Pulsante blu evidenziato</td><td>Dopo una modifica al progetto aspetta dieci secondi di quiete, poi sincronizza. La scritta indica che l'opzione è attiva. I cambi effettuati dalla sincronizzazione stessa non devono riavviare il conteggio. L'impostazione è salvata nelle ExtState di REAPER.</td></tr>
+<tr><th>Impostazioni</th><td>Pulsante disattivato/grigio</td><td>È un segnaposto: non apre ancora una pagina né modifica il provider.</td></tr>
+<tr><th>?</th><td>Pulsante di aiuto in alto a destra</td><td>Simbolo standard per aprire la guida. Il collegamento e il punto di apertura vanno verificati nella bozza.</td></tr>
+<tr><th>SRT presente / mancante</th><td>Testo a destra del nome item</td><td>Indica se esiste il file SRT con lo stesso nome base accanto alla sorgente audio. È un controllo del sidecar, non significa che i cue siano già collegati ai marker.</td></tr>
+<tr><th>marker N</th><td>Contatore per item</td><td>Numero di take marker sull'attivo take dell'item selezionato. Zero significa che non risultano marker su quel take.</td></tr>
+<tr><th>Barra di stato in basso</th><td>Testo</td><td>Mostra l'istruzione iniziale, avanzamento/coda, esito o errore dell'ultima operazione.</td></tr>
+</tbody></table>
+
+<h2>Flusso consigliato</h2><ol>
+<li><strong>Controlla l'elenco.</strong> Verifica i nomi, lo stato SRT e il numero marker di ciascun item selezionato.</li>
+<li><strong>Prepara la trascrizione.</strong> Premi <em>Trascrivi</em> per i WAV senza sidecar; oppure prepara/individua gli SRT con il tuo strumento. I file con SRT già presente vengono saltati.</li>
+<li><strong>Collega i cue all'audio.</strong> Premi <em>Collega marker</em> e completa eventuali richieste per scegliere un file esterno o sostituire marker esistenti.</li>
+<li><strong>Aggiorna il Gobbo.</strong> Premi <em>Sincronizza</em>. Controlla le tracce di testo create/aggiornate e ascolta o verifica il risultato nel Gobbo.</li>
+<li><strong>Solo se utile, abilita l'aggiornamento automatico.</strong> Accendi <em>Autofollow</em>; dopo aver mosso/tagliato o modificato elementi attendi dieci secondi senza altre modifiche.</li>
+</ol>
+
+<h2>Come leggere i risultati</h2><ul>
+<li><strong>Trascrizione finita.</strong> Il job è terminato: passa a <em>Collega marker</em>, poi a <em>Sincronizza</em>.</li>
+<li><strong>Niente da trascrivere.</strong> I selezionati hanno già l'SRT oppure non sono WAV idonei.</li>
+<li><strong>Trascrizione non riuscita.</strong> Leggi i dettagli nella console ReaScript; controlla che ZP Speech, il provider, il modello e i permessi del WAV siano pronti.</li>
+<li><strong>Impossibile trovare uno script o ZP_UI.lua.</strong> La bozza deve restare nella struttura di cartelle prevista nel repository, con la cartella <code>ZP Studio Suite</code> accanto alla cartella <code>gobbo_ricerca_battuta</code>.</li>
+</ul>
+
+<h2>Note e limiti della bozza</h2><ul>
+<li>Il conteggio marker si riferisce al take attivo. La riga mostra gli item audio selezionati che hanno una sorgente leggibile.</li>
+<li>La trascrizione automatica attuale accoda file WAV su macOS; non lavora automaticamente su Windows/Linux.</li>
+<li>L'import SRT è demandato integralmente a <code>28_Collega_Marker.lua</code>; il pannello non ne cambia le finestre di dialogo.</li>
+<li>Autofollow attende dieci secondi dopo le modifiche, ma controlli mouse e debounce devono essere collaudati nella sessione REAPER d'uso.</li>
+<li>Per annullare un'import o una sincronizzazione appena eseguita, usa Undo in REAPER e controlla il riepilogo della relativa azione.</li>
+</ul>
+<p class="note"><a href="index.html">Torna alla guida della Suite</a></p>
+</main></body></html>

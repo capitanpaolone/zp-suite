@@ -51,6 +51,18 @@ local sfumato_post_roll = 3.0
 local word_follow = false
 local fixed_block_mode = false
 local notes_panel_open = true
+local panels_hidden = false -- TAB: maschera temporanea, non modifica le preferenze.
+local sidebar_collapsed = false
+
+
+
+
+
+
+
+
+
+
 local tc_alert_mode = "off"
 local countdown_alert = true
 local max_character_rows = 1
@@ -177,6 +189,7 @@ function SaveSettings()
     reaper.SetExtState(settings_section, "word_follow", bool_to_state(word_follow), true)
     reaper.SetExtState(settings_section, "fixed_block_mode", bool_to_state(fixed_block_mode), true)
     reaper.SetExtState(settings_section, "notes_panel_open", bool_to_state(notes_panel_open), true)
+    reaper.SetExtState(settings_section, "sidebar_collapsed", bool_to_state(sidebar_collapsed), true)
     reaper.SetExtState(settings_section, "tc_alert_mode", tc_alert_mode, true)
     reaper.SetExtState(settings_section, "countdown_alert", bool_to_state(countdown_alert), true)
     reaper.SetExtState(settings_section, "max_character_rows", tostring(max_character_rows), true)
@@ -204,6 +217,7 @@ function LoadSettings()
     word_follow = state_to_bool(reaper.GetExtState(settings_section, "word_follow"), word_follow)
     fixed_block_mode = state_to_bool(reaper.GetExtState(settings_section, "fixed_block_mode"), fixed_block_mode)
     notes_panel_open = state_to_bool(reaper.GetExtState(settings_section, "notes_panel_open"), notes_panel_open)
+    sidebar_collapsed = state_to_bool(reaper.GetExtState(settings_section, "sidebar_collapsed"), sidebar_collapsed)
     show_timecode = state_to_bool(reaper.GetExtState(settings_section, "show_timecode"), show_timecode)
     countdown_alert = state_to_bool(reaper.GetExtState(settings_section, "countdown_alert"), countdown_alert)
     studio_edit_mode = state_to_bool(reaper.GetExtState(settings_section, "studio_edit_mode"), studio_edit_mode)
@@ -1318,7 +1332,7 @@ function NoteVisualState(note, play_pos)
 end
 
 function DrawNotesPanel(h, play_pos, reading_y)
-    if not notes_panel_open then return end
+    if panels_hidden or not notes_panel_open then return end
 
     local x = 0
     local pad = 12
@@ -2114,8 +2128,9 @@ end
 -- Ogni battuta viene piazzata una sotto l'altra come un paragrafo di Word.
 -- Memorizziamo l'altezza Y assoluta di dove inizia e dove finisce ogni riga.
 function RecalculateDocumentLayout()
-    local notes_w = notes_panel_open and 210 or 0
-    local w = gfx.w - side_panel_w - notes_w
+    local notes_w = (not panels_hidden and notes_panel_open) and NOTES_PANEL_W or 0
+    local spw = not panels_hidden and (sidebar_collapsed and 30 or side_panel_w) or 0
+    local w = gfx.w - spw - notes_w
     if w < 100 then w = 600 end
 	    
     local available_w = math.max(200, w - speaker_shoulder_w - (document_margin_x * 2))
@@ -2639,6 +2654,10 @@ function DrawSettingsPanel(w, h)
     gfx.x, gfx.y = 14, panel_y + 8
     gfx.drawstr("IMPOSTAZIONI GOBBO")
     
+    if DrawButton(w - 14 - 28, panel_y + 8, 28, 22, "X", 0.5, 0.2, 0.15) then
+        panel_open = false
+    end
+    
     gfx.set(0.25, 0.25, 0.4, alpha)
     gfx.line(0, panel_y + 32, w, panel_y + 32)
     
@@ -2676,7 +2695,8 @@ function DrawSettingsPanel(w, h)
 end
 
 function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
-    local x = w - side_panel_w
+    if panels_hidden then return end
+    local x = w - (sidebar_collapsed and 30 or side_panel_w)
     local pad = 12
     local header_h = 88
     local y = header_h - sidebar_scroll_y
@@ -2688,327 +2708,350 @@ function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
     SetThemeColor("panel_line", 1)
     gfx.rect(x, 0, 1, h, 1)
 
+
+
+    if sidebar_collapsed then
+        if DrawButton(x, 10, 30, 24, "<", 0.2, 0.3, 0.4, false) then
+            sidebar_collapsed = false
+            SaveSettings()
+            RecalculateDocumentLayout()
+        end
+        return
+    end
+
     sidebar_clip_top = clip_top
     sidebar_clip_bottom = clip_bottom
 
+        if not sidebar_collapsed then
     local tc_label = show_timecode and "Nascondi TC" or "Mostra TC"
-    if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, tc_label, 0.25, 0.32, 0.42, show_timecode) then
-        show_timecode = not show_timecode
-        SaveSettings()
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, tc_label, 0.25, 0.32, 0.42, show_timecode) then
+                show_timecode = not show_timecode
+                SaveSettings()
+            end
+        
+            y = y + 32
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "OSARA Menu", 0.20, 0.42, 0.50, false) then
+                OpenGobboAccessibleMenu()
+            end
+        
+            y = y + 36
+            gfx.setfont(3, "Arial", 13)
+            SetThemeColor("dim", 0.95)
+            gfx.x, gfx.y = x + pad, y
+            local theme_name = theme_mode == "dark" and "Scuro" or (theme_mode == "light" and "Chiaro" or "Medio")
+            gfx.drawstr("Tema: " .. theme_name)
+            y = y + 18
+        
+            if DrawButton(x + pad, y, 50, 26, "Scuro", 0.22, 0.22, 0.28, theme_mode == "dark") then
+                theme_mode = "dark"
+                SaveSettings()
+            end
+            if DrawButton(x + pad + 55, y, 54, 26, "Medio", 0.52, 0.48, 0.35, theme_mode == "medium") then
+                theme_mode = "medium"
+                SaveSettings()
+            end
+            if DrawButton(x + pad + 114, y, 54, 26, "Chiaro", 0.72, 0.72, 0.72, theme_mode == "light") then
+                theme_mode = "light"
+                SaveSettings()
+            end
+        
+            y = y + 46
+            SetThemeColor("dim", 0.95)
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr("Contrasto: " .. (full_contrast and "Pieno" or "Sfumato"))
+            y = y + 18
+        
+            if DrawButton(x + pad, y, 76, 26, "Sfumato", 0.28, 0.28, 0.34, not full_contrast) then
+                full_contrast = false
+                SaveSettings()
+            end
+            if DrawButton(x + pad + 84, y, 76, 26, "Pieno", 0.42, 0.34, 0.18, full_contrast) then
+                full_contrast = true
+                SaveSettings()
+            end
+        
+            y = y + 46
+            gfx.setfont(3, "Arial", 12)
+            SetThemeColor("dim", 0.95)
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr("Flusso testi")
+            local flow_y = y + 17
+            if DrawButton(x + pad, flow_y, 28, 24, "<", 0.22, 0.30, 0.42) then CycleTextFlow(-1) end
+            if DrawButton(x + side_panel_w - pad - 28, flow_y, 28, 24, ">", 0.22, 0.30, 0.42) then CycleTextFlow(1) end
+            gfx.setfont(3, "Arial", 13, 'b')
+            SetThemeColor("active", 0.95)
+            local flow_label = CurrentTextFlowLabel()
+            if #flow_label > 16 then flow_label = flow_label:sub(1, 15) .. "." end
+            local flow_tw, flow_th = gfx.measurestr(flow_label)
+            gfx.x = x + pad + 34 + (((side_panel_w - pad * 2) - 68) - flow_tw) / 2
+            gfx.y = flow_y + (24 - flow_th) / 2
+            gfx.drawstr(flow_label)
+        
+            y = y + 51
+            SetThemeColor("dim", 0.95)
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr("Punto lettura")
+            y = y + 18
+        
+            if DrawButton(x + pad, y, 48, 26, "Alto", 0.22, 0.30, 0.42, math.abs(reading_point - 0.18) < 0.01) then
+                reading_point = 0.18
+                SaveSettings()
+            end
+            if DrawButton(x + pad + 54, y, 58, 26, "Medio", 0.22, 0.30, 0.42, math.abs(reading_point - 0.34) < 0.01) then
+                reading_point = 0.34
+                SaveSettings()
+            end
+            if DrawButton(x + pad + 118, y, 48, 26, "Centro", 0.22, 0.30, 0.42, math.abs(reading_point - 0.50) < 0.01) then
+                reading_point = 0.50
+                SaveSettings()
+            end
+        
+            y = y + 46
+            local word_label = word_follow and "Parole ON" or "Parole OFF"
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, word_label, 0.36, 0.29, 0.12, word_follow) then
+                word_follow = not word_follow
+                SaveSettings()
+            end
+        
+            y = y + 34
+            local fixed_label = fixed_block_mode and "Scorri OFF" or "Scorri ON"
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, fixed_label, 0.22, 0.38, 0.52, not fixed_block_mode) then
+                fixed_block_mode = not fixed_block_mode
+                SaveSettings()
+            end
+        
+            y = y + 34
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, CountdownAlertLabel(), 0.38, 0.31, 0.10, countdown_alert) then
+                countdown_alert = not countdown_alert
+                SaveSettings()
+            end
+        
+            y = y + 34
+            local notes_label = notes_panel_open and "Note ON" or "Note OFF"
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, notes_label, 0.38, 0.31, 0.10, notes_panel_open) then
+                notes_panel_open = not notes_panel_open
+                SaveSettings()
+                RecalculateDocumentLayout()
+            end
+        
+            y = y + 34
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, NotesTrackLabel(), 0.30, 0.30, 0.38, IsTrackVisible(FindTrackByName(notes_track_name))) then
+                ToggleNotesTrackVisibility()
+            end
+        
+            y = y + 34
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, TextFlowTracksLabel(), 0.30, 0.30, 0.38, AnyTextFlowTrackVisible()) then
+                ToggleTextFlowTracksVisibility()
+            end
+        
+            y = y + 34
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, "+ Track Gobbo", 0.20, 0.48, 0.40) then
+                AddEmptyGobboTextItem()
+            end
+        
+            y = y + 38
+            y = DrawSpeakerPalette(x + pad, y, side_panel_w - pad * 2)
+        
+            y = y + 24
+            SetThemeColor("dim", 0.95)
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr("Corpo")
+            gfx.setfont(3, "Arial", 20, 'b')
+            SetThemeColor("active", 0.95)
+            local font_value = tostring(master_font_size)
+            local fw = gfx.measurestr(font_value)
+            gfx.x, gfx.y = x + side_panel_w - pad - fw, y - 4
+            gfx.drawstr(font_value)
+            y = y + 20
+        
+            if DrawButton(x + pad, y, 42, 28, "-", 0.45, 0.20, 0.20) then
+                master_font_size = math.max(10, master_font_size - 1)
+                SaveSettings()
+                RecalculateDocumentLayout()
+            end
+            if DrawButton(x + pad + 48, y, 74, 28, tostring(master_font_size), 0.22, 0.30, 0.42, true) then
+                -- Solo display: il valore si cambia con -/+.
+            end
+            if DrawButton(x + pad + 128, y, 42, 28, "+", 0.20, 0.45, 0.20) then
+                master_font_size = math.min(60, master_font_size + 1)
+                SaveSettings()
+                RecalculateDocumentLayout()
+            end
+        
+            y = y + 42
+            SetThemeColor("dim", 0.95)
+            gfx.setfont(3, "Arial", 13)
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr("Comandi")
+            y = y + 18
+        
+            local studio_label = studio_edit_mode and "Studio/Edit ON" or "Studio/Edit OFF"
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, studio_label, 0.20, 0.48, 0.40, studio_edit_mode) then
+                studio_edit_mode = not studio_edit_mode
+                if studio_edit_mode then
+                    reaper.OnStopButton()
+                    fixed_block_mode = false
+                end
+                SaveSettings()
+            end
+            y = y + 30
+        
+            if studio_edit_mode then
+                local sync_label = studio_edit_sync and "Sync ON" or "Sync OFF"
+                if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, sync_label, 0.20, 0.38, 0.58, studio_edit_sync) then
+                    studio_edit_sync = not studio_edit_sync
+                    SaveSettings()
+                end
+                y = y + 30
+            end
+        
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "Cerca", 0.25, 0.32, 0.42) then
+                PromptSubtitleSearch()
+            end
+            y = y + 30
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "Nota", 0.36, 0.30, 0.14) then
+                InsertNoteAtCurrentPosition()
+            end
+            y = y + 30
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "MOD NOTE", 0.38, 0.31, 0.10) then
+                EditNearestNote()
+            end
+            y = y + 30
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "DEL NOTE", 0.48, 0.18, 0.14) then
+                DeleteNearestNote()
+            end
+            y = y + 36
+        
+            sidebar_content_h = math.max(header_h, y + sidebar_scroll_y)
+            sidebar_clip_top = nil
+            sidebar_clip_bottom = nil
+        
+            local max_scroll = math.max(0, sidebar_content_h - h)
+            if max_scroll > 0 then
+                local track_x = x + side_panel_w - 5
+                local track_y = header_h + 4
+                local track_h = math.max(20, h - header_h - 8)
+                local thumb_h = math.max(24, track_h * (h / sidebar_content_h))
+                local thumb_y = track_y + ((track_h - thumb_h) * (sidebar_scroll_y / max_scroll))
+                local over_thumb = gfx.mouse_x >= track_x - 3 and gfx.mouse_x <= track_x + 5 and gfx.mouse_y >= thumb_y and gfx.mouse_y <= thumb_y + thumb_h
+                local over_track = gfx.mouse_x >= track_x - 5 and gfx.mouse_x <= track_x + 7 and gfx.mouse_y >= track_y and gfx.mouse_y <= track_y + track_h
+                local mouse_down = (gfx.mouse_cap & 1) == 1
+                if mouse_down and not mouse_was_down and over_thumb then sidebar_scroll_dragging = true end
+                if not mouse_down then sidebar_scroll_dragging = false end
+                if sidebar_scroll_dragging then
+                    local rel = (gfx.mouse_y - track_y - (thumb_h * 0.5)) / math.max(1, track_h - thumb_h)
+                    sidebar_scroll_y = math.max(0, math.min(max_scroll, rel * max_scroll))
+                    thumb_y = track_y + ((track_h - thumb_h) * (sidebar_scroll_y / max_scroll))
+                elseif mouse_down and not mouse_was_down and over_track then
+                    local rel = (gfx.mouse_y - track_y - (thumb_h * 0.5)) / math.max(1, track_h - thumb_h)
+                    sidebar_scroll_y = math.max(0, math.min(max_scroll, rel * max_scroll))
+                end
+                gfx.set(0.12, 0.12, 0.16, 0.90)
+                gfx.rect(track_x, track_y, 3, track_h, 1)
+                gfx.set(0.58, 0.66, 0.82, (over_thumb or sidebar_scroll_dragging) and 1 or 0.72)
+                gfx.rect(track_x - 2, thumb_y, 7, thumb_h, 1)
+            else
+                sidebar_scroll_dragging = false
+            end
+        
+            SetThemeColor("panel", 1)
+            gfx.rect(x, 0, side_panel_w, header_h, 1)
+            SetThemeColor("panel_line", 1)
+            gfx.rect(x, header_h - 1, side_panel_w, 1, 1)
+            gfx.rect(x, 0, 1, h, 1)
+    
+        
+        
+            gfx.setfont(3, "Arial", 15, 'b')
+            SetThemeColor("text", 0.95)
+            gfx.x, gfx.y = x + pad, 12
+            gfx.drawstr("GOBBO")
+        
+            gfx.setfont(3, "Arial", 12)
+            SetThemeColor("active", 0.95)
+            -- I pulsanti occupano y=10..34: le informazioni iniziano sotto.
+            gfx.x, gfx.y = x + pad, 40
+            gfx.drawstr("ZP Studio Suite v1.0.5")
+            gfx.x, gfx.y = x + pad, 56
+            gfx.drawstr("Paolo Balestri & Nicola Lanci")
+        
+            DrawHelpButton(x + side_panel_w - pad - 28, 10)
+            -- A sinistra di Help: un solo hit target, senza sovrapposizioni.
+            if DrawButton(x + side_panel_w - pad - 64, 10, 30, 24, ">", 0.2, 0.3, 0.4, false) then
+                sidebar_collapsed = true
+                sidebar_scroll_dragging = false
+                SaveSettings()
+                RecalculateDocumentLayout()
+            end
     end
-
-    y = y + 32
-    if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "OSARA Menu", 0.20, 0.42, 0.50, false) then
-        OpenGobboAccessibleMenu()
-    end
-
-    y = y + 36
-    gfx.setfont(3, "Arial", 13)
-    SetThemeColor("dim", 0.95)
-    gfx.x, gfx.y = x + pad, y
-    local theme_name = theme_mode == "dark" and "Scuro" or (theme_mode == "light" and "Chiaro" or "Medio")
-    gfx.drawstr("Tema: " .. theme_name)
-    y = y + 18
-
-    if DrawButton(x + pad, y, 50, 26, "Scuro", 0.22, 0.22, 0.28, theme_mode == "dark") then
-        theme_mode = "dark"
-        SaveSettings()
-    end
-    if DrawButton(x + pad + 55, y, 54, 26, "Medio", 0.52, 0.48, 0.35, theme_mode == "medium") then
-        theme_mode = "medium"
-        SaveSettings()
-    end
-    if DrawButton(x + pad + 114, y, 54, 26, "Chiaro", 0.72, 0.72, 0.72, theme_mode == "light") then
-        theme_mode = "light"
-        SaveSettings()
-    end
-
-    y = y + 46
-    SetThemeColor("dim", 0.95)
-    gfx.x, gfx.y = x + pad, y
-    gfx.drawstr("Contrasto: " .. (full_contrast and "Pieno" or "Sfumato"))
-    y = y + 18
-
-    if DrawButton(x + pad, y, 76, 26, "Sfumato", 0.28, 0.28, 0.34, not full_contrast) then
-        full_contrast = false
-        SaveSettings()
-    end
-    if DrawButton(x + pad + 84, y, 76, 26, "Pieno", 0.42, 0.34, 0.18, full_contrast) then
-        full_contrast = true
-        SaveSettings()
-    end
-
-    y = y + 46
-    gfx.setfont(3, "Arial", 12)
-    SetThemeColor("dim", 0.95)
-    gfx.x, gfx.y = x + pad, y
-    gfx.drawstr("Flusso testi")
-    local flow_y = y + 17
-    if DrawButton(x + pad, flow_y, 28, 24, "<", 0.22, 0.30, 0.42) then CycleTextFlow(-1) end
-    if DrawButton(x + side_panel_w - pad - 28, flow_y, 28, 24, ">", 0.22, 0.30, 0.42) then CycleTextFlow(1) end
-    gfx.setfont(3, "Arial", 13, 'b')
-    SetThemeColor("active", 0.95)
-    local flow_label = CurrentTextFlowLabel()
-    if #flow_label > 16 then flow_label = flow_label:sub(1, 15) .. "." end
-    local flow_tw, flow_th = gfx.measurestr(flow_label)
-    gfx.x = x + pad + 34 + (((side_panel_w - pad * 2) - 68) - flow_tw) / 2
-    gfx.y = flow_y + (24 - flow_th) / 2
-    gfx.drawstr(flow_label)
-
-    y = y + 51
-    SetThemeColor("dim", 0.95)
-    gfx.x, gfx.y = x + pad, y
-    gfx.drawstr("Punto lettura")
-    y = y + 18
-
-    if DrawButton(x + pad, y, 48, 26, "Alto", 0.22, 0.30, 0.42, math.abs(reading_point - 0.18) < 0.01) then
-        reading_point = 0.18
-        SaveSettings()
-    end
-    if DrawButton(x + pad + 54, y, 58, 26, "Medio", 0.22, 0.30, 0.42, math.abs(reading_point - 0.34) < 0.01) then
-        reading_point = 0.34
-        SaveSettings()
-    end
-    if DrawButton(x + pad + 118, y, 48, 26, "Centro", 0.22, 0.30, 0.42, math.abs(reading_point - 0.50) < 0.01) then
-        reading_point = 0.50
-        SaveSettings()
-    end
-
-    y = y + 46
-    local word_label = word_follow and "Parole ON" or "Parole OFF"
-    if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, word_label, 0.36, 0.29, 0.12, word_follow) then
-        word_follow = not word_follow
-        SaveSettings()
-    end
-
-    y = y + 34
-    local fixed_label = fixed_block_mode and "Scorri OFF" or "Scorri ON"
-    if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, fixed_label, 0.22, 0.38, 0.52, not fixed_block_mode) then
-        fixed_block_mode = not fixed_block_mode
-        SaveSettings()
-    end
-
-    y = y + 34
-    if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, CountdownAlertLabel(), 0.38, 0.31, 0.10, countdown_alert) then
-        countdown_alert = not countdown_alert
-        SaveSettings()
-    end
-
-    y = y + 34
-    local notes_label = notes_panel_open and "Note ON" or "Note OFF"
-    if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, notes_label, 0.38, 0.31, 0.10, notes_panel_open) then
-        notes_panel_open = not notes_panel_open
-        SaveSettings()
-        RecalculateDocumentLayout()
-    end
-
-    y = y + 34
-    if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, NotesTrackLabel(), 0.30, 0.30, 0.38, IsTrackVisible(FindTrackByName(notes_track_name))) then
-        ToggleNotesTrackVisibility()
-    end
-
-    y = y + 34
-    if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, TextFlowTracksLabel(), 0.30, 0.30, 0.38, AnyTextFlowTrackVisible()) then
-        ToggleTextFlowTracksVisibility()
-    end
-
-    y = y + 34
-    if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, "+ Track Gobbo", 0.20, 0.48, 0.40) then
-        AddEmptyGobboTextItem()
-    end
-
-    y = y + 38
-    y = DrawSpeakerPalette(x + pad, y, side_panel_w - pad * 2)
-
-    y = y + 24
-    SetThemeColor("dim", 0.95)
-    gfx.x, gfx.y = x + pad, y
-    gfx.drawstr("Corpo")
-    gfx.setfont(3, "Arial", 20, 'b')
-    SetThemeColor("active", 0.95)
-    local font_value = tostring(master_font_size)
-    local fw = gfx.measurestr(font_value)
-    gfx.x, gfx.y = x + side_panel_w - pad - fw, y - 4
-    gfx.drawstr(font_value)
-    y = y + 20
-
-    if DrawButton(x + pad, y, 42, 28, "-", 0.45, 0.20, 0.20) then
-        master_font_size = math.max(10, master_font_size - 1)
-        SaveSettings()
-        RecalculateDocumentLayout()
-    end
-    if DrawButton(x + pad + 48, y, 74, 28, tostring(master_font_size), 0.22, 0.30, 0.42, true) then
-        -- Solo display: il valore si cambia con -/+.
-    end
-    if DrawButton(x + pad + 128, y, 42, 28, "+", 0.20, 0.45, 0.20) then
-        master_font_size = math.min(60, master_font_size + 1)
-        SaveSettings()
-        RecalculateDocumentLayout()
-    end
-
-    y = y + 42
-    SetThemeColor("dim", 0.95)
-    gfx.setfont(3, "Arial", 13)
-    gfx.x, gfx.y = x + pad, y
-    gfx.drawstr("Comandi")
-    y = y + 18
-
-    local studio_label = studio_edit_mode and "Studio/Edit ON" or "Studio/Edit OFF"
-    if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, studio_label, 0.20, 0.48, 0.40, studio_edit_mode) then
-        studio_edit_mode = not studio_edit_mode
-        if studio_edit_mode then
-            reaper.OnStopButton()
-            fixed_block_mode = false
         end
-        SaveSettings()
-    end
-    y = y + 30
-
-    if studio_edit_mode then
-        local sync_label = studio_edit_sync and "Sync ON" or "Sync OFF"
-        if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, sync_label, 0.20, 0.38, 0.58, studio_edit_sync) then
-            studio_edit_sync = not studio_edit_sync
-            SaveSettings()
+        
+        function DrawTimecodeHud(notes_w, tc_position)
+            if not show_timecode then return end
+            local tc_text = FormatVideoTimecode(tc_position or GetCurrentProjectPosition())
+            gfx.setfont(3, "Arial", math.max(14, master_font_size - 2), 'b')
+            local tw, th = gfx.measurestr(tc_text)
+            local x = notes_w + 14
+            local y = 12
+            gfx.set(0, 0, 0, 1)
+            gfx.rect(x - 10, y - 7, tw + 20, th + 14, 1)
+            gfx.set(0, 0, 0, 1)
+            gfx.rect(x - 8, y - 5, tw + 16, th + 10, 1)
+            gfx.set(0.82, 0.82, 0.82, 1)
+            gfx.rect(x - 8, y - 5, tw + 16, th + 10, 0)
+            gfx.set(1, 1, 1, 1)
+            gfx.x, gfx.y = x, y
+            gfx.drawstr(tc_text)
         end
-        y = y + 30
-    end
-
-    if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "Cerca", 0.25, 0.32, 0.42) then
-        PromptSubtitleSearch()
-    end
-    y = y + 30
-    if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "Nota", 0.36, 0.30, 0.14) then
-        InsertNoteAtCurrentPosition()
-    end
-    y = y + 30
-    if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "MOD NOTE", 0.38, 0.31, 0.10) then
-        EditNearestNote()
-    end
-    y = y + 30
-    if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "DEL NOTE", 0.48, 0.18, 0.14) then
-        DeleteNearestNote()
-    end
-    y = y + 36
-
-    sidebar_content_h = math.max(header_h, y + sidebar_scroll_y)
-    sidebar_clip_top = nil
-    sidebar_clip_bottom = nil
-
-    local max_scroll = math.max(0, sidebar_content_h - h)
-    if max_scroll > 0 then
-        local track_x = x + side_panel_w - 5
-        local track_y = header_h + 4
-        local track_h = math.max(20, h - header_h - 8)
-        local thumb_h = math.max(24, track_h * (h / sidebar_content_h))
-        local thumb_y = track_y + ((track_h - thumb_h) * (sidebar_scroll_y / max_scroll))
-        local over_thumb = gfx.mouse_x >= track_x - 3 and gfx.mouse_x <= track_x + 5 and gfx.mouse_y >= thumb_y and gfx.mouse_y <= thumb_y + thumb_h
-        local over_track = gfx.mouse_x >= track_x - 5 and gfx.mouse_x <= track_x + 7 and gfx.mouse_y >= track_y and gfx.mouse_y <= track_y + track_h
-        local mouse_down = (gfx.mouse_cap & 1) == 1
-        if mouse_down and not mouse_was_down and over_thumb then sidebar_scroll_dragging = true end
-        if not mouse_down then sidebar_scroll_dragging = false end
-        if sidebar_scroll_dragging then
-            local rel = (gfx.mouse_y - track_y - (thumb_h * 0.5)) / math.max(1, track_h - thumb_h)
-            sidebar_scroll_y = math.max(0, math.min(max_scroll, rel * max_scroll))
-            thumb_y = track_y + ((track_h - thumb_h) * (sidebar_scroll_y / max_scroll))
-        elseif mouse_down and not mouse_was_down and over_track then
-            local rel = (gfx.mouse_y - track_y - (thumb_h * 0.5)) / math.max(1, track_h - thumb_h)
-            sidebar_scroll_y = math.max(0, math.min(max_scroll, rel * max_scroll))
+        
+        function ClampDocumentScroll(scroll_y, visible_h)
+            local max_scroll = math.max(0, (document_total_h or 0) - math.max(120, visible_h or gfx.h) + 80)
+            return math.max(0, math.min(scroll_y or 0, max_scroll)), max_scroll
         end
-        gfx.set(0.12, 0.12, 0.16, 0.90)
-        gfx.rect(track_x, track_y, 3, track_h, 1)
-        gfx.set(0.58, 0.66, 0.82, (over_thumb or sidebar_scroll_dragging) and 1 or 0.72)
-        gfx.rect(track_x - 2, thumb_y, 7, thumb_h, 1)
-    else
-        sidebar_scroll_dragging = false
-    end
-
-    SetThemeColor("panel", 1)
-    gfx.rect(x, 0, side_panel_w, header_h, 1)
-    SetThemeColor("panel_line", 1)
-    gfx.rect(x, header_h - 1, side_panel_w, 1, 1)
-    gfx.rect(x, 0, 1, h, 1)
-
-    gfx.setfont(3, "Arial", 15, 'b')
-    SetThemeColor("text", 0.95)
-    gfx.x, gfx.y = x + pad, 12
-    gfx.drawstr("GOBBO")
-
-    gfx.setfont(3, "Arial", 12)
-    SetThemeColor("active", 0.95)
-    gfx.x, gfx.y = x + pad, 31
-    gfx.drawstr("ZP Studio Suite v1.0.5")
-    gfx.x, gfx.y = x + pad, 45
-    gfx.drawstr("Paolo Balestri & Nicola Lanci")
-
-    DrawHelpButton(x + side_panel_w - pad - 28, 10)
-end
-
-function DrawTimecodeHud(notes_w, tc_position)
-    if not show_timecode then return end
-    local tc_text = FormatVideoTimecode(tc_position or GetCurrentProjectPosition())
-    gfx.setfont(3, "Arial", math.max(14, master_font_size - 2), 'b')
-    local tw, th = gfx.measurestr(tc_text)
-    local x = notes_w + 14
-    local y = 12
-    gfx.set(0, 0, 0, 1)
-    gfx.rect(x - 10, y - 7, tw + 20, th + 14, 1)
-    gfx.set(0, 0, 0, 1)
-    gfx.rect(x - 8, y - 5, tw + 16, th + 10, 1)
-    gfx.set(0.82, 0.82, 0.82, 1)
-    gfx.rect(x - 8, y - 5, tw + 16, th + 10, 0)
-    gfx.set(1, 1, 1, 1)
-    gfx.x, gfx.y = x, y
-    gfx.drawstr(tc_text)
-end
-
-function ClampDocumentScroll(scroll_y, visible_h)
-    local max_scroll = math.max(0, (document_total_h or 0) - math.max(120, visible_h or gfx.h) + 80)
-    return math.max(0, math.min(scroll_y or 0, max_scroll)), max_scroll
-end
-
-function ProjectPositionFromDocumentScroll(scroll_y, reading_y)
-    if #cached_items == 0 then return nil, nil end
-    local doc_y = (scroll_y or 0) + (reading_y or (gfx.h * reading_point))
-    local previous = nil
-    for _, item in ipairs(cached_items) do
-        if doc_y >= item.doc_start_y and doc_y <= item.doc_end_y then
-            local denom = math.max(1, (item.doc_end_y or 0) - (item.doc_start_y or 0))
-            local progress = math.max(0, math.min(1, (doc_y - item.doc_start_y) / denom))
-            return item.pos + ((item.len or 0) * progress), item.item
+        
+        function ProjectPositionFromDocumentScroll(scroll_y, reading_y)
+            if #cached_items == 0 then return nil, nil end
+            local doc_y = (scroll_y or 0) + (reading_y or (gfx.h * reading_point))
+            local previous = nil
+            for _, item in ipairs(cached_items) do
+                if doc_y >= item.doc_start_y and doc_y <= item.doc_end_y then
+                    local denom = math.max(1, (item.doc_end_y or 0) - (item.doc_start_y or 0))
+                    local progress = math.max(0, math.min(1, (doc_y - item.doc_start_y) / denom))
+                    return item.pos + ((item.len or 0) * progress), item.item
+                end
+                if previous and doc_y > previous.doc_end_y and doc_y < item.doc_start_y then
+                    local denom = math.max(1, item.doc_start_y - previous.doc_end_y)
+                    local progress = math.max(0, math.min(1, (doc_y - previous.doc_end_y) / denom))
+                    local prev_end = previous.pos + previous.len
+                    return prev_end + ((item.pos - prev_end) * progress), item.item
+                end
+                previous = item
+            end
+            if doc_y < cached_items[1].doc_start_y then return cached_items[1].pos, cached_items[1].item end
+            local last = cached_items[#cached_items]
+            return last.pos + last.len, last.item
         end
-        if previous and doc_y > previous.doc_end_y and doc_y < item.doc_start_y then
-            local denom = math.max(1, item.doc_start_y - previous.doc_end_y)
-            local progress = math.max(0, math.min(1, (doc_y - previous.doc_end_y) / denom))
-            local prev_end = previous.pos + previous.len
-            return prev_end + ((item.pos - prev_end) * progress), item.item
+        
+        function JumpTimelineFromDocumentScroll(visible_h)
+            if not studio_edit_mode or not studio_edit_sync then return end
+            local reading_y = gfx.h * reading_point
+            local pos, item = ProjectPositionFromDocumentScroll(document_scroll_y, reading_y)
+            if not pos then return end
+            if item then
+                reaper.Main_OnCommand(40289, 0) -- Unselect all items
+                reaper.SetMediaItemSelected(item, true)
+                local track = reaper.GetMediaItem_Track(item)
+                if track then reaper.SetOnlyTrackSelected(track) end
+            end
+            reaper.SetEditCurPos(pos, true, false)
+            search_virtual_pos = pos
+            if item then
+                search_hit_item = item
+                search_hit_until = reaper.time_precise() + 1.5
+            end
+            reaper.UpdateArrange()
         end
-        previous = item
-    end
-    if doc_y < cached_items[1].doc_start_y then return cached_items[1].pos, cached_items[1].item end
-    local last = cached_items[#cached_items]
-    return last.pos + last.len, last.item
-end
-
-function JumpTimelineFromDocumentScroll(visible_h)
-    if not studio_edit_mode or not studio_edit_sync then return end
-    local reading_y = gfx.h * reading_point
-    local pos, item = ProjectPositionFromDocumentScroll(document_scroll_y, reading_y)
-    if not pos then return end
-    if item then
-        reaper.Main_OnCommand(40289, 0) -- Unselect all items
-        reaper.SetMediaItemSelected(item, true)
-        local track = reaper.GetMediaItem_Track(item)
-        if track then reaper.SetOnlyTrackSelected(track) end
-    end
-    reaper.SetEditCurPos(pos, true, false)
-    search_virtual_pos = pos
-    if item then
-        search_hit_item = item
-        search_hit_until = reaper.time_precise() + 1.5
-    end
-    reaper.UpdateArrange()
-end
-
+        
 function DrawEditScrollbar(notes_w, read_w, visible_h)
     if not studio_edit_mode then return end
     local scroll_y, max_scroll = ClampDocumentScroll(document_scroll_y, visible_h)
@@ -3066,7 +3109,9 @@ function DrawGUI()
     end
     if char > 0 then
         local changed = false
-        if char == 9 then panel_open = not panel_open
+        if char == 9 then
+            panels_hidden = not panels_hidden
+            RecalculateDocumentLayout()
         elseif char == 32 then reaper.Main_OnCommand(40044, 0) -- Transport: Play/stop
         elseif IsSearchShortcut(char) then PromptSubtitleSearch()
         elseif char == 78 or char == 110 then InsertNoteAtCurrentPosition()
@@ -3089,7 +3134,8 @@ function DrawGUI()
         RecalculateDocumentLayout()
     end
 
-    local over_sidebar = gfx.mouse_x >= w - side_panel_w and gfx.mouse_x <= w and gfx.mouse_y >= 0 and gfx.mouse_y <= h
+    local spw = not panels_hidden and (sidebar_collapsed and 30 or side_panel_w) or 0
+    local over_sidebar = gfx.mouse_x >= w - spw and gfx.mouse_x <= w and gfx.mouse_y >= 0 and gfx.mouse_y <= h
     if wheel ~= 0 and over_sidebar then
         local max_sidebar_scroll = math.max(0, (sidebar_content_h or 0) - h)
         sidebar_scroll_y = math.max(0, math.min(sidebar_scroll_y + (wheel > 0 and -42 or 42), max_sidebar_scroll))
@@ -3137,8 +3183,9 @@ function DrawGUI()
         last_play_pos_raw = -1
     end
 
-    local notes_w = notes_panel_open and NOTES_PANEL_W or 0
-    local read_w = math.max(320, w - side_panel_w - notes_w)
+    local notes_w = (not panels_hidden and notes_panel_open) and NOTES_PANEL_W or 0
+    local spw = not panels_hidden and (sidebar_collapsed and 30 or side_panel_w) or 0
+    local read_w = math.max(320, w - spw - notes_w)
     local text_x = notes_w + document_margin_x + speaker_shoulder_w
     local reading_y = h * reading_point
     local tc_alert_item = FindUpcomingCue(smoothed_play_pos)
@@ -3384,6 +3431,35 @@ function DrawGUI()
     DrawSidePanel(w, h, smoothed_play_pos, tc_alert_item, tc_alert_flash)
     sidebar_scroll_y = math.max(0, math.min(sidebar_scroll_y, math.max(0, (sidebar_content_h or 0) - h)))
     DrawTimecodeHud(notes_w, smoothed_play_pos)
+
+    if not panel_open then
+        local btn_w, btn_h = 24, 20
+        local btn_x = notes_w + 14
+        local btn_y = 48
+        local mx, my = gfx.mouse_x, gfx.mouse_y
+        local over_settings = mx >= btn_x and mx <= btn_x + btn_w and my >= btn_y and my <= btn_y + btn_h
+        
+        if over_settings then
+            gfx.set(0.22, 0.34, 0.52, 1)
+        else
+            gfx.set(0.15, 0.20, 0.32, 0.35)
+        end
+        gfx.rect(btn_x, btn_y, btn_w, btn_h, 1)
+        gfx.set(0.55, 0.66, 0.88, over_settings and 1.0 or 0.70)
+        gfx.rect(btn_x, btn_y, btn_w, btn_h, 0)
+        gfx.setfont(3, "Arial", 12)
+        local tw = gfx.measurestr("⚙")
+        gfx.x = btn_x + (btn_w - tw) / 2
+        gfx.y = btn_y + 2
+        gfx.drawstr("⚙")
+        
+        if over_settings and (gfx.mouse_cap == 0) and mouse_was_down then
+            panel_open = true
+            show_settings_timer = 60
+            SaveSettings()
+        end
+    end
+
     DrawInlineSubtitleEditor()
     DrawSearchPanel(w, h)
 

@@ -1,0 +1,159 @@
+# MEMORIA — ricerca battuta nel gobbo (ZP Studio Suite)
+
+File vivo. Chi lavora al progetto (Claude, Codex, Paolo) lo LEGGE per intero all'inizio di ogni sessione e lo AGGIORNA durante il lavoro. Serve a recuperare dopo un'interruzione e a non causare regressioni. Non cancellare righe del registro: aggiungi.
+
+## 1. Obiettivo
+Podcast di ~2 h di parlato, più personaggi. Il gobbo deve portare Paolo a qualsiasi battuta cercata, ovunque sia in timeline, anche dopo tagli, spostamenti e Glue. Gli SRT sono trascrizioni Whisper (uno per file audio, stesso nome del WAV, tempi = tempo SORGENTE) usate anche dal tecnico audio. Paolo NON vuole esportare marker nei file: gli basta che REAPER segua gli item e sappia dove sono i marker.
+
+## 2. Regole ferme (non violarle)
+- NON pubblicare, NON fare version bump, NON push/tag/ReaPack: la pubblicazione la lancia solo Paolo.
+- NON committare senza richiesta di Paolo.
+- NON modificare `02_Gobbo_Verticale.lua` se non strettamente necessario (il gobbo funziona: legge la traccia "Rythmo Band Testi" con UpdateItems()).
+- REAPER usa Lua 5.4. Separare logica pura e codice `reaper.*` (`if not reaper then return {...} end`) per testare fuori da REAPER (lupa/lua5.4).
+- Non scansionare cartelle personali fuori dal repo.
+- Paolo vuole capire cosa si fa e perché; lasciargli i passaggi da cui impara; risparmiare token.
+- Modifiche minime: niente riscritture di file interi se basta una modifica.
+
+## 3. Fatti tecnici verificati (da test di Paolo in REAPER)
+- Take marker: salvati nel progetto (.RPP), non nel WAV. Posizione = tempo SORGENTE.
+- Dopo taglio/spostamento/cancellazione ogni pezzo conserva TUTTI i marker del take (600); contano solo quelli nella parte usata (19). Quindi filtrare sempre su [D_STARTOFFS, D_STARTOFFS + D_LENGTH*D_PLAYRATE).
+- Tempo timeline = pos_item + (src − startoffs)/playrate. Gli SRT Whisper sul file intero sono già tempi sorgente: si scrivono direttamente con SetTakeMarker, senza compensazioni.
+- Sopravvivono a salvataggio e riapertura. Undo funziona. 600 marker creati in 0,003 s.
+- Glue: il nuovo item ha solo i marker nella parte usata (37), ma il WAV incollato NON ha cue dentro.
+- Render con "Embed: Take markers" (REAPER ≥ 6.10): NON scrive i take marker nel WAV (solo marker di progetto). Percorso abbandonato.
+- Cue dentro un WAV (chunk `cue ` + `LIST adtl/labl`): REAPER li mostra in rosso ma NON sono take marker (GetTakeMarker restituisce 0). L'azione nativa 40692 li trasforma in marker di progetto (tempo timeline, non seguono i tagli).
+- Per importare da file esterni con cue: 40692 + script utente `_RSec76c1a2359012fb969d191afa2c67a8c9cd6b67` (marker progetto → take marker) + cancellare i marker di progetto creati.
+- Il nome del marker = solo testo su una riga, nessun timecode. Marker = inizio battuta (tempo Whisper).
+- Import SRT come take marker: COLLAUDATO (23/23 cue su "Portante Leapmotor B03X.wav", 209 s, 48 kHz mono). `conta` dice "nomi lunghi intatti 0/0" ed è normale (cerca solo le stringhe del test).
+- Dati di prova di Paolo: prova.srt, 23 cue; cue lunghe 7, 10, 12 (≈25,7 s); frase doppia alle cue 16 e 18; inizi: #1 0,52 s, #7 48,3 s, #10 74,58 s (1:14,580), #12 102,56 s, #23 193,21 s (3:13,210).
+
+## 4. Architettura scelta
+- Take marker nel progetto (seguono cuts/moves/Glue) + SRT con lo stesso nome accanto al WAV (portatore tra progetti/backup) + import opzionale dei cue WAV come take marker.
+- Il gobbo resta invariato: legge la traccia "Rythmo Band Testi" (item vuoti, testo in P_NOTES), ricostruita dallo script Sincronizza dai take marker filtrati sulla parte usata.
+- Sincronizza marca i propri item con `P_EXT:ZP_SYNC=1` e cancella/rifà solo quelli: i testi scritti a mano restano.
+- Gobbo: `UpdateItems()` (riga ~2282 di 02_Gobbo_Verticale.lua) costruisce `cached_items` dalla traccia; ricerca = `FindSubtitleMatch`, che sposta il cursore.
+
+## 5. Motore di trascrizione (ZP Speech Engine)
+- Servizio 127.0.0.1:8770 (LaunchAgent com.zp.speech-service); runtime installato in ~/Library/Application Support/ZP/runtimes/speech; `zp-speech request <wav> --format srt --output <srt>`.
+- `26_SRT_Tools.lua` scrive l'SRT accanto al WAV con lo stesso nome (solo WAV).
+- MacWhisper non fa diarizzazione: il personaggio va ricavato da traccia o nome file.
+- Corretto `speech-engine/src/zp_speech/providers/macwhisper.py`: i word timestamp che sforano il segmento vengono clampati ai suoi limiti (errore solo se la parola cade fuori); rimossa WORD_SEGMENT_ROUNDING_TOLERANCE_MS; test aggiornati; 98 test ok, ruff pulito. Dopo modifiche al motore: reinstallare con `ZP/ZP_Tools/install_speech_service.sh` e riavviare il servizio.
+
+## 6. File (bozze in `gobbo_ricerca_battuta/bozze/`)
+| File | Stato |
+|---|---|
+| ZP_test_take_marker.lua | collaudato (crea/conta) |
+| ZP_leggi_cue_dal_WAV.lua | testato su WAV di Paolo, lettore Lua puro |
+| ZP_import_SRT_come_take_marker.lua | COLLAUDATO da Paolo (parse_time l'ha scritta lui) |
+| ZP_importa_cue_come_take_marker.lua | NON provato (catena 40692) |
+| ZP_sincronizza_take_marker_nel_gobbo.lua | collaudata da Paolo (23 marker, taglio/spostamento, rilancio) il 2026-10-03; cancella e rifà tutto: SOSTITUITA da ZP_sincronizza_aggancio.lua, da conservare come riferimento |
+| ZP_sincronizza_aggancio.lua | COLLAUDATO da Paolo in REAPER il 2026-10-03 (esito positivo, dettaglio dei passi non riportato); logica pura 17/17. Dal pannello gira con ZP_SYNC_QUIET e restituisce il riepilogo |
+| ZP_Pannello_Trascrizione.lua | SCHELETRO 2026-10-03, sintassi verificata, DA PROVARE in REAPER: finestra unica (Trascrivi / Collega marker / Sincronizza / Autofollow 10 s / Impostazioni disattivato), lancia i tre script con dofile |
+| ../ZP Studio Suite/28_Collega_Marker.lua | Nuovo 2026-10-03: parser verificato; provato in REAPER 7.81: 2 cue importati sull’item di prova, tempi/testi verificati |
+
+## Stato corrente — Collega marker (2026-10-03)
+- Creato `ZP Studio Suite/28_Collega_Marker.lua`: legge sidecar SRT o file scelto, importa i cue sul take attivo degli item selezionati; marker preesistenti richiedono scelta esplicita. Guida e icona create e copiate in REAPER.
+- Verifica automatica parser Lua: timestamp con virgola/punto e cue multilinea superati (3 asserzioni); sintassi `luac -p` superata. In REAPER 7.81 la prova reale su item WAV sintetico ha importato 2 cue; diagnostica take marker ha confermato `0.500 s — Prima battuta seconda riga` e `2.000 s — Secondo cue`. Azione registrata in Action List e aggiunta alla Floating toolbar 8 come pulsante testuale “Collega marker”; l’icona PNG personalizzata è installata, ma l’assegnazione grafica al pulsante non è riuscita. Guida dettagliata completata.
+- Prossimi controlli: provare sidecar SRT reali, scelta SRT esterno, sostituzione/skip/cancel e Undo. Il progetto sintetico temporaneo è stato chiuso senza salvarlo.
+- GitHub: nessun commit/push in questo passaggio; `.git/index.lock` è ancora aperto in lettura da `com.apple` (PID 47574), quindi non avviare Git finché il lock è presente. La repo contiene inoltre modifiche preesistenti non correlate da preservare.
+
+## 7. Roadmap precedente (SOSTITUITA dal piano consolidato Fase 1 qui sotto; conservata come cronologia)
+1. ~~Sincronizza~~: verificato formato/nome traccia leggendo `UpdateItems()`, `GetRythmoTrack()`, `IsTextFlowTrackName`, `CollectTextFlowTracks`; COLLAUDATO da Paolo il 2026-10-03 (23 marker, taglio, spostamento, rilancio).
+2. Ricerca con doppioni (retake): apertura con ⌘F e ricerca con i pulsanti mouse `<` / `>` funzionano, confermato da Paolo il 2026-10-03. Da completare la verifica specifica che la stessa frase nelle cue 16 e 18 restituisca entrambe le occorrenze.
+3. Auto-sincronizzazione opzionale (GetProjectStateChangeCount, con limite di frequenza e interruttore).
+4. Personaggio da nome traccia/file, se il gobbo lo consente (`cached_character_notes`, `BuildCharacterLanes`).
+5. Split delle cue lunghe di Whisper con i timestamp delle parole (soglia configurabile).
+6. Azione unica "Trascrivi e importa" (riusa 26_SRT_Tools.lua); verificare la segnalazione errori in REAPER.
+7. Integrazione nella Suite (numerazione, menu/azioni, help, README, STATO LAVORI.md). Niente bump versione né pubblicazione: solo elenco per il changelog.
+8. Facoltativo: export take marker → SRT accanto ai file dopo un Glue.
+
+## 8. Pulizia in sospeso
+- `.git/index.lock` e forse `speech-engine/uv.lock` lasciati nel repo da una sessione cloud: Paolo deve rimuoverli (`rm ~/Documents/zp-suite/.git/index.lock`). Verificare.
+- Modifiche non committate: macwhisper.py, test_macwhisper.py, questa cartella.
+
+## 9. PROTOCOLLO DI MEMORIA (obbligatorio)
+- All'inizio sessione: leggi questo file e `git status`/`git diff --stat` per vedere lo stato reale.
+- Dopo OGNI modifica a un file, e comunque a fine di ogni punto: aggiungi una riga in fondo al registro (sezione 10) con data, file toccati, cosa è cambiato, perché, come è stato provato, stato (da provare / provato da Paolo).
+- Prima di cambiare un file già collaudato: annota nel registro quale comportamento va preservato e come verificarlo (regressione). Preferisci aggiungere funzioni a riscrivere.
+- Prima di modifiche rischiose: copia il file in `gobbo_ricerca_battuta/backup/<nome>.<data>.bak`.
+- Se scopri un fatto tecnico nuovo (comportamento di REAPER, formato, limite): aggiungilo in sezione 3.
+- Se una decisione cambia: non cancellare la vecchia, aggiungi "SOSTITUITA da …" con motivo.
+- Aggiorna la tabella (sezione 6) e l'elenco (sezione 7) quando cambia lo stato.
+- Se ti fermi per limiti di uso: scrivi come ultima riga "STOP: dove sono arrivato, prossimo passo esatto, cosa NON ho finito".
+
+## 9A. Piano consolidato per chiudere la Fase 1
+
+Obiettivo: rendere pratici trascrizione, import e ricerca in REAPER; questa fase non automatizza DSP o decisioni editoriali. L'editor/fonico sceglie quali audio lavorare.
+
+1. **Provider e Setup**
+   - Tenere ZP Speech come interfaccia stabile tra Lua e motore.
+   - Usare `whisper.cpp` come provider locale multipiattaforma consigliato; mantenere MacWhisper come opzione su macOS e consentire la scelta di un eseguibile noto già installato. Un eseguibile custom richiede un profilo/adapter esplicito per argomenti e output.
+   - Setup verifica runtime ZP Speech, servizio, eseguibile, modello e capacità WAV/SRT. Se qualcosa manca, mostra istruzioni; non installa o sostituisce software senza scelta dell'utente. Su questo Mac è presente Homebrew `whisper.cpp` 1.9.4, ma il modello va ancora configurato/verificato.
+   - Definire distribuzione installabile da GitHub e avvio servizio su macOS, Windows e Linux; l'installer attuale è macOS e parte da un checkout locale.
+2. **Interfaccia unica REAPER**
+   - Tre azioni: `Trascrivi`, `Importa SRT`, `Setup`.
+   - L'editor/fonico seleziona audio/item; niente scansione autonoma per decidere quali file lavorare. La coda mostra SRT presente/mancante, salta i file già trascritti e offre una sostituzione esplicita solo su richiesta. SRT salvato accanto all'audio con lo stesso nome base.
+3. **Import e marker**
+   - Importare l'SRT scelto o il sidecar; tempi riferiti all'intero file sorgente. Prevedere parser estendibili, con SRT come formato iniziale.
+   - Scrivere take marker sul take dell'item audio e ricostruire gli item di testo marcati `ZP_SYNC` sulla traccia Gobbo nascosta. Gli item audio non selezionati possono essere sincronizzati; la sincronizzazione esamina tutte le tracce e salta gli item muted. Senza marker importati, la SRT esterna non segue tagli/spostamenti.
+4. **Aggiornamento della traccia**
+   - Pulsante `Aggiorna ora` sempre disponibile; aggiungere un'opzione automatica con debounce di 10 secondi dopo le modifiche, inattiva quando il progetto non cambia e disattivabile. Ricreare solo gli item generati, preservando testi manuali.
+5. **Gobbo — modalità `Leggi tutto`**
+   - Il visore aggrega gli item testuali di tutte le tracce Gobbo, indipendentemente da selezione e origine/marker, ordinandoli per tempo e includendo item sovrapposti. I marker sono richiesti per seguire l'audio, non per essere mostrati dal visore. La resa può essere affollata: per questa lavorazione va bene.
+   - Verificare se serve modificare `02_Gobbo_Verticale.lua`; il file ha modifiche locali e va toccato solo per implementare questa modalità, preservando editing e salto agli item.
+6. **Collaudo**
+   - Test Lua 5.4 fuori REAPER per parsing SRT, mapping tempo sorgente/timeline, skip SRT esistenti e provider readiness dove isolabili.
+   - Prova REAPER: più tracce voce, file selezionati/non selezionati, import SRT esterno, 23 cue, ricerca, sovrapposizioni, taglio/spostamento/rilancio, traccia testo nascosta, undo e salvataggio/riapertura. Paolo conferma le prove che richiedono la sua sessione.
+7. **Integrazione Suite**
+   - Inserire azione e numero corretti, menu, help e README; aggiornare `STATO LAVORI.md` e preparare le note changelog senza bump prematuro.
+8. **GitHub e distribuzione**
+   - Preparare release/installazione con versioni fissate, istruzioni provider/modelli, controlli Setup e artefatti per i sistemi supportati; provare il percorso su ambiente pulito.
+   - Commit, push, tag, bump e pubblicazione soltanto su richiesta esplicita di Paolo, secondo le regole ferme.
+
+Ordine pratico: provider/Setup → interfaccia batch → import SRT/take marker → sync manuale e automatico → `Leggi tutto` → test REAPER → integrazione Suite → pacchetto GitHub.
+
+## 10. Registro
+- 2026-10-03 (Codex): creata l'icona toolbar a tre stati `ZP_tb_29_Pannello_Trascrizione.png`, installata anche in `REAPER/Data/toolbar_icons`. Aggiunta guida dettagliata `ZP Studio Suite/help/pannello_trascrizione.html` con legenda dei simboli e dei comandi, limiti e stato di collaudo; collegata dall'indice help come bozza. L'azione non è ancora integrata nella toolbar/Menu della Suite. Prossimo: guida completa Suite su richiesta successiva.
+- 2026-10-03 (Codex): prova REAPER 7.81 nel progetto temporaneo con due WAV sintetici: avvio pannello e lista selezione riusciti; stati sidecar corretti (presente/mancante, marker iniziali 0). Corretto `find_file` in `bozze/ZP_Pannello_Trascrizione.lua`: ora cerca `../../ZP Studio Suite` dalla cartella bozze. `28_Collega_Marker.lua`, lanciato da Action List, ha aggiornato 2 item importando 4 cue da sidecar/esterno; script non modificato. `ZP_sincronizza_aggancio.lua` ha una correzione locale necessaria alla memoria precedente: riepilogo ora restituito e console soppressa con `_G.ZP_SYNC_QUIET`; sintassi verificata. Il pannello gfx è visibile ma i clic automatizzati non sono stati recepiti, quindi i pulsanti dal pannello, Autofollow e debounce 10 s restano da verificare con input fisico. Trascrizione non verificabile: zp-speech ha risposto che MacWhisper non è disponibile (`kLSNoExecutableErr`), anche se il servizio è raggiungibile. Nessun dato nel progetto esistente è stato intenzionalmente modificato; la scheda temporanea REAPER continua a mostrare errori di autosalvataggio per cartella `unsaved/` inesistente (non è stata cambiata la configurazione globale). `luac -p` sui tre script (pannello, sync, collega marker) e `git diff --check` superati. I test profondi dei cinque casi split/duplicato/mute/nascoste/legacy non sono stati eseguiti in questa sessione. Prossimo: prova manuale dei controlli gfx/autofollow e configurare o avviare MacWhisper; poi `Leggi tutto` nel gobbo.
+- 2026-10-03 (Codex, prima della modifica): per `ZP_sincronizza_aggancio.lua` preservare match marker→item testo, durata/posizione aggiornate, testo manuale non sovrascritto e gestione orfani. Verificare sintassi e prova REAPER su WAV/SRT sintetici; la sola modifica prevista è rendere il riepilogo restituibile al pannello e sopprimere la console con `ZP_SYNC_QUIET`.
+- 2026-10-02 (Claude, cowork): collaudo take marker, import SRT 23/23, fix macwhisper.py + test, scritta ZP_sincronizza_take_marker_nel_gobbo.lua (non provata). Creata questa memoria. Prossimo passo: collaudo di Sincronizza da parte di Paolo, poi punto 1 e 2 della sezione 7.
+- 2026-10-02 (Codex): verificato il formato della bozza `ZP_sincronizza_take_marker_nel_gobbo.lua` contro `UpdateItems()`, `GetRythmoTrack()`, `IsTextFlowTrackName()` e `CollectTextFlowTracks()` del Gobbo nel checkout operativo `/Users/paolob/Documents/zp-suite`. Item vuoto + testo in `P_NOTES` è il formato atteso; la bozza scrive nella traccia base `Rythmo Band Testi`, raccogliendo i take marker dalle altre tracce. Con più tracce testo, per vedere il risultato Gobbo deve essere impostato su `Principale` (la traccia base). Nessuna modifica ai Lua: `02_Gobbo_Verticale.lua` ha modifiche locali già presenti. Discrepanza di checkout: la cartella di progetto esisteva solo in `/Users/paolob/Documents/ZP/zp-suite` (branch `master`, `.git/index.lock` assente); copiata nel checkout operativo `/Users/paolob/Documents/zp-suite` (branch `codex/zp-speech-phase-1-macwhisper`, molte modifiche preesistenti; `.git/index.lock` assente), sorgente lasciata intatta. `git status` del checkout operativo ora mostra la cartella nuova non tracciata; nessun commit. Revisione statica completata; resta la verifica in REAPER da Paolo: sincronizza i 23 marker, taglia e sposta l'item audio, rilancia e controlla la traccia Principale. Stato: da provare.
+- 2026-10-03 (Codex): Paolo conferma che Sincronizza funziona (collaudo dei 23 marker, taglio/spostamento e rilancio). Punto 1 chiuso e marcato collaudato. Punto 2: revisione statica di `FindSubtitleMatch`, `FindSubtitleMatchPrevious`, `ExecuteSubtitleSearch` e `ProcessSearchPanelKey`: la ricerca restituisce il primo item successivo alla posizione corrente, Enter e `>` avanzano, `<` torna indietro; al bordo della timeline la ricerca riparte dal primo/ultimo risultato. Le cue 16 e 18 sono item distinti, quindi possono essere raggiunte entrambe; non serve modificare `02_Gobbo_Verticale.lua`. Prova reale in REAPER ancora da fare: cercare la frase doppia e premere `>` per verificare entrambe le posizioni e il ritorno al primo. Stato: revisione codice completata, prova Paolo richiesta.
+- 2026-10-03 (Codex, aggiornamento dopo prova): Paolo segnala che i pulsanti a schermo `<` / `>` non rispondono nel suo uso, mentre usa Invio. Verificato che Invio richiama `ExecuteSubtitleSearch(1)`, la stessa ricerca in avanti del pulsante `>`; nessuna modifica al Gobbo. Da confermare se le pressioni successive di Invio raggiungono entrambe le occorrenze (cue 16 e 18); il solo funzionamento di Invio non dimostra ancora il passaggio fra i due retake.
+- 2026-10-03 (Codex, correzione): la nota precedente che diceva che Invio funzionava è SOSTITUITA da questa correzione, perché Paolo ha chiarito che non funziona né Invio né i pulsanti `>` / `<`. Controllo statico: il pannello instrada Invio (key 13) e i pulsanti alla stessa `ExecuteSubtitleSearch`, ma la causa dell’assenza di risposta non è ancora identificata. Nessuna modifica al Gobbo. Prossimo passo: chiedere uno screenshot del pannello dopo aver scritto la frase e premuto Invio, così da distinguere pannello non attivo, nessun risultato e jump non visibile. Stato: non collaudato, diagnosi in attesa.
+- 2026-10-03 (Codex, correzione dopo screenshot): la diagnosi precedente di mancato funzionamento è SOSTITUITA: Paolo chiarisce che la ricerca funziona aprendo il pannello con ⌘F e usando i pulsanti a schermo con il mouse; screenshot mostra query `tagli` e un risultato evidenziato. I pulsanti non erano guasti. Rimane solo il test richiesto dal punto 2: usare la frase duplicata delle cue 16 e 18 e cliccare `>` per controllare entrambe le occorrenze. Nessuna modifica al codice. Stato: pannello e ricerca mouse provati da Paolo; retake duplicato da provare.
+
+## Decisioni — interfaccia trascrizione Fase 1 (2026-10-03)
+
+- Pannello con tre azioni: `Trascrivi` audio selezionati; `Importa SRT` già prodotto; `Setup` motore/eseguibile/modello e guida se l'ambiente non è pronto.
+- È l'editor o il fonico a selezionare i file da lavorare: niente scelta automatica dei contenuti. L'interfaccia mostra lo stato SRT e non mette in coda ciò che è già trascritto, salvo futura azione esplicita di sostituzione.
+- I timestamp dell'SRT sono sempre riferiti all'intero audio sorgente. L'importazione mantiene il collegamento tramite take marker e aggiorna gli item del Gobbo sulla traccia nascosta.
+- Il Gobbo deve poter mostrare tutti i testi, compresi quelli temporalmente sovrapposti: è una questione dell'editor, fuori dallo scopo della Fase 1 di trascrizione e non necessaria al narratore.
+- 2026-10-03 (Codex): registrate le decisioni UI e di ambito concordate con Paolo. Nessun codice modificato. Prossimo passo, quando si apre l'implementazione: progettare il provider configurabile (MacWhisper/whisper.cpp/eseguibile già installato) e la verifica Setup; poi UI batch e import SRT.
+
+- 2026-10-03 (Codex): confermato che `ZP_sincronizza_take_marker_nel_gobbo.lua` non filtra gli item audio in base alla selezione REAPER: scorre tutti gli item di tutte le tracce, esclusa la traccia Gobbo di destinazione, e crea testo per quelli con take marker; gli item marcati muted sono saltati. La trascrizione resta una scelta umana sui file selezionati; la sincronizzazione può raccogliere marker da ogni traccia voce e consolidarli in `Rythmo Band Testi` (Gobbo → Principale). Se una SRT non è stata importata come take marker, non genera risultati collegati. I testi simultanei restano item distinti; la resa visiva delle sovrapposizioni è lavoro dell'editor.
+
+- 2026-10-03 (Codex, chiarimento specifica visore): SOSTITUITA l'interpretazione precedente secondo cui `Leggi tutto` sarebbe utile solo per includere altre tracce/testi già organizzati. Il Gobbo in modalità `Leggi tutto` deve mostrare gli item testuali già presenti nelle tracce Gobbo, a prescindere dall'origine e dalla presenza di take marker; i marker servono soltanto a generare/aggiornare gli item sincronizzati con l'audio. Gli item di testo senza marker restano visibili nel visore, ma non seguono i tagli/spostamenti dell'audio. Modalità di lettura: combinare gli item testuali e ordinarli per posizione timeline, includendo sovrapposizioni.
+- 2026-10-03 (Codex): consolidato il piano di chiusura Fase 1 in sezione 9A; la vecchia roadmap 7 è conservata ma marcata sostituita. Include provider configurabile/whisper.cpp, pannello a tre azioni, selezione umana e skip SRT, marker e traccia nascosta, refresh manuale/debounce, Gobbo Leggi tutto con sovrapposizioni, collaudi, integrazione Suite e pacchetto GitHub. Nessun codice cambiato; push/tag/pubblicazione restano subordinati a richiesta esplicita.
+- 2026-10-03 (Codex): allineata la tabella file alla conferma REAPER di Paolo; la bozza Sincronizza risulta collaudata.
+- 2026-10-03 (Claude, cowork): SOSTITUITA la verifica "retake cue 16/18" del punto 2: Paolo chiarisce che non ha senso pratico (il testo del gobbo lo porta già alla battuta; i cue li vede solo selezionando l'item, agganciati agli item da SRT). Ricerca chiusa. Nessun file di codice toccato. Revisione critica delle decisioni Fase 1 fatta in chat (ordine di lavoro, contraddizione su Leggi tutto, debounce, skip SRT, installer multipiattaforma): in attesa di scelta di Paolo.
+
+## Decisioni di Paolo — 2026-10-03 (SOSTITUISCONO il piano 9A dove in contrasto: niente Setup/installer, ordine di lavoro nuovo)
+- Ricerca battuta: CHIUSA. La prova retake cue 16/18 non serve.
+- `Leggi tutto` SERVE (editing): più tracce voce, ognuna con i suoi item testo; in editing si assembla l'uscita master e si cercano parole ovunque. Nome del personaggio NON necessario: il copione è il riferimento, il gobbo è annotazione e ricerca (caso d'uso: cambiare una parola in 2 h di podcast). Potrebbe bastare il gobbo orizzontale.
+- Sincronizza: la bozza attuale cancella e rifà tutti gli item ZP_SYNC (non è ciò che Paolo voleva). Approvato il nuovo schema ad AGGANCIO: ogni item testo memorizza GUID del take (`GetSetMediaItemTakeInfo_String(take,"GUID")`) + tempo sorgente del marker; a ogni sync aggiorna posizione/durata senza riscrivere il testo; item nuovi per marker nuovi (un item duplicato ha take GUID nuovo → nascono nuovi item testo, voluto). Fallback se serve: pulsante "Rigenera".
+- Item orfani (marker non più valido): se il testo non è mai stato modificato → cancellato; se modificato a mano → lasciato e messo in mute.
+- Una traccia testo per ogni traccia voce con marker, nome `Rythmo Band Testi <nome traccia>` (il Gobbo riconosce il prefisso, cicla con < >). Tracce testo NASCOSTE alla creazione (B_SHOWINTCP/B_SHOWINMIXER=0); le mostra Paolo dal gestore tracce.
+- Interfaccia (nessun Setup/installer; ognuno si installa whisper da sé, la Suite è solo Lua): pulsante 1 `Trascrivi` (avvia whisper sui file selezionati; salta quelli con SRT già presente; se si vuole sostituire AVVISA, non aggiunge; se il servizio manca apre un help con istruzioni Win/Linux/Mac); pulsante 2 `Collega marker` (importa SRT come take marker, anche SRT esistenti/esterni e altri file); `Impostazioni` (cambiare/integrare il motore whisper; interruttore autofollow).
+- Autofollow on/off: se gli item testo sono fuori sincronia, dopo 10 s senza modifiche al progetto sincronizza (evitare ciclo: ignorare i cambi prodotti dal sync stesso). In più pulsante manuale "sincronizza tutto" sul Gobbo (approvato).
+- Ordine: 1 riscrivere Sincronizza (aggancio, tracce per voce, nascoste); 2 `Collega marker`; 3 `Trascrivi` + help; 4 `Leggi tutto` nel Gobbo (backup di 02_Gobbo_Verticale.lua prima; modifica minima); 5 autofollow + pulsante manuale; 6 integrazione Suite. Distribuzione multipiattaforma/installer: fuori scopo.
+- Si riprende "prossimamente"; nessun codice modificato oggi.
+- 2026-10-03 (Claude, cowork): registrate queste decisioni. Nessun file Lua toccato. Stato: da implementare dal punto 1.
+
+- 2026-10-03 (Claude, cowork): punto 1 ordine di lavoro. Creata `bozze/ZP_sincronizza_aggancio.lua` (la vecchia bozza resta intatta). Schema: item testo marcati P_EXT ZP_SYNC_KEY (GUID take|tempo sorgente), ZP_SYNC_SRCKEY (file|tempo, ripiego se il GUID cambia dopo uno split), ZP_SYNC_TEXT (testo scritto dallo script, per capire se l'hai modificato), ZP_SYNC_ORPH (messo in mute da noi). Una traccia testo nascosta per voce, riconosciuta da P_EXT ZP_VOICE sulla traccia (regge i rename), nome `Rythmo Band Testi <voce>`. Logica pura `M.plan`/`M.item_lines` provata fuori da REAPER (17/17: aggancio, testo modificato non riscritto, orfani cancellati/mute, mute rimosso se il marker torna, ripiego dopo split, duplicato = item nuovi, spostamento di traccia). Nessun altro file toccato. Stato: da provare in REAPER. Punti da verificare da Paolo: (a) split dell'item audio: i testi corretti a mano restano e seguono (se REAPER dà GUID nuovo al take, deve scattare il ripiego); (b) duplicato dell'item: nascono item testo nuovi; (c) item testo corretto a mano + marker cancellato = item in mute; (d) tracce testo nascoste; (e) i vecchi item della bozza precedente (traccia `Rythmo Band Testi`, ZP_SYNC=1) NON vengono toccati: cancellarli a mano prima, altrimenti il gobbo mostra doppioni.
+- NOTA pulizia: `.git/index.lock` (0 byte, 3 ott 00:07) è PRESENTE in ~/Documents/zp-suite (checkout operativo, branch codex/zp-speech-phase-1-macwhisper): va rimosso da Paolo.
+- 2026-10-03 (Codex): creati `ZP Studio Suite/28_Collega_Marker.lua`, `help/collega_marker.html`, icona `icons/ZP_tb_28_Collega_Marker.png`; aggiornate le pagine Help/legenda toolbar e copiate le risorse in REAPER. Parser Lua controllato (3 asserzioni) e sintassi verificata; funzione ancora DA PROVARE in REAPER. Nessun commit/push; lock Git aperto da processo macOS. Prossimo passo esatto: testare l'azione su progetto REAPER di prova, poi completare registrazione Action List/toolbar/ReaPack.
+
+- 2026-10-03 (Codex): prova REAPER 7.81 riuscita per `28_Collega_Marker.lua`: un item sintetico aggiornato, due cue importati e verificati nei take marker a 0,500 s e 2,000 s; Action List aggiornata e Floating toolbar 8 modificata con etichetta “Collega marker”. Progetto di prova chiuso senza salvarlo. Guida `help/collega_marker.html` aggiornata per documentare l’esito. L’icona PNG è presente nel percorso icone REAPER e nel repo, ma non è stato possibile associarla al pulsante tramite il selettore REAPER; la toolbar mostra testo. Nessun commit/push: `.git/index.lock` è tenuto aperto in lettura da `com.apple` PID 47574 e il checkout ha altre modifiche pendenti.
+
+- 2026-10-03 (Claude, cowork): Paolo conferma che il test REAPER di Sincronizza ad aggancio è positivo. Creato `bozze/ZP_Pannello_Trascrizione.lua`: finestra gfx con ZP_UI.lua; elenco item selezionati (SRT presente/mancante, n. marker); `Trascrivi` = coda sequenziale su zp-speech per i WAV selezionati senza SRT (solo macOS, come 26_SRT_Tools.lua; SRT già presente = saltato, nessuna sostituzione per ora); `Collega marker` = dofile di 28_Collega_Marker.lua (invariato); `Sincronizza` = dofile di aggancio; `Autofollow` on/off (ExtState ZP_STUDIO_SUITE/PanelAutofollow) con debounce 10 s su GetProjectStateChangeCount, ignorando i cambi del sync stesso. `Impostazioni` è un segnaposto disattivato. Modifica minima a ZP_sincronizza_aggancio.lua: con `_G.ZP_SYNC_QUIET` non scrive in console e restituisce il riepilogo. Il pannello cerca i file in bozze/ e in ../ZP Studio Suite. Stato: sintassi ok, da provare in REAPER (non ho potuto eseguirlo). Help Win/Linux per ora è un messaggio. Prossimo: prova pannello, poi `Leggi tutto` nel gobbo (backup di 02_Gobbo_Verticale.lua prima).

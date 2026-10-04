@@ -85,7 +85,7 @@
   <p class="lead">Help operativo per tutti i Lua principali della suite.</p>
 
   <div class="note">
-    <p style="font-size:1.08em;margin-bottom:.6rem"><strong><a href="toolbar.html">La toolbar, pulsante per pulsante &rarr;</a></strong><br>Le sedici icone, con nome e funzione. &Egrave; la pagina da tenere aperta le prime volte.<br><strong><a href="solo_recorder.html">Il SOLO Recorder, comando per comando &rarr;</a></strong></p>
+    <p style="font-size:1.08em;margin-bottom:.6rem"><strong><a href="toolbar.html">La toolbar, pulsante per pulsante &rarr;</a></strong><br>Le icone della toolbar, con nome e funzione. &Egrave; la pagina da tenere aperta le prime volte.<br><strong><a href="solo_recorder.html">Il SOLO Recorder, comando per comando &rarr;</a></strong></p>
     <p><strong>Come usarlo:</strong> apri questo help dalla toolbar o dalla Action List con <code>00_Apri_Help_ZP_Studio_Suite.lua</code>. Le schede sotto seguono la numerazione dei Lua installati.</p>
   </div>
 
@@ -110,6 +110,8 @@
     <div class="card"><a href="#zp-chain-builder"><span class="num">23</span> ZP Chain Builder</a></div>
     <div class="card"><a href="#zp-probe-guard"><span class="num">24</span> ZP Probe Guard</a></div>
     <div class="card"><a href="#tool-srt-tools"><span class="num">SRT</span> SRT Tools offline</a></div>
+    <div class="card"><a href="collega_marker.html"><span class="num">28</span> Collega marker SRT</a></div>
+    <div class="card"><a href="pannello_trascrizione.html"><span class="num">BOZZA</span> Pannello Trascrizione e Gobbo</a></div>
     <div class="card"><a href="#tool-solo"><span class="num">SOLO</span> ZP SOLO Recorder</a></div>
     <div class="card"><a href="#zp-shared-bus"><span class="num">FX</span> ZP Shared Bus</a></div>
   </div>
@@ -224,6 +226,16 @@
   <p>Serve quando il testo deve viaggiare insieme al file: i marker di progetto restano nella timeline, i take marker si spostano con l'item e sopravvivono alla consegna. Lo script <strong>non cancella niente</strong>: duplica.</p>
   <p>Seleziona un item e lancialo. Alla fine dice quanti marker ha copiato. La conversione dei tempi tiene conto di start offset e playrate del take, quindi funziona anche su item tagliati o con velocita' diversa da 1.</p>
 
+  <h2 id="tool-collega-marker">28 - Collega marker</h2>
+  <p><code>28_Collega_Marker.lua</code> importa i cue SRT come take marker negli item audio selezionati.</p>
+  <ul>
+    <li>Seleziona gli item audio; il file SRT viene cercato accanto all'audio con lo stesso nome base, oppure puoi sceglierlo.</li>
+    <li>Ogni cue diventa un take marker nominato con il testo del cue e collocato al timestamp sorgente.</li>
+    <li>Se esistono già marker, puoi sostituirli, saltare l'item o annullare prima delle modifiche.</li>
+    <li>La successiva azione Sincronizza usa questi marker per aggiornare gli item del Gobbo.</li>
+    <li><a href="collega_marker.html">Apri la guida dettagliata e la legenda dell'icona.</a></li>
+  </ul>
+
   <h2 id="tool-srt-tools">SRT Tools offline</h2>
   <p><code>26_SRT_Tools.lua</code> apre nel browser il convertitore locale <code>tools/srt_tools.html</code>.</p>
   <ul>
@@ -263,6 +275,8 @@
   <ul>
     <li>Utile per consuntivi, stime e controllo carico speaker.</li>
     <li>Controlla che le tracce voce siano nominate in modo coerente.</li>
+    <li><strong>Aggiungi allo storico</strong> aggiorna il report cumulativo del progetto, evitando le righe gi&agrave; conteggiate.</li>
+    <li><strong>Salva questa sessione</strong> crea invece un HTML autonomo con il solo conteggio corrente, senza modificare lo storico generale.</li>
   </ul>
 
   <h2 id="tool-20">20 - Importa cartelle</h2>
