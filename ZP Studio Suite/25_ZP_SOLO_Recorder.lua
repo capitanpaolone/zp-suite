@@ -317,6 +317,9 @@ local AIUTI = {
   ["Espandi"] = "Passa alla vista Compact, con tutti i comandi di sessione.",
   ["REAPER"] = "Nasconde o rimette su la finestra di REAPER, senza cercarla nel Dock.",
   ["?"] = "Apre l'help del SOLO Recorder: cosa fa ogni pulsante, livello per livello.",
+  ["Telecomando"] = "Registra sulle tracce del tuo progetto: non crea le tracce SOLO e non cambia l'armamento.",
+  ["Usa sessione SOLO"] = "Torna alla sessione SOLO: al primo REC crea la cartella ZP SOLO SESSION con le sue tracce.",
+  ["Arma selezionata"] = "Arma la traccia selezionata in REAPER, senza disarmare le altre.",
   ["Folder Mode"] = "Organizza i take per cartella. Lane Mode non e' ancora attivo.",
 }
 
@@ -515,6 +518,18 @@ local function active_track()
   return tracks[state.active_track_key], TRACK_NAMES[state.active_track_key]
 end
 
+-- Telecomando: arma la traccia selezionata in REAPER. Non disarma le altre: l'armamento
+-- del progetto resta dell'utente.
+local function arm_selected_track()
+  local tr = reaper.GetSelectedTrack(0, 0)
+  if not tr then return nil end
+  reaper.SetMediaTrackInfo_Value(tr, "I_RECARM", 1)
+  if reaper.GetMediaTrackInfo_Value(tr, "I_RECINPUT") < 0 then
+    reaper.SetMediaTrackInfo_Value(tr, "I_RECINPUT", 0)
+  end
+  return tr
+end
+
 local function target_name()
   local _, name = active_track()
   return name or "?"
@@ -540,8 +555,12 @@ local function arm_only_solo_target(key)
   if remote_mode() then
     local armed = armed_tracks()
     if not armed[1] then
-      warn("Telecomando: arma in REAPER la traccia su cui registrare (o passa a Sessione SOLO).")
-      return nil
+      -- nessuna traccia armata: arma quella selezionata, se c'e'
+      if not arm_selected_track() then
+        warn("Telecomando: seleziona o arma la traccia su cui registrare (o passa a Sessione SOLO).")
+        return nil
+      end
+      armed = armed_tracks()
     end
     state.status = "REC READY — " .. target_name()
     return armed[1]
@@ -1277,9 +1296,15 @@ local function draw_track_selector(y, clicked)
     gfx.setfont(1, "Arial", 14, "b")
     gfx.set(0.86, 0.90, 0.96, 1)
     gfx.x, gfx.y = margin, y + 8
+    local arm_w = 140
     gfx.drawstr(fit_text(#armed > 0
-      and ("Telecomando: registra su " .. target_name() .. " (tracce armate da te)")
-      or "Telecomando: arma in REAPER la traccia su cui registrare", gfx.w - margin * 2 - switch_w - 12))
+      and ("Telecomando: registra su " .. target_name())
+      or "Telecomando: nessuna traccia armata", gfx.w - margin * 2 - switch_w - arm_w - 20))
+    local has_sel = reaper.GetSelectedTrack(0, 0) ~= nil
+    if btn({x=gfx.w - margin - switch_w - gap - arm_w, y=y, w=arm_w, h=32}, "Arma selezionata", false, has_sel, clicked, "tab") then
+      local tr = arm_selected_track()
+      if tr then state.warning = ""; state.status = "Armata: " .. track_name(tr) end
+    end
     if btn({x=gfx.w - margin - switch_w, y=y, w=switch_w, h=32}, "Usa sessione SOLO", false, true, clicked, "tab") then
       set_target("solo")
     end
@@ -1380,16 +1405,17 @@ local function draw_expanded(clicked)
   local bw, bh, gap = 128, 36, 10
   local labels = {
     {"NOME / NOTA TAKE", rename_last_take_region, "play"},
-    {"RETAKE REGION", function() rec_region("retakes") end, "danger"},
-    {"INSERT", insert_record, nil},
-    {"ALT TAKE", alt_take, nil},
+    {"RETAKE REGION", function() rec_region("retakes") end, "danger", true},
+    {"INSERT", insert_record, nil, true},
+    {"ALT TAKE", alt_take, nil, true},
     {"NEXT TAKE", next_take, "danger"},
     {"TOGLI TAKE", undo_last_take, "danger"}
   }
   for i, item in ipairs(labels) do
     local col = (i - 1) % 3
     local row = math.floor((i - 1) / 3)
-    if btn({x=14 + col * (bw + gap), y=y + row * 46, w=bw, h=bh}, item[1], false, true, clicked, item[3]) then
+    -- item[4]: usa le tracce dedicate della sessione SOLO -> spento in Telecomando
+    if btn({x=14 + col * (bw + gap), y=y + row * 46, w=bw, h=bh}, item[1], false, not (item[4] and remote_mode()), clicked, item[3]) then
       item[2]()
     end
   end
@@ -1401,7 +1427,7 @@ local function draw_expanded(clicked)
   if btn({x=x2+306, y=y, w=92, h=34}, "NOISE", false, true, clicked) then add_marker_named("NOISE", false) end
 
   local y2 = y + 46
-  if btn({x=x2, y=y2, w=150, h=34}, state.folder_mode and "Folder Mode" or "Lane Mode TODO", state.folder_mode, true, clicked, "tab") then
+  if btn({x=x2, y=y2, w=150, h=34}, state.folder_mode and "Folder Mode" or "Lane Mode TODO", state.folder_mode, not remote_mode(), clicked, "tab") then
     state.folder_mode = true
     warn("Lane Mode e' placeholder futuro nella POC.")
     save_state()
