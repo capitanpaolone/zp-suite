@@ -83,7 +83,10 @@ local function main()
     if not take or source_path == "" then
       skipped = skipped + 1
     else
-      local path = srt_cache[source_path] and srt_cache[source_path].path or sidecar(source_path)
+      -- _G.ZP_COLLEGA_SRT_PATH (dalla strada, "SRT esterno o tradotto"): stesso SRT per tutti
+      -- gli item selezionati, anche se accanto al file c'e' gia' l'SRT di whisper.
+      local path = _G.ZP_COLLEGA_SRT_PATH or
+        (srt_cache[source_path] and srt_cache[source_path].path or sidecar(source_path))
       if not exists(path) then
         local ok, chosen = reaper.GetUserFileNameForRead(path, "Scegli l'SRT per " .. (source_path:match("[^/\\]+$") or "item"), "srt")
         if not ok then return end

@@ -5,7 +5,9 @@
 -- da fare adesso e' evidenziata. "Percorri la strada" fa in ordine quello che manca.
 --
 --   1 Trascrivi       whisper (ZP Speech) crea l'SRT accanto al WAV, stesso nome
---   2 Abbina          i cue dell'SRT diventano take marker sull'item (28_Collega_Marker.lua)
+--   2 Abbina da...    sorgente a scelta -> take marker sull'item: SRT accanto al file o SRT
+--                     esterno/tradotto (28_Collega_Marker.lua), marker di progetto (14);
+--                     in piu' "cue del WAV -> marker in timeline" (azione nativa 40692)
 --   3 Porta nel gobbo i marker diventano item testo magnetici su "Rythmo Band Testi <voce>"
 --                     (ZP_sincronizza_aggancio.lua). Parte da sola dopo Abbina.
 --   4 Segui i tagli   dopo 10 s senza modifiche al progetto i testi seguono l'audio
@@ -201,12 +203,49 @@ local function set_follow(on)
 end
 
 -- Tappa 2 (+3): abbina e porta subito i testi in timeline
-local function do_link(skip_existing)
+local function do_link(skip_existing, srt_path)
   local msg = run_script("28_Collega_Marker.lua",
-    { ZP_COLLEGA_QUIET = true, ZP_COLLEGA_SKIP_EXISTING = skip_existing or nil })
+    { ZP_COLLEGA_QUIET = true, ZP_COLLEGA_SKIP_EXISTING = skip_existing or nil, ZP_COLLEGA_SRT_PATH = srt_path })
   local brought = do_bring(true)
   status = (msg and tostring(msg):match("^[^\n]*") or "Abbina: nessuna modifica.") ..
     (brought and ("  Testi: " .. tostring(brought):gsub("\n", " ")) or "")
+end
+
+-- Tappa 2 da marker di progetto: motore del 14 su tutti gli item selezionati,
+-- poi subito nel gobbo. La domanda "cancello dalla timeline?" la fa il 14.
+local function do_link_markers()
+  local msg = run_script("14_Marker_da_Timeline_a_Item.lua", { ZP_14_ALL = true, ZP_14_QUIET = true })
+  local brought = do_bring(true)
+  status = (msg and (tostring(msg):gsub("\n", "  ")) or "Da marker di progetto: nessuna modifica.") ..
+    (brought and ("  Testi: " .. tostring(brought):gsub("\n", " ")) or "")
+end
+
+-- Cue gia' scritti dentro il WAV -> marker di progetto in timeline (azione nativa 40692),
+-- cosi' li gestisci in REAPER; quando renderizzi il file rilavorato escono i cue nuovi.
+local function do_cues_to_timeline()
+  local _, before = reaper.CountProjectMarkers(0)
+  reaper.Main_OnCommand(40692, 0)   -- Item: Import item media cues as project markers
+  local _, after = reaper.CountProjectMarkers(0)
+  local n = after - before
+  status = n > 0 and string.format(
+    "Cue del WAV in timeline: %d marker di progetto. Sistemali in REAPER; per fissarli nell'item: Abbina da > marker di progetto.", n)
+    or "Nessun cue trovato nei file degli item selezionati."
+end
+
+local function abbina_menu()
+  gfx.x, gfx.y = gfx.mouse_x, gfx.mouse_y
+  local choice = gfx.showmenu(
+    "SRT accanto al file (automatico)|SRT esterno o tradotto...|Marker di progetto in timeline (14)|Cue del WAV -> marker in timeline")
+  if choice == 1 then
+    do_link(false)
+  elseif choice == 2 then
+    local ok, path = reaper.GetUserFileNameForRead("", "SRT esterno o tradotto per gli item selezionati", "srt")
+    if ok and path ~= "" then do_link(false, path) end
+  elseif choice == 3 then
+    do_link_markers()
+  elseif choice == 4 then
+    do_cues_to_timeline()
+  end
 end
 
 local function finish_chain()
@@ -336,10 +375,10 @@ end
 ---------------------------------------------------------------------------
 -- Finestra
 ---------------------------------------------------------------------------
-local TITLES = { "Trascrivi", "Abbina", "Porta nel gobbo", "Segui i tagli" }
+local TITLES = { "Trascrivi", "Abbina da...", "Porta nel gobbo", "Segui i tagli" }
 local HINTS = {
   "whisper crea l'SRT accanto al file audio",
-  "le battute diventano marker sull'item audio",
+  "SRT, SRT tradotto, marker di progetto o cue -> marker sull'item",
   "i marker diventano testi magnetici per il gobbo",
   "dopo 10 s di quiete i testi seguono l'audio",
 }
@@ -391,7 +430,7 @@ local function draw_step(i, s, is_next, y, clicked)
   if i == 1 then
     if UI.draw_button(b, running and "Trascrivo..." or "Trascrivi", running ~= nil, not busy and not s.done, clicked, "play_now") then do_transcribe() end
   elseif i == 2 then
-    if UI.draw_button(b, "Abbina", false, not busy and #rows > 0, clicked, "play_select") then do_link(false) end
+    if UI.draw_button(b, "Abbina da...", false, not busy and #rows > 0, clicked, "play_select") then abbina_menu() end
   elseif i == 3 then
     if UI.draw_button(b, "Aggiorna ora", false, not busy, clicked, "save") then do_bring(false) end
   else

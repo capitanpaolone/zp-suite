@@ -63,14 +63,23 @@ if not reaper then return M end
 -- PARTE REAPER
 ---------------------------------------------------------------------------
 
+-- Lanciato dalla finestra ZP Trascrizione: _G.ZP_14_ALL usa tutti gli item selezionati
+-- senza chiedere, _G.ZP_14_QUIET restituisce il riepilogo invece di mostrarlo.
+-- La domanda sulla cancellazione dalla timeline resta sempre: e' una scelta tua.
+local function report(message)
+  if _G.ZP_14_QUIET then return message end
+  reaper.MB(message, TITLE, 0)
+end
+
 local count = reaper.CountSelectedMediaItems(0)
 if count == 0 then
-  reaper.MB("Seleziona un item e rilancia lo script.", TITLE, 0)
-  return
+  return report("Seleziona un item e rilancia lo script.")
 end
 
 local use = 1
-if count > 1 then
+if count > 1 and _G.ZP_14_ALL then
+  use = count
+elseif count > 1 then
   local answer = reaper.MB(string.format(
     "Ci sono %d item selezionati.\n\nSì: fissa i marker in tutti.\nNo: solo nel primo.\nAnnulla: esci senza modifiche.", count),
     TITLE, 3)
@@ -102,8 +111,7 @@ for i = 0, use - 1 do
   end
 end
 if #items == 0 then
-  reaper.MB("L'item selezionato non ha un take attivo.", TITLE, 0)
-  return
+  return report("L'item selezionato non ha un take attivo.")
 end
 
 local markers = {}
@@ -120,8 +128,7 @@ local to_add, already = 0, 0
 for _, p in ipairs(plan) do to_add = to_add + #p.add; already = already + p.already end
 
 if #fixed == 0 then
-  reaper.MB("Nessun marker di progetto dentro " .. (#items > 1 and "gli item selezionati." or "l'item selezionato."), TITLE, 0)
-  return
+  return report("Nessun marker di progetto dentro " .. (#items > 1 and "gli item selezionati." or "l'item selezionato."))
 end
 
 -- Tutte le domande prima di modificare: un Annulla non lascia lavori a meta'.
@@ -150,7 +157,7 @@ reaper.PreventUIRefresh(-1)
 reaper.UpdateArrange()
 reaper.Undo_EndBlock("Copia Project Markers come Take Markers", -1)
 
-reaper.MB(string.format(
+return report(string.format(
   "Item lavorati: %d%s\nMarker fissati: %d\nGia' presenti, saltati: %d\nCancellati dalla timeline: %d",
   #items, no_take > 0 and string.format(" (%d senza take, saltati)", no_take) or "",
-  to_add, already, removed), TITLE, 0)
+  to_add, already, removed))
