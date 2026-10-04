@@ -2064,7 +2064,8 @@ end
 local VISTE = {
   mini = { Z.trasporto, Z.ingresso },
   compact = { Z.trasporto, Z.ingresso, Z.traccia, Z.vai, Z.sessione },
-  expanded = { Z.trasporto, Z.ingresso, Z.traccia, Z.vai, Z.take, Z.etichette, Z.sessione },
+  -- Expanded: "Vai a e segna" a sinistra e "Traccia" a destra, sulla stessa riga
+  expanded = { Z.trasporto, Z.ingresso, Z.vai, Z.traccia, Z.take, Z.etichette, Z.sessione },
 }
 
 -- Impagina le zone in righe: ne mette in una riga finche' ci stanno (larghezza minima),
