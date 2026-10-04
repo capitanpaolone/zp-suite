@@ -1,13 +1,13 @@
 # ZP Harmonic Space Carver — cue di rientro rapido
 
-Richiesta di Paolo, 2026-10-04. Implementazione sorgente v2.4.5 (v2.4.3 di Codex, corretta il 2026-10-05) in `ZP Voce/ZP Harmonic Space Carver.jsfx`, installata in REAPER.
+Richiesta di Paolo, 2026-10-04. Implementazione sorgente v2.4.6 (v2.4.3 di Codex, corretta il 2026-10-05) in `ZP Voce/ZP Harmonic Space Carver.jsfx`, installata in REAPER.
 
 ## Interfaccia e comportamento
 
 - Il cue manager usa lo spazio libero a destra dei controlli Advanced.
 - Le frecce `<` e `>` saltano al cue precedente o successivo. Il pulsante centrale mostra il cue selezionato (numero in ordine di tempo e minuti:secondi) e ci salta.
 - `Timeline: SALTA / RESTA FERMO`: con RESTA FERMO le frecce scorrono i cue senza muovere il playhead (helper non usato). Salvato con il progetto.
-- `ADD / REMOVE` (solo in Play) memorizza o rimuove un cue sul playhead; a trasporto fermo dice "PLAY PER AGGIUNGERE" e non resta in sospeso.
+- `ADD / REMOVE` memorizza o rimuove un cue: in Play sul playhead (il rientro si sente subito), da fermo sul cursore di REAPER, che legge l'helper (comando 4, risposta in gmem base+70). Senza helper, da fermo dice "MANCA HELPER".
 - `UNDO LAST` annulla l'ultima aggiunta, rimozione o cancellazione totale.
 - `CLEAR ALL` cancella tutti i cue: primo clic arma (CONFERMA?), secondo clic entro 3 s cancella; UNDO LAST li rimette (solo nella sessione).
 - Si possono salvare fino a 64 cue nello stato serializzato del plugin.
@@ -36,3 +36,4 @@ Il ReaScript è stato caricato nell’Action List, avviato e configurato all’a
 - 2.4.5: pannello spostato nello spazio libero (y 350-456, sotto la fila Mix/In/Out/SC/Voice Ret) dopo lo
   screenshot di Paolo con sovrapposizioni; tre righe compatte, pomello Rampa a destra, messaggi dentro i
   pulsanti, font piccolo automatico se il testo non entra.
+- 2.4.6 / helper 1.2: Paolo "non memorizza il punto". La diagnostica in REAPER (script di sola lettura sulla gmem) mostrava 0 cue a trasporto fermo: ADD funzionava solo in Play. Ora da fermo il punto e' il cursore, chiesto all'helper.

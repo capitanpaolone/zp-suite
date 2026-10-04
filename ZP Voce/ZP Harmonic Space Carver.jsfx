@@ -1,8 +1,9 @@
 // @description ZP Harmonic Space Carver
-// @version 2.4.5
+// @version 2.4.6
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   ADD/REMOVE anche a trasporto fermo: il punto e' il cursore di REAPER (lo legge l'helper).
 //   Pannello cue nello spazio libero (sotto Mix/In/Out/SC/Voice Ret, sopra la sezione bassa):
 //     niente sovrapposizioni; cue spostati a 8192 (16-6159 e' il buffer dell'oscilloscopio).
 //   Cue: corretti la memoria (i cue finivano negli stati dei filtri), l'azzeramento a ogni Play,
@@ -236,6 +237,21 @@ function quick_sort() local(i, j, v) (
   );
 );
 function quick_set_status(st) ( quick_status = st; quick_status_t = time_precise(); );
+// Aggiunge un cue in t, o lo toglie se ce n'e' gia' uno entro 80 ms. Restituisce 1 se aggiunto.
+function quick_toggle_at(t) local(i, found, added) (
+  found = -1; i = 0; added = 0;
+  loop(quick_point_count, abs(quick_points[i] - t) <= 0.08 ? found = i; i += 1;);
+  found >= 0 ? (
+    quick_last_action = 2; quick_last_action_pos = quick_points[found];
+    quick_delete(found); quick_sel = -1; quick_set_status(2);
+  ) : quick_point_count < 64 ? (
+    quick_sel = quick_insert(t); added = 1;
+    quick_last_action = 1; quick_last_action_pos = t; quick_set_status(1);
+  ) : quick_set_status(3);
+  quick_gmem_base >= 0 ? gmem[quick_gmem_base+2] = quick_sel;
+  added;
+);
+quick_wait_seq = 0; quick_wait_t = 0;
 quick_inited != 2404 ? (
   quick_inited = 2404;
   quick_point_count = 0; quick_backup_count = 0; quick_nav_jump = 1; quick_sel = -1;
@@ -416,26 +432,8 @@ quick_total_samples = max(1, floor(slider(56) * 0.001 * srate));
 quick_fire = 0;
 quick_request ? (
   quick_request = 0;
-  is_playing ? (
-    quick_point_action = -1; qpi = 0;
-    loop(quick_point_count,
-      abs(quick_points[qpi] - play_position) <= 0.08 ? quick_point_action = qpi;
-      qpi += 1;
-    );
-    quick_point_action >= 0 ? (
-      quick_action_pos = quick_points[quick_point_action];
-      quick_delete(quick_point_action);
-      quick_last_action = 2; quick_last_action_pos = quick_action_pos;
-      quick_sel = -1; quick_gmem_base>=0 ? gmem[quick_gmem_base+2]=-1;
-      quick_set_status(2);
-    ) : quick_point_count < 64 ? (
-      quick_sel = quick_insert(play_position);
-      quick_last_action = 1; quick_last_action_pos = play_position;
-      quick_gmem_base>=0 ? gmem[quick_gmem_base+2]=quick_sel;
-      quick_fire = 1;
-      quick_set_status(1);
-    ) : quick_set_status(3);
-  ) : quick_set_status(4);
+  // in Play: al playhead (e il rientro si sente subito); da fermo lo gestisce la GUI con l'helper
+  is_playing ? (quick_toggle_at(play_position) ? quick_fire = 1;);
 );
 !is_jumping && is_playing ? (
   qpi = 0;
@@ -1283,6 +1281,13 @@ show_simple ? (
   ) : (quick_nav_jump=0;);
   quick_sel>=quick_point_count ? quick_sel=-1;
   quick_now=time_precise();
+  // risposta dell'helper a "aggiungi al cursore" (trasporto fermo)
+  quick_wait_seq>0 && quick_gmem_base>=0 ? (
+    gmem[quick_gmem_base+3]==quick_wait_seq ? (
+      gmem[quick_gmem_base+70]>=0 ? quick_toggle_at(gmem[quick_gmem_base+70]);
+      quick_wait_seq=0;
+    ) : quick_now-quick_wait_t>1.5 ? (quick_set_status(8); quick_wait_seq=0;);
+  );
   quick_status!=0 && quick_now-quick_status_t>2.5 ? quick_status=0;
   quick_now-quick_clear_arm_t>3 ? quick_clear_arm_t=-10;
 
@@ -1320,10 +1325,14 @@ show_simple ? (
 
   // riga 2: ADD/REMOVE  UNDO  CLEAR ALL (il messaggio compare nel pulsante stesso)
   qy=quick_panel_y+52; quick_aw=floor((qw-8)/3);
-  quick_status==4 ? (#quick_add_txt="PREMI PLAY";) : quick_status==2 ? (#quick_add_txt="TOLTO";) :
+  quick_status==8 ? (#quick_add_txt="MANCA HELPER";) : quick_status==4 ? (#quick_add_txt="PREMI PLAY";) : quick_status==2 ? (#quick_add_txt="TOLTO";) :
     quick_status==1 ? (#quick_add_txt="AGGIUNTO";) : quick_status==3 ? (#quick_add_txt="PIENO";) : (#quick_add_txt="ADD / REMOVE";);
   ui_cue_button(qx, qy, quick_aw, qh, #quick_add_txt, quick_status==1, 1, 56) ? (
-    (play_state & 1) ? (quick_request=1;) : (quick_set_status(4););   // a trasporto fermo non resta in sospeso
+    (play_state & 1) ? (quick_request=1;) :
+    quick_gmem_base>=0 ? (                                    // da fermo: punto = cursore di REAPER (helper)
+      gmem[quick_gmem_base]=4; gmem[quick_gmem_base+1]+=1;
+      quick_wait_seq=gmem[quick_gmem_base+1]; quick_wait_t=quick_now;
+    ) : (quick_set_status(4););
   );
   ui_cue_button(qx+quick_aw+4, qy, quick_aw, qh, (quick_status==5 || quick_status==6) ? "FATTO" : "UNDO", 0, quick_last_action>0, 56) ? (
     quick_last_action==1 ? (
@@ -1641,7 +1650,7 @@ view_mode == 0 ? (
   active_info_id == 21 ? gfx_drawstr("SIMPLE MIX: quantita' globale di processamento nella versione rapida.") :
   active_info_id == 51 ? gfx_drawstr("VIEW MODE: FULL mantiene la GUI completa, STATUS compatta la finestra.") :
   active_info_id == 52 ? gfx_drawstr("FLAT FOCUS: in modalita' FLAT scegli BOTH (Carver+VCA), CARVER (solo carving) o VCA (solo ducking).") :
-  active_info_id == 56 ? gfx_drawstr("QUICK RETURN: ADD/REMOVE (in Play) mette o toglie un cue al playhead; al cue la musica rientra con la Rampa. < > e il cue centrale saltano nella timeline (Salta) o solo selezionano (Resta fermo). UNDO LAST annulla l'ultima modifica.") :
+  active_info_id == 56 ? gfx_drawstr("QUICK RETURN: ADD/REMOVE mette o toglie un cue al playhead (in Play) o al cursore (da fermo, con l'helper); al cue la musica rientra con la Rampa. < > e il cue centrale saltano nella timeline (Salta) o solo selezionano (Resta fermo). UNDO LAST annulla l'ultima modifica.") :
   active_info_id == 57 ? gfx_drawstr("CLEAR ALL: cancella tutti i cue. Primo clic arma (CONFERMA?), secondo clic entro 3 s cancella. UNDO LAST li rimette.") :
   active_info_id == 58 ? (quick_gmem_base < 0 ? gfx_drawstr("TIMELINE: salto non disponibile, il Carver e' su un take o sull'input FX. RESTA FERMO scorre i cue.") :
     gfx_drawstr("TIMELINE: SALTA sposta il playhead sui cue (serve l'helper Cue Navigator); RESTA FERMO scorre i cue senza muovere il playhead.")) :

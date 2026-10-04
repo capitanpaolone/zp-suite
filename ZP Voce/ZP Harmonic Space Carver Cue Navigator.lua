@@ -1,8 +1,10 @@
 -- @description ZP Harmonic Space Carver Cue Navigator (background helper)
--- @version 1.1
+-- @version 1.2
 -- @author Paolo Balestri / Codex
 -- @about Keeps the Carver previous/current/next cue buttons connected to the REAPER edit/play cursor.
 -- @changelog
+--   1.2: comando 4 = "dove e' il cursore": risponde con la posizione del cursore di REAPER
+--        (base+70), cosi' il Carver aggiunge un cue anche a trasporto fermo.
 --   1.1: rilegge l'elenco degli FX una volta al secondo (prima a ogni giro, ~30 volte al secondo);
 --        a ogni giro controlla solo gli indirizzi dei Carver trovati.
 local GMEM_NAME = "ZPVoiceoverSharedBus"
@@ -36,6 +38,14 @@ local function handle(base)
   local ack = math.floor(reaper.gmem_read(base + 3) + 0.5)
   if seq == ack or seq == last_seq[base] then return end
   local cmd = math.floor(reaper.gmem_read(base) + 0.5)
+  if cmd == 4 then
+    -- il Carver chiede il punto per un cue: cursore di edit (o playhead se sta suonando)
+    local pos = ((reaper.GetPlayState() & 1) == 1) and (reaper.GetPlayPosition2 or reaper.GetPlayPosition)() or reaper.GetCursorPosition()
+    reaper.gmem_write(base + 70, pos)
+    reaper.gmem_write(base + 3, seq)
+    last_seq[base] = seq
+    return
+  end
   local cues = read_cues(base)
   local selected = -1
   local target = nil
