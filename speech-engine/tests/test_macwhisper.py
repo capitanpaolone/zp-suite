@@ -133,6 +133,64 @@ def test_normalize_without_words_and_with_speaker(tmp_path: Path) -> None:
     assert document["capabilities"]["word_timestamps"] is False
 
 
+def test_normalize_rounding_drift_within_one_ms(tmp_path: Path) -> None:
+    source = tmp_path / "source.wav"
+    source.write_bytes(b"x")
+    raw = {
+        "segments": [
+            {
+                "start": 1,
+                "end": 100,
+                "text": "Ciao",
+                "words": [{"start": 0, "end": 101, "text": "Ciao"}],
+            }
+        ]
+    }
+    document = normalize_macwhisper_json(raw, source=source, model=MODEL, language="it")
+    assert document["segments"][0]["words"] == [{"start_ms": 1, "end_ms": 100, "text": "Ciao"}]
+
+
+def test_normalize_clamps_word_overshoot_beyond_rounding(tmp_path: Path) -> None:
+    # Real Whisper output: a word can end hundreds of ms after its segment.
+    source = tmp_path / "source.wav"
+    source.write_bytes(b"x")
+    raw = {
+        "segments": [
+            {
+                "start": 2,
+                "end": 1000,
+                "text": "Ciao mondo",
+                "words": [
+                    {"start": 0, "end": 500, "text": "Ciao"},
+                    {"start": 500, "end": 1201, "text": "mondo"},
+                ],
+            }
+        ]
+    }
+    document = normalize_macwhisper_json(raw, source=source, model=MODEL, language="it")
+    assert document["segments"][0]["words"] == [
+        {"start_ms": 2, "end_ms": 500, "text": "Ciao"},
+        {"start_ms": 500, "end_ms": 1000, "text": "mondo"},
+    ]
+
+
+def test_normalize_rejects_word_outside_its_segment(tmp_path: Path) -> None:
+    source = tmp_path / "source.wav"
+    source.write_bytes(b"x")
+    raw = {
+        "segments": [
+            {
+                "start": 0,
+                "end": 1000,
+                "text": "Ciao",
+                "words": [{"start": 1200, "end": 1300, "text": "Ciao"}],
+            }
+        ]
+    }
+    with pytest.raises(ProviderError, match="lies outside its segment"):
+        normalize_macwhisper_json(raw, source=source, model=MODEL, language="it")
+
+
 @pytest.mark.parametrize(
     ("raw", "message"),
     [

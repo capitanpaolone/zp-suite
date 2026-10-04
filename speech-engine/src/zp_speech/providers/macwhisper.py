@@ -125,10 +125,23 @@ def normalize_macwhisper_json(
             if not isinstance(raw_words, list):
                 raise ProviderError("transcription_failed", f"{path}.words must be an array")
             words = cast(list[object], raw_words)
-            segment["words"] = [
+            normalized_words = [
                 _normalize_word(word, f"{path}.words[{word_index}]")
                 for word_index, word in enumerate(words)
             ]
+            for word_index, word in enumerate(normalized_words):
+                # Word timestamps can drift past their segment by more than rounding:
+                # real Whisper output overshoots by hundreds of ms. The segment is
+                # authoritative for SRT and markers, so clamp the word into it; only a
+                # word lying entirely outside its segment is an error.
+                word["start_ms"] = max(word["start_ms"], segment["start_ms"])
+                word["end_ms"] = min(word["end_ms"], segment["end_ms"])
+                if word["start_ms"] >= word["end_ms"]:
+                    raise ProviderError(
+                        "transcription_failed",
+                        f"{path}.words[{word_index}] lies outside its segment",
+                    )
+            segment["words"] = normalized_words
             has_words = True
         speaker = item.get("speaker")
         if speaker is not None:
@@ -172,8 +185,17 @@ def normalize_macwhisper_json(
     try:
         validate_document(document)
     except ContractValidationError as error:
+        timing_details = []
+        for segment_index, segment in enumerate(segments):
+            for word_index, word in enumerate(segment.get("words", [])):
+                if word["start_ms"] < segment["start_ms"] or word["end_ms"] > segment["end_ms"]:
+                    timing_details.append(
+                        f"segments[{segment_index}] [{segment['start_ms']}, {segment['end_ms']}) "
+                        f"words[{word_index}] [{word['start_ms']}, {word['end_ms']})"
+                    )
+        detail = f"; intervalli: {'; '.join(timing_details[:8])}" if timing_details else ""
         raise ProviderError(
-            "transcription_failed", f"invalid MacWhisper timing: {error}"
+            "transcription_failed", f"invalid MacWhisper timing: {error}{detail}"
         ) from error
     return document
 

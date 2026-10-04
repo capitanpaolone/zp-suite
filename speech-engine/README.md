@@ -1,7 +1,7 @@
 # ZP Speech Engine — contract foundation
 
-This directory contains ZP Speech API/Schema v1 and the Phase 1 MacWhisper provider adapter.
-HTTP services and REAPER integrations remain deliberately out of scope.
+This directory contains ZP Speech API/Schema v1, the MacWhisper provider adapter,
+the singleton loopback service, and its CLI client for REAPER and ZP applications.
 
 ## Stable contract
 
@@ -59,3 +59,29 @@ and streaming were observed. Speaker labels were not present even with `--speake
 two-voice sample, so diarization is reported as unavailable. MacWhisper's raw JSON does not
 identify the automatically detected language; with `--language auto`, the normalized document
 therefore preserves `auto` rather than inventing a language.
+
+## Shared local service
+
+`zp-speech serve` starts the provider in one process and accepts local jobs over HTTP. It binds only to loopback and defaults to the fixed port `8770`; it does not choose another port when that port is occupied.
+
+```console
+zp-speech serve
+curl http://127.0.0.1:8770/api/v1/health
+```
+
+Initial API:
+
+- `GET /api/v1/health` — service identity and API version, without calling the provider.
+- `GET /api/v1/capabilities` — MacWhisper version, installed models and verified features.
+- `POST /api/v1/transcriptions` — enqueue a WAV file by absolute local path; returns a job ID.
+- `GET /api/v1/jobs/{job_id}` — poll `queued`, `running`, `succeeded`, or `failed`; successful results are ZP Speech v1 transcript documents.
+
+Provider jobs run one at a time, with at most eight outstanding jobs and a bounded in-memory job history. An OS lock prevents a second service process, even if another port is requested. The API rejects non-loopback Host/Origin headers. Jobs and results are currently process-local: restarting the service interrupts work and clears job history. ZP Tools provides the LaunchAgent installer; it is installed and started on the current macOS profile.
+
+The shared-client command waits for a service job and writes normalized JSON or SRT:
+
+```console
+zp-speech request recording.wav --format srt --output recording.srt
+```
+
+`ZP Studio Suite/26_SRT_Tools.lua` offers this path alongside the existing offline SRT Tools. ZP Shorts `auto` uses the service first and falls back only to whisper.cpp. The legacy `macwhisper` backend name is routed through the shared queue too; no production Shorts path starts a second MacWhisper transcription. Persistent job recovery, cancellation of a running MacWhisper process, and shared transcript caching remain future work.

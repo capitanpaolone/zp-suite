@@ -370,6 +370,8 @@ Espone un servizio locale su loopback, ad esempio `127.0.0.1`, destinato alle in
 
 Non deve essere esposto in rete esterna per default.
 
+Servizio macOS implementato nel pacchetto `speech-engine` e installato tramite il LaunchAgent ZP Tools: ascolta su `127.0.0.1:8770`, usa un lock OS per consentire una sola istanza anche se si specifica una porta diversa, serializza le trascrizioni MacWhisper e mantiene job solo in memoria. Health, capabilities, submit e polling sono in `/api/v1/`. Il client Shorts preferisce il servizio se health/provider sono pronti; il server attivo è stato riavviato. Il comando `zp-speech request` e `26_SRT_Tools.lua` forniscono il client Suite/REAPER per produrre SRT attraverso lo stesso singleton. Le copie già installate nelle risorse REAPER si aggiorneranno con la prossima distribuzione della Suite.
+
 ## 11. Integrazione con `26_SRT_Tools.lua`
 
 Il 26 attuale deve restare un client leggero.
@@ -385,18 +387,15 @@ Nuova funzione:
 
 Il browser non deve chiamare direttamente MacWhisper o whisper.cpp.
 
-Flusso previsto:
+Flusso implementato su macOS:
 
 ```text
 26_SRT_Tools.lua
-    -> verifica/avvia ZP Speech Engine
-    -> apre la UI locale
-    -> Audio -> richiesta al servizio locale
-    -> JSON ZP
-    -> esportazione SRT / modifica / download
+    ├── SRT Tools offline -> apre la pagina HTML esistente
+    └── WAV -> CLI zp-speech request -> ZP Speech v1 -> SRT accanto al WAV
 ```
 
-Questo permette di mantenere l'HTML come interfaccia e spostare tutto il lavoro di sistema nel Core.
+La CLI avvia o riusa il LaunchAgent singleton, invia il job all'API locale e attende il risultato; l'HTML resta indipendente e non chiama direttamente provider o API.
 
 ## 12. Integrazione con Gobbo, Solo Recorder e applicazioni future
 
