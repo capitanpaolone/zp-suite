@@ -32,6 +32,7 @@ local EXT_SECTION = "ZP_SOLO_Recorder"
 local PROJ_SECTION = "ZP_SOLO_Recorder_Project"
 
 local FOLDER_NAME = "ZP SOLO SESSION"
+local SESSION_VIEW_SECONDS = 120   -- zoom della timeline quando nasce la sessione SOLO
 local TRACK_NAMES = {
   main = "VO_MAIN",
   inserts = "VO_INSERTS",
@@ -464,6 +465,7 @@ local function ensure_solo_structure()
   reaper.PreventUIRefresh(1)
 
   local folder, folder_idx = find_track_exact(FOLDER_NAME)
+  local created = not folder
   if not folder then
     local idx = reaper.CountTracks(0)
     folder = insert_named_track(idx, FOLDER_NAME, {50, 145, 170})
@@ -489,6 +491,12 @@ local function ensure_solo_structure()
   normalize_solo_folder_depths(solo_tracks())
   reaper.PreventUIRefresh(-1)
   reaper.Undo_EndBlock("ZP SOLO Recorder: crea/trova struttura SOLO", -1)
+  if created then
+    -- Solo vista: alla nascita della sessione la timeline mostra circa 2 minuti dal cursore
+    -- (su un REAPER vuoto lo zoom di partenza e' troppo largo). Non cambia nient'altro.
+    local start = math.max(0, reaper.GetCursorPosition() - 5)
+    reaper.GetSet_ArrangeView2(0, true, 0, 0, start, start + SESSION_VIEW_SECONDS)
+  end
   reaper.UpdateArrange()
   return solo_tracks()
 end
