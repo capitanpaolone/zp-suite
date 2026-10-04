@@ -1,13 +1,14 @@
 -- @noindex
 
 -- ZP Studio Suite for REAPER
--- 31 SRT dall'audio: i take marker degli item selezionati diventano un SRT
--- accanto al file sorgente, con lo stesso nome.
+-- 31 SRT dall'audio: i take marker degli item selezionati diventano un SRT,
+-- con lo stesso nome del file sorgente, nella cartella che scegli (non tra i media).
 --
 -- Serve dopo il montaggio: le battute corrette in REAPER, o un file nato da un Glue
 -- (che tiene solo i marker della parte usata), tornano a essere un SRT da consegnare
 -- al fonico o da riusare. I tempi sono quelli del file (tempo sorgente), come
--- l'SRT di whisper: ricollegandolo con 29 "Abbina da..." torna identico.
+-- l'SRT di whisper: ricollegandolo con 29 "Abbina da > SRT esterno" torna identico.
+-- Cartella: la chiede ogni volta e propone l'ultima usata (o quella del progetto).
 --
 -- Fine di ogni battuta = inizio della successiva; l'ultima dura al massimo 8 s
 -- e non supera la fine del file.
@@ -77,6 +78,33 @@ if not reaper then return M end
 
 local function exists(p) local f = io.open(p, "rb"); if f then f:close() return true end return false end
 local function base(p) return (p:gsub("%.[^./\\]+$", "")) end
+local function file_base(p) return (base(p):match("[^/\\]+$") or base(p)) end
+local sep = package.config:sub(1, 1)
+local EXT, DIR_KEY = "ZP_STUDIO_SUITE", "SRT31_dir"
+
+local function project_dir()
+  local _, proj = reaper.EnumProjects(-1, "")
+  local d = (proj or ""):match("^(.*)[/\\][^/\\]+$")
+  return (d and d ~= "") and d or reaper.GetResourcePath()
+end
+
+-- Cartella di destinazione: selettore di cartelle (js_ReaScriptAPI) o, senza,
+-- il dialogo "salva" sul primo file (si tiene la sua cartella). nil = annullato.
+local function choose_dir(default, first_name)
+  if reaper.JS_Dialog_BrowseForFolder then
+    local rv, folder = reaper.JS_Dialog_BrowseForFolder("Dove salvo gli SRT?", default)
+    if rv == 1 and folder and folder ~= "" then return folder end
+    return nil
+  end
+  if reaper.GetUserFileNameForWrite then
+    local ok, f = reaper.GetUserFileNameForWrite(default .. sep .. first_name .. ".srt", "Dove salvo gli SRT? (conta la cartella)", "srt")
+    if ok and f ~= "" then return f:match("^(.*)[/\\][^/\\]+$") end
+    return nil
+  end
+  local ok, f = reaper.GetUserFileNameForRead(default, "Scegli un file nella cartella dove salvare gli SRT", "")
+  if ok and f ~= "" then return f:match("^(.*)[/\\][^/\\]+$") end
+  return nil
+end
 
 local count = reaper.CountSelectedMediaItems(0)
 if count == 0 then
@@ -108,17 +136,23 @@ if #order == 0 then
   return
 end
 
--- Tutte le domande prima di scrivere
+-- Tutte le domande prima di scrivere: prima la cartella
+local last = reaper.GetExtState(EXT, DIR_KEY)
+local out_dir = choose_dir((last ~= "" and last) or project_dir(), file_base(order[1]))
+if not out_dir then return end
+reaper.RecursiveCreateDirectory(out_dir, 0)
+reaper.SetExtState(EXT, DIR_KEY, out_dir, true)
+
 local plan = {}
 for _, path in ipairs(order) do
-  local target = base(path) .. ".srt"
+  local target = out_dir .. sep .. file_base(path) .. ".srt"
   local backup = false
   if exists(target) then
     local answer = reaper.MB(string.format(
-      "Esiste gia' un SRT accanto a:\n%s\n\nSì: sostituiscilo (copia di sicurezza .srt.bak accanto).\nNo: salva un SRT nuovo \"(marker).srt\" accanto.\nAnnulla: esci senza scrivere niente.",
-      path:match("[^/\\]+$") or path), TITLE, 3)
+      "Nella cartella scelta c'e' gia':\n%s\n\nSì: sostituiscilo (copia di sicurezza .srt.bak accanto).\nNo: salva un SRT nuovo \"(marker).srt\".\nAnnulla: esci senza scrivere niente.",
+      target:match("[^/\\]+$") or target), TITLE, 3)
     if answer == 2 then return end
-    if answer == 6 then backup = true else target = base(path) .. " (marker).srt" end
+    if answer == 6 then backup = true else target = out_dir .. sep .. file_base(path) .. " (marker).srt" end
   end
   plan[#plan + 1] = { path = path, target = target, backup = backup }
 end
@@ -142,5 +176,5 @@ end
 
 local msg = string.format("SRT scritti: %d\nBattute: %d", written, lines)
 if #failed > 0 then msg = msg .. "\n\nNon riesco a scrivere:\n" .. table.concat(failed, "\n") end
-if written > 0 then msg = msg .. "\n\nAccanto ai file sorgente, con lo stesso nome." end
+if written > 0 then msg = msg .. "\n\nCon lo stesso nome dei file sorgente, in:\n" .. out_dir end
 reaper.MB(msg, TITLE, 0)

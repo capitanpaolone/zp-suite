@@ -247,7 +247,7 @@ local function choose_output_dir(default_dir)
   if reaper.JS_Dialog_BrowseForFolder then
     local ok, folder = reaper.JS_Dialog_BrowseForFolder("Scegli cartella export SRT", default_dir)
     folder = trim(folder or "")
-    if ok and folder ~= "" then return folder end
+    if ok == 1 and folder ~= "" then return folder end
     return nil
   end
 
@@ -372,8 +372,15 @@ local function open_export_settings_visual(tracks, on_done)
 
   local track_index = default_track_index(tracks)
   local mode = suggested_mode()
-  local destination_mode = "srt_export"
-  local custom_out_dir = ""
+  -- la destinazione scelta l'ultima volta (cartella compresa) resta per la prossima
+  local destination_mode = reaper.GetExtState("ZP_STUDIO_SUITE", "SRT08_dest")
+  if destination_mode ~= "project" and destination_mode ~= "custom" then destination_mode = "srt_export" end
+  local custom_out_dir = reaper.GetExtState("ZP_STUDIO_SUITE", "SRT08_dir")
+  if destination_mode == "custom" and custom_out_dir == "" then destination_mode = "srt_export" end
+  local function remember()
+    reaper.SetExtState("ZP_STUDIO_SUITE", "SRT08_dest", destination_mode, true)
+    reaper.SetExtState("ZP_STUDIO_SUITE", "SRT08_dir", custom_out_dir, true)
+  end
   local last_mouse_down = false
 
   gfx.init("ZP Studio Suite v1.0.5 - Export SRT", 760, 500)
@@ -460,16 +467,17 @@ local function open_export_settings_visual(tracks, on_done)
     end
 
     if draw_button({ x = 22, y = 318, w = 140, h = 34 }, "Progetto", destination_mode == "project", true, clicked, "tab") then
-      destination_mode = "project"
+      destination_mode = "project"; remember()
     end
     if draw_button({ x = 174, y = 318, w = 140, h = 34 }, "SRT_export", destination_mode == "srt_export", true, clicked, "tab") then
-      destination_mode = "srt_export"
+      destination_mode = "srt_export"; remember()
     end
     if draw_button({ x = 326, y = 318, w = 120, h = 34 }, "Scegli...", destination_mode == "custom", true, clicked, "tab") then
       local picked = choose_output_dir(custom_out_dir ~= "" and custom_out_dir or project_folder)
       if picked and picked ~= "" then
         custom_out_dir = picked
         destination_mode = "custom"
+        remember()
       end
     end
     gfx.set(0.70, 0.72, 0.78, 1)
