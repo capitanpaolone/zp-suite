@@ -55,6 +55,28 @@ function M.to_transcribe(rows)
   return queue
 end
 
+-- "m:ss" per i messaggi
+function M.clock(sec)
+  sec = math.max(0, math.floor(sec + 0.5))
+  return string.format("%d:%02d", sec // 60, sec % 60)
+end
+
+-- Anti-ansia: la trascrizione non da' percentuali, quindi dico cosa so davvero:
+-- che sto lavorando, da quanto, quanto e' lungo l'audio e una stima dalle volte precedenti.
+-- ratio = secondi di lavoro per secondo di audio misurati in passato (nil se mai misurato)
+function M.heartbeat(name, elapsed, audio_len, ratio, tick)
+  local spin = ({ "|", "/", "-", "\\" })[(tick % 4) + 1]
+  local msg = string.format("%s  Sto lavorando, non sono bloccato: %s, %s trascorsi", spin, name, M.clock(elapsed))
+  if audio_len and audio_len > 0 then
+    msg = msg .. ", audio " .. M.clock(audio_len)
+    if ratio and ratio > 0 then
+      local left = audio_len * ratio - elapsed
+      msg = msg .. (left > 0 and (", mancano circa " .. M.clock(left)) or ", dovrei finire a momenti")
+    end
+  end
+  return msg
+end
+
 if not reaper then return M end
 
 ---------------------------------------------------------------------------
@@ -95,6 +117,8 @@ local rows, rows_t = {}, -1
 local text_names = {}          -- nomi delle tracce testo delle voci selezionate
 local texts_visible = false
 local queue, running = {}, nil
+local audio_len = {}           -- percorso -> durata della sorgente, per la stima
+local SPEED_KEY = "PanelSpeechRatio"
 local chain = false            -- true mentre "Percorri la strada" e' in corso
 local last_down = false
 local pending, last_change, last_count = false, 0, reaper.GetProjectStateChangeCount(0)
@@ -136,8 +160,10 @@ local function refresh_rows()
         name = path:match("[^/\\]+$") or path, path = path,
         wav = path:lower():match("%.wav$") ~= nil,
         srt = exists(sidecar(path)), markers = reaper.GetNumTakeMarkers(take),
+        len = reaper.GetMediaSourceLength(src),
         texts = per_take[tguid] or 0,
       }
+      audio_len[path] = rows[#rows].len
       local tn = text_track_of[vguid]
       if tn and not named[tn] then named[tn] = true; text_names[#text_names + 1] = tn end
     end
@@ -206,19 +232,38 @@ local function start_next()
   end
   local cli = speech_cli()
   local tmp = os.tmpname(); os.remove(tmp)
-  local st, lg = tmp .. ".status", tmp .. ".log"
+  local st, lg, pf = tmp .. ".status", tmp .. ".log", tmp .. ".pid"
   local task = shell_quote(cli) .. " request " .. shell_quote(job) .. " --format srt --output " ..
     shell_quote(sidecar(job)) .. " > " .. shell_quote(lg) .. " 2>&1; printf '%s\\n' \"$?\" > " .. shell_quote(st)
-  os.execute("(" .. task .. ") </dev/null >/dev/null 2>&1 &")
-  running = { job = job, st = st, lg = lg }
+  os.execute("(" .. task .. ") </dev/null >/dev/null 2>&1 & echo $! > " .. shell_quote(pf))
+  local now = reaper.time_precise()
+  running = { job = job, st = st, lg = lg, pf = pf, t0 = now, checked = now, len = audio_len[job] }
   status = string.format("Trascrivo %s (ne restano %d)...", job:match("[^/\\]+$") or job, #queue)
+end
+
+local function speech_ratio()
+  return tonumber(reaper.GetExtState(EXT, SPEED_KEY))
 end
 
 local function poll_job()
   if not running then return end
   local code = read_file(running.st)
-  if not code then return end
+  if not code then
+    -- ogni 2 s controllo che il processo sia davvero vivo: se e' morto senza risposta lo dico
+    local now = reaper.time_precise()
+    if now - running.checked >= 2 then
+      running.checked = now
+      local pid = (read_file(running.pf) or ""):match("%d+")
+      if pid and not os.execute("kill -0 " .. pid .. " 2>/dev/null") and not read_file(running.st) then
+        status = "La trascrizione si e' fermata senza risposta: " .. (running.job:match("[^/\\]+$") or "") .. ". Riprova."
+        os.remove(running.pf)
+        queue, running, chain = {}, nil, false
+      end
+    end
+    return
+  end
   os.remove(running.st)
+  os.remove(running.pf)
   if tonumber(code:match("%d+")) ~= 0 then
     local detail = read_file(running.lg) or ""
     reaper.ShowConsoleMsg("[ZP Speech] errore su " .. running.job .. "\n" .. detail:sub(-1200) .. "\n")
@@ -227,6 +272,12 @@ local function poll_job()
     return
   end
   os.remove(running.lg)
+  -- impara la velocita' (media mobile) per stimare le prossime trascrizioni
+  if running.len and running.len > 5 then
+    local r = (reaper.time_precise() - running.t0) / running.len
+    local old = speech_ratio()
+    reaper.SetExtState(EXT, SPEED_KEY, string.format("%.4f", old and (old * 0.6 + r * 0.4) or r), true)
+  end
   start_next()
 end
 
@@ -326,7 +377,11 @@ local function draw_step(i, s, is_next, y, clicked)
   UI.set_color(s.done and UI.colors.credit or UI.colors.disabled)
   gfx.x, gfx.y = tx, y + 44
   local info = s.info
-  if i == 1 and running then info = status end
+  if i == 1 and running then
+    info = M.heartbeat(running.job:match("[^/\\]+$") or running.job, reaper.time_precise() - running.t0,
+      running.len, speech_ratio(), math.floor(reaper.time_precise() * 4))
+    if #queue > 0 then info = info .. string.format(" (poi altri %d)", #queue) end
+  end
   if i == 3 and #text_names > 0 then info = info .. "  -  " .. table.concat(text_names, ", ") end
   gfx.drawstr(UI.fit_text(info, gfx.w - tx - 190))
 
