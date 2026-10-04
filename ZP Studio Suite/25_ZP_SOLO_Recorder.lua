@@ -91,6 +91,8 @@ local state = {
   toolbar = false,
   preroll = 0,
   folder_mode = true,
+  auto_regions = true,   -- crea la regione "Take NNN" a ogni REC
+  nav = "regioni",       -- PREV/NEXT/START: "regioni" oppure "item"
   active_track_key = "main",
   take_counter = 1,
   status = "Pronto",
@@ -165,6 +167,8 @@ local function load_state()
   state.toolbar = bool_from_state(ext_get("toolbar", ""), state.toolbar)
   state.preroll = tonumber(ext_get("preroll", "")) or 0
   state.folder_mode = bool_from_state(ext_get("folder_mode", ""), state.folder_mode)
+  state.auto_regions = bool_from_state(ext_get("auto_regions", ""), state.auto_regions)
+  state.nav = ext_get("nav", state.nav) == "item" and "item" or "regioni"
   state.active_track_key = proj_get("active_track_key", state.active_track_key)
   -- Destinazione: "solo" = sessione SOLO (crea le sue tracce); "progetto" = telecomando
   -- (registra sulle tracce che arma l'utente, non crea e non tocca niente).
@@ -189,6 +193,8 @@ local function save_state()
   ext_set("toolbar", state.toolbar and "1" or "0")
   ext_set("preroll", state.preroll)
   ext_set("folder_mode", state.folder_mode and "1" or "0")
+  ext_set("auto_regions", state.auto_regions and "1" or "0")
+  ext_set("nav", state.nav)
   proj_set("active_track_key", state.active_track_key)
   proj_set("take_counter", state.take_counter)
   proj_set("target", state.target or "solo")
@@ -324,6 +330,13 @@ local AIUTI = {
   ["Telecomando"] = "Registra sulle tracce del tuo progetto: non crea le tracce SOLO e non cambia l'armamento.",
   ["Usa sessione SOLO"] = "Torna alla sessione SOLO: al primo REC crea la cartella ZP SOLO SESSION con le sue tracce.",
   ["Arma selezionata"] = "Arma la traccia selezionata in REAPER, senza disarmare le altre.",
+  ["Regioni take ON"] = "A ogni REC crea la regione Take NNN sul nuovo audio. Clic: spegni.",
+  ["Regioni take OFF"] = "Registra senza creare regioni. TOGLI TAKE funziona lo stesso. Clic: accendi.",
+  ["Naviga: regioni"] = "PREV/NEXT/START si muovono tra le regioni. Clic: passa agli item.",
+  ["Naviga: item"] = "PREV/NEXT/INIZIO si muovono tra gli item della traccia di destinazione. Clic: passa alle regioni.",
+  ["ITEM PREV"] = "Cursore all'inizio dell'item precedente.",
+  ["ITEM NEXT"] = "Cursore all'inizio dell'item successivo.",
+  ["INIZIO ITEM"] = "Cursore all'inizio dell'item in cui si trova.",
   ["Tracce \u{25BE}"] = "Elenco delle tracce del progetto con il loro ingresso: spuntate le armate, un clic arma o disarma.",
   ["Folder Mode"] = "Organizza i take per cartella. Lane Mode non e' ancora attivo.",
 }
@@ -918,6 +931,55 @@ local function goto_region_start()
   state.status = "Inizio regione"
 end
 
+-- Navigazione per item: quelli della traccia di destinazione; se non ce ne sono, tutti.
+local function item_starts()
+  local target = active_track()
+  local starts, all = {}, {}
+  for i = 0, reaper.CountMediaItems(0) - 1 do
+    local it = reaper.GetMediaItem(0, i)
+    local p = reaper.GetMediaItemInfo_Value(it, "D_POSITION")
+    local l = reaper.GetMediaItemInfo_Value(it, "D_LENGTH")
+    all[#all + 1] = { pos = p, len = l }
+    if target and reaper.GetMediaItemTrack(it) == target then starts[#starts + 1] = { pos = p, len = l } end
+  end
+  local list = #starts > 0 and starts or all
+  table.sort(list, function(a, b) return a.pos < b.pos end)
+  return list
+end
+
+local function goto_item(delta)
+  if not can_click("item_" .. tostring(delta)) then return end
+  local items = item_starts()
+  if #items == 0 then warn("Nessun item nel progetto."); return end
+  local pos = current_position()
+  local target = nil
+  if delta < 0 then
+    for i = #items, 1, -1 do
+      if items[i].pos < pos - 0.05 then target = items[i]; break end
+    end
+    target = target or items[1]
+  else
+    for _, it in ipairs(items) do
+      if it.pos > pos + 0.05 then target = it; break end
+    end
+    target = target or items[#items]
+  end
+  reaper.SetEditCurPos(target.pos, true, false)
+  state.status = "Item a " .. format_time(target.pos)
+end
+
+local function goto_item_start()
+  local pos = current_position()
+  for _, it in ipairs(item_starts()) do
+    if pos >= it.pos and pos < it.pos + it.len then
+      reaper.SetEditCurPos(it.pos, true, false)
+      state.status = "Inizio item"
+      return
+    end
+  end
+  warn("Il cursore non e' dentro un item.")
+end
+
 local function rec_region(key)
   local r = current_region()
   if not r then warn("Il cursore non e' dentro una regione."); return end
@@ -1034,14 +1096,18 @@ local function finalize_recording(session)
   end
   local take_number = state.take_counter
   local name = string.format("Take %03d", take_number)
-  reaper.AddProjectMarker2(0, true, first_pos, final_end, name, -1, native_color(70, 155, 220))
+  local region_name = nil
+  if state.auto_regions then
+    reaper.AddProjectMarker2(0, true, first_pos, final_end, name, -1, native_color(70, 155, 220))
+    region_name = name
+  end
   state.take_counter = take_number + 1
   proj_set("take_counter", state.take_counter)
   -- Mi segno cos'e' appena entrato in timeline: serve a TOGLI TAKE.
-  state.last_take = { guids = nuovi, start = first_pos, region = name,
+  state.last_take = { guids = nuovi, start = first_pos, region = region_name,
                       track_key = session.track_key }
   reaper.UpdateArrange()
-  state.status = name .. " indicizzato — " .. TRACK_NAMES[session.track_key]
+  state.status = name .. (region_name and " indicizzato — " or " registrato (senza regione) — ") .. track_name(session.track)
   return final_end, name
 end
 
@@ -1510,9 +1576,16 @@ local function draw_compact(clicked)
   local x = 14
   if btn({x=x, y=yb, w=bw, h=bh}, "MARK", false, true, clicked) then add_marker_named("SOLO_MARK", false) end
   if btn({x=x+bw+gap, y=yb, w=bw, h=bh}, "MARK NAME", false, true, clicked) then add_marker_named("SOLO_MARK", true) end
-  if btn({x=x+(bw+gap)*2, y=yb, w=bw, h=bh}, "REG PREV", false, true, clicked) then goto_region(-1) end
-  if btn({x=x+(bw+gap)*3, y=yb, w=bw, h=bh}, "REG NEXT", false, true, clicked) then goto_region(1) end
-  if btn({x=x+(bw+gap)*4, y=yb, w=bw, h=bh}, "REG START", false, true, clicked) then goto_region_start() end
+  local by_item = state.nav == "item"
+  if btn({x=x+(bw+gap)*2, y=yb, w=bw, h=bh}, by_item and "ITEM PREV" or "REG PREV", false, true, clicked) then
+    if by_item then goto_item(-1) else goto_region(-1) end
+  end
+  if btn({x=x+(bw+gap)*3, y=yb, w=bw, h=bh}, by_item and "ITEM NEXT" or "REG NEXT", false, true, clicked) then
+    if by_item then goto_item(1) else goto_region(1) end
+  end
+  if btn({x=x+(bw+gap)*4, y=yb, w=bw, h=bh}, by_item and "INIZIO ITEM" or "REG START", false, true, clicked) then
+    if by_item then goto_item_start() else goto_region_start() end
+  end
 
   local yw = yb + 46
   if btn({x=14, y=yw, w=112, h=34}, "Preroll " .. state.preroll .. "s", false, true, clicked) then cycle_preroll() end
@@ -1524,7 +1597,103 @@ local function draw_compact(clicked)
   end
   if btn({x=362, y=yw, w=96, h=34}, "Hide 5s", false, true, clicked) then hide_5s() end
   if btn({x=470, y=yw, w=88, h=34}, "Park", false, true, clicked) then park_window() end
+  if btn({x=570, y=yw, w=150, h=34}, state.nav == "item" and "Naviga: item" or "Naviga: regioni", false, true, clicked, "tab") then
+    state.nav = state.nav == "item" and "regioni" or "item"; save_state()
+  end
   return yw + 44
+end
+
+-- Navigatore dentro la finestra (vista Expanded): tutto il progetto in una striscia.
+-- In alto, tenui, gli item di tutte le tracce; in basso, in verde, quelli della traccia
+-- di destinazione. Regioni in blu, marker in giallo, riquadro = parte visibile della
+-- timeline, cursore bianco, riproduzione verde (rossa in REC). Clic o trascina: sposta
+-- il cursore; durante il REC non si muove niente.
+local function nav_time_label(t)
+  t = math.floor(t + 0.5)
+  if t >= 3600 then return string.format("%d:%02d:%02d", t // 3600, (t // 60) % 60, t % 60) end
+  return string.format("%d:%02d", t // 60, t % 60)
+end
+
+local function draw_navigator(x, y, w, h)
+  if w < 120 or h < 44 then return end
+  local proj_len = reaper.GetProjectLength(0)
+  local view_start, view_end = reaper.GetSet_ArrangeView2(0, false, 0, 0, 0, 0)
+  local total = math.max(proj_len + 10, view_end or 0, 60)
+  local band_h = h - 14
+  local function tx(t) return x + (t / total) * w end
+
+  gfx.set(0.10, 0.105, 0.12, 1); gfx.rect(x, y, w, band_h, true)
+  set_color(colors.border); gfx.rect(x, y, w, band_h, false)
+
+  gfx.setfont(1, "Arial", 11)
+  for _, r in ipairs(collect_regions()) do
+    local rx, rw = tx(r.pos), math.max(1, tx(r.end_pos) - tx(r.pos))
+    gfx.set(0.25, 0.45, 0.70, 0.30); gfx.rect(rx, y + 1, rw, band_h - 2, true)
+    if rw > 40 and r.name ~= "" then
+      gfx.set(0.78, 0.86, 0.96, 0.9); gfx.x, gfx.y = rx + 3, y + 2
+      gfx.drawstr(fit_text(r.name, rw - 6))
+    end
+  end
+
+  local target = active_track()
+  local lane = math.floor((band_h - 16) / 3)
+  for i = 0, reaper.CountMediaItems(0) - 1 do
+    local it = reaper.GetMediaItem(0, i)
+    local p = reaper.GetMediaItemInfo_Value(it, "D_POSITION")
+    local l = reaper.GetMediaItemInfo_Value(it, "D_LENGTH")
+    local ix, iw = tx(p), math.max(1, tx(p + l) - tx(p))
+    if target and reaper.GetMediaItemTrack(it) == target then
+      gfx.set(0.35, 0.80, 0.50, 0.85); gfx.rect(ix, y + 14 + lane, iw, lane * 2 - 2, true)
+    else
+      gfx.set(0.60, 0.62, 0.68, 0.40); gfx.rect(ix, y + 14, iw, lane - 3, true)
+    end
+  end
+
+  local _, nm, nr = reaper.CountProjectMarkers(0)
+  for i = 0, nm + nr - 1 do
+    local ok, isrgn, pos = reaper.EnumProjectMarkers3(0, i)
+    if ok and not isrgn then gfx.set(0.95, 0.80, 0.30, 0.9); gfx.line(tx(pos), y + 1, tx(pos), y + band_h - 2) end
+  end
+
+  if view_end and view_end > view_start then
+    gfx.set(1, 1, 1, 0.55)
+    gfx.rect(tx(view_start), y, math.max(2, tx(view_end) - tx(view_start)), band_h, false)
+  end
+  local ec = reaper.GetCursorPosition()
+  gfx.set(1, 1, 1, 1); gfx.line(tx(ec), y, tx(ec), y + band_h)
+  local ps = reaper.GetPlayState()
+  if ps & 1 == 1 then
+    if ps & 4 == 4 then gfx.set(1, 0.25, 0.2, 1) else gfx.set(0.4, 0.9, 0.5, 1) end
+    local pp = reaper.GetPlayPosition()
+    gfx.line(tx(pp), y, tx(pp), y + band_h)
+  end
+
+  gfx.set(0.60, 0.62, 0.68, 1)
+  local step = total > 3600 and 600 or total > 1800 and 300 or total > 600 and 60 or total > 120 and 30 or 10
+  local t = 0
+  while t <= total do
+    gfx.x, gfx.y = tx(t) + 2, y + band_h + 1
+    gfx.drawstr(nav_time_label(t))
+    t = t + step
+  end
+
+  local down = (gfx.mouse_cap & 1) == 1
+  local inside = point_in_rect(gfx.mouse_x, gfx.mouse_y, x, y, w, band_h)
+  if inside then state.hint = "Navigatore: clic o trascina per spostare il cursore (fermo durante il REC)." end
+  if down and inside and not state.mouse_was_down then state.nav_drag = true end
+  if state.nav_drag then
+    if down then
+      if ps & 4 ~= 4 then
+        local tt = math.max(0, math.min(total, (gfx.mouse_x - x) / w * total))
+        reaper.SetEditCurPos(tt, true, false)
+        state.nav_t = tt
+      end
+    else
+      state.nav_drag = false
+      if ps & 1 == 1 and ps & 4 ~= 4 and state.nav_t then reaper.SetEditCurPos(state.nav_t, true, true) end
+      state.nav_t = nil
+    end
+  end
 end
 
 -- EXPANDED - il livello avanzato: la regia del take.
@@ -1556,13 +1725,15 @@ local function draw_expanded(clicked)
   if btn({x=x2+306, y=y, w=92, h=34}, "NOISE", false, true, clicked) then add_marker_named("NOISE", false) end
 
   local y2 = y + 46
-  if btn({x=x2, y=y2, w=150, h=34}, state.folder_mode and "Folder Mode" or "Lane Mode TODO", state.folder_mode, not remote_mode(), clicked, "tab") then
-    state.folder_mode = true
-    warn("Lane Mode e' placeholder futuro nella POC.")
-    save_state()
+  if btn({x=x2, y=y2, w=150, h=34}, state.auto_regions and "Regioni take ON" or "Regioni take OFF", state.auto_regions, true, clicked, "tab") then
+    state.auto_regions = not state.auto_regions; save_state()
+    state.status = state.auto_regions and "A ogni REC crea la regione Take NNN." or "REC senza regione: il take resta, la regione no."
   end
   if btn({x=x2+162, y=y2, w=150, h=34}, "Navigator", false, true, clicked) then show_navigator() end
   if btn({x=x2+324, y=y2, w=150, h=34}, "Video", video_aperta(), true, clicked, "tab") then show_video_window() end
+
+  local nav_y = y2 + 46
+  draw_navigator(14, nav_y, gfx.w - 28, gfx.h - (state.toolbar and TOOLBAR_H or 0) - 30 - nav_y)
 end
 
 local function draw_toolbar(clicked)
