@@ -12,6 +12,12 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
   e il percorso deve esistere (run_all lo controlla).
 - Mai push su master, tag, bump di versione o ReaPack senza richiesta esplicita di Paolo.
 
+## Help
+- Ogni modifica visibile a Paolo aggiorna, nello stesso commit, l'help (`help/index.html` e la pagina
+  dedicata: solo_recorder, pannello_trascrizione, toolbar...) e le spiegazioni dentro lo script
+  (suggerimenti, guida ?). Prima del commit cerca nell'help le frasi del comportamento vecchio.
+- Le copie installate dell'help devono restare uguali al repo.
+
 ## Installazione su questo Mac
 - Prima di sovrascrivere una copia in `REAPER/Scripts/ZP Suite/...`, verifica che sia uguale
   a `git show HEAD:<file>`; se e' diversa, fermati e chiedi. La 00 installata e' quella pubblicata.
