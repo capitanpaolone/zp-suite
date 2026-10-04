@@ -43,9 +43,9 @@ local TRACK_NAMES = {
 local TRACK_ORDER = { "main", "inserts", "retakes", "alt", "ref" }
 local RECORD_TRACK_KEYS = { "main", "inserts", "retakes", "alt" }
 
-local MINI_W, MINI_H = 620, 272
-local COMPACT_W, COMPACT_H = 740, 462
-local EXPANDED_W, EXPANDED_H = 1000, 640
+local MINI_W, MINI_H = 720, 236
+local COMPACT_W, COMPACT_H = 740, 476
+local EXPANDED_W, EXPANDED_H = 1000, 660
 local TOOLBAR_H = 96
 
 local NEXT_TAKE_GAP_SECONDS = 5.0
@@ -84,6 +84,11 @@ if not ok_ui and reaper.GetResourcePath then
   ok_ui, ZP_UI = pcall(dofile, reaper.GetResourcePath() .. sep .. "Scripts" .. sep .. "ZP_Studio_Suite" .. sep .. "ZP_UI.lua")
 end
 if not ok_ui then ZP_UI = nil end
+-- La pulsantiera usa i controlli di ZP_UI (pomelli, interruttori, trasporto): senza, non parte.
+if not (ZP_UI and ZP_UI.draw_knob) then
+  reaper.MB("Manca ZP_UI.lua aggiornato accanto a questo script.\nReinstalla la ZP Studio Suite da ReaPack.", "ZP SOLO Recorder", 0)
+  return
+end
 
 local state = {
   mode = "compact",
@@ -112,7 +117,11 @@ local state = {
   last_window_save = 0,
   last_pin_try = 0,
   toolbar_buttons = {},
-  record_session = nil
+  record_session = nil,
+  ctrls = {},            -- comandi disegnati in questo giro (barra in basso e guida)
+  zones = {},            -- zone disegnate in questo giro (guida)
+  overlay = false,       -- guida rapida aperta
+  overlay_pick = nil     -- comando scelto con un clic nella guida
 }
 
 local colors = {
@@ -291,88 +300,107 @@ local function draw_button(rect, label, active, enabled, clicked, style)
   return draw_fallback_button(rect, label, active, enabled, clicked, style)
 end
 
--- Suggerimenti: la riga in basso spiega il pulsante sotto il mouse.
--- Pin, Hide, Park e compagnia non si indovinano guardandoli.
+-- Spiegazioni dei comandi, per chiave stabile (non per etichetta, che cambia).
+-- AIUTI: una riga, nella barra in basso quando passi col mouse.
+-- DETTAGLI: la spiegazione lunga dell'overlay della guida (?). Se manca, vale AIUTI.
 local AIUTI = {
+  ["Mini"] = "Vista Mini: trasporto, ingresso e ascolto.",
+  ["Compact"] = "Vista Compact: anche tracce, spostamenti, marker e sessione.",
+  ["Expanded"] = "Vista Expanded: anche take, etichette e navigatore.",
+  ["REAPER"] = "Nasconde o rimette su la finestra di REAPER, senza cercarla nel Dock.",
+  ["?"] = "Guida rapida: numera le zone e spiega ogni comando. Clic di nuovo per chiuderla.",
   ["REC"] = "Registra sulla traccia scelta, dopo aver verificato che sia l'unica armata.",
-  ["STOP"] = "Ferma la registrazione e numera il take appena inciso.",
+  ["Lock"] = "Lucchetto del REC: acceso, la barra spaziatrice non ferma la registrazione. Clic: cambia.",
+  ["STOP"] = "Ferma la registrazione o la riproduzione e numera il take appena inciso.",
   ["PLAY"] = "Riproduce dalla posizione del cursore.",
-  ["INDIETRO 5s"] = "Sposta il cursore indietro di cinque secondi.",
   ["-5s"] = "Sposta il cursore indietro di cinque secondi.",
-  ["ULTIMO ITEM +5s"] = "Porta il cursore cinque secondi dopo la fine dell'ultimo item. Non cancella niente.",
-  ["FINE +5s"] = "Porta il cursore cinque secondi dopo la fine dell'ultimo item. Non cancella niente.",
-  ["MARK"] = "Mette un marker qui, senza chiedere il nome.",
-  ["MARK NAME"] = "Mette un marker qui e ti chiede come chiamarlo.",
-  ["REG PREV"] = "Va alla regione precedente.",
-  ["REG NEXT"] = "Va alla regione successiva.",
-  ["REG START"] = "Riporta il cursore all'inizio della regione in cui ti trovi.",
-  ["Preroll"] = "Secondi di conto alla rovescia prima che parta il REC. Premi per cambiarli.",
-  ["Toolbar"] = "Mostra o nasconde la fila di comandi REAPER in fondo al pannello.",
-  ["Pin"] = "Tiene questa finestra sempre sopra le altre.",
-  ["Hide 5s"] = "Sparisce per cinque secondi e torna da sola. Per liberare lo schermo un attimo.",
-  ["Park"] = "Sposta la finestra nell'angolo in alto a destra dello schermo.",
-  ["Nascondi REAPER"] = "Manda giu' la finestra di REAPER e lascia solo questo telecomando.",
-  ["Mostra REAPER"] = "Rimette su la finestra di REAPER.",
-  ["Monitor"] = "Ascolto dell'ingresso sulla traccia attiva. REAPER lo accende da solo quando armi.",
-  ["RIT -"] = "Abbassa di 1 dB il volume della traccia selezionata in REAPER. Cambia il mix.",
-  ["RIT +"] = "Alza di 1 dB il volume della traccia selezionata in REAPER. Cambia il mix.",
-  ["Mini"] = "Solo i comandi essenziali: REC, STOP, PLAY e i due spostamenti.",
-  ["Compact"] = "Tutto quello che serve durante una sessione normale.",
-  ["Expanded"] = "Anche i comandi da regia: take, marcatori di giudizio, navigatore, video.",
+  ["fine +5s"] = "Porta il cursore cinque secondi dopo la fine dell'ultimo item. Non cancella niente.",
+  ["Ingresso"] = "Da quale ingresso della scheda pesca la traccia. Clic: cambia ingresso.",
+  ["Monitor"] = "Ascolto dell'ingresso sulla traccia attiva. Clic: acceso / spento.",
+  ["Ritorno"] = "Volume della traccia selezionata in REAPER (reference o video). Trascina o rotella.",
+  ["Preroll"] = "Secondi di conto alla rovescia prima del REC. Trascina o rotella.",
   ["MAIN"] = "Registra sulla traccia principale VO_MAIN.",
   ["INSERTS"] = "Registra sulla traccia degli inserti.",
   ["RETAKES"] = "Registra sulla traccia dei rifacimenti.",
   ["ALT"] = "Registra sulla traccia delle versioni alternative.",
-  ["NOME / NOTA TAKE"] = "Rinomina l'ultima regione take, per annotarci com'e' andata.",
-  ["RETAKE REGION"] = "Rifa' la regione corrente sulla traccia dei retake.",
-  ["INSERT"] = "Registra un inserto senza toccare quello che c'e' gia'.",
-  ["ALT TAKE"] = "Registra una versione alternativa sulla traccia ALT.",
-  ["NEXT TAKE"] = "Chiude il take, lascia cinque secondi di stacco e riparte a registrare.",
-  ["TOGLI TAKE"] = "Toglie dalla timeline il take appena registrato e torna al punto di partenza. Il file resta nella cartella Media.",
-  ["BAD"] = "Marca questo punto come da rifare.",
-  ["OK"] = "Marca questo punto come buono.",
-  ["NOISE"] = "Marca un rumore da sistemare.",
-  ["Navigator"] = "Apre il Navigator di ZP Master Pro.",
+  ["Telecomando"] = "Registra sulle tracce del tuo progetto: non crea le tracce SOLO.",
+  ["Usa sessione SOLO"] = "Torna alla sessione SOLO, con la sua cartella e le sue tracce.",
+  ["Tracce"] = "Tracce del progetto con il loro ingresso: un clic arma o disarma.",
+  ["Regioni"] = "Precedente / inizio / successivo si muovono tra le regioni.",
+  ["Item"] = "Precedente / inizio / successivo si muovono tra gli item della traccia di destinazione.",
+  ["Precedente"] = "Cursore alla regione (o all'item) precedente.",
+  ["Inizio"] = "Cursore all'inizio della regione (o dell'item) in cui ti trovi.",
+  ["Successivo"] = "Cursore alla regione (o all'item) successiva.",
+  ["Mark"] = "Mette un marker qui, senza chiedere il nome.",
+  ["Mark nome"] = "Mette un marker qui e ti chiede come chiamarlo.",
+  ["Nome / nota"] = "Rinomina l'ultima regione take, per annotarci com'e' andata.",
+  ["Next take"] = "Chiude il take, lascia cinque secondi di stacco e riparte a registrare.",
+  ["Togli take"] = "Toglie dalla timeline il take appena registrato. Il file resta nella cartella Media.",
+  ["Retake"] = "Rifa' la regione corrente sulla traccia dei retake.",
+  ["Insert"] = "Registra un inserto senza toccare quello che c'e' gia'.",
+  ["Alt take"] = "Registra una versione alternativa sulla traccia ALT.",
+  ["OK"] = "Marker OK: questo punto e' buono.",
+  ["BAD"] = "Marker BAD: questo punto e' da rifare.",
+  ["ALT marker"] = "Marker ALT: qui c'e' una versione alternativa.",
+  ["NOISE"] = "Marker NOISE: c'e' un rumore da sistemare.",
+  ["Regioni take"] = "A ogni REC crea la regione Take NNN sul nuovo audio. Clic: acceso / spento.",
+  ["Effetti"] = "Sessione SOLO con le catene ZP sul bus voci e sul master. Clic: acceso / spento.",
+  ["Pin"] = "Tiene questa finestra sempre sopra le altre.",
+  ["Toolbar"] = "Mostra o nasconde la fila di comandi REAPER in fondo al pannello.",
   ["Video"] = "Apre e chiude la finestra video di REAPER.",
-  ["Espandi"] = "Passa alla vista Compact, con tutti i comandi di sessione.",
-  ["REAPER"] = "Nasconde o rimette su la finestra di REAPER, senza cercarla nel Dock.",
-  ["?"] = "Apre l'help del SOLO Recorder: cosa fa ogni pulsante, livello per livello.",
-  ["Telecomando"] = "Registra sulle tracce del tuo progetto: non crea le tracce SOLO e non cambia l'armamento.",
-  ["Usa sessione SOLO"] = "Torna alla sessione SOLO: al primo REC crea la cartella ZP SOLO SESSION con le sue tracce.",
-  ["Arma selezionata"] = "Arma la traccia selezionata in REAPER, senza disarmare le altre.",
-  ["Regioni take ON"] = "A ogni REC crea la regione Take NNN sul nuovo audio. Clic: spegni.",
-  ["Regioni take OFF"] = "Registra senza creare regioni. TOGLI TAKE funziona lo stesso. Clic: accendi.",
-  ["Naviga: regioni"] = "PREV/NEXT/START si muovono tra le regioni. Clic: passa agli item.",
-  ["Naviga: item"] = "PREV/NEXT/INIZIO si muovono tra gli item della traccia di destinazione. Clic: passa alle regioni.",
-  ["ITEM PREV"] = "Cursore all'inizio dell'item precedente.",
-  ["ITEM NEXT"] = "Cursore all'inizio dell'item successivo.",
-  ["INIZIO ITEM"] = "Cursore all'inizio dell'item in cui si trova.",
-  ["\u{2212}"] = "Navigatore: mostra piu' tempo (fino a tutto il progetto).",
-  ["+"] = "Navigatore: zoom avanti; la finestra segue la testina.",
-  ["1/3"] = "Testina a un terzo da sinistra: vedi piu' di quello che arriva. Clic: al centro.",
-  ["centro"] = "Testina al centro della striscia. Clic: a un terzo da sinistra.",
-  ["Effetti ON"] = "Sessione con effetti: ZP Bus VoiceChain sul bus voci (cartella SOLO) e ZP MasterChain sul master. Clic: spegni.",
-  ["Effetti OFF"] = "Clic: la sessione SOLO avra' le catene ZP Bus VoiceChain (bus voci) e ZP MasterChain (master).",
-  ["Lock REC"] = "Lock acceso: durante il REC la barra spaziatrice non ferma la registrazione (lo fa solo STOP). Clic: spegni.",
-  ["Lock off"] = "Lock spento: la barra spaziatrice ferma anche il REC, come in REAPER. Clic: accendi.",
-  ["Tracce \u{25BE}"] = "Elenco delle tracce del progetto con il loro ingresso: spuntate le armate, un clic arma o disarma.",
-  ["Folder Mode"] = "Organizza i take per cartella. Lane Mode non e' ancora attivo.",
+  ["Nascondi 5s"] = "Sparisce per cinque secondi e torna da sola.",
+  ["Parcheggia"] = "Sposta la finestra nell'angolo in alto a destra dello schermo.",
+  ["Zoom"] = "Quanto tempo mostra il navigatore: da tutto il progetto a 10 secondi.",
+  ["1/3"] = "Testina a un terzo da sinistra: vedi di piu' di quello che arriva.",
+  ["centro"] = "Testina al centro della striscia.",
+  ["Navigatore"] = "Clic o trascina per spostare il cursore (fermo durante il REC).",
+  ["Guida completa"] = "Apre la pagina di help del SOLO Recorder nel browser.",
+  ["Save"] = "Salva il progetto.",
+  ["Undo"] = "Annulla l'ultima operazione di REAPER.",
+  ["Redo"] = "Ripete l'operazione annullata.",
+  ["Metro"] = "Accende o spegne il metronomo.",
+  ["Mixer"] = "Apre il mixer di REAPER.",
+  ["Routing"] = "Apre il routing della traccia selezionata.",
+  ["FX Chain"] = "Apre la catena effetti della traccia selezionata.",
+  ["Notes"] = "Apre le note del progetto.",
+  ["Markers"] = "Apre il gestore di marker e regioni.",
+  ["Navigator"] = "Apre il Navigator di REAPER.",
 }
 
--- Etichette che cambiano da sole: qui si cerca per inizio, non per uguaglianza.
--- Tabella separata apposta, altrimenti una chiave corta come "R" pescherebbe
--- anche "RIT +" e "RETAKE REGION".
-local AIUTI_INIZIO = {
-  {"Preroll", "Secondi di conto alla rovescia prima che parta il REC. Premi per cambiarli."},
-  {"Monitor", "Ascolto dell'ingresso sulla traccia attiva. REAPER lo accende da solo quando armi."},
+local DETTAGLI = {
+  ["REC"] = "Registra sulla traccia di destinazione (zona 4). Prima controlla che sia l'unica armata, poi, se il Preroll e' sopra zero, fa il conto alla rovescia. In Telecomando, se non c'e' nessuna traccia armata, ti chiede quale armare.",
+  ["Lock"] = "Il lucchetto sul REC protegge la registrazione. Acceso (giallo, chiuso): durante il REC la barra spaziatrice non ferma niente, solo il pulsante STOP. Spento (grigio, aperto): la barra ferma anche il REC, come in REAPER. Vale quando la finestra del SOLO e' in primo piano.",
+  ["STOP"] = "Ferma la registrazione o la riproduzione. Dopo un REC numera il take e, se Regioni take e' acceso, crea la sua regione.",
+  ["Ritorno"] = "Volume della traccia selezionata in REAPER: di solito la reference o l'audio del video. Trascina in su o in giu' (con Shift e' piu' fine), oppure usa la rotella; doppio clic = 0 dB. E' un cambio di mix vero: resta nel progetto.",
+  ["Preroll"] = "Secondi di conto alla rovescia prima che parta il REC: da 0 a 5. Trascina o usa la rotella; doppio clic = 0.",
+  ["Ingresso"] = "L'ingresso della scheda audio da cui registra la traccia di destinazione: In 1, In 1/2 per lo stereo, e cosi' via. Clic: scegli da un elenco.",
+  ["Monitor"] = "Ascolto in cuffia dell'ingresso sulla traccia attiva. Auto vuol dire che REAPER lo accende da solo quando la traccia e' armata.",
+  ["Telecomando"] = "Telecomando: il SOLO registra sulle tracce del tuo progetto, quelle che armi tu. Non crea la cartella SOLO e non cambia l'armamento. Retake, Insert, Alt take ed Effetti qui sono spenti, perche' usano le tracce della sessione SOLO.",
+  ["Next take"] = "Chiude il take in corso, lascia cinque secondi di stacco dopo la fine reale dell'audio e riparte subito a registrare.",
+  ["Togli take"] = "Toglie dalla timeline il take appena registrato (e la sua regione) e riporta il cursore dov'era. Il file audio resta nella cartella Media: se serve, lo ritrovi.",
+  ["Regioni take"] = "Acceso: a ogni REC crea la regione Take NNN sopra il nuovo audio, utile per rinominare e ritrovare i take. Spento: registra senza regioni; Togli take funziona lo stesso.",
+  ["Effetti"] = "Acceso: quando nasce la sessione SOLO inserisce ZP Bus VoiceChain sul bus delle voci e ZP MasterChain sul master. Le catene le installa il comando 32. Non le duplica se ci sono gia'. Spegnendo, quelle gia' inserite restano.",
+  ["Zoom"] = "Quanto tempo mostra il navigatore: tutto il progetto, poi 10, 5, 2, 1 minuto, 30 e 10 secondi. Con lo zoom la striscia segue la testina. Trascina o rotella; doppio clic = tutto.",
+  ["Navigatore"] = "Tutto il progetto (o la finestra di zoom) in una striscia: in alto, tenui, gli item di tutte le tracce; in verde quelli della traccia di destinazione. Regioni in blu, marker in giallo, il riquadro e' la parte visibile della timeline. Clic o trascina per spostare il cursore; durante il REC non si muove.",
+  ["Nascondi 5s"] = "La finestra sparisce per cinque secondi e torna da sola: per guardare un attimo cosa c'e' sotto.",
+  ["Pin"] = "Tiene la finestra del SOLO sempre sopra le altre (serve js_ReaScriptAPI).",
 }
 
-local function aiuto_per(label)
-  if AIUTI[label] then return AIUTI[label] end
-  for _, voce in ipairs(AIUTI_INIZIO) do
-    if label:sub(1, #voce[1]) == voce[1] then return voce[2] end
-  end
-  return nil
+-- Le zone, come le numera la guida.
+local ZONE_AIUTO = {
+  testata = "Stato del trasporto, timecode, traccia, regione e take. A destra le tre viste, REAPER e questa guida.",
+  trasporto = "I comandi di ogni secondo. REC e' il piu' grande; il lucchetto sul REC decide se la barra spaziatrice puo' fermarlo.",
+  ingresso = "Cosa entra e cosa senti: meter dell'ingresso e del ritorno, da dove pesca la traccia, monitor. I pomelli regolano il ritorno e il preroll.",
+  traccia = "Dove registri: le tracce della sessione SOLO, oppure il Telecomando sulle tracce del tuo progetto.",
+  vai = "Muoversi tra regioni o item, e mettere marker.",
+  take = "La regia del take: nominare, ripartire, togliere, rifare, inserti e alternative.",
+  etichette = "Marker di giudizio nel punto in cui sei: OK, BAD, ALT, NOISE.",
+  navigatore = "Il progetto in una striscia. Lo zoom e la posizione della testina sono in alto a destra.",
+  sessione = "Interruttori della sessione (la spia verde vuol dire acceso) e comandi della finestra.",
+}
+
+local function aiuto_per(key)
+  return AIUTI[key]
 end
 
 local function sotto_il_mouse(rect)
@@ -380,11 +408,17 @@ local function sotto_il_mouse(rect)
   return mx >= rect.x and mx <= rect.x + rect.w and my >= rect.y and my <= rect.y + rect.h
 end
 
-local function btn(rect, label, active, enabled, clicked, style)
+-- Ogni comando disegnato si annota qui: la barra in basso e la guida sanno cosa c'e' sotto il mouse.
+local function note(rect, key, text)
+  state.ctrls[#state.ctrls + 1] = { rect = rect, key = key, text = text }
   if sotto_il_mouse(rect) then
-    local testo = aiuto_per(label)
+    local testo = text or aiuto_per(key)
     if testo then state.hint = testo end
   end
+end
+
+local function btn(rect, label, active, enabled, clicked, style, key, text)
+  note(rect, key or label, text)
   return draw_button(rect, label, active, enabled, clicked, style)
 end
 
@@ -1390,13 +1424,13 @@ local function return_db_label()
   return string.format("%+.1f dB", track_db(tr))
 end
 
-local function nudge_return(delta_db)
+local function set_return_db(db)
   local tr = selected_track()
   if not tr then
     warn("Seleziona in REAPER la traccia che vuoi alzare o abbassare (la reference, o il video).")
     return
   end
-  local db = math.max(-60, math.min(12, track_db(tr) + delta_db))
+  db = math.max(-60, math.min(12, db))
   reaper.SetMediaTrackInfo_Value(tr, "D_VOL", 10 ^ (db / 20))
   local _, nome = reaper.GetSetMediaTrackInfo_String(tr, "P_NAME", "", false)
   if nome == nil or nome == "" then nome = "traccia selezionata" end
@@ -1469,26 +1503,34 @@ local function set_mode(mode)
   save_state()
 end
 
-local function cycle_preroll()
-  local options = {0, 1, 2, 3, 5}
-  local next_value = 0
-  for i, value in ipairs(options) do
-    if value == state.preroll then next_value = options[(i % #options) + 1]; break end
-  end
-  state.preroll = next_value
-  save_state()
-end
-
 -- Altezza della testata. I pulsanti di modalita' stanno qui e non si spostano
 -- mai: cambiando vista, il mouse li ritrova dov'erano.
 local function head_h()
   return state.mode == "mini" and 76 or 102
 end
 
+local function toggle_overlay()
+  state.overlay = not state.overlay
+  state.overlay_pick = nil
+  if state.overlay then
+    speak("Guida rapida: passa con il mouse su un comando per sapere cosa fa; clic per fissarlo. Esc o ? per chiudere.")
+  else
+    state.status = "Guida chiusa"
+  end
+end
+
+local function toggle_rec_lock()
+  state.rec_lock = not state.rec_lock
+  save_state()
+  speak(state.rec_lock and "Lock REC acceso: durante il REC la barra spaziatrice non ferma la registrazione."
+    or "Lock REC spento: la barra spaziatrice ferma anche il REC, come in REAPER.")
+end
+
+-- Testata: viste, REAPER, guida. Stanno sempre allo stesso posto, in ogni vista.
 local function draw_header_buttons(clicked)
   local y, bh = 8, 24
-  local w1, w2, w3, wl, wr, wq = 62, 84, 88, 84, 72, 28
-  local tot = w1 + w2 + w3 + 8 + wl + 4 + wr + 4 + wq
+  local w1, w2, w3, wr, wq = 62, 84, 88, 72, 28
+  local tot = w1 + w2 + w3 + 12 + wr + 4 + wq
   local x = gfx.w - tot - 14
   if btn({x=x, y=y, w=w1, h=bh}, "Mini", state.mode == "mini", true, clicked, "tab") then set_mode("mini") end
   x = x + w1 + 4
@@ -1496,15 +1538,10 @@ local function draw_header_buttons(clicked)
   x = x + w2 + 4
   if btn({x=x, y=y, w=w3, h=bh}, "Expanded", state.mode == "expanded", true, clicked, "tab") then set_mode("expanded") end
   x = x + w3 + 12
-  if btn({x=x, y=y, w=wl, h=bh}, state.rec_lock and "Lock REC" or "Lock off", state.rec_lock, true, clicked, state.rec_lock and "danger" or "tab") then
-    state.rec_lock = not state.rec_lock; save_state()
-    state.status = state.rec_lock and "Lock REC: durante il REC la barra spaziatrice non ferma la registrazione."
-      or "Lock spento: la barra spaziatrice ferma anche il REC, come in REAPER."
-  end
-  x = x + wl + 4
   if btn({x=x, y=y, w=wr, h=bh}, "REAPER", state.reaper_hidden, true, clicked, "tab") then toggle_reaper_window() end
   x = x + wr + 4
-  if btn({x=x, y=y, w=wq, h=bh}, "?", false, true, clicked, "tab") then apri_help_solo() end
+  state.help_rect = {x=x, y=y, w=wq, h=bh}
+  if btn(state.help_rect, "?", state.overlay, true, clicked, "tab") then toggle_overlay() end
 end
 
 local function draw_status_header(clicked)
@@ -1550,155 +1587,6 @@ local function draw_meter(x, y, w, h, value, label)
   gfx.set(1, 1, 1, 1)
   gfx.x, gfx.y = x + 8, y + 4
   gfx.drawstr(label or "N/A")
-end
-
-local function draw_transport(y, clicked)
-  local gap, margin, count = state.mode == "mini" and 5 or 9, 14, 5
-  local bw = math.floor((gfx.w - margin * 2 - gap * (count - 1)) / count)
-  local bh = state.mode == "mini" and 42 or 52
-  -- Le etichette lunghe venivano tagliate a meta' parola quando il pulsante
-  -- si stringe: in Mini, o quando rimpicciolisci la finestra a mano.
-  -- Meglio una parola corta e intera che una lunga con i puntini.
-  local stretto = bw < 104
-  local x = margin
-  if btn({x=x, y=y, w=bw, h=bh}, "REC", transport_state() == "REC", true, clicked, "rec") then
-    record_on_track(state.active_track_key, "REC")
-  end
-  x = x + bw + gap
-  if btn({x=x, y=y, w=bw, h=bh}, "STOP", false, true, clicked, "stop") then stop_transport() end
-  x = x + bw + gap
-  if btn({x=x, y=y, w=bw, h=bh}, "PLAY", transport_state() == "PLAY", true, clicked, "play") then play_transport() end
-  x = x + bw + gap
-  if btn({x=x, y=y, w=bw, h=bh}, stretto and "-5s" or "INDIETRO 5s", false, true, clicked) then move_cursor(-5) end
-  x = x + bw + gap
-  if btn({x=x, y=y, w=bw, h=bh}, stretto and "FINE +5s" or "ULTIMO ITEM +5s", false, true, clicked) then goto_after_last_item() end
-end
-
-local function draw_track_selector(y, clicked)
-  local margin, gap = 14, 8
-  local switch_w = 150
-  if remote_mode() then
-    local armed = armed_tracks()
-    gfx.setfont(1, "Arial", 14, "b")
-    gfx.set(0.86, 0.90, 0.96, 1)
-    gfx.x, gfx.y = margin, y + 8
-    local arm_w = 140
-    gfx.drawstr(fit_text(#armed > 0
-      and ("Telecomando: registra su " .. target_name())
-      or "Telecomando: nessuna traccia armata", gfx.w - margin * 2 - switch_w - arm_w - 20))
-    if btn({x=gfx.w - margin - switch_w - gap - arm_w, y=y, w=arm_w, h=32}, "Tracce \u{25BE}", false, true, clicked, "tab") then
-      choose_tracks_menu()
-    end
-    if btn({x=gfx.w - margin - switch_w, y=y, w=switch_w, h=32}, "Usa sessione SOLO", false, true, clicked, "tab") then
-      set_target("solo")
-    end
-    return
-  end
-  if btn({x=gfx.w - margin - switch_w, y=y, w=switch_w, h=32}, "Telecomando", false, true, clicked, "tab") then
-    set_target("progetto")
-    return
-  end
-  local bw = math.floor((gfx.w - margin * 2 - switch_w - gap * #RECORD_TRACK_KEYS) / #RECORD_TRACK_KEYS)
-  for i, key in ipairs(RECORD_TRACK_KEYS) do
-    local x = margin + (i - 1) * (bw + gap)
-    local label = TRACK_NAMES[key]:gsub("^VO_", "")
-    local solo_tr = find_track_exact(TRACK_NAMES[key])
-    if solo_tr then label = label .. " \u{00B7} " .. input_short(solo_tr) end
-    if btn({x=x, y=y, w=bw, h=32}, label, state.active_track_key == key, true, clicked, "tab") then
-      if arm_only_solo_target(key) then state.warning = "" end
-    end
-  end
-end
-
--- Blocco monitoraggio: ingresso e ritorno, con il loro comando accanto.
--- Sta nella vista Mini perche' e' roba che serve sempre sotto mano.
-local function draw_monitor_block(y, clicked)
-  local tr = active_track()
-  local peak, in_label = meter_for_track(tr)
-  local mpeak, mlabel = master_meter()
-  local mw = math.min(210, math.floor(gfx.w * 0.28))
-  local xm = 48 + mw + 14
-
-  gfx.setfont(1, "Arial", 13, "b")
-  gfx.set(0.86, 0.86, 0.90, 1)
-  gfx.x, gfx.y = 16, y + 5
-  gfx.drawstr("IN")
-  draw_meter(48, y, mw, 24, peak, in_label)
-  local mon_label, mon_on = monitoring_label()
-  if btn({x=xm, y=y - 3, w=132, h=30}, mon_label, mon_on, true, clicked, "tab") then
-    toggle_monitoring()
-  end
-  -- da dove pesca la traccia di destinazione; clic = cambia ingresso
-  local xi = xm + 142
-  if gfx.w - 14 - xi >= 120 then
-    if btn({x=xi, y=y - 3, w=gfx.w - 14 - xi, h=30}, "Ingresso: " .. (tr and input_long(tr) or "nessuna traccia"), false, tr ~= nil, clicked, "tab") then
-      choose_input(tr)
-    end
-  end
-
-  local y2 = y + 38
-  gfx.setfont(1, "Arial", 13, "b")
-  gfx.set(0.86, 0.86, 0.90, 1)
-  gfx.x, gfx.y = 16, y2 + 5
-  gfx.drawstr("RIT")
-  draw_meter(48, y2, mw, 24, mpeak, mlabel)
-  if btn({x=xm, y=y2 - 3, w=58, h=30}, "RIT -", false, true, clicked) then nudge_return(-1) end
-  if btn({x=xm + 64, y=y2 - 3, w=58, h=30}, "RIT +", false, true, clicked) then nudge_return(1) end
-  gfx.setfont(1, "Arial", 13, "b")
-  gfx.set(0.74, 0.76, 0.82, 1)
-  gfx.x, gfx.y = xm + 132, y2 + 5
-  gfx.drawstr(return_db_label())
-  return y2 + 34
-end
-
--- MINI - il livello semplice: si registra, si ascolta, si sente come si sta.
-local function draw_mini(clicked)
-  local y = head_h() + 10
-  draw_transport(y, clicked)
-  local fine = draw_monitor_block(y + 56, clicked)
-  gfx.setfont(1, "Arial", 12, "b")
-  gfx.set(0.78, 0.80, 0.85, 1)
-  gfx.x, gfx.y = 16, fine + 4
-  gfx.drawstr((remote_mode() and "Telecomando: " or "Traccia: ") .. target_name())
-end
-
--- COMPACT - il livello medio: tutto quello che serve in una sessione normale.
-local function draw_compact(clicked)
-  local y = head_h() + 10
-  draw_transport(y, clicked)
-  draw_track_selector(y + 62, clicked)
-  local fine = draw_monitor_block(y + 106, clicked)
-
-  local yb = fine + 8
-  local bw, bh, gap = 128, 36, 10
-  local x = 14
-  if btn({x=x, y=yb, w=bw, h=bh}, "MARK", false, true, clicked) then add_marker_named("SOLO_MARK", false) end
-  if btn({x=x+bw+gap, y=yb, w=bw, h=bh}, "MARK NAME", false, true, clicked) then add_marker_named("SOLO_MARK", true) end
-  local by_item = state.nav == "item"
-  if btn({x=x+(bw+gap)*2, y=yb, w=bw, h=bh}, by_item and "ITEM PREV" or "REG PREV", false, true, clicked) then
-    if by_item then goto_item(-1) else goto_region(-1) end
-  end
-  if btn({x=x+(bw+gap)*3, y=yb, w=bw, h=bh}, by_item and "ITEM NEXT" or "REG NEXT", false, true, clicked) then
-    if by_item then goto_item(1) else goto_region(1) end
-  end
-  if btn({x=x+(bw+gap)*4, y=yb, w=bw, h=bh}, by_item and "INIZIO ITEM" or "REG START", false, true, clicked) then
-    if by_item then goto_item_start() else goto_region_start() end
-  end
-
-  local yw = yb + 46
-  if btn({x=14, y=yw, w=112, h=34}, "Preroll " .. state.preroll .. "s", false, true, clicked) then cycle_preroll() end
-  if btn({x=138, y=yw, w=112, h=34}, "Toolbar", state.toolbar, true, clicked, "tab") then
-    state.toolbar = not state.toolbar; save_state(); set_mode(state.mode)
-  end
-  if btn({x=262, y=yw, w=88, h=34}, "Pin", state.pin, true, clicked, "tab") then
-    state.pin = not state.pin; if not state.pin then try_unpin_window() end; save_state()
-  end
-  if btn({x=362, y=yw, w=96, h=34}, "Hide 5s", false, true, clicked) then hide_5s() end
-  if btn({x=470, y=yw, w=88, h=34}, "Park", false, true, clicked) then park_window() end
-  if btn({x=570, y=yw, w=150, h=34}, state.nav == "item" and "Naviga: item" or "Naviga: regioni", false, true, clicked, "tab") then
-    state.nav = state.nav == "item" and "regioni" or "item"; save_state()
-  end
-  return yw + 44
 end
 
 -- Navigatore dentro la finestra (vista Expanded): tutto il progetto in una striscia.
@@ -1799,9 +1687,9 @@ local function draw_navigator(x, y, w, h)
     t = t + step
   end
 
+  if state.overlay then return end
   local down = (gfx.mouse_cap & 1) == 1
   local inside = point_in_rect(gfx.mouse_x, gfx.mouse_y, x, y, w, band_h)
-  if inside then state.hint = "Navigatore (" .. nav_zoom_label() .. "): clic o trascina per spostare il cursore (fermo durante il REC)." end
   if down and inside and not state.mouse_was_down then state.nav_drag = true end
   if state.nav_drag then
     if down then
@@ -1818,61 +1706,479 @@ local function draw_navigator(x, y, w, h)
   end
 end
 
--- EXPANDED - il livello avanzato: la regia del take.
-local function draw_expanded(clicked)
-  local base = draw_compact(clicked)
-  local y = base + 6
-  local bw, bh, gap = 128, 36, 10
-  local labels = {
-    {"NOME / NOTA TAKE", rename_last_take_region, "play"},
-    {"RETAKE REGION", function() rec_region("retakes") end, "danger", true},
-    {"INSERT", insert_record, nil, true},
-    {"ALT TAKE", alt_take, nil, true},
-    {"NEXT TAKE", next_take, "danger"},
-    {"TOGLI TAKE", undo_last_take, "danger"}
+---------------------------------------------------------------------------
+-- PULSANTIERA A ZONE
+-- Ogni zona e' un pannello col suo titolo. Le zone si mettono in fila da sole e
+-- vanno a capo se la finestra e' stretta: niente coordinate fisse, niente pulsanti
+-- uno sopra l'altro. La guida (?) numera le zone e spiega ogni comando.
+---------------------------------------------------------------------------
+
+local GAP, MARGIN, STATUS_H = 10, 12, 28
+
+-- Il tasto del mouse e' appena sceso (serve ai pomelli). Con la guida aperta no.
+local function pressed_now()
+  return not state.overlay and (gfx.mouse_cap & 1) == 1 and not state.mouse_was_down
+end
+
+-- Pulsante con un simbolo disegnato al posto della scritta.
+local function sbtn(rect, key, symbol, active, enabled, clicked)
+  local hit = btn(rect, "", active, enabled, clicked, nil, key)
+  local v = enabled == false and 0.45 or 0.95
+  gfx.set(v, v, v + 0.02, 1)
+  ZP_UI.draw_symbol(symbol, rect.x + rect.w / 2, rect.y + rect.h / 2, rect.h * 0.9)
+  return hit
+end
+
+local function tgl(rect, label, on, enabled, clicked, key)
+  note(rect, key or label)
+  return ZP_UI.draw_toggle(rect, label, on, enabled, clicked)
+end
+
+local function knob(rect, k, key, text)
+  note(rect, key, text)
+  k.pressed = pressed_now()
+  k.readonly = state.overlay
+  return ZP_UI.draw_knob(rect, k)
+end
+
+-- Pulsanti in fila che vanno a capo: posizioni e altezza totale.
+local function flow(x, y, w, items, row_h, gap)
+  local px, py, pos = x, y, {}
+  for i, it in ipairs(items) do
+    local iw = math.min(it.w, w)
+    if px > x and px + iw > x + w then px = x; py = py + row_h + gap end
+    pos[i] = {x=px, y=py, w=iw, h=row_h}
+    px = px + iw + gap
+  end
+  return pos, (py - y) + row_h
+end
+
+local Z = {}
+
+-- 2 TRASPORTO -------------------------------------------------------------
+Z.trasporto = { id = "trasporto", n = 2, title = "Trasporto", min_w = 300, weight = 1,
+  h = function() return 104 end }
+function Z.trasporto.draw(c, clicked)
+  local ts = transport_state()
+  local tasti = {
+    {"prev", 40, "-5s", "-5s"}, {"rec", 58, "REC", "REC"}, {"stop", 50, "STOP", "STOP"},
+    {"play", 50, "PLAY", "PLAY"}, {"next", 40, "fine +5s", "fine +5s"}
   }
-  for i, item in ipairs(labels) do
-    local col = (i - 1) % 3
-    local row = math.floor((i - 1) / 3)
-    -- item[4]: usa le tracce dedicate della sessione SOLO -> spento in Telecomando
-    if btn({x=14 + col * (bw + gap), y=y + row * 46, w=bw, h=bh}, item[1], false, not (item[4] and remote_mode()), clicked, item[3]) then
-      item[2]()
+  local total = 238
+  local g = math.max(6, math.min(28, math.floor((c.w - total) / 4)))
+  local x = c.x + math.floor((c.w - total - g * 4) / 2)
+  local cy, cap_y = c.y + 30, c.y + 62
+  -- il lucchetto sta sul bordo del REC: se il mouse e' li', il clic non fa partire il REC
+  local rec_cx = x + 40 + g + 29
+  local lx, ly, lr = rec_cx + 22, cy - 22, 11
+  local on_lock = (gfx.mouse_x - lx) ^ 2 + (gfx.mouse_y - ly) ^ 2 <= (lr + 1) ^ 2
+  for _, t in ipairs(tasti) do
+    local kind, d = t[1], t[2]
+    local r = {x=x, y=cy - d // 2, w=d, h=d}
+    note(r, t[4])
+    local active = (kind == "rec" and ts == "REC") or (kind == "play" and ts == "PLAY")
+    if ZP_UI.draw_round_button(r, kind, active, true, clicked and not on_lock) then
+      if kind == "rec" then record_on_track(state.active_track_key, "REC")
+      elseif kind == "stop" then stop_transport()
+      elseif kind == "play" then play_transport()
+      elseif kind == "prev" then move_cursor(-5)
+      else goto_after_last_item() end
+    end
+    gfx.setfont(1, "Arial", 11, "b")
+    gfx.set(0.70, 0.73, 0.80, 1)
+    local tw = gfx.measurestr(t[3])
+    gfx.x, gfx.y = x + d / 2 - tw / 2, cap_y
+    gfx.drawstr(t[3])
+    x = x + d + g
+  end
+  note({x=lx - lr, y=ly - lr, w=lr * 2, h=lr * 2}, "Lock")
+  if state.rec_lock then gfx.set(0.98, on_lock and 0.88 or 0.76, 0.24, 1)
+  else gfx.set(on_lock and 0.42 or 0.28, on_lock and 0.44 or 0.30, on_lock and 0.50 or 0.36, 1) end
+  gfx.circle(lx, ly, lr, true, true)
+  gfx.set(0.05, 0.05, 0.06, 1); gfx.circle(lx, ly, lr, false, true)
+  if state.rec_lock then gfx.set(0.14, 0.09, 0.02, 1) else gfx.set(0.86, 0.88, 0.93, 1) end
+  ZP_UI.draw_lock(lx, ly, lr * 1.3, state.rec_lock)
+  if clicked and on_lock then toggle_rec_lock() end
+end
+
+-- 3 INGRESSO E ASCOLTO ----------------------------------------------------
+Z.ingresso = { id = "ingresso", n = 3, title = "Ingresso e ascolto", min_w = 380, weight = 2,
+  h = function() return 104 end }
+function Z.ingresso.draw(c, clicked)
+  local tr = active_track()
+  local kw = 64
+  local lw = c.w - kw * 2 - 12
+  local bw = math.min(130, math.max(92, math.floor(lw * 0.42)))
+  local mw = math.max(40, lw - 28 - bw - 8)
+  local peak, in_label = meter_for_track(tr)
+  local mpeak, mlabel = master_meter()
+
+  gfx.setfont(1, "Arial", 12, "b")
+  gfx.set(0.80, 0.82, 0.88, 1)
+  gfx.x, gfx.y = c.x, c.y + 7
+  gfx.drawstr("IN")
+  draw_meter(c.x + 28, c.y + 2, mw, 24, peak, in_label)
+  local r1 = {x=c.x + 28 + mw + 8, y=c.y, w=bw, h=28}
+  if btn(r1, (tr and input_short(tr) or "nessuna traccia") .. " \u{25BE}", false, tr ~= nil, clicked, "tab", "Ingresso",
+      tr and ("Ingresso: " .. input_long(tr) .. ". Clic: cambia ingresso.") or nil) then
+    choose_input(tr)
+  end
+
+  local y2 = c.y + 40
+  gfx.setfont(1, "Arial", 12, "b")
+  gfx.set(0.80, 0.82, 0.88, 1)
+  gfx.x, gfx.y = c.x, y2 + 7
+  gfx.drawstr("RIT")
+  draw_meter(c.x + 28, y2 + 2, mw, 24, mpeak, mlabel)
+  local mon_label, mon_on = monitoring_label()
+  if btn({x=r1.x, y=y2, w=bw, h=28}, mon_label, mon_on, true, clicked, "tab", "Monitor") then toggle_monitoring() end
+
+  local kx = c.x + lw + 12
+  local sel = selected_track()
+  local db = sel and math.max(-60, track_db(sel)) or 0
+  local sel_nome = ""
+  if sel then local _; _, sel_nome = reaper.GetSetMediaTrackInfo_String(sel, "P_NAME", "", false) end
+  local v, changed = knob({x=kx, y=c.y, w=kw, h=c.h}, {
+    id = "ritorno", value = db, min = -60, max = 12, default = 0, step = 0.5,
+    label = "Ritorno", text = sel and string.format("%+.1f dB", db) or "--", enabled = sel ~= nil,
+  }, "Ritorno", sel and ("Ritorno: volume di " .. ((sel_nome ~= "" and sel_nome) or "traccia selezionata") ..
+    ". Trascina o rotella, doppio clic = 0 dB.") or "Ritorno: seleziona in REAPER la traccia da regolare (reference o video).")
+  if changed then set_return_db(v) end
+
+  v, changed = knob({x=kx + kw + 12, y=c.y, w=kw, h=c.h}, {
+    id = "preroll", value = state.preroll, min = 0, max = 5, default = 0, step = 1,
+    label = "Preroll", text = tostring(state.preroll) .. " s",
+  }, "Preroll")
+  if changed then
+    state.preroll = math.floor(v + 0.5); save_state()
+    state.status = "Preroll: " .. state.preroll .. " s"
+  end
+end
+
+-- 4 TRACCIA ---------------------------------------------------------------
+Z.traccia = { id = "traccia", n = 4, title = "Traccia di destinazione", min_w = 500, weight = 2,
+  h = function() return 62 end }
+function Z.traccia.draw(c, clicked)
+  local switch_w = 132
+  if remote_mode() then
+    local armed = armed_tracks()
+    local arm_w = 110
+    gfx.setfont(1, "Arial", 13, "b")
+    gfx.set(0.86, 0.90, 0.96, 1)
+    gfx.x, gfx.y = c.x, c.y + 8
+    gfx.drawstr(fit_text(#armed > 0 and ("Telecomando: registra su " .. target_name())
+      or "Telecomando: nessuna traccia armata", c.w - switch_w - arm_w - 16))
+    if btn({x=c.x + c.w - switch_w - 8 - arm_w, y=c.y, w=arm_w, h=32}, "Tracce \u{25BE}", false, true, clicked, "tab", "Tracce") then
+      choose_tracks_menu()
+    end
+    if btn({x=c.x + c.w - switch_w, y=c.y, w=switch_w, h=32}, "Usa sessione SOLO", false, true, clicked, "tab") then
+      set_target("solo")
+    end
+    return
+  end
+  if btn({x=c.x + c.w - switch_w, y=c.y, w=switch_w, h=32}, "Telecomando", false, true, clicked, "tab") then
+    set_target("progetto")
+    return
+  end
+  local n = #RECORD_TRACK_KEYS
+  local bw = math.floor((c.w - switch_w - 12 - 6 * (n - 1)) / n)
+  for i, key in ipairs(RECORD_TRACK_KEYS) do
+    local x = c.x + (i - 1) * (bw + 6)
+    local corto = TRACK_NAMES[key]:gsub("^VO_", "")
+    local label = corto
+    local solo_tr = find_track_exact(TRACK_NAMES[key])
+    if solo_tr then label = label .. " \u{00B7} " .. input_short(solo_tr) end
+    if btn({x=x, y=c.y, w=bw, h=32}, label, state.active_track_key == key, true, clicked, "tab", corto) then
+      if arm_only_solo_target(key) then state.warning = "" end
+    end
+  end
+end
+
+-- 5 VAI A E SEGNA ---------------------------------------------------------
+Z.vai = { id = "vai", n = 5, title = "Vai a e segna", min_w = 420, weight = 1,
+  h = function() return 62 end }
+function Z.vai.draw(c, clicked)
+  local by_item = state.nav == "item"
+  local x, h = c.x, 32
+  if btn({x=x, y=c.y, w=66, h=h}, "Regioni", not by_item, true, clicked, "tab") then
+    state.nav = "regioni"; save_state(); state.status = "Spostamenti tra le regioni"
+  end
+  x = x + 68
+  if btn({x=x, y=c.y, w=54, h=h}, "Item", by_item, true, clicked, "tab") then
+    state.nav = "item"; save_state(); state.status = "Spostamenti tra gli item della traccia di destinazione"
+  end
+  x = x + 54 + 12
+  if sbtn({x=x, y=c.y, w=34, h=h}, "Precedente", "left", false, true, clicked) then
+    if by_item then goto_item(-1) else goto_region(-1) end
+  end
+  x = x + 38
+  if sbtn({x=x, y=c.y, w=34, h=h}, "Inizio", "start", false, true, clicked) then
+    if by_item then goto_item_start() else goto_region_start() end
+  end
+  x = x + 38
+  if sbtn({x=x, y=c.y, w=34, h=h}, "Successivo", "right", false, true, clicked) then
+    if by_item then goto_item(1) else goto_region(1) end
+  end
+  x = x + 34 + 12
+  local rest = c.x + c.w - x
+  local w1 = math.floor((rest - 6) * 0.42)
+  if btn({x=x, y=c.y, w=w1, h=h}, "Mark", false, true, clicked) then add_marker_named("SOLO_MARK", false) end
+  if btn({x=x + w1 + 6, y=c.y, w=rest - w1 - 6, h=h}, "Mark nome", false, true, clicked) then add_marker_named("SOLO_MARK", true) end
+end
+
+-- 6 TAKE ------------------------------------------------------------------
+Z.take = { id = "take", n = 6, title = "Take", min_w = 330, weight = 2,
+  h = function() return 96 end }
+function Z.take.draw(c, clicked)
+  local voci = {
+    {"Nome / nota", rename_last_take_region},
+    {"Next take", next_take},
+    {"Togli take", undo_last_take, "danger"},
+    -- true: usa le tracce della sessione SOLO -> spento in Telecomando
+    {"Retake", function() rec_region("retakes") end, nil, true},
+    {"Insert", insert_record, nil, true},
+    {"Alt take", alt_take, nil, true},
+  }
+  local bw = math.floor((c.w - 12) / 3)
+  for i, v in ipairs(voci) do
+    local col, row = (i - 1) % 3, (i - 1) // 3
+    if btn({x=c.x + col * (bw + 6), y=c.y + row * 36, w=bw, h=30}, v[1], false,
+        not (v[4] and remote_mode()), clicked, v[3]) then
+      v[2]()
+    end
+  end
+end
+
+-- 7 ETICHETTE -------------------------------------------------------------
+local ETICHETTE = { {"OK", "save", "OK"}, {"BAD", "danger", "BAD"}, {"ALT", nil, "ALT marker"}, {"NOISE", "play_select", "NOISE"} }
+Z.etichette = { id = "etichette", n = 7, title = "Etichette", min_w = 150, weight = 1,
+  h = function(w) return (w - 20 >= 4 * 56 + 18) and 62 or 96 end }
+function Z.etichette.draw(c, clicked)
+  local cols = (c.w >= 4 * 56 + 18) and 4 or 2
+  local bw = math.floor((c.w - 6 * (cols - 1)) / cols)
+  for i, e in ipairs(ETICHETTE) do
+    local col, row = (i - 1) % cols, (i - 1) // cols
+    if btn({x=c.x + col * (bw + 6), y=c.y + row * 36, w=bw, h=30}, e[1], false, true, clicked, e[2], e[3]) then
+      add_marker_named(e[1], false)
+    end
+  end
+end
+
+-- 9 SESSIONE E FINESTRA ---------------------------------------------------
+local function sessione_voci()
+  return {
+    {w = 124, kind = "tgl", label = "Regioni take", on = state.auto_regions, act = function()
+      state.auto_regions = not state.auto_regions; save_state()
+      state.status = state.auto_regions and "A ogni REC crea la regione Take NNN." or "REC senza regione: il take resta, la regione no."
+    end},
+    {w = 92, kind = "tgl", label = "Effetti", on = state.fx_session, enabled = not remote_mode(), act = function()
+      state.fx_session = not state.fx_session; save_state()
+      if state.fx_session then
+        if not apply_fx_session() then state.status = "Effetti ON: li inserisco quando nasce la sessione SOLO." end
+      else
+        state.status = "Effetti OFF: non inserisco piu' le catene; quelli gia' inseriti restano."
+      end
+    end},
+    {w = 66, kind = "tgl", label = "Pin", on = state.pin, act = function()
+      state.pin = not state.pin; if not state.pin then try_unpin_window() end; save_state()
+    end},
+    {w = 92, kind = "tgl", label = "Toolbar", on = state.toolbar, act = function()
+      state.toolbar = not state.toolbar; save_state(); set_mode(state.mode)
+    end},
+    {w = 80, kind = "tgl", label = "Video", on = video_aperta(), act = show_video_window},
+    {w = 104, kind = "btn", label = "Nascondi 5s", act = hide_5s},
+    {w = 100, kind = "btn", label = "Parcheggia", act = park_window},
+  }
+end
+
+Z.sessione = { id = "sessione", n = 9, title = "Sessione e finestra", min_w = 440, weight = 2 }
+function Z.sessione.h(w)
+  local _, h = flow(0, 0, w - 20, sessione_voci(), 28, 6)
+  return h + 30
+end
+function Z.sessione.draw(c, clicked)
+  local voci = sessione_voci()
+  local pos = flow(c.x, c.y, c.w, voci, 28, 6)
+  for i, v in ipairs(voci) do
+    local hit
+    if v.kind == "tgl" then hit = tgl(pos[i], v.label, v.on, v.enabled, clicked)
+    else hit = btn(pos[i], v.label, false, true, clicked) end
+    if hit then v.act() end
+  end
+end
+
+-- 8 NAVIGATORE (prende l'altezza che resta) ------------------------------
+Z.navigatore = { id = "navigatore", n = 8, title = "Navigatore", min_w = 300, weight = 1 }
+function Z.navigatore.draw(c, clicked)
+  local v, changed = knob({x=c.x, y=c.y, w=120, h=30}, {
+    id = "zoom", value = state.nav_zoom, min = 0, max = #NAV_ZOOM_SECONDS, default = 0, step = 1,
+    label = "Zoom", text = nav_zoom_label(), inline = true,
+  }, "Zoom")
+  if changed then
+    state.nav_zoom = math.floor(v + 0.5); save_state()
+    state.status = "Navigatore: " .. nav_zoom_label()
+  end
+  local zoomed = state.nav_zoom > 0
+  local x = c.x + c.w - 48 - 4 - 70
+  if btn({x=x, y=c.y + 2, w=48, h=26}, "1/3", state.nav_focus ~= "centro", zoomed, clicked, "tab") then
+    state.nav_focus = "terzo"; save_state()
+  end
+  if btn({x=x + 52, y=c.y + 2, w=70, h=26}, "centro", state.nav_focus == "centro", zoomed, clicked, "tab") then
+    state.nav_focus = "centro"; save_state()
+  end
+  local band = {x=c.x, y=c.y + 38, w=c.w, h=c.h - 38}
+  note(band, "Navigatore", "Navigatore (" .. nav_zoom_label() .. "): clic o trascina per spostare il cursore (fermo durante il REC).")
+  draw_navigator(band.x, band.y, band.w, band.h)
+end
+
+-- Le viste sono un sottoinsieme delle zone, nell'ordine in cui si leggono.
+local VISTE = {
+  mini = { Z.trasporto, Z.ingresso },
+  compact = { Z.trasporto, Z.ingresso, Z.traccia, Z.vai, Z.sessione },
+  expanded = { Z.trasporto, Z.ingresso, Z.traccia, Z.vai, Z.take, Z.etichette, Z.sessione },
+}
+
+-- Impagina le zone in righe: ne mette in una riga finche' ci stanno (larghezza minima),
+-- poi divide lo spazio avanzato secondo il peso. Righe alte quanto la zona piu' alta.
+local function layout_zones(zones, x, y, w)
+  local rows, row, used = {}, {}, 0
+  for _, z in ipairs(zones) do
+    local need = math.min(z.min_w, w) + (#row > 0 and GAP or 0)
+    if #row > 0 and used + need > w then
+      rows[#rows + 1] = row
+      row, used, need = {}, 0, math.min(z.min_w, w)
+    end
+    row[#row + 1] = z
+    used = used + need
+  end
+  if #row > 0 then rows[#rows + 1] = row end
+  local placed = {}
+  for _, r in ipairs(rows) do
+    local mins, weights = GAP * (#r - 1), 0
+    for _, z in ipairs(r) do mins = mins + math.min(z.min_w, w); weights = weights + (z.weight or 1) end
+    local extra = math.max(0, w - mins)
+    local widths, rh, xx = {}, 0, x
+    for i, z in ipairs(r) do
+      local zw = math.min(z.min_w, w) + math.floor(extra * (z.weight or 1) / weights)
+      if i == #r then zw = x + w - xx end
+      widths[i] = zw
+      rh = math.max(rh, z.h(zw))
+      xx = xx + zw + GAP
+    end
+    xx = x
+    for i, z in ipairs(r) do
+      placed[#placed + 1] = { zone = z, rect = {x=xx, y=y, w=widths[i], h=rh} }
+      xx = xx + widths[i] + GAP
+    end
+    y = y + rh + GAP
+  end
+  return placed, y
+end
+
+local function content_bottom()
+  return gfx.h - ((state.toolbar and state.mode ~= "mini") and TOOLBAR_H or 0) - STATUS_H
+end
+
+local function draw_zones(clicked)
+  local zones = VISTE[state.mode] or VISTE.compact
+  local placed, y = layout_zones(zones, MARGIN, head_h() + GAP, gfx.w - 2 * MARGIN)
+  if state.mode == "expanded" and content_bottom() - y >= 90 then
+    placed[#placed + 1] = { zone = Z.navigatore, rect = {x=MARGIN, y=y, w=gfx.w - 2 * MARGIN, h=content_bottom() - y} }
+  end
+  state.zones = { { id = "testata", n = 1, title = "Testata", rect = {x=0, y=0, w=gfx.w, h=head_h()} } }
+  local remote = state.target == "progetto"
+  local opts = remote and { fill = {0.235, 0.245, 0.26, 1}, border = {0.36, 0.37, 0.40, 1} } or nil
+  for _, p in ipairs(placed) do
+    local c = ZP_UI.draw_panel(p.rect, p.zone.title, opts)
+    p.zone.draw(c, clicked)
+    state.zones[#state.zones + 1] = { id = p.zone.id, n = p.zone.n, title = p.zone.title, rect = p.rect }
+  end
+end
+
+-- GUIDA RAPIDA (overlay) --------------------------------------------------
+-- Scurisce la finestra, numera le zone e spiega il comando sotto il mouse.
+-- Un clic su un comando non lo esegue: fissa la sua spiegazione (e la legge OSARA).
+local function draw_overlay(clicked)
+  gfx.set(0, 0, 0, 0.66)
+  gfx.rect(0, 0, gfx.w, gfx.h, true)
+  local hit
+  for i = #state.ctrls, 1, -1 do
+    local c = state.ctrls[i]
+    if c.key ~= "?" and sotto_il_mouse(c.rect) then hit = c; break end
+  end
+  local zone_hit
+  for _, z in ipairs(state.zones) do
+    local r = z.rect
+    gfx.set(0.30, 0.68, 1.0, 0.75)
+    gfx.rect(r.x + 1, r.y + 1, r.w - 2, r.h - 2, false)
+    gfx.setfont(1, "Arial", 12, "b")
+    local tw = gfx.measurestr(z.title)
+    gfx.set(0.04, 0.07, 0.12, 1)
+    gfx.rect(r.x + 2, r.y + 2, tw + 36, 19, true)
+    gfx.set(0.30, 0.68, 1.0, 1)
+    gfx.circle(r.x + 13, r.y + 11, 8, true, true)
+    gfx.setfont(1, "Arial", 11, "b")
+    gfx.set(0.02, 0.08, 0.16, 1)
+    local s = tostring(z.n)
+    local sw = gfx.measurestr(s)
+    gfx.x, gfx.y = r.x + 13 - sw / 2, r.y + 5
+    gfx.drawstr(s)
+    gfx.setfont(1, "Arial", 12, "b")
+    gfx.set(0.86, 0.93, 1, 1)
+    gfx.x, gfx.y = r.x + 26, r.y + 5
+    gfx.drawstr(z.title)
+    if sotto_il_mouse(r) then zone_hit = z end
+  end
+  if hit then
+    gfx.set(1, 0.85, 0.30, 1)
+    gfx.rect(hit.rect.x - 2, hit.rect.y - 2, hit.rect.w + 4, hit.rect.h + 4, false)
+    gfx.rect(hit.rect.x - 3, hit.rect.y - 3, hit.rect.w + 6, hit.rect.h + 6, false)
+    if clicked then
+      state.overlay_pick = { key = hit.key, text = DETTAGLI[hit.key] or hit.text or aiuto_per(hit.key) or "" }
+      speak(hit.key .. ": " .. state.overlay_pick.text)
     end
   end
 
-  local x2 = 480
-  if btn({x=x2, y=y, w=92, h=34}, "BAD", false, true, clicked, "danger") then add_marker_named("BAD", false) end
-  if btn({x=x2+102, y=y, w=92, h=34}, "OK", false, true, clicked, "save") then add_marker_named("OK", false) end
-  if btn({x=x2+204, y=y, w=92, h=34}, "ALT", false, true, clicked) then add_marker_named("ALT", false) end
-  if btn({x=x2+306, y=y, w=92, h=34}, "NOISE", false, true, clicked) then add_marker_named("NOISE", false) end
+  -- riquadro della spiegazione: comando sotto il mouse, oppure quello fissato, oppure la zona
+  local title, text
+  if hit then
+    title, text = hit.key, DETTAGLI[hit.key] or hit.text or aiuto_per(hit.key) or ""
+  elseif state.overlay_pick then
+    title, text = state.overlay_pick.key, state.overlay_pick.text
+  elseif zone_hit then
+    title, text = zone_hit.n .. "  " .. zone_hit.title, ZONE_AIUTO[zone_hit.id] or ""
+  else
+    title = "Guida rapida"
+    text = "Passa con il mouse su un comando per sapere cosa fa; clic per fissare la spiegazione (OSARA la legge). Le zone sono numerate. Esc o ? per chiudere; Guida completa apre l'help nel browser."
+  end
+  local bw = math.min(gfx.w - 32, 640)
+  gfx.setfont(1, "Arial", 14)
+  local lines = ZP_UI.wrap_text(text, bw - 28)
+  local bh = 40 + #lines * 18 + 10
+  local bx = math.floor((gfx.w - bw) / 2)
+  local by = (gfx.mouse_y > gfx.h / 2) and (head_h() + 8) or (gfx.h - bh - 12)
+  gfx.set(0.10, 0.11, 0.145, 0.98)
+  ZP_UI.fill_round(bx, by, bw, bh, 8)
+  gfx.set(0.30, 0.68, 1.0, 1)
+  if gfx.roundrect then gfx.roundrect(bx, by, bw - 1, bh - 1, 8, true) else gfx.rect(bx, by, bw, bh, false) end
+  gfx.setfont(1, "Arial", 15, "b")
+  gfx.set(1, 0.88, 0.45, 1)
+  gfx.x, gfx.y = bx + 14, by + 12
+  gfx.drawstr(fit_text(title, bw - 28))
+  gfx.setfont(1, "Arial", 14)
+  gfx.set(0.92, 0.93, 0.96, 1)
+  for i, l in ipairs(lines) do
+    gfx.x, gfx.y = bx + 14, by + 36 + (i - 1) * 18
+    gfx.drawstr(l)
+  end
 
-  local y2 = y + 46
-  if btn({x=x2, y=y2, w=136, h=34}, state.auto_regions and "Regioni take ON" or "Regioni take OFF", state.auto_regions, true, clicked, "tab") then
-    state.auto_regions = not state.auto_regions; save_state()
-    state.status = state.auto_regions and "A ogni REC crea la regione Take NNN." or "REC senza regione: il take resta, la regione no."
+  -- comandi della guida, sopra lo scuro: "?" chiude, accanto la guida completa
+  local hr = state.help_rect
+  if hr then
+    if ZP_UI.draw_button(hr, "?", true, true, clicked, "tab") then toggle_overlay() end
+    local gr = {x=hr.x - 136, y=hr.y, w=130, h=hr.h}
+    if ZP_UI.draw_button(gr, "Guida completa", false, true, clicked, "play_select") then apri_help_solo() end
   end
-  -- zoom del navigatore qui sotto (al posto del pulsante che apriva quello di REAPER)
-  if btn({x=x2+142, y=y2, w=40, h=34}, "\u{2212}", false, state.nav_zoom > 0, clicked) then
-    state.nav_zoom = state.nav_zoom - 1; save_state(); state.status = "Navigatore: " .. nav_zoom_label()
-  end
-  if btn({x=x2+186, y=y2, w=40, h=34}, "+", false, state.nav_zoom < #NAV_ZOOM_SECONDS, clicked) then
-    state.nav_zoom = state.nav_zoom + 1; save_state(); state.status = "Navigatore: " .. nav_zoom_label()
-  end
-  if btn({x=x2+230, y=y2, w=58, h=34}, state.nav_focus == "centro" and "centro" or "1/3", false, state.nav_zoom > 0, clicked, "tab") then
-    state.nav_focus = state.nav_focus == "centro" and "terzo" or "centro"; save_state()
-  end
-  if btn({x=x2+294, y=y2, w=80, h=34}, "Video", video_aperta(), true, clicked, "tab") then show_video_window() end
-  if btn({x=x2+380, y=y2, w=120, h=34}, state.fx_session and "Effetti ON" or "Effetti OFF", state.fx_session, not remote_mode(), clicked, "tab") then
-    state.fx_session = not state.fx_session; save_state()
-    if state.fx_session then
-      if not apply_fx_session() then state.status = "Effetti ON: li inserisco quando nasce la sessione SOLO." end
-    else
-      state.status = "Effetti OFF: non inserisco piu' le catene; quelli gia' inseriti restano."
-    end
-  end
-
-  local nav_y = y2 + 46
-  draw_navigator(14, nav_y, gfx.w - 28, gfx.h - (state.toolbar and TOOLBAR_H or 0) - 30 - nav_y)
 end
 
 local function draw_toolbar(clicked)
@@ -1932,16 +2238,17 @@ local function draw_gui()
 
   set_color(state.target == "progetto" and colors.remote_bg or colors.bg)
   gfx.rect(0, 0, gfx.w, gfx.h, true)
-  local clicked = mouse_clicked()
+  state.ctrls = {}
+  -- con la guida aperta i comandi si vedono ma non si azionano
+  local real_click = mouse_clicked()
+  local clicked = real_click and not state.overlay
   draw_status_header(clicked)
-  if state.mode == "mini" then draw_mini(clicked)
-  elseif state.mode == "expanded" then draw_expanded(clicked)
-  else draw_compact(clicked) end
+  draw_zones(clicked)
   draw_toolbar(clicked)
 
   -- Riga in basso: se il mouse e' su un pulsante spiega quel pulsante,
   -- altrimenti dice come e' andata l'ultima cosa che hai premuto.
-  local yr = gfx.h - (state.toolbar and state.mode ~= "mini" and TOOLBAR_H or 0) - 24
+  local yr = gfx.h - (state.toolbar and state.mode ~= "mini" and TOOLBAR_H or 0) - 22
   gfx.setfont(1, "Arial", 13)
   if state.hint ~= "" then
     gfx.set(0.62, 0.78, 0.92, 1)
@@ -1951,7 +2258,11 @@ local function draw_gui()
   gfx.x, gfx.y = 16, yr
   gfx.drawstr(fit_text(state.hint ~= "" and state.hint or
     (state.warning ~= "" and state.warning or state.status), gfx.w - 32))
+  if state.overlay then draw_overlay(real_click) end
   draw_countdown()
+  -- la rotella vale solo sopra un pomello: quello che nessuno ha usato si butta
+  gfx.mouse_wheel = 0
+  if (gfx.mouse_cap & 1) == 0 then ZP_UI._knob.drag = nil end
   gfx.update()
 end
 
@@ -1974,7 +2285,11 @@ local function main_loop()
     restore_reaper_on_exit()
     return
   end
-  if char == 27 then
+  if char == 27 and state.overlay then
+    toggle_overlay()
+  elseif char == 63 then
+    toggle_overlay()
+  elseif char == 27 then
     -- Esc non chiude: evita chiusure accidentali durante sessione.
     state.status = "Esc ignorato: chiudi dalla X finestra se necessario."
   elseif char == 32 and not state.countdown then
