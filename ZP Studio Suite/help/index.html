@@ -223,8 +223,9 @@
 
   <h2 id="tool-14">14 - Marker da timeline a item</h2>
   <p>Copia i marker di progetto che cadono dentro l'item selezionato come <strong>take marker</strong> dell'item, tenendo nome, posizione e colore.</p>
-  <p>Serve quando il testo deve viaggiare insieme al file: i marker di progetto restano nella timeline, i take marker si spostano con l'item e sopravvivono alla consegna. Lo script <strong>non cancella niente</strong>: duplica.</p>
-  <p>Seleziona un item e lancialo. Alla fine dice quanti marker ha copiato. La conversione dei tempi tiene conto di start offset e playrate del take, quindi funziona anche su item tagliati o con velocita' diversa da 1.</p>
+  <p>Serve quando il testo deve viaggiare insieme al file: i take marker si spostano con l'item, sopravvivono a tagli e consegna, e la finestra ZP Trascrizione li porta nel Gobbo come testo (tappa 3).</p>
+  <p>Seleziona uno o più item e lancialo. Con più item selezionati chiede se lavorare su <strong>tutti</strong> o solo sul primo. Un marker già presente nell'item (stesso punto, stesso nome) viene <strong>saltato</strong>: puoi rilanciarlo senza creare doppioni. Prima di modificare qualcosa propone di <strong>cancellare dalla timeline</strong> i marker di progetto fissati negli item; se rispondi No restano dove sono. Tutto si annulla con un solo Undo.</p>
+  <p>Un marker che cade esattamente sulla fine di un item appartiene all'item che comincia lì. La conversione dei tempi tiene conto di start offset e playrate del take, quindi funziona anche su item tagliati o con velocità diversa da 1.</p>
 
   <h2 id="tool-collega-marker">28 - Collega marker</h2>
   <p><code>28_Collega_Marker.lua</code> importa i cue SRT come take marker negli item audio selezionati.</p>
