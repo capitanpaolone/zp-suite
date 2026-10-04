@@ -100,6 +100,7 @@
 --   [main] 29_ZP_Trascrizione.lua
 --   [main] 30_ZP_SRT.lua
 --   [main] 31_SRT_da_Marker_Audio.lua
+--   [main] 32_Installa_Toolbar_ZP.lua
 --   [nomain] 04_worker_Crea_Marker_Item.lua
 --   [nomain] 05_worker_Gestione_SRT.lua
 --   [nomain] 28_Collega_Marker.lua
