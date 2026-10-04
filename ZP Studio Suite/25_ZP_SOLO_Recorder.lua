@@ -93,6 +93,8 @@ local state = {
   folder_mode = true,
   auto_regions = true,   -- crea la regione "Take NNN" a ogni REC
   nav = "regioni",       -- PREV/NEXT/START: "regioni" oppure "item"
+  nav_zoom = 0,          -- navigatore: 0 = tutto il progetto, poi finestre sempre piu' corte
+  nav_focus = "terzo",   -- testina a 1/3 da sinistra ("terzo") o al centro ("centro")
   active_track_key = "main",
   take_counter = 1,
   status = "Pronto",
@@ -169,6 +171,8 @@ local function load_state()
   state.folder_mode = bool_from_state(ext_get("folder_mode", ""), state.folder_mode)
   state.auto_regions = bool_from_state(ext_get("auto_regions", ""), state.auto_regions)
   state.nav = ext_get("nav", state.nav) == "item" and "item" or "regioni"
+  state.nav_zoom = tonumber(ext_get("nav_zoom", "")) or state.nav_zoom
+  state.nav_focus = ext_get("nav_focus", state.nav_focus) == "centro" and "centro" or "terzo"
   state.active_track_key = proj_get("active_track_key", state.active_track_key)
   -- Destinazione: "solo" = sessione SOLO (crea le sue tracce); "progetto" = telecomando
   -- (registra sulle tracce che arma l'utente, non crea e non tocca niente).
@@ -195,6 +199,8 @@ local function save_state()
   ext_set("folder_mode", state.folder_mode and "1" or "0")
   ext_set("auto_regions", state.auto_regions and "1" or "0")
   ext_set("nav", state.nav)
+  ext_set("nav_zoom", state.nav_zoom)
+  ext_set("nav_focus", state.nav_focus)
   proj_set("active_track_key", state.active_track_key)
   proj_set("take_counter", state.take_counter)
   proj_set("target", state.target or "solo")
@@ -337,6 +343,10 @@ local AIUTI = {
   ["ITEM PREV"] = "Cursore all'inizio dell'item precedente.",
   ["ITEM NEXT"] = "Cursore all'inizio dell'item successivo.",
   ["INIZIO ITEM"] = "Cursore all'inizio dell'item in cui si trova.",
+  ["\u{2212}"] = "Navigatore: mostra piu' tempo (fino a tutto il progetto).",
+  ["+"] = "Navigatore: zoom avanti; la finestra segue la testina.",
+  ["1/3"] = "Testina a un terzo da sinistra: vedi piu' di quello che arriva. Clic: al centro.",
+  ["centro"] = "Testina al centro della striscia. Clic: a un terzo da sinistra.",
   ["Tracce \u{25BE}"] = "Elenco delle tracce del progetto con il loro ingresso: spuntate le armate, un clic arma o disarma.",
   ["Folder Mode"] = "Organizza i take per cartella. Lane Mode non e' ancora attivo.",
 }
@@ -1614,25 +1624,45 @@ local function nav_time_label(t)
   return string.format("%d:%02d", t // 60, t % 60)
 end
 
+local NAV_ZOOM_SECONDS = { 600, 300, 120, 60, 30, 10 }   -- livelli dopo "tutto"
+
+local function nav_zoom_label()
+  local z = NAV_ZOOM_SECONDS[state.nav_zoom]
+  if not z then return "tutto" end
+  return z >= 60 and (tostring(z // 60) .. " min") or (tostring(z) .. " s")
+end
+
 local function draw_navigator(x, y, w, h)
   if w < 120 or h < 44 then return end
   local proj_len = reaper.GetProjectLength(0)
   local view_start, view_end = reaper.GetSet_ArrangeView2(0, false, 0, 0, 0, 0)
-  local total = math.max(proj_len + 10, view_end or 0, 60)
+  local ps = reaper.GetPlayState()
+  -- finestra: tutto il progetto, oppure una durata fissa che segue la testina
+  local t0, total = 0, math.max(proj_len + 10, view_end or 0, 60)
+  local zoom_len = NAV_ZOOM_SECONDS[state.nav_zoom]
+  if zoom_len then
+    local head = (ps & 1 == 1) and reaper.GetPlayPosition() or reaper.GetCursorPosition()
+    total = zoom_len
+    t0 = math.max(0, head - zoom_len * (state.nav_focus == "centro" and 0.5 or 1 / 3))
+  end
   local band_h = h - 14
-  local function tx(t) return x + (t / total) * w end
+  local function tx(t) return x + ((t - t0) / total) * w end
+  local function visible(a, b) return b >= t0 and a <= t0 + total end
 
   gfx.set(0.10, 0.105, 0.12, 1); gfx.rect(x, y, w, band_h, true)
   set_color(colors.border); gfx.rect(x, y, w, band_h, false)
 
   gfx.setfont(1, "Arial", 11)
   for _, r in ipairs(collect_regions()) do
-    local rx, rw = tx(r.pos), math.max(1, tx(r.end_pos) - tx(r.pos))
+    if not visible(r.pos, r.end_pos) then goto next_region end
+    local rx = math.max(x, tx(r.pos))
+    local rw = math.max(1, math.min(x + w, tx(r.end_pos)) - rx)
     gfx.set(0.25, 0.45, 0.70, 0.30); gfx.rect(rx, y + 1, rw, band_h - 2, true)
     if rw > 40 and r.name ~= "" then
       gfx.set(0.78, 0.86, 0.96, 0.9); gfx.x, gfx.y = rx + 3, y + 2
       gfx.drawstr(fit_text(r.name, rw - 6))
     end
+    ::next_region::
   end
 
   local target = active_track()
@@ -1641,27 +1671,30 @@ local function draw_navigator(x, y, w, h)
     local it = reaper.GetMediaItem(0, i)
     local p = reaper.GetMediaItemInfo_Value(it, "D_POSITION")
     local l = reaper.GetMediaItemInfo_Value(it, "D_LENGTH")
-    local ix, iw = tx(p), math.max(1, tx(p + l) - tx(p))
+    if not visible(p, p + l) then goto next_item end
+    local ix = math.max(x, tx(p))
+    local iw = math.max(1, math.min(x + w, tx(p + l)) - ix)
     if target and reaper.GetMediaItemTrack(it) == target then
       gfx.set(0.35, 0.80, 0.50, 0.85); gfx.rect(ix, y + 14 + lane, iw, lane * 2 - 2, true)
     else
       gfx.set(0.60, 0.62, 0.68, 0.40); gfx.rect(ix, y + 14, iw, lane - 3, true)
     end
+    ::next_item::
   end
 
   local _, nm, nr = reaper.CountProjectMarkers(0)
   for i = 0, nm + nr - 1 do
     local ok, isrgn, pos = reaper.EnumProjectMarkers3(0, i)
-    if ok and not isrgn then gfx.set(0.95, 0.80, 0.30, 0.9); gfx.line(tx(pos), y + 1, tx(pos), y + band_h - 2) end
+    if ok and not isrgn and visible(pos, pos) then gfx.set(0.95, 0.80, 0.30, 0.9); gfx.line(tx(pos), y + 1, tx(pos), y + band_h - 2) end
   end
 
-  if view_end and view_end > view_start then
+  if view_end and view_end > view_start and visible(view_start, view_end) then
     gfx.set(1, 1, 1, 0.55)
-    gfx.rect(tx(view_start), y, math.max(2, tx(view_end) - tx(view_start)), band_h, false)
+    local vx = math.max(x, tx(view_start))
+    gfx.rect(vx, y, math.max(2, math.min(x + w, tx(view_end)) - vx), band_h, false)
   end
   local ec = reaper.GetCursorPosition()
-  gfx.set(1, 1, 1, 1); gfx.line(tx(ec), y, tx(ec), y + band_h)
-  local ps = reaper.GetPlayState()
+  if visible(ec, ec) then gfx.set(1, 1, 1, 1); gfx.line(tx(ec), y, tx(ec), y + band_h) end
   if ps & 1 == 1 then
     if ps & 4 == 4 then gfx.set(1, 0.25, 0.2, 1) else gfx.set(0.4, 0.9, 0.5, 1) end
     local pp = reaper.GetPlayPosition()
@@ -1669,9 +1702,10 @@ local function draw_navigator(x, y, w, h)
   end
 
   gfx.set(0.60, 0.62, 0.68, 1)
-  local step = total > 3600 and 600 or total > 1800 and 300 or total > 600 and 60 or total > 120 and 30 or 10
-  local t = 0
-  while t <= total do
+  local step = total > 3600 and 600 or total > 1800 and 300 or total > 600 and 60 or total > 120 and 30
+    or total > 40 and 10 or total > 15 and 5 or 1
+  local t = math.ceil(t0 / step) * step
+  while t <= t0 + total do
     gfx.x, gfx.y = tx(t) + 2, y + band_h + 1
     gfx.drawstr(nav_time_label(t))
     t = t + step
@@ -1679,12 +1713,12 @@ local function draw_navigator(x, y, w, h)
 
   local down = (gfx.mouse_cap & 1) == 1
   local inside = point_in_rect(gfx.mouse_x, gfx.mouse_y, x, y, w, band_h)
-  if inside then state.hint = "Navigatore: clic o trascina per spostare il cursore (fermo durante il REC)." end
+  if inside then state.hint = "Navigatore (" .. nav_zoom_label() .. "): clic o trascina per spostare il cursore (fermo durante il REC)." end
   if down and inside and not state.mouse_was_down then state.nav_drag = true end
   if state.nav_drag then
     if down then
       if ps & 4 ~= 4 then
-        local tt = math.max(0, math.min(total, (gfx.mouse_x - x) / w * total))
+        local tt = math.max(0, t0 + math.max(0, math.min(1, (gfx.mouse_x - x) / w)) * total)
         reaper.SetEditCurPos(tt, true, false)
         state.nav_t = tt
       end
@@ -1729,7 +1763,16 @@ local function draw_expanded(clicked)
     state.auto_regions = not state.auto_regions; save_state()
     state.status = state.auto_regions and "A ogni REC crea la regione Take NNN." or "REC senza regione: il take resta, la regione no."
   end
-  if btn({x=x2+162, y=y2, w=150, h=34}, "Navigator", false, true, clicked) then show_navigator() end
+  -- zoom del navigatore qui sotto (al posto del pulsante che apriva quello di REAPER)
+  if btn({x=x2+162, y=y2, w=40, h=34}, "\u{2212}", false, state.nav_zoom > 0, clicked) then
+    state.nav_zoom = state.nav_zoom - 1; save_state(); state.status = "Navigatore: " .. nav_zoom_label()
+  end
+  if btn({x=x2+206, y=y2, w=40, h=34}, "+", false, state.nav_zoom < #NAV_ZOOM_SECONDS, clicked) then
+    state.nav_zoom = state.nav_zoom + 1; save_state(); state.status = "Navigatore: " .. nav_zoom_label()
+  end
+  if btn({x=x2+250, y=y2, w=62, h=34}, state.nav_focus == "centro" and "centro" or "1/3", false, state.nav_zoom > 0, clicked, "tab") then
+    state.nav_focus = state.nav_focus == "centro" and "terzo" or "centro"; save_state()
+  end
   if btn({x=x2+324, y=y2, w=150, h=34}, "Video", video_aperta(), true, clicked, "tab") then show_video_window() end
 
   local nav_y = y2 + 46
