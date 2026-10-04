@@ -320,6 +320,7 @@ local AIUTI = {
   ["Telecomando"] = "Registra sulle tracce del tuo progetto: non crea le tracce SOLO e non cambia l'armamento.",
   ["Usa sessione SOLO"] = "Torna alla sessione SOLO: al primo REC crea la cartella ZP SOLO SESSION con le sue tracce.",
   ["Arma selezionata"] = "Arma la traccia selezionata in REAPER, senza disarmare le altre.",
+  ["Tracce \u{25BE}"] = "Elenco delle tracce del progetto con il loro ingresso: spuntate le armate, un clic arma o disarma.",
   ["Folder Mode"] = "Organizza i take per cartella. Lane Mode non e' ancora attivo.",
 }
 
@@ -530,6 +531,87 @@ local function arm_selected_track()
   return tr
 end
 
+-- Ingresso di registrazione (I_RECINPUT): -1 nessuno; &4096 MIDI; &1024 stereo;
+-- &2048 multicanale; indice & 1023 (da 512 in su = ReaRoute).
+local function input_short(track)
+  if not track then return "-" end
+  local v = math.floor(reaper.GetMediaTrackInfo_Value(track, "I_RECINPUT") or -1)
+  if v < 0 then return "nessun ingresso" end
+  if v & 4096 ~= 0 then return "MIDI" end
+  local idx = v & 1023
+  if idx >= 512 then return "ReaRoute " .. tostring(idx - 512 + 1) end
+  if v & 2048 ~= 0 then return "In " .. tostring(idx + 1) .. "+ multi" end
+  if v & 1024 ~= 0 then return "In " .. tostring(idx + 1) .. "/" .. tostring(idx + 2) end
+  return "In " .. tostring(idx + 1)
+end
+
+local function input_long(track)
+  local short = input_short(track)
+  if not track then return short end
+  local v = math.floor(reaper.GetMediaTrackInfo_Value(track, "I_RECINPUT") or -1)
+  if v >= 0 and v & 4096 == 0 and (v & 1023) < 512 and reaper.GetInputChannelName then
+    local name = reaper.GetInputChannelName(v & 1023)
+    if name and name ~= "" and name ~= short then return short .. " (" .. name .. ")" end
+  end
+  return short
+end
+
+local function menu_safe(text)
+  return (tostring(text):gsub("[|#!<>]", " "))
+end
+
+-- Menu degli ingressi della scheda audio per la traccia: mono, poi coppie stereo.
+local function choose_input(track)
+  if not track then warn("Nessuna traccia di destinazione."); return end
+  local n = reaper.GetNumAudioInputs and reaper.GetNumAudioInputs() or 0
+  local current = math.floor(reaper.GetMediaTrackInfo_Value(track, "I_RECINPUT") or -1)
+  local entries, values = {}, {}
+  local function add(label, value)
+    entries[#entries + 1] = (value == current and "!" or "") .. menu_safe(label)
+    values[#values + 1] = value
+  end
+  for i = 0, n - 1 do
+    local name = reaper.GetInputChannelName and reaper.GetInputChannelName(i) or ""
+    add("In " .. (i + 1) .. ((name ~= "" and name ~= ("In " .. (i + 1))) and ("   " .. name) or ""), i)
+  end
+  for i = 0, n - 2, 2 do add("Stereo In " .. (i + 1) .. "/" .. (i + 2), 1024 + i) end
+  add("Nessun ingresso", -1)
+  gfx.x, gfx.y = gfx.mouse_x, gfx.mouse_y
+  local choice = gfx.showmenu(table.concat(entries, "|"))
+  local v = values[choice or 0]
+  if v ~= nil then
+    reaper.SetMediaTrackInfo_Value(track, "I_RECINPUT", v)
+    state.status = "Ingresso di " .. track_name(track) .. ": " .. input_long(track)
+  end
+end
+
+-- Telecomando: elenco delle tracce del progetto, armate spuntate, con l'ingresso.
+-- Un clic arma o disarma quella traccia (le altre restano come sono).
+local function choose_tracks_menu()
+  local n = reaper.CountTracks(0)
+  if n == 0 then warn("Il progetto non ha tracce."); return end
+  local selected = reaper.GetSelectedTrack(0, 0)
+  local entries, tracks = {}, {}
+  for i = 0, n - 1 do
+    local tr = reaper.GetTrack(0, i)
+    local name = track_name(tr); if name == "" then name = "(senza nome)" end
+    local armed = reaper.GetMediaTrackInfo_Value(tr, "I_RECARM") == 1
+    entries[#entries + 1] = (armed and "!" or "") .. menu_safe(string.format("%d   %s   ·   %s%s",
+      i + 1, name, input_short(tr), tr == selected and "   (selezionata)" or ""))
+    tracks[#tracks + 1] = tr
+  end
+  gfx.x, gfx.y = gfx.mouse_x, gfx.mouse_y
+  local tr = tracks[gfx.showmenu(table.concat(entries, "|")) or 0]
+  if not tr then return end
+  local arm = reaper.GetMediaTrackInfo_Value(tr, "I_RECARM") == 1 and 0 or 1
+  reaper.SetMediaTrackInfo_Value(tr, "I_RECARM", arm)
+  if arm == 1 and reaper.GetMediaTrackInfo_Value(tr, "I_RECINPUT") < 0 then
+    reaper.SetMediaTrackInfo_Value(tr, "I_RECINPUT", 0)
+  end
+  state.warning = ""
+  state.status = (arm == 1 and "Armata: " or "Disarmata: ") .. track_name(tr) .. " · " .. input_long(tr)
+end
+
 -- Telecomando, REC senza tracce armate: chiede su quale registrare invece di indovinare.
 -- Menu con le tracce del progetto, la selezionata gia' spuntata; niente scelta = niente REC.
 local function choose_track_to_arm()
@@ -545,7 +627,7 @@ local function choose_track_to_arm()
     local name = track_name(tr)
     if name == "" then name = "(senza nome)" end
     name = name:gsub("[|#!<>]", " ")
-    entries[#entries + 1] = (tr == selected and "!" or "") .. string.format("%d   %s", i + 1, name)
+    entries[#entries + 1] = (tr == selected and "!" or "") .. menu_safe(string.format("%d   %s   ·   %s", i + 1, name, input_short(tr)))
     tracks[#tracks + 1] = tr
   end
   gfx.x, gfx.y = gfx.mouse_x, gfx.mouse_y
@@ -1329,10 +1411,8 @@ local function draw_track_selector(y, clicked)
     gfx.drawstr(fit_text(#armed > 0
       and ("Telecomando: registra su " .. target_name())
       or "Telecomando: nessuna traccia armata", gfx.w - margin * 2 - switch_w - arm_w - 20))
-    local has_sel = reaper.GetSelectedTrack(0, 0) ~= nil
-    if btn({x=gfx.w - margin - switch_w - gap - arm_w, y=y, w=arm_w, h=32}, "Arma selezionata", false, has_sel, clicked, "tab") then
-      local tr = arm_selected_track()
-      if tr then state.warning = ""; state.status = "Armata: " .. track_name(tr) end
+    if btn({x=gfx.w - margin - switch_w - gap - arm_w, y=y, w=arm_w, h=32}, "Tracce \u{25BE}", false, true, clicked, "tab") then
+      choose_tracks_menu()
     end
     if btn({x=gfx.w - margin - switch_w, y=y, w=switch_w, h=32}, "Usa sessione SOLO", false, true, clicked, "tab") then
       set_target("solo")
@@ -1347,6 +1427,8 @@ local function draw_track_selector(y, clicked)
   for i, key in ipairs(RECORD_TRACK_KEYS) do
     local x = margin + (i - 1) * (bw + gap)
     local label = TRACK_NAMES[key]:gsub("^VO_", "")
+    local solo_tr = find_track_exact(TRACK_NAMES[key])
+    if solo_tr then label = label .. " \u{00B7} " .. input_short(solo_tr) end
     if btn({x=x, y=y, w=bw, h=32}, label, state.active_track_key == key, true, clicked, "tab") then
       if arm_only_solo_target(key) then state.warning = "" end
     end
@@ -1370,6 +1452,13 @@ local function draw_monitor_block(y, clicked)
   local mon_label, mon_on = monitoring_label()
   if btn({x=xm, y=y - 3, w=132, h=30}, mon_label, mon_on, true, clicked, "tab") then
     toggle_monitoring()
+  end
+  -- da dove pesca la traccia di destinazione; clic = cambia ingresso
+  local xi = xm + 142
+  if gfx.w - 14 - xi >= 120 then
+    if btn({x=xi, y=y - 3, w=gfx.w - 14 - xi, h=30}, "Ingresso: " .. (tr and input_long(tr) or "nessuna traccia"), false, tr ~= nil, clicked, "tab") then
+      choose_input(tr)
+    end
   end
 
   local y2 = y + 38
