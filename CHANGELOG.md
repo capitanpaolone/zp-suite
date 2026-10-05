@@ -18,6 +18,12 @@ nel suo insieme.
 
 ## Non rilasciato
 
+### ZP Harmonic Space Carver 2.5.0
+- GUI Advanced nell'ordine del segnale, Simple come vista dello stesso motore, Partenza
+  SCORE / FLAT / VOCAL, sidechain da tre fonti, Anticipo, Knee, Apertura, Min/Max Duck a forbice,
+  vista DOCK, cue in @block e quattro azioni da tastiera (ZP HSC Cue).
+- Progetto della 2.6 (cue come marker `#HSC`): `docs/PROGETTO_Harmonic_Carver_2.6_cue_marker.md`.
+
 ### Corretto
 - Quattro effetti non entravano nell'indice ReaPack: Reference Tone Mirror EQ Pro,
   Oscilloscope 16ch, Harmonic Space Carver e Subliminal Presence Layer White.

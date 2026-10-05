@@ -47,7 +47,11 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 - Ogni array in memoria (`x[i]`) deve avere un indirizzo base assegnato in @init, in una zona libera:
   una variabile mai assegnata vale 0 e scrive sopra la memoria del DSP (Carver: cue sugli stati SVF).
   Per trovare gli array cerca anche i nomi con maiuscole (es. `buf_main_L[`): mappa TUTTA la memoria
-  usata prima di scegliere la base (Carver: 0-15 SVF, 16-6159 oscilloscopio, cue da 8192).
+  usata prima di scegliere la base (Carver 2.5: 0-15 SVF, 16-6159 oscilloscopio, 8192 cue,
+  8320 backup cue, 8400-8431 tabella Partenza, 8440-8442 stato fonti SC, 16384-49151 lookahead).
+- gmem del Carver: 72 celle per FX (`base+0..71`), mai oltre `+71` (sarebbe l'FX successivo). `+71` = routing SC (helper).
+- Un JSFX non vede pin mapping, invii o folder: solo `num_ch`. Quello che dipende dal routing lo legge l'helper.
+  I comandi da tasti/helper passano dalla casella comune 3800-3899 (lo Shared Bus usa fino a ~606).
 - GUI JSFX: prima di aggiungere un pannello, mappa le coordinate di TUTTO cio' che e' gia' disegnato
   in quella zona (anche etichette e valori dei knob, che sporgono sopra e sotto il cerchio).
 - Senza `ext_noinit=1` REAPER rilancia @init a ogni Play: lo stato da conservare (cue, liste, scelte
@@ -57,6 +61,9 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 - Marker di servizio, mai testo, mai copiati/cancellati dal 14, mai nel gobbo o nell'SRT:
   nome che comincia con `#` (segnaposto) o `!` (azioni), marker del SOLO
   `SOLO_MARK_/OK_/BAD_/ALT_/NOISE_/INSERT_` + numero, senza nome. Regola in 14, aggancio e 31.
+- Item vuoti e di testo (note) non hanno take; item generati (video processor) non hanno file.
+  Chi conta o raggruppa item (17 Gestore Progetto, 19 Report minuti) usa solo item con take
+  e GetMediaSourceFileName non vuoto, mai il semplice "item con lunghezza > 0".
 - L'SRT di Trascrivi sta accanto al WAV apposta (lo cerca Abbina). Gli SRT di consegna (08, 31)
   vanno nella cartella scelta, mai tra i media.
 

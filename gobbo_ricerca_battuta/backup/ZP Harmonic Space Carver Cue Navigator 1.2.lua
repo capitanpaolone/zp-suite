@@ -1,10 +1,8 @@
 -- @description ZP Harmonic Space Carver Cue Navigator (background helper)
--- @version 1.3
+-- @version 1.2
 -- @author Paolo Balestri / Codex
 -- @about Keeps the Carver previous/current/next cue buttons connected to the REAPER edit/play cursor.
 -- @changelog
---   1.3: controlla il routing delle fonti sidechain di ogni Carver (pin collegati ai canali della
---        traccia, invii e tracce figlie del folder che arrivano su quei canali) e lo scrive in base+71.
 --   1.2: comando 4 = "dove e' il cursore": risponde con la posizione del cursore di REAPER
 --        (base+70), cosi' il Carver aggiunge un cue anche a trasporto fermo.
 --   1.1: rilegge l'elenco degli FX una volta al secondo (prima a ogni giro, ~30 volte al secondo);
@@ -76,78 +74,23 @@ end
 
 -- Indirizzi gmem dei Carver nel progetto: si ricalcolano ogni secondo (spostare un FX o
 -- una traccia cambia l'indirizzo, che il plugin ricalcola da solo nella sua GUI).
-local bases, carvers, last_scan = {}, {}, -1
-local function scan_track(track, track_index, out, list)
+local bases, last_scan = {}, -1
+local function scan_track(track, track_index, out)
   local n = reaper.TrackFX_GetCount(track)
   for fx = 0, n - 1 do
     local ok, name = reaper.TrackFX_GetFXName(track, fx, "")
     if ok and name and name:lower():find("harmonic space carver", 1, true) then
       local base = BASE_START + ((track_index + 2) * TRACK_STRIDE) + (fx * FX_STRIDE)
-      if base >= 0 and base < MAX_BASE then
-        out[#out + 1] = base
-        list[#list + 1] = {base = base, track = track, fx = fx}
-      end
+      if base >= 0 and base < MAX_BASE then out[#out + 1] = base end
     end
   end
-end
-
--- Canali della traccia (0-based) su cui arriva segnale: ricezioni e tracce figlie del folder.
-local function fed_channels(track)
-  local fed = {}
-  for r = 0, reaper.GetTrackNumSends(track, -1) - 1 do
-    local src = math.floor(reaper.GetTrackSendInfo_Value(track, -1, r, "I_SRCCHAN"))
-    if src >= 0 then
-      local dst = math.floor(reaper.GetTrackSendInfo_Value(track, -1, r, "I_DSTCHAN"))
-      local w = src >> 10
-      local nch = (w == 0) and 2 or ((w == 1) and 1 or w * 2)
-      local ch = dst & 1023
-      if (dst & 1024) ~= 0 then nch = 1 end
-      for k = 0, nch - 1 do fed[ch + k] = true end
-    end
-  end
-  for i = 0, reaper.CountTracks(0) - 1 do
-    local child = reaper.GetTrack(0, i)
-    if reaper.GetParentTrack(child) == track and reaper.GetMediaTrackInfo_Value(child, "B_MAINSEND") == 1 then
-      local offs = math.floor(reaper.GetMediaTrackInfo_Value(child, "C_MAINSEND_OFFS"))
-      local nch = math.floor(reaper.GetMediaTrackInfo_Value(child, "C_MAINSEND_NCH"))
-      if nch <= 0 then nch = math.floor(reaper.GetMediaTrackInfo_Value(child, "I_NCHAN")) end
-      for k = 0, nch - 1 do fed[offs + k] = true end
-    end
-  end
-  return fed
-end
-
--- Per le fonti SC1-SC3 (pin di ingresso 2-3, 4-5, 6-7): pin collegati a un canale esistente
--- (bit 1) e almeno uno di quei canali alimentato (bit 2). Valore = 64 + somma(codice * 4^i).
-local function route_value(track, fx)
-  local nchan = math.floor(reaper.GetMediaTrackInfo_Value(track, "I_NCHAN"))
-  local fed = fed_channels(track)
-  local value = 64
-  for i = 0, 2 do
-    local mapped, fedok = false, false
-    for pin = 2 + 2 * i, 3 + 2 * i do
-      local lo = reaper.TrackFX_GetPinMappings(track, fx, 0, pin)
-      for ch = 0, math.min(31, nchan - 1) do
-        if (lo & (1 << ch)) ~= 0 then
-          mapped = true
-          if fed[ch] then fedok = true end
-        end
-      end
-    end
-    local code = (mapped and 1 or 0) + (fedok and 2 or 0)
-    value = value + code * (4 ^ i)
-  end
-  return value
 end
 
 local function rescan()
-  local out, list = {}, {}
-  scan_track(reaper.GetMasterTrack(0), -1, out, list)
-  for i = 0, reaper.CountTracks(0) - 1 do scan_track(reaper.GetTrack(0, i), i, out, list) end
-  bases, carvers = out, list
-  for _, c in ipairs(carvers) do
-    if reaper.gmem_read(c.base + 69) == MAGIC then reaper.gmem_write(c.base + 71, route_value(c.track, c.fx)) end
-  end
+  local out = {}
+  scan_track(reaper.GetMasterTrack(0), -1, out)
+  for i = 0, reaper.CountTracks(0) - 1 do scan_track(reaper.GetTrack(0, i), i, out) end
+  bases = out
 end
 
 local function run()
