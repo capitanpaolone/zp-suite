@@ -1,8 +1,9 @@
 -- @description ZP HSC Cue - Precedente
--- @version 1.1
+-- @version 1.2
 -- @author Paolo Balestri
 -- @about Porta il cursore al cue di rientro rapido precedente del Carver. Da assegnare a un tasto. Parla con il Carver della traccia selezionata (o con il primo del progetto).
 -- @changelog
+--   1.2: trova il Carver con il suo numero unico (Carver 2.6.3, helper 1.8).
 --   1.1: se ripremi il tasto mentre il messaggio e' ancora a schermo, riparte senza chiedere nulla.
 --   1.0: prima versione (ZP Harmonic Space Carver 2.5).
 -- Ripremuto mentre e' ancora attivo (messaggio a schermo): chiude il precedente e riparte, senza dialoghi.
@@ -15,7 +16,16 @@ local function scan(track, idx)
   for fx = 0, reaper.TrackFX_GetCount(track) - 1 do
     local ok, name = reaper.TrackFX_GetFXName(track, fx, "")
     if ok and name and name:lower():find("harmonic space carver", 1, true) then
+      -- numero unico del Carver (2.6.3+, assegnato dall'helper), altrimenti traccia e posizione
       local b = 4096 + ((idx + 2) * 4096) + fx * 72
+      for p = reaper.TrackFX_GetNumParams(track, fx) - 1, 0, -1 do
+        local _, pname = reaper.TrackFX_GetParamName(track, fx, p, "")
+        if pname and pname:find("HSC Slot", 1, true) then
+          local slot = math.floor(reaper.TrackFX_GetParam(track, fx, p) + 0.5)
+          if slot >= 1 and slot <= 900 then b = 8310000 + slot * 76 end
+          break
+        end
+      end
       if reaper.gmem_read(b + 69) == MAGIC then return b end
     end
   end

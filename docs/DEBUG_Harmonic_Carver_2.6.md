@@ -133,3 +133,20 @@ Test: test_hsc_sync.lua riscritto per le regole nuove (in run_all); simulazione 
 REAPER finto, 20 passaggi ok (progetto vecchio, spostamento, ADD, marker cancellato/aggiunto/tutti cancellati,
 rinumerati, CLEAR ALL, cue rosso, Riallinea, altro progetto nella stessa scheda, secondo helper, richiesta vecchia).
 
+## Seconda tornata (Carver 2.6.3 + helper 1.8 + azioni 1.2)
+
+- 14 piu' progetti in schede: Paolo, "problema serio, due tab sono frequenti". Fatto: numero unico per
+  Carver (parametro HSC Slot) assegnato dall'helper fra tutti i progetti aperti; il progetto attivo tiene
+  i suoi numeri, i doppioni (anche un Carver copiato con la traccia) vengono rinumerati. Simulazione con
+  due progetti e "Run background projects" acceso: nessuna interferenza.
+- Trovato indagando: **Ctrl+Z si incastrava.** Le correzioni automatiche dei marker creavano punti di undo:
+  annullando un'aggiunta l'helper rimetteva il marker e creava un punto nuovo, e non si poteva piu' tornare
+  indietro nel lavoro. Ora le correzioni automatiche non creano punti di undo.
+- 20 automazioni: le forbici (Min/Max Duck e crossover) scrivevano sui parametri dal DSP: con una corsia in
+  Write/Latch/Touch si registravano valori che non avevi messo tu, in Read c'era un tira e molla. Ora il DSP
+  usa i valori effettivi e le forbici le applica solo la GUI quando muovi tu un valore.
+- 13 Anticipo: `pdc_delay` ora in @slider (REAPER lo legge li'). Da verificare con un render.
+- 17 e 18 (tasto e helper nello stesso istante, buco quando cambi l'Anticipo): solo ascolto, non entrano
+  nel render. Lasciati cosi' (decisione di Paolo).
+- 11 progetti vecchi in Simple/Vocal: nessun intervento (decisione di Paolo: si controlla sempre prima di consegnare).
+

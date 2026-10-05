@@ -1,8 +1,12 @@
 // @description ZP Harmonic Space Carver
-// @version 2.6.2
+// @version 2.6.3
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   2.6.3: ogni Carver ha un numero unico (assegnato dall'helper 1.8, salvato nel Carver): due progetti
+//     aperti in schede o due Carver nella stessa posizione non si mescolano piu' cue e comandi.
+//     Forbici Min/Max Duck e crossover solo quando li muovi tu: il DSP non scrive piu' sui parametri
+//     (niente piu' scritture sopra un'automazione). Anticipo dichiarato a REAPER in @slider.
 //   2.6.2: il preascolto si spegne davvero alla riapertura del progetto. Min Duck sistemato nei
 //     progetti salvati prima (se era uguale a Max Duck il VCA restava fisso): passa a -3 dB, e il
 //     blocco VCA avvisa se Min = Max. Avviso rosso lampeggiante (non bloccante) se ci sono cue fuori
@@ -143,6 +147,7 @@ slider61:0<0,1,1{Off,On}>-SC 2 On (5/6)
 slider62:0<0,1,1{Off,On}>-SC 3 On (7/8)
 slider63:0<0,20,0.1>-Lookahead (ms)
 slider64:6<0,12,0.1>-Carver Knee (dB)
+slider65:0<0,900,1>-HSC Slot (helper)
 
 // -----------------------------
 // METER VITALI (Esclusivi per OSARA, prefisso [Read])
@@ -216,12 +221,14 @@ log2db = 8.68588963806504;
 DECAY = 0.99997;
 // MAPPA DELLA MEMORIA (vedi ANTI_REGRESSIONE): 0-15 stati SVF, 16-6159 oscilloscopio,
 // 8192-8255 cue, 8320-8383 backup cue, 8400-8431 tabella Partenza, 8440-8442 stato fonti SC,
-// 16384-49151 lookahead.
+// 16384-49151 lookahead. gmem: vedi quick_service (numeri unici da 8310000).
 BUF_SIZE   = 2048;
 buf_main_L = 16; buf_sc_L = buf_main_L + BUF_SIZE; buf_out_L = buf_sc_L + BUF_SIZE;
 i_init = 0; loop(16, i_init[0] = 0; i_init += 1;);
 LA_SIZE = 8192; la_mL = 16384; la_mR = la_mL + LA_SIZE; la_sL = la_mR + LA_SIZE; la_sR = la_sL + LA_SIZE;
 la_w = 0; la_samples = -1;
+la_target = min(LA_SIZE - 1, floor(max(0, min(20, slider63)) * 0.001 * srate));
+pdc_delay = la_target; pdc_bot_ch = 0; pdc_top_ch = 2;
 
 // Partenza: valori di Low, Mid, High, Intens, Spread, Prio, Min Duck, Max Duck.
 preset_tab = 8400; preset_sl = 8424;
@@ -314,8 +321,11 @@ function quick_clear_all() local(i) (
 // +2 posizione, +3 seq, +4 ack, +5 esito, +6 cue (1..n), +7 numero cue, +10 numero cue nuovi, +11..+74 tempi.
 // Gira in @block: funziona in Simple, in Dock e a finestra chiusa.
 HSC_MB = 3800;
+// Numeri unici: blocchi da 76 celle da 8310000 (0-71 come sopra, 72-73 maschere dei cue fuori posto).
+HSC_SLOT_BASE = 8310000; HSC_SLOT_STRIDE = 76;
 function quick_service() local(base, i, seq, cmd, res, pos, n) (
   quick_place_cnt -= 1;
+  floor(slider(65) + 0.5) != quick_slot ? quick_place_cnt = 0;
   quick_place_cnt <= 0 ? (
     quick_place_cnt = 8;
     quick_host_chain = 0; quick_host_flags = 0;
@@ -323,6 +333,12 @@ function quick_service() local(base, i, seq, cmd, res, pos, n) (
     // solo FX di traccia/master: per take FX o input FX l'indirizzo non sarebbe univoco
     base = (quick_host_flags & 3) ? -1 : 4096 + ((quick_host_track + 2) * 4096) + (quick_host_chain * 72);
     base >= 8300000 ? base = -1;
+    // numero unico assegnato dall'helper (1.8+): indirizzo indipendente da progetto, traccia e posizione
+    quick_slot = floor(slider(65) + 0.5);
+    quick_slot >= 1 && quick_slot <= 900 && base >= 0 ? base = HSC_SLOT_BASE + quick_slot * HSC_SLOT_STRIDE;
+    // maschere dei cue fuori posto: nel blocco del numero unico, o nella zona libera della traccia
+    quick_mask_addr = base < 0 ? -1 : (quick_slot >= 1 && quick_slot <= 900) ? base + 72 :
+                      quick_host_chain < 32 ? base - quick_host_chain * 72 + 4032 + quick_host_chain * 2 : -1;
     base != quick_gmem_base ? (
       quick_gmem_base = base;
       quick_ext_seen = gmem[HSC_MB+3];
@@ -382,10 +398,9 @@ quick_inited != 2404 ? (
   qpi = 0; loop(128, quick_points[qpi] = -1; qpi += 1;);
   // il preascolto non sopravvive alla riapertura del progetto (si rischia di renderizzare il "tolto")
   slider31 = 0;
-  quick_gmem_base = -1; quick_place_cnt = 0; quick_ext_seen = 0;
+  quick_gmem_base = -1; quick_place_cnt = 0; quick_ext_seen = 0; quick_slot = -1; quick_mask_addr = -1;
 );
 quick_request = 0; quick_ui_pos = 0; quick_fire_ext = 0;
-duck_init_pending = 1;
 quick_total_samples = max(1, floor(0.200 * srate));
 quick_samples_left = 0; quick_guard_samples_left = 0; quick_start_gr = 1.0;
 quick_carver_start_l = 1.0; quick_carver_start_m = 1.0; quick_carver_start_h = 1.0;
@@ -556,11 +571,7 @@ slider(31) != prev_delta_mode ? (
 );
 
 // Lookahead: ritarda la musica (e la voce del Voice Return) e lo dichiara a REAPER come PDC.
-la_new = min(LA_SIZE - 1, floor(max(0, min(20, slider(63))) * 0.001 * srate));
-la_new != la_samples ? (
-  la_samples = la_new; pdc_delay = la_samples; pdc_bot_ch = 0; pdc_top_ch = 2;
-  memset(la_mL, 0, LA_SIZE * 4); la_w = 0;
-);
+la_target != la_samples ? ( la_samples = la_target; memset(la_mL, 0, LA_SIZE * 4); la_w = 0; );
 
 // Motori: Carver+VCA / solo Carver / solo VCA (interruttori ON nella GUI).
 flat_focus_mode = min(2, max(0, floor(slider(52))));
@@ -568,17 +579,9 @@ flat_focus_mode == 1 ? ( flat_t_both = 0; flat_t_carver = 1; flat_t_vca = 0;
 ) : flat_focus_mode == 2 ? ( flat_t_both = 0; flat_t_carver = 0; flat_t_vca = 1;
 ) : ( flat_t_both = 1; flat_t_carver = 0; flat_t_vca = 0; );
 
+// Valori effettivi: il DSP non scrive sui parametri (le forbici le applica la GUI quando li muovi).
 c_freq_l_new = slider(11);
-c_freq_h_new = slider(12);
-c_freq_l_new > c_freq_h_new - 50 ? (
-  c_freq_l_new != c_freq_l ? (
-    c_freq_h_new = c_freq_l_new + 50;
-    slider(12) = c_freq_h_new; notify_slider(12);
-  ) : (
-    c_freq_l_new = c_freq_h_new - 50;
-    slider(11) = c_freq_l_new; notify_slider(11);
-  );
-);
+c_freq_h_new = max(slider(12), slider(11) + 50);
 (c_freq_l_new != c_freq_l || c_freq_h_new != c_freq_h) ? (
     c_freq_l = c_freq_l_new; c_freq_h = c_freq_h_new; calc_crossover();
 );
@@ -588,15 +591,8 @@ listen_reset_pending ? ( slider31 = 0; sliderchange(2 ^ 30); listen_reset_pendin
 duck_migrate ? (
   // progetti salvati prima della 2.6.2: Min = Max (o Min piu' profondo) lasciava il VCA fisso
   slider23 <= slider24 + 0.05 ? ( slider23 = max(slider24, -3); sliderchange(2 ^ 22); );
-  duck_migrate = 0; duck_init_pending = 1;
+  duck_migrate = 0;
 );
-duck_init_pending ? ( prev_min_duck = slider(23); prev_max_duck = slider(24); duck_init_pending = 0; );
-// Forbice Min/Max Duck: Min (riduzione minima) non puo' essere piu' profondo di Max.
-slider(23) < slider(24) ? (
-  slider(23) != prev_min_duck ? ( slider(24) = slider(23); notify_slider(24); )
-                              : ( slider(23) = slider(24); notify_slider(23); );
-);
-prev_min_duck = slider(23); prev_max_duck = slider(24);
 
 main_gain = exp(slider(2) * db2log);
 sc1_g = slider(60) >= 0.5 ? exp(slider(3) * db2log) : 0;
@@ -615,7 +611,7 @@ carver_attack_ms = slider(17);
 carver_release_ms = slider(18);
 spread = slider(19) / 100.0;
 clash_thr_db = slider(22);
-duck_floor_db = slider(23);
+duck_floor_db = max(slider(23), slider(24));   // Min non piu' profondo di Max (effettivo)
 max_red_db = slider(24);
 vca_attack_ms = slider(26);
 vca_hold_ms = slider(27);
@@ -665,6 +661,12 @@ slider45 = os_vca_gr; slider49 = os_fat_gr; slider54 = os_glue_gr;
 
 slider36 = amp2db(meter_main_l); slider37 = amp2db(meter_main_r); slider39 = amp2db(meter_sc_r);
 slider40 = amp2db(meter_out_l); slider41 = amp2db(meter_out_r); slider47 = amp2db(meter_delta_r);
+
+// ================================================================
+@slider
+// Anticipo (lookahead): latenza dichiarata a REAPER, che la compensa come per ogni plugin.
+la_target = min(LA_SIZE - 1, floor(max(0, min(20, slider63)) * 0.001 * srate));
+pdc_delay = la_target; pdc_bot_ch = 0; pdc_top_ch = 2;
 
 // ================================================================
 @sample
@@ -1101,6 +1103,15 @@ function ui_cue_button(bx, by, bw, bh, label, state, enabled, info_id) local(is_
 );
 
 // Trascinamento comune a pomelli e campi: doppio clic/destro = default, Shift+clic = neutro, Shift+drag = fine.
+// Forbici, solo quando il valore lo cambi tu (pomelli, mappa, Partenza): Min Duck non piu' profondo di
+// Max Duck, crossover alto almeno 50 Hz sopra il basso. Il DSP usa comunque i valori effettivi.
+function ui_pairs(sl) (
+  sl == 23 && slider(23) < slider(24) ? ( slider(24) = slider(23); notify_slider(24); );
+  sl == 24 && slider(23) < slider(24) ? ( slider(23) = slider(24); notify_slider(23); );
+  sl == 11 && slider(11) > slider(12) - 50 ? ( slider(12) = min(18000, slider(11) + 50); notify_slider(12); );
+  sl == 12 && slider(11) > slider(12) - 50 ? ( slider(11) = max(20, slider(12) - 50); notify_slider(11); );
+);
+
 function ui_drag(sl_idx, is_hover, min_v, max_v, def_v) local(val, my, now_t, is_double_click, neutral_v, drag_sens) (
   val = slider(sl_idx);
   my = ui_scroll_widgets ? (mouse_y + ui_scroll_y) : mouse_y;
@@ -1110,21 +1121,21 @@ function ui_drag(sl_idx, is_hover, min_v, max_v, def_v) local(val, my, now_t, is
       is_double_click = (last_click_sl_idx == sl_idx) && (now_t - last_click_time < 0.35);
       last_click_sl_idx = sl_idx; last_click_time = now_t;
       is_double_click ? (
-        slider(sl_idx) = def_v; notify_slider(sl_idx); ui_drag_id = 0; ui_shift_click_pending = 0;
+        slider(sl_idx) = def_v; notify_slider(sl_idx); ui_pairs(sl_idx); ui_drag_id = 0; ui_shift_click_pending = 0;
       ) : (
         ui_drag_id = sl_idx; ui_drag_start_y = my; ui_drag_start_v = val; ui_shift_click_pending = mouse_cap & 8;
       );
     );
-    mouse_right_click ? ( slider(sl_idx) = def_v; notify_slider(sl_idx); );
+    mouse_right_click ? ( slider(sl_idx) = def_v; notify_slider(sl_idx); ui_pairs(sl_idx); );
   );
   ui_drag_id == sl_idx && mouse_down ? (
     drag_sens = ((max_v - min_v) / 150.0) * fine_tune;
     val = max(min_v, min(max_v, ui_drag_start_v + (ui_drag_start_y - my) * drag_sens));
-    slider(sl_idx) = val; notify_slider(sl_idx);
+    slider(sl_idx) = val; notify_slider(sl_idx); ui_pairs(sl_idx);
   ) : ( ui_drag_id == sl_idx ? (
     ui_shift_click_pending && abs(my - ui_drag_start_y) < 1 ? (
       neutral_v = ui_neutral_value(sl_idx, min_v, max_v, def_v);
-      slider(sl_idx) = neutral_v; notify_slider(sl_idx);
+      slider(sl_idx) = neutral_v; notify_slider(sl_idx); ui_pairs(sl_idx);
     );
     ui_shift_click_pending = 0;
     ui_drag_id = 0;
@@ -1273,14 +1284,13 @@ function draw_listen_banner(x, y, w, h) local(sy, blink, tw, th) (
   );
 );
 
-// Cue fuori posto: maschere scritte dall'helper (1.6) nella zona libera della traccia
-// (base traccia + 4032 + 2*fx, cue 0-31 e 32-63, in ordine di tempo).
+// Cue fuori posto: maschere scritte dall'helper (cue 0-31 e 32-63, in ordine di tempo), all'indirizzo
+// quick_mask_addr (blocco del numero unico, o zona libera della traccia senza numero).
 function cue_lost(i) ( i < 32 ? floor(quick_lost_m1 / (2 ^ i)) % 2 : floor(quick_lost_m2 / (2 ^ (i - 32))) % 2; );
 quick_lost_m1 = 0; quick_lost_m2 = 0; quick_lost_n = 0;
-quick_gmem_base >= 0 && quick_host_chain < 32 && sc_route_fresh ? (
-  quick_track_base = quick_gmem_base - quick_host_chain * 72;
-  quick_lost_m1 = max(0, gmem[quick_track_base + 4032 + quick_host_chain * 2]);
-  quick_lost_m2 = max(0, gmem[quick_track_base + 4033 + quick_host_chain * 2]);
+quick_mask_addr >= 0 && sc_route_fresh ? (
+  quick_lost_m1 = max(0, gmem[quick_mask_addr]);
+  quick_lost_m2 = max(0, gmem[quick_mask_addr + 1]);
   i = 0; loop(quick_point_count, quick_lost_n += cue_lost(i); i += 1;);
 );
 quick_sel_lost = quick_sel >= 0 && cue_lost(quick_sel);
@@ -1569,7 +1579,7 @@ show_simple ? (
   gfx_setfont(5); gfx_r=0.60; gfx_g=0.60; gfx_b=0.72; gfx_x = 752; gfx_y = ui_sy(186); gfx_drawstr("Rientro");
   ui_tab_button(50, 0, 752, 206, 48, 22, "STD", 50);
   ui_tab_button(50, 1, 804, 206, 78, 22, "GRADUAL", 50);
-  abs(slider(23) - slider(24)) < 0.05 ? (
+  slider(23) <= slider(24) + 0.05 ? (
     gfx_setfont(5); gfx_r=0.95; gfx_g=0.62; gfx_b=0.15; gfx_x = 752; gfx_y = ui_sy(240); gfx_drawstr("Min = Max: VCA fisso");
     ui_hit(748, 236, 140, 20) ? active_info_id = 76;
   );
@@ -1582,7 +1592,7 @@ show_simple ? (
   gfx_r=0.08; gfx_g=0.08; gfx_b=0.10; gfx_a=1; gfx_rect(mx, ui_sy(my0), mw, mh);
   log_min = log(20); log_tot = log(18000) - log_min;
   xl = mx + mw * (log(max(21, slider(11))) - log_min) / log_tot;
-  xh = mx + mw * (log(min(17999, slider(12))) - log_min) / log_tot;
+  xh = mx + mw * (log(min(17999, max(slider(12), slider(11) + 50))) - log_min) / log_tot;
   bands_page == 0 ? (
     gfx_r=0.16; gfx_g=0.36; gfx_b=0.60; gfx_a=0.30; gfx_rect(xl, ui_sy(my0), xh - xl, mh);
     h1 = min(mh - 30, (1.0 - meter_gr_l) * mh * 1.5);
@@ -1630,13 +1640,13 @@ show_simple ? (
   xo_hover > 0 ? (
     active_info_id = 72;
     mouse_click ? ui_drag_id = 1000 + xo_hover;
-    mouse_right_click ? (slider(xo_hover) = xo_hover == 11 ? 250 : 4500; notify_slider(xo_hover););
+    mouse_right_click ? (slider(xo_hover) = xo_hover == 11 ? 250 : 4500; notify_slider(xo_hover); ui_pairs(xo_hover););
   );
   (ui_drag_id == 1011 || ui_drag_id == 1012) ? (
     mouse_down ? (
       xo_f = exp(log_min + max(0, min(1, (mouse_x - mx) / mw)) * log_tot);
-      ui_drag_id == 1011 ? (slider(11) = floor(max(20, min(4000, xo_f))); notify_slider(11);)
-                         : (slider(12) = floor(max(1000, min(18000, xo_f))); notify_slider(12););
+      ui_drag_id == 1011 ? (slider(11) = floor(max(20, min(4000, xo_f))); notify_slider(11); ui_pairs(11);)
+                         : (slider(12) = floor(max(1000, min(18000, xo_f))); notify_slider(12); ui_pairs(12););
       active_info_id = 72;
     ) : (ui_drag_id = 0;);
   );

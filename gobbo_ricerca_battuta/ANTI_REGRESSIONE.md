@@ -18,6 +18,15 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 - Il progetto si riconosce da puntatore + file (`EnumProjects(-1)`): la stessa scheda puo' contenere un altro progetto.
 - Le richieste in ExtState si cancellano dopo l'uso (un helper riavviato non deve rieseguirle).
 - Un solo helper: ExtState ZP_HSC/owner, l'ultimo avviato vince.
+- gmem del Carver per numero unico (parametro "HSC Slot", assegnato dall'helper fra TUTTI i progetti
+  aperti): blocchi da 76 celle da 8310000 (slot 1-900, fino a 8378476; gmem arriva a 8388608).
+  Senza numero vale ancora traccia+posizione (4096 + (traccia+2)*4096 + fx*72): due progetti in schede
+  li' si scontrano. Chi cerca un Carver in gmem (azioni, helper) legge prima lo slot.
+- Correzioni automatiche dell'helper sui marker: MAI in un blocco di undo (Ctrl+Z si incastrerebbe:
+  annulli, l'helper rimette, nuovo punto). Undo solo per le azioni chieste da Paolo (Riallinea, Tieni qui).
+- Il DSP non scrive sui parametri (forbici Min/Max Duck e crossover): usa i valori effettivi; le forbici
+  le applica la GUI quando l'utente muove un valore. Scrivere un parametro dal DSP sporca le automazioni.
+- `pdc_delay` si imposta in @init/@slider, non in @block.
 - Lo stato da sistemare al caricamento (preascolto, migrazioni) va in @serialize + primo @block, non in @init:
   REAPER ricarica i parametri dopo @init.
 - Installazione su questo Mac: veri in `Scripts/ZP Suite/ZP Voce/` (cartella di ReaPack); in `Scripts/ZP Suite/`

@@ -1,9 +1,13 @@
 -- @description ZP Harmonic Space Carver Cue Navigator (background helper)
--- @version 1.7
+-- @version 1.8
 -- @author Paolo Balestri / Codex
 -- @about Collega i Carver a REAPER: salti tra i cue, punto del cursore a trasporto fermo,
 --   verifica del routing sidechain e cue come marker #HSC sul righello (seguono l'editing).
 -- @changelog
+--   1.8: assegna a ogni Carver un numero unico fra tutti i progetti aperti (parametro "HSC Slot",
+--        salvato nel Carver): due progetti in schede, o un Carver copiato con la traccia, non si
+--        mescolano piu'. Le correzioni automatiche dei marker #HSC non creano punti di undo
+--        (Ctrl+Z torna indietro nel lavoro senza incastrarsi); Riallinea e Tieni qui restano annullabili.
 --   1.7: i cue si aggiungono e si tolgono solo dal Carver: un marker #HSC cancellato a mano torna,
 --        uno aggiunto a mano sparisce; spostarli resta libero. Marker #HSC in lane 4 (fuori dalle
 --        lane del Gestore Progetto). Un solo helper alla volta (l'ultimo avviato prende il posto).
@@ -410,18 +414,75 @@ end
 -- Indirizzi gmem dei Carver nel progetto: si ricalcolano ogni secondo (spostare un FX o
 -- una traccia cambia l'indirizzo, che il plugin ricalcola da solo nella sua GUI).
 local bases, carvers, last_scan = {}, {}, -1
-local function scan_track(track, track_index, out, list)
-  local n = reaper.TrackFX_GetCount(track)
-  for fx = 0, n - 1 do
-    local ok, name = reaper.TrackFX_GetFXName(track, fx, "")
-    if ok and name and name:lower():find("harmonic space carver", 1, true) then
-      local base = BASE_START + ((track_index + 2) * TRACK_STRIDE) + (fx * FX_STRIDE)
-      if base >= 0 and base < MAX_BASE then
-        out[#out + 1] = base
-        list[#list + 1] = {base = base, track = track, fx = fx}
+-- Numeri unici (Carver 2.6.3+): blocchi da 76 celle da 8310000 (+72/+73 maschere dei cue rossi).
+local SLOT_BASE, SLOT_STRIDE, SLOT_MAX = 8310000, 76, 900
+
+local function is_carver(track, fx)
+  local ok, name = reaper.TrackFX_GetFXName(track, fx, "")
+  return ok and name and name:lower():find("harmonic space carver", 1, true) ~= nil
+end
+
+local function slot_param(track, fx)
+  for p = reaper.TrackFX_GetNumParams(track, fx) - 1, 0, -1 do
+    local _, pname = reaper.TrackFX_GetParamName(track, fx, p, "")
+    if pname and pname:find("HSC Slot", 1, true) then
+      return p, math.floor(reaper.TrackFX_GetParam(track, fx, p) + 0.5)
+    end
+  end
+end
+
+-- Indirizzo gmem e indirizzo delle maschere, come li calcola il Carver.
+local function addresses(track_index, fx, slot)
+  if slot and slot >= 1 and slot <= SLOT_MAX then
+    local base = SLOT_BASE + slot * SLOT_STRIDE
+    return base, base + 72
+  end
+  local base = BASE_START + ((track_index + 2) * TRACK_STRIDE) + (fx * FX_STRIDE)
+  return base, (fx < 32) and (base - fx * FX_STRIDE + 4032 + fx * 2) or nil
+end
+
+-- Tutti i Carver di tutti i progetti aperti: numeri doppi o mancanti vengono riassegnati
+-- (prima il progetto attivo, che tiene i suoi). Restituisce i Carver del progetto attivo.
+local function assign_slots()
+  local active = reaper.EnumProjects(-1)
+  local all = {}
+  local function scan_proj(proj, is_active)
+    local function scan(track, idx)
+      for fx = 0, reaper.TrackFX_GetCount(track) - 1 do
+        if is_carver(track, fx) then
+          local pidx, slot = slot_param(track, fx)
+          all[#all + 1] = { track = track, idx = idx, fx = fx, pidx = pidx, slot = slot or 0, active = is_active }
+        end
+      end
+    end
+    scan(reaper.GetMasterTrack(proj), -1)
+    for i = 0, reaper.CountTracks(proj) - 1 do scan(reaper.GetTrack(proj, i), i) end
+  end
+  scan_proj(active, true)
+  local pi = 0
+  while true do
+    local proj = reaper.EnumProjects(pi)
+    if not proj then break end
+    if proj ~= active then scan_proj(proj, false) end
+    pi = pi + 1
+  end
+  local used = {}
+  for _, c in ipairs(all) do
+    if c.pidx and c.slot >= 1 and c.slot <= SLOT_MAX and not used[c.slot] then used[c.slot] = true else c.need = true end
+  end
+  local free = 1
+  for _, c in ipairs(all) do
+    if c.need and c.pidx then
+      while used[free] do free = free + 1 end
+      if free <= SLOT_MAX then
+        reaper.TrackFX_SetParam(c.track, c.fx, c.pidx, free)
+        c.slot = free; used[free] = true
       end
     end
   end
+  local list = {}
+  for _, c in ipairs(all) do if c.active then list[#list + 1] = c end end
+  return list
 end
 
 -- Canali della traccia (0-based) su cui arriva segnale: ricezioni e tracce figlie del folder.
@@ -476,8 +537,14 @@ end
 local voice_list = {}                 -- tracce voce di tutti i Carver (aggiornata da rescan)
 local function rescan()
   local out, list = {}, {}
-  scan_track(reaper.GetMasterTrack(0), -1, out, list)
-  for i = 0, reaper.CountTracks(0) - 1 do scan_track(reaper.GetTrack(0, i), i, out, list) end
+  for _, c in ipairs(assign_slots()) do
+    local slot = (c.pidx and c.slot >= 1) and c.slot or nil
+    local base, mask = addresses(c.idx, c.fx, slot)
+    if base >= 0 and base < SLOT_BASE + (SLOT_MAX + 1) * SLOT_STRIDE then
+      out[#out + 1] = base
+      list[#list + 1] = { base = base, mask = mask, track = c.track, fx = c.fx }
+    end
+  end
   bases, carvers = out, list
   local seen, vl = {}, {}
   for _, c in ipairs(carvers) do
@@ -536,12 +603,13 @@ local function lane_sweep()
   for _, m in ipairs(read_cue_markers()) do put_in_lane(m.idx) end
 end
 
--- Applica le modifiche ai marker in un blocco di undo. create = { tempo | {pos, from} }.
+-- Applica le modifiche ai marker. create = { tempo | {pos, from} }. Niente punti di undo: sono
+-- correzioni automatiche (i cue li governa il Carver); un punto di undo qui incastrerebbe Ctrl+Z
+-- (annulli, l'helper rimette, nuovo punto, e non torni mai piu' indietro).
 -- Restituisce la mappa vecchio numero -> nuovo numero dei marker rimessi.
-local function apply_marker_ops(create, delete, undo_name)
+local function apply_marker_ops(create, delete)
   if #create == 0 and #delete == 0 then return {} end
   local moved = {}
-  reaper.Undo_BeginBlock2(0)
   reaper.PreventUIRefresh(1)
   for _, num in ipairs(delete) do reaper.DeleteProjectMarker(0, num, false) end
   for _, c in ipairs(create) do
@@ -552,7 +620,6 @@ local function apply_marker_ops(create, delete, undo_name)
   lane_sweep()
   reaper.PreventUIRefresh(-1)
   reaper.UpdateTimeline()
-  reaper.Undo_EndBlock2(0, undo_name or "ZP HSC: cue sul righello", -1)
   return moved
 end
 
@@ -633,7 +700,7 @@ local function sync()
     local ops = HSC.marker_side(synced, markers)
     for old, new in pairs(ops.rekey) do rekey_anchor(old, new); changed_anchors = true end
     if #ops.restore > 0 or #ops.delete > 0 then
-      local moved = apply_marker_ops(ops.restore, ops.delete, "ZP HSC: marker dei cue rimessi")
+      local moved = apply_marker_ops(ops.restore, ops.delete)
       for old, new in pairs(moved) do rekey_anchor(old, new); changed_anchors = true end
       notify(#ops.restore > 0
         and string.format("Cue rimessi sul righello: %d. I cue si tolgono dal Carver (ADD/REMOVE, CLEAR ALL).", #ops.restore)
@@ -757,11 +824,7 @@ local function anchors_tick(force)
   lost_count_said = lost_n
   local m1, m2 = HSC.masks(lost)
   for _, c in ipairs(carvers) do
-    if c.fx < 32 then
-      local track_base = c.base - c.fx * FX_STRIDE
-      reaper.gmem_write(track_base + 4032 + c.fx * 2, m1)
-      reaper.gmem_write(track_base + 4033 + c.fx * 2, m2)
-    end
+    if c.mask then reaper.gmem_write(c.mask, m1); reaper.gmem_write(c.mask + 1, m2) end
   end
 end
 
