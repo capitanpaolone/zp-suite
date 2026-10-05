@@ -1,8 +1,9 @@
 -- @description ZP HSC Cue - Aggiungi o togli
--- @version 1.2
+-- @version 1.3
 -- @author Paolo Balestri
 -- @about Mette o toglie un cue di rientro rapido del Carver sul playhead (in Play) o sul cursore (da fermo). Da assegnare a un tasto. Parla con il Carver della traccia selezionata (o con il primo del progetto).
 -- @changelog
+--   1.3: se l'helper sta usando la casella dei comandi, aspetta che si liberi invece di perdere il comando.
 --   1.2: trova il Carver con il suo numero unico (Carver 2.6.3, helper 1.8).
 --   1.1: se ripremi il tasto mentre il messaggio e' ancora a schermo, riparte senza chiedere nulla.
 --   1.0: prima versione (ZP Harmonic Space Carver 2.5).
@@ -68,7 +69,17 @@ end
 -- Manda un comando al Carver nella casella comune (gmem 3800: +0 destinatario, +1 comando,
 -- +2 posizione, +3 seq) e aspetta l'esito (+4 ack, +5 esito, +6 cue, +7 numero cue).
 local MB = 3800
-local function send(b, cmd, pos, on_done)
+local send
+send = function(b, cmd, pos, on_done, force)
+  -- se la casella e' occupata (l'helper sta mandando un elenco), aspetta che si liberi (max 0,5 s)
+  local t_wait = reaper.time_precise()
+  local function busy() return math.floor(reaper.gmem_read(MB + 4) + 0.5) ~= math.floor(reaper.gmem_read(MB + 3) + 0.5) end
+  if not force and busy() then
+    local function retry()
+      if busy() and reaper.time_precise() - t_wait < 0.5 then reaper.defer(retry) else send(b, cmd, pos, on_done, true) end
+    end
+    reaper.defer(retry); return
+  end
   local seq = math.floor(reaper.gmem_read(MB + 3) + 0.5) + 1
   reaper.gmem_write(MB, b)
   reaper.gmem_write(MB + 1, cmd)

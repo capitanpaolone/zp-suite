@@ -150,3 +150,13 @@ rinumerati, CLEAR ALL, cue rosso, Riallinea, altro progetto nella stessa scheda,
   nel render. Lasciati cosi' (decisione di Paolo).
 - 11 progetti vecchi in Simple/Vocal: nessun intervento (decisione di Paolo: si controlla sempre prima di consegnare).
 
+## Terza tornata (Carver 2.6.4 + helper 1.9 + azioni Aggiungi/Annulla 1.3)
+
+- Progetti in sottofondo: l'helper scriveva il numero unico anche li' (progetti "modificati" che si
+  consideravano chiusi). Ora scrive solo nel progetto attivo; in caso di doppione rinumera il Carver attivo.
+  Non salvare un progetto non perde niente: il numero si riassegna alla riapertura.
+- 17 tasto e helper nello stesso istante: Aggiungi/Annulla aspettano che la casella si liberi (max 0,5 s).
+- 18 buco quando cambi l'Anticipo: dissolvenza di 20 ms fra ritardo vecchio e nuovo (verificato con un
+  calcolo: nessun silenzio, nessun salto).
+- Automazioni: Paolo le evita (podcast) e non usa mai Write (memoria).
+

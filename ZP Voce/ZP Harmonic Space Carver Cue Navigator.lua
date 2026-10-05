@@ -1,9 +1,11 @@
 -- @description ZP Harmonic Space Carver Cue Navigator (background helper)
--- @version 1.8
+-- @version 1.9
 -- @author Paolo Balestri / Codex
 -- @about Collega i Carver a REAPER: salti tra i cue, punto del cursore a trasporto fermo,
 --   verifica del routing sidechain e cue come marker #HSC sul righello (seguono l'editing).
 -- @changelog
+--   1.9: i numeri unici si scrivono solo nel progetto attivo: i progetti aperti in sottofondo non
+--        risultano mai modificati (in caso di doppione si rinumera il Carver del progetto attivo).
 --   1.8: assegna a ogni Carver un numero unico fra tutti i progetti aperti (parametro "HSC Slot",
 --        salvato nel Carver): due progetti in schede, o un Carver copiato con la traccia, non si
 --        mescolano piu'. Le correzioni automatiche dei marker #HSC non creano punti di undo
@@ -441,8 +443,9 @@ local function addresses(track_index, fx, slot)
   return base, (fx < 32) and (base - fx * FX_STRIDE + 4032 + fx * 2) or nil
 end
 
--- Tutti i Carver di tutti i progetti aperti: numeri doppi o mancanti vengono riassegnati
--- (prima il progetto attivo, che tiene i suoi). Restituisce i Carver del progetto attivo.
+-- Numeri unici. L'helper scrive SOLO nel progetto attivo (i progetti in sottofondo non risultano mai
+-- modificati): i Carver in sottofondo tengono i loro numeri, e se un Carver del progetto attivo ne ha
+-- uno gia' usato (o nessuno) prende il primo libero. Restituisce i Carver del progetto attivo.
 local function assign_slots()
   local active = reaper.EnumProjects(-1)
   local all = {}
@@ -458,7 +461,6 @@ local function assign_slots()
     scan(reaper.GetMasterTrack(proj), -1)
     for i = 0, reaper.CountTracks(proj) - 1 do scan(reaper.GetTrack(proj, i), i) end
   end
-  scan_proj(active, true)
   local pi = 0
   while true do
     local proj = reaper.EnumProjects(pi)
@@ -466,9 +468,15 @@ local function assign_slots()
     if proj ~= active then scan_proj(proj, false) end
     pi = pi + 1
   end
+  scan_proj(active, true)
   local used = {}
-  for _, c in ipairs(all) do
-    if c.pidx and c.slot >= 1 and c.slot <= SLOT_MAX and not used[c.slot] then used[c.slot] = true else c.need = true end
+  for _, c in ipairs(all) do                -- prima i numeri dei progetti in sottofondo
+    if not c.active and c.slot >= 1 and c.slot <= SLOT_MAX then used[c.slot] = true end
+  end
+  for _, c in ipairs(all) do                -- poi quelli del progetto attivo, se liberi
+    if c.active then
+      if c.pidx and c.slot >= 1 and c.slot <= SLOT_MAX and not used[c.slot] then used[c.slot] = true else c.need = true end
+    end
   end
   local free = 1
   for _, c in ipairs(all) do

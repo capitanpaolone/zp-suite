@@ -1,8 +1,9 @@
 // @description ZP Harmonic Space Carver
-// @version 2.6.3
+// @version 2.6.4
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   2.6.4: cambiare l'Anticipo non fa piu' un buco nell'audio (dissolvenza di 20 ms).
 //   2.6.3: ogni Carver ha un numero unico (assegnato dall'helper 1.8, salvato nel Carver): due progetti
 //     aperti in schede o due Carver nella stessa posizione non si mescolano piu' cue e comandi.
 //     Forbici Min/Max Duck e crossover solo quando li muovi tu: il DSP non scrive piu' sui parametri
@@ -226,7 +227,7 @@ BUF_SIZE   = 2048;
 buf_main_L = 16; buf_sc_L = buf_main_L + BUF_SIZE; buf_out_L = buf_sc_L + BUF_SIZE;
 i_init = 0; loop(16, i_init[0] = 0; i_init += 1;);
 LA_SIZE = 8192; la_mL = 16384; la_mR = la_mL + LA_SIZE; la_sL = la_mR + LA_SIZE; la_sR = la_sL + LA_SIZE;
-la_w = 0; la_samples = -1;
+la_w = 0; la_samples = -1; la_xf = 0; la_xf_n = 1; la_old = 0;
 la_target = min(LA_SIZE - 1, floor(max(0, min(20, slider63)) * 0.001 * srate));
 pdc_delay = la_target; pdc_bot_ch = 0; pdc_top_ch = 2;
 
@@ -571,7 +572,11 @@ slider(31) != prev_delta_mode ? (
 );
 
 // Lookahead: ritarda la musica (e la voce del Voice Return) e lo dichiara a REAPER come PDC.
-la_target != la_samples ? ( la_samples = la_target; memset(la_mL, 0, LA_SIZE * 4); la_w = 0; );
+// cambio di Anticipo: dissolvenza di 20 ms dal ritardo vecchio al nuovo (niente buco nell'audio)
+la_target != la_samples ? (
+  la_old = max(0, la_samples); la_samples = la_target;
+  la_xf_n = max(1, floor(0.020 * srate)); la_xf = la_xf_n;
+);
 
 // Motori: Carver+VCA / solo Carver / solo VCA (interruttori ON nella GUI).
 flat_focus_mode = min(2, max(0, floor(slider(52))));
@@ -696,14 +701,18 @@ s3a = max(abs(spl6), abs(spl7)) * sc3_g; s3a > meter_s3 ? (meter_s3 = s3a) : (me
 scL = spl2 * sc1_g + spl4 * sc2_g + spl6 * sc3_g;
 scR = spl3 * sc1_g + spl5 * sc2_g + spl7 * sc3_g;
 
-la_samples > 0 ? (
-  la_mL[la_w] = spl0 * main_gain; la_mR[la_w] = spl1 * main_gain; la_sL[la_w] = scL; la_sR[la_w] = scR;
-  la_rd = la_w - la_samples; la_rd < 0 ? la_rd += LA_SIZE;
-  inL = la_mL[la_rd]; inR = la_mR[la_rd]; retL = la_sL[la_rd]; retR = la_sR[la_rd];
-  la_w += 1; la_w >= LA_SIZE ? la_w = 0;
-) : (
-  inL = spl0 * main_gain; inR = spl1 * main_gain; retL = scL; retR = scR;
+// Linea di ritardo sempre attiva (con Anticipo 0 legge il campione appena scritto).
+la_mL[la_w] = spl0 * main_gain; la_mR[la_w] = spl1 * main_gain; la_sL[la_w] = scL; la_sR[la_w] = scR;
+la_rd = la_w - max(0, la_samples); la_rd < 0 ? la_rd += LA_SIZE;
+inL = la_mL[la_rd]; inR = la_mR[la_rd]; retL = la_sL[la_rd]; retR = la_sR[la_rd];
+la_xf > 0 ? (
+  la_g = la_xf / la_xf_n;
+  la_ro = la_w - la_old; la_ro < 0 ? la_ro += LA_SIZE;
+  inL = inL * (1 - la_g) + la_mL[la_ro] * la_g; inR = inR * (1 - la_g) + la_mR[la_ro] * la_g;
+  retL = retL * (1 - la_g) + la_sL[la_ro] * la_g; retR = retR * (1 - la_g) + la_sR[la_ro] * la_g;
+  la_xf -= 1;
 );
+la_w += 1; la_w >= LA_SIZE ? la_w = 0;
 
 // ------------------------------------------------
 // SC RMS STABILIZ. (pre-detection, non comprime il sidechain audio)
