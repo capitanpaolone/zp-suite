@@ -3,9 +3,10 @@
 Decisione di Paolo (2026-10-05): strada **B**. I cue nascono per evitare le automazioni, quindi
 niente corsia di automazione: i cue diventano anche marker di servizio sul righello.
 
-Stato: **progetto**. La parte del plugin è già nella 2.5 (comando 5 "sostituisci elenco").
-Render offline verificato da Paolo il 2026-10-05: i cue scattano anche in render.
-Manca l'helper 1.4 (la 1.3 è uscita con il controllo del routing sidechain).
+Stato: **fatto, da collaudare in REAPER** (2026-10-05): Carver 2.6.0 (solo testi) + helper Cue Navigator 1.4.
+La parte del plugin è nella 2.5 (comando 5 "sostituisci elenco"). Render offline verificato da Paolo.
+Test: `test_hsc_sync.lua` (logica pura, in run_all) e simulazione del giro completo con REAPER finto
+(migrazione, ripple, ADD, marker cancellato, CLEAR ALL, undo, marker di testo ignorato, due Carver).
 
 ## Il problema
 
@@ -25,9 +26,11 @@ si sposta e i cue no: dopo un taglio di 3 s i cue successivi arrivano 3 s in ant
   usa quella.
 - L'undo di REAPER (Ctrl+Z) vale anche per i cue, perché i marker sono stato del progetto.
 
-## Helper Cue Navigator 1.4 (da scrivere)
+## Helper Cue Navigator 1.4
 
-Ogni 0,25 s, per ogni Carver trovato (stessa scansione della 1.2):
+Ogni 0,25 s, per ogni Carver trovato (stessa scansione della 1.2). Un comando alla volta nella
+casella: l'istantanea si aggiorna solo dopo l'ack del Carver; se il Carver non risponde in 1 s si riprova.
+Se la casella e' occupata da un'azione da tastiera, l'helper aspetta.
 
 1. Legge i marker `#HSC` (`EnumProjectMarkers3`), ordinati per tempo.
 2. Legge l'elenco del Carver (gmem `base+4` numero, `base+5..68` tempi).

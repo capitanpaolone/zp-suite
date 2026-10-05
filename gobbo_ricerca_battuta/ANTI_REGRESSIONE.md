@@ -67,6 +67,10 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
   Opzioni (2026-10-05): 17 "Video" (di serie acceso) e "No muti" (di serie spento, B_MUTE);
   19 "No muti" (modi item/tracce, ExtState ZP_STUDIO_SUITE/Report19_skip_muted). Le opzioni
   nuove partono sempre dal comportamento di prima.
+- Marker `#HSC` = cue del Harmonic Space Carver (helper 1.4): servizio, non testo. Il marker comanda
+  sul Carver; l'helper cambia l'istantanea solo dopo l'ack del comando 5. Il 17 usa i marker di
+  lane 1/2 come sezioni del render: deve ignorare i `#HSC` (fatto in collect_project_markers).
+  Chi aggiunge marker di servizio nuovi controlla anche il 17.
 - L'SRT di Trascrivi sta accanto al WAV apposta (lo cerca Abbina). Gli SRT di consegna (08, 31)
   vanno nella cartella scelta, mai tra i media.
 

@@ -562,7 +562,9 @@ local function collect_project_markers()
   local marker_number = 0
   for i = 0, total - 1 do
     local ok, is_region, pos, _, name, idx, color = reaper.EnumProjectMarkers3(0, i)
-    if ok and not is_region then
+    -- I marker "#HSC" sono i cue del Harmonic Space Carver: non sono sezioni del render.
+    local hsc_cue = trim(name or "") == "#HSC" or trim(name or ""):sub(1, 5) == "#HSC "
+    if ok and not is_region and not hsc_cue then
       local lane = marker_lane_at_enum_index(i)
       -- Lane 1 = cartella Mixdown principale; Lane 2 = sottocartella della Lane 1 precedente.
       -- Lane 3+ restano marker standard/metadati e non spezzano le sezioni render.

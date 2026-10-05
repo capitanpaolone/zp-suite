@@ -1,8 +1,11 @@
 // @description ZP Harmonic Space Carver
-// @version 2.5.1
+// @version 2.6.0
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   2.6.0: i cue seguono l'editing. Con l'helper Cue Navigator 1.4 ogni cue e' anche un marker di
+//     servizio "#HSC" sul righello: un taglio in ripple, uno spostamento o una cancellazione del marker
+//     aggiornano il Carver; ADD/REMOVE, UNDO e CLEAR ALL creano o tolgono i marker.
 //   2.5.1: le fonti sidechain seguono il routing vero: compaiono solo quando la traccia ha i canali,
 //     con una spia per fonte (collegata, segnale ma spenta, nessun invio, pin scollegati). Pin e invii
 //     li verifica l'helper Cue Navigator 1.3; senza helper conta i canali della traccia.
@@ -69,6 +72,9 @@ about:
   ADD / REMOVE mette o toglie un cue sul playhead (in Play) o sul cursore (da fermo, con
   l'helper Cue Navigator). Al cue VCA, Carver e Glue rientrano con la Rampa, poi per
   l'Apertura il processing resta aperto e ignora il sidechain. Fino a 64 cue, salvati nel progetto.
+  Con l'helper (1.4) ogni cue e' anche un marker "#HSC" sul righello e il marker comanda: se un
+  taglio in ripple (tutte le tracce) lo sposta, o lo sposti, cancelli o aggiungi a mano, il Carver
+  si aggiorna. Ctrl+Z vale anche per i cue. In render il Carver usa l'ultimo elenco sincronizzato.
   Azioni da tastiera: "ZP HSC Cue - Aggiungi o togli", "Successivo", "Precedente", "Annulla".
   Vista DOCK: una striscia con stato e cue da tenere aperta mentre monti.
 
@@ -1358,7 +1364,7 @@ function draw_header() local(rx) (
   show_simple ? (gfx_r=0.18; gfx_g=0.24; gfx_b=0.30;) : (gfx_r=0.8; gfx_g=0.8; gfx_b=0.85;);
   gfx_x = 18; gfx_y = 6; gfx_drawstr("ZP HSC");
   gfx_setfont(5); show_simple ? (gfx_r=0.43; gfx_g=0.49; gfx_b=0.56;) : (gfx_r=0.45; gfx_g=0.45; gfx_b=0.52;);
-  gfx_x = 18; gfx_y = 30; show_simple ? gfx_drawstr("Simple  v2.5") : gfx_drawstr("Advanced  v2.5");
+  gfx_x = 18; gfx_y = 30; show_simple ? gfx_drawstr("Simple  v2.6") : gfx_drawstr("Advanced  v2.6");
 
   gfx_x = 110; gfx_y = 18; gfx_drawstr("PARTENZA");
   ui_cue_button(184, 12, 62, 26, "SCORE", preset_match(0), 1, 70) ? preset_apply(0);
@@ -1687,12 +1693,12 @@ view_mode == 0 ? (
   active_info_id == 50 ? gfx_drawstr("RIENTRO VCA: STD classico, GRADUAL riapre la musica con una rampa lunga e morbida dopo l'Hold.") :
   active_info_id == 51 ? gfx_drawstr("VISTA: FULL tutta la GUI, DOCK una striscia con stato e cue da tenere aperta mentre monti.") :
   active_info_id == 53 ? gfx_drawstr("DBG: mostra o nasconde la diagnostica VCA nel footer.") :
-  active_info_id == 56 ? gfx_drawstr("CUE: ADD/REMOVE sul playhead (Play) o sul cursore (fermo). < > e il cue centrale saltano (SALTA) o selezionano (RESTA FERMO).") :
+  active_info_id == 56 ? gfx_drawstr("CUE: ADD/REMOVE sul playhead o sul cursore; diventa un marker #HSC che segue i tagli. < > saltano (SALTA) o selezionano.") :
   active_info_id == 57 ? gfx_drawstr("CLEAR ALL: primo clic arma (CONFERMA?), secondo clic entro 3 s cancella tutti i cue. UNDO li rimette.") :
   active_info_id == 58 ? (quick_gmem_base < 0 ? gfx_drawstr("TIMELINE: salto non disponibile su take FX o input FX. RESTA FERMO scorre i cue.") :
     gfx_drawstr("TIMELINE: SALTA sposta il playhead sui cue (helper Cue Navigator); RESTA FERMO solo li seleziona.")) :
   active_info_id == 59 ? gfx_drawstr("UNDO: annulla l'ultima aggiunta, rimozione o cancellazione dei cue.") :
-  active_info_id == 60 ? gfx_drawstr("FILA DEI CUE: punti ciano = cue, linea rossa = playhead. Clic su un punto per sceglierlo.") :
+  active_info_id == 60 ? gfx_drawstr("FILA DEI CUE: ciano = cue (sul righello sono i marker #HSC), rosso = playhead. Clic su un punto per sceglierlo.") :
   active_info_id == 61 ? gfx_drawstr("APERTURA: dopo la Rampa la musica resta aperta per questo tempo, ignorando la voce.") :
   active_info_id == 65 ? gfx_drawstr(#sc_msg0) : active_info_id == 66 ? gfx_drawstr(#sc_msg1) : active_info_id == 67 ? gfx_drawstr(#sc_msg2) :
   active_info_id == 68 ? gfx_drawstr("FONTI VOCE: compaiono quando la traccia ha i canali. Pulsante I/O del plugin, Track channels 6 (SC2) o 8 (SC3).") :
@@ -1701,7 +1707,7 @@ view_mode == 0 ? (
   active_info_id == 70 ? gfx_drawstr("PARTENZA: imposta Depth, Intens, Spread, Prio, Min e Max Duck. SCORE cinema, FLAT equilibrio, VOCAL podcast.") :
   active_info_id == 71 ? gfx_drawstr("ON/OFF: spegne il Carver o il VCA (resta sempre acceso almeno uno dei due).") :
   active_info_id == 72 ? gfx_drawstr("BANDE: GR = riduzione per banda; trascina le linee per i crossover (destro = valore iniziale). SCOPE = forme d'onda.") :
-  gfx_drawstr("ZP HARMONIC SPACE CARVER v2.5 - Doppio clic = default | Shift+clic = zero | Shift+drag = precisione");
+  gfx_drawstr("ZP HARMONIC SPACE CARVER v2.6 - Doppio clic = default | Shift+clic = zero | Shift+drag = precisione");
 
   dbg_bx = gfx_w - 60; dbg_by = footer_top + 7; dbg_bw = 44; dbg_bh = max(24, ui_font_small + 8);
   dbg_hover = (mouse_x >= dbg_bx && mouse_x <= dbg_bx + dbg_bw && mouse_y >= dbg_by && mouse_y <= dbg_by + dbg_bh);
