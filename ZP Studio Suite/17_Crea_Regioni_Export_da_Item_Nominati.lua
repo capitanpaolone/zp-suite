@@ -210,6 +210,8 @@ local function get_state()
     number_names = bool_from_state(reaper.GetExtState(EXT_SECTION, "number_names"), false),
     mixdown_index_enabled = bool_from_state(reaper.GetExtState(EXT_SECTION, "mixdown_index_enabled"), false),
     preroll_warmup = bool_from_state(reaper.GetExtState(EXT_SECTION, "preroll_warmup"), false),
+    include_video = bool_from_state(reaper.GetExtState(EXT_SECTION, "include_video"), true),
+    skip_muted = bool_from_state(reaper.GetExtState(EXT_SECTION, "skip_muted"), false),
     names_text = reaper.GetExtState(EXT_SECTION, "names_text") or "",
     draft_names = reaper.GetExtState(EXT_SECTION, "draft_names") or "",
     draft_order = reaper.GetExtState(EXT_SECTION, "draft_order") or ""
@@ -226,6 +228,8 @@ local function save_state(state)
   reaper.SetExtState(EXT_SECTION, "number_names", state.number_names and "1" or "0", true)
   reaper.SetExtState(EXT_SECTION, "mixdown_index_enabled", state.mixdown_index_enabled and "1" or "0", true)
   reaper.SetExtState(EXT_SECTION, "preroll_warmup", state.preroll_warmup and "1" or "0", true)
+  reaper.SetExtState(EXT_SECTION, "include_video", state.include_video and "1" or "0", true)
+  reaper.SetExtState(EXT_SECTION, "skip_muted", state.skip_muted and "1" or "0", true)
   reaper.SetExtState(EXT_SECTION, "names_text", state.names_text or "", true)
   reaper.SetExtState(EXT_SECTION, "draft_names", state.draft_names or "", true)
   reaper.SetExtState(EXT_SECTION, "draft_order", state.draft_order or "", true)
@@ -323,8 +327,32 @@ local function is_warmup_item_candidate(item)
   return false
 end
 
+local VIDEO_EXTENSIONS = { mp4 = true, mov = true, m4v = true, avi = true, mkv = true, mpg = true, mpeg = true, wmv = true, webm = true }
+
+-- Opzioni della sorgente (pulsanti Video / No muti), impostate da collect_items.
+local candidate_filter = { include_video = true, skip_muted = false }
+
+-- Percorso del file sorgente, "" se l'item non ne ha uno: item vuoti e di testo
+-- (note) non hanno take, gli item generati (video processor, click) non hanno un file.
+local function item_media_file(item)
+  local take = item and reaper.GetActiveTake(item)
+  if not take then return "", nil end
+  local source = reaper.GetMediaItemTake_Source(take)
+  if not source then return "", nil end
+  return trim(reaper.GetMediaSourceFileName(source, "") or ""), source
+end
+
+local function source_is_video(source, path)
+  local source_type = reaper.GetMediaSourceType and reaper.GetMediaSourceType(source, "") or ""
+  if source_type:upper():find("VIDEO", 1, true) then return true end
+  return VIDEO_EXTENSIONS[(path:match("%.([^%.\\/]+)$") or ""):lower()] == true
+end
+
 local function add_region_candidate(items, item, track)
-  if item_is_midi(item) or is_warmup_item_candidate(item) then return end
+  local path, source = item_media_file(item)
+  if path == "" or item_is_midi(item) or is_warmup_item_candidate(item) then return end
+  if candidate_filter.skip_muted and reaper.GetMediaItemInfo_Value(item, "B_MUTE") ~= 0 then return end
+  if not candidate_filter.include_video and source_is_video(source, path) then return end
   local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
   local len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
   if len > EPS then
@@ -373,6 +401,8 @@ local function collect_items(state)
   local seen_tracks = {}
   local selected_count = reaper.CountSelectedMediaItems(0)
   local mode = state and state.collect_mode or "tracks"
+  candidate_filter.include_video = not (state and state.include_video == false)
+  candidate_filter.skip_muted = state and state.skip_muted == true or false
 
   if mode == "items" then
     for i = 0, selected_count - 1 do
@@ -3741,6 +3771,16 @@ local function open_window()
       state.collect_mode = "all"
       save_state(state)
     end
+    if draw_button({ x = 390, y = mode_y, w = 74, h = 30 }, "Video", state.include_video, true, clicked) then
+      state.include_video = not state.include_video
+      save_state(state)
+      notify_status(state.include_video and "File video inclusi." or "File video esclusi: solo audio.")
+    end
+    if draw_button({ x = 472, y = mode_y, w = 88, h = 30 }, "No muti", state.skip_muted, true, clicked) then
+      state.skip_muted = not state.skip_muted
+      save_state(state)
+      notify_status(state.skip_muted and "Item muti esclusi." or "Item muti inclusi.")
+    end
 
     local action_y = mode_y + 42
     local old_count = count_own_regions()
@@ -4197,16 +4237,17 @@ local function run_osara_mode()
   local state = get_state()
   local ok, values = reaper.GetUserInputs(
     "Gestore Progetto OSARA",
-    7,
-    "Azione 1=seleziona 2=crea 3=nomi+crea,Sezione 0=tutte,Modo 1=item 2=tracce 3=folder 4=tutte,Gap nuovo file s,Padding inizio s,Padding fine s,Cancella vecchie 0/1",
-    string.format("1,0,%s,%s,%s,%s,%s",
+    9,
+    "Azione 1=seleziona 2=crea 3=nomi+crea,Sezione 0=tutte,Modo 1=item 2=tracce 3=folder 4=tutte,Gap nuovo file s,Padding inizio s,Padding fine s,Cancella vecchie 0/1,Includi video 0/1,Salta item muti 0/1",
+    string.format("1,0,%s,%s,%s,%s,%s,%s,%s",
       state.collect_mode == "items" and "1" or state.collect_mode == "folder" and "3" or state.collect_mode == "all" and "4" or "2",
-      state.gap, state.pad_in, state.pad_out, state.delete_old and "1" or "0")
+      state.gap, state.pad_in, state.pad_out, state.delete_old and "1" or "0",
+      state.include_video and "1" or "0", state.skip_muted and "1" or "0")
   )
   if not ok then return end
 
-  local action, section, mode, gap, pad_in, pad_out, delete_old =
-    values:match("^([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),(.*)$")
+  local action, section, mode, gap, pad_in, pad_out, delete_old, include_video, skip_muted =
+    values:match("^([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),(.*)$")
   action = math.floor(tonumber_locale(action, 1))
   section = math.floor(tonumber_locale(section, 0))
   mode = math.floor(tonumber_locale(mode, 2))
@@ -4223,6 +4264,8 @@ local function run_osara_mode()
   state.pad_in = math.max(0, tonumber_locale(pad_in, state.pad_in))
   state.pad_out = math.max(0, tonumber_locale(pad_out, state.pad_out))
   state.delete_old = tonumber_locale(delete_old, 0) ~= 0
+  state.include_video = tonumber_locale(include_video, 1) ~= 0
+  state.skip_muted = tonumber_locale(skip_muted, 0) ~= 0
   save_state(state)
 
   local items, source_label = collect_items(state)

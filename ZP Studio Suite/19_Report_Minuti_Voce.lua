@@ -177,8 +177,17 @@ local function ext_lower(path)
   return (path:match("%.([^%.\\/]+)$") or ""):lower()
 end
 
+local STATE_SECTION = "ZP_STUDIO_SUITE"
+local SKIP_MUTED_KEY = "Report19_skip_muted"
+-- Pulsante "No muti": gli item in mute non entrano nei conteggi per item/tracce.
+local skip_muted = reaper.GetExtState(STATE_SECTION, SKIP_MUTED_KEY) == "1"
+
+local function item_muted_excluded(item)
+  return skip_muted and reaper.GetMediaItemInfo_Value(item, "B_MUTE") ~= 0
+end
+
 local function is_audio_item(item)
-  if not item then return false end
+  if not item or item_muted_excluded(item) then return false end
   local take = reaper.GetActiveTake(item)
   if not take or reaper.TakeIsMIDI(take) then return false end
   local source = reaper.GetMediaItemTake_Source(take)
@@ -195,7 +204,7 @@ local function is_audio_item(item)
 end
 
 local function is_media_file_item(item)
-  if not item then return false end
+  if not item or item_muted_excluded(item) then return false end
   local take = reaper.GetActiveTake(item)
   if not take or reaper.TakeIsMIDI(take) then return false end
   local source = reaper.GetMediaItemTake_Source(take)
@@ -996,6 +1005,7 @@ local function open_window()
     gfx.mouse_wheel = 0
 
     local rows, total_seconds, total_billed, total_items, mode_label, warning, item_label, report_suffix, detail_rows = calculate()
+    if skip_muted and mode >= 3 then mode_label = mode_label .. " (senza item muti)" end
 
     ZP_UI.fill_background()
     ZP_UI.draw_header({
@@ -1016,6 +1026,13 @@ local function open_window()
     if ZP_UI.draw_button({ x = 22, y = 146, w = 170, h = 34 }, "Tracce selezionate", mode == 4, true, clicked, "tab") then mode = 4 scroll = 0 end
     if ZP_UI.draw_button({ x = 204, y = 146, w = 170, h = 34 }, "Tutte tracce audio", mode == 5, true, clicked, "tab") then mode = 5 scroll = 0 end
     if ZP_UI.draw_button({ x = 386, y = 146, w = 132, h = 34 }, "Tutti i file", mode == 6, true, clicked, "tab") then mode = 6 scroll = 0 end
+    if ZP_UI.draw_button({ x = gfx.w - 164, y = 104, w = 142, h = 34 }, "No muti", skip_muted, mode >= 3, clicked, "tab") then
+      skip_muted = not skip_muted
+      reaper.SetExtState(STATE_SECTION, SKIP_MUTED_KEY, skip_muted and "1" or "0", true)
+      if reaper.osara_outputMessage then
+        reaper.osara_outputMessage(skip_muted and "Item muti esclusi." or "Item muti inclusi.")
+      end
+    end
     local copied_recently = copied_message ~= "" and (reaper.time_precise() - copied_time) < 1.3
     if ZP_UI.draw_button({ x = gfx.w - 164, y = 146, w = 142, h = 34 }, copied_recently and "OK salvato" or "Copia + HTML", copied_recently, #rows > 0, clicked, "copy") then
       pending_report_text = build_report_text(mode_label, rows, total_seconds, total_billed, total_items, item_label)

@@ -64,6 +64,9 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 - Item vuoti e di testo (note) non hanno take; item generati (video processor) non hanno file.
   Chi conta o raggruppa item (17 Gestore Progetto, 19 Report minuti) usa solo item con take
   e GetMediaSourceFileName non vuoto, mai il semplice "item con lunghezza > 0".
+  Opzioni (2026-10-05): 17 "Video" (di serie acceso) e "No muti" (di serie spento, B_MUTE);
+  19 "No muti" (modi item/tracce, ExtState ZP_STUDIO_SUITE/Report19_skip_muted). Le opzioni
+  nuove partono sempre dal comportamento di prima.
 - L'SRT di Trascrivi sta accanto al WAV apposta (lo cerca Abbina). Gli SRT di consegna (08, 31)
   vanno nella cartella scelta, mai tra i media.
 
