@@ -13,58 +13,55 @@ check("regione esclusa", not HSC.is_cue_marker("#HSC", true))
 check("altro segnaposto", not HSC.is_cue_marker("#HSCX", false))
 check("testo", not HSC.is_cue_marker("HSC", false))
 
--- prima volta: migrazione dei cue in marker
-local p = HSC.plan(nil, {}, {12.0, 3.5})
-check("migrazione: aggiunge", eq(p.add, {3.5, 12.0}) and #p.remove == 0 and p.to_carver == nil)
-check("migrazione: istantanea", eq(p.snapshot, {3.5, 12.0}))
+local function M(...) local l = {} for i, v in ipairs({...}) do l[i] = { num = v[1], pos = v[2] } end return l end
+local function nums(l) table.sort(l) return table.concat(l, ",") end
+local function pos_of(l) local o = {} for _, c in ipairs(l) do o[#o + 1] = type(c) == "table" and c.pos or c end table.sort(o) local t = {} for i, v in ipairs(o) do t[i] = string.format("%g", v) end return table.concat(t, ",") end
 
--- prima volta con marker gia' presenti: comandano i marker
-p = HSC.plan(nil, {5.0, 9.0}, {1.0})
-check("primo avvio: marker al Carver", eq(p.to_carver, {5.0, 9.0}) and #p.add == 0)
-p = HSC.plan(nil, {5.0, 9.0}, {9.002, 5.0})
-check("primo avvio gia' allineato: niente", p.to_carver == nil and #p.add == 0 and #p.remove == 0)
+-- primo giro: comanda il Carver, mai cancellare cue
+local f = HSC.first_sync({}, {12.0, 3.5})
+check("primo giro: cue senza marker -> creati", pos_of(f.create) == "3.5,12" and #f.delete == 0)
+f = HSC.first_sync(M({1, 5.0}, {2, 9.0}), {9.002, 5.0})
+check("primo giro: gia' allineati", #f.create == 0 and #f.delete == 0)
+f = HSC.first_sync(M({1, 5.0}, {2, 9.0}), {5.0})
+check("primo giro: marker senza cue -> tolto", nums(f.delete) == "2" and #f.create == 0)
+f = HSC.first_sync({}, {})
+check("primo giro: vuoto", #f.create == 0 and #f.delete == 0)
 
--- tutto vuoto
-p = HSC.plan(nil, {}, {})
-check("vuoto", p.to_carver == nil and #p.add == 0 and eq(p.snapshot, {}))
+local synced = { [1] = 10.0, [2] = 20.0, [3] = 30.0 }
+-- spostamenti accettati
+local ms = HSC.marker_side(synced, M({1, 10.0}, {2, 17.0}, {3, 27.0}))
+check("marker spostati: niente da fare", #ms.restore == 0 and #ms.delete == 0 and next(ms.rekey) == nil)
+-- cancellato a mano: torna
+ms = HSC.marker_side(synced, M({1, 10.0}, {3, 30.0}))
+check("marker cancellato: rimesso", #ms.restore == 1 and ms.restore[1].pos == 20.0 and ms.restore[1].from == 2)
+-- tutti cancellati: tornano tutti
+ms = HSC.marker_side(synced, {})
+check("tutti cancellati: rimessi", #ms.restore == 3)
+-- aggiunto a mano: tolto
+ms = HSC.marker_side(synced, M({1, 10.0}, {2, 20.0}, {3, 30.0}, {9, 15.0}))
+check("marker aggiunto a mano: tolto", nums(ms.delete) == "9" and #ms.restore == 0)
+-- rinumerati: stessa posizione, numero nuovo
+ms = HSC.marker_side(synced, M({11, 10.0}, {12, 20.0}, {13, 30.0}))
+check("rinumerati: chiavi nuove, niente rimesso", ms.rekey[1] == 11 and ms.rekey[2] == 12 and ms.rekey[3] == 13 and #ms.restore == 0 and #ms.delete == 0)
 
-local snap = {10.0, 20.0, 30.0}
--- marker spostato (ripple o mouse)
-p = HSC.plan(snap, {10.0, 17.0, 27.0}, snap)
-check("marker spostati -> Carver", eq(p.to_carver, {10.0, 17.0, 27.0}) and #p.add == 0 and #p.remove == 0)
--- marker cancellato
-p = HSC.plan(snap, {10.0, 30.0}, snap)
-check("marker cancellato -> Carver", eq(p.to_carver, {10.0, 30.0}))
--- tutti i marker cancellati
-p = HSC.plan(snap, {}, snap)
-check("tutti i marker cancellati -> Carver vuoto", p.to_carver ~= nil and #p.to_carver == 0)
--- cue aggiunto dal Carver
-p = HSC.plan(snap, snap, {10.0, 15.0, 20.0, 30.0})
-check("cue aggiunto -> marker", eq(p.add, {15.0}) and #p.remove == 0 and p.to_carver == nil)
--- cue tolto dal Carver
-p = HSC.plan(snap, snap, {10.0, 30.0})
-check("cue tolto -> marker tolto", eq(p.remove, {20.0}) and #p.add == 0)
--- CLEAR ALL nel Carver
-p = HSC.plan(snap, snap, {})
-check("clear all -> marker tolti", eq(p.remove, snap))
--- conflitto: cambiano entrambi, vincono i marker
-p = HSC.plan(snap, {11.0, 21.0, 31.0}, {10.0, 20.0, 30.0, 40.0})
-check("conflitto: vincono i marker", eq(p.to_carver, {11.0, 21.0, 31.0}) and #p.add == 0 and #p.remove == 0)
--- niente di cambiato (differenze sotto la tolleranza)
-p = HSC.plan(snap, {10.001, 20.0, 30.004}, {10.0, 19.997, 30.0})
-check("sotto tolleranza: niente", p.to_carver == nil and #p.add == 0 and #p.remove == 0)
--- cue a 4 ms l'uno dall'altro: restano distinti nel conteggio
-p = HSC.plan({}, {}, {1.000, 1.004})
-check("cue vicini: due marker", #p.add == 2)
--- oltre 64 marker: il Carver riceve i primi 64 e c'e' un avviso
+local mk = M({1, 10.0}, {2, 20.0}, {3, 30.0})
+-- lato Carver
+local cs = HSC.carver_side({10, 20, 30}, {10, 15, 20, 30}, mk)
+check("Carver: cue aggiunto -> marker", pos_of(cs.create) == "15" and #cs.delete == 0)
+cs = HSC.carver_side({10, 20, 30}, {10, 30}, mk)
+check("Carver: cue tolto -> marker tolto", nums(cs.delete) == "2" and #cs.create == 0)
+cs = HSC.carver_side({10, 20, 30}, {}, mk)
+check("Carver: CLEAR ALL -> marker tolti", nums(cs.delete) == "1,2,3")
+cs = HSC.carver_side({10, 20, 30}, {10.001, 20, 29.997}, mk)
+check("Carver: sotto tolleranza niente", #cs.create == 0 and #cs.delete == 0)
+cs = HSC.carver_side({}, {1.000, 1.004}, {})
+check("Carver: cue a 4 ms -> due marker", #cs.create == 2)
+
+-- elenco al Carver: posizioni ordinate, massimo 64
 local many = {}
-for i = 1, 70 do many[i] = i * 1.0 end
-p = HSC.plan({}, many, {})
-check("64 al Carver", p.to_carver and #p.to_carver == 64 and p.to_carver[64] == 64.0 and p.warn ~= nil)
--- ordine indifferente
-p = HSC.plan({30.0, 10.0, 20.0}, {20.0, 30.0, 10.0}, {30.0, 20.0, 10.0})
-check("ordine indifferente", p.to_carver == nil and #p.add == 0 and #p.remove == 0)
-
+for i = 70, 1, -1 do many[#many + 1] = { num = i, pos = i * 1.0 } end
+local list = HSC.positions(many)
+check("posizioni: 64 e ordinate", #list == 64 and list[1] == 1.0 and list[64] == 64.0)
 
 -- ===== tracce voce dal routing sidechain (progetto come "I Guardiani dell'Abbazia") =====
 do

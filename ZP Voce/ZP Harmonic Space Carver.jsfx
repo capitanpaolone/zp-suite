@@ -1,8 +1,12 @@
 // @description ZP Harmonic Space Carver
-// @version 2.6.1
+// @version 2.6.2
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   2.6.2: il preascolto si spegne davvero alla riapertura del progetto. Min Duck sistemato nei
+//     progetti salvati prima (se era uguale a Max Duck il VCA restava fisso): passa a -3 dB, e il
+//     blocco VCA avvisa se Min = Max. Avviso rosso lampeggiante (non bloccante) se ci sono cue fuori
+//     posto; spia HELPER SPENTO nella barra cue. Testi a v2.6.
 //   2.6.1: cue ancorati all'audio della voce (helper Cue Navigator 1.6): se la voce si sposta e il cue no,
 //     il cue diventa rosso (punto, conteggio "FUORI POSTO", marker #HSC) con RIALLINEA e TIENI QUI.
 //   2.6.0: i cue seguono l'editing. Con l'helper Cue Navigator 1.4 ogni cue e' anche un marker di
@@ -29,11 +33,11 @@ desc:ZP Harmonic Space Carver Ducker - Paolo Balestri
 options:gmem=ZPVoiceoverSharedBus
 tags: zp dynamics sidechain multiband eq ducker voice podcast broadcast paolo balestri zio paolo
 // Autore: Paolo Balestri - Zio Paolo
-// Versione: 2.5
+// Versione: 2.6
 // Contatto: social@paolobalestri.com
 about:
   # =========================================================
-  # ZP HARMONIC SPACE CARVER v2.5
+  # ZP HARMONIC SPACE CARVER v2.6
   # =========================================================
   Space Carver crea spazio tra VOCE e MUSICA: un Carver multibanda guidato dalla voce
   e un ducker VCA, con cue di rientro rapido sulla timeline.
@@ -359,6 +363,9 @@ function quick_service() local(base, i, seq, cmd, res, pos, n) (
           i = 0; loop(n, gmem[HSC_MB+11+i] >= 0 ? quick_insert(gmem[HSC_MB+11+i]); i += 1;);
           quick_sel = -1; res = 9;
         );
+        // elenco aggiornato subito, prima dell'ack: l'helper legge cue gia' nuovi
+        gmem[base+4] = quick_point_count;
+        i = 0; loop(64, gmem[base+5+i] = i < quick_point_count ? quick_points[i] : -1; i += 1;);
         gmem[HSC_MB+5] = res; gmem[HSC_MB+6] = quick_sel + 1; gmem[HSC_MB+7] = quick_point_count; gmem[HSC_MB+4] = seq;
       );
     );
@@ -378,6 +385,7 @@ quick_inited != 2404 ? (
   quick_gmem_base = -1; quick_place_cnt = 0; quick_ext_seen = 0;
 );
 quick_request = 0; quick_ui_pos = 0; quick_fire_ext = 0;
+duck_init_pending = 1;
 quick_total_samples = max(1, floor(0.200 * srate));
 quick_samples_left = 0; quick_guard_samples_left = 0; quick_start_gr = 1.0;
 quick_carver_start_l = 1.0; quick_carver_start_m = 1.0; quick_carver_start_h = 1.0;
@@ -575,6 +583,14 @@ c_freq_l_new > c_freq_h_new - 50 ? (
     c_freq_l = c_freq_l_new; c_freq_h = c_freq_h_new; calc_crossover();
 );
 
+// Dopo il caricamento di un progetto (segnali da @serialize): preascolto spento e Min Duck sistemato.
+listen_reset_pending ? ( slider31 = 0; sliderchange(2 ^ 30); listen_reset_pending = 0; );
+duck_migrate ? (
+  // progetti salvati prima della 2.6.2: Min = Max (o Min piu' profondo) lasciava il VCA fisso
+  slider23 <= slider24 + 0.05 ? ( slider23 = max(slider24, -3); sliderchange(2 ^ 22); );
+  duck_migrate = 0; duck_init_pending = 1;
+);
+duck_init_pending ? ( prev_min_duck = slider(23); prev_max_duck = slider(24); duck_init_pending = 0; );
 // Forbice Min/Max Duck: Min (riduzione minima) non puo' essere piu' profondo di Max.
 slider(23) < slider(24) ? (
   slider(23) != prev_min_duck ? ( slider(24) = slider(23); notify_slider(24); )
@@ -888,11 +904,14 @@ speech_was_active = speech_active;
 
 // ================================================================
 @serialize
-quick_serialize_version = 2404;
+quick_serialize_version = 2602;
 file_avail(0) >= 0 ? (
+  // caricamento (progetto, undo, preset): il preascolto riparte spento
+  listen_reset_pending = 1;
   file_avail(0) > 0 ? (
     file_var(0, quick_serialize_version);
-    quick_serialize_version >= 2402 && quick_serialize_version <= 2404 ? (
+    quick_serialize_version < 2602 ? duck_migrate = 1;
+    quick_serialize_version >= 2402 && quick_serialize_version <= 2602 ? (
       file_var(0, quick_point_count);
       quick_point_count = max(0, min(64, floor(quick_point_count)));
       qpi = 0;
@@ -1258,13 +1277,26 @@ function draw_listen_banner(x, y, w, h) local(sy, blink, tw, th) (
 // (base traccia + 4032 + 2*fx, cue 0-31 e 32-63, in ordine di tempo).
 function cue_lost(i) ( i < 32 ? floor(quick_lost_m1 / (2 ^ i)) % 2 : floor(quick_lost_m2 / (2 ^ (i - 32))) % 2; );
 quick_lost_m1 = 0; quick_lost_m2 = 0; quick_lost_n = 0;
-quick_gmem_base >= 0 && quick_host_chain < 32 ? (
+quick_gmem_base >= 0 && quick_host_chain < 32 && sc_route_fresh ? (
   quick_track_base = quick_gmem_base - quick_host_chain * 72;
   quick_lost_m1 = max(0, gmem[quick_track_base + 4032 + quick_host_chain * 2]);
   quick_lost_m2 = max(0, gmem[quick_track_base + 4033 + quick_host_chain * 2]);
   i = 0; loop(quick_point_count, quick_lost_n += cue_lost(i); i += 1;);
 );
 quick_sel_lost = quick_sel >= 0 && cue_lost(quick_sel);
+
+// Avviso cue fuori posto (lampeggia, non blocca): scattano nel punto sbagliato finche' non li riallinei.
+function draw_lost_banner(x, y, w, h) local(sy, blink, tw, th) (
+  quick_lost_n > 0 ? (
+    sy = ui_sy(y);
+    blink = 0.65 + 0.35 * sin(quick_now * 6.0 + 1.5);
+    gfx_r=0.86; gfx_g=0.20; gfx_b=0.18; gfx_a=blink; gfx_rect(x, sy, w, h); gfx_a = 1;
+    sprintf(#lost_banner_txt, "CUE FUORI POSTO: %d", quick_lost_n);
+    gfx_setfont(5); gfx_measurestr(#lost_banner_txt, tw, th);
+    gfx_r=1; gfx_g=0.95; gfx_b=0.93; gfx_x = x + (w - tw) / 2; gfx_y = sy + (h - th) / 2; gfx_drawstr(#lost_banner_txt);
+    ui_hit(x, y, w, h) ? active_info_id = 73;
+  );
+);
 
 // Barra QUICK RETURN CUES, identica in Advanced, Simple e Dock. full = con Rampa e Apertura.
 function draw_cue_bar(bx, by, bw, full)
@@ -1279,6 +1311,8 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
   gfx_setfont(5); gfx_r=0.62; gfx_g=0.66; gfx_b=0.73; gfx_y = sy + 10; gfx_drawstr(#quick_count_txt);
   quick_gmem_base < 0 ? (gfx_r=0.85; gfx_g=0.55; gfx_b=0.20; gfx_drawstr("   (take/input FX: salto non disponibile)"));
   quick_lost_n > 0 ? (sprintf(#quick_lost_txt, "   %d FUORI POSTO", quick_lost_n); gfx_r=0.95; gfx_g=0.32; gfx_b=0.28; gfx_drawstr(#quick_lost_txt););
+  quick_gmem_base >= 0 && !sc_route_fresh ? (gfx_r=0.92; gfx_g=0.60; gfx_b=0.18; gfx_drawstr("   HELPER SPENTO"););
+  ui_hit(bx, by, 420, 26) && quick_gmem_base >= 0 && !sc_route_fresh ? active_info_id = 75;
 
   qx = bx + 10; qy = by + 32; qh = 24;
   sel_w = full ? 170 : 140;
@@ -1383,7 +1417,7 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
 // ================================================================
 // TESTATA (FULL): nome, Partenza, preascolto, profilo, vista
 // ================================================================
-function draw_header() local(rx) (
+function draw_header() local(rx, ban_w) (
   gfx_setfont(2);
   show_simple ? (gfx_r=0.18; gfx_g=0.24; gfx_b=0.30;) : (gfx_r=0.8; gfx_g=0.8; gfx_b=0.85;);
   gfx_x = 18; gfx_y = 6; gfx_drawstr("ZP HSC");
@@ -1400,7 +1434,12 @@ function draw_header() local(rx) (
   ui_tab_button(51, 0, rx - 60 - 4 - 56, 12, 56, 26, "FULL", 51);
   ui_tab_button(4, 1, rx - 120 - 16 - 92, 12, 92, 26, "ADVANCED", 4);
   ui_tab_button(4, 0, rx - 228 - 4 - 74, 12, 74, 26, "SIMPLE", 4);
-  draw_listen_banner(384, 12, max(120, rx - 306 - 384 - 10), 26);
+  ban_w = max(120, rx - 306 - 384 - 10);
+  slider(31) > 0 && quick_lost_n > 0 ? (
+    draw_listen_banner(384, 12, ban_w / 2 - 2, 26); draw_lost_banner(384 + ban_w / 2 + 2, 12, ban_w / 2 - 2, 26);
+  ) : (
+    draw_listen_banner(384, 12, ban_w, 26); draw_lost_banner(384, 12, ban_w, 26);
+  );
 
   show_simple ? (gfx_r=0.80; gfx_g=0.85; gfx_b=0.91;) : (gfx_r=0.16; gfx_g=0.16; gfx_b=0.20;);
   gfx_a = 1; gfx_line(0, 50, gfx_w, 50);
@@ -1530,6 +1569,10 @@ show_simple ? (
   gfx_setfont(5); gfx_r=0.60; gfx_g=0.60; gfx_b=0.72; gfx_x = 752; gfx_y = ui_sy(186); gfx_drawstr("Rientro");
   ui_tab_button(50, 0, 752, 206, 48, 22, "STD", 50);
   ui_tab_button(50, 1, 804, 206, 78, 22, "GRADUAL", 50);
+  abs(slider(23) - slider(24)) < 0.05 ? (
+    gfx_setfont(5); gfx_r=0.95; gfx_g=0.62; gfx_b=0.15; gfx_x = 752; gfx_y = ui_sy(240); gfx_drawstr("Min = Max: VCA fisso");
+    ui_hit(748, 236, 140, 20) ? active_info_id = 76;
+  );
 
   // ---- riga 2: BANDE -> VCA/GLUE -> USCITA -> LIVELLI ----
   draw_box(10, 276, 300, 204, "BANDE", 0.82, 0.84, 0.90);
@@ -1727,7 +1770,9 @@ view_mode == 0 ? (
   active_info_id == 65 ? gfx_drawstr(#sc_msg0) : active_info_id == 66 ? gfx_drawstr(#sc_msg1) : active_info_id == 67 ? gfx_drawstr(#sc_msg2) :
   active_info_id == 68 ? gfx_drawstr("FONTI VOCE: compaiono quando la traccia ha i canali. Pulsante I/O del plugin, Track channels 6 (SC2) o 8 (SC3).") :
   active_info_id == 63 ? gfx_drawstr("ANTICIPO: il Carver vede la voce prima della musica (lookahead). Aggiunge la stessa latenza (PDC).") :
-  active_info_id == 73 ? gfx_drawstr("FUORI POSTO: la voce sotto questo cue si e' spostata (o non c'e' piu'). RIALLINEA porta il cue dove ora c'e' la sua voce.") :
+  active_info_id == 75 ? gfx_drawstr("HELPER SPENTO: salti, marker #HSC, tracce voce e cue rossi non funzionano. Avvia l'azione ZP Harmonic Space Carver Cue Navigator.") :
+  active_info_id == 76 ? gfx_drawstr("MIN = MAX: con la voce la musica scende sempre di Max Duck; Ceiling e Prio non lavorano. Alza Min Duck (es. -3 dB).") :
+  active_info_id == 73 ? gfx_drawstr("FUORI POSTO: la voce sotto il cue si e' spostata; il cue scatta nel punto sbagliato. RIALLINEA lo porta sulla sua voce.") :
   active_info_id == 74 ? gfx_drawstr("TIENI QUI: il cue resta dov'e' e prende come riferimento la voce che ha sotto adesso.") :
   active_info_id == 64 ? gfx_drawstr("KNEE: morbidezza dell'ingresso in soglia del Carver (0 = netto).") :
   active_info_id == 70 ? gfx_drawstr("PARTENZA: imposta Depth, Intens, Spread, Prio, Min e Max Duck. SCORE cinema, FLAT equilibrio, VOCAL podcast.") :

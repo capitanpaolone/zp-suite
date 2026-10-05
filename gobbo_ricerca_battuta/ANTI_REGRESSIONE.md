@@ -12,6 +12,17 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
   e il percorso deve esistere (run_all lo controlla).
 - Mai push su master, tag, bump di versione o ReaPack senza richiesta esplicita di Paolo.
 
+## Harmonic Space Carver: cue e helper
+- I cue esistono solo per il Carver: un #HSC cancellato o aggiunto fuori dal Carver si ripristina/toglie
+  (decisione di Paolo). Al primo giro su un progetto comanda il Carver: l'helper non cancella mai cue.
+- Il progetto si riconosce da puntatore + file (`EnumProjects(-1)`): la stessa scheda puo' contenere un altro progetto.
+- Le richieste in ExtState si cancellano dopo l'uso (un helper riavviato non deve rieseguirle).
+- Un solo helper: ExtState ZP_HSC/owner, l'ultimo avviato vince.
+- Lo stato da sistemare al caricamento (preascolto, migrazioni) va in @serialize + primo @block, non in @init:
+  REAPER ricarica i parametri dopo @init.
+- Installazione su questo Mac: veri in `Scripts/ZP Suite/ZP Voce/` (cartella di ReaPack); in `Scripts/ZP Suite/`
+  solo tre rimandi (helper all'avvio SWS, Mostra tracce voce, Riallinea su Ctrl+\). Non sovrascriverli con i veri.
+
 ## Help
 - Ogni modifica visibile a Paolo aggiorna, nello stesso commit, l'help (`help/index.html` e la pagina
   dedicata: solo_recorder, pannello_trascrizione, toolbar...) e le spiegazioni dentro lo script

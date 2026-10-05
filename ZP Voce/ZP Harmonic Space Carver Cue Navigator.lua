@@ -1,9 +1,15 @@
 -- @description ZP Harmonic Space Carver Cue Navigator (background helper)
--- @version 1.6
+-- @version 1.7
 -- @author Paolo Balestri / Codex
 -- @about Collega i Carver a REAPER: salti tra i cue, punto del cursore a trasporto fermo,
 --   verifica del routing sidechain e cue come marker #HSC sul righello (seguono l'editing).
 -- @changelog
+--   1.7: i cue si aggiungono e si tolgono solo dal Carver: un marker #HSC cancellato a mano torna,
+--        uno aggiunto a mano sparisce; spostarli resta libero. Marker #HSC in lane 4 (fuori dalle
+--        lane del Gestore Progetto). Un solo helper alla volta (l'ultimo avviato prende il posto).
+--        Progetto riconosciuto anche dal file: un progetto vecchio aperto nella stessa scheda non
+--        perde i cue. Riallinea non riparte al riavvio. Avviso (non bloccante) se ci sono cue rossi.
+--        Ancore ricalcolate solo quando il progetto cambia.
 --   1.6: ogni cue e' ancorato all'audio della voce che ha sotto (file e punto nel file). Se l'audio
 --        si sposta e il cue no, il marker #HSC e il punto nel Carver diventano rossi: RIALLINEA porta
 --        il cue dove adesso c'e' la sua voce, TIENI QUI accetta la posizione. Un marker trascinato a mano
@@ -50,40 +56,92 @@ local function contains(list, t)
   return false
 end
 
--- Confronta marker e cue del Carver con l'ultima istantanea sincronizzata.
--- Restituisce un piano: { to_carver = elenco | nil, add = {tempi}, remove = {tempi}, snapshot = elenco, warn = testo|nil }.
--- Regole: il marker comanda; se e' cambiato solo il Carver, si aggiornano i marker;
--- prima volta (nessuna istantanea): marker presenti -> al Carver, altrimenti i cue diventano marker.
-function HSC.plan(snapshot, markers, cues)
-  markers, cues = HSC.sorted(markers), HSC.sorted(cues)
-  local p = { add = {}, remove = {} }
-  local function markers_win()
-    local list = {}
-    for i = 1, math.min(#markers, HSC.MAX) do list[i] = markers[i] end
-    if #markers > HSC.MAX then p.warn = "Piu' di 64 marker #HSC: il Carver usa i primi 64" end
-    if not HSC.same(list, cues) then p.to_carver = list end
-    p.snapshot = list
+-- Regole (1.7, decise da Paolo): i cue nascono e si tolgono SOLO dal Carver (pulsanti e tasti);
+-- i marker #HSC si possono solo spostare (a mano, ripple). Un #HSC cancellato da fuori torna al suo
+-- posto, uno aggiunto da fuori viene tolto. Marker = { num, pos }.
+
+-- Accoppia due elenchi ordinati entro la tolleranza. Restituisce gli scompagnati di a e di b.
+function HSC.unmatched(a, b, key_a, key_b)
+  local la, lb = {}, {}
+  for _, v in ipairs(a) do la[#la + 1] = v end
+  for _, v in ipairs(b) do lb[#lb + 1] = v end
+  local ka = key_a or function(v) return v end
+  local kb = key_b or function(v) return v end
+  table.sort(la, function(x, y) return ka(x) < ka(y) end)
+  table.sort(lb, function(x, y) return kb(x) < kb(y) end)
+  local ua, ub, i, j = {}, {}, 1, 1
+  while i <= #la and j <= #lb do
+    local d = ka(la[i]) - kb(lb[j])
+    if math.abs(d) <= HSC.TOL then i, j = i + 1, j + 1
+    elseif d < 0 then ua[#ua + 1] = la[i]; i = i + 1
+    else ub[#ub + 1] = lb[j]; j = j + 1 end
   end
-  if snapshot == nil then
-    if #markers > 0 then markers_win() else
-      for _, t in ipairs(cues) do p.add[#p.add + 1] = t end
-      p.snapshot = cues
+  for k = i, #la do ua[#ua + 1] = la[k] end
+  for k = j, #lb do ub[#ub + 1] = lb[k] end
+  return ua, ub
+end
+
+local function mpos(m) return m.pos end
+
+-- Primo giro su un progetto: comanda il Carver. Marker senza cue = da togliere, cue senza marker = da creare.
+function HSC.first_sync(markers, cues)
+  local um, uc = HSC.unmatched(markers, cues, mpos)
+  local del = {}
+  for _, m in ipairs(um) do del[#del + 1] = m.num end
+  return { delete = del, create = uc }
+end
+
+-- Lato marker: confronta i marker di adesso con quelli dell'ultimo giro (synced: num -> pos).
+-- Spostati: accettati. Spariti: da rimettere (restore {pos, from}). Nuovi: da togliere (delete).
+-- Rinumerati (sparito + nuovo nello stesso punto): stessa cosa, chiave cambiata (rekey old -> new).
+function HSC.marker_side(synced, markers)
+  local present, extra, used = {}, {}, {}
+  for _, m in ipairs(markers) do present[m.num] = m.pos end
+  for _, m in ipairs(markers) do if synced[m.num] == nil then extra[#extra + 1] = m end end
+  local rekey, restore = {}, {}
+  local nums = {}
+  for num in pairs(synced) do nums[#nums + 1] = num end
+  table.sort(nums)
+  for _, num in ipairs(nums) do
+    if present[num] == nil then
+      local hit
+      for k, e in ipairs(extra) do
+        if not used[k] and math.abs(e.pos - synced[num]) <= HSC.TOL then hit = k; break end
+      end
+      if hit then used[hit] = true; rekey[num] = extra[hit].num
+      else restore[#restore + 1] = { pos = synced[num], from = num } end
     end
-    return p
   end
-  snapshot = HSC.sorted(snapshot)
-  local markers_changed = not HSC.same(markers, snapshot)
-  local cues_changed = not HSC.same(cues, snapshot)
-  if markers_changed then
-    markers_win()
-  elseif cues_changed then
-    for _, t in ipairs(cues) do if not contains(markers, t) then p.add[#p.add + 1] = t end end
-    for _, t in ipairs(markers) do if not contains(cues, t) then p.remove[#p.remove + 1] = t end end
-    p.snapshot = cues
-  else
-    p.snapshot = snapshot
+  local del = {}
+  for k, e in ipairs(extra) do if not used[k] then del[#del + 1] = e.num end end
+  return { rekey = rekey, restore = restore, delete = del }
+end
+
+-- Lato Carver: cosa e' cambiato nel Carver rispetto all'elenco che doveva avere (expected).
+-- Cue aggiunti -> marker da creare; cue tolti -> marker (vicino a quel tempo) da togliere.
+function HSC.carver_side(expected, cues, markers)
+  local removed, added = HSC.unmatched(expected, cues)
+  local create, del = {}, {}
+  for _, t in ipairs(added) do
+    local exists = false
+    for _, m in ipairs(markers) do if math.abs(m.pos - t) <= HSC.TOL then exists = true; break end end
+    if not exists then create[#create + 1] = t end
   end
-  return p
+  for _, t in ipairs(removed) do
+    for _, m in ipairs(markers) do
+      if math.abs(m.pos - t) <= HSC.TOL then del[#del + 1] = m.num; break end
+    end
+  end
+  return { create = create, delete = del }
+end
+
+-- Elenco per il Carver: posizioni dei marker, ordinate, al massimo 64.
+function HSC.positions(markers)
+  local list = {}
+  for _, m in ipairs(markers) do list[#list + 1] = m.pos end
+  table.sort(list)
+  while #list > HSC.MAX do table.remove(list) end
+  return list
 end
 
 -- ================================================================
@@ -432,22 +490,70 @@ local function rescan()
 end
 
 -- ================================================================
--- Sincronizzazione nel progetto (ogni 0,25 s)
+-- Un solo helper alla volta: l'ultimo avviato prende il posto dei precedenti.
+-- ================================================================
+local MY_ID = string.format("%.6f-%d", reaper.time_precise(), math.random(1, 1000000))
+local function i_am_owner() return reaper.GetExtState("ZP_HSC", "owner") == MY_ID end
+
+-- Messaggio non bloccante: OSARA se c'e', e un suggerimento vicino al mouse.
+local tip_until = 0
+local function notify(msg)
+  if reaper.osara_outputMessage then reaper.osara_outputMessage(msg) end
+  local x, y = reaper.GetMousePosition()
+  reaper.TrackCtl_SetToolTip(msg, x + 14, y + 14, true)
+  tip_until = reaper.time_precise() + 3
+end
+
+-- ================================================================
+-- Marker #HSC: lettura, creazione (in lane 4), cancellazione
 -- ================================================================
 local MB = 3800                          -- casella comune dei comandi al Carver (vedi il JSFX)
 local MARKER_COLOR = reaper.ColorToNative(36, 184, 212) | 0x1000000
-local snapshots, sync_project, pending, last_sync = {}, nil, nil, -1
-local last_mb_seen, warned = 0, false
+local LOST_COLOR = reaper.ColorToNative(232, 64, 56) | 0x1000000
+local HSC_LANE = 3                       -- lane 4 (REAPER le conta da 0): fuori dalle lane 1-2 del 17
 
-local function read_markers()
+local function read_cue_markers()
   local list, i = {}, 0
   while true do
-    local retval, isrgn, pos, _, name = reaper.EnumProjectMarkers3(0, i)
+    local retval, isrgn, pos, _, name, num, color = reaper.EnumProjectMarkers3(0, i)
     if retval == 0 then break end
-    if HSC.is_cue_marker(name, isrgn) then list[#list + 1] = pos end
+    if HSC.is_cue_marker(name, isrgn) then list[#list + 1] = { pos = pos, num = num, name = name, color = color, idx = i } end
     i = i + 1
   end
+  table.sort(list, function(a, b) return a.pos < b.pos end)
   return list
+end
+
+local function put_in_lane(enum_idx)
+  if not (reaper.GetRegionOrMarker and reaper.SetRegionOrMarkerInfo_Value and reaper.GetRegionOrMarkerInfo_Value) then return end
+  local entry = reaper.GetRegionOrMarker(0, enum_idx, "")
+  if entry and reaper.GetRegionOrMarkerInfo_Value(0, entry, "I_LANENUMBER") ~= HSC_LANE then
+    reaper.SetRegionOrMarkerInfo_Value(0, entry, "I_LANENUMBER", HSC_LANE)
+  end
+end
+
+local function lane_sweep()
+  for _, m in ipairs(read_cue_markers()) do put_in_lane(m.idx) end
+end
+
+-- Applica le modifiche ai marker in un blocco di undo. create = { tempo | {pos, from} }.
+-- Restituisce la mappa vecchio numero -> nuovo numero dei marker rimessi.
+local function apply_marker_ops(create, delete, undo_name)
+  if #create == 0 and #delete == 0 then return {} end
+  local moved = {}
+  reaper.Undo_BeginBlock2(0)
+  reaper.PreventUIRefresh(1)
+  for _, num in ipairs(delete) do reaper.DeleteProjectMarker(0, num, false) end
+  for _, c in ipairs(create) do
+    local pos = type(c) == "table" and c.pos or c
+    local num = reaper.AddProjectMarker2(0, false, pos, 0, HSC.NAME, -1, MARKER_COLOR)
+    if type(c) == "table" and c.from and num and num >= 0 then moved[c.from] = num end
+  end
+  lane_sweep()
+  reaper.PreventUIRefresh(-1)
+  reaper.UpdateTimeline()
+  reaper.Undo_EndBlock2(0, undo_name or "ZP HSC: cue sul righello", -1)
+  return moved
 end
 
 local function cue_times(base)
@@ -456,30 +562,28 @@ local function cue_times(base)
   return list
 end
 
-local function apply_markers(add, remove)
-  if #add == 0 and #remove == 0 then return end
-  reaper.Undo_BeginBlock2(0)
-  reaper.PreventUIRefresh(1)
-  if #remove > 0 then
-    -- dall'ultimo indice al primo, cosi' gli indici restano validi
-    local i = reaper.CountProjectMarkers(0) - 1
-    while i >= 0 do
-      local retval, isrgn, pos, _, name = reaper.EnumProjectMarkers3(0, i)
-      if retval ~= 0 and HSC.is_cue_marker(name, isrgn) then
-        for _, t in ipairs(remove) do
-          if math.abs(pos - t) <= HSC.TOL then reaper.DeleteProjectMarkerByIndex(0, i); break end
-        end
-      end
-      i = i - 1
-    end
-  end
-  for _, t in ipairs(add) do reaper.AddProjectMarker2(0, false, t, 0, HSC.NAME, -1, MARKER_COLOR) end
-  reaper.PreventUIRefresh(-1)
-  reaper.UpdateTimeline()
-  reaper.Undo_EndBlock2(0, "ZP HSC: cue sul righello", -1)
+-- ================================================================
+-- Ancore (definite qui perche' la sincronizzazione le rinumera)
+-- ================================================================
+local anchors, runtime = {}, {}
+local function rekey_anchor(old, new)
+  if old == new then return end
+  anchors[new], anchors[old] = anchors[old], nil
+  runtime[new], runtime[old] = runtime[old], nil
 end
 
--- Manda l'elenco al Carver (comando 5). Un comando alla volta: si aspetta l'ack prima del successivo.
+-- ================================================================
+-- Sincronizzazione (ogni 0,25 s)
+-- ================================================================
+local synced, expected, pending, sync_key = nil, {}, nil, nil
+local last_sync, last_mb_seen = -1, 0
+local save_anchors                        -- definita con le ancore
+
+local function project_key()
+  local proj, fn = reaper.EnumProjects(-1)
+  return tostring(proj) .. "|" .. tostring(fn or "")
+end
+
 local function send_list(base, list)
   local seq = math.floor(reaper.gmem_read(MB + 3) + 0.5) + 1
   reaper.gmem_write(MB + 10, #list)
@@ -487,48 +591,85 @@ local function send_list(base, list)
   reaper.gmem_write(MB, base)
   reaper.gmem_write(MB + 1, 5)
   reaper.gmem_write(MB + 3, seq)
-  pending = { base = base, seq = seq, t = reaper.time_precise(), snapshot = list }
+  pending = { base = base, seq = seq, t = reaper.time_precise(), list = list }
+end
+
+local function alive_carvers()
+  local out = {}
+  for _, c in ipairs(carvers) do if reaper.gmem_read(c.base + 69) == MAGIC then out[#out + 1] = c end end
+  return out
 end
 
 local function sync()
-  local proj = reaper.EnumProjects(-1)
-  if proj ~= sync_project then snapshots, pending, sync_project = {}, nil, proj end
+  local key = project_key()
+  if key ~= sync_key then synced, expected, pending, sync_key = nil, {}, nil, key end
   if pending then
     if math.floor(reaper.gmem_read(MB + 4) + 0.5) == pending.seq then
-      snapshots[pending.base] = pending.snapshot; pending = nil
+      expected[pending.base] = pending.list; pending = nil
     elseif reaper.time_precise() - pending.t > 1.0 then
       pending = nil                       -- Carver fermo: si riprova al prossimo giro
     end
     return
   end
-  -- la casella e' occupata da un'azione da tastiera in corso: si aspetta
+  -- la casella e' occupata da un'azione da tastiera in corso: si aspetta (al massimo 1 s)
   if math.floor(reaper.gmem_read(MB + 4) + 0.5) ~= math.floor(reaper.gmem_read(MB + 3) + 0.5)
-     and reaper.time_precise() - (last_mb_seen or 0) < 1.0 then return end
+     and reaper.time_precise() - last_mb_seen < 1.0 then return end
   last_mb_seen = reaper.time_precise()
-  local markers = read_markers()
-  for _, c in ipairs(carvers) do
-    if reaper.gmem_read(c.base + 69) == MAGIC then
-      local p = HSC.plan(snapshots[c.base], markers, cue_times(c.base))
-      if p.warn and not warned then warned = true; if reaper.osara_outputMessage then reaper.osara_outputMessage(p.warn) end end
-      if #p.add > 0 or #p.remove > 0 then
-        apply_markers(p.add, p.remove)
-        markers = read_markers()
-      end
-      if p.to_carver then
-        send_list(c.base, p.to_carver)
-        return                            -- un Carver per giro mentre si aspetta l'ack
-      end
-      snapshots[c.base] = p.snapshot
+
+  local list = alive_carvers()
+  if #list == 0 then return end           -- senza Carver i marker non si toccano
+  local markers = read_cue_markers()
+  local changed_anchors = false
+
+  if synced == nil then
+    -- primo giro su questo progetto: comanda il Carver (mai cancellare cue da qui)
+    local ops = HSC.first_sync(markers, cue_times(list[1].base))
+    apply_marker_ops(ops.create, ops.delete)
+    lane_sweep()
+    markers = read_cue_markers()
+    expected[list[1].base] = HSC.positions(markers)
+  else
+    -- lato marker: spostamenti accettati, cancellazioni rimesse, aggiunte tolte
+    local ops = HSC.marker_side(synced, markers)
+    for old, new in pairs(ops.rekey) do rekey_anchor(old, new); changed_anchors = true end
+    if #ops.restore > 0 or #ops.delete > 0 then
+      local moved = apply_marker_ops(ops.restore, ops.delete, "ZP HSC: marker dei cue rimessi")
+      for old, new in pairs(moved) do rekey_anchor(old, new); changed_anchors = true end
+      notify(#ops.restore > 0
+        and string.format("Cue rimessi sul righello: %d. I cue si tolgono dal Carver (ADD/REMOVE, CLEAR ALL).", #ops.restore)
+        or "I cue si aggiungono dal Carver: marker #HSC aggiunto a mano tolto.")
+      markers = read_cue_markers()
     end
+    -- lato Carver: cue aggiunti o tolti con i pulsanti o i tasti
+    for _, c in ipairs(list) do
+      if expected[c.base] then
+        local cs = HSC.carver_side(expected[c.base], cue_times(c.base), markers)
+        if #cs.create > 0 or #cs.delete > 0 then
+          apply_marker_ops(cs.create, cs.delete)
+          markers = read_cue_markers()
+          expected[c.base] = HSC.positions(markers)
+        end
+      end
+    end
+  end
+  synced = {}
+  for _, m in ipairs(markers) do synced[m.num] = m.pos end
+  if changed_anchors and save_anchors then save_anchors() end
+
+  -- ogni Carver riceve le posizioni dei marker (un Carver per giro mentre si aspetta l'ack)
+  local target = HSC.positions(markers)
+  for _, c in ipairs(list) do
+    if not HSC.same(HSC.sorted(cue_times(c.base)), target) then send_list(c.base, target); return end
+    expected[c.base] = target
   end
 end
 
 -- ================================================================
 -- Ancore nel progetto: stato, colori dei marker, maschere per i Carver
 -- ================================================================
-local LOST_COLOR = reaper.ColorToNative(232, 64, 56) | 0x1000000
-local anchors, runtime, anchors_project = {}, {}, nil
+local anchors_key, voice_items_state = nil, -1
 local cue_markers_cache, items_cache = {}, {}
+local lost_count_said = 0
 
 local function source_file(take)
   local src = reaper.GetMediaItemTake_Source(take)
@@ -561,31 +702,26 @@ local function collect_voice_items()
   return items
 end
 
-local function read_cue_markers()
-  local list, i = {}, 0
-  while true do
-    local retval, isrgn, pos, _, name, num, color = reaper.EnumProjectMarkers3(0, i)
-    if retval == 0 then break end
-    if HSC.is_cue_marker(name, isrgn) then list[#list + 1] = { pos = pos, num = num, name = name, color = color } end
-    i = i + 1
-  end
-  table.sort(list, function(a, b) return a.pos < b.pos end)
-  return list
-end
-
-local function save_anchors()
+save_anchors = function()
   reaper.SetProjExtState(0, "ZP_HSC", "anchors", HSC.serialize(anchors))
 end
 
-local function anchors_tick()
-  local proj = reaper.EnumProjects(-1)
-  if proj ~= anchors_project then
+-- Gira quando il progetto cambia (stato di REAPER), e comunque ogni 2 s.
+local last_state, last_full = -1, -1
+local function anchors_tick(force)
+  local key = project_key()
+  if key ~= anchors_key then
     local _, text = reaper.GetProjExtState(0, "ZP_HSC", "anchors")
-    anchors, runtime, anchors_project = HSC.deserialize(text), {}, proj
+    anchors, runtime, anchors_key, last_state = HSC.deserialize(text), {}, key, -1
+    lane_sweep()
   end
+  local state = reaper.GetProjectStateChangeCount(0)
+  local now = reaper.time_precise()
+  if not force and state == last_state and now - last_full < 2.0 then return end
+  last_state, last_full = state, now
   local markers, items = read_cue_markers(), collect_voice_items()
   cue_markers_cache, items_cache = markers, items
-  local dirty, lost, present = false, {}, {}
+  local dirty, lost, present, lost_n = false, {}, {}, 0
   for i, m in ipairs(markers) do
     present[m.num] = true
     local a, rt = anchors[m.num], runtime[m.num] or {}
@@ -608,11 +744,17 @@ local function anchors_tick()
     end
     rt.prev_pos, rt.prev_exp, rt.status, rt.exp = m.pos, exp, st, exp
     lost[i] = (st == "lost")
+    if lost[i] then lost_n = lost_n + 1 end
     local want = lost[i] and LOST_COLOR or MARKER_COLOR
     if m.color ~= want then reaper.SetProjectMarker3(0, m.num, false, m.pos, 0, m.name, want) end
   end
   for k in pairs(anchors) do if not present[k] then anchors[k] = nil; runtime[k] = nil; dirty = true end end
   if dirty then save_anchors() end
+  -- avviso forte ma non bloccante quando aumentano i cue fuori posto
+  if lost_n > lost_count_said then
+    notify(string.format("Cue fuori posto: %d. Scattano nel punto sbagliato finche' non li riallinei.", lost_n))
+  end
+  lost_count_said = lost_n
   local m1, m2 = HSC.masks(lost)
   for _, c in ipairs(carvers) do
     if c.fx < 32 then
@@ -626,7 +768,7 @@ end
 -- RIALLINEA / TIENI QUI su un cue (indice in ordine di tempo) o su tutti quelli fuori posto.
 -- Restituisce quanti cue ha toccato.
 anchor_command = function(kind, index)
-  anchors_tick()
+  anchors_tick(true)
   local targets = {}
   for i, m in ipairs(cue_markers_cache) do
     local rt = runtime[m.num]
@@ -647,15 +789,16 @@ anchor_command = function(kind, index)
   save_anchors()
   reaper.UpdateTimeline()
   reaper.Undo_EndBlock2(0, kind == "realign" and "ZP HSC: riallinea cue" or "ZP HSC: tieni il cue qui", -1)
+  anchors_tick(true)
   return done
 end
 
 -- Richieste dalle azioni da tastiera (ExtState ZP_HSC/req = "realign_all|seq").
-local last_req = ""
+-- La richiesta si cancella dopo l'uso; una richiesta trovata all'avvio e' vecchia e si ignora.
 local function serve_requests()
   local req = reaper.GetExtState("ZP_HSC", "req")
-  if req == "" or req == last_req then return end
-  last_req = req
+  if req == "" then return end
+  reaper.DeleteExtState("ZP_HSC", "req", false)
   local what, seq = req:match("^([%w_]+)|(.+)$")
   if what == "realign_all" then
     local n = anchor_command("realign", nil)
@@ -664,12 +807,17 @@ local function serve_requests()
 end
 
 local function run()
+  if not i_am_owner() then return end     -- un helper piu' nuovo ha preso il posto: questo si ferma
   local now = reaper.time_precise()
   if now - last_scan >= 1.0 then rescan(); last_scan = now end
   for _, base in ipairs(bases) do handle(base) end
   if now - last_sync >= 0.25 then sync(); anchors_tick(); serve_requests(); last_sync = now end
+  if tip_until > 0 and now > tip_until then reaper.TrackCtl_SetToolTip("", 0, 0, true); tip_until = 0 end
   reaper.defer(run)
 end
+
+reaper.SetExtState("ZP_HSC", "owner", MY_ID, false)
+reaper.DeleteExtState("ZP_HSC", "req", false)   -- richieste rimaste da prima: vecchie
 -- simulazione fuori REAPER (test): espone i passi senza avviare il ciclo
-if HSC_SYNC_SIM then return { sync = sync, rescan = rescan, anchors_tick = anchors_tick, anchor_command = anchor_command, serve_requests = serve_requests } end
+if HSC_SYNC_SIM then return { sync = sync, rescan = rescan, anchors_tick = anchors_tick, anchor_command = anchor_command, serve_requests = serve_requests, run_once = function() local d = reaper.defer; reaper.defer = function() end; run(); reaper.defer = d end, id = MY_ID } end
 run()

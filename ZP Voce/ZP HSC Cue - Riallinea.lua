@@ -1,10 +1,13 @@
 -- @description ZP HSC Cue - Riallinea
--- @version 1.0
+-- @version 1.1
 -- @author Paolo Balestri
 -- @about Riporta sulla loro voce tutti i cue del Harmonic Space Carver fuori posto (rossi). Da assegnare
 --   a un tasto. Lo esegue l'helper Cue Navigator (1.6 o successivo), che deve essere in esecuzione.
 -- @changelog
+--   1.1: se ripremi il tasto mentre il messaggio e' ancora a schermo, riparte senza chiedere nulla.
 --   1.0: prima versione (ZP Harmonic Space Carver 2.6.1).
+-- Ripremuto mentre e' ancora attivo (messaggio a schermo): chiude il precedente e riparte, senza dialoghi.
+if reaper.set_action_options then reaper.set_action_options(3) end
 local function say(msg)
   if reaper.osara_outputMessage then reaper.osara_outputMessage(msg) end
   local x, y = reaper.GetMousePosition()

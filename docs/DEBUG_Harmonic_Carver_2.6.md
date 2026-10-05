@@ -100,3 +100,36 @@ Legenda: **A** = da correggere prima di pubblicare, **B** = importante, **C** = 
 
 1, 3, 4 (sicurezza dei dati e dei tasti) → 2 → 9 → 6 → 8 → 10 → prove C in REAPER → 7 (decisione) →
 16-20 → 5 (pubblicazione).
+
+## Esito (2026-10-05, Carver 2.6.2 + helper 1.7 + azioni 1.1)
+
+Decisioni di Paolo e cosa e' stato fatto:
+
+- 1 progetto nella stessa scheda: progetto riconosciuto anche dal file; e al primo giro comanda il Carver
+  (mai cancellare cue da li'). **Fatto.**
+- 2 cancellazione dei marker: regola nuova di Paolo, "i #HSC non si toccano fuori dal Carver, al massimo si
+  spostano": cancellati a mano tornano, aggiunti a mano spariscono, rinumerati restano. **Fatto.**
+- 3 Riallinea: la richiesta si cancella dopo l'uso e quella vecchia si ignora all'avvio. **Fatto.**
+- 4 tasti ripremuti: `set_action_options(3)` in tutte le azioni (1.1), nessun dialogo. **Fatto.**
+- 5 installazione: file nella cartella di ReaPack `Scripts/ZP Suite/ZP Voce/`; nella vecchia posizione
+  restano tre rimandi (helper avviato da SWS, Mostra tracce voce, Riallinea su Ctrl+\) per non cambiare
+  scorciatoie e avvio; le quattro copie vecchie non registrate spostate in un backup. Un solo helper alla
+  volta (l'ultimo avviato prende il posto). **Fatto.** Resta: `reapack-index --check` prima del merge.
+- 6 Min = Max: progetti salvati prima della 2.6.2 con Min = Max (o Min piu' profondo) -> Min Duck -3 dB;
+  avviso "Min = Max: VCA fisso" nel blocco VCA. **Fatto.**
+- 7 cue rossi: restano attivi, avviso rosso lampeggiante non bloccante in testata + messaggio OSARA quando
+  aumentano. **Fatto.**
+- 8 due annulla: con la regola nuova l'UNDO del Carver annulla aggiunte e rimozioni, Ctrl+Z gli spostamenti.
+- 9 helper spento: spia "HELPER SPENTO" nella barra cue; le maschere dei rossi si ignorano se l'helper e' fermo. **Fatto.**
+- 10 rinumerazione: riconosciuta (stessa posizione, numero nuovo), ancore conservate. **Fatto.**
+- 12 preascolto: Paolo ha verificato che NON si spegneva (lo azzeravo in @init, prima che REAPER ricarichi i
+  parametri). Ora lo spegne il primo @block dopo il caricamento (segnale da @serialize). **Da riprovare.**
+- 15 prestazioni: le ancore si ricalcolano solo quando cambia lo stato del progetto (o ogni 2 s). **Fatto.**
+- Marker #HSC in lane 4 (proposta di Paolo): `SetRegionOrMarkerInfo_Value(..., "I_LANENUMBER", 3)`. **Da provare in REAPER.**
+- Aperti: 11 (progetti vecchi in Simple/Vocal), 13 (PDC dell'Anticipo), 14 (Run background projects),
+  16-20 piccoli (16 fatto: testi a v2.6).
+
+Test: test_hsc_sync.lua riscritto per le regole nuove (in run_all); simulazione completa dell'helper 1.7 con
+REAPER finto, 20 passaggi ok (progetto vecchio, spostamento, ADD, marker cancellato/aggiunto/tutti cancellati,
+rinumerati, CLEAR ALL, cue rosso, Riallinea, altro progetto nella stessa scheda, secondo helper, richiesta vecchia).
+

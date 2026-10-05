@@ -1,12 +1,15 @@
 -- @description ZP HSC - Mostra tracce voce
--- @version 1.0
+-- @version 1.1
 -- @author Paolo Balestri
 -- @about Seleziona le tracce che il Harmonic Space Carver considera voce: quelle che arrivano ai
 --   pin delle fonti sidechain accese (invii e figlie del folder, risalendo le cartelle). Tracce mute
 --   escluse. Serve per controllare il routing e il riferimento dei cue. Richiede l'helper Cue Navigator 1.5
 --   nella stessa cartella. Parla con il Carver della traccia selezionata, o con il primo del progetto.
 -- @changelog
+--   1.1: se ripremi il tasto mentre il messaggio e' ancora a schermo, riparte senza chiedere nulla.
 --   1.0: prima versione (Carver 2.6, helper Cue Navigator 1.5).
+-- Ripremuto mentre e' ancora attivo (messaggio a schermo): chiude il precedente e riparte, senza dialoghi.
+if reaper.set_action_options then reaper.set_action_options(3) end
 local dir = debug.getinfo(1, "S").source:match("^@(.*[/\\])") or ""
 HSC_LIBRARY = true
 local okload, HSC = pcall(dofile, dir .. "ZP Harmonic Space Carver Cue Navigator.lua")

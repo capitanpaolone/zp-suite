@@ -1,9 +1,12 @@
 -- @description ZP HSC Cue - Successivo
--- @version 1.0
+-- @version 1.1
 -- @author Paolo Balestri
 -- @about Porta il cursore al cue di rientro rapido successivo del Carver. Da assegnare a un tasto. Parla con il Carver della traccia selezionata (o con il primo del progetto).
 -- @changelog
+--   1.1: se ripremi il tasto mentre il messaggio e' ancora a schermo, riparte senza chiedere nulla.
 --   1.0: prima versione (ZP Harmonic Space Carver 2.5).
+-- Ripremuto mentre e' ancora attivo (messaggio a schermo): chiude il precedente e riparte, senza dialoghi.
+if reaper.set_action_options then reaper.set_action_options(3) end
 local GMEM, MAGIC = "ZPVoiceoverSharedBus", 905243
 reaper.gmem_attach(GMEM)
 
