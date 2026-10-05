@@ -71,6 +71,8 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
   sul Carver; l'helper cambia l'istantanea solo dopo l'ack del comando 5. Il 17 usa i marker di
   lane 1/2 come sezioni del render: deve ignorare i `#HSC` (fatto in collect_project_markers).
   Chi aggiunge marker di servizio nuovi controlla anche il 17.
+- gmem per traccia 4032-4095 (dopo i 56 slot FX da 72 celle): maschere dei cue fuori posto del Carver
+  (4032 + 2*fx, fx < 32). Non usarle per altro.
 - L'SRT di Trascrivi sta accanto al WAV apposta (lo cerca Abbina). Gli SRT di consegna (08, 31)
   vanno nella cartella scelta, mai tra i media.
 

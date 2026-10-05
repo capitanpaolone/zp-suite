@@ -1,8 +1,10 @@
 // @description ZP Harmonic Space Carver
-// @version 2.6.0
+// @version 2.6.1
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   2.6.1: cue ancorati all'audio della voce (helper Cue Navigator 1.6): se la voce si sposta e il cue no,
+//     il cue diventa rosso (punto, conteggio "FUORI POSTO", marker #HSC) con RIALLINEA e TIENI QUI.
 //   2.6.0: i cue seguono l'editing. Con l'helper Cue Navigator 1.4 ogni cue e' anche un marker di
 //     servizio "#HSC" sul righello: un taglio in ripple, uno spostamento o una cancellazione del marker
 //     aggiornano il Carver; ADD/REMOVE, UNDO e CLEAR ALL creano o tolgono i marker.
@@ -75,6 +77,9 @@ about:
   Con l'helper (1.4) ogni cue e' anche un marker "#HSC" sul righello e il marker comanda: se un
   taglio in ripple (tutte le tracce) lo sposta, o lo sposti, cancelli o aggiungi a mano, il Carver
   si aggiorna. Ctrl+Z vale anche per i cue. In render il Carver usa l'ultimo elenco sincronizzato.
+  Ogni cue ricorda la voce che ha sotto (le tracce voce sono quelle che arrivano al sidechain).
+  Se quella voce si sposta e il cue no, il cue diventa rosso: RIALLINEA lo porta sulla sua voce,
+  TIENI QUI accetta la posizione. Un marker trascinato a mano prende la voce nel punto nuovo.
   Azioni da tastiera: "ZP HSC Cue - Aggiungi o togli", "Successivo", "Precedente", "Annulla".
   Vista DOCK: una striscia con stato e cue da tenere aperta mentre monti.
 
@@ -1249,6 +1254,18 @@ function draw_listen_banner(x, y, w, h) local(sy, blink, tw, th) (
   );
 );
 
+// Cue fuori posto: maschere scritte dall'helper (1.6) nella zona libera della traccia
+// (base traccia + 4032 + 2*fx, cue 0-31 e 32-63, in ordine di tempo).
+function cue_lost(i) ( i < 32 ? floor(quick_lost_m1 / (2 ^ i)) % 2 : floor(quick_lost_m2 / (2 ^ (i - 32))) % 2; );
+quick_lost_m1 = 0; quick_lost_m2 = 0; quick_lost_n = 0;
+quick_gmem_base >= 0 && quick_host_chain < 32 ? (
+  quick_track_base = quick_gmem_base - quick_host_chain * 72;
+  quick_lost_m1 = max(0, gmem[quick_track_base + 4032 + quick_host_chain * 2]);
+  quick_lost_m2 = max(0, gmem[quick_track_base + 4033 + quick_host_chain * 2]);
+  i = 0; loop(quick_point_count, quick_lost_n += cue_lost(i); i += 1;);
+);
+quick_sel_lost = quick_sel >= 0 && cue_lost(quick_sel);
+
 // Barra QUICK RETURN CUES, identica in Advanced, Simple e Dock. full = con Rampa e Apertura.
 function draw_cue_bar(bx, by, bw, full)
 local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m, s, sel_w, tl_w, add_state)
@@ -1261,6 +1278,7 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
   sprintf(#quick_count_txt, "  %d / 64", quick_point_count);
   gfx_setfont(5); gfx_r=0.62; gfx_g=0.66; gfx_b=0.73; gfx_y = sy + 10; gfx_drawstr(#quick_count_txt);
   quick_gmem_base < 0 ? (gfx_r=0.85; gfx_g=0.55; gfx_b=0.20; gfx_drawstr("   (take/input FX: salto non disponibile)"));
+  quick_lost_n > 0 ? (sprintf(#quick_lost_txt, "   %d FUORI POSTO", quick_lost_n); gfx_r=0.95; gfx_g=0.32; gfx_b=0.28; gfx_drawstr(#quick_lost_txt););
 
   qx = bx + 10; qy = by + 32; qh = 24;
   sel_w = full ? 170 : 140;
@@ -1276,7 +1294,7 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
     m = floor(quick_points[quick_sel] / 60); s = quick_points[quick_sel] - m * 60;
     sprintf(#quick_sel_txt, "CUE %d / %d  %d:%04.1f", quick_sel + 1, quick_point_count, m, s);
   ) : quick_point_count > 0 ? strcpy(#quick_sel_txt, "NESSUN CUE SELEZ.") : strcpy(#quick_sel_txt, "NESSUN CUE");
-  ui_cue_button(x, qy, sel_w, qh, #quick_sel_txt, quick_sel >= 0, quick_jump_ok && quick_point_count > 0, 56) ? (
+  ui_cue_button(x, qy, sel_w, qh, #quick_sel_txt, quick_sel_lost ? 2 : quick_sel >= 0, quick_jump_ok && quick_point_count > 0, quick_sel_lost ? 73 : 56) ? (
     gmem[quick_gmem_base] = 3; gmem[quick_gmem_base+1] += 1;
   );
   x += sel_w + 4;
@@ -1316,6 +1334,7 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
 
   // Fila dei cue: dove sei (playhead rosso) rispetto ai cue. Clic su un punto = selezionalo.
   lx = qx; lw = full ? (bw - 130) : (bw - 20);
+  quick_sel_lost ? lw -= 214;
   ly = by + (full ? 82 : 84);
   gfx_r=0.24; gfx_g=0.24; gfx_b=0.30; gfx_a = 1; gfx_line(lx, ui_sy(ly), lx + lw, ui_sy(ly));
   quick_point_count > 0 ? (
@@ -1326,8 +1345,9 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
     loop(quick_point_count,
       cx = lx + (quick_points[i] - t0) / span * lw;
       ui_hit(cx - 6, ly - 7, 12, 14) && abs(mouse_x - cx) < bestd ? (best = i; bestd = abs(mouse_x - cx););
-      i == quick_sel ? (gfx_r=1; gfx_g=1; gfx_b=1; gfx_circle(cx, ui_sy(ly), 5, 1, 1); gfx_r=0.14; gfx_g=0.72; gfx_b=0.83; gfx_circle(cx, ui_sy(ly), 6, 0, 1);)
-                     : (gfx_r=0.14; gfx_g=0.72; gfx_b=0.83; gfx_circle(cx, ui_sy(ly), 4, 1, 1););
+      cue_lost(i) ? (gfx_r=0.95; gfx_g=0.32; gfx_b=0.28;) : (gfx_r=0.14; gfx_g=0.72; gfx_b=0.83;);
+      i == quick_sel ? (gfx_circle(cx, ui_sy(ly), 6, 0, 1); gfx_r=1; gfx_g=1; gfx_b=1; gfx_circle(cx, ui_sy(ly), 4, 1, 1);)
+                     : (gfx_circle(cx, ui_sy(ly), 4, 1, 1););
       i += 1;
     );
     px = lx + (quick_ui_pos - t0) / span * lw;
@@ -1349,6 +1369,10 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
     gfx_drawstr("Nessun cue: premi ADD / REMOVE dove la musica deve rientrare subito.");
   );
 
+  quick_sel_lost && quick_gmem_base >= 0 ? (
+    ui_cue_button(lx + lw + 12, ly - 11, 100, 22, "RIALLINEA", 2, 1, 73) ? (gmem[quick_gmem_base+2] = quick_sel; gmem[quick_gmem_base] = 6; gmem[quick_gmem_base+1] += 1;);
+    ui_cue_button(lx + lw + 116, ly - 11, 96, 22, "TIENI QUI", 0, 1, 74) ? (gmem[quick_gmem_base+2] = quick_sel; gmem[quick_gmem_base] = 7; gmem[quick_gmem_base+1] += 1;);
+  );
   full ? (
     ui_knob(56, bx + bw - 86, by + 70, 12, 10, 250, 200, "Rampa", "ms", 0.95, 0.42, 0.20, 56);
     ui_knob(57, bx + bw - 34, by + 70, 12, 0, 2000, 500, "Apertura", "ms", 0.95, 0.42, 0.20, 61);
@@ -1698,11 +1722,13 @@ view_mode == 0 ? (
   active_info_id == 58 ? (quick_gmem_base < 0 ? gfx_drawstr("TIMELINE: salto non disponibile su take FX o input FX. RESTA FERMO scorre i cue.") :
     gfx_drawstr("TIMELINE: SALTA sposta il playhead sui cue (helper Cue Navigator); RESTA FERMO solo li seleziona.")) :
   active_info_id == 59 ? gfx_drawstr("UNDO: annulla l'ultima aggiunta, rimozione o cancellazione dei cue.") :
-  active_info_id == 60 ? gfx_drawstr("FILA DEI CUE: ciano = cue (sul righello sono i marker #HSC), rosso = playhead. Clic su un punto per sceglierlo.") :
+  active_info_id == 60 ? gfx_drawstr("FILA DEI CUE: ciano = al suo posto, rosso = fuori posto, linea rossa = playhead. Clic su un punto per sceglierlo.") :
   active_info_id == 61 ? gfx_drawstr("APERTURA: dopo la Rampa la musica resta aperta per questo tempo, ignorando la voce.") :
   active_info_id == 65 ? gfx_drawstr(#sc_msg0) : active_info_id == 66 ? gfx_drawstr(#sc_msg1) : active_info_id == 67 ? gfx_drawstr(#sc_msg2) :
   active_info_id == 68 ? gfx_drawstr("FONTI VOCE: compaiono quando la traccia ha i canali. Pulsante I/O del plugin, Track channels 6 (SC2) o 8 (SC3).") :
   active_info_id == 63 ? gfx_drawstr("ANTICIPO: il Carver vede la voce prima della musica (lookahead). Aggiunge la stessa latenza (PDC).") :
+  active_info_id == 73 ? gfx_drawstr("FUORI POSTO: la voce sotto questo cue si e' spostata (o non c'e' piu'). RIALLINEA porta il cue dove ora c'e' la sua voce.") :
+  active_info_id == 74 ? gfx_drawstr("TIENI QUI: il cue resta dov'e' e prende come riferimento la voce che ha sotto adesso.") :
   active_info_id == 64 ? gfx_drawstr("KNEE: morbidezza dell'ingresso in soglia del Carver (0 = netto).") :
   active_info_id == 70 ? gfx_drawstr("PARTENZA: imposta Depth, Intens, Spread, Prio, Min e Max Duck. SCORE cinema, FLAT equilibrio, VOCAL podcast.") :
   active_info_id == 71 ? gfx_drawstr("ON/OFF: spegne il Carver o il VCA (resta sempre acceso almeno uno dei due).") :

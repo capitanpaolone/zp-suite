@@ -3,7 +3,7 @@
 Decisione di Paolo (2026-10-05): strada **B**. I cue nascono per evitare le automazioni, quindi
 niente corsia di automazione: i cue diventano anche marker di servizio sul righello.
 
-Stato: **fatto, da collaudare in REAPER** (2026-10-05): Carver 2.6.0 (solo testi) + helper Cue Navigator 1.4.
+Stato: **fatto e collaudato da Paolo** (2026-10-05; RIALLINEA e Ctrl+Z verificati): Carver 2.6.1 + helper Cue Navigator 1.6.
 La parte del plugin è nella 2.5 (comando 5 "sostituisci elenco"). Render offline verificato da Paolo.
 Test: `test_hsc_sync.lua` (logica pura, in run_all) e simulazione del giro completo con REAPER finto
 (migrazione, ripple, ADD, marker cancellato, CLEAR ALL, undo, marker di testo ignorato, due Carver).
@@ -78,3 +78,25 @@ Le celle per FX (`base+0..71`) restano quelle della 2.4: 72 celle per FX, mai ol
 `gobbo_ricerca_battuta/test/test_hsc_sync.lua`: la logica di confronto (istantanea, marker, Carver)
 come funzione pura, con i casi: marker spostato, marker cancellato, cue aggiunto dal Carver, conflitto,
 migrazione, 64 cue, cue a 4 ms l'uno dall'altro.
+
+## Riferimento dei cue: l'audio della voce (Carver 2.6.1, helper 1.5-1.6)
+
+Domanda di Paolo: con piu' podcast in timeline un taglio nel primo non deve spostare i cue del secondo;
+i cue devono restare fermi e diventare rossi se perdono il riferimento. Scelta: il riferimento e' l'audio
+della voce sotto il cue, non la timeline e non la regione.
+
+- **Tracce voce** (1.5): quelle che arrivano ai pin delle fonti SC accese (invii, figlie del folder, a
+  ritroso). Azione "ZP HSC - Mostra tracce voce" per vederle. Verificato da Paolo sul progetto dei Guardiani.
+- **Ancora** (1.6): file della voce e punto nel file (`src = offs + (pos - item_pos) * rate`). Voce sotto il
+  cue; se non c'e', quella finita da meno di 5 s; se no quella che parte entro 2 s; se no cue libero.
+  Salvate nel progetto (`ProjExtState ZP_HSC/anchors`), per numero di marker.
+- **Giudizio** a ogni giro: al suo posto (scarto <= 20 ms) ciano; marker spostato e audio fermo = trascinato
+  a mano, nuova ancora; audio spostato (o sparito) e cue fermo = **rosso**. Ripple su tutte le tracce o
+  regione spostata con il contenuto: audio e marker si muovono insieme, resta ciano.
+- **Rosso**: marker `#HSC` rosso, punto rosso e "N FUORI POSTO" nel Carver (maschere in gmem nella zona
+  libera della traccia: base traccia + 4032 + 2*fx). RIALLINEA (comando 6 sul canale GUI->helper) sposta
+  il marker sulla voce; TIENI QUI (comando 7) ancora il cue dov'e'. Tasto "ZP HSC Cue - Riallinea"
+  (ExtState ZP_HSC/req -> rep) riallinea tutti i rossi.
+- Item diviso: il punto resta valido (stesso file, stessa mappatura). File usato piu' volte: vale
+  l'occorrenza piu' vicina al cue.
+
