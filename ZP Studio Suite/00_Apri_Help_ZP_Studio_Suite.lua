@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.0.0
+-- @version 2.0.1
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -14,38 +14,13 @@
 --   OSARA non sono richiesti: aggiungono funzioni, e quando mancano la suite
 --   usa da sola una strada alternativa. Il dettaglio e' in README.txt.
 -- @changelog
---   Versione 2: trascrizione, gobbo che segue i tagli, SRT in una finestra.
---   Nuovo: 29 ZP Trascrizione, la strada in quattro tappe sugli item audio:
---     Trascrivi (whisper, ZP Speech su macOS), Abbina da... (SRT accanto al
---     file, SRT esterno o tradotto, marker di progetto, cue del WAV), Porta
---     nel gobbo, Segui i tagli. Ritrascrivi rilegge da capo un file che ha
---     gia' marker o SRT (per esempio dopo un glue).
---   Gobbi: Leggi tutto (flusso Tutti), flusso letto nel titolo, Segui i tagli
---     anche nel Gobbo orizzontale, ricerca.
---   Nuovo: 30 ZP SRT, una finestra per tutto quello che si fa con gli SRT
---     (porta dentro, controlla, porta fuori). Resta aperta: la chiudi tu.
---   Nuovo: 31 SRT dall'audio: i marker delle battute diventano un SRT, nella
---     cartella che scegli. Finestra che segue la selezione.
---   13 Info item SRT: finestra che resta aperta e si aggiorna con la selezione.
---   08 Esporta SRT ricorda la destinazione scelta.
---   Marker: 04 e 14 nella stessa finestra (Crea dagli item / Fissa negli item).
---     I marker di servizio (#segnaposto, !azioni, marker del SOLO) non diventano
---     mai testo e non vengono cancellati.
---   Nuovo: 32 Installa toolbar ed effetti: scrive la toolbar con gli
---     identificativi di questo REAPER, installa le catene di effetti del SOLO e
---     i preset del Chain Builder, senza toccare quelli che hai gia'.
---   SOLO Recorder: pulsantiera a zone (trasporto tondo, pomelli Ritorno,
---     Preroll e Zoom, interruttori con spia), guida rapida con il ?,
---     Telecomando sulle tracce del progetto con selettore Sessione|Telecomando,
---     scelta dell'ingresso, navigatore interno con zoom, Regioni take on/off,
---     sessione con effetti, lucchetto del REC sulla barra spaziatrice, Notes
---     sulle note del progetto, niente messaggi in console.
---   Chain Builder: ZP BUS Chain con il preset Voiceover_Body1_BG80HzDyn_-3dBLim
---     al posto della Unified Chain (che resta in bypass), ZP Master Pro con
---     Flat -19 in tutti i profili, percorsi ReaPack.
---   19 Report minuti voce: regioni selezionate anche dalla timeline; oltre ad
---     aggiungere allo storico, si puo' salvare il report della sola sessione.
---   Help: ogni finestra ha il suo ?, help riscritto e aggiornato.
+--   17 Gestore Progetto: le regioni nascono solo da item con un file vero (gli item di
+--     testo e vuoti non creano piu' regioni ne' spostano i nomi). Nuovi pulsanti Video
+--     (di serie acceso) e No muti (di serie spento), anche nel percorso OSARA. I marker
+--     #HSC del Harmonic Space Carver non spezzano le sezioni del render.
+--   19 Report minuti voce: pulsante No muti per item e tracce; il report lo dichiara.
+--   Help: Harmonic Space Carver 2.6 (cue di rientro rapido, marker #HSC, tracce voce,
+--     cue fuori posto, azioni da tastiera).
 -- @provides
 --   [main] 01_Importa_Video_SRT.lua
 --   [main] 02_Gobbo_Verticale.lua

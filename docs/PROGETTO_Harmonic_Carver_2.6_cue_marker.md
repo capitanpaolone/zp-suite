@@ -8,6 +8,12 @@ La parte del plugin è nella 2.5 (comando 5 "sostituisci elenco"). Render offlin
 Test: `test_hsc_sync.lua` (logica pura, in run_all) e simulazione del giro completo con REAPER finto
 (migrazione, ripple, ADD, marker cancellato, CLEAR ALL, undo, marker di testo ignorato, due Carver).
 
+> **Regole attuali (2.6.2 e seguenti, decise da Paolo dopo la revisione).** Le sezioni qui sotto
+> descrivono il primo progetto. Oggi: i cue si aggiungono e si tolgono **solo dal Carver**; i marker
+> `#HSC` si possono solo spostare (un marker cancellato a mano torna, uno aggiunto a mano sparisce);
+> marker in lane 4; le correzioni automatiche non creano punti di undo; ogni Carver ha un numero unico.
+> Dettagli in `DEBUG_Harmonic_Carver_2.6.md`. Pubblicato con Carver 2.6.4 e helper 1.9.
+
 ## Il problema
 
 Nella 2.5 un cue è un tempo assoluto salvato dentro il plugin. Con un taglio in ripple il materiale

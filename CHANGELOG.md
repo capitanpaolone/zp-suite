@@ -16,13 +16,27 @@ nel suo insieme.
 - ZP Stagekeeper Dialogue Director 2.5.0 (la 2.3.1 resta come riferimento in
   `gobbo_ricerca_battuta/backup/`).
 
-## Non rilasciato
+## ZP Harmonic Space Carver 2.6.4, ZP Studio Suite 2.0.1 — 2026-10-05
 
-### ZP Harmonic Space Carver 2.5.0
-- GUI Advanced nell'ordine del segnale, Simple come vista dello stesso motore, Partenza
-  SCORE / FLAT / VOCAL, sidechain da tre fonti, Anticipo, Knee, Apertura, Min/Max Duck a forbice,
-  vista DOCK, cue in @block e quattro azioni da tastiera (ZP HSC Cue).
-- Progetto della 2.6 (cue come marker `#HSC`): `docs/PROGETTO_Harmonic_Carver_2.6_cue_marker.md`.
+### ZP Harmonic Space Carver 2.6.4 (con Cue Navigator 1.9 e azioni ZP HSC)
+- GUI nell'ordine del segnale (Voce, Carver, VCA, Bande, VCA/Glue, Uscita, Livelli), un solo motore:
+  Simple mostra i controlli principali dell'Advanced; SCORE / FLAT / VOCAL sono punti di partenza.
+- Sidechain da tre fonti (3/4, 5/6, 7/8) legate al routing vero, con spia per fonte.
+- Anticipo (lookahead compensato), Knee, Apertura del cue, Min/Max Duck a forbice; vista DOCK.
+- Quick return cues: funzionano in ogni vista e a finestra chiusa; marker `#HSC` sul righello
+  (lane 4) che si spostano liberamente ma si aggiungono e tolgono solo dal Carver; ogni cue e'
+  ancorato alla voce che ha sotto e diventa rosso se la voce si sposta (RIALLINEA / TIENI QUI).
+- Helper "ZP Harmonic Space Carver Cue Navigator" (da avviare all'apertura di REAPER) e azioni
+  da tastiera: Cue aggiungi o togli, Successivo, Precedente, Annulla, Riallinea, Mostra tracce voce.
+- Ogni Carver ha un numero unico: piu' progetti aperti in schede non si mescolano.
+- Preascolto segnalato e spento alla riapertura; livelli sempre sull'uscita vera.
+- Dettagli e revisione: `docs/PROGETTO_Harmonic_Carver_2.6_cue_marker.md`, `docs/DEBUG_Harmonic_Carver_2.6.md`.
+
+### ZP Studio Suite 2.0.1
+- 17 Gestore Progetto: niente regioni da item di testo o vuoti; pulsanti Video e No muti.
+- 19 Report minuti voce: pulsante No muti.
+
+## Non rilasciato
 
 ### Corretto
 - Quattro effetti non entravano nell'indice ReaPack: Reference Tone Mirror EQ Pro,
