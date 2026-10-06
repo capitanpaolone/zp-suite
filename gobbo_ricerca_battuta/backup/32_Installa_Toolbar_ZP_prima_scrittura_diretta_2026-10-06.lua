@@ -11,10 +11,8 @@
 -- avrebbe pulsanti vuoti per gli script nuovi. Questo script li cerca qui:
 --   1. nel file delle azioni (reaper-kb.ini), se lo script e' gia' registrato;
 --   2. altrimenti lo registra adesso nell'Action List.
--- Poi scrive la toolbar "ZP Studio Suite" in reaper-menu.ini (backup accanto): nella toolbar che
--- si chiama gia' cosi', altrimenti nella prima Floating toolbar libera fra 1 e 16; le altre
--- toolbar e i menu restano com'erano. REAPER la carica al riavvio. Ne lascia anche una copia
--- in MenuSets/ZP_StudioSuite.ReaperMenu, da importare a mano se serve.
+-- Poi scrive MenuSets/ZP_StudioSuite.ReaperMenu (con copia del file precedente) e
+-- spiega come importarlo. Non tocca le toolbar che stai usando.
 -- Catene: se in FXChains c'e' gia' una catena con lo stesso nome non viene sovrascritta
 -- (puo' essere la tua, personalizzata).
 -- Preset: aggiunge in REAPER/presets i preset dei JSFX usati dal Chain Builder (BUS Chain
@@ -107,7 +105,7 @@ function M.pick_icon(e, has_icon)
   return e[3]
 end
 
-function M.menu_text(layout, ids, title, has_icon, slot)
+function M.menu_text(layout, ids, title, has_icon)
   local icons, items, n = {}, {}, 0
   for _, e in ipairs(layout) do
     if e == "-" then
@@ -124,46 +122,10 @@ function M.menu_text(layout, ids, title, has_icon, slot)
     end
   end
   if items[#items] == "-1" then items[#items] = nil end
-  local out = { "[Floating toolbar " .. (slot or 32) .. "]" }
+  local out = { "[Floating toolbar 32]" }
   for _, l in ipairs(icons) do out[#out + 1] = l end
   for i, l in ipairs(items) do out[#out + 1] = string.format("item_%d=%s", i - 1, l) end
   out[#out + 1] = "title=" .. (title or "ZP Studio Suite")
-  return table.concat(out, "\n") .. "\n"
-end
-
--- reaper-menu.ini: in quale Floating toolbar scrivere la toolbar ZP. Quella che si chiama gia'
--- "ZP Studio Suite" (si aggiorna), altrimenti la prima libera fra 1 e 16 (stanno in View > Toolbars),
--- poi fra 17 e 32. Libera = sezione assente o senza pulsanti.
-function M.pick_slot(ini)
-  ini = "\n" .. (ini or "") .. "\n["
-  local used = {}
-  for num, body in ini:gmatch("\n%[Floating toolbar (%d+)%]\n(.-)\n%f[%[]") do
-    local n = tonumber(num)
-    if body:find("\ntitle=ZP Studio Suite", 1, true) or body:match("^title=ZP Studio Suite") then return n end
-    if body:find("item_", 1, true) then used[n] = true end
-  end
-  for n = 1, 32 do if not used[n] then return n end end
-  return nil
-end
-
--- Mette (o rimpiazza) la sezione [nome] in reaper-menu.ini; il resto del file resta com'e'.
-function M.put_section(ini, section_text)
-  ini = ini or ""
-  local name = section_text:match("^%[([^%]]+)%]")
-  local body = (section_text:gsub("\n+$", ""))
-  local out, skipping, done = {}, false, false
-  for line in (ini .. ((ini == "" or ini:match("\n$")) and "" or "\n")):gmatch("([^\n]*)\n") do
-    local sec = line:match("^%[(.+)%]%s*$")
-    if sec then
-      skipping = (sec == name)
-      if skipping and not done then out[#out + 1] = body; out[#out + 1] = ""; done = true end
-    end
-    if not skipping then out[#out + 1] = line end
-  end
-  if not done then
-    if #out > 0 and out[#out] ~= "" then out[#out + 1] = "" end
-    out[#out + 1] = body
-  end
   return table.concat(out, "\n") .. "\n"
 end
 
@@ -273,34 +235,6 @@ end
 f:write(M.menu_text(M.LAYOUT, ids, nil, has_icon))
 f:close()
 
--- La toolbar va anche in reaper-menu.ini, col nome "ZP Studio Suite": dopo un riavvio di REAPER
--- si sceglie con Switch toolbar (l'Import di REAPER non porta il nome e chiede passi a mano).
--- REAPER riscrive reaper-menu.ini solo quando si modificano menu o toolbar: finche' non si
--- riavvia non va aperto Customize toolbars, altrimenti la sezione scritta qui si perde.
-local menu_ini_path = resource .. sep .. "reaper-menu.ini"
-local menu_ini = read(menu_ini_path) or ""
-local slot = M.pick_slot(menu_ini)
-local slot_msg
-if slot then
-  if menu_ini ~= "" then
-    local bk = io.open(menu_ini_path .. ".ZP_backup_" .. os.date("%Y%m%d_%H%M%S"), "wb")
-    if bk then bk:write(menu_ini); bk:close() end
-  end
-  local w = io.open(menu_ini_path, "wb")
-  if w then
-    w:write(M.put_section(menu_ini, M.menu_text(M.LAYOUT, ids, nil, has_icon, slot)))
-    w:close()
-    reaper.SetExtState("ZP_STUDIO_SUITE", "toolbar_da_riavviare", tostring(slot), false)
-    slot_msg = "Toolbar \"ZP Studio Suite\" scritta nella Floating toolbar " .. slot .. ".\n" ..
-      "RIAVVIA REAPER: dopo la trovi con Switch toolbar (o View > Toolbars).\n" ..
-      "Prima del riavvio non aprire Customize toolbars, altrimenti va rifatto."
-  end
-end
-if not slot_msg then
-  slot_msg = "Non ho potuto scriverla in reaper-menu.ini: importala a mano da Options > Customize\n" ..
-    "menus/toolbars > Import, file " .. target
-end
-
 -- catene di effetti in REAPER/FXChains
 local chain_dir = resource .. sep .. "FXChains"
 reaper.RecursiveCreateDirectory(chain_dir, 0)
@@ -351,10 +285,9 @@ end
 
 local buttons = 0
 for _ in pairs(ids) do buttons = buttons + 1 end
-for _, e in ipairs(M.LAYOUT) do if type(e) == "table" and e.cmd then buttons = buttons + 1 end end
 local msg = string.format(
-  "Toolbar con %d pulsanti, con gli identificativi di questo REAPER.\n\n%s\n\n(Copia da importare a mano, se serve: %s)",
-  buttons, slot_msg, target)
+  "Toolbar scritta con %d pulsanti, con gli identificativi di questo REAPER.\n\n%s\n\nPer metterla in REAPER:\nOptions > Customize menus/toolbars, scegli una Floating toolbar libera fra 1 e 16\n(quelle che si aprono da View > Toolbars), poi Import/Export > Import e scegli questo file.\nIl Benvenuto (33) guida questo passo e poi apre la toolbar.",
+  buttons, target)
 if #registered > 0 then msg = msg .. "\n\nRegistrati ora nell'Action List: " .. table.concat(registered, ", ") end
 if #missing > 0 then msg = msg .. "\n\nNON trovati (pulsante saltato): " .. table.concat(missing, ", ") end
 msg = msg .. "\n\nCatene di effetti per il SOLO Recorder (REAPER/FXChains):\n" .. table.concat(chain_lines, "\n")

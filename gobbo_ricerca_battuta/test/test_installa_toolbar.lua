@@ -52,4 +52,19 @@ local full = M.menu_text(M.LAYOUT, setmetatable({}, { __index = function() retur
 local nitems = select(2, full:gsub("\nitem_", ""))
 check("layout completo = toolbar 8 (23 voci con 6 separatori)", nitems == 23 and full:find("item_18=50125", 1, true)
   and full:find("item_19=42653", 1, true) and full:find("icon_1=ZP_tb_17_Regioni_Item.png", 1, true) and full:find("ZP_tb_23_Catena_FX.png", 1, true))
+-- scrittura diretta in reaper-menu.ini
+local ini = "[Main toolbar]\nitem_0=40001\n\n[Floating toolbar 1]\nitem_0=1 A\n\n[Floating toolbar 3]\nitem_0=2 B\ntitle=Mia\n\n[MIDI piano roll]\nitem_0=5\n"
+check("slot: primo libero fra 1 e 16", M.pick_slot(ini) == 2)
+check("slot: quella gia' chiamata ZP Studio Suite", M.pick_slot(ini .. "\n[Floating toolbar 9]\nicon_0=x.png\nitem_0=3 C\ntitle=ZP Studio Suite\n") == 9)
+check("slot: file vuoto", M.pick_slot(nil) == 1)
+local sec = "[Floating toolbar 2]\nitem_0=_RS1 X\ntitle=ZP Studio Suite\n"
+local w1 = M.put_section(ini, sec)
+check("sezione nuova in coda, il resto intatto", w1:sub(1, #ini) == ini and w1:find("[Floating toolbar 2]", 1, true))
+local w2 = M.put_section(w1, "[Floating toolbar 2]\nitem_0=_RS9 Y\ntitle=ZP Studio Suite\n")
+local _, k = w2:gsub("%[Floating toolbar 2%]", "")
+check("sezione rimpiazzata, non doppia, le altre intatte", k == 1 and w2:find("_RS9 Y", 1, true) and not w2:find("_RS1 X", 1, true)
+  and w2:find("[Floating toolbar 3]\nitem_0=2 B\ntitle=Mia", 1, true) and w2:find("[MIDI piano roll]\nitem_0=5", 1, true))
+local mid = M.put_section(ini, "[Floating toolbar 1]\nitem_0=_RSz Z\n")
+check("sezione in mezzo rimpiazzata, la successiva resta", mid:find("[Floating toolbar 1]\nitem_0=_RSz Z\n\n[Floating toolbar 3]", 1, true) ~= nil)
+check("menu_text con numero di toolbar", M.menu_text({ { "a.lua", "A", "a.png" } }, { ["a.lua"] = "_RS1" }, nil, nil, 7):match("^%[Floating toolbar 7%]") ~= nil)
 print(fails == 0 and "\nTUTTI OK" or ("\nFALLITI: " .. fails)); os.exit(fails == 0 and 0 or 1)

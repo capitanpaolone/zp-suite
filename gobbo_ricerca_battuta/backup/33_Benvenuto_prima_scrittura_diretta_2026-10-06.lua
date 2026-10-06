@@ -85,12 +85,10 @@ function M.put_startup_block(text, block)
 end
 
 -- Toolbar: "ok" importata, "importa" file pronto ma non importata, "manca" mai installata.
--- Toolbar: "manca" (da installare), "riavvia" (scritta dal 32 in reaper-menu.ini, REAPER deve
--- ripartire per caricarla), "ok". slot = toolbar_slot; pending = scritta in questa sessione.
-function M.toolbar_state(slot, chains_ok, pending)
-  if not slot or not chains_ok then return "manca" end
-  if pending then return "riavvia" end
-  return "ok"
+function M.toolbar_state(menu_file, chains_ok, reaper_menu)
+  if not menu_file or not chains_ok then return "manca" end
+  if (reaper_menu or ""):find("ZP_tb_", 1, true) then return "ok" end
+  return "importa"
 end
 
 -- In quale toolbar e' finita la toolbar ZP (reaper-menu.ini): numero della Floating toolbar,
@@ -195,20 +193,21 @@ local function check_all()
   local out = {}
   local kb = read(P(resource, "reaper-kb.ini")) or ""
 
-  -- 1 toolbar ed effetti: il 32 scrive la toolbar "ZP Studio Suite" in reaper-menu.ini; REAPER la
-  -- carica al riavvio. La spia "toolbar_da_riavviare" e' non persistente: sparisce riavviando.
+  -- 1 toolbar ed effetti
   local chains = exists(P(resource, "FXChains", "ZP Bus VoiceChain.RfxChain")) and exists(P(resource, "FXChains", "ZP MasterChain.RfxChain"))
-  local slot = M.toolbar_slot(read(P(resource, "reaper-menu.ini")))
-  local pending = reaper.GetExtState("ZP_STUDIO_SUITE", "toolbar_da_riavviare") ~= ""
-  local tb = M.toolbar_state(slot, chains, pending)
-  local dove = type(slot) == "number" and ("Floating toolbar " .. slot) or slot == "main" and "toolbar principale" or ""
-  local reinstalla = { "Reinstalla", function() if run_script(P(here, "32_Installa_Toolbar_ZP.lua")) then speak("Toolbar ed effetti: installazione avviata.") end end }
+  local menu_ini = read(P(resource, "reaper-menu.ini"))
+  local tb = M.toolbar_state(exists(P(resource, "MenuSets", "ZP_StudioSuite.ReaperMenu")), chains, menu_ini)
+  local slot = M.toolbar_slot(menu_ini)
   out[#out + 1] = {
     title = "Toolbar ed effetti",
-    state = tb == "ok" and "ok" or tb == "riavvia" and "passo" or "fare",
-    line = tb == "ok" and ("Toolbar \"ZP Studio Suite\" nella " .. dove .. " (Switch toolbar o View > Toolbars); catene di effetti e preset al loro posto.")
-      or tb == "riavvia" and ("Scritta nella " .. dove .. ". Ultimo passo: chiudi e riapri REAPER. Fino ad allora non aprire Customize toolbars (la scrittura andrebbe persa).")
-      or "Da installare: toolbar \"ZP Studio Suite\" (pronta dopo un riavvio di REAPER), catene di effetti del SOLO Recorder e preset del Chain Builder.",
+    -- installata ma non importata: e' un passo a mano (REAPER non lascia importare toolbar agli
+    -- script), quindi spia gialla "manca un passo" e pulsante che lo guida, non rossa.
+    state = tb == "ok" and "ok" or tb == "importa" and "passo" or "fare",
+    line = tb == "ok" and ("Toolbar ZP importata" .. (type(slot) == "number" and (" nella Floating toolbar " .. slot) or slot == "main" and " nella toolbar principale" or "") ..
+        "; catene di effetti e preset al loro posto.")
+      or tb == "importa" and ("Installata. Ultimo passo, a mano: Importa apre Customize toolbars. Scegli una Floating toolbar " ..
+        "libera fra 1 e 16, Import, poi " .. (IS_MAC and "Cmd+Shift+G e Cmd+V" or "incolla nel nome file") .. " (il percorso e' gia' copiato) e Apri.")
+      or "Da installare: pulsanti ZP, catene di effetti del SOLO Recorder e preset del Chain Builder.",
     buttons = tb == "ok" and {
       { "Apri la toolbar", function()
           if type(slot) == "number" and slot <= 16 then
@@ -216,9 +215,19 @@ local function check_all()
             speak("Toolbar ZP: Floating toolbar " .. slot .. ", aperta o chiusa.")
           elseif type(slot) == "number" then speak("La toolbar ZP e' la Floating toolbar " .. slot .. ": View > Toolbars.")
           else speak("La toolbar ZP e' nella toolbar principale.") end
+        end, enabled = slot ~= nil },
+      { "Reinstalla", function() if run_script(P(here, "32_Installa_Toolbar_ZP.lua")) then speak("Toolbar ed effetti: installazione avviata.") end end },
+    } or tb == "importa" and {
+      { "Importa", function()
+          local path = P(resource, "MenuSets", "ZP_StudioSuite.ReaperMenu")
+          local copied = reaper.CF_SetClipboard ~= nil
+          if copied then reaper.CF_SetClipboard(path) end
+          reaper.Main_OnCommand(40905, 0)   -- Options: Customize menus/toolbars...
+          speak(copied and "Percorso della toolbar copiato. Scegli una Floating toolbar, Import, incolla il percorso, Apri; poi chiudi con OK."
+            or ("Scegli una Floating toolbar, Import, e apri: " .. path))
         end },
-      reinstalla,
-    } or tb == "riavvia" and { reinstalla } or {
+      { "Reinstalla", function() if run_script(P(here, "32_Installa_Toolbar_ZP.lua")) then speak("Toolbar ed effetti: installazione avviata.") end end },
+    } or {
       { "Installa", function() if run_script(P(here, "32_Installa_Toolbar_ZP.lua")) then speak("Toolbar ed effetti: installazione avviata.") end end },
       { "Come si fa", function() UI.open_help("tool-32") end },
     },

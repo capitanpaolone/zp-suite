@@ -53,8 +53,11 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 ## Installazione su questo Mac
 - Prima di sovrascrivere una copia in `REAPER/Scripts/ZP Suite/...`, verifica che sia uguale
   a `git show HEAD:<file>`; se e' diversa, fermati e chiedi. La 00 installata e' quella pubblicata.
-- Mai toccare `reaper-kb.ini` / `reaper-menu.ini` / `reaper.ini` con REAPER aperto (`pgrep -x REAPER`),
-  sempre con backup.
+- Mai toccare `reaper-kb.ini` / `reaper.ini` con REAPER aperto (`pgrep -x REAPER`), sempre con backup.
+- `reaper-menu.ini`: unica eccezione decisa da Paolo (2026-10-06, "mai dire mai") e' il 32, che scrive SOLO la
+  sezione della toolbar "ZP Studio Suite" (backup accanto) e chiede di riavviare. REAPER riscrive il file solo
+  quando si modificano menu/toolbar (non ad avvio o chiusura): fino al riavvio niente Customize toolbars.
+  L'Import di REAPER non porta il nome della toolbar se la si importa in un'altra toolbar.
 - Backup in `gobbo_ricerca_battuta/backup/` prima di modifiche grosse; ogni cambio in MEMORIA.md.
 
 ## REAPER (cose verificate, non intuitive)

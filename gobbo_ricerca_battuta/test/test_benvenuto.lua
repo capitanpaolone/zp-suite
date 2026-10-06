@@ -24,10 +24,10 @@ local _, n = t2:gsub("ZP_BENVENUTO_HSC_INIZIO", "")
 check("blocco rimpiazzato, non doppio", n == 1 and t2:find("/altro.lua", 1, true) and not t2:find("ZP Voce", 1, true))
 check("file vuoto", M.put_startup_block(nil, block) == block .. "\n")
 
-check("toolbar mai installata", M.toolbar_state(false, false, "") == "manca")
-check("toolbar senza catene", M.toolbar_state(true, false, "") == "manca")
-check("toolbar da importare", M.toolbar_state(true, true, "[Floating toolbar 1]\nitem_0=40001\n") == "importa")
-check("toolbar importata", M.toolbar_state(true, true, "icon_0=ZP_tb_02_Gobbo.png\n") == "ok")
+check("toolbar: assente", M.toolbar_state(nil, true, false) == "manca")
+check("toolbar: senza catene", M.toolbar_state(8, false, false) == "manca")
+check("toolbar: scritta, da riavviare", M.toolbar_state(8, true, true) == "riavvia")
+check("toolbar: pronta", M.toolbar_state(8, true, false) == "ok")
 check("versione dall'intestazione", M.header_version("-- @description X\n-- @version 2.2.0\n") == "2.2.0")
 
 local set = { ["/Library/Frameworks/Python.framework/Versions/3.12/bin/python3"] = true, ["/opt/homebrew/bin/python3.11"] = true }
