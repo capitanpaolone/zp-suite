@@ -51,5 +51,5 @@ check("icona di serie tenuta, mancante -> riserva ZP, azione nativa col suo nume
 local full = M.menu_text(M.LAYOUT, setmetatable({}, { __index = function() return "_RSx" end }), nil, function(n) return M.STOCK[n] end)
 local nitems = select(2, full:gsub("\nitem_", ""))
 check("layout completo = toolbar 8 (23 voci con 6 separatori)", nitems == 23 and full:find("item_18=50125", 1, true)
-  and full:find("item_19=42653", 1, true) and full:find("icon_1=ZP_tb_17_Gestore_Progetto.png", 1, true))
+  and full:find("item_19=42653", 1, true) and full:find("icon_1=ZP_tb_17_Regioni_Item.png", 1, true) and full:find("ZP_tb_23_Catena_FX.png", 1, true))
 print(fails == 0 and "\nTUTTI OK" or ("\nFALLITI: " .. fails)); os.exit(fails == 0 and 0 or 1)

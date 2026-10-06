@@ -37,6 +37,11 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
   caricare ZP_UI (ZP_UI lo apre se e' vuota). Un pezzo nuovo da installare a mano = una riga nel 33.
 - Scripts/__startup.lua e' dell'utente: si scrive solo il blocco tra ZP_BENVENUTO_HSC_INIZIO e _FINE.
 
+## Icone
+- Prima di chiedere un'icona nuova (a Codex o altri) controlla che il nome non esista gia' in `ZP Studio Suite/icons`
+  e in Data/toolbar_icons: un nome uguale sovrascrive l'icona installata (successo con ZP_tb_23_Chain_Builder, 2026-10-06).
+- Icone toolbar: PNG 90x30 (3 stati 30x30) + `200/` a 180x60; stile REAPER #818989 / #939A9A / #1ABC98.
+
 ## Help
 - Ogni modifica visibile a Paolo aggiorna, nello stesso commit, l'help (`help/index.html` e la pagina
   dedicata: solo_recorder, pannello_trascrizione, toolbar...) e le spiegazioni dentro lo script

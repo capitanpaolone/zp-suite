@@ -33,12 +33,13 @@ M.PRESETS = {
   "js-ZP Suite_ZP Master_ZP Master Pro_jsfx.ini",
 }
 
--- La toolbar: la stessa che Paolo usa (Floating toolbar 8), con le icone di serie di REAPER.
+-- La toolbar: la stessa che Paolo usa (Floating toolbar 8), con le icone di serie di REAPER
+-- e due icone ZP nello stesso stile (Regioni_Item, Catena_FX, anche a 200% per Retina).
 -- Voce: { script, testo, icona, icona di riserva } oppure { cmd = azione nativa, testo, icona }.
 -- L'icona di riserva (ZP) si usa se l'icona scelta non c'e' in questo REAPER. "-" = separatore.
 M.LAYOUT = {
   { "18_Project_Viewer.lua", "Project Viewer", "toolbar_item_arpeggiate.png", "ZP_tb_18_Project_Viewer.png" },
-  { "17_Crea_Regioni_Export_da_Item_Nominati.lua", "Gestore Progetto", "tomtjes_toolbar_region_adjacent_items_same_track.png", "ZP_tb_17_Gestore_Progetto.png" },
+  { "17_Crea_Regioni_Export_da_Item_Nominati.lua", "Gestore Progetto", "ZP_tb_17_Regioni_Item.png" },
   { "19_Report_Minuti_Voce.lua", "Report minuti voce", "toolbar_misc_calculate_numeric.png", "ZP_tb_19_Report_Minuti.png" },
   "-",
   { "29_ZP_Trascrizione.lua", "ZP Trascrizione", "ZP_tb_29_Pannello_Trascrizione.png" },
@@ -52,7 +53,7 @@ M.LAYOUT = {
   "-",
   { "07_Note_Personaggio.lua", "Actor / Note", "toolbar_misc_mic.png", "ZP_tb_07_Actor_Note.png" },
   { "22_Pulisci_Code_Silenzi_e_Separa_Item.lua", "Voice Cleaner", "toolbar_misc_brush_broom_clean.png", "ZP_tb_22_Voice_Cleaner.png" },
-  { "23_ZP_Chain_Builder.lua", "Chain Builder", "toolbar_C_TrackTemplateAdd.png", "ZP_tb_23_Chain_Builder.png" },
+  { "23_ZP_Chain_Builder.lua", "Chain Builder", "ZP_tb_23_Catena_FX.png" },
   { "25_ZP_SOLO_Recorder.lua", "SOLO Recorder", "ZP_tb_25_SOLO_Recorder.png" },
   "-",
   { cmd = 50125, "Video: Show/hide video window", "toolbar_video_screen.png" },

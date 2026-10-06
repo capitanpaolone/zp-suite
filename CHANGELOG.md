@@ -108,7 +108,8 @@ nel suo insieme.
 
 ## ZP Studio Suite 2.3.0 — 2026-10-06
 
-- 32 Installa toolbar: toolbar ZP con le icone di REAPER, i pulsanti della finestra video (anche dai progetti
+- 32 Installa toolbar: toolbar ZP con le icone di REAPER (piu' due icone ZP nello stesso stile, anche per
+  schermi Retina), i pulsanti della finestra video (anche dai progetti
   in sottofondo) e l'ordine della toolbar di lavoro.
 - 33 Benvenuto: ZP Speech si installa con un clic (il Terminale scarica da GitHub e installa); se mancano
   Python 3.11+ o MacWhisper la riga lo dice e porta a scaricarli.

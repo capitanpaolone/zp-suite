@@ -19,7 +19,8 @@
 --   Cue Navigator del Carver, ZP Speech, SWS, js_ReaScriptAPI, OSARA e interfaccia
 --   web, e per ognuno ha il pulsante che lo mette a posto.
 -- @changelog
---   32 Installa toolbar: la toolbar ZP con le icone di REAPER, i pulsanti della finestra
+--   32 Installa toolbar: la toolbar ZP con le icone di REAPER (piu' due icone ZP nello stesso
+--     stile, anche per schermi Retina), i pulsanti della finestra
 --     video (anche dai progetti in sottofondo) e lo stesso ordine della toolbar di lavoro.
 --   33 Benvenuto: ZP Speech si installa con un clic (il Terminale scarica e installa da
 --     solo); se mancano Python 3.11+ o MacWhisper la riga lo dice e porta a scaricarli.
@@ -106,6 +107,10 @@
 --   [data] icons/ZP_tb_29_Pannello_Trascrizione.png > toolbar_icons/ZP_tb_29_Pannello_Trascrizione.png
 --   [data] icons/ZP_tb_30_ZP_SRT.png > toolbar_icons/ZP_tb_30_ZP_SRT.png
 --   [data] icons/ZP_tb_Importa_SRT_1_video.png > toolbar_icons/ZP_tb_Importa_SRT_1_video.png
+--   [data] icons/ZP_tb_17_Regioni_Item.png > toolbar_icons/ZP_tb_17_Regioni_Item.png
+--   [data] icons/ZP_tb_23_Catena_FX.png > toolbar_icons/ZP_tb_23_Catena_FX.png
+--   [data] icons/200/ZP_tb_17_Regioni_Item.png > toolbar_icons/200/ZP_tb_17_Regioni_Item.png
+--   [data] icons/200/ZP_tb_23_Catena_FX.png > toolbar_icons/200/ZP_tb_23_Catena_FX.png
 
 --[[
 ZP Studio Suite for REAPER
