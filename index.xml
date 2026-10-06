@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" name="ZP Suite" commit="a758535b9e56f5a2f6c523c02e1073a1a0e52fe8">
+<index version="1" name="ZP Suite" commit="9a9a848017eec699b7299b147fc4c31e235cad95">
   <category name="ZP Master">
     <reapack name="ZP Master Pro.jsfx" type="effect" desc="ZP Master Pro">
       <version name="2.45" author="Paolo Balestri" time="2026-08-30T20:03:27Z">
@@ -1765,6 +1765,95 @@ SOLO Web (prototipo): il SOLO nel browser del Mac, dell'iPad o del telefono, tra
         <source type="data" file="toolbar_icons/ZP_tb_26_SRT_Tools.png">https://github.com/capitanpaolone/zp-suite/raw/a758535b9e56f5a2f6c523c02e1073a1a0e52fe8/ZP%20Studio%20Suite/icons/ZP_tb_26_SRT_Tools.png</source>
         <source type="data" file="toolbar_icons/ZP_tb_29_Pannello_Trascrizione.png">https://github.com/capitanpaolone/zp-suite/raw/a758535b9e56f5a2f6c523c02e1073a1a0e52fe8/ZP%20Studio%20Suite/icons/ZP_tb_29_Pannello_Trascrizione.png</source>
         <source type="data" file="toolbar_icons/ZP_tb_30_ZP_SRT.png">https://github.com/capitanpaolone/zp-suite/raw/a758535b9e56f5a2f6c523c02e1073a1a0e52fe8/ZP%20Studio%20Suite/icons/ZP_tb_30_ZP_SRT.png</source>
+      </version>
+      <version name="2.3.0" author="Paolo Balestri" time="2026-10-06T13:40:37Z">
+        <changelog><![CDATA[32 Installa toolbar: la toolbar ZP con le icone di REAPER, i pulsanti della finestra
+  video (anche dai progetti in sottofondo) e lo stesso ordine della toolbar di lavoro.
+33 Benvenuto: ZP Speech si installa con un clic (il Terminale scarica e installa da
+  solo); se mancano Python 3.11+ o MacWhisper la riga lo dice e porta a scaricarli.]]></changelog>
+        <source main="main">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/00_Apri_Help_ZP_Studio_Suite.lua</source>
+        <source main="main" file="01_Importa_Video_SRT.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/01_Importa_Video_SRT.lua</source>
+        <source main="main" file="02_Gobbo_Verticale.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/02_Gobbo_Verticale.lua</source>
+        <source main="main" file="03_Gobbo_Orizzontale.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/03_Gobbo_Orizzontale.lua</source>
+        <source main="main" file="04_Crea_Marker_Item.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/04_Crea_Marker_Item.lua</source>
+        <source main="main" file="05_Aggiorna_SRT_Video.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/05_Aggiorna_SRT_Video.lua</source>
+        <source main="main" file="06_Importa_SRT_Reference.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/06_Importa_SRT_Reference.lua</source>
+        <source main="main" file="07_Note_Personaggio.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/07_Note_Personaggio.lua</source>
+        <source main="main" file="08_Esporta_SRT.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/08_Esporta_SRT.lua</source>
+        <source main="main" file="09_OSARA_Battuta_Corrente.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/09_OSARA_Battuta_Corrente.lua</source>
+        <source main="main" file="10_OSARA_Battuta_Successiva.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/10_OSARA_Battuta_Successiva.lua</source>
+        <source main="main" file="11_OSARA_Battuta_Precedente.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/11_OSARA_Battuta_Precedente.lua</source>
+        <source main="main" file="12_OSARA_Lettura_Automatica.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/12_OSARA_Lettura_Automatica.lua</source>
+        <source main="main" file="13_Info_Item_SRT.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/13_Info_Item_SRT.lua</source>
+        <source main="main" file="14_Marker_da_Timeline_a_Item.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/14_Marker_da_Timeline_a_Item.lua</source>
+        <source main="main" file="17_Crea_Regioni_Export_da_Item_Nominati.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/17_Crea_Regioni_Export_da_Item_Nominati.lua</source>
+        <source main="main" file="18_Project_Viewer.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/18_Project_Viewer.lua</source>
+        <source main="main" file="19_Report_Minuti_Voce.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/19_Report_Minuti_Voce.lua</source>
+        <source main="main" file="20_Importa_Cartelle_Video_Mixdown.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/20_Importa_Cartelle_Video_Mixdown.lua</source>
+        <source main="main" file="22_Pulisci_Code_Silenzi_e_Separa_Item.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/22_Pulisci_Code_Silenzi_e_Separa_Item.lua</source>
+        <source main="main" file="23_ZP_Chain_Builder.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/23_ZP_Chain_Builder.lua</source>
+        <source main="main" file="24_ZP_Probe_Guard.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/24_ZP_Probe_Guard.lua</source>
+        <source main="main" file="25_ZP_SOLO_Recorder.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/25_ZP_SOLO_Recorder.lua</source>
+        <source main="main" file="26_SRT_Tools.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/26_SRT_Tools.lua</source>
+        <source main="main" file="27_Pulisci_Installazione_Precedente.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/27_Pulisci_Installazione_Precedente.lua</source>
+        <source main="main" file="29_ZP_Trascrizione.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/29_ZP_Trascrizione.lua</source>
+        <source main="main" file="30_ZP_SRT.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/30_ZP_SRT.lua</source>
+        <source main="main" file="31_SRT_da_Marker_Audio.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/31_SRT_da_Marker_Audio.lua</source>
+        <source main="main" file="32_Installa_Toolbar_ZP.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/32_Installa_Toolbar_ZP.lua</source>
+        <source main="main" file="33_Benvenuto_Controllo_Installazione.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/33_Benvenuto_Controllo_Installazione.lua</source>
+        <source main="main" file="web/ZP_SOLO_Web_Motore.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/web/ZP_SOLO_Web_Motore.lua</source>
+        <source file="04_worker_Crea_Marker_Item.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/04_worker_Crea_Marker_Item.lua</source>
+        <source file="05_worker_Gestione_SRT.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/05_worker_Gestione_SRT.lua</source>
+        <source file="28_Collega_Marker.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/28_Collega_Marker.lua</source>
+        <source file="ZP_UI.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/ZP_UI.lua</source>
+        <source file="ZP_sincronizza_aggancio.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/ZP_sincronizza_aggancio.lua</source>
+        <source file="lib_RythmoBand_Accessibile.lua">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/lib_RythmoBand_Accessibile.lua</source>
+        <source file="web/zp_solo.html">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/web/zp_solo.html</source>
+        <source file="help/index.html">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/help/index.html</source>
+        <source file="help/toolbar.html">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/help/toolbar.html</source>
+        <source file="help/solo_recorder.html">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/help/solo_recorder.html</source>
+        <source file="help/voice_cleaner.html">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/help/voice_cleaner.html</source>
+        <source file="help/pannello_trascrizione.html">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/help/pannello_trascrizione.html</source>
+        <source file="help/collega_marker.html">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/help/collega_marker.html</source>
+        <source file="fxchains/ZP_Bus_VoiceChain.RfxChain">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/fxchains/ZP_Bus_VoiceChain.RfxChain</source>
+        <source file="fxchains/ZP_MasterChain.RfxChain">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/fxchains/ZP_MasterChain.RfxChain</source>
+        <source file="presets/js-ZP Suite_ZP Voce_ZP BUS Chain_jsfx.ini">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/presets/js-ZP%20Suite_ZP%20Voce_ZP%20BUS%20Chain_jsfx.ini</source>
+        <source file="presets/js-ZP Suite_ZP Master_ZP Master Pro_jsfx.ini">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/presets/js-ZP%20Suite_ZP%20Master_ZP%20Master%20Pro_jsfx.ini</source>
+        <source file="tools/srt_tools.html">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/tools/srt_tools.html</source>
+        <source file="toolbar/ZP_StudioSuite.ReaperMenu">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/toolbar/ZP_StudioSuite.ReaperMenu</source>
+        <source file="ZP_NVDA_Speech.py">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/ZP_NVDA_Speech.py</source>
+        <source file="nvdaControllerClient64.dll">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/nvdaControllerClient64.dll</source>
+        <source file="README.txt">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/README.txt</source>
+        <source file="VideoProcessor_Project_Timecode_Overlay.txt">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/VideoProcessor_Project_Timecode_Overlay.txt</source>
+        <source file="RB Voice Track.RTrackTemplate">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/RB%20Voice%20Track.RTrackTemplate</source>
+        <source file="SRT Track.RTrackTemplate">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/SRT%20Track.RTrackTemplate</source>
+        <source type="data" file="toolbar_icons/ZP_tb_00_Help.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_00_Help.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_01_Import_Video_SRT.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_01_Import_Video_SRT.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_02_Gobbo_Verticale.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_02_Gobbo_Verticale.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_03_Gobbo_Orizzontale.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_03_Gobbo_Orizzontale.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_04_Marker_Item.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_04_Marker_Item.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_05_Gestione_SRT.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_05_Gestione_SRT.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_06_Import_SRT_Reference.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_06_Import_SRT_Reference.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_07_Actor_Note.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_07_Actor_Note.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_08_Export_SRT.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_08_Export_SRT.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_09_OSARA_Corrente.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_09_OSARA_Corrente.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_10_OSARA_Successiva.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_10_OSARA_Successiva.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_11_OSARA_Precedente.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_11_OSARA_Precedente.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_12_OSARA_Auto.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_12_OSARA_Auto.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_13_Info_Item_SRT.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_13_Info_Item_SRT.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_14_Marker_TL_Item.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_14_Marker_TL_Item.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_17_Gestore_Progetto.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_17_Gestore_Progetto.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_18_Project_Viewer.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_18_Project_Viewer.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_19_Report_Minuti.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_19_Report_Minuti.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_20_Importa_Cartelle.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_20_Importa_Cartelle.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_22_Voice_Cleaner.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_22_Voice_Cleaner.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_23_Chain_Builder.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_23_Chain_Builder.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_24_Probe_Guard.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_24_Probe_Guard.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_25_SOLO_Recorder.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_25_SOLO_Recorder.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_26_SRT_Tools.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_26_SRT_Tools.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_29_Pannello_Trascrizione.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_29_Pannello_Trascrizione.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_30_ZP_SRT.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_30_ZP_SRT.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_Importa_SRT_1_video.png">https://github.com/capitanpaolone/zp-suite/raw/a75c3a3f016ceef438fae1fa5701c1d278f6674f/ZP%20Studio%20Suite/icons/ZP_tb_Importa_SRT_1_video.png</source>
       </version>
     </reapack>
   </category>
