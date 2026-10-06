@@ -40,4 +40,16 @@ for _, f in ipairs(M.PRESETS) do
   local en = M.preset_entries(t or "")
   check("pacchetto " .. f, #en == 1 and en[1].name ~= nil)
 end
+-- toolbar 8 di Paolo: azioni native, icone di serie, riserva ZP
+local lay = { { "a.lua", "A", "stock.png", "zp_a.png" }, { "b.lua", "B", "tomtjes.png", "zp_b.png" }, "-",
+  { cmd = 50125, "Video", "toolbar_video_screen.png" } }
+local has = function(n) return n == "stock.png" end
+local t8 = M.menu_text(lay, { ["a.lua"] = "_RS1", ["b.lua"] = "_RS2" }, nil, has)
+check("icona di serie tenuta, mancante -> riserva ZP, azione nativa col suo numero",
+  t8:find("icon_0=stock.png", 1, true) and t8:find("icon_1=zp_b.png", 1, true)
+  and t8:find("item_3=50125 Video", 1, true) and t8:find("icon_3=toolbar_video_screen.png", 1, true))
+local full = M.menu_text(M.LAYOUT, setmetatable({}, { __index = function() return "_RSx" end }), nil, function(n) return M.STOCK[n] end)
+local nitems = select(2, full:gsub("\nitem_", ""))
+check("layout completo = toolbar 8 (23 voci con 6 separatori)", nitems == 23 and full:find("item_18=50125", 1, true)
+  and full:find("item_19=42653", 1, true) and full:find("icon_1=ZP_tb_17_Gestore_Progetto.png", 1, true))
 print(fails == 0 and "\nTUTTI OK" or ("\nFALLITI: " .. fails)); os.exit(fails == 0 and 0 or 1)

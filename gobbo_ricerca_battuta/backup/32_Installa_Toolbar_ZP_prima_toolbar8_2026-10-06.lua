@@ -33,43 +33,28 @@ M.PRESETS = {
   "js-ZP Suite_ZP Master_ZP Master Pro_jsfx.ini",
 }
 
--- La toolbar: la stessa che Paolo usa (Floating toolbar 8), con le icone di serie di REAPER.
--- Voce: { script, testo, icona, icona di riserva } oppure { cmd = azione nativa, testo, icona }.
--- L'icona di riserva (ZP) si usa se l'icona scelta non c'e' in questo REAPER. "-" = separatore.
+-- La toolbar: script, testo del pulsante, icona. "-" = separatore.
 M.LAYOUT = {
-  { "18_Project_Viewer.lua", "Project Viewer", "toolbar_item_arpeggiate.png", "ZP_tb_18_Project_Viewer.png" },
-  { "17_Crea_Regioni_Export_da_Item_Nominati.lua", "Gestore Progetto", "tomtjes_toolbar_region_adjacent_items_same_track.png", "ZP_tb_17_Gestore_Progetto.png" },
-  { "19_Report_Minuti_Voce.lua", "Report minuti voce", "toolbar_misc_calculate_numeric.png", "ZP_tb_19_Report_Minuti.png" },
+  { "18_Project_Viewer.lua", "Project Viewer", "ZP_tb_18_Project_Viewer.png" },
+  { "17_Crea_Regioni_Export_da_Item_Nominati.lua", "Gestore Progetto", "ZP_tb_17_Gestore_Progetto.png" },
+  { "19_Report_Minuti_Voce.lua", "Report minuti voce", "ZP_tb_19_Report_Minuti.png" },
   "-",
   { "29_ZP_Trascrizione.lua", "ZP Trascrizione", "ZP_tb_29_Pannello_Trascrizione.png" },
   "-",
-  { "02_Gobbo_Verticale.lua", "Gobbo verticale", "toolbar_item_selected_move_vertical_track.png", "ZP_tb_02_Gobbo_Verticale.png" },
-  { "03_Gobbo_Orizzontale.lua", "Gobbo orizzontale", "toolbar_item_selected_move_horizontal_position_time.png", "ZP_tb_03_Gobbo_Orizzontale.png" },
+  { "02_Gobbo_Verticale.lua", "Gobbo verticale", "ZP_tb_02_Gobbo_Verticale.png" },
+  { "03_Gobbo_Orizzontale.lua", "Gobbo orizzontale", "ZP_tb_03_Gobbo_Orizzontale.png" },
   "-",
-  { "20_Importa_Cartelle_Video_Mixdown.lua", "Importa cartelle", "toolbar_color_load_disk.png", "ZP_tb_20_Importa_Cartelle.png" },
+  { "20_Importa_Cartelle_Video_Mixdown.lua", "Importa cartelle", "ZP_tb_20_Importa_Cartelle.png" },
   { "30_ZP_SRT.lua", "ZP SRT", "ZP_tb_30_ZP_SRT.png" },
-  { "04_Crea_Marker_Item.lua", "Marker", "toolbar_marker_renum.png", "ZP_tb_04_Marker_Item.png" },
+  { "04_Crea_Marker_Item.lua", "Marker", "ZP_tb_04_Marker_Item.png" },
   "-",
-  { "07_Note_Personaggio.lua", "Actor / Note", "toolbar_misc_mic.png", "ZP_tb_07_Actor_Note.png" },
-  { "22_Pulisci_Code_Silenzi_e_Separa_Item.lua", "Voice Cleaner", "toolbar_misc_brush_broom_clean.png", "ZP_tb_22_Voice_Cleaner.png" },
-  { "23_ZP_Chain_Builder.lua", "Chain Builder", "toolbar_C_TrackTemplateAdd.png", "ZP_tb_23_Chain_Builder.png" },
+  { "07_Note_Personaggio.lua", "Actor / Note", "ZP_tb_07_Actor_Note.png" },
+  { "22_Pulisci_Code_Silenzi_e_Separa_Item.lua", "Voice Cleaner", "ZP_tb_22_Voice_Cleaner.png" },
+  { "23_ZP_Chain_Builder.lua", "Chain Builder", "ZP_tb_23_Chain_Builder.png" },
+  { "24_ZP_Probe_Guard.lua", "Probe Guard", "ZP_tb_24_Probe_Guard.png" },
   { "25_ZP_SOLO_Recorder.lua", "SOLO Recorder", "ZP_tb_25_SOLO_Recorder.png" },
   "-",
-  { cmd = 50125, "Video: Show/hide video window", "toolbar_video_screen.png" },
-  { cmd = 42653, "Project tabs: Display video from background projects if active project lacks video", "ZP_tb_Importa_SRT_1_video.png" },
-  { "24_ZP_Probe_Guard.lua", "Probe Guard", "toolbar_color_source_input_channel.png", "ZP_tb_24_Probe_Guard.png" },
-  "-",
   { "00_Apri_Help_ZP_Studio_Suite.lua", "Help", "ZP_tb_00_Help.png" },
-}
-
--- Icone di serie di REAPER (stanno dentro l'applicazione, non nella cartella dell'utente).
-M.STOCK = {
-  ["toolbar_item_arpeggiate.png"] = true, ["toolbar_misc_calculate_numeric.png"] = true,
-  ["toolbar_item_selected_move_vertical_track.png"] = true,
-  ["toolbar_item_selected_move_horizontal_position_time.png"] = true,
-  ["toolbar_color_load_disk.png"] = true, ["toolbar_marker_renum.png"] = true, ["toolbar_misc_mic.png"] = true,
-  ["toolbar_misc_brush_broom_clean.png"] = true, ["toolbar_video_screen.png"] = true,
-  ["toolbar_color_source_input_channel.png"] = true,
 }
 
 ---------------------------------------------------------------------------
@@ -98,26 +83,15 @@ function M.ids_from_kb(kb_text, scripts_dir)
 end
 
 -- Testo del file .ReaperMenu. ids: nome script -> "_RS..." (mancante = pulsante saltato)
--- Icona del pulsante: quella scelta, o la riserva ZP se has_icon dice che qui non c'e'.
-function M.pick_icon(e, has_icon)
-  if e[4] and has_icon and not has_icon(e[3]) then return e[4] end
-  return e[3]
-end
-
-function M.menu_text(layout, ids, title, has_icon)
+function M.menu_text(layout, ids, title)
   local icons, items, n = {}, {}, 0
   for _, e in ipairs(layout) do
     if e == "-" then
       if n > 0 and items[#items] ~= "-1" then items[#items + 1] = "-1"; n = n + 1 end
-    else
-      local id = e.cmd and tostring(e.cmd) or ids[e[1]]
-      local text = e.cmd and e[1] or e[2]
-      local icon = e.cmd and e[2] or M.pick_icon(e, has_icon)
-      if id then
-        icons[#icons + 1] = string.format("icon_%d=%s", n, icon)
-        items[#items + 1] = string.format("%s %s", id, text)
-        n = n + 1
-      end
+    elseif ids[e[1]] then
+      icons[#icons + 1] = string.format("icon_%d=%s", n, e[3])
+      items[#items + 1] = string.format("%s %s", ids[e[1]], e[2])
+      n = n + 1
     end
   end
   if items[#items] == "-1" then items[#items] = nil end
@@ -194,7 +168,7 @@ local kb_ids = M.ids_from_kb(read(resource .. sep .. "reaper-kb.ini") or "", res
 local ids, registered, missing = {}, {}, {}
 local to_register = {}
 for _, e in ipairs(M.LAYOUT) do
-  if e ~= "-" and not e.cmd then
+  if e ~= "-" then
     local path = here .. sep .. e[1]
     if not exists(path) then
       missing[#missing + 1] = e[1]
@@ -228,10 +202,7 @@ if not f then
   reaper.MB("Non riesco a scrivere:\n" .. target, "ZP Installa toolbar", 0)
   return
 end
-local function has_icon(name)
-  return M.STOCK[name] or exists(resource .. sep .. "Data" .. sep .. "toolbar_icons" .. sep .. name)
-end
-f:write(M.menu_text(M.LAYOUT, ids, nil, has_icon))
+f:write(M.menu_text(M.LAYOUT, ids))
 f:close()
 
 -- catene di effetti in REAPER/FXChains

@@ -95,6 +95,18 @@ function M.header_version(text)
   return (text or ""):match("@version%s+([%w%.%-]+)")
 end
 
+-- Python 3.11+ fra i posti dove lo mettono python.org e Homebrew (exists e' passato da fuori).
+function M.find_python(exists)
+  for _, v in ipairs({ "3.14", "3.13", "3.12", "3.11" }) do
+    for _, p in ipairs({ "/Library/Frameworks/Python.framework/Versions/" .. v .. "/bin/python3",
+                         "/opt/homebrew/bin/python" .. v, "/usr/local/bin/python" .. v,
+                         "/opt/homebrew/opt/python@" .. v .. "/bin/python" .. v }) do
+      if exists(p) then return p end
+    end
+  end
+  return nil
+end
+
 if not reaper then return M end
 
 ---------------------------------------------------------------------------
@@ -139,6 +151,24 @@ end
 local function speak(t)
   status = t
   if reaper.osara_outputMessage then reaper.osara_outputMessage(t) end
+end
+
+-- ZP Speech: il Terminale scarica da GitHub solo speech-engine e lancia install_macos.sh.
+local function install_speech()
+  local cmd = os.tmpname() .. "_zp_speech.command"
+  local body = table.concat({
+    "#!/bin/bash",
+    "echo 'ZP Speech: scarico l installatore da GitHub (capitanpaolone/zp-suite)...'",
+    "T=$(mktemp -d)",
+    "curl -fsSL https://codeload.github.com/capitanpaolone/zp-suite/tar.gz/refs/heads/master | tar -xz -C \"$T\" --strip-components=1 zp-suite-master/speech-engine || { echo 'Download non riuscito: controlla la connessione.'; read -n 1 -s -r -p 'Premi un tasto per chiudere.'; exit 1; }",
+    "bash \"$T/speech-engine/install_macos.sh\" && echo 'ZP Speech pronto: torna in REAPER, la spia del Benvenuto diventa verde.' || echo 'Installazione non riuscita: leggi i messaggi qui sopra.'",
+    "rm -rf \"$T\"",
+    "echo",
+    "read -n 1 -s -r -p 'Fatto. Premi un tasto per chiudere questa finestra.'",
+  }, "\n") .. "\n"
+  if not write(cmd, body) then speak("Non riesco a preparare l'installazione di ZP Speech."); return false end
+  os.execute("chmod +x " .. string.format("%q", cmd) .. " && open " .. string.format("%q", cmd))
+  return true
 end
 
 -- I pezzi -----------------------------------------------------------------------
@@ -192,19 +222,30 @@ local function check_all()
     }
   end
 
-  -- 3 ZP Speech
+  -- 3 ZP Speech: un clic su Installa apre il Terminale, scarica da GitHub solo la cartella
+  -- speech-engine e lancia il suo installatore (si vede tutto quello che fa).
   if not IS_MAC then
     out[#out + 1] = { title = "ZP Speech (Trascrivi)", state = "na", line = "Solo su Mac. Altrove crea l'SRT con il tuo whisper e parti da Abbina.", buttons = {} }
   else
     local home = os.getenv("HOME") or ""
     local ready = exists(home .. "/Library/Application Support/ZP/runtimes/speech/bin/zp-speech")
+    local mw = exists("/Applications/MacWhisper.app")
+    local py = M.find_python(exists)
+    local mancano = {}
+    if not py then mancano[#mancano + 1] = "Python 3.11 o piu' recente (python.org)" end
+    if not mw then mancano[#mancano + 1] = "MacWhisper (in Applicazioni)" end
     out[#out + 1] = {
       title = "ZP Speech (Trascrivi)",
-      state = ready and "ok" or "manca",
-      line = ready and "Installato: 29 Trascrivi crea l'SRT dal WAV con whisper."
-        or "Facoltativo: serve solo a Trascrivi (29). Si installa a parte, con lo script install_macos.sh.",
-      buttons = ready and {} or {
-        { "Come si installa", function() UI.open_url("https://github.com/capitanpaolone/zp-suite/tree/master/speech-engine") end },
+      state = (ready and mw) and "ok" or "manca",
+      line = (ready and mw) and "Installato: 29 Trascrivi crea l'SRT dal WAV con whisper (MacWhisper)."
+        or ready and "Installato, ma per trascrivere serve MacWhisper in Applicazioni (aprilo una volta)."
+        or (#mancano > 0 and ("Facoltativo, serve a Trascrivi (29). Prima di installarlo serve: " .. table.concat(mancano, ", ") .. ".")
+          or "Facoltativo, serve a Trascrivi (29). Installa: il Terminale scarica e installa tutto da solo."),
+      buttons = {
+        { ready and "Aggiorna" or "Installa", function() if install_speech() then speak("Si apre il Terminale: segui li' l'installazione di ZP Speech.") end end,
+          enabled = py ~= nil },
+        { "Python", function() UI.open_url("https://www.python.org/downloads/macos/") end, hidden = py ~= nil },
+        { "MacWhisper", function() UI.open_url("https://goodsnooze.gumroad.com/l/macwhisper") end, hidden = mw },
       },
     }
   end
@@ -276,7 +317,7 @@ local function draw()
   gfx.drawstr((da_fare == 0 and "Tutto pronto." or (da_fare == 1 and "Una cosa da fare." or (da_fare .. " cose da fare."))) ..
     "  Versione " .. ver .. ". Lo stato si aggiorna da solo.")
 
-  local y, bw = 76, 150
+  local y, bw = 76, 136
   for _, r in ipairs(rows) do
     local h = 70
     local panel = UI.draw_panel({ x = 12, y = y, w = gfx.w - 24, h = h }, nil)
@@ -289,16 +330,18 @@ local function draw()
     gfx.setfont(1, "Arial", 12, "b"); gfx.set(c[1], c[2], c[3], 1)
     gfx.x, gfx.y = 46 + tw + 10, y + 16
     gfx.drawstr(WORD[r.state])
-    local text_w = gfx.w - 24 - 46 - (#r.buttons > 0 and (#r.buttons * (bw + 8)) or 0) - 10
+    local shown = {}
+    for _, b in ipairs(r.buttons) do if not b.hidden then shown[#shown + 1] = b end end
+    local text_w = gfx.w - 24 - 46 - (#shown > 0 and (#shown * (bw + 8)) or 0) - 10
     gfx.setfont(1, "Arial", 13); gfx.set(0.78, 0.80, 0.86, 1)
     for i, l in ipairs(UI.wrap_text(r.line, text_w)) do
       if i > 2 then break end
       gfx.x, gfx.y = 46, y + 34 + (i - 1) * 16
       gfx.drawstr(l)
     end
-    local bx = gfx.w - 24 - #r.buttons * (bw + 8) + 4
-    for _, b in ipairs(r.buttons) do
-      if UI.draw_button({ x = bx, y = y + 20, w = bw, h = 30 }, b[1], false, b.enabled ~= false, clicked, b[1] == "Installa" and "save" or "tab") then
+    local bx = gfx.w - 24 - #shown * (bw + 8) + 4
+    for _, b in ipairs(shown) do
+      if UI.draw_button({ x = bx, y = y + 20, w = bw, h = 30 }, b[1], false, b.enabled ~= false, clicked, (b[1] == "Installa" and b.enabled ~= false) and "save" or "tab") then
         b[2](); last_check = 0
       end
       bx = bx + bw + 8

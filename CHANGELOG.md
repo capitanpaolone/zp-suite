@@ -105,3 +105,10 @@ nel suo insieme.
   Harmonic Space Carver e il suo avvio con REAPER, ZP Speech, SWS, js_ReaScriptAPI, OSARA, interfaccia web)
   e il pulsante che lo sistema. Si apre da solo la prima volta che si usa uno strumento ZP; poi dall'Action
   List o dall'help.
+
+## ZP Studio Suite 2.3.0 — 2026-10-06
+
+- 32 Installa toolbar: toolbar ZP con le icone di REAPER, i pulsanti della finestra video (anche dai progetti
+  in sottofondo) e l'ordine della toolbar di lavoro.
+- 33 Benvenuto: ZP Speech si installa con un clic (il Terminale scarica da GitHub e installa); se mancano
+  Python 3.11+ o MacWhisper la riga lo dice e porta a scaricarli.

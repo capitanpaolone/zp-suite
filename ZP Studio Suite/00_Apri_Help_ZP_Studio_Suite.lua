@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.2.0
+-- @version 2.3.0
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -19,10 +19,10 @@
 --   Cue Navigator del Carver, ZP Speech, SWS, js_ReaScriptAPI, OSARA e interfaccia
 --   web, e per ognuno ha il pulsante che lo mette a posto.
 -- @changelog
---   33 Benvenuto: controllo dell'installazione con una spia per pezzo (toolbar ed
---     effetti, Cue Navigator del Carver anche all'avvio di REAPER, ZP Speech, SWS,
---     js_ReaScriptAPI, OSARA, interfaccia web) e il pulsante che lo sistema. Si apre
---     da solo la prima volta che si usa uno strumento ZP.
+--   32 Installa toolbar: la toolbar ZP con le icone di REAPER, i pulsanti della finestra
+--     video (anche dai progetti in sottofondo) e lo stesso ordine della toolbar di lavoro.
+--   33 Benvenuto: ZP Speech si installa con un clic (il Terminale scarica e installa da
+--     solo); se mancano Python 3.11+ o MacWhisper la riga lo dice e porta a scaricarli.
 -- @provides
 --   [main] 01_Importa_Video_SRT.lua
 --   [main] 02_Gobbo_Verticale.lua
@@ -105,6 +105,7 @@
 --   [data] icons/ZP_tb_26_SRT_Tools.png > toolbar_icons/ZP_tb_26_SRT_Tools.png
 --   [data] icons/ZP_tb_29_Pannello_Trascrizione.png > toolbar_icons/ZP_tb_29_Pannello_Trascrizione.png
 --   [data] icons/ZP_tb_30_ZP_SRT.png > toolbar_icons/ZP_tb_30_ZP_SRT.png
+--   [data] icons/ZP_tb_Importa_SRT_1_video.png > toolbar_icons/ZP_tb_Importa_SRT_1_video.png
 
 --[[
 ZP Studio Suite for REAPER

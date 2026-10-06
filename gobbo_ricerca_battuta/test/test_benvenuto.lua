@@ -30,5 +30,8 @@ check("toolbar da importare", M.toolbar_state(true, true, "[Floating toolbar 1]\
 check("toolbar importata", M.toolbar_state(true, true, "icon_0=ZP_tb_02_Gobbo.png\n") == "ok")
 check("versione dall'intestazione", M.header_version("-- @description X\n-- @version 2.2.0\n") == "2.2.0")
 
+local set = { ["/Library/Frameworks/Python.framework/Versions/3.12/bin/python3"] = true, ["/opt/homebrew/bin/python3.11"] = true }
+check("python: il piu' recente trovato", M.find_python(function(p) return set[p] end) == "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3")
+check("python: nessuno", M.find_python(function() return false end) == nil)
 if fails > 0 then print(fails .. " FALLITI") os.exit(1) end
 print("TUTTI OK")
