@@ -126,3 +126,8 @@ nel suo insieme.
   (Switch toolbar o View > Toolbars, dopo un riavvio): nella toolbar che si chiama gia' cosi', altrimenti nella
   prima libera fra 1 e 16. Le altre toolbar restano come sono; accanto a reaper-menu.ini resta un backup.
 - 33 Benvenuto: toolbar da installare, da riavviare, pronta (dice in quale toolbar e' e la apre).
+
+## ZP Studio Suite 2.3.5 — 2026-10-06
+
+- SOLO Web: pulsante Condividi con il link per aprire il SOLO da un altro dispositivo della stessa rete (iPad,
+  telefono, altro computer), con Copia e QR; Wi-Fi e cavo insieme. Il globo del SOLO Recorder copia il link.

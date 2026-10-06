@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.3.4
+-- @version 2.3.5
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -19,12 +19,9 @@
 --   Cue Navigator del Carver, ZP Speech, SWS, js_ReaScriptAPI, OSARA e interfaccia
 --   web, e per ognuno ha il pulsante che lo mette a posto.
 -- @changelog
---   32 Installa toolbar: mette la toolbar "ZP Studio Suite" direttamente fra le toolbar di
---     REAPER, col suo nome (si sceglie con Switch toolbar o View > Toolbars dopo un riavvio):
---     nella toolbar che si chiama gia' cosi', altrimenti nella prima libera fra 1 e 16; le
---     altre toolbar restano come sono e accanto a reaper-menu.ini resta un backup.
---   33 Benvenuto: toolbar da installare (Installa), da riavviare (giallo, finche' REAPER
---     non la carica), pronta (dice in quale toolbar e' e la apre).
+--   SOLO Web: pulsante Condividi con il link per aprire il SOLO da un altro dispositivo
+--     della stessa rete (iPad, telefono, altro computer), Copia e QR da inquadrare; Wi-Fi e
+--     cavo insieme. Il globo del SOLO Recorder copia il link negli appunti.
 -- @provides
 --   [main] 01_Importa_Video_SRT.lua
 --   [main] 02_Gobbo_Verticale.lua
