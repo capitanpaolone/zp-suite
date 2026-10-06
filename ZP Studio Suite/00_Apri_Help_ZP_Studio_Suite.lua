@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.3.0
+-- @version 2.3.1
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -19,9 +19,9 @@
 --   Cue Navigator del Carver, ZP Speech, SWS, js_ReaScriptAPI, OSARA e interfaccia
 --   web, e per ognuno ha il pulsante che lo mette a posto.
 -- @changelog
---   32 Installa toolbar: la toolbar ZP con le icone di REAPER (piu' due icone ZP nello stesso
---     stile, anche per schermi Retina), i pulsanti della finestra
---     video (anche dai progetti in sottofondo) e lo stesso ordine della toolbar di lavoro.
+--   32 Installa toolbar: la toolbar ZP con le icone di REAPER piu' due icone ZP nello stesso
+--     stile (Gestore Progetto, Chain Builder), anche per schermi Retina; pulsanti della
+--     finestra video (anche dai progetti in sottofondo); ordine della toolbar di lavoro.
 --   33 Benvenuto: ZP Speech si installa con un clic (il Terminale scarica e installa da
 --     solo); se mancano Python 3.11+ o MacWhisper la riga lo dice e porta a scaricarli.
 -- @provides

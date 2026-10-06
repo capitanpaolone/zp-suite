@@ -106,7 +106,7 @@ nel suo insieme.
   e il pulsante che lo sistema. Si apre da solo la prima volta che si usa uno strumento ZP; poi dall'Action
   List o dall'help.
 
-## ZP Studio Suite 2.3.0 — 2026-10-06
+## ZP Studio Suite 2.3.1 — 2026-10-06
 
 - 32 Installa toolbar: toolbar ZP con le icone di REAPER (piu' due icone ZP nello stesso stile, anche per
   schermi Retina), i pulsanti della finestra video (anche dai progetti

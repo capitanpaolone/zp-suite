@@ -11,6 +11,8 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 - Un file nuovo distribuito (fxchains, presets, help, icone) va aggiunto al `@provides` del 00
   e il percorso deve esistere (run_all lo controlla).
 - Mai push su master, tag, bump di versione o ReaPack senza richiesta esplicita di Paolo.
+- reapack-index crea una versione solo nel commit dove cambia @version: se dopo il bump aggiungi file o
+  modifiche al pacchetto, rialza la versione prima di pubblicare (2.3.0 uscita senza icone, 2026-10-06).
 
 ## Harmonic Space Carver: cue e helper
 - I cue esistono solo per il Carver: un #HSC cancellato o aggiunto fuori dal Carver si ripristina/toglie
