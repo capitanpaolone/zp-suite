@@ -38,5 +38,8 @@ check("toolbar ZP: vince quella col nome ZP Studio Suite", M.toolbar_slot(menu) 
 check("toolbar ZP: senza nome, la prima con icone ZP", M.toolbar_slot("[Floating toolbar 5]\nicon_0=ZP_tb_a.png\n") == 5)
 check("toolbar ZP: nella principale", M.toolbar_slot("[Main toolbar]\nicon_3=ZP_tb_a.png\n") == "main")
 check("toolbar ZP: assente", M.toolbar_slot("[Floating toolbar 1]\nitem_0=1\n") == nil)
+check("da riavviare: file ancora quello scritto", M.toolbar_pending("8|10", "0123456789") == true)
+check("da riavviare: REAPER ha riscritto il file", M.toolbar_pending("8|10", "0123456789ab") == false)
+check("da riavviare: nessuna scrittura", M.toolbar_pending("", "x") == false)
 if fails > 0 then print(fails .. " FALLITI") os.exit(1) end
 print("TUTTI OK")

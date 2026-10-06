@@ -288,9 +288,12 @@ if slot then
   end
   local w = io.open(menu_ini_path, "wb")
   if w then
-    w:write(M.put_section(menu_ini, M.menu_text(M.LAYOUT, ids, nil, has_icon, slot)))
+    local new_ini = M.put_section(menu_ini, M.menu_text(M.LAYOUT, ids, nil, has_icon, slot))
+    w:write(new_ini)
     w:close()
-    reaper.SetExtState("ZP_STUDIO_SUITE", "toolbar_da_riavviare", tostring(slot), false)
+    -- "da riavviare" vale finche' il file e' quello scritto qui: se REAPER lo riscrive (Customize
+    -- toolbars, Import) la toolbar e' gia' nella sua memoria. Non persistente: sparisce al riavvio.
+    reaper.SetExtState("ZP_STUDIO_SUITE", "toolbar_da_riavviare", slot .. "|" .. #new_ini, false)
     slot_msg = "Toolbar \"ZP Studio Suite\" scritta nella Floating toolbar " .. slot .. ".\n" ..
       "RIAVVIA REAPER: dopo la trovi con Switch toolbar (o View > Toolbars).\n" ..
       "Prima del riavvio non aprire Customize toolbars, altrimenti va rifatto."

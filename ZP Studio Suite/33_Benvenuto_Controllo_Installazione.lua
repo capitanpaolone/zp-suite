@@ -87,6 +87,13 @@ end
 -- Toolbar: "ok" importata, "importa" file pronto ma non importata, "manca" mai installata.
 -- Toolbar: "manca" (da installare), "riavvia" (scritta dal 32 in reaper-menu.ini, REAPER deve
 -- ripartire per caricarla), "ok". slot = toolbar_slot; pending = scritta in questa sessione.
+-- La toolbar scritta dal 32 aspetta un riavvio solo se reaper-menu.ini e' ancora quello scritto
+-- (flag "slot|lunghezza"): se REAPER l'ha riscritto, la toolbar e' gia' caricata.
+function M.toolbar_pending(flag, menu_ini)
+  local len = tonumber((flag or ""):match("|(%d+)$"))
+  return len ~= nil and len == #(menu_ini or "")
+end
+
 function M.toolbar_state(slot, chains_ok, pending)
   if not slot or not chains_ok then return "manca" end
   if pending then return "riavvia" end
@@ -198,8 +205,9 @@ local function check_all()
   -- 1 toolbar ed effetti: il 32 scrive la toolbar "ZP Studio Suite" in reaper-menu.ini; REAPER la
   -- carica al riavvio. La spia "toolbar_da_riavviare" e' non persistente: sparisce riavviando.
   local chains = exists(P(resource, "FXChains", "ZP Bus VoiceChain.RfxChain")) and exists(P(resource, "FXChains", "ZP MasterChain.RfxChain"))
-  local slot = M.toolbar_slot(read(P(resource, "reaper-menu.ini")))
-  local pending = reaper.GetExtState("ZP_STUDIO_SUITE", "toolbar_da_riavviare") ~= ""
+  local menu_ini = read(P(resource, "reaper-menu.ini"))
+  local slot = M.toolbar_slot(menu_ini)
+  local pending = M.toolbar_pending(reaper.GetExtState("ZP_STUDIO_SUITE", "toolbar_da_riavviare"), menu_ini)
   local tb = M.toolbar_state(slot, chains, pending)
   local dove = type(slot) == "number" and ("Floating toolbar " .. slot) or slot == "main" and "toolbar principale" or ""
   local reinstalla = { "Reinstalla", function() if run_script(P(here, "32_Installa_Toolbar_ZP.lua")) then speak("Toolbar ed effetti: installazione avviata.") end end }
