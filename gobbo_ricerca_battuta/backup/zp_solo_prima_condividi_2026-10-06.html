@@ -86,14 +86,6 @@ section h2{font-size:12px;font-weight:600;color:var(--sub);margin:0 0 8px}
 footer{padding:4px 16px 16px;color:var(--sub);font-size:14px;min-height:24px}
 .offline{background:#5a1712;color:#ffd9d4;padding:10px 16px;font-size:14px;display:none}
 .offline.show{display:block}
-.share{background:#15171c;border-bottom:1px solid #2a2c34;padding:12px 16px;display:none;gap:16px;align-items:flex-start;flex-wrap:wrap}
-.share.show{display:flex}
-.share .links{flex:1;min-width:240px}
-.share .url{display:flex;gap:8px;align-items:center;margin:6px 0}
-.share code{font-size:15px;background:#0c0d10;border:1px solid #2a2c34;border-radius:4px;padding:6px 8px;user-select:all;word-break:break-all}
-.share .note{font-size:13px;color:var(--sub);margin-top:6px;max-width:560px}
-#qr{background:#fff;padding:8px;border-radius:6px;line-height:0}
-#qr:empty{display:none}
 </style>
 </head>
 <body>
@@ -101,7 +93,6 @@ footer{padding:4px 16px 16px;color:var(--sub);font-size:14px;min-height:24px}
 <symbol id="i-save" viewBox="0 0 16 16"><path d="M3 2h8l2 2v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M5 2v4h5V2M5 14v-4h6v4"/></symbol>
 <symbol id="i-undo" viewBox="0 0 16 16"><path d="M5 9L2 6l3-3"/><path d="M2 6h8a4 4 0 0 1 0 8H7"/></symbol>
 <symbol id="i-redo" viewBox="0 0 16 16"><path d="M11 9l3-3-3-3"/><path d="M14 6H6a4 4 0 0 0 0 8h3"/></symbol>
-<symbol id="i-share" viewBox="0 0 16 16"><circle cx="4" cy="8" r="2"/><circle cx="12" cy="3.5" r="2"/><circle cx="12" cy="12.5" r="2"/><path d="M5.8 7l4.4-2.5M5.8 9l4.4 2.5"/></symbol>
 <symbol id="i-flag" viewBox="0 0 16 16"><path d="M4 2v13"/><path d="M4 2l9 3.5L4 9z" fill="currentColor"/></symbol>
 </defs></svg>
 
@@ -116,7 +107,6 @@ footer{padding:4px 16px 16px;color:var(--sub);font-size:14px;min-height:24px}
     </div>
     <span class="spacer"></span>
     <span class="engine" id="engine"><i></i><span>motore…</span></span>
-    <div class="pill"><button class="cell" id="b-share" aria-pressed="false" aria-label="Condividi: indirizzo per aprire questa pagina da un altro dispositivo"><svg class="i"><use href="#i-share"/></svg></button></div>
   </div>
   <div class="state">
     <span class="big" id="transport">—<small>Telecomando</small></span>
@@ -124,15 +114,6 @@ footer{padding:4px 16px 16px;color:var(--sub);font-size:14px;min-height:24px}
   </div>
   <div class="info" id="info">Traccia: — · Regione: — · Pre-roll: —</div>
 </header>
-
-<section class="share" id="share" aria-label="Condividi">
-  <div class="links">
-    <div style="font-weight:600">Apri il SOLO da un altro dispositivo (iPad, telefono, altro computer)</div>
-    <div id="share-list"></div>
-    <div class="note">Funziona sulla stessa rete Wi-Fi o cablata. Chi ha questo indirizzo puo' comandare REAPER: se la rete non e' solo tua, metti una password in REAPER, Preferences › Control/OSC/web › Web browser interface.</div>
-  </div>
-  <div id="qr" aria-hidden="true"></div>
-</section>
 
 <main>
   <section aria-labelledby="h-tr">
@@ -229,46 +210,12 @@ function drawMeter(m, src) {
 meters.in = setupMeter($("m-in")); meters.rit = setupMeter($("m-rit"));
 
 // ---- stato ----
-// ---- condividi: indirizzi di rete pubblicati dal motore (piu' quello in uso, se non e' localhost) ----
-let shareKey = "";
-function shareUrls() {
-  const list = (st && Array.isArray(st.share)) ? st.share.slice() : [];
-  if (!/^(localhost|127\.)/.test(location.hostname)) {
-    const here = location.origin + location.pathname;
-    if (!list.includes(here)) list.unshift(here);
-  }
-  return list;
-}
-function renderShare() {
-  const urls = shareUrls(), key = urls.join(" ");
-  if (key === shareKey) return;
-  shareKey = key;
-  const box = $("share-list"); box.textContent = "";
-  if (!urls.length) { box.textContent = "Nessun indirizzo di rete trovato: il computer e' collegato a una rete?"; $("qr").textContent = ""; return; }
-  urls.forEach(u => {
-    const row = document.createElement("div"); row.className = "url";
-    const c = document.createElement("code"); c.textContent = u;
-    const b = document.createElement("button"); b.className = "btn"; b.textContent = "Copia";
-    b.addEventListener("click", () => { navigator.clipboard && navigator.clipboard.writeText(u).then(() => { b.textContent = "Copiato"; setTimeout(() => b.textContent = "Copia", 1500); }, () => {}); });
-    row.append(c, b); box.appendChild(row);
-  });
-  const qr = $("qr"); qr.textContent = "";
-  if (window.QRCode) new QRCode(qr, { text: urls[0], width: 140, height: 140, correctLevel: QRCode.CorrectLevel.M });
-}
-$("b-share").addEventListener("click", () => {
-  const on = !$("share").classList.contains("show");
-  $("share").classList.toggle("show", on);
-  $("b-share").setAttribute("aria-pressed", on ? "true" : "false");
-  if (on) { shareKey = ""; renderShare(); }
-});
-
 function render() {
   const alive = st && !st.off && (performance.now() - lastChange < 1500);
   $("offline").classList.toggle("show", !alive);
   const eng = $("engine"); eng.className = "engine " + (alive ? "ok" : "ko");
   eng.lastChild.textContent = alive ? "motore acceso" : "motore spento";
   if (!st || st.off) return;
-  if ($("share").classList.contains("show")) renderShare();
   const recp = st.transport === "REC_PAUSE", rec = st.transport === "REC" || recp;
   $("head").classList.toggle("rec", rec && !recp);
   $("head").classList.toggle("recpause", recp);
@@ -338,6 +285,5 @@ document.addEventListener("keydown", e => {
 poll();
 requestAnimationFrame(frame);
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" async onload="shareKey=''"></script>
 </body>
 </html>

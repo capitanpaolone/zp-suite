@@ -61,6 +61,16 @@ Si adatta al telefono. Lavora come il Telecomando (traccia = prima armata).
 - Attenzione: Paolo aveva registrato il motore dal percorso del repo; il globo registra quello installato.
   Due registrazioni non fanno danni (il globo non lancia se un motore e' gia' vivo).
 
+## Condividi (2026-10-06, richiesta di Paolo: base per l'online)
+- Il motore calcola ogni minuto gli indirizzi IPv4 di rete locale (macOS: `ipconfig getifaddr en0..en8`,
+  Windows: `ipconfig` righe IPv4, Linux: `hostname -I`; esclusi 127.x, 169.254.x) e la porta web da
+  reaper.ini, e li pubblica in `state.share` (lista di URL `http://IP:porta/zp_solo.html`).
+- La pagina ha il pulsante Condividi in testata: link con Copia e QR (qrcodejs da cdnjs; senza internet
+  resta il link). Se la pagina e' gia' aperta da un altro dispositivo, il suo indirizzo e' il primo.
+- Il globo del SOLO copia il link di rete negli appunti (SWS) e lo scrive nella riga di stato.
+- Avviso nella pagina: chi ha il link sulla stessa rete comanda REAPER; password nelle preferenze web di REAPER.
+- ONLINE: lo stesso pannello mostrera' il link della sessione sul ponte remoto al posto dell'IP locale.
+
 ## Come si usa (locale)
 1. REAPER: Preferenze > Control/OSC/web: c'e' gia' "Web browser interface" sulla porta 8080.
 2. Nel SOLO clic sul globo in testata (oppure Actions > Load ReaScript: `Scripts/ZP Suite/ZP Studio Suite/web/ZP_SOLO_Web_Motore.lua`). Il motore e' un interruttore: lanciato una seconda volta si spegne.

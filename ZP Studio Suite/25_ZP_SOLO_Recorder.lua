@@ -1788,6 +1788,22 @@ function WEB.copy_file(src, dst)
   return true
 end
 
+-- Primo indirizzo di rete locale del computer (per aprire il SOLO Web da un altro dispositivo).
+function WEB.lan_url(port)
+  local os_name = reaper.GetOS() or ""
+  local cmd = os_name:match("Win") and 'ipconfig | findstr /R /C:"IPv4"'
+    or (os_name:match("OSX") or os_name:match("macOS")) and "for i in 0 1 2 3 4 5 6 7 8; do ipconfig getifaddr en$i; done 2>/dev/null"
+    or "hostname -I 2>/dev/null"
+  local p = io.popen(cmd); if not p then return nil end
+  local txt = p:read("a") or ""; p:close()
+  for ip in txt:gmatch("(%d+%.%d+%.%d+%.%d+)") do
+    if not ip:match("^127%.") and not ip:match("^169%.254%.") and not ip:match("^0%.") then
+      return "http://" .. ip .. ":" .. port .. "/" .. WEB.page
+    end
+  end
+  return nil
+end
+
 function WEB.launch()
   local port = WEB.port()
   if not port then
@@ -1807,8 +1823,11 @@ function WEB.launch()
     reaper.Main_OnCommand(cmd, 0)
   end
   ZP_UI.open_url("http://localhost:" .. port .. "/" .. WEB.page)
-  state.status = "SOLO Web: http://localhost:" .. port .. "/" .. WEB.page ..
-    "  (da iPad: l'indirizzo del Mac al posto di localhost)"
+  -- link da condividere (iPad, telefono): IP del computer in rete locale; copiato negli appunti
+  local share = WEB.lan_url(port)
+  if share and reaper.CF_SetClipboard then reaper.CF_SetClipboard(share) end
+  state.status = share and ("SOLO Web aperto. Da iPad o telefono: " .. share ..
+    (reaper.CF_SetClipboard and "  (copiato)" or "")) or "SOLO Web aperto nel browser (nessuna rete locale trovata per condividerlo)."
 end
 
 -- Testata, una riga: a sinistra il progetto e la sessione, a destra la finestra.

@@ -231,58 +231,6 @@ local function region_at(pos)
   return "Nessuna regione"
 end
 
--- CONDIVIDI ----------------------------------------------------------------------
--- Indirizzi con cui altri dispositivi della stessa rete aprono la pagina: IP del computer in
--- rete locale + porta dell'interfaccia web di REAPER. Si ricalcolano ogni minuto (rete cambiata).
--- Per la versione online questo diventera' il link della sessione sul ponte remoto.
-local share, last_share = {}, -1000
-
-local function web_port()
-  local f = io.open(reaper.get_ini_file(), "r")
-  if not f then return nil end
-  local ini = "\n" .. f:read("a"); f:close()
-  local cnt = tonumber(ini:match("\ncsurf_cnt=(%d+)")) or 0
-  for i = 0, cnt - 1 do
-    local port = ini:match("\ncsurf_" .. i .. "=HTTP %-?%d+ (%d+)")
-    if port then return port end
-  end
-  return nil
-end
-
--- Indirizzi IPv4 di rete locale dal testo dei comandi di sistema (esclusi 127.x e 169.254.x).
-local function lan_ips(text)
-  local out, seen = {}, {}
-  for ip in (text or ""):gmatch("(%d+%.%d+%.%d+%.%d+)") do
-    if not ip:match("^127%.") and not ip:match("^169%.254%.") and not ip:match("^0%.") and not ip:match("%.255$")
-      and not ip:match("^255%.") and not seen[ip] then
-      seen[ip] = true; out[#out + 1] = ip
-    end
-  end
-  return out
-end
-
-local function system_ips()
-  local os_name = reaper.GetOS() or ""
-  local cmd
-  if os_name:match("Win") then cmd = 'ipconfig | findstr /R /C:"IPv4"'
-  elseif os_name:match("OSX") or os_name:match("macOS") then
-    cmd = "for i in 0 1 2 3 4 5 6 7 8; do ipconfig getifaddr en$i; done 2>/dev/null"
-  else cmd = "hostname -I 2>/dev/null" end
-  local p = io.popen(cmd)
-  if not p then return {} end
-  local txt = p:read("a") or ""; p:close()
-  return lan_ips(txt)
-end
-
-local function refresh_share(now)
-  if now - last_share < 60 then return end
-  last_share = now
-  local port = web_port()
-  share = {}
-  if not port then return end
-  for _, ip in ipairs(system_ips()) do share[#share + 1] = "http://" .. ip .. ":" .. port .. "/zp_solo.html" end
-end
-
 local function publish()
   local ps = reaper.GetPlayState()
   local pos = (ps & 1 == 1) and reaper.GetPlayPosition() or reaper.GetCursorPosition()
@@ -308,7 +256,6 @@ local function publish()
     dirty = reaper.IsProjectDirty(0) ~= 0,
     can_undo = reaper.Undo_CanUndo2(0) ~= nil,
     can_redo = reaper.Undo_CanRedo2(0) ~= nil,
-    share = share,
   }
   reaper.SetExtState(SEC, "state", json(st), false)
 end
@@ -318,7 +265,6 @@ local function loop()
   local now = reaper.time_precise()
   if now - last_publish >= PUBLISH_EVERY then
     last_publish = now
-    refresh_share(now)
     publish()
   end
   reaper.defer(loop)
