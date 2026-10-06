@@ -182,24 +182,11 @@ local function check_all()
   local tb = M.toolbar_state(exists(P(resource, "MenuSets", "ZP_StudioSuite.ReaperMenu")), chains, read(P(resource, "reaper-menu.ini")))
   out[#out + 1] = {
     title = "Toolbar ed effetti",
-    -- installata ma non importata: e' un passo a mano (REAPER non lascia importare toolbar agli
-    -- script), quindi spia gialla "manca un passo" e pulsante che lo guida, non rossa.
-    state = tb == "ok" and "ok" or tb == "importa" and "passo" or "fare",
+    state = tb == "ok" and "ok" or "fare",
     line = tb == "ok" and "Toolbar ZP importata; catene di effetti e preset al loro posto."
-      or tb == "importa" and ("Installata. Ultimo passo, a mano: Importa apre Customize toolbars. Scegli una Floating toolbar " ..
-        "libera, Import, poi " .. (IS_MAC and "Cmd+Shift+G e Cmd+V" or "incolla nel nome file") .. " (il percorso e' gia' copiato) e Apri.")
+      or tb == "importa" and "File della toolbar pronto: va importata. Tasto destro su una toolbar > Customize toolbar > Import > ZP_StudioSuite.ReaperMenu."
       or "Da installare: pulsanti ZP, catene di effetti del SOLO Recorder e preset del Chain Builder.",
-    buttons = tb == "importa" and {
-      { "Importa", function()
-          local path = P(resource, "MenuSets", "ZP_StudioSuite.ReaperMenu")
-          local copied = reaper.CF_SetClipboard ~= nil
-          if copied then reaper.CF_SetClipboard(path) end
-          reaper.Main_OnCommand(40905, 0)   -- Options: Customize menus/toolbars...
-          speak(copied and "Percorso della toolbar copiato. Scegli una Floating toolbar, Import, incolla il percorso, Apri; poi chiudi con OK."
-            or ("Scegli una Floating toolbar, Import, e apri: " .. path))
-        end },
-      { "Reinstalla", function() if run_script(P(here, "32_Installa_Toolbar_ZP.lua")) then speak("Toolbar ed effetti: installazione avviata.") end end },
-    } or {
+    buttons = {
       { "Installa", function() if run_script(P(here, "32_Installa_Toolbar_ZP.lua")) then speak("Toolbar ed effetti: installazione avviata.") end end },
       { "Come si fa", function() UI.open_help("tool-32") end },
     },
@@ -310,15 +297,15 @@ local function check_all()
 end
 
 -- Disegno ---------------------------------------------------------------------
-local LED = { ok = {0.25, 0.85, 0.42}, fare = {0.95, 0.30, 0.22}, passo = {0.98, 0.72, 0.20}, manca = {0.55, 0.60, 0.70}, na = {0.32, 0.34, 0.40} }
-local WORD = { ok = "pronto", fare = "da fare", passo = "manca un passo", manca = "facoltativo", na = "non serve" }
+local LED = { ok = {0.25, 0.85, 0.42}, fare = {0.95, 0.30, 0.22}, manca = {0.55, 0.60, 0.70}, na = {0.32, 0.34, 0.40} }
+local WORD = { ok = "pronto", fare = "da fare", manca = "facoltativo", na = "non serve" }
 local mouse_was_down = false
 
 local function draw()
   UI.fill_background()
   local clicked = (gfx.mouse_cap & 1) == 0 and mouse_was_down
   local da_fare = 0
-  for _, r in ipairs(rows) do if r.state == "fare" or r.state == "passo" then da_fare = da_fare + 1 end end
+  for _, r in ipairs(rows) do if r.state == "fare" then da_fare = da_fare + 1 end end
 
   gfx.setfont(1, "Arial", 22, "b"); gfx.set(0.95, 0.95, 0.97, 1)
   gfx.x, gfx.y = 20, 16
@@ -332,12 +319,7 @@ local function draw()
 
   local y, bw = 76, 136
   for _, r in ipairs(rows) do
-    local shown = {}
-    for _, b in ipairs(r.buttons) do if not b.hidden then shown[#shown + 1] = b end end
-    local text_w = gfx.w - 24 - 46 - (#shown > 0 and (#shown * (bw + 8)) or 0) - 10
-    gfx.setfont(1, "Arial", 13)
-    local lines = UI.wrap_text(r.line, text_w)
-    local h = math.max(70, 40 + math.min(3, #lines) * 16)
+    local h = 70
     local panel = UI.draw_panel({ x = 12, y = y, w = gfx.w - 24, h = h }, nil)
     local c = LED[r.state]
     gfx.set(c[1], c[2], c[3], 1); gfx.circle(30, y + 22, 7, true, true)
@@ -348,9 +330,12 @@ local function draw()
     gfx.setfont(1, "Arial", 12, "b"); gfx.set(c[1], c[2], c[3], 1)
     gfx.x, gfx.y = 46 + tw + 10, y + 16
     gfx.drawstr(WORD[r.state])
+    local shown = {}
+    for _, b in ipairs(r.buttons) do if not b.hidden then shown[#shown + 1] = b end end
+    local text_w = gfx.w - 24 - 46 - (#shown > 0 and (#shown * (bw + 8)) or 0) - 10
     gfx.setfont(1, "Arial", 13); gfx.set(0.78, 0.80, 0.86, 1)
-    for i, l in ipairs(lines) do
-      if i > 3 then break end
+    for i, l in ipairs(UI.wrap_text(r.line, text_w)) do
+      if i > 2 then break end
       gfx.x, gfx.y = 46, y + 34 + (i - 1) * 16
       gfx.drawstr(l)
     end
@@ -384,9 +369,9 @@ local function loop()
   reaper.defer(loop)
 end
 
-gfx.init(TITLE, 820, 76 + 7 * 78 + 60 + 34, 0, 160, 120)
+gfx.init(TITLE, 820, 76 + 7 * 78 + 60, 0, 160, 120)
 rows = check_all(); last_check = reaper.time_precise()
 local fare = 0
-for _, r in ipairs(rows) do if r.state == "fare" or r.state == "passo" then fare = fare + 1 end end
+for _, r in ipairs(rows) do if r.state == "fare" then fare = fare + 1 end end
 speak(fare == 0 and "ZP Studio Suite: tutto pronto." or ("ZP Studio Suite: " .. fare .. " cose da fare. Ogni riga ha il suo pulsante."))
 loop()
