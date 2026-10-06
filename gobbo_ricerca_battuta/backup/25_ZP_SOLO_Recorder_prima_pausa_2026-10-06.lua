@@ -43,8 +43,8 @@ local TRACK_NAMES = {
 local TRACK_ORDER = { "main", "inserts", "retakes", "alt", "ref" }
 local RECORD_TRACK_KEYS = { "main", "inserts", "retakes", "alt" }
 
-local MINI_W, MINI_H = 750, 242   -- 750: trasporto con la PAUSA accanto a ingresso
-local COMPACT_W, COMPACT_H = 760, 524   -- +40: navigatore ridotto anche in Compact (+8 testata)
+local MINI_W, MINI_H = 720, 242
+local COMPACT_W, COMPACT_H = 740, 524   -- +40: navigatore ridotto anche in Compact (+8 testata)
 local EXPANDED_W, EXPANDED_H = 1000, 668
 local TOOLBAR_H = 50   -- una fila: Save/Undo/Redo stanno in testata
 
@@ -315,9 +315,7 @@ local AIUTI = {
   ["REC"] = "Registra sulla traccia scelta, dopo aver verificato che sia l'unica armata.",
   ["Lock"] = "Lucchetto del REC: acceso, la barra spaziatrice non ferma la registrazione. Clic: cambia.",
   ["STOP"] = "Ferma la registrazione o la riproduzione e numera il take appena inciso.",
-  ["PLAY"] = "Riproduce dalla posizione del cursore. Durante il REC, come in REAPER, mette in pausa e riprende.",
-  ["Web"] = "Globo: apre il SOLO nel browser (anche da iPad), accendendo il motore web se serve. Azzurro = motore acceso. Prototipo.",
-  ["PAUSA"] = "Pausa: ferma senza chiudere. Durante il REC la registrazione resta aperta; di nuovo per riprendere.",
+  ["PLAY"] = "Riproduce dalla posizione del cursore.",
   ["-5s"] = "Sposta il cursore indietro di cinque secondi.",
   ["fine +5s"] = "Porta il cursore cinque secondi dopo la fine dell'ultimo item. Non cancella niente.",
   ["Ingresso"] = "Da quale ingresso della scheda pesca la traccia. Clic: cambia ingresso (in Telecomando, anche quale traccia armare).",
@@ -1003,22 +1001,20 @@ local function stop_transport()
   end
 end
 
--- Pausa (anche del REC): come in REAPER, la stessa azione mette in pausa e riprende.
-local function pause_transport()
-  if not can_click("pause") then return end
-  local ps = reaper.GetPlayState()
-  reaper.Main_OnCommand(ACTION.pause, 0)
-  local rec, paused = ps & 4 == 4, ps & 2 == 2
-  if rec then state.status = paused and ("\u{25CF} REC ripreso \u{2014} " .. target_name()) or "REC in pausa: PLAY o PAUSA per riprendere, STOP per chiudere il take"
-  else state.status = paused and "PLAY" or "PAUSA" end
-end
-
--- PLAY durante il REC fa come REAPER: mette in pausa (e riprende) la registrazione.
 local function play_transport()
-  if (reaper.GetPlayState() & 4) == 4 then pause_transport(); return end
   if not can_click("play") then return end
+  if (reaper.GetPlayState() & 4) == 4 then
+    warn("STOP prima del PLAY: registrazione in corso.")
+    return
+  end
   reaper.Main_OnCommand(ACTION.play, 0)
   state.status = "PLAY"
+end
+
+local function pause_transport()
+  if not can_click("pause") then return end
+  reaper.Main_OnCommand(ACTION.pause, 0)
+  state.status = "PAUSE"
 end
 
 local function move_cursor(delta)
@@ -1690,12 +1686,6 @@ local function draw_header_icon(kind, cx, cy)
     local tw, th = gfx.measurestr("?")
     gfx.x, gfx.y = cx - tw / 2 + 0.5, cy - th / 2
     gfx.drawstr("?")
-  elseif kind == "web" then
-    -- globo: cerchio, equatore, meridiano e due paralleli
-    for t = 0, 1 do gfx.circle(cx, cy, 7 * k - t, false, true) end
-    L(1.5, 8, 14.5, 8); L(8, 1.5, 8, 14.5)
-    gfx.line(cx - 5 * k, cy - 3.5 * k, cx + 5 * k, cy - 3.5 * k, 1)
-    gfx.line(cx - 5 * k, cy + 3.5 * k, cx + 5 * k, cy + 3.5 * k, 1)
   elseif kind == "pin" or kind == "pin_off" then
     -- puntina come in REAPER: dritta = sempre sopra, inclinata = libera
     local ang = (kind == "pin_off") and 0.6 or 0
@@ -1751,66 +1741,6 @@ end
 
 local function pill_w(n) return n * CELL_W end
 
--- ZP SOLO WEB --------------------------------------------------------------
--- Il globo in testata apre la versione HTML (prototipo, docs/PROGETTO_SOLO_Web.md):
--- mette la pagina in REAPER/reaper_www_root, accende il motore se non gira, apre il browser.
--- (tutto in una tabella: il file e' vicino al limite di 200 variabili locali di Lua)
-local WEB = { sec = "ZP_SOLO_WEB", page = "zp_solo.html", engine = "ZP_SOLO_Web_Motore.lua" }
-
--- Il motore pubblica t = time_precise() 20 volte al secondo: se e' fresco, e' acceso.
-function WEB.alive()
-  local s = reaper.GetExtState(WEB.sec, "state")
-  if s == "" or s:find('"off":true', 1, true) then return false end
-  local t = tonumber(s:match('"t":(%-?[%d%.]+)'))
-  return t ~= nil and math.abs(reaper.time_precise() - t) < 1.5
-end
-
--- Porta dell'interfaccia web di REAPER (reaper.ini: csurf_N=HTTP flag porta ...).
-function WEB.port()
-  local f = reaper.get_ini_file and io.open(reaper.get_ini_file(), "r")
-  if not f then return nil end
-  local txt = f:read("a"); f:close()
-  local cnt = tonumber(txt:match("\ncsurf_cnt=(%d+)")) or 0
-  for i = 0, cnt - 1 do
-    local port = txt:match("\ncsurf_" .. i .. "=HTTP %-?%d+ (%d+)")
-    if port then return port end
-  end
-  return nil
-end
-
-function WEB.copy_file(src, dst)
-  local a = io.open(src, "rb"); if not a then return false end
-  local data = a:read("a"); a:close()
-  local b = io.open(dst, "rb")
-  if b then local old = b:read("a"); b:close(); if old == data then return true end end
-  b = io.open(dst, "wb"); if not b then return false end
-  b:write(data); b:close()
-  return true
-end
-
-function WEB.launch()
-  local port = WEB.port()
-  if not port then
-    warn("Accendi l'interfaccia web di REAPER: Preferences > Control/OSC/web > Add > Web browser interface (porta 8080).")
-    return
-  end
-  local dir = script_dir() .. sep .. "web" .. sep
-  local www = reaper.GetResourcePath() .. sep .. "reaper_www_root"
-  if reaper.RecursiveCreateDirectory then reaper.RecursiveCreateDirectory(www, 0) end
-  if not WEB.copy_file(dir .. WEB.page, www .. sep .. WEB.page) then
-    warn("Non trovo o non riesco a copiare la pagina " .. WEB.page .. " (cartella web accanto al SOLO).")
-    return
-  end
-  if not WEB.alive() then
-    local cmd = reaper.AddRemoveReaScript and reaper.AddRemoveReaScript(true, 0, dir .. WEB.engine, true) or 0
-    if not cmd or cmd == 0 then warn("Non riesco ad avviare il motore web (" .. WEB.engine .. ")."); return end
-    reaper.Main_OnCommand(cmd, 0)
-  end
-  ZP_UI.open_url("http://localhost:" .. port .. "/" .. WEB.page)
-  state.status = "SOLO Web: http://localhost:" .. port .. "/" .. WEB.page ..
-    "  (da iPad: l'indirizzo del Mac al posto di localhost)"
-end
-
 -- Testata, una riga: a sinistra il progetto e la sessione, a destra la finestra.
 local function draw_header_buttons(clicked)
   local y = 8
@@ -1855,13 +1785,12 @@ local function draw_header_buttons(clicked)
       state.status = state.pin and "Pin: finestra sempre sopra" or "Pin spento: la finestra puo' andare sotto"
     end},
   }, clicked)
-  xr = xr - PILL_GAP - pill_w(3)
+  xr = xr - PILL_GAP - pill_w(2)
   draw_pill(xr, y, {
     {icon = "toolbar", key = "Toolbar", active = state.toolbar and state.mode ~= "mini", enabled = state.mode ~= "mini", act = function()
       state.toolbar = not state.toolbar; save_state(); set_mode(state.mode)
     end},
     {icon = state.reaper_hidden and "reaper_up" or "reaper_down", key = "REAPER", active = state.reaper_hidden, act = toggle_reaper_window},
-    {icon = "web", key = "Web", active = WEB.alive(), act = WEB.launch},
   }, clicked)
   xr = xr - PILL_GAP - pill_w(3)
   draw_pill(xr, y, {
@@ -1875,9 +1804,7 @@ local function draw_status_header(clicked)
   local label = transport_state()
   local rec = label == "REC"
   local H = head_h()
-  -- REC rosso; REC in pausa rosso scuro (si vede che la registrazione e' ancora aperta)
-  local rec_paused = rec and (reaper.GetPlayState() & 2 == 2)
-  set_color(rec_paused and {0.42, 0.12, 0.06, 1} or rec and colors.rec or (state.target == "progetto" and colors.remote_panel or colors.panel))
+  set_color(rec and colors.rec or (state.target == "progetto" and colors.remote_panel or colors.panel))
   gfx.rect(0, 0, gfx.w, H, true)
   set_color(colors.border)
   gfx.rect(0, H - 1, gfx.w, 1, true)
@@ -1893,8 +1820,7 @@ local function draw_status_header(clicked)
   gfx.set(1, 1, 1, 1)
   gfx.x, gfx.y = 14, 44
   local active_name = target_name()
-  local big = fit_text(rec_paused and ("\u{275A}\u{275A} REC in pausa \u{2014} " .. active_name)
-    or rec and ("\u{25CF} REC \u{2014} " .. active_name) or label, tc_x - 40)
+  local big = fit_text(rec and ("\u{25CF} REC \u{2014} " .. active_name) or label, tc_x - 40)
   gfx.drawstr(big)
   -- la modalita' resta scritta, in piccolo, accanto allo stato
   local bw, bh = gfx.measurestr(big)
@@ -2125,17 +2051,17 @@ end
 local Z = {}
 
 -- 2 TRASPORTO -------------------------------------------------------------
-Z.trasporto = { id = "trasporto", n = 2, title = "Trasporto", min_w = 332,   -- 6 pulsanti con la PAUSA weight = 1,
+Z.trasporto = { id = "trasporto", n = 2, title = "Trasporto", min_w = 300, weight = 1,
   h = function() return 104 end }
 function Z.trasporto.draw(c, clicked)
   local ts = transport_state()
   local tasti = {
     {"prev", 40, "-5s", "-5s"}, {"rec", 58, "REC", "REC"}, {"stop", 50, "STOP", "STOP"},
-    {"pause", 36, "PAUSA", "PAUSA"}, {"play", 50, "PLAY", "PLAY"}, {"next", 40, "fine +5s", "fine +5s"}
+    {"play", 50, "PLAY", "PLAY"}, {"next", 40, "fine +5s", "fine +5s"}
   }
-  local total = 274
-  local g = math.max(6, math.min(28, math.floor((c.w - total) / 5)))
-  local x = c.x + math.floor((c.w - total - g * 5) / 2)
+  local total = 238
+  local g = math.max(6, math.min(28, math.floor((c.w - total) / 4)))
+  local x = c.x + math.floor((c.w - total - g * 4) / 2)
   local cy, cap_y = c.y + 30, c.y + 62
   -- il lucchetto sta sul bordo del REC: se il mouse e' li', il clic non fa partire il REC
   local rec_cx = x + 40 + g + 29
@@ -2148,13 +2074,11 @@ function Z.trasporto.draw(c, clicked)
     local kind, d = t[1], t[2]
     local r = {x=x, y=cy - d // 2, w=d, h=d}
     note(r, t[4])
-    local paused = reaper.GetPlayState() & 2 == 2
-    local active = (kind == "rec" and ts == "REC") or (kind == "play" and ts == "PLAY") or (kind == "pause" and paused)
+    local active = (kind == "rec" and ts == "REC") or (kind == "play" and ts == "PLAY")
     if ZP_UI.draw_round_button(r, kind, active, true, clicked and not on_lock and not on_pre) then
       if kind == "rec" then record_on_track(state.active_track_key, "REC")
       elseif kind == "stop" then stop_transport()
       elseif kind == "play" then play_transport()
-      elseif kind == "pause" then pause_transport()
       elseif kind == "prev" then move_cursor(-5)
       else goto_after_last_item() end
     end

@@ -93,6 +93,11 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
   Chi aggiunge marker di servizio nuovi controlla anche il 17.
 - gmem per traccia 4032-4095 (dopo i 56 slot FX da 72 celle): maschere dei cue fuori posto del Carver
   (4032 + 2*fx, fx < 32). Non usarle per altro.
+- Abbina dalla strada 29 non apre mai il Finder per item: un file glued ha marker ma nessun SRT
+  accanto (nome nuovo) e la tappa 1 risulta fatta; il 28 decide prima dei marker (`decide`), poi cerca
+  il file, e gli item saltati li elenca nella riga di stato (2026-10-06, test_collega_marker).
+- Abbina > SRT accanto non tocca mai item gia' abbinati (niente domanda per item): per rifarli c'e' Ritrascrivi.
+  Con SRT esterno la domanda 'sostituisci?' e' una sola per tutta la selezione (decisione di Paolo).
 - L'SRT di Trascrivi sta accanto al WAV apposta (lo cerca Abbina). Gli SRT di consegna (08, 31)
   vanno nella cartella scelta, mai tra i media.
 
@@ -100,6 +105,23 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 - Lucchetto REC spento di default (chiave ExtState `rec_lock2`). Nascondi 5s / Parcheggia tolti.
 - Il SOLO richiede `ZP_UI.lua` con `draw_knob`: ZP_UI e SOLO si aggiornano insieme.
 - Dopo modifiche alla pulsantiera: simulazione fuori REAPER (nessun comando fuori finestra o sovrapposto).
+- 25_ZP_SOLO_Recorder.lua e' al limite di 200 variabili locali nel blocco principale: funzioni nuove in tabelle (es. WEB.*).
+- Meter IN = ingresso vero della scheda (`GetInputActivityLevel`, che restituisce GIA' dB, -150 = silenzio: mai
+  math.abs / amp_db sopra), non `Track_GetPeakInfo` della traccia (quello e' ampiezza); meter sempre in dB
+  (in lineare una voce a -30 dB riempie il 3% e sembra morta).
+- `gfx.showmenu`: separatori e intestazioni di sottomenu (`>`) non contano nell'indice restituito.
+- Un pulsante che apre la guida ? e lo stesso pulsante ridisegnato dalla guida: il clic di apertura non va passato alla guida
+  nello stesso giro (si richiuderebbe subito).
+- Testata del SOLO: solo celle-icona 28x24 in pillole (docs/PROGETTO_SOLO_testata_iconcine.md); niente pulsanti a scritta.
+  Per vedere il disegno fuori REAPER: gfx finto che scrive SVG, poi `qlmanage -t` per il PNG.
+- Il pre-roll e' quello di REAPER: bit 2 del config `preroll`, durata `prerollmeas` in MISURE (convertire dai secondi
+  al tempo del cursore a ogni REC). Nessun conto alla rovescia interno. Servono le funzioni SNM_* di SWS.
+- Casella di testo in una finestra gfx: mentre ha il fuoco prende TUTTI i tasti (barra e ? compresi), svuotando la coda di getchar.
+
+## Interfaccia web di REAPER (ZP SOLO Web)
+- `/_/SET/EXTSTATE/sez/chiave/valore`: REAPER decodifica gia' l'URL; lo script non deve decodificare di nuovo.
+- `/_/GET/EXTSTATE/...` codifica nel valore `\t`, `\n`, `\\`: decodificare in un solo passaggio.
+- La pagina non fa logica: comandi e controlli stanno nel motore (docs/PROGETTO_SOLO_Web.md).
 
 ## Riferimenti per confronti (anti-regressione)
 - ZP Stagekeeper Dialogue Director 2.3.1 (ultima pubblicata prima della 2.5.0):

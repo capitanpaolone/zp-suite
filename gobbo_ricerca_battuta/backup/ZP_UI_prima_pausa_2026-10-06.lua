@@ -334,10 +334,6 @@ function UI.draw_symbol(kind, cx, cy, s)
   elseif kind == "stop" then
     local h = math.floor(s * 0.70)
     gfx.rect(cx - h / 2, cy - h / 2, h, h, true)
-  elseif kind == "pause" then
-    local h, w = math.floor(s * 0.62), math.max(2, math.floor(s * 0.20))
-    gfx.rect(cx - w - math.floor(w * 0.6), cy - h / 2, w, h, true)
-    gfx.rect(cx + math.floor(w * 0.6), cy - h / 2, w, h, true)
   elseif kind == "play" then
     local h = s * 0.42
     gfx.triangle(cx - h * 0.75, cy - h, cx - h * 0.75, cy + h, cx + h * 0.95, cy)
@@ -377,8 +373,6 @@ local ROUND_COLORS = {
   rec  = { normal = {0.62, 0.07, 0.06, 1}, hover = {0.82, 0.12, 0.10, 1}, active = {1.00, 0.16, 0.12, 1}, icon = {1, 0.93, 0.92, 1} },
   play = { normal = {0.08, 0.38, 0.18, 1}, hover = {0.12, 0.56, 0.26, 1}, active = {0.20, 0.82, 0.38, 1}, icon = {0.93, 1, 0.94, 1} },
   stop = { normal = {0.17, 0.18, 0.22, 1}, hover = {0.27, 0.28, 0.34, 1}, active = {0.40, 0.42, 0.50, 1}, icon = {0.95, 0.95, 0.97, 1} },
-  -- pausa: grigia; accesa (in pausa) ambra
-  pause = { normal = {0.17, 0.18, 0.22, 1}, hover = {0.27, 0.28, 0.34, 1}, active = {0.86, 0.58, 0.12, 1}, icon = {0.95, 0.95, 0.97, 1} },
 }
 function UI.draw_round_button(rect, kind, active, enabled, clicked, opts)
   opts = opts or {}

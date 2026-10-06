@@ -43,9 +43,9 @@ local TRACK_NAMES = {
 local TRACK_ORDER = { "main", "inserts", "retakes", "alt", "ref" }
 local RECORD_TRACK_KEYS = { "main", "inserts", "retakes", "alt" }
 
-local MINI_W, MINI_H = 750, 242   -- 750: trasporto con la PAUSA accanto a ingresso
-local COMPACT_W, COMPACT_H = 760, 524   -- +40: navigatore ridotto anche in Compact (+8 testata)
-local EXPANDED_W, EXPANDED_H = 1000, 668
+local MINI_W, MINI_H = 720, 236
+local COMPACT_W, COMPACT_H = 740, 516   -- +40: navigatore ridotto anche in Compact
+local EXPANDED_W, EXPANDED_H = 1000, 660
 local TOOLBAR_H = 50   -- una fila: Save/Undo/Redo stanno in testata
 
 local NEXT_TAKE_GAP_SECONDS = 5.0
@@ -315,9 +315,7 @@ local AIUTI = {
   ["REC"] = "Registra sulla traccia scelta, dopo aver verificato che sia l'unica armata.",
   ["Lock"] = "Lucchetto del REC: acceso, la barra spaziatrice non ferma la registrazione. Clic: cambia.",
   ["STOP"] = "Ferma la registrazione o la riproduzione e numera il take appena inciso.",
-  ["PLAY"] = "Riproduce dalla posizione del cursore. Durante il REC, come in REAPER, mette in pausa e riprende.",
-  ["Web"] = "Globo: apre il SOLO nel browser (anche da iPad), accendendo il motore web se serve. Azzurro = motore acceso. Prototipo.",
-  ["PAUSA"] = "Pausa: ferma senza chiudere. Durante il REC la registrazione resta aperta; di nuovo per riprendere.",
+  ["PLAY"] = "Riproduce dalla posizione del cursore.",
   ["-5s"] = "Sposta il cursore indietro di cinque secondi.",
   ["fine +5s"] = "Porta il cursore cinque secondi dopo la fine dell'ultimo item. Non cancella niente.",
   ["Ingresso"] = "Da quale ingresso della scheda pesca la traccia. Clic: cambia ingresso (in Telecomando, anche quale traccia armare).",
@@ -1003,22 +1001,20 @@ local function stop_transport()
   end
 end
 
--- Pausa (anche del REC): come in REAPER, la stessa azione mette in pausa e riprende.
-local function pause_transport()
-  if not can_click("pause") then return end
-  local ps = reaper.GetPlayState()
-  reaper.Main_OnCommand(ACTION.pause, 0)
-  local rec, paused = ps & 4 == 4, ps & 2 == 2
-  if rec then state.status = paused and ("\u{25CF} REC ripreso \u{2014} " .. target_name()) or "REC in pausa: PLAY o PAUSA per riprendere, STOP per chiudere il take"
-  else state.status = paused and "PLAY" or "PAUSA" end
-end
-
--- PLAY durante il REC fa come REAPER: mette in pausa (e riprende) la registrazione.
 local function play_transport()
-  if (reaper.GetPlayState() & 4) == 4 then pause_transport(); return end
   if not can_click("play") then return end
+  if (reaper.GetPlayState() & 4) == 4 then
+    warn("STOP prima del PLAY: registrazione in corso.")
+    return
+  end
   reaper.Main_OnCommand(ACTION.play, 0)
   state.status = "PLAY"
+end
+
+local function pause_transport()
+  if not can_click("pause") then return end
+  reaper.Main_OnCommand(ACTION.pause, 0)
+  state.status = "PAUSE"
 end
 
 local function move_cursor(delta)
@@ -1594,7 +1590,7 @@ end
 -- Altezza della testata. I pulsanti di modalita' stanno qui e non si spostano
 -- mai: cambiando vista, il mouse li ritrova dov'erano.
 local function head_h()
-  return state.mode == "mini" and 82 or 110
+  return state.mode == "mini" and 76 or 102
 end
 
 local function toggle_overlay()
@@ -1619,10 +1615,7 @@ end
 -- in "pillole": gruppi con un solo bordo arrotondato e una riga sottile fra le celle.
 -- Stati uguali per tutti: normale (fondo scuro), acceso/scelto (azzurro), non disponibile
 -- (icona attenuata, mai un riquadro vuoto). Progetto: docs/PROGETTO_SOLO_testata_iconcine.md
--- Scala 1.1 (Paolo, 2026-10-06: icone e scritte della testata un 10% piu' grandi).
-local HEAD_SCALE = 1.1
-local CELL_W, CELL_H, PILL_GAP = 31, 26, 8
-local SAVE_GAP = 18   -- Salva sta da solo, staccato da Annulla: non si preme per errore
+local CELL_W, CELL_H, PILL_GAP = 28, 24, 8
 
 -- Poligono convesso ruotato di ang (radianti) attorno a (cx, cy): per la puntina inclinata.
 local function rot_poly(pts, cx, cy, ang)
@@ -1635,23 +1628,18 @@ local function rot_poly(pts, cx, cy, ang)
   return out
 end
 
--- Icone disegnate su una griglia di 16 punti centrata in (cx, cy), ingrandita di HEAD_SCALE;
--- il tratto resta di 2 px. Solo rettangoli, linee, archi e poligoni: gfx non ha font di icone.
+-- Icone in un quadrato di 16 px centrato in (cx, cy). Solo rettangoli, linee, archi e
+-- poligoni: gfx non ha font di icone.
 local function draw_header_icon(kind, cx, cy)
-  local k = HEAD_SCALE
-  local ox, oy = math.floor(cx - 8 * k), math.floor(cy - 8 * k)
-  local function F(x, y, w, h) gfx.rect(ox + x * k, oy + y * k, math.max(1, w * k), math.max(1, h * k), true) end
-  local function R(x, y, w, h)
-    local X, Y, W, H = math.floor(ox + x * k), math.floor(oy + y * k), math.floor(w * k + 0.5), math.floor(h * k + 0.5)
-    gfx.rect(X, Y, W, H, false); gfx.rect(X + 1, Y + 1, W - 2, H - 2, false)
-  end
+  local ox, oy = math.floor(cx - 8), math.floor(cy - 8)
+  local function F(x, y, w, h) gfx.rect(ox + x, oy + y, w, h, true) end
+  local function R(x, y, w, h) gfx.rect(ox + x, oy + y, w, h, false); gfx.rect(ox + x + 1, oy + y + 1, w - 2, h - 2, false) end
   local function L(x1, y1, x2, y2)
-    x1, y1, x2, y2 = ox + x1 * k, oy + y1 * k, ox + x2 * k, oy + y2 * k
-    gfx.line(x1, y1, x2, y2, 1)
-    if math.abs(x2 - x1) >= math.abs(y2 - y1) then gfx.line(x1, y1 + 1, x2, y2 + 1, 1)
-    else gfx.line(x1 + 1, y1, x2 + 1, y2, 1) end
+    gfx.line(ox + x1, oy + y1, ox + x2, oy + y2, 1)
+    if math.abs(x2 - x1) >= math.abs(y2 - y1) then gfx.line(ox + x1, oy + y1 + 1, ox + x2, oy + y2 + 1, 1)
+    else gfx.line(ox + x1 + 1, oy + y1, ox + x2 + 1, oy + y2, 1) end
   end
-  local function P(pts) for i = 1, #pts, 2 do pts[i] = ox + pts[i] * k; pts[i + 1] = oy + pts[i + 1] * k end; gfx.triangle(table.unpack(pts)) end
+  local function P(pts) for i = 1, #pts, 2 do pts[i] = ox + pts[i]; pts[i + 1] = oy + pts[i + 1] end; gfx.triangle(table.unpack(pts)) end
   if kind == "save" then
     R(2, 2, 12, 12); F(5, 3, 5, 3); R(5, 9, 6, 5)
   elseif kind == "undo" or kind == "redo" then
@@ -1659,14 +1647,14 @@ local function draw_header_icon(kind, cx, cy)
     local d = (kind == "undo") and -1 or 1
     local a1, a2 = -math.pi / 2, math.pi * 0.6
     if d > 0 then a1, a2 = -math.pi * 0.6, math.pi / 2 end
-    for t = 0, 1 do if gfx.arc then gfx.arc(cx, cy + 1, 5 * k - t, a1, a2, true) end end
-    local tx = cx + d * 5 * k
-    gfx.triangle(tx - 3.5 * k, cy + 1, tx + 3.5 * k, cy + 1, tx, cy + 1 + 4.5 * k)
+    for t = 0, 1 do if gfx.arc then gfx.arc(cx, cy + 1, 5 - t, a1, a2, true) end end
+    local tx = cx + d * 5
+    gfx.triangle(tx - 3.5, cy + 1, tx + 3.5, cy + 1, tx, cy + 5.5)
   elseif kind == "folder" then
     L(2, 4, 6, 4); L(6, 4, 8, 6); L(8, 6, 13, 6); L(13, 6, 13, 13); L(2, 13, 13, 13); L(2, 4, 2, 13)
   elseif kind == "remote" then
     R(5, 6, 6, 10); F(7, 8, 2, 2); F(7, 12, 2, 2)
-    for t = 0, 1 do if gfx.arc then gfx.arc(cx, cy - 1, 5 * k - t, -0.85, 0.85, true) end end
+    for t = 0, 1 do if gfx.arc then gfx.arc(cx, cy - 1, 5 - t, -0.85, 0.85, true) end end
   elseif kind == "regions" then
     L(2, 3, 4, 3); L(2, 3, 2, 13); L(2, 13, 4, 13); L(12, 3, 14, 3); L(14, 3, 14, 13); L(12, 13, 14, 13)
     F(5, 6, 6, 2); F(5, 9, 4, 2)
@@ -1685,17 +1673,11 @@ local function draw_header_icon(kind, cx, cy)
     R(2, 1, 12, 8); F(7, 10, 2, 3)
     if kind == "reaper_down" then P({4.5, 12, 11.5, 12, 8, 15.5}) else P({4.5, 13.5, 11.5, 13.5, 8, 10}) end
   elseif kind == "help" then
-    for t = 0, 1 do gfx.circle(cx, cy, 7 * k - t, false, true) end
-    gfx.setfont(1, "Arial", math.floor(12 * k + 0.5), "b")
+    for t = 0, 1 do gfx.circle(cx, cy, 7 - t, false, true) end
+    gfx.setfont(1, "Arial", 12, "b")
     local tw, th = gfx.measurestr("?")
     gfx.x, gfx.y = cx - tw / 2 + 0.5, cy - th / 2
     gfx.drawstr("?")
-  elseif kind == "web" then
-    -- globo: cerchio, equatore, meridiano e due paralleli
-    for t = 0, 1 do gfx.circle(cx, cy, 7 * k - t, false, true) end
-    L(1.5, 8, 14.5, 8); L(8, 1.5, 8, 14.5)
-    gfx.line(cx - 5 * k, cy - 3.5 * k, cx + 5 * k, cy - 3.5 * k, 1)
-    gfx.line(cx - 5 * k, cy + 3.5 * k, cx + 5 * k, cy + 3.5 * k, 1)
   elseif kind == "pin" or kind == "pin_off" then
     -- puntina come in REAPER: dritta = sempre sopra, inclinata = libera
     local ang = (kind == "pin_off") and 0.6 or 0
@@ -1751,66 +1733,6 @@ end
 
 local function pill_w(n) return n * CELL_W end
 
--- ZP SOLO WEB --------------------------------------------------------------
--- Il globo in testata apre la versione HTML (prototipo, docs/PROGETTO_SOLO_Web.md):
--- mette la pagina in REAPER/reaper_www_root, accende il motore se non gira, apre il browser.
--- (tutto in una tabella: il file e' vicino al limite di 200 variabili locali di Lua)
-local WEB = { sec = "ZP_SOLO_WEB", page = "zp_solo.html", engine = "ZP_SOLO_Web_Motore.lua" }
-
--- Il motore pubblica t = time_precise() 20 volte al secondo: se e' fresco, e' acceso.
-function WEB.alive()
-  local s = reaper.GetExtState(WEB.sec, "state")
-  if s == "" or s:find('"off":true', 1, true) then return false end
-  local t = tonumber(s:match('"t":(%-?[%d%.]+)'))
-  return t ~= nil and math.abs(reaper.time_precise() - t) < 1.5
-end
-
--- Porta dell'interfaccia web di REAPER (reaper.ini: csurf_N=HTTP flag porta ...).
-function WEB.port()
-  local f = reaper.get_ini_file and io.open(reaper.get_ini_file(), "r")
-  if not f then return nil end
-  local txt = f:read("a"); f:close()
-  local cnt = tonumber(txt:match("\ncsurf_cnt=(%d+)")) or 0
-  for i = 0, cnt - 1 do
-    local port = txt:match("\ncsurf_" .. i .. "=HTTP %-?%d+ (%d+)")
-    if port then return port end
-  end
-  return nil
-end
-
-function WEB.copy_file(src, dst)
-  local a = io.open(src, "rb"); if not a then return false end
-  local data = a:read("a"); a:close()
-  local b = io.open(dst, "rb")
-  if b then local old = b:read("a"); b:close(); if old == data then return true end end
-  b = io.open(dst, "wb"); if not b then return false end
-  b:write(data); b:close()
-  return true
-end
-
-function WEB.launch()
-  local port = WEB.port()
-  if not port then
-    warn("Accendi l'interfaccia web di REAPER: Preferences > Control/OSC/web > Add > Web browser interface (porta 8080).")
-    return
-  end
-  local dir = script_dir() .. sep .. "web" .. sep
-  local www = reaper.GetResourcePath() .. sep .. "reaper_www_root"
-  if reaper.RecursiveCreateDirectory then reaper.RecursiveCreateDirectory(www, 0) end
-  if not WEB.copy_file(dir .. WEB.page, www .. sep .. WEB.page) then
-    warn("Non trovo o non riesco a copiare la pagina " .. WEB.page .. " (cartella web accanto al SOLO).")
-    return
-  end
-  if not WEB.alive() then
-    local cmd = reaper.AddRemoveReaScript and reaper.AddRemoveReaScript(true, 0, dir .. WEB.engine, true) or 0
-    if not cmd or cmd == 0 then warn("Non riesco ad avviare il motore web (" .. WEB.engine .. ")."); return end
-    reaper.Main_OnCommand(cmd, 0)
-  end
-  ZP_UI.open_url("http://localhost:" .. port .. "/" .. WEB.page)
-  state.status = "SOLO Web: http://localhost:" .. port .. "/" .. WEB.page ..
-    "  (da iPad: l'indirizzo del Mac al posto di localhost)"
-end
-
 -- Testata, una riga: a sinistra il progetto e la sessione, a destra la finestra.
 local function draw_header_buttons(clicked)
   local y = 8
@@ -1819,10 +1741,8 @@ local function draw_header_buttons(clicked)
   local can_undo = not reaper.Undo_CanUndo2 or reaper.Undo_CanUndo2(0) ~= nil
   local can_redo = not reaper.Undo_CanRedo2 or reaper.Undo_CanRedo2(0) ~= nil
   local x = 14
-  x = x + SAVE_GAP + draw_pill(x, y, {
-    {icon = "save", key = "Save", dot = dirty, act = function() run_action(ACTION.save_project, "Progetto salvato") end},
-  }, clicked)
   x = x + PILL_GAP + draw_pill(x, y, {
+    {icon = "save", key = "Save", dot = dirty, act = function() run_action(ACTION.save_project, "Progetto salvato") end},
     {icon = "undo", key = "Undo", enabled = can_undo, act = function() run_action(ACTION.undo, "Undo") end},
     {icon = "redo", key = "Redo", enabled = can_redo, act = function() run_action(ACTION.redo, "Redo") end},
   }, clicked)
@@ -1855,13 +1775,12 @@ local function draw_header_buttons(clicked)
       state.status = state.pin and "Pin: finestra sempre sopra" or "Pin spento: la finestra puo' andare sotto"
     end},
   }, clicked)
-  xr = xr - PILL_GAP - pill_w(3)
+  xr = xr - PILL_GAP - pill_w(2)
   draw_pill(xr, y, {
     {icon = "toolbar", key = "Toolbar", active = state.toolbar and state.mode ~= "mini", enabled = state.mode ~= "mini", act = function()
       state.toolbar = not state.toolbar; save_state(); set_mode(state.mode)
     end},
     {icon = state.reaper_hidden and "reaper_up" or "reaper_down", key = "REAPER", active = state.reaper_hidden, act = toggle_reaper_window},
-    {icon = "web", key = "Web", active = WEB.alive(), act = WEB.launch},
   }, clicked)
   xr = xr - PILL_GAP - pill_w(3)
   draw_pill(xr, y, {
@@ -1875,41 +1794,38 @@ local function draw_status_header(clicked)
   local label = transport_state()
   local rec = label == "REC"
   local H = head_h()
-  -- REC rosso; REC in pausa rosso scuro (si vede che la registrazione e' ancora aperta)
-  local rec_paused = rec and (reaper.GetPlayState() & 2 == 2)
-  set_color(rec_paused and {0.42, 0.12, 0.06, 1} or rec and colors.rec or (state.target == "progetto" and colors.remote_panel or colors.panel))
+  set_color(rec and colors.rec or (state.target == "progetto" and colors.remote_panel or colors.panel))
   gfx.rect(0, 0, gfx.w, H, true)
   set_color(colors.border)
   gfx.rect(0, H - 1, gfx.w, 1, true)
   draw_header_buttons(clicked)
-  gfx.setfont(2, "Arial", state.mode == "mini" and 26 or 31, "b")
+  gfx.setfont(2, "Arial", state.mode == "mini" and 24 or 28, "b")
   local tc = format_time(current_position())
   local tw = gfx.measurestr(tc)
   local tc_x = gfx.w - tw - 16
   gfx.set(1, 1, 1, 1)
-  gfx.x, gfx.y = tc_x, 42
+  gfx.x, gfx.y = tc_x, 38
   gfx.drawstr(tc)
-  gfx.setfont(1, "Arial", rec and 29 or 24, "b")
+  gfx.setfont(1, "Arial", rec and 26 or 22, "b")
   gfx.set(1, 1, 1, 1)
-  gfx.x, gfx.y = 14, 44
+  gfx.x, gfx.y = 14, 40
   local active_name = target_name()
-  local big = fit_text(rec_paused and ("\u{275A}\u{275A} REC in pausa \u{2014} " .. active_name)
-    or rec and ("\u{25CF} REC \u{2014} " .. active_name) or label, tc_x - 40)
+  local big = fit_text(rec and ("\u{25CF} REC \u{2014} " .. active_name) or label, tc_x - 40)
   gfx.drawstr(big)
   -- la modalita' resta scritta, in piccolo, accanto allo stato
   local bw, bh = gfx.measurestr(big)
-  gfx.setfont(3, "Arial", 14)
+  gfx.setfont(3, "Arial", 13)
   local mw, mh = gfx.measurestr("x")
   local spazio = tc_x - 24 - (14 + bw + 8)
   if spazio > 60 then
     gfx.set(rec and 1 or 0.62, rec and 0.86 or 0.66, rec and 0.86 or 0.74, 1)
-    gfx.x, gfx.y = 14 + bw + 8, 44 + bh - mh - 2
+    gfx.x, gfx.y = 14 + bw + 8, 40 + bh - mh - 2
     gfx.drawstr(fit_text("\u{00B7} " .. (remote_mode() and "Telecomando" or "Sessione SOLO"), spazio))
   end
   if state.mode ~= "mini" then
-    gfx.setfont(3, "Arial", 14)
+    gfx.setfont(3, "Arial", 13)
     gfx.set(0.82, 0.84, 0.88, 1)
-    gfx.x, gfx.y = 16, 85
+    gfx.x, gfx.y = 16, 78
     local tr = target_name()
     gfx.drawstr(fit_text("Track: " .. tr .. "   Region: " .. region_label() ..
       "   Take: " .. tostring(state.take_counter) ..
@@ -2125,17 +2041,17 @@ end
 local Z = {}
 
 -- 2 TRASPORTO -------------------------------------------------------------
-Z.trasporto = { id = "trasporto", n = 2, title = "Trasporto", min_w = 332,   -- 6 pulsanti con la PAUSA weight = 1,
+Z.trasporto = { id = "trasporto", n = 2, title = "Trasporto", min_w = 300, weight = 1,
   h = function() return 104 end }
 function Z.trasporto.draw(c, clicked)
   local ts = transport_state()
   local tasti = {
     {"prev", 40, "-5s", "-5s"}, {"rec", 58, "REC", "REC"}, {"stop", 50, "STOP", "STOP"},
-    {"pause", 36, "PAUSA", "PAUSA"}, {"play", 50, "PLAY", "PLAY"}, {"next", 40, "fine +5s", "fine +5s"}
+    {"play", 50, "PLAY", "PLAY"}, {"next", 40, "fine +5s", "fine +5s"}
   }
-  local total = 274
-  local g = math.max(6, math.min(28, math.floor((c.w - total) / 5)))
-  local x = c.x + math.floor((c.w - total - g * 5) / 2)
+  local total = 238
+  local g = math.max(6, math.min(28, math.floor((c.w - total) / 4)))
+  local x = c.x + math.floor((c.w - total - g * 4) / 2)
   local cy, cap_y = c.y + 30, c.y + 62
   -- il lucchetto sta sul bordo del REC: se il mouse e' li', il clic non fa partire il REC
   local rec_cx = x + 40 + g + 29
@@ -2148,13 +2064,11 @@ function Z.trasporto.draw(c, clicked)
     local kind, d = t[1], t[2]
     local r = {x=x, y=cy - d // 2, w=d, h=d}
     note(r, t[4])
-    local paused = reaper.GetPlayState() & 2 == 2
-    local active = (kind == "rec" and ts == "REC") or (kind == "play" and ts == "PLAY") or (kind == "pause" and paused)
+    local active = (kind == "rec" and ts == "REC") or (kind == "play" and ts == "PLAY")
     if ZP_UI.draw_round_button(r, kind, active, true, clicked and not on_lock and not on_pre) then
       if kind == "rec" then record_on_track(state.active_track_key, "REC")
       elseif kind == "stop" then stop_transport()
       elseif kind == "play" then play_transport()
-      elseif kind == "pause" then pause_transport()
       elseif kind == "prev" then move_cursor(-5)
       else goto_after_last_item() end
     end

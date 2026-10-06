@@ -82,3 +82,19 @@ nel suo insieme.
 ### Note
 - Import iniziale con i nomi file storici. La rinomina che toglie la versione dal nome
   avviene nel passo successivo, con `git mv`, prima della prima pubblicazione.
+
+## ZP Studio Suite 2.1.0 — 2026-10-06
+
+### SOLO Recorder
+- Testata a icone uguale in Mini, Compact ed Expanded: salva (staccato), annulla, ripeti; Sessione SOLO o
+  Telecomando; regioni take, effetti, video; viste; toolbar; nascondi REAPER; versione web; guida; puntina.
+- Meter IN dall'ingresso vero della scheda e RIT dal master, in dB da -60 a 0, con picco trattenuto.
+- Pre-roll di REAPER: PRE sul bordo del REC lo accende, i secondi (1-5) stanno nella toolbar.
+- PAUSA fra STOP e PLAY, anche durante il REC; PLAY durante il REC mette in pausa come in REAPER.
+- Marker con la bandierina e il nome scritto in una casella del pannello (Invio).
+- In Telecomando la traccia da armare si sceglie dal menu dell'ingresso; navigatore anche in Compact.
+
+### SOLO Web (prototipo)
+- Il SOLO nel browser (Mac, iPad, telefono) attraverso l'interfaccia web di REAPER: trasporto con pausa,
+  pre-roll, meter, marker, salva/annulla/ripeti. Si apre dal globo in testata del SOLO, che prepara la
+  pagina e accende il motore `ZP_SOLO_Web_Motore`.

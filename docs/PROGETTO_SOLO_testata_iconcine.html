@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SOLO testata iconcine</title>
+<style>
+body{background:#111216;color:#e6e8ee;font:15px/1.6 -apple-system,Helvetica,Arial,sans-serif;margin:0;padding:24px 16px}
+main{max-width:860px;margin:auto}
+h1{font-size:22px;font-weight:600;margin:0 0 4px}h2{font-size:17px;font-weight:600;margin:28px 0 8px}
+.sub{color:#9aa1ae;margin:0 0 20px}
+.hd{background:#1d1e24;border:1px solid #2c2e37;border-radius:8px;padding:8px 12px 10px;font-family:Arial,sans-serif;max-width:720px}
+.r1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.g{display:flex;border:1px solid #4a4e5c;border-radius:5px;overflow:hidden}
+.c{width:28px;height:24px;display:flex;align-items:center;justify-content:center;color:#c9ccd6;background:#24252d;border-right:1px solid #3a3d48;position:relative}
+.g .c:last-child{border-right:none}
+.on{background:#1f78c8;color:#fff}.off{color:#4c505c}
+.dot{position:absolute;top:2px;right:3px;width:5px;height:5px;border-radius:50%;background:#f0a020}
+.t{height:24px;padding:0 9px;display:flex;align-items:center;font-size:12px;background:#22242d;border:1px solid #4a6a8a;border-radius:4px;color:#dfe3ea}
+.t.i{padding:0 5px}.ta{background:#1f78c8;color:#fff}
+.r2{display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;gap:8px}
+svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px solid #2c2e37;padding:7px 6px;text-align:left;vertical-align:top}th{color:#9aa1ae;font-weight:500}
+td svg{vertical-align:-3px;margin-right:4px}
+.lab{color:#9aa1ae;font-size:13px;margin:16px 0 6px}
+ul{padding-left:20px}
+</style></head><body><main>
+<svg style="display:none"><defs>
+<symbol id="save" viewBox="0 0 16 16"><path d="M3 2h8l2 2v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M5 2v4h5V2M5 14v-4h6v4"/></symbol>
+<symbol id="undo" viewBox="0 0 16 16"><path d="M5 9L2 6l3-3"/><path d="M2 6h8a4 4 0 0 1 0 8H7"/></symbol>
+<symbol id="redo" viewBox="0 0 16 16"><path d="M11 9l3-3-3-3"/><path d="M14 6H6a4 4 0 0 0 0 8h3"/></symbol>
+<symbol id="folder" viewBox="0 0 16 16"><path d="M2 4h4l2 2h6v7H2z"/></symbol>
+<symbol id="remote" viewBox="0 0 16 16"><rect x="5" y="5" width="6" height="10" rx="1"/><path d="M8 8v0M8 11v0M5 3a4 4 0 0 1 6 0"/></symbol>
+<symbol id="regions" viewBox="0 0 16 16"><path d="M4 3H2v10h2M12 3h2v10h-2"/><path d="M5 7h6M5 10h4"/></symbol>
+<symbol id="fx" viewBox="0 0 16 16"><path d="M4 2v12M8 2v12M12 2v12"/><path d="M2.5 5h3M6.5 10h3M10.5 6h3"/></symbol>
+<symbol id="video" viewBox="0 0 16 16"><rect x="1.5" y="4" width="9" height="8" rx="1"/><path d="M10.5 7l4-2v6l-4-2"/></symbol>
+<symbol id="v1" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M4 5h8"/></symbol>
+<symbol id="v2" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M4 5h8M4 8h8"/></symbol>
+<symbol id="v3" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M4 5h8M4 8h8M4 11h8"/></symbol>
+<symbol id="toolbar" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M2 10h12M6 10v4M10 10v4"/></symbol>
+<symbol id="reaper" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="8" rx="1"/><path d="M8 11v4M6 13l2 2 2-2"/></symbol>
+<symbol id="help" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5"/><path d="M6.2 6.2a2 2 0 1 1 2.6 1.9c-.5.2-.8.6-.8 1.1M8 11.5v0"/></symbol>
+<symbol id="pin" viewBox="0 0 16 16"><path d="M6 2h4M7 2v4l-2 3h6L9 6V2M8 9v6"/></symbol>
+<symbol id="pinoff" viewBox="0 0 16 16"><g transform="rotate(35 8 8)"><path d="M6 2h4M7 2v4l-2 3h6L9 6V2M8 9v6"/></g></symbol>
+</defs></svg>
+
+<h1>SOLO Recorder — progetto iconcine della testata</h1>
+<p class="sub">Approvata e realizzata il 6 ottobre 2026.</p>
+
+<h2>Il problema</h2>
+<p>In testata convivono tre stili: icone (Save, Undo, Redo, Pin, Toolbar), scritte in scatole di larghezze diverse (Regioni, FX, Video, Mini, Compact, Expanded, REAPER, ?) e un selettore a parte sulla seconda riga (Sessione | Telecomando). FX in Telecomando e' una scatola vuota e scura. Il risultato e' dispersivo, e i pulsanti a scritta sembrano incompleti accanto alle icone.</p>
+
+<p class="lab">Adesso</p>
+<div class="hd">
+ <div class="r1">
+  <div class="t i"><svg><use href="#save"/></svg></div><div class="t i"><svg><use href="#undo"/></svg></div><div class="t i"><svg><use href="#redo"/></svg></div>
+  <div class="t i ta"><svg><use href="#pin"/></svg></div><div class="t i"><svg><use href="#toolbar"/></svg></div>
+  <div class="t ta">Regioni</div><div class="t" style="color:#555">FX</div><div class="t">Video</div>
+  <span style="flex:1"></span>
+  <div class="t">Mini</div><div class="t ta">Compact</div><div class="t">Expanded</div><div class="t">REAPER</div><div class="t">?</div>
+ </div>
+ <div class="r2"><span style="font-size:20px;font-weight:600">STOP</span><span style="display:flex;gap:2px"><span class="t">Sessione</span><span class="t ta">Telecomando</span></span><span style="font-size:24px;font-weight:600">00:13:36:00</span></div>
+</div>
+
+<p class="lab">Proposta: una riga sola di pillole, celle tutte da 28 × 24</p>
+<div class="hd">
+ <div class="r1">
+  <div class="g"><div class="c"><svg><use href="#save"/></svg><span class="dot"></span></div><div class="c"><svg><use href="#undo"/></svg></div><div class="c off"><svg><use href="#redo"/></svg></div></div>
+  <div class="g"><div class="c"><svg><use href="#folder"/></svg></div><div class="c on"><svg><use href="#remote"/></svg></div></div>
+  <div class="g"><div class="c on"><svg><use href="#regions"/></svg></div><div class="c off"><svg><use href="#fx"/></svg></div><div class="c"><svg><use href="#video"/></svg></div></div>
+  <span style="flex:1"></span>
+  <div class="g"><div class="c"><svg><use href="#v1"/></svg></div><div class="c on"><svg><use href="#v2"/></svg></div><div class="c"><svg><use href="#v3"/></svg></div></div>
+  <div class="g"><div class="c"><svg><use href="#toolbar"/></svg></div><div class="c"><svg><use href="#reaper"/></svg></div></div>
+  <div class="g"><div class="c"><svg><use href="#help"/></svg></div><div class="c on"><svg><use href="#pin"/></svg></div></div>
+ </div>
+ <div class="r2"><span style="font-size:20px;font-weight:600">STOP <span style="font-size:12px;color:#9aa3b2;font-weight:400">· Telecomando</span></span><span style="font-size:24px;font-weight:600">00:13:36:00</span></div>
+ <div style="font-size:12px;color:#c9ccd6;margin-top:6px">Track: L1 · Region: nessuna · Take: 1 · Pre-roll 3 s</div>
+</div>
+<p class="lab">Nell'esempio: progetto non salvato (pallino ambra), niente da ripetere (Redo spento), Telecomando scelto, Regioni acceso, FX non disponibile in Telecomando, vista Compact, Pin acceso.</p>
+
+<h2>Una regola per tutti</h2>
+<ul>
+<li>Ogni comando della testata e' una cella 28 × 24 con un'icona disegnata (16 px, tratto 2 px).</li>
+<li>Le celle stanno in pillole: un solo bordo arrotondato per gruppo, una riga sottile fra le celle, 8 px fra un gruppo e l'altro.</li>
+<li>Normale: fondo scuro, icona grigio chiaro. Acceso o scelto: fondo azzurro, icona bianca. Non disponibile: icona attenuata ma visibile, mai un riquadro vuoto.</li>
+<li>Passando col mouse, la spiegazione resta nella barra in basso e nella guida ?.</li>
+<li>In testata le uniche scritte sono lo stato (STOP / REC) e il timecode.</li>
+</ul>
+
+<h2>I gruppi</h2>
+<p>A sinistra il progetto e la sessione, a destra la finestra.</p>
+<table>
+<tr><th>Gruppo</th><th>Celle</th><th>Icone</th></tr>
+<tr><td>Progetto</td><td>Save · Undo · Redo</td><td><svg><use href="#save"/></svg>dischetto, pallino ambra se il progetto non e' salvato · <svg><use href="#undo"/></svg><svg><use href="#redo"/></svg>frecce, spente quando non c'e' niente da annullare o ripetere</td></tr>
+<tr><td>Modalita'</td><td>Sessione · Telecomando</td><td><svg><use href="#folder"/></svg>cartella (ZP SOLO SESSION) · <svg><use href="#remote"/></svg>telecomando</td></tr>
+<tr><td>Sessione</td><td>Regioni · FX · Video</td><td><svg><use href="#regions"/></svg>parentesi di regione · <svg><use href="#fx"/></svg>cursori di mixer (catena effetti) · <svg><use href="#video"/></svg>cinepresa</td></tr>
+<tr><td>Viste</td><td>Mini · Compact · Expanded</td><td><svg><use href="#v1"/></svg><svg><use href="#v2"/></svg><svg><use href="#v3"/></svg>la stessa finestrella con 1, 2, 3 file</td></tr>
+<tr><td>Finestra</td><td>Toolbar · REAPER</td><td><svg><use href="#toolbar"/></svg>finestrella con la fila in basso · <svg><use href="#reaper"/></svg>finestra con freccia giu' (su quando REAPER e' nascosto)</td></tr>
+<tr><td>Aiuto</td><td>? · Pin</td><td><svg><use href="#help"/></svg>punto di domanda · <svg><use href="#pin"/></svg>puntina dritta e azzurra = sempre sopra; <svg><use href="#pinoff"/></svg>inclinata e grigia = libera</td></tr>
+</table>
+
+<h2>La puntina</h2>
+<p>Le 15 celle occupano circa 480 px; la vista Mini e' larga 720. Quindi la puntina sta in alto a destra, come in REAPER, e non serve spostarla nella zona dell'aiuto: e' gia' l'ultima cella, accanto al ?.</p>
+
+<h2>Seconda riga</h2>
+<p>Si libera: STOP / REC a sinistra con accanto, piccolo, "· Telecomando" o "· Sessione" (la modalita' resta scritta, oltre allo sfondo antracite), timecode a destra. La terza riga di Compact ed Expanded resta com'e'.</p>
+
+<h2>Come si fa nello script</h2>
+<ul>
+<li>Le icone si disegnano con <code>draw_header_icon</code>, gia' esistente, con rettangoli, triangoli, archi e linee: niente font di icone.</li>
+<li>Nuove icone: cartella, telecomando, regioni, fx, video, tre viste, REAPER su/giu', ?, puntina dritta/inclinata.</li>
+<li>Le spiegazioni della guida restano legate alle stesse chiavi di oggi.</li>
+</ul>
+
+<h2>Secondo passo, se piace</h2>
+<ul>
+<li>Toolbar in basso con la stessa regola: icona piu' scritta corta, li' c'e' spazio.</li>
+<li>PRE e lucchetto restano distintivi tondi sul bordo del REC.</li>
+</ul>
+
+<h2>Verifiche</h2>
+<ul>
+<li>Simulazione fuori REAPER: nessuna cella fuori finestra o sovrapposta in Mini, Compact, Expanded.</li>
+<li>Guida ?: ogni cella ha la sua spiegazione.</li>
+<li>Help del SOLO: la tabella della testata descrive le icone a parole.</li>
+</ul>
+</main></body></html>

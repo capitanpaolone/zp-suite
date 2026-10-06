@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.1.0
+-- @version 2.0.1
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -14,17 +14,13 @@
 --   OSARA non sono richiesti: aggiungono funzioni, e quando mancano la suite
 --   usa da sola una strada alternativa. Il dettaglio e' in README.txt.
 -- @changelog
---   SOLO Recorder: testata a icone in ogni vista (salva, annulla, ripeti, Sessione o
---     Telecomando, regioni take, effetti, video, viste, toolbar, REAPER, versione web,
---     guida, puntina "sempre sopra"); stato e timecode piu' grandi.
---   SOLO Recorder: meter IN dell'ingresso vero della scheda e RIT del master, in dB con
---     picco; pre-roll di REAPER acceso dal pulsante PRE sul REC, da 1 a 5 secondi;
---     PAUSA anche durante il REC (PLAY durante il REC mette in pausa, come REAPER);
---     marker con la bandierina e il nome scritto nel pannello; in Telecomando la traccia
---     da armare si sceglie dal menu dell'ingresso; navigatore anche in Compact.
---   SOLO Web (prototipo): il SOLO nel browser del Mac, dell'iPad o del telefono, tramite
---     l'interfaccia web di REAPER. Si apre dal globo in testata del SOLO: trasporto con
---     pausa, pre-roll, meter, marker, salva, annulla, ripeti.
+--   17 Gestore Progetto: le regioni nascono solo da item con un file vero (gli item di
+--     testo e vuoti non creano piu' regioni ne' spostano i nomi). Nuovi pulsanti Video
+--     (di serie acceso) e No muti (di serie spento), anche nel percorso OSARA. I marker
+--     #HSC del Harmonic Space Carver non spezzano le sezioni del render.
+--   19 Report minuti voce: pulsante No muti per item e tracce; il report lo dichiara.
+--   Help: Harmonic Space Carver 2.6 (cue di rientro rapido, marker #HSC, tracce voce,
+--     cue fuori posto, azioni da tastiera).
 -- @provides
 --   [main] 01_Importa_Video_SRT.lua
 --   [main] 02_Gobbo_Verticale.lua
@@ -54,14 +50,12 @@
 --   [main] 30_ZP_SRT.lua
 --   [main] 31_SRT_da_Marker_Audio.lua
 --   [main] 32_Installa_Toolbar_ZP.lua
---   [main] web/ZP_SOLO_Web_Motore.lua
 --   [nomain] 04_worker_Crea_Marker_Item.lua
 --   [nomain] 05_worker_Gestione_SRT.lua
 --   [nomain] 28_Collega_Marker.lua
 --   [nomain] ZP_UI.lua
 --   [nomain] ZP_sincronizza_aggancio.lua
 --   [nomain] lib_RythmoBand_Accessibile.lua
---   web/zp_solo.html
 --   help/index.html
 --   help/toolbar.html
 --   help/solo_recorder.html

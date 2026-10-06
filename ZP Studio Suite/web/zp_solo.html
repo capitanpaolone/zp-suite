@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>ZP SOLO Web</title>
+<!--
+  ZP SOLO Web - PROTOTIPO (uso locale). Pagina per l'interfaccia web di REAPER.
+  Non registra niente da sola: manda comandi al motore (ZP_SOLO_Web_Motore.lua, che deve
+  essere avviato in REAPER) e legge il suo stato, tutto attraverso le ExtState di REAPER:
+    GET /_/GET/EXTSTATE/ZP_SOLO_WEB/state          stato (JSON)
+    GET /_/SET/EXTSTATE/ZP_SOLO_WEB/cmd/<id|verbo|arg>  comando (urlencoded)
+-->
+<style>
+:root{
+  --bg:#0e0f11; --head:#2b2d33; --head-remote:#33353a; --panel:#17181d; --panel-b:#2a2c34;
+  --cell:#24252d; --cell-h:#383a46; --cell-b:#4a4e5c; --sep:#3a3d48;
+  --on:#1f78c8; --on-h:#2a8de6; --txt:#e8e9ee; --sub:#9aa1ae; --dim:#4f535e;
+  --rec:#c41b14; --play:#1b7a3a; --amber:#f0a020; --green:#1e8a3e; --yellow:#a59520; --orange:#c2531e; --red:#f02a1a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.4 -apple-system,"Helvetica Neue",Arial,sans-serif;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+header{background:var(--head);padding:9px 14px 10px;border-bottom:1px solid #3c3f48}
+header.rec{background:#7a0f0b}
+header.recpause{background:#4a1a0c}
+.row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.spacer{flex:1}
+.pill{display:flex;border:1px solid var(--cell-b);border-radius:5px;overflow:hidden}
+.cell{width:34px;height:29px;border:0;border-right:1px solid var(--sep);background:var(--cell);display:flex;align-items:center;justify-content:center;position:relative;color:#cdd0d8;padding:0}
+.pill .cell:last-child{border-right:0}
+.cell:hover{background:var(--cell-h)}
+.cell[aria-pressed=true]{background:var(--on);color:#fff}
+.cell:disabled{color:var(--dim);cursor:default;background:var(--cell)}
+.cell .dot{position:absolute;top:3px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--amber)}
+.gap-save{margin-right:12px}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.state{display:flex;align-items:baseline;justify-content:space-between;gap:4px 12px;margin-top:10px;flex-wrap:wrap}
+.big{font-size:clamp(20px,6vw,26px);font-weight:700;white-space:nowrap}
+.big small{font-size:14px;font-weight:400;color:var(--sub);margin-left:8px}
+.tc{font-size:clamp(24px,8vw,32px);margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.info{font-size:14px;color:#c9ccd6;margin-top:6px}
+.engine{font-size:13px;color:var(--sub);display:flex;align-items:center;gap:6px}
+.engine i{width:9px;height:9px;border-radius:50%;background:#666;display:inline-block}
+.engine.ok i{background:#3bd16f}.engine.ko i{background:var(--red)}
+main{padding:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:12px}
+section{background:var(--panel);border:1px solid var(--panel-b);border-radius:8px;padding:8px 12px 12px}
+section h2{font-size:12px;font-weight:600;color:var(--sub);margin:0 0 8px}
+.transport{display:flex;justify-content:space-around;align-items:flex-start;gap:6px}
+.tbtn{display:flex;flex-direction:column;align-items:center;gap:5px;border:0;background:none;padding:0;font-size:12px;color:var(--sub);position:relative}
+.round{border-radius:50%;background:#2a2c33;border:2px solid #3e414b;display:flex;align-items:center;justify-content:center;color:#fff}
+.tbtn:hover .round{filter:brightness(1.25)}
+.r48{width:48px;height:48px}.r58{width:58px;height:58px}.r68{width:68px;height:68px}
+.recb .round{background:var(--rec);border-color:#7a1410}
+.recb.on .round{background:#ff2a1f;box-shadow:0 0 0 4px #ff2a1f55}
+.playb .round{background:var(--play);border-color:#0f4a23}
+.r40{width:40px;height:40px}
+.pauseb.on .round{background:#dc941f;border-color:#7a5210}
+.playb.on .round{background:#22a64e}
+.badge{position:absolute;top:-6px;left:-8px;width:26px;height:26px;border-radius:50%;border:2px solid #0b0b0d;background:#4a4d57;color:#e8e9ee;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0}
+.badge[aria-pressed=true]{background:#f9c23d;color:#231703}
+.meter-row{display:flex;align-items:center;gap:8px;margin:6px 0}
+.meter-row b{width:30px;font-size:13px}
+.meter{position:relative;flex:1;height:28px;background:#0c0c0f;border:1px solid var(--panel-b);border-radius:3px;overflow:hidden}
+.meter .fill{position:absolute;inset:2px auto 2px 2px;width:0;background:linear-gradient(90deg,var(--green) 0 70%,var(--yellow) 70% 90%,var(--orange) 90% 98.3%,var(--red) 98.3%);background-size:var(--full) 100%;background-repeat:no-repeat}
+.meter .tick{position:absolute;top:2px;bottom:2px;width:1px;background:#ffffff24}
+.meter .tick.m{background:#ffffff50}
+.meter .hold{position:absolute;top:2px;bottom:2px;width:2px;background:#eee;left:-10px}
+.meter .lab{position:absolute;left:8px;top:5px;font-size:13px;font-weight:700}
+.meter .val{position:absolute;right:8px;top:5px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{height:36px;padding:0 12px;border-radius:5px;border:1px solid #4a6a8a;background:#22242d}
+.btn:hover{background:#2e3a4c}
+.step{display:flex;align-items:center;border:1px solid var(--cell-b);border-radius:5px;overflow:hidden}
+.step button{width:38px;height:36px;border:0;background:var(--cell);font-size:18px}
+.step button:disabled{color:var(--dim)}
+.step span{padding:0 12px;min-width:116px;text-align:center;display:flex;align-items:center;gap:8px;justify-content:center}
+.lamp{width:9px;height:9px;border-radius:50%;background:#3a3d45;display:inline-block}
+.lamp.on{background:#f9c23d}
+.mark{display:flex;gap:8px}
+.mark input{flex:1;height:38px;min-width:120px;border-radius:5px;border:1px solid #4a4e5c;background:#0f1013;color:var(--txt);padding:0 10px;font:inherit}
+.mark input:focus{outline:2px solid var(--on);border-color:var(--on)}
+.flag{width:48px;height:38px;border-radius:5px;border:1px solid #4a6a8a;background:#22242d;color:#6bbde9;display:flex;align-items:center;justify-content:center}
+footer{padding:4px 16px 16px;color:var(--sub);font-size:14px;min-height:24px}
+.offline{background:#5a1712;color:#ffd9d4;padding:10px 16px;font-size:14px;display:none}
+.offline.show{display:block}
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true"><defs>
+<symbol id="i-save" viewBox="0 0 16 16"><path d="M3 2h8l2 2v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M5 2v4h5V2M5 14v-4h6v4"/></symbol>
+<symbol id="i-undo" viewBox="0 0 16 16"><path d="M5 9L2 6l3-3"/><path d="M2 6h8a4 4 0 0 1 0 8H7"/></symbol>
+<symbol id="i-redo" viewBox="0 0 16 16"><path d="M11 9l3-3-3-3"/><path d="M14 6H6a4 4 0 0 0 0 8h3"/></symbol>
+<symbol id="i-flag" viewBox="0 0 16 16"><path d="M4 2v13"/><path d="M4 2l9 3.5L4 9z" fill="currentColor"/></symbol>
+</defs></svg>
+
+<div class="offline" id="offline" role="alert">Motore spento: in REAPER avvia l'azione <b>ZP_SOLO_Web_Motore</b> (Action List). Finché non parte, i comandi non arrivano.</div>
+
+<header id="head">
+  <div class="row">
+    <div class="pill gap-save"><button class="cell" id="b-save" aria-label="Salva progetto"><svg class="i"><use href="#i-save"/></svg><span class="dot" id="dirty" hidden></span></button></div>
+    <div class="pill">
+      <button class="cell" id="b-undo" aria-label="Annulla"><svg class="i"><use href="#i-undo"/></svg></button>
+      <button class="cell" id="b-redo" aria-label="Ripeti"><svg class="i"><use href="#i-redo"/></svg></button>
+    </div>
+    <span class="spacer"></span>
+    <span class="engine" id="engine"><i></i><span>motore…</span></span>
+  </div>
+  <div class="state">
+    <span class="big" id="transport">—<small>Telecomando</small></span>
+    <span class="tc" id="tc">--:--:--:--</span>
+  </div>
+  <div class="info" id="info">Traccia: — · Regione: — · Pre-roll: —</div>
+</header>
+
+<main>
+  <section aria-labelledby="h-tr">
+    <h2 id="h-tr">Trasporto</h2>
+    <div class="transport">
+      <button class="tbtn" data-cmd="back" aria-label="Indietro di 5 secondi"><span class="round r48"><svg class="i" viewBox="0 0 16 16" style="fill:currentColor;stroke:none"><path d="M2 3h2v10H2zM9 3v10L4 8zM15 3v10L10 8z"/></svg></span>-5s</button>
+      <span style="position:relative">
+        <button class="tbtn recb" id="b-rec" data-cmd="rec" aria-label="Registra"><span class="round r68"><span style="width:30px;height:30px;border-radius:50%;background:#fff;display:block"></span></span>REC</button>
+        <button class="badge" id="b-pre" aria-pressed="false" aria-label="Pre-roll acceso o spento">PRE</button>
+      </span>
+      <button class="tbtn" data-cmd="stop" aria-label="Stop"><span class="round r58"><span style="width:22px;height:22px;background:#fff;display:block"></span></span>STOP</button>
+      <button class="tbtn pauseb" id="b-pause" data-cmd="pause" aria-label="Pausa, anche della registrazione"><span class="round r40" style="margin-top:9px"><svg class="i" viewBox="0 0 16 16" style="fill:#fff;stroke:none"><path d="M4 3h3v10H4zM9 3h3v10H9z"/></svg></span>PAUSA</button>
+      <button class="tbtn playb" id="b-play" data-cmd="play" aria-label="Play"><span class="round r58"><svg class="i" viewBox="0 0 16 16" style="width:24px;height:24px;fill:#fff;stroke:none"><path d="M4 2l10 6-10 6z"/></svg></span>PLAY</button>
+      <button class="tbtn" data-cmd="fine" aria-label="Dopo l'ultimo item più 5 secondi"><span class="round r48"><svg class="i" viewBox="0 0 16 16" style="fill:currentColor;stroke:none"><path d="M12 3h2v10h-2zM1 3v10l5-5zM7 3v10l5-5z"/></svg></span>fine +5s</button>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-in">
+    <h2 id="h-in">Ingresso e ascolto</h2>
+    <div class="meter-row"><b>IN</b><div class="meter" id="m-in" role="meter" aria-label="Livello ingresso" aria-valuemin="-60" aria-valuemax="0"><div class="fill"></div><div class="hold"></div><span class="lab">LOW</span><span class="val">-inf</span></div></div>
+    <div class="meter-row"><b>RIT</b><div class="meter" id="m-rit" role="meter" aria-label="Livello ritorno" aria-valuemin="-60" aria-valuemax="0"><div class="fill"></div><div class="hold"></div><span class="lab">LOW</span><span class="val">-inf</span></div></div>
+    <div class="ctl" style="margin-top:8px">
+      <div class="step" role="group" aria-label="Secondi del pre-roll">
+        <button id="pre-minus" aria-label="Meno un secondo">−</button>
+        <span><i class="lamp" id="pre-lamp"></i><span id="pre-s">Pre-roll 3 s</span></span>
+        <button id="pre-plus" aria-label="Più un secondo">+</button>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-mk">
+    <h2 id="h-mk">Vai a e segna</h2>
+    <form class="mark" id="markform">
+      <button type="submit" class="flag" aria-label="Metti marker qui"><svg class="i" style="width:20px;height:20px"><use href="#i-flag"/></svg></button>
+      <input id="markname" placeholder="Nome marker… (Invio)" aria-label="Nome del marker, vuoto per numerato" autocomplete="off">
+    </form>
+  </section>
+</main>
+
+<footer id="msg" aria-live="polite"></footer>
+
+<script>
+"use strict";
+const SEC = "ZP_SOLO_WEB", FLOOR = -60;
+const $ = id => document.getElementById(id);
+let st = null, lastT = 0, lastChange = 0, seq = 0, queue = [], waiting = null;
+
+function unescapeWWR(v) { return String(v).replace(/\\(t|n|\\)/g, (m, c) => c === "t" ? "\t" : c === "n" ? "\n" : "\\"); }
+
+async function req(path) {
+  const r = await fetch("/_/" + path, { cache: "no-store" });
+  return r.text();
+}
+
+// ---- comandi: uno alla volta, il successivo parte quando il motore conferma (ack) ----
+function send(verb, arg) {
+  queue.push(verb + "|" + (arg == null ? "" : String(arg).replace(/\|/g, "/")));
+  pump();
+}
+function pump() {
+  if (waiting || !queue.length) return;
+  const id = Date.now().toString(36) + "-" + (seq++);
+  waiting = { id, at: performance.now() };
+  req("SET/EXTSTATE/" + SEC + "/cmd/" + encodeURIComponent(id + "|" + queue.shift())).catch(() => {});
+}
+
+// ---- meter: dB, sale subito, scende di 24 dB/s, picco fermo 1,5 s ----
+const meters = {};
+function frac(db) { return Math.max(0, Math.min(1, (db - FLOOR) / -FLOOR)); }
+function word(db) { return db > -1 ? "CLIP" : db > -6 ? "HOT" : db > -30 ? "OK" : "LOW"; }
+function setupMeter(el) {
+  [-48, -36, -24, -18, -12, -6, -3].forEach(t => {
+    const d = document.createElement("div");
+    d.className = "tick" + (t === -18 || t === -6 ? " m" : "");
+    d.style.left = (frac(t) * 100) + "%";
+    el.appendChild(d);
+  });
+  return { el, fill: el.querySelector(".fill"), hold: el.querySelector(".hold"), lab: el.querySelector(".lab"), val: el.querySelector(".val"), db: -150, hdb: -150, ht: 0, t: performance.now(), aria: 0 };
+}
+function drawMeter(m, src) {
+  const now = performance.now(), dt = Math.min(0.25, (now - m.t) / 1000); m.t = now;
+  const db = (src == null) ? -150 : src;
+  m.db = Math.max(db, m.db - 24 * dt);
+  if (db >= m.hdb) { m.hdb = db; m.ht = now; } else if (now - m.ht > 1500) m.hdb = m.db;
+  const w = m.el.clientWidth - 4;
+  m.fill.style.setProperty("--full", w + "px");
+  m.fill.style.width = (frac(m.db) * w) + "px";
+  m.hold.style.left = (m.hdb > FLOOR ? 2 + frac(m.hdb) * w - 1 : -10) + "px";
+  m.hold.style.background = m.hdb > -1 ? "var(--red)" : "#eee";
+  m.lab.textContent = src == null ? "N/A" : word(m.hdb);
+  m.val.textContent = src == null ? "" : (m.hdb <= -100 ? "-inf" : m.hdb.toFixed(1) + " dB");
+  if (now - m.aria > 1000) { m.aria = now; m.el.setAttribute("aria-valuenow", Math.max(FLOOR, Math.round(m.hdb))); m.el.setAttribute("aria-valuetext", m.val.textContent || "non disponibile"); }
+}
+meters.in = setupMeter($("m-in")); meters.rit = setupMeter($("m-rit"));
+
+// ---- stato ----
+function render() {
+  const alive = st && !st.off && (performance.now() - lastChange < 1500);
+  $("offline").classList.toggle("show", !alive);
+  const eng = $("engine"); eng.className = "engine " + (alive ? "ok" : "ko");
+  eng.lastChild.textContent = alive ? "motore acceso" : "motore spento";
+  if (!st || st.off) return;
+  const recp = st.transport === "REC_PAUSE", rec = st.transport === "REC" || recp;
+  $("head").classList.toggle("rec", rec && !recp);
+  $("head").classList.toggle("recpause", recp);
+  $("transport").firstChild.textContent = recp ? "❚❚ REC in pausa — " + (st.track || "?") : rec ? "● REC — " + (st.track || "?") : st.transport === "PAUSE" ? "PAUSA" : st.transport;
+  $("b-pause").classList.toggle("on", recp || st.transport === "PAUSE");
+  $("transport").lastChild.textContent = "Telecomando";
+  $("tc").textContent = st.tc;
+  $("info").textContent = "Traccia: " + (st.armed ? st.track + (st.armed > 1 ? " + " + (st.armed - 1) : "") + " · " + st.input : "nessuna traccia armata") +
+    "   ·   Regione: " + st.region + "   ·   " + (st.sws ? (st.preroll ? "Pre-roll " + st.preroll_s + " s" : "Pre-roll off") : "Pre-roll: serve SWS");
+  $("dirty").hidden = !st.dirty;
+  $("b-undo").disabled = !st.can_undo; $("b-redo").disabled = !st.can_redo;
+  $("b-rec").classList.toggle("on", rec);
+  $("b-play").classList.toggle("on", st.transport === "PLAY");
+  $("b-pre").setAttribute("aria-pressed", st.preroll ? "true" : "false");
+  $("pre-lamp").classList.toggle("on", !!st.preroll);
+  $("pre-s").textContent = "Pre-roll " + st.preroll_s + " s";
+  $("pre-minus").disabled = st.preroll_s <= 1; $("pre-plus").disabled = st.preroll_s >= 5;
+  if ($("msg").textContent !== st.msg) $("msg").textContent = st.msg;
+}
+
+async function poll() {
+  try {
+    const txt = await req("GET/EXTSTATE/" + SEC + "/state");
+    const line = txt.split("\n").find(l => l.startsWith("EXTSTATE\t"));
+    if (line) {
+      const val = unescapeWWR(line.split("\t").slice(3).join("\t"));
+      if (val) {
+        st = JSON.parse(val);
+        if (st.t !== lastT) { lastT = st.t; lastChange = performance.now(); }
+        if (waiting && (st.ack === waiting.id)) waiting = null;
+      }
+    }
+  } catch (e) { /* REAPER non risponde: la fascia rossa lo dice */ }
+  if (waiting && performance.now() - waiting.at > 800) waiting = null;
+  pump();
+  render();
+  setTimeout(poll, 60);
+}
+
+function frame() {
+  drawMeter(meters.in, st && !st.off ? st.in_db : null);
+  drawMeter(meters.rit, st && !st.off ? st.rit_db : null);
+  requestAnimationFrame(frame);
+}
+
+// ---- eventi ----
+document.querySelectorAll("[data-cmd]").forEach(b => b.addEventListener("click", () => send(b.dataset.cmd)));
+$("b-pre").addEventListener("click", e => { e.stopPropagation(); send("preroll"); });
+$("b-save").addEventListener("click", () => send("save"));
+$("b-undo").addEventListener("click", () => send("undo"));
+$("b-redo").addEventListener("click", () => send("redo"));
+$("pre-minus").addEventListener("click", () => st && send("preroll_s", st.preroll_s - 1));
+$("pre-plus").addEventListener("click", () => st && send("preroll_s", st.preroll_s + 1));
+$("markform").addEventListener("submit", e => {
+  e.preventDefault();
+  send("mark", $("markname").value.trim());
+  $("markname").value = "";
+});
+$("markname").addEventListener("keydown", e => { if (e.key === "Escape") { e.target.value = ""; e.target.blur(); } });
+// barra spaziatrice come in REAPER (non mentre scrivi): ferma se suona o registra, altrimenti PLAY
+document.addEventListener("keydown", e => {
+  if (e.code !== "Space" || /INPUT|TEXTAREA|BUTTON/.test(document.activeElement.tagName)) return;
+  e.preventDefault();
+  send(st && st.transport !== "STOP" ? "stop" : "play");
+});
+
+poll();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

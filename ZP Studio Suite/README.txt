@@ -29,7 +29,8 @@ SWS / S&M (sws-extension.org)
   e i pulsanti che aprono un file - l'help, il log del Probe Guard, il
   report - non aprono niente.
   Con: copia e incolla funzionano, e i file si aprono nell'applicazione
-  di sistema.
+  di sistema. Il SOLO Recorder regola i secondi del pre-roll (senza SWS il
+  pre-roll si regola da Options > Metronome/pre-roll di REAPER).
 
 js_ReaScriptAPI (da ReaPack)
   Senza: per scegliere una cartella la suite chiede il percorso a mano
@@ -39,6 +40,10 @@ js_ReaScriptAPI (da ReaPack)
   disponibile.
   Con: pannello di sistema per le cartelle, selezione delle regioni
   sincronizzata, finestra sempre in primo piano.
+
+Interfaccia web di REAPER (Preferences > Control/OSC/web > Web browser interface)
+  Serve solo alla versione web del SOLO Recorder (globo in testata): la
+  pagina zp_solo.html e il motore ZP_SOLO_Web_Motore li prepara il SOLO.
 
 OSARA (osara.reaperaccessibility.com)
   Serve alle quattro action 09, 10, 11 e 12, che fanno leggere le battute
