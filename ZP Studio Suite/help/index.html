@@ -105,6 +105,7 @@
     <a href="solo_recorder.html">SOLO Recorder &rarr;</a> &middot;
     <a href="pannello_trascrizione.html">ZP Trascrizione &rarr;</a> &middot;
     <a href="voice_cleaner.html">Voice Cleaner &rarr;</a><br>
+    <strong>Appena installata:</strong> apri dall'Action List <a href="#tool-33"><strong>33 Benvenuto</strong></a> (si apre anche da solo la prima volta che usi uno strumento ZP). Ti dice quali pezzi sono pronti e quali no, e per ognuno ha il pulsante che lo sistema.<br>
     Se è la prima volta, leggi le prime tre sezioni: <em>a cosa serve</em>, <em>le parole da sapere</em> e <em>da dove parto</em>. Poi usa questa pagina come manuale: ogni finestra ha la sua scheda, e il <strong>?</strong> in alto a destra di una finestra apre direttamente la scheda giusta.
   </div>
 
@@ -539,6 +540,14 @@
   <!-- ================================================================== -->
   <h2 id="installazione">Installazione e componenti opzionali</h2>
   <p>La suite si installa e si aggiorna con <strong>ReaPack</strong>: <em>Extensions &rarr; ReaPack &rarr; Import repositories</em>, incolla <code>https://github.com/capitanpaolone/zp-suite/raw/master/index.xml</code>, poi <em>Browse packages</em>, cerca <em>ZP</em> e installa <em>ZP Studio Suite</em> e i plugin che ti servono. Le azioni compaiono nell'Action List come <em>ZP Studio Suite - …</em>.</p>
+  <p id="tool-33"><strong>33 Benvenuto (controllo installazione):</strong> si apre da solo la prima volta che usi uno strumento ZP, e poi quando vuoi dall'Action List. Una riga per pezzo, con una spia: <strong>verde</strong> pronto, <strong>rossa</strong> da fare, <strong>grigio-azzurra</strong> facoltativo assente, <strong>grigia</strong> non serve. Lo stato si aggiorna da solo ogni secondo.</p>
+  <ul>
+    <li><strong>Toolbar ed effetti</strong>: <em>Installa</em> lancia il 32 (vedi sotto); la spia diventa verde quando la toolbar è anche importata in REAPER.</li>
+    <li><strong>Cue Navigator</strong> del Harmonic Space Carver (solo se il Carver è installato): deve girare sempre. <em>Avvia ora</em> lo accende; <em>A ogni apertura</em> aggiunge a <code>Scripts/__startup.lua</code> un blocco segnato che lo avvia quando apri REAPER (senza SWS e senza toccare il resto del file). Se l'hai già messo come azione di avvio di SWS, il Benvenuto lo riconosce.</li>
+    <li><strong>ZP Speech</strong> (solo Mac, facoltativo): serve a Trascrivi; si installa a parte con <code>speech-engine/install_macos.sh</code> del repository.</li>
+    <li><strong>SWS</strong>, <strong>js_ReaScriptAPI</strong>, <strong>OSARA</strong>: facoltative, ciascuna con cosa aggiunge e dove si prende.</li>
+    <li><strong>Interfaccia web di REAPER</strong>: serve solo al SOLO Web; <em>Preferenze</em> apre le impostazioni di REAPER.</li>
+  </ul>
   <p id="tool-32"><strong>Toolbar ed effetti:</strong> dopo l'installazione lancia dall'Action List <strong>32 Installa toolbar ZP</strong>. Scrive la toolbar con gli identificativi delle azioni del tuo REAPER e ti dice come importarla; mette anche in REAPER/FXChains le catene di effetti del SOLO Recorder (ZP Bus VoiceChain e ZP MasterChain), senza sovrascrivere quelle che hai già. Aggiunge in REAPER/presets i preset usati dal Chain Builder (BUS Chain <code>Voiceover_Body1_BG80HzDyn_-3dBLim</code>, Master Pro <code>Flat -19</code>): solo se non hai già un preset con lo stesso nome, e i tuoi restano. Rilancialo se un pulsante resta vuoto o dopo un aggiornamento che aggiunge strumenti. <a href="toolbar.html">I pulsanti, uno per uno</a>.</p>
   <p>In alternativa c'è il file pronto <code>toolbar/ZP_StudioSuite.ReaperMenu</code> nella cartella della suite (Options &rarr; Customize menus/toolbars &rarr; Import), ma è fatto con gli identificativi di un altro REAPER: i pulsanti degli strumenti più recenti possono restare vuoti. Meglio la 32. <a href="toolbar.html">Cosa fa ogni pulsante &rarr;</a></p>
   <p>Funziona su un REAPER pulito. Queste estensioni non sono obbligatorie, ma aggiungono qualcosa:</p>

@@ -7,6 +7,12 @@ La gestisce ReaPack: gli aggiornamenti arrivano da li'
 Non modificare manualmente questi file se non sai esattamente cosa stai
 facendo: un aggiornamento li sostituisce.
 
+Primi passi:
+- dall'Action List apri "33 Benvenuto" (si apre anche da solo la prima volta
+  che usi uno strumento ZP): dice cosa e' pronto e cosa no, con il pulsante
+  per sistemarlo (toolbar ed effetti, Cue Navigator del Carver, ZP Speech,
+  estensioni facoltative, interfaccia web).
+
 Documentazione:
 - apri help/index.html
 - oppure esegui 00_Apri_Help_ZP_Studio_Suite.lua dalla Action List.

@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.1.0
+-- @version 2.2.0
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -13,18 +13,16 @@
 --   Funziona su un REAPER pulito, senza estensioni. SWS, js_ReaScriptAPI e
 --   OSARA non sono richiesti: aggiungono funzioni, e quando mancano la suite
 --   usa da sola una strada alternativa. Il dettaglio e' in README.txt.
+--
+--   Dopo l'installazione apri dall'Action List "33 Benvenuto" (si apre anche da
+--   solo la prima volta che usi uno strumento ZP): controlla toolbar ed effetti,
+--   Cue Navigator del Carver, ZP Speech, SWS, js_ReaScriptAPI, OSARA e interfaccia
+--   web, e per ognuno ha il pulsante che lo mette a posto.
 -- @changelog
---   SOLO Recorder: testata a icone in ogni vista (salva, annulla, ripeti, Sessione o
---     Telecomando, regioni take, effetti, video, viste, toolbar, REAPER, versione web,
---     guida, puntina "sempre sopra"); stato e timecode piu' grandi.
---   SOLO Recorder: meter IN dell'ingresso vero della scheda e RIT del master, in dB con
---     picco; pre-roll di REAPER acceso dal pulsante PRE sul REC, da 1 a 5 secondi;
---     PAUSA anche durante il REC (PLAY durante il REC mette in pausa, come REAPER);
---     marker con la bandierina e il nome scritto nel pannello; in Telecomando la traccia
---     da armare si sceglie dal menu dell'ingresso; navigatore anche in Compact.
---   SOLO Web (prototipo): il SOLO nel browser del Mac, dell'iPad o del telefono, tramite
---     l'interfaccia web di REAPER. Si apre dal globo in testata del SOLO: trasporto con
---     pausa, pre-roll, meter, marker, salva, annulla, ripeti.
+--   33 Benvenuto: controllo dell'installazione con una spia per pezzo (toolbar ed
+--     effetti, Cue Navigator del Carver anche all'avvio di REAPER, ZP Speech, SWS,
+--     js_ReaScriptAPI, OSARA, interfaccia web) e il pulsante che lo sistema. Si apre
+--     da solo la prima volta che si usa uno strumento ZP.
 -- @provides
 --   [main] 01_Importa_Video_SRT.lua
 --   [main] 02_Gobbo_Verticale.lua
@@ -54,6 +52,7 @@
 --   [main] 30_ZP_SRT.lua
 --   [main] 31_SRT_da_Marker_Audio.lua
 --   [main] 32_Installa_Toolbar_ZP.lua
+--   [main] 33_Benvenuto_Controllo_Installazione.lua
 --   [main] web/ZP_SOLO_Web_Motore.lua
 --   [nomain] 04_worker_Crea_Marker_Item.lua
 --   [nomain] 05_worker_Gestione_SRT.lua
@@ -140,4 +139,15 @@ elseif osname:match("Win") then
   os.execute('start "" ' .. quoted)
 else
   os.execute("xdg-open " .. quoted .. " >/dev/null 2>&1 &")
+end
+
+-- Primo avvio: se il Benvenuto non si e' mai aperto, si apre adesso (accanto all'help).
+if reaper.GetExtState("ZP_STUDIO_SUITE", "benvenuto_visto") == "" then
+  local b = join(script_dir, "33_Benvenuto_Controllo_Installazione.lua")
+  local fb = io.open(b, "r")
+  if fb and reaper.AddRemoveReaScript then
+    fb:close()
+    local id = reaper.AddRemoveReaScript(true, 0, b, true)
+    if id and id ~= 0 then reaper.Main_OnCommand(id, 0) end
+  end
 end

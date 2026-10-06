@@ -98,3 +98,10 @@ nel suo insieme.
 - Il SOLO nel browser (Mac, iPad, telefono) attraverso l'interfaccia web di REAPER: trasporto con pausa,
   pre-roll, meter, marker, salva/annulla/ripeti. Si apre dal globo in testata del SOLO, che prepara la
   pagina e accende il motore `ZP_SOLO_Web_Motore`.
+
+## ZP Studio Suite 2.2.0 — 2026-10-06
+
+- 33 Benvenuto: controllo dell'installazione. Una spia per pezzo (toolbar ed effetti, Cue Navigator del
+  Harmonic Space Carver e il suo avvio con REAPER, ZP Speech, SWS, js_ReaScriptAPI, OSARA, interfaccia web)
+  e il pulsante che lo sistema. Si apre da solo la prima volta che si usa uno strumento ZP; poi dall'Action
+  List o dall'help.

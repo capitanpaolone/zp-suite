@@ -32,6 +32,11 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 - Installazione su questo Mac: veri in `Scripts/ZP Suite/ZP Voce/` (cartella di ReaPack); in `Scripts/ZP Suite/`
   solo tre rimandi (helper all'avvio SWS, Mostra tracce voce, Riallinea su Ctrl+\). Non sovrascriverli con i veri.
 
+## Primo avvio (33 Benvenuto)
+- La spunta e' ExtState persistente ZP_STUDIO_SUITE/benvenuto_visto; chi apre il Benvenuto la scrive PRIMA di
+  caricare ZP_UI (ZP_UI lo apre se e' vuota). Un pezzo nuovo da installare a mano = una riga nel 33.
+- Scripts/__startup.lua e' dell'utente: si scrive solo il blocco tra ZP_BENVENUTO_HSC_INIZIO e _FINE.
+
 ## Help
 - Ogni modifica visibile a Paolo aggiorna, nello stesso commit, l'help (`help/index.html` e la pagina
   dedicata: solo_recorder, pannello_trascrizione, toolbar...) e le spiegazioni dentro lo script

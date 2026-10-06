@@ -534,4 +534,20 @@ function UI.wrap_text(text, max_w)
   return lines
 end
 
+-- Benvenuto: ReaPack non puo' eseguire niente dopo l'installazione, quindi la prima volta che
+-- uno strumento ZP carica questa libreria si apre "33 Benvenuto" (controllo installazione).
+-- Una volta sola: la spunta resta in ExtState ZP_STUDIO_SUITE/benvenuto_visto.
+do
+  if reaper and reaper.GetExtState and reaper.GetExtState("ZP_STUDIO_SUITE", "benvenuto_visto") == "" then
+    reaper.SetExtState("ZP_STUDIO_SUITE", "benvenuto_visto", "1", true)
+    local path = script_dir_from_debug() .. "/33_Benvenuto_Controllo_Installazione.lua"
+    local f = io.open(path, "r")
+    if f and reaper.AddRemoveReaScript then
+      f:close()
+      local id = reaper.AddRemoveReaScript(true, 0, path, true)
+      if id and id ~= 0 then reaper.Main_OnCommand(id, 0) end
+    end
+  end
+end
+
 return UI
