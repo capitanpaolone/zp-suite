@@ -33,5 +33,10 @@ check("versione dall'intestazione", M.header_version("-- @description X\n-- @ver
 local set = { ["/Library/Frameworks/Python.framework/Versions/3.12/bin/python3"] = true, ["/opt/homebrew/bin/python3.11"] = true }
 check("python: il piu' recente trovato", M.find_python(function(p) return set[p] end) == "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3")
 check("python: nessuno", M.find_python(function() return false end) == nil)
+local menu = "[Main toolbar]\nitem_0=40001\n\n[Floating toolbar 2]\nicon_0=ZP_tb_x.png\nitem_0=_RS1 A\n\n[Floating toolbar 8]\nicon_0=ZP_tb_y.png\nitem_0=_RS2 B\ntitle=ZP Studio Suite\n\n[Floating toolbar 9]\nitem_0=1\n"
+check("toolbar ZP: vince quella col nome ZP Studio Suite", M.toolbar_slot(menu) == 8)
+check("toolbar ZP: senza nome, la prima con icone ZP", M.toolbar_slot("[Floating toolbar 5]\nicon_0=ZP_tb_a.png\n") == 5)
+check("toolbar ZP: nella principale", M.toolbar_slot("[Main toolbar]\nicon_3=ZP_tb_a.png\n") == "main")
+check("toolbar ZP: assente", M.toolbar_slot("[Floating toolbar 1]\nitem_0=1\n") == nil)
 if fails > 0 then print(fails .. " FALLITI") os.exit(1) end
 print("TUTTI OK")

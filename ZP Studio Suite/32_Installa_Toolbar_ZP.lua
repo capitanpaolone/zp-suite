@@ -286,7 +286,7 @@ end
 local buttons = 0
 for _ in pairs(ids) do buttons = buttons + 1 end
 local msg = string.format(
-  "Toolbar scritta con %d pulsanti, con gli identificativi di questo REAPER.\n\n%s\n\nPer metterla in REAPER:\nOptions > Customize menus/toolbars, scegli una toolbar libera (es. Floating toolbar 32),\npoi Import/Export > Import e scegli questo file.",
+  "Toolbar scritta con %d pulsanti, con gli identificativi di questo REAPER.\n\n%s\n\nPer metterla in REAPER:\nOptions > Customize menus/toolbars, scegli una Floating toolbar libera fra 1 e 16\n(quelle che si aprono da View > Toolbars), poi Import/Export > Import e scegli questo file.\nIl Benvenuto (33) guida questo passo e poi apre la toolbar.",
   buttons, target)
 if #registered > 0 then msg = msg .. "\n\nRegistrati ora nell'Action List: " .. table.concat(registered, ", ") end
 if #missing > 0 then msg = msg .. "\n\nNON trovati (pulsante saltato): " .. table.concat(missing, ", ") end

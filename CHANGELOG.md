@@ -113,3 +113,9 @@ nel suo insieme.
   in sottofondo) e l'ordine della toolbar di lavoro.
 - 33 Benvenuto: ZP Speech si installa con un clic (il Terminale scarica da GitHub e installa); se mancano
   Python 3.11+ o MacWhisper la riga lo dice e porta a scaricarli.
+
+## ZP Studio Suite 2.3.2 — 2026-10-06
+
+- 33 Benvenuto: la toolbar ZP in tre momenti chiari: da installare (Installa), da importare (Importa apre
+  Customize toolbars e copia il percorso del file), pronta (dice in quale toolbar e' e la apre).
+- 32 Installa toolbar: consiglia una Floating toolbar fra 1 e 16, quelle del menu View > Toolbars.
