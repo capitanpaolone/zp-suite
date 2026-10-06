@@ -120,7 +120,7 @@ nel suo insieme.
   Customize toolbars e copia il percorso del file), pronta (dice in quale toolbar e' e la apre).
 - 32 Installa toolbar: consiglia una Floating toolbar fra 1 e 16, quelle del menu View > Toolbars.
 
-## ZP Studio Suite 2.3.3 — 2026-10-06
+## ZP Studio Suite 2.3.4 — 2026-10-06
 
 - 32 Installa toolbar: la toolbar "ZP Studio Suite" entra direttamente fra le toolbar di REAPER, col suo nome
   (Switch toolbar o View > Toolbars, dopo un riavvio): nella toolbar che si chiama gia' cosi', altrimenti nella

@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.3.3
+-- @version 2.3.4
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -23,8 +23,8 @@
 --     REAPER, col suo nome (si sceglie con Switch toolbar o View > Toolbars dopo un riavvio):
 --     nella toolbar che si chiama gia' cosi', altrimenti nella prima libera fra 1 e 16; le
 --     altre toolbar restano come sono e accanto a reaper-menu.ini resta un backup.
---   33 Benvenuto: toolbar da installare (Installa), da riavviare (giallo), pronta (dice
---     in quale toolbar e' e la apre).
+--   33 Benvenuto: toolbar da installare (Installa), da riavviare (giallo, finche' REAPER
+--     non la carica), pronta (dice in quale toolbar e' e la apre).
 -- @provides
 --   [main] 01_Importa_Video_SRT.lua
 --   [main] 02_Gobbo_Verticale.lua
