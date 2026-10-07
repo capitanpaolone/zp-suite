@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.3.6
+-- @version 2.3.7
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -19,10 +19,16 @@
 --   Cue Navigator del Carver, ZP Speech, SWS, js_ReaScriptAPI, OSARA, marker degli
 --   item e interfaccia web, e per ognuno ha il pulsante che lo mette a posto.
 -- @changelog
---   Marker degli item protetti: trascinando sopra un take marker prendi l'item, Shift+trascina
---     sposta il marker. 32 Installa li protegge se valgono i comandi di serie di REAPER; il 33
---     Benvenuto ha la riga "Marker degli item" con Proteggi e Ripristina standard.
---   Help del Harmonic Space Carver 2.6.5: ELIMINA con selezione multipla, GUI in tre colonne.
+--   Gobbo, ricerca: trova le parole dall'inizio ("ved" trova "vedere"), senza badare a maiuscole
+--     e accenti; tra virgolette cerca la parola esatta. L'elenco dei risultati e' in ordine di
+--     timeline, con timecode e file audio di ogni battuta; clic, frecce, < e > ci portano.
+--   Gobbo verticale, Sostituisci: solo parole intere, gli accenti contano. Un clic mostra la
+--     parola, il secondo la cambia e resta li'; Tutti chiede conferma e si annulla con un Undo.
+--   Gobbo verticale: Modifica battuta si apre sotto Cerca e la battuta in modifica e' segnata.
+--     Pannello note con tutte le note, scorrevole: clic porta la timeline, doppio clic modifica,
+--     bollino OK per segnarle fatte o riaprirle, x a sinistra per cancellarle. In Modifica la
+--     rotella scorre il testo. Barra comandi a blocchi, con caselle e flusso testi a tendina.
+--   Gobbo orizzontale: flusso testi a tendina.
 -- @provides
 --   [main] 01_Importa_Video_SRT.lua
 --   [main] 02_Gobbo_Verticale.lua

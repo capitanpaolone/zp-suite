@@ -4,6 +4,22 @@ Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
 ciascun file e nel gestore pacchetti. Questo file registra la storia della Suite
 nel suo insieme.
 
+## ZP Studio Suite 2.3.7 — 2026-10-08
+
+- Gobbo, ricerca: trova le parole dall'inizio (`ved` trova *vedere*), senza badare a maiuscole e
+  accenti; tra virgolette cerca la parola esatta. Sotto il campo c'e' l'elenco dei risultati in
+  ordine di timeline, con timecode e file audio di ogni battuta; clic, frecce, `<` e `>` portano
+  alla battuta.
+- Gobbo verticale, Sostituisci: cambia solo parole intere e gli accenti contano (`è` non tocca
+  *e*). Un clic mostra la parola, il secondo la cambia e resta li'; Tutti chiede conferma e si
+  annulla con un solo Undo.
+- Gobbo verticale: Modifica battuta si apre sotto Cerca e la battuta in modifica e' segnata nel
+  copione. Il pannello note elenca tutte le note ed e' scorrevole: clic porta la timeline, doppio
+  clic modifica, bollino OK per segnarle fatte o riaprirle, x a sinistra per cancellarle. In
+  Modifica la rotella scorre il testo. La barra comandi e' divisa in blocchi, con caselle e il
+  flusso testi a tendina.
+- Gobbo orizzontale: flusso testi a tendina.
+
 ## ZP Harmonic Space Carver 2.6.5, Cue Navigator 1.10, ZP Studio Suite 2.3.6 — 2026-10-07
 
 ### ZP Harmonic Space Carver 2.6.5
