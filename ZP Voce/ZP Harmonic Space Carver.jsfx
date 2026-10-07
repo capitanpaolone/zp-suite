@@ -1477,7 +1477,7 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
   );
   nsel > 1 ? sprintf(#quick_del_txt, "ELIMINA %d", nsel) : strcpy(#quick_del_txt, "ELIMINA");
   ui_cue_button(lx + row_w - del_w, ly - 11, del_w, 22, #quick_del_txt, nsel > 0 ? 2 : 0,
-                quick_point_count > 0 && (nsel > 0 || quick_sel >= 0), 76) ? quick_delete_selected();
+                quick_point_count > 0 && (nsel > 0 || quick_sel >= 0), 77) ? quick_delete_selected();
   full ? (
     ui_knob(56, bx + bw - 86, by + 70, 12, 10, 250, 200, "Rampa", "ms", 0.95, 0.42, 0.20, 56);
     ui_knob(57, bx + bw - 34, by + 70, 12, 0, 2000, 500, "Apertura", "ms", 0.95, 0.42, 0.20, 61);
@@ -1837,7 +1837,7 @@ view_mode == 0 ? (
     gfx_drawstr("TIMELINE: SALTA sposta il playhead sui cue (helper Cue Navigator); RESTA FERMO solo li seleziona.")) :
   active_info_id == 59 ? gfx_drawstr("UNDO: annulla l'ultima aggiunta, rimozione o cancellazione dei cue.") :
   active_info_id == 60 ? gfx_drawstr("FILA DEI CUE: ciano = al suo posto, rosso = fuori posto. Clic sceglie, Cmd/Ctrl+clic aggiunge, Shift+clic intervallo.") :
-  active_info_id == 76 ? gfx_drawstr("ELIMINA: toglie i cue selezionati e i loro marker #HSC (Cmd/Ctrl+clic o Shift+clic per piu' cue). UNDO li rimette.") :
+  active_info_id == 77 ? gfx_drawstr("ELIMINA: toglie i cue selezionati e i loro marker #HSC (Cmd/Ctrl+clic o Shift+clic per piu' cue). UNDO li rimette.") :
   active_info_id == 61 ? gfx_drawstr("APERTURA: dopo la Rampa la musica resta aperta per questo tempo, ignorando la voce.") :
   active_info_id == 65 ? gfx_drawstr(#sc_msg0) : active_info_id == 66 ? gfx_drawstr(#sc_msg1) : active_info_id == 67 ? gfx_drawstr(#sc_msg2) :
   active_info_id == 68 ? gfx_drawstr("FONTI VOCE: compaiono quando la traccia ha i canali. Pulsante I/O del plugin, Track channels 6 (SC2) o 8 (SC3).") :
