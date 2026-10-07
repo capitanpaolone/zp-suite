@@ -19,47 +19,6 @@ local gobbo_settings_section = "ZP_VoiceOver_Studio_Gobbo_Orizzontale"
 local speech_lead_key = "accessibility_speech_lead"
 local studio_mode_key = "studio_edit_mode"
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
-local function SimpleSearchFallback()
-    local M = {}
-    function M.fold(s) return tostring(s or ""):gsub("\r\n", "\n"):gsub("\r", "\n"):lower() end
-    function M.find(text, query)
-        local q = tostring(query or ""):gsub('^"(.*)"$', "%1")
-        q = q:gsub("^“(.*)”$", "%1")
-        if q == "" then return nil end
-        local a, b = M.fold(text):find(M.fold(q), 1, true)
-        return a, b
-    end
-    function M.count(items, query, current_item)
-        local total, current = 0, nil
-        for _, item in ipairs(items or {}) do
-            if M.find(item.notes or item.text or "", query) then
-                total = total + 1
-                if item == current_item then current = total end
-            end
-        end
-        return total, current
-    end
-    function M.word_matches(word, query) return M.find(word, query) ~= nil end
-    return M
-end
-
-local ZP_CERCA
-do
-    local path = SCRIPT_DIR .. "ZP_cerca.lua"
-    local file = io.open(path, "r")
-    if file then
-        file:close()
-        local ok, loaded = pcall(dofile, path)
-        if ok and type(loaded) == "table" and type(loaded.find) == "function" then ZP_CERCA = loaded end
-    end
-    if not ZP_CERCA then
-        if reaper.GetExtState("ZP_STUDIO_SUITE", "cerca_helper_missing_session") ~= "1" then
-            reaper.ShowMessageBox("ZP_cerca.lua non è disponibile o non si carica. Il Gobbo userà una ricerca semplice per sottostringa finché il file non viene ripristinato.", "ZP Studio Suite - ricerca", 0)
-            reaper.SetExtState("ZP_STUDIO_SUITE", "cerca_helper_missing_session", "1", false)
-        end
-        ZP_CERCA = SimpleSearchFallback()
-    end
-end
 local NVDA_BRIDGE_PATH = SCRIPT_DIR .. "ZP_NVDA_Speech.py"
 local NVDA_DLL_PATH = SCRIPT_DIR .. "nvdaControllerClient64.dll"
 local cached_items = {}
@@ -920,36 +879,40 @@ function CycleTextFlow(delta)
     UpdateItems()
 end
 
-function NormalizeSearchText(text) return ZP_CERCA.fold(text) end
+function NormalizeSearchText(text)
+    return tostring(text or ""):gsub("\r\n", "\n"):gsub("\r", "\n"):lower()
+end
 
 function FindSubtitleMatch(query, start_pos)
-    if ZP_CERCA.fold(query) == "" then return nil end
-    local fallback
+    local needle = NormalizeSearchText(query)
+    if needle == "" then return nil end
+
+    local fallback = nil
     for _, item in ipairs(cached_items) do
-        local match_start = ZP_CERCA.find(item.notes, query)
-        if match_start then
-            local ratio = math.max(0, math.min(1, (match_start - 1) / math.max(1, #tostring(item.notes or ""))))
-            item.search_match_pos = item.pos + item.len * ratio
-            item.search_match_offset = match_start
+        local haystack = NormalizeSearchText(item.notes)
+        if haystack:find(needle, 1, true) then
             if not fallback then fallback = item end
-            if item.pos > (start_pos or 0) + 0.001 then return item end
+            if item.pos > (start_pos or 0) + 0.001 then
+                return item
+            end
         end
     end
     return fallback
 end
 
 function FindSubtitleMatchPrevious(query, start_pos)
-    if ZP_CERCA.fold(query) == "" then return nil end
-    local fallback
+    local needle = NormalizeSearchText(query)
+    if needle == "" then return nil end
+
+    local fallback = nil
     for i = #cached_items, 1, -1 do
         local item = cached_items[i]
-        local match_start = ZP_CERCA.find(item.notes, query)
-        if match_start then
-            local ratio = math.max(0, math.min(1, (match_start - 1) / math.max(1, #tostring(item.notes or ""))))
-            item.search_match_pos = item.pos + item.len * ratio
-            item.search_match_offset = match_start
+        local haystack = NormalizeSearchText(item.notes)
+        if haystack:find(needle, 1, true) then
             if not fallback then fallback = item end
-            if item.pos < (start_pos or 0) - 0.001 then return item end
+            if item.pos < (start_pos or 0) - 0.001 then
+                return item
+            end
         end
     end
     return fallback
@@ -991,8 +954,7 @@ function ExecuteSubtitleSearch(direction)
         return
     end
     JumpToSearchMatch(match)
-    local total, current = ZP_CERCA.count(cached_items, search_query, match, match.search_match_offset)
-    search_message = (total > 0 and (tostring(current or 1) .. " di " .. tostring(total) .. " · ") or "") .. FormatVideoTimecode(match.search_match_pos or match.pos)
+    search_message = FormatVideoTimecode(match.pos)
     search_message_until = reaper.time_precise() + 2.0
 end
 

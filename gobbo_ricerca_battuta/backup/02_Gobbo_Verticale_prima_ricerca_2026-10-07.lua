@@ -19,47 +19,6 @@ local settings_section = "RythmoBand_Teleprompter"
 local gobbo_state_section = "RythmoBand_Gobbo_State"
 local gobbo_state_key = "vertical_ts"
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
-local function SimpleSearchFallback()
-    local M = {}
-    function M.fold(s) return tostring(s or ""):gsub("\r\n", "\n"):gsub("\r", "\n"):lower() end
-    function M.find(text, query)
-        local q = tostring(query or ""):gsub('^"(.*)"$', "%1")
-        q = q:gsub("^“(.*)”$", "%1")
-        if q == "" then return nil end
-        local a, b = M.fold(text):find(M.fold(q), 1, true)
-        return a, b
-    end
-    function M.count(items, query, current_item)
-        local total, current = 0, nil
-        for _, item in ipairs(items or {}) do
-            if M.find(item.notes or item.text or "", query) then
-                total = total + 1
-                if item == current_item then current = total end
-            end
-        end
-        return total, current
-    end
-    function M.word_matches(word, query) return M.find(word, query) ~= nil end
-    return M
-end
-
-local ZP_CERCA
-do
-    local path = SCRIPT_DIR .. "ZP_cerca.lua"
-    local file = io.open(path, "r")
-    if file then
-        file:close()
-        local ok, loaded = pcall(dofile, path)
-        if ok and type(loaded) == "table" and type(loaded.find) == "function" then ZP_CERCA = loaded end
-    end
-    if not ZP_CERCA then
-        if reaper.GetExtState("ZP_STUDIO_SUITE", "cerca_helper_missing_session") ~= "1" then
-            reaper.ShowMessageBox("ZP_cerca.lua non è disponibile o non si carica. Il Gobbo userà una ricerca semplice per sottostringa finché il file non viene ripristinato.", "ZP Studio Suite - ricerca", 0)
-            reaper.SetExtState("ZP_STUDIO_SUITE", "cerca_helper_missing_session", "1", false)
-        end
-        ZP_CERCA = SimpleSearchFallback()
-    end
-end
 local cached_items = {}
 local cached_notes = {}
 local cached_character_notes = {}
@@ -1052,37 +1011,71 @@ function FindUpcomingCue(pos)
     return best
 end
 
-function NormalizeSearchText(text) return ZP_CERCA.fold(text) end
-function FindExactSearchInText(text, query) return ZP_CERCA.find(text, query) end
+function NormalizeSearchText(text)
+    return tostring(text or ""):gsub("\r\n", "\n"):gsub("\r", "\n"):lower()
+end
+
+function IsSearchWordChar(ch)
+    if ch == "" then return false end
+    return ch:match("[%w_]") ~= nil
+end
+
+function IsExactSearchBoundary(text, start_pos, end_pos)
+    local before = start_pos > 1 and text:sub(start_pos - 1, start_pos - 1) or ""
+    local after = end_pos <= #text and text:sub(end_pos, end_pos) or ""
+    return not IsSearchWordChar(before) and not IsSearchWordChar(after)
+end
+
+function FindExactSearchInText(text, query)
+    local haystack = NormalizeSearchText(text)
+    local needle = NormalizeSearchText(query)
+    if needle == "" then return nil end
+
+    local from = 1
+    while true do
+        local s, e = haystack:find(needle, from, true)
+        if not s then return nil end
+        if needle:find("%s") or IsExactSearchBoundary(haystack, s, e + 1) then
+            return s, e
+        end
+        from = s + 1
+    end
+end
 
 function FindSubtitleMatch(query, start_pos)
-    if ZP_CERCA.fold(query) == "" then return nil end
-    local fallback
+    local needle = NormalizeSearchText(query)
+    if needle == "" then return nil end
+
+    local fallback = nil
     for _, item in ipairs(cached_items) do
-        local match_start = ZP_CERCA.find(item.notes, query)
+        local match_start = FindExactSearchInText(item.notes, needle)
         if match_start then
-            local ratio = math.max(0, math.min(1, (match_start - 1) / math.max(1, #tostring(item.notes or ""))))
-            item.search_match_pos = item.pos + item.len * ratio
-            item.search_match_offset = match_start
+            local ratio = math.max(0, math.min(1, (match_start - 1) / math.max(1, #NormalizeSearchText(item.notes))))
+            item.search_match_pos = item.pos + (item.len * ratio)
             if not fallback then fallback = item end
-            if item.pos > (start_pos or 0) + 0.001 then return item end
+            if item.pos > (start_pos or 0) + 0.001 then
+                return item
+            end
         end
     end
     return fallback
 end
 
 function FindSubtitleMatchPrevious(query, start_pos)
-    if ZP_CERCA.fold(query) == "" then return nil end
-    local fallback
+    local needle = NormalizeSearchText(query)
+    if needle == "" then return nil end
+
+    local fallback = nil
     for i = #cached_items, 1, -1 do
         local item = cached_items[i]
-        local match_start = ZP_CERCA.find(item.notes, query)
+        local match_start = FindExactSearchInText(item.notes, needle)
         if match_start then
-            local ratio = math.max(0, math.min(1, (match_start - 1) / math.max(1, #tostring(item.notes or ""))))
-            item.search_match_pos = item.pos + item.len * ratio
-            item.search_match_offset = match_start
+            local ratio = math.max(0, math.min(1, (match_start - 1) / math.max(1, #NormalizeSearchText(item.notes))))
+            item.search_match_pos = item.pos + (item.len * ratio)
             if not fallback then fallback = item end
-            if item.pos < (start_pos or 0) - 0.001 then return item end
+            if item.pos < (start_pos or 0) - 0.001 then
+                return item
+            end
         end
     end
     return fallback
@@ -1146,8 +1139,7 @@ function ExecuteSubtitleSearch(direction)
         return
     end
     JumpToSearchMatch(match)
-    local total, current = ZP_CERCA.count(cached_items, search_query, match, match.search_match_offset)
-    search_message = (total > 0 and (tostring(current or 1) .. " di " .. tostring(total) .. " · ") or "") .. FormatVideoTimecode(match.search_match_pos or match.pos)
+    search_message = FormatVideoTimecode(match.search_match_pos or match.pos)
     search_message_until = reaper.time_precise() + 2.0
 end
 
@@ -1326,31 +1318,16 @@ function SetThemeColor(kind, alpha)
     end
 end
 
-local SEARCH_EDGE_PUNCT = {
-    "’", "‘", "“", "”", "«", "»", "‹", "›", "—", "–", "…", "·", "•", " ",
-    " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", "​", "　",
-    "、", "。", "，", "．", "！", "？", "：", "；", "（", "）", "［", "］", "｛", "｝",
-}
-
 function DrawTextLine(line, x, y, is_active, item, word_counter, base_color_kind, base_alpha)
     local function clean_word(word)
-        word = tostring(word or ""):gsub("^%p+", ""):gsub("%p+$", "")
-        local changed = true
-        while changed do
-            changed = false
-            for _, punct in ipairs(SEARCH_EDGE_PUNCT) do
-                if word:sub(1, #punct) == punct then word = word:sub(#punct + 1); changed = true end
-                if word:sub(-#punct) == punct then word = word:sub(1, -#punct - 1); changed = true end
-            end
-        end
-        return NormalizeSearchText(word)
+        return NormalizeSearchText(tostring(word or ""):gsub("^%p+", ""):gsub("%p+$", ""))
     end
 
     local function word_is_highlighted(word)
         if item and search_hit_item == item.item and reaper.time_precise() <= search_hit_until then
             local live = trim(search_hit_query or "")
             if live ~= "" and not live:find("%s") then
-                if ZP_CERCA.word_matches(clean_word(word), live) then return true end
+                if clean_word(word) == NormalizeSearchText(live) then return true end
             end
         end
         local highlights = item and item.highlights or nil

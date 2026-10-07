@@ -59,6 +59,7 @@
 --   [nomain] 28_Collega_Marker.lua
 --   [nomain] ZP_UI.lua
 --   [nomain] ZP_sincronizza_aggancio.lua
+--   [nomain] ZP_cerca.lua
 --   [nomain] lib_RythmoBand_Accessibile.lua
 --   web/zp_solo.html
 --   help/index.html
