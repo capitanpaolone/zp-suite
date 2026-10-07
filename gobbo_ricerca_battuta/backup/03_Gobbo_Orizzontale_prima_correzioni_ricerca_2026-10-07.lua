@@ -19,73 +19,7 @@ local gobbo_settings_section = "ZP_VoiceOver_Studio_Gobbo_Orizzontale"
 local speech_lead_key = "accessibility_speech_lead"
 local studio_mode_key = "studio_edit_mode"
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
-local function SimpleSearchFallback()
-    local M = {}
-    function M.fold(s) return tostring(s or ""):gsub("\r\n", "\n"):gsub("\r", "\n"):lower() end
-    function M.find(text, query)
-        local q = tostring(query or ""):gsub('^"(.*)"$', "%1")
-        q = q:gsub("^“(.*)”$", "%1")
-        if q == "" then return nil end
-        local a, b = M.fold(text):find(M.fold(q), 1, true)
-        return a, b
-    end
-    function M.count(items, query, current_item)
-        local total, current = 0, nil
-        for _, item in ipairs(items or {}) do
-            if M.find(item.notes or item.text or "", query) then
-                total = total + 1
-                if item == current_item then current = total end
-            end
-        end
-        return total, current
-    end
-    function M.results(items, query, max_results)
-        local out,total={},0
-        for _,item in ipairs(items or {}) do
-            local a,b=M.find(item.notes or item.text or "",query)
-            if a then
-                total=total+1
-                if #out<(max_results or 500) then out[#out+1]={item=item,offset_start=a,offset_end=b,snippet=(item.notes or ""):sub(math.max(1,a-30),math.min(#(item.notes or ""),b+30)),snip_a=a-math.max(1,a-30)+1,snip_b=b-math.max(1,a-30)+1} end
-            end
-        end
-        return out,total
-    end
-    function M.replace(text, query, replacement, all)
-        text,replacement=tostring(text or ""),tostring(replacement or "")
-        local chunks,cursor,from,n={},1,1,0
-        while true do
-            local a,b=M.find(text:sub(from),query)
-            if not a then break end
-            a,b=a+from-1,b+from-1
-            chunks[#chunks+1]=text:sub(cursor,a-1); chunks[#chunks+1]=replacement
-            n,cursor,from=n+1,b+1,b+1
-            if not all then break end
-        end
-        if n==0 then return text,0 end
-        chunks[#chunks+1]=text:sub(cursor)
-        return table.concat(chunks),n
-    end
-    function M.word_matches(word, query) return M.find(word, query) ~= nil end
-    return M
-end
-
-local ZP_CERCA
-do
-    local path = SCRIPT_DIR .. "ZP_cerca.lua"
-    local file = io.open(path, "r")
-    if file then
-        file:close()
-        local ok, loaded = pcall(dofile, path)
-        if ok and type(loaded) == "table" and type(loaded.find) == "function" and type(loaded.results) == "function" and type(loaded.replace) == "function" then ZP_CERCA = loaded end
-    end
-    if not ZP_CERCA then
-        if reaper.GetExtState("ZP_STUDIO_SUITE", "cerca_helper_missing_session") ~= "1" then
-            reaper.ShowMessageBox("ZP_cerca.lua non è disponibile o non si carica. Il Gobbo userà una ricerca semplice per sottostringa finché il file non viene ripristinato.", "ZP Studio Suite - ricerca", 0)
-            reaper.SetExtState("ZP_STUDIO_SUITE", "cerca_helper_missing_session", "1", false)
-        end
-        ZP_CERCA = SimpleSearchFallback()
-    end
-end
+local ZP_CERCA = dofile(SCRIPT_DIR .. "ZP_cerca.lua")
 local NVDA_BRIDGE_PATH = SCRIPT_DIR .. "ZP_NVDA_Speech.py"
 local NVDA_DLL_PATH = SCRIPT_DIR .. "nvdaControllerClient64.dll"
 local cached_items = {}
@@ -141,10 +75,6 @@ local search_panel_open = false
 local search_message = ""
 local search_message_until = 0
 local search_virtual_pos = nil
-local search_results, search_results_total = {}, 0
-local search_results_dirty, search_results_deadline = true, 0
-local search_results_current, search_results_scroll = 0, 0
-local search_results_rect = nil
 local osara_text_enabled = true
 local accessibility_speech_lead = 0.0
 local studio_edit_mode = false
@@ -950,15 +880,6 @@ function CycleTextFlow(delta)
     UpdateItems()
 end
 
--- Nome del file audio da cui il sync ha creato la battuta (P_EXT:ZP_SYNC_SRCKEY = "percorso|tempo").
--- nil per le battute scritte a mano.
-function SyncSourceFileName(item)
-    local _, key = reaper.GetSetMediaItemInfo_String(item, "P_EXT:ZP_SYNC_SRCKEY", "", false)
-    local path = key and key:match("^(.*)|[^|]*$") or ""
-    if path == "" then return nil end
-    return path:match("[^/\\]+$") or path
-end
-
 function NormalizeSearchText(text) return ZP_CERCA.fold(text) end
 
 function FindSubtitleMatch(query, start_pos)
@@ -998,62 +919,20 @@ function JumpToSearchMatch(item)
     if not item then return end
     search_hit_item = item.item
     search_hit_until = reaper.time_precise() + 3.0
-    local target_pos = item.search_match_pos or item.pos
-    search_virtual_pos = target_pos
+    search_virtual_pos = item.pos
     if studio_edit_mode then
         SelectSubtitleItemAndJump(item.item)
-        reaper.SetEditCurPos(target_pos, true, false)
     else
-        manual_view_pos = target_pos
-        smooth_scroll_pos = target_pos
+        manual_view_pos = item.pos
+        smooth_scroll_pos = item.pos
         playback_anchor_pos = nil
     end
-end
-
-function ScheduleSearchResults()
-    search_results_dirty=true
-    search_results_deadline=reaper.time_precise()+0.15
-    search_results_current=0
-end
-
-function RefreshSearchResults(force)
-    if not force and (not search_results_dirty or reaper.time_precise()<search_results_deadline) then return end
-    local previous=search_results[search_results_current] and search_results[search_results_current].item or nil
-    search_results,search_results_total=ZP_CERCA.results(cached_items,search_query,500)
-    search_results_dirty=false; search_results_current=0
-    if previous then for i,result in ipairs(search_results) do if result.item==previous then search_results_current=i; break end end end
-    if search_results_current==0 then search_results_scroll=0 end
-end
-
-function SearchResultPosition(result)
-    local item=result.item
-    local ratio=(result.offset_start-1)/math.max(1,#tostring(item.notes or ""))
-    return item.pos+item.len*math.max(0,math.min(1,ratio))
-end
-
-function SearchResultIndexForItem(item)
-    for i,result in ipairs(search_results) do if result.item==item then return i end end
-end
-
-function SelectSearchResult(index, jump)
-    if #search_results==0 then return end
-    index=math.max(1,math.min(index,#search_results)); search_results_current=index
-    local result=search_results[index]; local item=result.item
-    item.search_match_pos=SearchResultPosition(result); item.search_match_offset=result.offset_start
-    if index<=search_results_scroll then search_results_scroll=index-1 end
-    local visible=search_results_rect and math.max(1,math.floor(search_results_rect.h/40)) or 1
-    if index>search_results_scroll+visible then search_results_scroll=index-visible end
-    search_results_scroll=math.max(0,math.min(search_results_scroll,math.max(0,#search_results-visible)))
-    if jump then JumpToSearchMatch(item) end
-    search_message=tostring(index).." di "..tostring(search_results_total).." · "..FormatVideoTimecode(SearchResultPosition(result))
-    search_message_until=reaper.time_precise()+2.0
 end
 
 function PromptSubtitleSearch()
     search_panel_open = true
     search_message = ""
     if search_query == "" and search_panel_open then search_query = "" end
-    ScheduleSearchResults()
 end
 
 function ExecuteSubtitleSearch(direction)
@@ -1063,19 +942,18 @@ function ExecuteSubtitleSearch(direction)
         search_message_until = reaper.time_precise() + 1.8
         return
     end
-    RefreshSearchResults(true)
 
     local pos = (not studio_edit_mode and search_virtual_pos) or reaper.GetCursorPosition()
     local match = direction and direction < 0 and FindSubtitleMatchPrevious(search_query, pos) or FindSubtitleMatch(search_query, pos)
     if not match then
         search_message = "Nessun risultato"
         search_message_until = reaper.time_precise() + 2.0
-        search_results_current=0
         return
     end
     JumpToSearchMatch(match)
-    local index=SearchResultIndexForItem(match)
-    if index then SelectSearchResult(index,false) end
+    local total, current = ZP_CERCA.count(cached_items, search_query, match, match.search_match_offset)
+    search_message = (total > 0 and (tostring(current or 1) .. " di " .. tostring(total) .. " · ") or "") .. FormatVideoTimecode(match.search_match_pos or match.pos)
+    search_message_until = reaper.time_precise() + 2.0
 end
 
 function IsSearchShortcut(char)
@@ -1088,19 +966,12 @@ end
 function ProcessSearchPanelKey(char)
     if not search_panel_open or char <= 0 then return false end
     if IsSearchShortcut(char) then return true end
-    if char==30064 or char==1685026670 then
-        RefreshSearchResults(true)
-        local step=char==30064 and -1 or 1
-        local next_index=search_results_current==0 and (step>0 and 1 or #search_results) or search_results_current+step
-        if next_index>=1 and next_index<=#search_results then SelectSearchResult(next_index,true) end
-        return true
-    end
     if char == 13 then ExecuteSubtitleSearch(1); return true end
     if char == 27 then search_panel_open = false; return true end
-    if char == 8 then search_query = Utf8Backspace(search_query); ScheduleSearchResults(); return true end
+    if char == 8 then search_query = Utf8Backspace(search_query); return true end
     if char >= 32 and char <= 1114111 then
         local ch = TextCharFromCode(char)
-        if ch then search_query = (search_query or "") .. ch; ScheduleSearchResults() end
+        if ch then search_query = (search_query or "") .. ch end
         return true
     end
     return false
@@ -1168,7 +1039,7 @@ function UpdateItems()
             
             local r, g, b = ColorToRGB(color, COLOR_SUBS)
             
-            table.insert(cached_items, {item=item, pos=pos, len=len, notes=notes, highlights=ParseHighlightTerms(highlight_raw), person_notes=person_notes, r=r, g=g, b=b, flow=flow_index, track_name=GetTrackName(track), source_file=SyncSourceFileName(item)})
+            table.insert(cached_items, {item=item, pos=pos, len=len, notes=notes, highlights=ParseHighlightTerms(highlight_raw), person_notes=person_notes, r=r, g=g, b=b, flow=flow_index})
         end
     end
     -- in ordine di tempo; a parita' di tempo, l'ordine delle tracce
@@ -1178,7 +1049,6 @@ function UpdateItems()
     end)
     
     RecalculateLayout()
-    if search_panel_open then search_results_dirty=true; search_results_deadline=reaper.time_precise()+0.15 end
 end
 
 function RefreshCachedSubtitleItem(item, new_text)
@@ -1217,84 +1087,52 @@ end
 
 function DrawSearchPanel(w, h)
     if not search_panel_open then return end
-    RefreshSearchResults(false)
-    local panel_w=math.min(680,math.max(180,w-16))
-    local x=math.max(4,math.min(w-panel_w-4,math.floor((w-panel_w)/2)))
-    local header_h=58; local row_h=52
-    local max_h=math.max(0,math.min(560,h-8,math.max(header_h+24,math.floor(h*0.6))))
-    local available=math.max(0,max_h-header_h-20)
-    local visible=math.min(8,math.floor(available/row_h))
-    local overflow=search_results_total>#search_results and 24 or 0
-    local empty=search_results_total==0 and 28 or 0
-    local panel_h=math.min(max_h,header_h+math.min(visible,#search_results)*row_h+overflow+empty+10)
-    local y=math.max(0,math.min(12,h-panel_h-4))
-    local pad=10; local input_x=x+58; local input_y=y+22
-    local input_w=math.max(40,panel_w-206)
-    gfx.set(0.08,0.075,0.065,0.97); gfx.rect(x,y,panel_w,panel_h,1)
-    gfx.set(0.72,0.50,0.12,0.95); gfx.rect(x,y,panel_w,2,1)
-    gfx.set(0.38,0.34,0.26,0.85); gfx.rect(x,y,panel_w,panel_h,0)
-    gfx.setfont(3,"Arial",13,'b'); gfx.set(0.93, 0.90, 0.83, 1); gfx.x,gfx.y=x+pad,y+7; gfx.drawstr("Trova")
-    gfx.set(0.12,0.11,0.10,1); gfx.rect(input_x,input_y,input_w,24,1)
-    gfx.set(0.82,0.58,0.13,1); gfx.rect(input_x,input_y,input_w,24,0)
-    gfx.setfont(3,"Arial",15); local shown=search_query~="" and search_query or "Cerca parola/frase..."
-    gfx.x,gfx.y=input_x+8,input_y+4
-    if search_query=="" then gfx.set(0.58,0.55,0.50,0.9) else gfx.set(0.95,0.92,0.84,1) end
+    local panel_w = math.min(560, math.max(330, w - 80))
+    local panel_h = 58
+    local x = math.floor((w - panel_w) / 2)
+    local y = 12
+    local pad = 10
+
+    gfx.set(0.08, 0.075, 0.065, 0.97)
+    gfx.rect(x, y, panel_w, panel_h, 1)
+    gfx.set(0.72, 0.50, 0.12, 0.95)
+    gfx.rect(x, y, panel_w, 2, 1)
+    gfx.set(0.38, 0.34, 0.26, 0.85)
+    gfx.rect(x, y, panel_w, panel_h, 0)
+
+    gfx.setfont(3, "Arial", 13, 'b')
+    gfx.set(0.78, 0.73, 0.62, 1)
+    gfx.x, gfx.y = x + pad, y + 7
+    gfx.drawstr("Trova")
+
+    local input_x = x + 58
+    local input_y = y + 22
+    local input_w = panel_w - 206
+    gfx.set(0.12, 0.11, 0.10, 1)
+    gfx.rect(input_x, input_y, input_w, 24, 1)
+    gfx.set(0.82, 0.58, 0.13, 1)
+    gfx.rect(input_x, input_y, input_w, 24, 0)
+
+    gfx.setfont(3, "Arial", 15)
+    local shown = search_query ~= "" and search_query or "Cerca parola/frase..."
+    gfx.x, gfx.y = input_x + 8, input_y + 4
+    if search_query == "" then gfx.set(0.58, 0.55, 0.50, 0.9) else gfx.set(0.95, 0.92, 0.84, 1) end
     gfx.drawstr(shown)
-    if math.floor(reaper.time_precise()*2)%2==0 then
-        local tw=gfx.measurestr(search_query or ""); gfx.set(0.95,0.70,0.18,1); gfx.rect(input_x+9+tw,input_y+5,2,15,1)
+    if math.floor(reaper.time_precise() * 2) % 2 == 0 then
+        local tw = gfx.measurestr(search_query or "")
+        gfx.set(0.95, 0.70, 0.18, 1)
+        gfx.rect(input_x + 9 + tw, input_y + 5, 2, 15, 1)
     end
-    if DrawButton(x+panel_w-138,input_y,30,24,"<",0.34,0.25,0.12) then ExecuteSubtitleSearch(-1) end
-    if DrawButton(x+panel_w-104,input_y,30,24,">",0.34,0.25,0.12) then ExecuteSubtitleSearch(1) end
-    if DrawButton(x+panel_w-68,input_y,26,24,"X",0.45,0.18,0.14) then search_panel_open=false end
-    if search_message~="" and reaper.time_precise()<=search_message_until then
-        gfx.setfont(3,"Arial",13); gfx.set(0.98, 0.90, 0.70, 1); gfx.x,gfx.y=x+125,y+6; gfx.drawstr(search_message)
-    end
-    local list_y=y+header_h; local list_x=x+pad; local list_w=panel_w-pad*2-12
-    local shown_rows=math.min(visible,#search_results)
-    if search_results_current>0 then
-        if search_results_current<=search_results_scroll then search_results_scroll=search_results_current-1 end
-        if search_results_current>search_results_scroll+math.max(1,shown_rows) then search_results_scroll=search_results_current-math.max(1,shown_rows) end
-    end
-    search_results_rect={x=x,y=list_y,w=panel_w,h=shown_rows*row_h}
-    if search_results_total==0 then
-        gfx.setfont(3,"Arial",15); gfx.set(0.90, 0.86, 0.78, 1); gfx.x,gfx.y=list_x,list_y+5; gfx.drawstr("Nessun risultato")
-    else
-        for row=1,shown_rows do
-            local i=search_results_scroll+row; local result=search_results[i]
-            if result then
-                local ry=list_y+(row-1)*row_h
-                if i==search_results_current then gfx.set(0.19,0.25,0.34,0.95) else gfx.set(0.12,0.12,0.13,0.9) end
-                gfx.rect(list_x,ry,list_w,row_h-2,1)
-                local label=FormatVideoTimecode(SearchResultPosition(result))
-                -- il file audio da cui viene la battuta (per il montaggio); se non c'e', la traccia in "Tutti"
-                if result.item.source_file then label=label.." · "..result.item.source_file
-                elseif selected_text_track_guid==READ_ALL then label=label.." · "..tostring(result.item.track_name or "") end
-                gfx.setfont(3,"Arial",14,'b'); gfx.set(0.98, 0.82, 0.45, 1); gfx.x,gfx.y=list_x+6,ry+4; gfx.drawstr(label,0,list_x+list_w-6,ry+21)
-                local snip=result.snippet or ""; local a,b=result.snip_a or 1,result.snip_b or 1
-                local left,hit,right=snip:sub(1,a-1),snip:sub(a,b),snip:sub(b+1)
-                local tx,ty=list_x+6,ry+24; gfx.setfont(3,"Arial",17);
-                gfx.set(0.97, 0.96, 0.93, 1); gfx.x,gfx.y=tx,ty; gfx.drawstr(left,0,tx+list_w-12,ty+22); local lw=gfx.measurestr(left); local hw=gfx.measurestr(hit)
-                gfx.set(0.98, 0.74, 0.20, 1); if lw<list_w-14 then gfx.rect(tx+lw,ty,math.max(2,math.min(hw,list_w-12-lw)),21,1) end
-                gfx.set(0.08, 0.06, 0.02, 1); gfx.x,gfx.y=tx+lw,ty; gfx.drawstr(hit,0,tx+list_w-12,ty+22)
-                gfx.set(0.97, 0.96, 0.93, 1); gfx.x,gfx.y=tx+lw+hw,ty; gfx.drawstr(right,0,tx+list_w-12,ty+22)
-                if gfx.mouse_x>=list_x and gfx.mouse_x<=list_x+list_w and gfx.mouse_y>=ry and gfx.mouse_y<ry+row_h-2 and gfx.mouse_cap==0 and mouse_was_down then SelectSearchResult(i,true) end
-            end
-        end
-    end
-    if overflow>0 then gfx.setfont(3,"Arial",13); gfx.set(0.88, 0.84, 0.76, 1); gfx.x,gfx.y=list_x+4,list_y+shown_rows*row_h+3; gfx.drawstr("altri "..tostring(search_results_total-#search_results).."…") end
-    local wheel=gfx.mouse_wheel or 0; gfx.mouse_wheel=0
-    if wheel~=0 and search_results_rect and gfx.mouse_x>=search_results_rect.x and gfx.mouse_x<=search_results_rect.x+search_results_rect.w and gfx.mouse_y>=search_results_rect.y and gfx.mouse_y<=search_results_rect.y+search_results_rect.h then
-        search_results_scroll=math.max(0,math.min(search_results_scroll+(wheel>0 and -2 or 2),math.max(0,#search_results-shown_rows)))
-    end
-    if shown_rows>0 and #search_results>shown_rows then
-        local track_x=x+panel_w-8; local track_h=shown_rows*row_h; local thumb_h=math.max(14,track_h*shown_rows/#search_results)
-        local max_scroll=#search_results-shown_rows
-        gfx.set(0.2,0.19,0.18,0.9); gfx.rect(track_x,list_y,4,track_h,1)
-        local thumb_y=list_y+(track_h-thumb_h)*search_results_scroll/max_scroll
-        gfx.set(0.65,0.53,0.32,0.95); gfx.rect(track_x,thumb_y,4,thumb_h,1)
-        if gfx.mouse_cap==0 and mouse_was_down and gfx.mouse_x>=track_x-5 and gfx.mouse_x<=track_x+8 and gfx.mouse_y>=list_y and gfx.mouse_y<=list_y+track_h then
-            search_results_scroll=math.floor(math.max(0,math.min(1,(gfx.mouse_y-list_y)/track_h))*max_scroll)
-        end
+
+    if DrawButton(x + panel_w - 138, input_y, 30, 24, "<", 0.34, 0.25, 0.12) then ExecuteSubtitleSearch(-1) end
+    if DrawButton(x + panel_w - 104, input_y, 30, 24, ">", 0.34, 0.25, 0.12) then ExecuteSubtitleSearch(1) end
+    if DrawButton(x + panel_w - 68, input_y, 26, 24, "X", 0.45, 0.18, 0.14) then search_panel_open = false end
+
+    if search_message ~= "" and reaper.time_precise() <= search_message_until then
+        gfx.setfont(3, "Arial", 12)
+        gfx.set(0.86, 0.78, 0.58, 0.95)
+        gfx.x, gfx.y = x + panel_w - 140, y + 7
+        gfx.drawstr(search_message)
     end
 end
 
@@ -1352,28 +1190,22 @@ function Utf8PrevCursor(text, cursor)
     text = tostring(text or "")
     cursor = math.max(1, math.min(cursor or (#text + 1), #text + 1))
     if cursor <= 1 then return 1 end
-    -- a mano, senza utf8.offset: va in errore se la posizione cade a meta' di una lettera
-    -- accentata ("initial position is a continuation byte"). Salta i byte 0x80-0xBF.
-    local pos = cursor - 1
-    while pos > 1 do
-        local b = text:byte(pos)
-        if not b or b < 0x80 or b >= 0xC0 then break end
-        pos = pos - 1
+    if utf8 and utf8.offset then
+        local byte = utf8.offset(text, -1, cursor - 1)
+        if byte then return byte end
     end
-    return pos
+    return cursor - 1
 end
 
 function Utf8NextCursor(text, cursor)
     text = tostring(text or "")
     cursor = math.max(1, math.min(cursor or (#text + 1), #text + 1))
     if cursor > #text then return #text + 1 end
-    local pos = cursor + 1
-    while pos <= #text do
-        local b = text:byte(pos)
-        if b < 0x80 or b >= 0xC0 then break end
-        pos = pos + 1
+    if utf8 and utf8.offset then
+        local byte = utf8.offset(text, 2, cursor)
+        if byte then return byte end
     end
-    return pos
+    return cursor + 1
 end
 
 function InlineSetCursor(pos)

@@ -248,28 +248,26 @@
   <h2 id="tool-02">Gobbo verticale</h2>
   <p><strong>A cosa serve.</strong> È il teleprompter: mostra il copione come una pagina che scorre, con la battuta corrente evidenziata, i colori dei personaggi, il countdown prima di ogni battuta e le note di regia. Si può anche correggere il testo lì dentro.</p>
   <p class="when">Quando: in sala, mentre l'attore registra; in montaggio, per trovare e correggere una battuta. È il formato giusto quando ci sono più voci.</p>
-  <p>La barra a destra è divisa in blocchi: in alto quello che usi lavorando, poi <strong>Testo</strong> e <strong>Lettura</strong>, in fondo <strong>Aspetto</strong> e <strong>Note e tracce</strong>, che si chiudono con un clic sul titolo (il Gobbo ricorda come li lasci). Le caselle ☑ accendono o spengono un'impostazione. Con <strong>&gt;</strong> in alto la barra si nasconde.</p>
-  <h3>Testo e lettura</h3>
+  <h3>Lettura</h3>
   <ul>
-    <li><strong>Flusso</strong> (tendina ▾): quale traccia di testo leggere (principale, lingue, una per voce, <em>Tutti</em>). Le tracce di backup non compaiono.</li>
-    <li><strong>Corpo</strong>: grandezza del testo.</li>
-    <li><strong>Punto di lettura</strong> (Alto / Terzo / Centro): a che altezza della finestra compare la battuta attiva. Alto lascia sotto il resto del copione; Centro mette a fuoco la battuta e lascia spazio sopra, per esempio alla finestra video.</li>
-    <li><strong>Scorrimento continuo</strong>: acceso, il copione scorre con la timeline come una rythmo band; spento, il testo sta fermo come un foglio e cambia a scatti, una battuta (item) alla volta.</li>
-    <li><strong>Parola per parola</strong>: evidenzia le parole una dopo l'altra durante la battuta.</li>
-    <li><strong>Conto alla rovescia</strong>: il preavviso numerico prima della battuta in arrivo.</li>
-    <li><strong>Mostra timecode</strong>, e nel blocco <strong>Aspetto</strong>: <strong>Tema</strong> (scuro, medio, chiaro), <strong>Contrasto</strong> (sfumato, pieno), <strong>Colori speaker</strong> (un colore a ogni voce/personaggio; il colore viene dalle tracce voce).</li>
+    <li><strong>Flusso testi &lt; &gt;</strong>: quale traccia di testo leggere (principale, lingue, una per voce, <em>Tutti</em>). Le tracce di backup non compaiono.</li>
+    <li><strong>Punto lettura</strong> (Alto / Medio / Centro): dove sta la battuta attiva nella finestra.</li>
+    <li><strong>Scorri ON/OFF</strong>: ON, il copione segue la timeline; OFF, la battuta attiva resta ferma sul punto lettura e il resto rimane visibile.</li>
+    <li><strong>Parole ON/OFF</strong>: evidenzia le parole una dopo l'altra durante la battuta.</li>
+    <li><strong>Countdown</strong>: il preavviso numerico prima della battuta in arrivo.</li>
+    <li><strong>Mostra/Nascondi TC</strong>, <strong>Tema</strong> (scuro, medio, chiaro), <strong>Contrasto</strong> (pieno, sfumato), <strong>Corpo</strong> del testo.</li>
+    <li><strong>Colori speaker</strong>: assegna un colore a ogni voce/personaggio; il colore viene dalle tracce voce.</li>
   </ul>
   <h3>Lavoro sul testo</h3>
   <ul>
-    <li><strong>Cerca</strong> (anche Ctrl/⌘+F): cerca dal principio di una parola e accetta anche un prefisso (per esempio <code>hijac</code> trova <em>hijacking</em>). Ignora maiuscole e accenti. Racchiudi parola o frase tra virgolette per richiederla esatta. L'elenco mostra timecode, battuta e traccia quando sei in <em>Tutti</em>; clicca un risultato oppure usa ↑/↓, <code>&lt;</code> e <code>&gt;</code>. Rotella e barra scorrono l'elenco.
-      <br><strong>Sostituisci</strong> apre il secondo campo; Tab passa da Trova a Sostituisci con. Sostituisci cambia solo <strong>parole intere</strong> e gli accenti contano: <code>è</code> → <code>é</code> non tocca <em>e</em> né <em>effetti</em>. Con Sostituisci aperto l'elenco mostra solo quello che verrebbe cambiato, con l'anteprima. <strong>Sostituisci</strong>: il primo clic porta alla prossima parola, il secondo la cambia e resta lì; un altro clic va alla successiva. <strong>Tutti</strong> chiede conferma e si annulla con un solo Ctrl/⌘+Z. Cambia solo il testo dell'item Gobbo: take marker e file SRT restano invariati.</li>
+    <li><strong>Cerca</strong> (anche Ctrl/⌘+F): cerca dal principio di una parola e accetta anche un prefisso (per esempio <code>hijac</code> trova <em>hijacking</em>). Ignora maiuscole e accenti. Racchiudi parola o frase tra virgolette per richiederla esatta; il pannello mostra il risultato corrente, il totale e il timecode. Con <em>Tutti</em> cerca dappertutto.</li>
     <li><strong>Doppio click</strong> su una battuta: la correggi lì. Invio salva, Shift+Invio va a capo, Esc annulla.</li>
-    <li><strong>Modifica (Studio/Edit)</strong>: ferma la riproduzione e ti lascia navigare il testo; <strong>Muove la timeline</strong> decide se la navigazione sposta anche il cursore di REAPER. Il testo si scorre con la rotella o con la barra a destra, anche con Sync acceso.</li>
-    <li><strong>+ Nota</strong>: aggiunge una nota di regia alla posizione corrente. <strong>Pannello note</strong> (in Note e tracce) mostra o nasconde le note: l'elenco di tutte le note in ordine di tempo, scorrevole con la rotella, che segue da solo la nota corrente (barra ambra a sinistra) finché non scorri a mano. Un clic su una nota porta lì la timeline, doppio clic la modifica; il bollino <strong>OK</strong> la segna come fatta (attenuata, bollino verde) e un altro clic la riapre per rilavorarci; la <strong>×</strong> a sinistra la cancella dopo una conferma. Ogni cambio si annulla con Ctrl/⌘+Z.</li>
-    <li><strong>Segui i tagli</strong>: lo stesso interruttore di ZP Trascrizione, comodo perché il Gobbo di solito resta aperto.</li>
-    <li><strong>Traccia note visibile / Tracce gobbo visibili</strong>: mostra o nasconde in REAPER le tracce di note e di testo. <strong>+ Battuta</strong> (in alto) crea un item di testo pronto da scrivere alla posizione corrente (o sulla selezione di tempo), creando la traccia di testo se manca.</li>
+    <li><strong>Studio/Edit</strong>: ferma la riproduzione e ti lascia navigare il testo; <strong>Sync</strong> decide se la navigazione sposta anche il cursore di REAPER.</li>
+    <li><strong>Nota, MOD NOTE, DEL NOTE</strong>: aggiunge, modifica o cancella una nota di regia vicino alla posizione corrente. <strong>Note ON/OFF</strong> apre il pannello delle note.</li>
+    <li><strong>Segui tagli ON/OFF</strong>: lo stesso interruttore di ZP Trascrizione, comodo perché il Gobbo di solito resta aperto.</li>
+    <li><strong>Track Note / Track Gobbo</strong>: mostra o nasconde in REAPER le tracce di note e di testo. <strong>+ Track Gobbo</strong> crea una traccia di testo con un item pronto da scrivere.</li>
   </ul>
-  <p><strong>Menu OSARA</strong>: un menu leggibile dallo screen reader con tutti i comandi qui sopra (TC, flusso, parole, scorrimento, note, tema, corpo). Non legge il copione: per quello ci sono le <a href="#tool-09">azioni 09-12</a>.</p>
+  <p><strong>OSARA Menu</strong>: un menu leggibile dallo screen reader con tutti i comandi qui sopra (TC, flusso, parole, scorrimento, note, tema, corpo). Non legge il copione: per quello ci sono le <a href="#tool-09">azioni 09-12</a>.</p>
 
   <!-- ================================================================== -->
   <h2 id="tool-03">Gobbo orizzontale</h2>

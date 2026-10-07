@@ -39,32 +39,6 @@ local function SimpleSearchFallback()
         end
         return total, current
     end
-    function M.results(items, query, max_results)
-        local out,total={},0
-        for _,item in ipairs(items or {}) do
-            local a,b=M.find(item.notes or item.text or "",query)
-            if a then
-                total=total+1
-                if #out<(max_results or 500) then out[#out+1]={item=item,offset_start=a,offset_end=b,snippet=(item.notes or ""):sub(math.max(1,a-30),math.min(#(item.notes or ""),b+30)),snip_a=a-math.max(1,a-30)+1,snip_b=b-math.max(1,a-30)+1} end
-            end
-        end
-        return out,total
-    end
-    function M.replace(text, query, replacement, all)
-        text,replacement=tostring(text or ""),tostring(replacement or "")
-        local chunks,cursor,from,n={},1,1,0
-        while true do
-            local a,b=M.find(text:sub(from),query)
-            if not a then break end
-            a,b=a+from-1,b+from-1
-            chunks[#chunks+1]=text:sub(cursor,a-1); chunks[#chunks+1]=replacement
-            n,cursor,from=n+1,b+1,b+1
-            if not all then break end
-        end
-        if n==0 then return text,0 end
-        chunks[#chunks+1]=text:sub(cursor)
-        return table.concat(chunks),n
-    end
     function M.word_matches(word, query) return M.find(word, query) ~= nil end
     return M
 end
@@ -76,7 +50,7 @@ do
     if file then
         file:close()
         local ok, loaded = pcall(dofile, path)
-        if ok and type(loaded) == "table" and type(loaded.find) == "function" and type(loaded.results) == "function" and type(loaded.replace) == "function" then ZP_CERCA = loaded end
+        if ok and type(loaded) == "table" and type(loaded.find) == "function" then ZP_CERCA = loaded end
     end
     if not ZP_CERCA then
         if reaper.GetExtState("ZP_STUDIO_SUITE", "cerca_helper_missing_session") ~= "1" then
@@ -112,7 +86,7 @@ local show_settings_timer = 0
 local document_margin_x = 54
 local speaker_shoulder_w = 78
 local scroll_follow = 0.045
-local side_panel_w = 210
+local side_panel_w = 190
 local theme_mode = "medium"
 local full_contrast = false
 local sfumato_pre_roll = 5.0
@@ -169,19 +143,8 @@ local search_query = ""
 local search_cursor = 1
 local search_sel_start = nil
 local search_sel_end = nil
-local search_replace_open = false
-local replace_query = ""
-local replace_cursor = 1
-local replace_sel_start = nil
-local replace_sel_end = nil
-local search_active_field = "find"
 local search_input_rect = nil
-local replace_input_rect = nil
 local search_last_click_time = 0
-local search_results, search_results_total = {}, 0
-local search_results_dirty, search_results_deadline = true, 0
-local search_results_current, search_list_scroll = 0, 0
-local search_list_rect, search_scroll_dragging, search_scroll_drag_offset = nil, false, 0
 local search_hit_item = nil
 local search_hit_query = ""
 local search_hit_until = 0
@@ -217,7 +180,7 @@ local NOTE_DEFAULT_LEN = 3.0
 local NOTE_HOT_MARGIN = 0.35
 local NOTE_WAKE_LEAD = 5.0
 local NOTE_PIXELS_PER_SECOND = 46
-local NOTES_PANEL_W = 250
+local NOTES_PANEL_W = 210
 local TC_ALERT_LEAD = 3.0
 
 function lerp(a, b, t) return a + (b - a) * t end
@@ -577,14 +540,8 @@ function CycleTextFlow(delta)
     end
 
     local next_index = ((current_index - 1 + delta) % #tracks) + 1
-    SelectTextFlow(tracks[next_index].guid)
-end
-
--- Imposta il flusso letto dal gobbo (guid di una traccia testo, o READ_ALL = Tutti).
-function SelectTextFlow(guid)
-    selected_text_track_guid = guid
-    local entry = guid ~= READ_ALL and FindTextFlowByGuid(guid) or nil
-    current_text_track = entry and entry.track or nil
+    selected_text_track_guid = tracks[next_index].guid
+    current_text_track = tracks[next_index].track
     reaper.SetExtState(settings_section, "read_all", selected_text_track_guid == READ_ALL and "1" or "0", true)
     active_media_item = nil
     cached_items = {}
@@ -653,14 +610,6 @@ function BestTextColorForBackground(r, g, b)
     local white_ratio = ContrastRatio(lum, 1)
     if black_ratio >= white_ratio then return 0.02, 0.025, 0.03 end
     return 1.0, 0.98, 0.92
-end
-
--- Testo leggibile su una scheda nota trasparente (alpha) sopra il pannello scuro:
--- il fondo vero e' la miscela, non il colore pieno della nota (prima: nero su oro scuro).
-function SetNoteCardTextColor(r, g, b, card_alpha, alpha)
-    local base = 0.08
-    local a = card_alpha or 0.2
-    SetReadableTextColor(r * a + base * (1 - a), g * a + base * (1 - a), b * a + base * (1 - a), alpha)
 end
 
 function SetReadableTextColor(r, g, b, alpha)
@@ -1074,19 +1023,6 @@ function EditNearestNote()
     StartInlineNoteEdit(note)
 end
 
--- Cancella una nota dal pannello (la x sulla scheda), con conferma. Undo la rimette.
-function DeleteNote(note)
-    if not note or not note.item or not reaper.ValidatePtr(note.item, "MediaItem*") then return end
-    local ok = reaper.ShowMessageBox("Cancellare questa nota?\n\n" .. FormatVideoTimecode(note.pos) .. "\n" .. note.text, "ZP Studio Suite", 4)
-    if ok ~= 6 then return end
-    local track = reaper.GetMediaItem_Track(note.item)
-    reaper.Undo_BeginBlock()
-    reaper.DeleteTrackMediaItem(track, note.item)
-    reaper.Undo_EndBlock("ZP Studio Suite cancella nota", -1)
-    reaper.UpdateArrange()
-    UpdateItems()
-end
-
 function DeleteNearestNote()
     local note, distance = FindNearestNote(GetCurrentProjectPosition())
     if not note or (distance and distance > 12) then
@@ -1114,15 +1050,6 @@ function FindUpcomingCue(pos)
         end
     end
     return best
-end
-
--- Nome del file audio da cui il sync ha creato la battuta (P_EXT:ZP_SYNC_SRCKEY = "percorso|tempo").
--- nil per le battute scritte a mano.
-function SyncSourceFileName(item)
-    local _, key = reaper.GetSetMediaItemInfo_String(item, "P_EXT:ZP_SYNC_SRCKEY", "", false)
-    local path = key and key:match("^(.*)|[^|]*$") or ""
-    if path == "" then return nil end
-    return path:match("[^/\\]+$") or path
 end
 
 function NormalizeSearchText(text) return ZP_CERCA.fold(text) end
@@ -1161,71 +1088,6 @@ function FindSubtitleMatchPrevious(query, start_pos)
     return fallback
 end
 
-function ScheduleSearchResults()
-    search_results_dirty = true
-    search_results_deadline = reaper.time_precise() + 0.15
-    search_results_current = 0
-end
-
-function RefreshSearchResults(force)
-    if not force and (not search_results_dirty or reaper.time_precise() < search_results_deadline) then return end
-    local previous_item = search_results[search_results_current] and search_results[search_results_current].item or nil
-    -- con Sostituisci aperto l'elenco mostra solo cio' che verrebbe cambiato (parola intera, accenti)
-    search_results, search_results_total = ZP_CERCA.results(cached_items, search_query, 500, search_replace_open and "replace" or nil)
-    -- in ordine di timeline secondo il timecode mostrato (punto della parola, non inizio battuta):
-    -- con take e marker gli item testo possono essere lunghi e sovrapposti
-    table.sort(search_results, function(a, b) return SearchResultPosition(a) < SearchResultPosition(b) end)
-    search_results_dirty = false
-    search_results_current = 0
-    if previous_item then
-        for i, result in ipairs(search_results) do
-            if result.item == previous_item then search_results_current = i; break end
-        end
-    end
-    if search_results_current == 0 then search_list_scroll = 0 end
-end
-
-function SearchResultPosition(result)
-    local item = result.item
-    local ratio = (result.offset_start - 1) / math.max(1, #tostring(item.notes or ""))
-    return item.pos + item.len * math.max(0, math.min(1, ratio))
-end
-
-function UpdateSearchResultMessage(result, index)
-    if not result then return end
-    local pos = SearchResultPosition(result)
-    search_message = tostring(index or 1) .. " di " .. tostring(search_results_total) .. " · " .. FormatVideoTimecode(pos)
-    search_message_until = reaper.time_precise() + 2.0
-end
-
-function KeepSearchResultVisible(index, visible_rows)
-    visible_rows = math.max(1, visible_rows or 1)
-    if index < search_list_scroll + 1 then search_list_scroll = index - 1 end
-    if index > search_list_scroll + visible_rows then search_list_scroll = index - visible_rows end
-    search_list_scroll = math.max(0, math.min(search_list_scroll, math.max(0, #search_results - visible_rows)))
-end
-
-function SelectSearchResult(index, jump)
-    if #search_results == 0 then return nil end
-    index = math.max(1, math.min(index, #search_results))
-    search_results_current = index
-    local result = search_results[index]
-    local item = result.item
-    item.search_match_pos = SearchResultPosition(result)
-    item.search_match_offset = result.offset_start
-    KeepSearchResultVisible(index, 8)
-    if jump then JumpToSearchMatch(item) end
-    UpdateSearchResultMessage(result, index)
-    return result
-end
-
-function SearchResultIndexForItem(item)
-    for i, result in ipairs(search_results) do
-        if result.item == item then return i end
-    end
-    return nil
-end
-
 function SelectSubtitleItemAndJump(media_item)
     if not media_item then return end
     local track = reaper.GetMediaItem_Track(media_item)
@@ -1261,138 +1123,32 @@ function PromptSubtitleSearch()
     if inline_edit then SaveInlineSubtitleEdit() end
     search_panel_open = true
     search_message = ""
-    -- si riapre sempre su Trova, con Sostituisci chiuso; la ricerca di prima resta selezionata:
-    -- scrivendo la si sostituisce, Invio la ripete
-    search_replace_open = false
-    search_active_field = "find"
     search_cursor = #(search_query or "") + 1
-    search_sel_start = (search_query or "") ~= "" and 1 or nil
-    search_sel_end = (search_query or "") ~= "" and search_cursor or nil
-    ScheduleSearchResults()
+    search_sel_start = nil
+    search_sel_end = nil
 end
 
 function ExecuteSubtitleSearch(direction)
     if inline_edit then SaveInlineSubtitleEdit() end
-    local trimmed = trim(search_query or "")
-    if trimmed ~= search_query then search_query = trimmed; ScheduleSearchResults() end
+    search_query = trim(search_query or "")
     search_cursor = math.max(1, math.min(search_cursor or (#search_query + 1), #search_query + 1))
     if search_query == "" then
         search_message = "Scrivi una parola o frase"
         search_message_until = reaper.time_precise() + 1.8
         return
     end
-    RefreshSearchResults(true)
 
     local pos = (studio_edit_mode and not studio_edit_sync and search_virtual_pos) or GetCurrentProjectPosition()
-    if search_replace_open then
-        -- con Sostituisci aperto si scorre l'elenco (solo parole intere da sostituire)
-        local index = SearchResultIndexNear(pos, direction and direction < 0 and -1 or 1)
-        if index then SelectSearchResult(index, true)
-        else
-            search_results_current = 0
-            search_message = "Nessun risultato"
-            search_message_until = reaper.time_precise() + 2.0
-        end
-        return
-    end
     local match = direction and direction < 0 and FindSubtitleMatchPrevious(search_query, pos) or FindSubtitleMatch(search_query, pos)
     if not match then
         search_message = "Nessun risultato"
         search_message_until = reaper.time_precise() + 2.0
-        search_results_current = 0
         return
     end
     JumpToSearchMatch(match)
-    local index = SearchResultIndexForItem(match)
-    if index then SelectSearchResult(index, false) end
-    if not index then
-        search_message = "Nessun risultato"
-        search_message_until = reaper.time_precise() + 2.0
-    end
-end
-
--- Risultato dell'elenco dopo (dir 1) o prima (dir -1) di pos; al bordo riparte dall'altro capo.
-function SearchResultIndexNear(pos, dir)
-    if #search_results == 0 then return nil end
-    if dir < 0 then
-        for i = #search_results, 1, -1 do
-            if SearchResultPosition(search_results[i]) < pos - 0.001 then return i end
-        end
-        return #search_results
-    end
-    for i, result in ipairs(search_results) do
-        if SearchResultPosition(result) > pos + 0.001 then return i end
-    end
-    return 1
-end
-
--- Sostituisci (una): il primo clic porta alla prossima parola e la mostra; il secondo la cambia
--- e resta li', cosi' si vede il risultato. Tutti: conferma e un solo Undo.
--- Sostituisce solo parole intere e gli accenti contano (ZP_cerca mode "replace").
-function ApplySearchReplacement(all)
-    if search_query == "" then return end
-    if all then
-        local all_results = ZP_CERCA.results(cached_items, search_query, math.huge, "replace")
-        local total_replacements, matched_items = 0, 0
-        for _, result in ipairs(all_results) do
-            local _, count = ZP_CERCA.replace(result.item.notes or "", search_query, replace_query, true)
-            if count > 0 then total_replacements = total_replacements + count; matched_items = matched_items + 1 end
-        end
-        if total_replacements == 0 then
-            search_message = "Nessuna parola intera da sostituire"
-            search_message_until = reaper.time_precise() + 2.5
-            return
-        end
-        local answer = reaper.ShowMessageBox(string.format("Sostituisco %d occorrenze in %d battute?", total_replacements, matched_items), "ZP Studio Suite - Sostituisci tutto", 4)
-        if answer ~= 6 then return end
-        reaper.Undo_BeginBlock()
-        for _, result in ipairs(all_results) do
-            local old_text = result.item.notes or ""
-            local new_text, count = ZP_CERCA.replace(old_text, search_query, replace_query, true)
-            if count > 0 and new_text ~= old_text then
-                reaper.GetSetMediaItemInfo_String(result.item.item, "P_NOTES", new_text, true)
-                UpdateSubtitleItemName(result.item.item, new_text)
-                reaper.UpdateItemInProject(result.item.item)
-            end
-        end
-        reaper.Undo_EndBlock(string.format("ZP Studio Suite: sostituisci '%s' con '%s' (%d)", search_query, replace_query, total_replacements), -1)
-        reaper.UpdateArrange()
-        UpdateItems()
-        search_results_dirty = true
-        RefreshSearchResults(true)
-        search_results_current = 0
-        search_message = string.format("Sostituite %d", total_replacements)
-        search_message_until = reaper.time_precise() + 3.0
-        return
-    end
-
-    RefreshSearchResults(true)
-    local result = search_results_current > 0 and search_results[search_results_current] or nil
-    if not result then
-        -- primo clic: mostra la prossima parola da sostituire, non cambia niente
-        ExecuteSubtitleSearch(1)
-        if search_results_current > 0 then
-            search_message = tostring(search_results_current) .. " di " .. tostring(search_results_total) .. " · di nuovo Sostituisci per cambiarla"
-            search_message_until = reaper.time_precise() + 4.0
-        end
-        return
-    end
-    local old_text = result.item.notes or ""
-    local new_text, count = ZP_CERCA.replace(old_text, search_query, replace_query, false)
-    if count == 0 or new_text == old_text then return end
-    reaper.Undo_BeginBlock()
-    reaper.GetSetMediaItemInfo_String(result.item.item, "P_NOTES", new_text, true)
-    UpdateSubtitleItemName(result.item.item, new_text)
-    reaper.UpdateItemInProject(result.item.item)
-    reaper.Undo_EndBlock(string.format("ZP Studio Suite: sostituisci '%s' con '%s'", search_query, replace_query), -1)
-    reaper.UpdateArrange()
-    UpdateItems()
-    search_results_dirty = true
-    RefreshSearchResults(true)
-    -- resta sulla parola cambiata: il prossimo clic cerca la successiva
-    search_results_current = 0
-    search_message = "Sostituita · ne restano " .. tostring(search_results_total)
-    search_message_until = reaper.time_precise() + 3.0
+    local total, current = ZP_CERCA.count(cached_items, search_query, match, match.search_match_offset)
+    search_message = (total > 0 and (tostring(current or 1) .. " di " .. tostring(total) .. " · ") or "") .. FormatVideoTimecode(match.search_match_pos or match.pos)
+    search_message_until = reaper.time_precise() + 2.0
 end
 
 function IsSearchShortcut(char)
@@ -1402,81 +1158,55 @@ function IsSearchShortcut(char)
     return is_f and has_modifier
 end
 
-function SearchGetFieldValue()
-    return search_active_field == "replace" and replace_query or search_query
-end
-
-function SearchSetFieldValue(value)
-    if search_active_field == "replace" then replace_query = value else search_query = value end
-end
-
-function SearchGetFieldCursor()
-    return search_active_field == "replace" and replace_cursor or search_cursor
-end
-
-function SearchSetFieldCursor(value)
-    if search_active_field == "replace" then replace_cursor = value else search_cursor = value end
-end
-
 function SearchSetCursor(pos)
-    local value = SearchGetFieldValue() or ""
-    SearchSetFieldCursor(math.max(1, math.min(pos or 1, #value + 1)))
-    if search_active_field == "replace" then replace_sel_start, replace_sel_end = nil, nil
-    else search_sel_start, search_sel_end = nil, nil end
+    search_cursor = math.max(1, math.min(pos or 1, #(search_query or "") + 1))
+    search_sel_start = nil
+    search_sel_end = nil
 end
 
 function SearchSetSelection(a, b)
-    local value = SearchGetFieldValue() or ""
-    local max_pos = #value + 1
+    local max_pos = #(search_query or "") + 1
     a = math.max(1, math.min(a or 1, max_pos))
     b = math.max(1, math.min(b or a, max_pos))
-    SearchSetFieldCursor(b)
-    local first, last = math.min(a,b), math.max(a,b)
-    if a == b then first,last = nil,nil end
-    if search_active_field == "replace" then replace_sel_start,replace_sel_end=first,last
-    else search_sel_start,search_sel_end=first,last end
+    search_cursor = b
+    if a == b then
+        search_sel_start, search_sel_end = nil, nil
+    else
+        search_sel_start, search_sel_end = math.min(a, b), math.max(a, b)
+    end
 end
 
 function SearchSelectionRange()
-    local a,b
-    if search_active_field == "replace" then a,b=replace_sel_start,replace_sel_end
-    else a,b=search_sel_start,search_sel_end end
-    if not a or a == b then return nil,nil end
-    return math.min(a,b),math.max(a,b)
+    if not search_sel_start or search_sel_start == search_sel_end then return nil, nil end
+    return math.min(search_sel_start, search_sel_end), math.max(search_sel_start, search_sel_end)
 end
 
 function SearchDeleteSelection()
-    local a,b=SearchSelectionRange()
+    local a, b = SearchSelectionRange()
     if not a then return false end
-    local value=SearchGetFieldValue() or ""
-    SearchSetFieldValue(value:sub(1,a-1)..value:sub(b))
+    search_query = (search_query or ""):sub(1, a - 1) .. (search_query or ""):sub(b)
     SearchSetCursor(a)
     return true
 end
 
 function SearchInsertText(text)
-    text=tostring(text or "")
-    if text=="" then return end
+    text = tostring(text or "")
+    if text == "" then return end
     SearchDeleteSelection()
-    local value=SearchGetFieldValue() or ""
-    local cursor=SearchGetFieldCursor() or (#value+1)
-    SearchSetFieldValue(value:sub(1,cursor-1)..text..value:sub(cursor))
-    SearchSetFieldCursor(cursor+#text)
-    if search_active_field == "find" then ScheduleSearchResults() end
+    local source = search_query or ""
+    local cursor = search_cursor or (#source + 1)
+    search_query = source:sub(1, cursor - 1) .. text .. source:sub(cursor)
+    search_cursor = cursor + #text
 end
 
 function SearchBackspace()
-    if SearchDeleteSelection() then
-        if search_active_field == "find" then ScheduleSearchResults() end
-        return
-    end
-    local value=SearchGetFieldValue() or ""
-    local cursor=SearchGetFieldCursor() or (#value+1)
-    if cursor<=1 then return end
-    local prev=Utf8PrevCursor(value,cursor)
-    SearchSetFieldValue(value:sub(1,prev-1)..value:sub(cursor))
-    SearchSetFieldCursor(prev)
-    if search_active_field == "find" then ScheduleSearchResults() end
+    if SearchDeleteSelection() then return end
+    local source = search_query or ""
+    local cursor = search_cursor or (#source + 1)
+    if cursor <= 1 then return end
+    local prev = Utf8PrevCursor(source, cursor)
+    search_query = source:sub(1, prev - 1) .. source:sub(cursor)
+    search_cursor = prev
 end
 
 function SearchPaste()
@@ -1491,27 +1221,15 @@ end
 function ProcessSearchPanelKey(char)
     if not search_panel_open or char <= 0 then return false end
     if IsSearchShortcut(char) then return true end
-    if char == 9 then
-        if not search_replace_open then search_replace_open = true; replace_input_rect = nil; ScheduleSearchResults(); search_results_deadline = 0 end
-        search_active_field = search_active_field == "find" and "replace" or "find"
-        return true
-    end
-    if char == 30064 or char == 1685026670 then
-        RefreshSearchResults(true)
-        local step = char == 30064 and -1 or 1
-        local next_index = search_results_current == 0 and (step > 0 and 1 or #search_results) or search_results_current + step
-        if next_index >= 1 and next_index <= #search_results then SelectSearchResult(next_index, true) end
-        return true
-    end
     if char == 13 then ExecuteSubtitleSearch(1); return true end
     if char == 27 then search_panel_open = false; return true end
     if char == 8 then SearchBackspace(); return true end
-    if char == 1 then SearchSetSelection(1, #SearchGetFieldValue() + 1); return true end
+    if char == 1 then SearchSetSelection(1, #(search_query or "") + 1); return true end
     if char == 22 then SearchPaste(); return true end
-    if char == 1818584692 then SearchSetCursor(Utf8PrevCursor(SearchGetFieldValue(), SearchGetFieldCursor())); return true end
-    if char == 1919379572 then SearchSetCursor(Utf8NextCursor(SearchGetFieldValue(), SearchGetFieldCursor())); return true end
+    if char == 1818584692 then SearchSetCursor(Utf8PrevCursor(search_query, search_cursor)); return true end
+    if char == 1919379572 then SearchSetCursor(Utf8NextCursor(search_query, search_cursor)); return true end
     if char == 1752132965 then SearchSetCursor(1); return true end
-    if char == 6647396 then SearchSetCursor(#SearchGetFieldValue() + 1); return true end
+    if char == 6647396 then SearchSetCursor(#(search_query or "") + 1); return true end
     if char >= 32 and char <= 1114111 then
         local ch = TextCharFromCode(char)
         if ch then SearchInsertText(ch) end
@@ -1682,12 +1400,10 @@ function DrawTextLine(line, x, y, is_active, item, word_counter, base_color_kind
     return word_counter
 end
 
-local NOTE_FONT, NOTE_LINE_H = 17, 21
-
 function DrawWrappedNoteText(text, x, y, max_w, alpha)
-    gfx.setfont(3, "Arial", NOTE_FONT)
+    gfx.setfont(3, "Arial", 14)
     local lines = WrapText(text:gsub("[\r\n]+", " "), max_w)
-    local line_h = NOTE_LINE_H
+    local line_h = 17
     for i, line in ipairs(lines) do
         gfx.x = x
         gfx.y = y + ((i - 1) * line_h)
@@ -1697,9 +1413,9 @@ function DrawWrappedNoteText(text, x, y, max_w, alpha)
 end
 
 function MeasureWrappedNoteText(text, max_w)
-    gfx.setfont(3, "Arial", NOTE_FONT)
+    gfx.setfont(3, "Arial", 14)
     local lines = WrapText((text or ""):gsub("[\r\n]+", " "), max_w)
-    return #lines * NOTE_LINE_H
+    return #lines * 17
 end
 
 function NoteVisualState(note, play_pos)
@@ -1715,171 +1431,81 @@ function NoteVisualState(note, play_pos)
     return "future", 0.26
 end
 
--- Segna una nota come fatta (bollino OK) o la riapre. Sta nell'item: P_EXT:ZP_NOTE_DONE.
-function ToggleNoteDone(note)
-    if not note or not note.item or not reaper.ValidatePtr(note.item, "MediaItem*") then return end
-    local done = not note.done
-    reaper.Undo_BeginBlock()
-    reaper.GetSetMediaItemInfo_String(note.item, "P_EXT:ZP_NOTE_DONE", done and "1" or "", true)
-    reaper.Undo_EndBlock(done and "ZP Studio Suite: nota fatta (OK)" or "ZP Studio Suite: nota riaperta", -1)
-    note.done = done
-    UpdateItems()
-end
-
--- Pannello NOTE: elenco di TUTTE le note in ordine di tempo, scorrevole con la rotella.
--- Segue da solo la nota corrente (attiva o la prossima) finche' non scorri a mano (5 s di pausa).
--- Clic = porta la timeline alla nota; doppio clic = modifica; bollino OK = fatta / riaperta.
--- Stato tra un giro e l'altro in globali (NotesScroll, NotesUserScrollTime): niente local nuovi.
 function DrawNotesPanel(h, play_pos, reading_y)
     if panels_hidden or not notes_panel_open then return end
 
     local x = 0
     local pad = 12
     local panel_w = NOTES_PANEL_W
-    local bar_w = 6
     gfx.set(0.10, 0.095, 0.075, 0.96)
     gfx.rect(x, 0, panel_w, h, 1)
+    gfx.set(0.55, 0.42, 0.18, 0.75)
+    gfx.rect(panel_w - 1, 0, 1, h, 1)
 
-    local clip_top = 42
-    local clip_bottom = h - 8
-    local max_w = panel_w - (pad * 2) - bar_w
-    local now = reaper.time_precise()
-
-    -- misure e nota corrente
-    local entries, total_h, current_i, done_n = {}, 0, nil, 0
-    for i, note in ipairs(cached_notes) do
-        local card_h = MeasureWrappedNoteText(note.text, max_w) + 38
-        entries[i] = { note = note, top = total_h, card_h = card_h }
-        total_h = total_h + card_h + 8
-        if note.done then done_n = done_n + 1 end
-        if not current_i and play_pos <= note.pos + note.len + NOTE_HOT_MARGIN then current_i = i end
-    end
-    local view_h = math.max(1, clip_bottom - clip_top)
-    local max_scroll = math.max(0, total_h - view_h)
-
-    -- rotella sopra il pannello: scorrimento a mano (NotesWheel la mette il ciclo principale)
-    local over_panel = gfx.mouse_x >= x and gfx.mouse_x < panel_w and gfx.mouse_y >= clip_top and gfx.mouse_y <= clip_bottom
-    if over_panel and (NotesWheel or 0) ~= 0 then
-        NotesScroll = (NotesScroll or 0) + (NotesWheel > 0 and -60 or 60)
-        NotesUserScrollTime = now
-        NotesWheel = 0
-    end
-    if current_i and now - (NotesUserScrollTime or 0) > 5 and not over_panel then
-        local target = entries[current_i].top - 40
-        NotesScroll = (NotesScroll or 0) + (target - (NotesScroll or 0)) * 0.25
-    end
-    NotesScroll = math.max(0, math.min(NotesScroll or 0, max_scroll))
-
-    local mouse_pressed = (gfx.mouse_cap & 1) == 1 and not mouse_was_down
-    local clicks_ok = mouse_pressed and over_panel and not inline_edit
-        and not (search_panel_open and SearchPanelBottom and gfx.mouse_y <= SearchPanelBottom)
-
-    for i, entry in ipairs(entries) do
-        local note = entry.note
-        local y = clip_top + 4 + entry.top - NotesScroll
-        local card_h = entry.card_h
-        if y > clip_bottom then break end
-        if y + card_h >= clip_top then
-            local state, alpha = NoteVisualState(note, play_pos)
-            local is_current = i == current_i
-
-            -- corrente (attiva) quasi piena; le altre trasparenti; fatte attenuate
-            local card_alpha = 0.22
-            if note.done then card_alpha = 0.08
-            elseif state == "active" then card_alpha = 0.92
-            elseif is_current or state == "imminent" then card_alpha = 0.40 end
-            local text_alpha = note.done and 0.55 or 0.95
-            gfx.set(note.r, note.g, note.b, card_alpha)
-            gfx.rect(x + 6, y - 4, panel_w - 12 - bar_w, card_h, 1)
-            if is_current then
-                gfx.set(1.0, 0.70, 0.12, 1)
-                gfx.rect(x + 2, y - 4, 4, card_h, 1)
-            end
-
-            -- x (cancella) a sinistra, lontana dal bollino OK a destra: niente cancellazioni per sbaglio
-            local ok_w, ok_h = 44, 18
-            local del_w = 20
-            local del_x = x + pad - 2
-            local ok_x, ok_y = x + panel_w - 12 - bar_w - ok_w - 4, y - 1
-
-            gfx.setfont(3, "Arial", 14, 'b')
-            SetNoteCardTextColor(note.r, note.g, note.b, card_alpha, text_alpha)
-            gfx.x, gfx.y = del_x + del_w + 8, y
-            gfx.drawstr(FormatVideoTimecode(note.pos))
-            -- x: cancella (chiede conferma)
-            SetNoteCardTextColor(note.r, note.g, note.b, card_alpha, 0.75)
-            gfx.rect(del_x, ok_y, del_w, ok_h, 0)
-            gfx.setfont(3, "Arial", 13, 'b')
-            local xw = gfx.measurestr("×")
-            gfx.x, gfx.y = del_x + math.floor((del_w - xw) / 2), ok_y + 2
-            gfx.drawstr("×")
-            if note.done then
-                gfx.set(0.25, 0.68, 0.36, 1); gfx.rect(ok_x, ok_y, ok_w, ok_h, 1)
-                gfx.set(1, 1, 1, 1)
-            else
-                SetNoteCardTextColor(note.r, note.g, note.b, card_alpha, 0.75)
-                gfx.rect(ok_x, ok_y, ok_w, ok_h, 0)
-            end
-            gfx.setfont(3, "Arial", 12, 'b')
-            local label = note.done and "✓ OK" or "OK"
-            local lw = gfx.measurestr(label)
-            gfx.x, gfx.y = ok_x + math.floor((ok_w - lw) / 2), ok_y + 3
-            gfx.drawstr(label)
-
-            SetNoteCardTextColor(note.r, note.g, note.b, card_alpha, text_alpha)
-            DrawWrappedNoteText(note.text, x + pad, y + 21, max_w, alpha)
-
-            if clicks_ok and gfx.mouse_y >= math.max(clip_top, y - 4) and gfx.mouse_y <= y - 4 + card_h then
-                local mx, my = gfx.mouse_x, gfx.mouse_y
-                if mx >= ok_x and mx <= ok_x + ok_w and my >= ok_y and my <= ok_y + ok_h then
-                    ToggleNoteDone(note)
-                elseif mx >= del_x and mx <= del_x + del_w and my >= ok_y and my <= ok_y + ok_h then
-                    DeleteNote(note)
-                elseif note_last_click_item == note.item and now - (note_last_click_time or 0) < 0.35 then
-                    StartInlineNoteEdit(note)   -- doppio clic: modifica
-                    note_last_click_item = nil
-                else
-                    reaper.SetEditCurPos(note.pos, true, false)   -- clic: timeline alla nota
-                    reaper.UpdateArrange()
-                    note_last_click_item, note_last_click_time = note.item, now
-                    NotesUserScrollTime = 0   -- torna a seguire: la nota cliccata diventa la corrente
-                end
-                clicks_ok = false
-            end
-        end
-    end
-
-    -- intestazione disegnata sopra le schede che scorrono (gfx non ha il ritaglio)
-    gfx.set(0.10, 0.095, 0.075, 1)
-    gfx.rect(x, 0, panel_w, clip_top, 1)
-    gfx.rect(x, clip_bottom, panel_w, h - clip_bottom, 1)
     gfx.setfont(3, "Arial", 15, 'b')
     gfx.set(0.95, 0.84, 0.42, 1)
     gfx.x, gfx.y = x + pad, 14
     gfx.drawstr("NOTE")
-    gfx.setfont(3, "Arial", 13)
-    gfx.set(0.85, 0.80, 0.68, 1)
-    gfx.x, gfx.y = x + pad + 52, 16
-    gfx.drawstr(#entries == 0 and "" or (tostring(#entries) .. (done_n > 0 and ("  ·  " .. done_n .. " OK") or "")))
 
-    -- barra di scorrimento
-    if max_scroll > 0 then
-        local track_x = panel_w - bar_w - 2
-        gfx.set(0.22, 0.20, 0.16, 1)
-        gfx.rect(track_x, clip_top, bar_w - 2, view_h, 1)
-        local thumb_h = math.max(24, view_h * view_h / total_h)
-        local thumb_y = clip_top + (view_h - thumb_h) * (NotesScroll / max_scroll)
-        gfx.set(0.80, 0.62, 0.25, 1)
-        gfx.rect(track_x, thumb_y, bar_w - 2, thumb_h, 1)
+    local clip_top = 42
+    local clip_bottom = h - 8
+    local shown = 0
+    local max_w = panel_w - (pad * 2)
+    local entries = {}
+
+    for _, note in ipairs(cached_notes) do
+        local text_h = MeasureWrappedNoteText(note.text, max_w)
+        local card_h = text_h + 34
+        local raw_y = (reading_y or (h * reading_point)) + ((note.pos - play_pos) * NOTE_PIXELS_PER_SECOND) - 18
+        if raw_y + card_h >= clip_top and raw_y <= clip_bottom then
+            table.insert(entries, {note=note, y=raw_y, card_h=card_h, text_h=text_h})
+        end
     end
-    gfx.set(0.55, 0.42, 0.18, 0.75)
-    gfx.rect(panel_w - 1, 0, 1, h, 1)
 
-    if #entries == 0 then
-        gfx.setfont(3, "Arial", 14)
-        gfx.set(0.80, 0.76, 0.66, 1)
+    table.sort(entries, function(a, b) return a.y < b.y end)
+
+    local last_bottom = clip_top - 8
+    for _, entry in ipairs(entries) do
+        local note = entry.note
+        local y = math.max(entry.y, last_bottom + 8)
+        local card_h = entry.card_h
+        if y > clip_bottom then break end
+        if y + card_h >= clip_top then
+            local state, alpha = NoteVisualState(note, play_pos)
+
+            if state == "active" then
+                gfx.set(note.r, note.g, note.b, 0.56)
+                gfx.rect(x + 6, y - 4, panel_w - 12, card_h, 1)
+            elseif state == "imminent" then
+                gfx.set(note.r, note.g, note.b, 0.20 + alpha * 0.20)
+                gfx.rect(x + 6, y - 4, panel_w - 12, card_h, 1)
+            elseif state == "past" then
+                gfx.set(note.r, note.g, note.b, 0.16)
+                gfx.rect(x + 6, y - 4, panel_w - 12, card_h, 1)
+            else
+                gfx.set(note.r, note.g, note.b, 0.18)
+                gfx.rect(x + 6, y - 4, panel_w - 12, card_h, 1)
+            end
+
+            local tc = FormatVideoTimecode(note.pos)
+            gfx.setfont(3, "Arial", 12, 'b')
+            SetReadableTextColor(note.r, note.g, note.b, math.max(0.62, alpha))
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr(tc)
+
+            y = y + 17
+            SetReadableTextColor(note.r, note.g, note.b, math.max(0.62, alpha))
+            DrawWrappedNoteText(note.text, x + pad, y, max_w, alpha)
+            shown = shown + 1
+        end
+        last_bottom = y + card_h
+    end
+
+    if shown == 0 then
+        gfx.setfont(3, "Arial", 13)
+        gfx.set(0.60, 0.56, 0.46, 0.8)
         gfx.x, gfx.y = x + pad, clip_top + 10
-        gfx.drawstr("Nessuna nota")
+        gfx.drawstr("Nessuna nota nel quadro")
     end
 end
 
@@ -1934,28 +1560,22 @@ function Utf8PrevCursor(text, cursor)
     text = tostring(text or "")
     cursor = math.max(1, math.min(cursor or (#text + 1), #text + 1))
     if cursor <= 1 then return 1 end
-    -- a mano, senza utf8.offset: va in errore se la posizione cade a meta' di una lettera
-    -- accentata ("initial position is a continuation byte"). Salta i byte 0x80-0xBF.
-    local pos = cursor - 1
-    while pos > 1 do
-        local b = text:byte(pos)
-        if not b or b < 0x80 or b >= 0xC0 then break end
-        pos = pos - 1
+    if utf8 and utf8.offset then
+        local byte = utf8.offset(text, -1, cursor - 1)
+        if byte then return byte end
     end
-    return pos
+    return cursor - 1
 end
 
 function Utf8NextCursor(text, cursor)
     text = tostring(text or "")
     cursor = math.max(1, math.min(cursor or (#text + 1), #text + 1))
     if cursor > #text then return #text + 1 end
-    local pos = cursor + 1
-    while pos <= #text do
-        local b = text:byte(pos)
-        if b < 0x80 or b >= 0xC0 then break end
-        pos = pos + 1
+    if utf8 and utf8.offset then
+        local byte = utf8.offset(text, 2, cursor)
+        if byte then return byte end
     end
-    return pos
+    return cursor + 1
 end
 
 function InlineSetCursor(pos)
@@ -2413,14 +2033,6 @@ function DrawInlineSubtitleEditor()
     local x = inline_edit.x
     local y = math.max(6, inline_edit.y)
     local w = math.min(inline_edit.w, gfx.w - x - 8)
-    local is_subtitle = (inline_edit.mode or "subtitle") == "subtitle"
-    if is_subtitle then
-        -- in alto, subito sotto Cerca (stessa larghezza): la battuta resta visibile sotto,
-        -- evidenziata nel gobbo (inline_edit.block, aggiornato a ogni giro dal disegno del copione)
-        w = math.min(680, math.max(260, gfx.w - 16))
-        x = math.max(4, math.floor((gfx.w - w) / 2))
-        y = (search_panel_open and SearchPanelBottom or 30) + 6
-    end
     local line_h = inline_edit.font_size * 1.45
     inline_edit.line_h = line_h
     gfx.setfont(1, default_font, inline_edit.font_size)
@@ -2430,12 +2042,6 @@ function DrawInlineSubtitleEditor()
     inline_edit.text_w = text_w
     local lines = InlineVisualLines(text_w)
     local h = math.max(inline_edit.h, (#lines * line_h) + (pad * 2) + title_h + footer_h)
-    if is_subtitle then h = (#lines * line_h) + (pad * 2) + title_h + footer_h end
-    local block = inline_edit.block
-    if is_subtitle and block and block.y < y + h + 8 and block.y + block.h > y then
-        -- la finestra coprirebbe la battuta: la metto subito sotto la battuta
-        if block.y + block.h + 10 + h <= gfx.h - 8 then y = block.y + block.h + 10 end
-    end
     if y + h > gfx.h - 8 then y = math.max(6, gfx.h - h - 8) end
     inline_edit.text_x = x + pad
     inline_edit.text_y = y + pad + title_h
@@ -2450,9 +2056,7 @@ function DrawInlineSubtitleEditor()
         gfx.x, gfx.y = x + pad, y + 10
         gfx.drawstr(inline_edit.title)
     end
-    -- il titolo cambia il font: torno a quello del testo (con cui InlineVisualLines ha misurato)
-    gfx.setfont(1, default_font, inline_edit.font_size)
-    gfx.set(0.98, 0.95, 0.88, 1)
+    gfx.set(0.96, 0.91, 0.78, 1)
     for i, line in ipairs(lines) do
         gfx.x = x + pad
         gfx.y = inline_edit.text_y + ((i - 1) * line_h)
@@ -2465,7 +2069,7 @@ function DrawInlineSubtitleEditor()
                 local sel_w = gfx.measurestr((inline_edit.text or ""):sub(a, b - 1))
                 gfx.set(0.18, 0.44, 0.95, 0.55)
                 gfx.rect(x + pad + before_w, inline_edit.text_y + ((i - 1) * line_h) - 2, math.max(2, sel_w), line_h, 1)
-                gfx.set(0.98, 0.95, 0.88, 1)
+                gfx.set(0.96, 0.91, 0.78, 1)
             end
         end
         gfx.drawstr(line.text)
@@ -2520,11 +2124,11 @@ function DrawInlineSubtitleEditor()
         SaveInlineSubtitleEdit()
         return
     end
-    gfx.setfont(3, "Arial", 14)
-    gfx.set(0.90, 0.86, 0.76, 1)
+    gfx.setfont(3, "Arial", 12)
+    gfx.set(0.72, 0.66, 0.54, 0.96)
     gfx.x = x + pad
-    gfx.y = button_y + 4
-    gfx.drawstr("Invio salva  |  Shift+Invio accapo  |  Esc annulla", 0, x + w - pad - 196, button_y + 24)
+    gfx.y = button_y + 5
+    gfx.drawstr("Invio salva  |  Shift+Invio accapo  |  Esc annulla")
 end
 
 function HandleSubtitleEditDoubleClick(item, x, y, w, h)
@@ -2781,8 +2385,7 @@ function CollectNotes()
             if text ~= "" then
                 local color = GetDisplayedItemColor(item, COLOR_NOTES)
                 local r, g, b = ColorToRGB(color, COLOR_NOTES)
-                local _, done = reaper.GetSetMediaItemInfo_String(item, "P_EXT:ZP_NOTE_DONE", "", false)
-                table.insert(notes, { item=item, pos=pos, len=len, text=text, key=NormalizeName(text), r=r, g=g, b=b, color=color, done = done == "1" })
+                table.insert(notes, { item=item, pos=pos, len=len, text=text, key=NormalizeName(text), r=r, g=g, b=b, color=color })
             end
         end
         table.sort(notes, function(a, b) return a.pos < b.pos end)
@@ -2819,7 +2422,7 @@ function UpdateItems()
             
             local r, g, b = ColorToRGB(color, COLOR_SUBS)
             
-            table.insert(cached_items, {item=item, pos=pos, len=len, notes=notes, highlights=ParseHighlightTerms(highlight_raw), has_note=has_note, person_notes=person_notes, r=r, g=g, b=b, flow=flow_index, track_name=GetTrackName(track), source_file=SyncSourceFileName(item)})
+            table.insert(cached_items, {item=item, pos=pos, len=len, notes=notes, highlights=ParseHighlightTerms(highlight_raw), has_note=has_note, person_notes=person_notes, r=r, g=g, b=b, flow=flow_index})
         end
     end
     -- Ordine cronologico rigidissimo! È un copione. A parita' di tempo, l'ordine delle tracce.
@@ -2829,7 +2432,6 @@ function UpdateItems()
     end)
     
     RecalculateDocumentLayout()
-    if search_panel_open then search_results_dirty=true; search_results_deadline=reaper.time_precise()+0.15 end
 end
 
 -- =============================================
@@ -3038,157 +2640,82 @@ function DrawHelpButton(x, y)
 end
 
 function DrawSearchPanel(w, h)
-    if not search_panel_open then SearchPanelBottom = nil; return end
-    RefreshSearchResults(false)
-    local panel_w = math.min(680, math.max(80, w - 16))
-    local x = math.max(4, math.min(w - panel_w - 4, math.floor((w - panel_w) / 2)))
-    local header_h = search_replace_open and 86 or 56
-    local max_panel_h = math.max(0, math.min(560, h - 8, math.max(header_h + 24, math.floor(h * 0.6))))
-    local y = math.max(0, math.min(36, h - max_panel_h - 4))
-    local row_h = search_replace_open and 74 or 52
-    local list_h = math.max(0, max_panel_h - header_h - 20)
-    local visible_rows = math.min(8, math.floor(list_h / row_h))
-    local overflow_h = search_results_total > #search_results and 24 or 0
-    local empty_h = search_results_total == 0 and 28 or 0
-    local panel_h = math.min(max_panel_h, header_h + math.min(visible_rows, #search_results) * row_h + overflow_h + empty_h + 12)
-    y = math.max(0, math.min(y, h - panel_h - 4))
+    if not search_panel_open then return end
+    local panel_w = math.min(560, math.max(330, w - 80))
+    local panel_h = 62
+    local x = math.floor((w - panel_w) / 2)
+    local y = 36
     local pad = 10
 
-    SearchPanelBottom = y + panel_h -- la finestra Modifica battuta si mette subito sotto
-    gfx.set(0.08, 0.075, 0.065, 0.97); gfx.rect(x, y, panel_w, panel_h, 1)
-    gfx.set(0.72, 0.50, 0.12, 0.95); gfx.rect(x, y, panel_w, 2, 1)
-    gfx.set(0.38, 0.34, 0.26, 0.8); gfx.rect(x, y, panel_w, panel_h, 0)
+    gfx.set(0.08, 0.075, 0.065, 0.96)
+    gfx.rect(x, y, panel_w, panel_h, 1)
+    gfx.set(0.72, 0.50, 0.12, 0.95)
+    gfx.rect(x, y, panel_w, 2, 1)
+    gfx.set(0.38, 0.34, 0.26, 0.8)
+    gfx.rect(x, y, panel_w, panel_h, 0)
 
-    gfx.setfont(3, "Arial", 13, 'b'); gfx.set(0.93, 0.90, 0.83, 1)
-    gfx.x, gfx.y = x + pad, y + 7; gfx.drawstr("Cerca")
-    if DrawButton(x + panel_w - 112, y + 4, 102, 22, search_replace_open and "Nascondi" or "Sostituisci…", 0.34, 0.25, 0.12) then
-        search_replace_open = not search_replace_open
-        search_active_field = search_replace_open and "replace" or "find"
-        ScheduleSearchResults(); search_results_deadline = 0
+    gfx.setfont(3, "Arial", 13, 'b')
+    gfx.set(0.78, 0.73, 0.62, 1)
+    gfx.x, gfx.y = x + pad, y + 8
+    gfx.drawstr("Trova")
+
+    local input_x = x + 58
+    local input_y = y + 24
+    local input_w = panel_w - 206
+    search_input_rect = {x=input_x, y=input_y, w=input_w, h=24}
+    gfx.set(0.12, 0.11, 0.10, 1)
+    gfx.rect(input_x, input_y, input_w, 24, 1)
+    gfx.set(0.82, 0.58, 0.13, 1)
+    gfx.rect(input_x, input_y, input_w, 24, 0)
+
+    gfx.setfont(3, "Arial", 15)
+    local shown = search_query ~= "" and search_query or "Cerca parola/frase..."
+    gfx.x, gfx.y = input_x + 8, input_y + 4
+    if search_query == "" then gfx.set(0.58, 0.55, 0.50, 0.9) else gfx.set(0.95, 0.92, 0.84, 1) end
+    local sel_a, sel_b = SearchSelectionRange()
+    if sel_a and search_query ~= "" then
+        local before_w = gfx.measurestr((search_query or ""):sub(1, sel_a - 1))
+        local sel_w = gfx.measurestr((search_query or ""):sub(sel_a, sel_b - 1))
+        gfx.set(0.18, 0.44, 0.95, 0.55)
+        gfx.rect(input_x + 8 + before_w, input_y + 3, math.max(2, sel_w), 18, 1)
+        gfx.set(0.95, 0.92, 0.84, 1)
+        gfx.x, gfx.y = input_x + 8, input_y + 4
+    end
+    gfx.drawstr(shown)
+    if math.floor(reaper.time_precise() * 2) % 2 == 0 then
+        local tw = gfx.measurestr((search_query or ""):sub(1, (search_cursor or (#(search_query or "") + 1)) - 1))
+        gfx.set(0.95, 0.70, 0.18, 1)
+        gfx.rect(input_x + 9 + tw, input_y + 5, 2, 15, 1)
     end
 
-    local function draw_field(field, label, value, cursor, sel_a, sel_b, rect, row_y, label_w, input_width)
-        gfx.setfont(3, "Arial", 13, 'b'); gfx.set(0.93, 0.90, 0.83, 1)
-        gfx.x, gfx.y = x + pad, row_y + 5; gfx.drawstr(label)
-        local input_x, input_y = x + label_w, row_y
-        rect.x, rect.y, rect.w, rect.h = input_x, input_y, input_width, 24
-        gfx.set(0.12, 0.11, 0.10, 1); gfx.rect(input_x, input_y, input_width, 24, 1)
-        gfx.set(search_active_field == field and 0.82 or 0.42, search_active_field == field and 0.58 or 0.40, 0.13, 1)
-        gfx.rect(input_x, input_y, input_width, 24, 0)
-        gfx.setfont(3, "Arial", 15)
-        gfx.set(value == "" and 0.58 or 0.95, value == "" and 0.55 or 0.92, value == "" and 0.50 or 0.84, 1)
-        gfx.x, gfx.y = input_x + 7, input_y + 4
-        if sel_a and value ~= "" then
-            local before_w = gfx.measurestr(value:sub(1, sel_a - 1))
-            local sel_w = gfx.measurestr(value:sub(sel_a, sel_b - 1))
-            gfx.set(0.18, 0.44, 0.95, 0.55); gfx.rect(input_x + 7 + before_w, input_y + 3, math.max(2,sel_w), 18, 1)
-            gfx.set(0.95,0.92,0.84,1); gfx.x,gfx.y=input_x+7,input_y+4
+    local mouse_down = (gfx.mouse_cap & 1) == 1
+    local over_input = gfx.mouse_x >= input_x and gfx.mouse_x <= input_x + input_w and gfx.mouse_y >= input_y and gfx.mouse_y <= input_y + 24
+    if over_input and mouse_down and not mouse_was_down then
+        local rel_x = math.max(0, gfx.mouse_x - input_x - 8)
+        local best = 1
+        for pos = 1, #(search_query or "") + 1 do
+            local tw = gfx.measurestr((search_query or ""):sub(1, pos - 1))
+            if rel_x < tw then break end
+            best = pos
         end
-        gfx.drawstr(value ~= "" and value or (field == "find" and "Cerca parola/frase..." or "Testo sostitutivo..."))
-        if search_active_field == field and math.floor(reaper.time_precise()*2)%2==0 then
-            local caret_w=gfx.measurestr(value:sub(1,cursor-1)); gfx.set(0.95,0.70,0.18,1); gfx.rect(input_x+8+caret_w,input_y+5,2,15,1)
+        local now = reaper.time_precise()
+        if search_last_click_time and now - search_last_click_time < 0.35 then
+            SearchSetSelection(1, #(search_query or "") + 1)
+        else
+            SearchSetCursor(best)
         end
-        local down=(gfx.mouse_cap & 1)==1
-        if gfx.mouse_x>=input_x and gfx.mouse_x<=input_x+input_width and gfx.mouse_y>=input_y and gfx.mouse_y<=input_y+24 and down and not mouse_was_down then
-            search_active_field=field
-            local rel_x=math.max(0,gfx.mouse_x-input_x-7); local best=1
-            local pos=1
-            while pos<=#value do
-                local next_pos=Utf8NextCursor(value,pos)
-                if rel_x<gfx.measurestr(value:sub(1,pos-1)) then break end
-                best=next_pos; pos=next_pos
-            end
-            local now=reaper.time_precise()
-            if now-search_last_click_time<0.35 then SearchSetSelection(1,#value+1) else SearchSetCursor(best) end
-            search_last_click_time=now
-        end
+        search_last_click_time = now
     end
 
-    local input_y = y + 27
-    local action_x = x + panel_w - 138
-    local input_w = math.max(48, action_x - (x + 58) - 6)
-    draw_field("find", "Trova", search_query, search_cursor, search_sel_start, search_sel_end, search_input_rect or {}, input_y, 58, input_w)
-    search_input_rect = search_input_rect or {}; search_input_rect.x=x+58; search_input_rect.y=input_y; search_input_rect.w=input_w; search_input_rect.h=24
     if DrawButton(x + panel_w - 138, input_y, 30, 24, "<", 0.34, 0.25, 0.12) then ExecuteSubtitleSearch(-1) end
     if DrawButton(x + panel_w - 104, input_y, 30, 24, ">", 0.34, 0.25, 0.12) then ExecuteSubtitleSearch(1) end
     if DrawButton(x + panel_w - 68, input_y, 26, 24, "X", 0.45, 0.18, 0.14) then search_panel_open = false end
 
-    if search_replace_open then
-        local ry=y+57; local bx=x+panel_w-126; local rw=math.max(48,bx-(x+105)-6)
-        draw_field("replace", "Sostituisci con", replace_query, replace_cursor, replace_sel_start, replace_sel_end, replace_input_rect or {}, ry, 105, rw)
-        replace_input_rect=replace_input_rect or {}; replace_input_rect.x=x+105; replace_input_rect.y=ry; replace_input_rect.w=rw; replace_input_rect.h=24
-        if DrawButton(bx,ry,62,24,"Sostituisci",0.34,0.25,0.12) then ApplySearchReplacement(false) end
-        if DrawButton(bx+66,ry,48,24,"Tutti",0.34,0.25,0.12) then ApplySearchReplacement(true) end
-        gfx.setfont(3,"Arial",13); gfx.set(0.90, 0.86, 0.76, 1); gfx.x=x+pad; gfx.y=ry+27
-        gfx.drawstr("Sostituisce solo parole intere; gli accenti contano (è non cambia e).")
-    end
     if search_message ~= "" and reaper.time_precise() <= search_message_until then
-        gfx.setfont(3,"Arial",13); gfx.set(0.98, 0.90, 0.70, 1); gfx.x=x+125; gfx.y=y+8; gfx.drawstr(search_message,0,x+122+math.max(0,panel_w-240),y+24)
-    end
-
-    local list_y=y+header_h; local list_x=x+pad; local list_w=panel_w-pad*2-12
-    local rows_visible=math.min(visible_rows,#search_results)
-    if search_results_current>0 then KeepSearchResultVisible(search_results_current,math.max(1,rows_visible)) end
-    local start_i=search_list_scroll+1
-    search_list_rect={x=x,y=list_y,w=panel_w,h=rows_visible*row_h}
-    if search_results_total==0 then
-        gfx.setfont(3,"Arial",15); gfx.set(0.90, 0.86, 0.78, 1); gfx.x=list_x; gfx.y=list_y+5; gfx.drawstr("Nessun risultato")
-    else
-        for row=1,rows_visible do
-            local i=start_i+row-1; local result=search_results[i]
-            if result then
-                local ry=list_y+(row-1)*row_h
-                if i==search_results_current then gfx.set(0.19,0.25,0.34,0.95) else gfx.set(0.12,0.12,0.13,0.9) end
-                gfx.rect(list_x,ry,list_w,row_h-2,1)
-                local label=FormatVideoTimecode(SearchResultPosition(result))
-                -- il file audio da cui viene la battuta (per il montaggio); se non c'e', la traccia in "Tutti"
-                if result.item.source_file then label=label.." · "..result.item.source_file
-                elseif selected_text_track_guid==READ_ALL then label=label.." · "..tostring(result.item.track_name or "") end
-                gfx.setfont(3,"Arial",14,'b'); gfx.set(0.98, 0.82, 0.45, 1); gfx.x=list_x+6; gfx.y=ry+4; gfx.drawstr(label,0,list_x+list_w-6,ry+21)
-                local snippet=result.snippet or ""; local sa=result.snip_a or 1; local sb=result.snip_b or sa
-                local left=snippet:sub(1,sa-1); local hit=snippet:sub(sa,sb); local right=snippet:sub(sb+1)
-                gfx.setfont(3,"Arial",17); local tx=list_x+6; local ty=ry+24
-                gfx.set(0.97, 0.96, 0.93, 1); gfx.x=tx; gfx.y=ty; gfx.drawstr(left,0,tx+list_w-12,ty+22)
-                local lw=gfx.measurestr(left); local hw=gfx.measurestr(hit)
-                gfx.set(0.98, 0.74, 0.20, 1); if lw<list_w-14 then gfx.rect(tx+lw,ty,math.max(2,math.min(hw,list_w-12-lw)),21,1) end
-                gfx.set(0.08, 0.06, 0.02, 1); gfx.x=tx+lw; gfx.y=ty; gfx.drawstr(hit,0,tx+list_w-12,ty+22)
-                gfx.set(0.97, 0.96, 0.93, 1); gfx.x=tx+lw+hw; gfx.y=ty; gfx.drawstr(right,0,tx+list_w-12,ty+22)
-                if search_replace_open then
-                    local original=tostring(result.item.notes or ""):sub(result.offset_start,result.offset_end)
-                    local after=ZP_CERCA.replace(original,search_query,replace_query,false)
-                    gfx.setfont(3,"Arial",15); gfx.set(0.72, 0.95, 0.72, 1); gfx.x=list_x+6; gfx.y=ry+50
-                    gfx.drawstr(original.." → "..after,0,list_x+list_w-5,ry+row_h-2)
-                end
-                local down=(gfx.mouse_cap & 1)==1
-                if gfx.mouse_x>=list_x and gfx.mouse_x<=list_x+list_w and gfx.mouse_y>=ry and gfx.mouse_y<ry+row_h-2 and gfx.mouse_cap==0 and mouse_was_down then
-                    SelectSearchResult(i,true)
-                end
-            end
-        end
-    end
-    if search_results_total>#search_results then
-        gfx.setfont(3,"Arial",13); gfx.set(0.88, 0.84, 0.76, 1); gfx.x=list_x+4; gfx.y=list_y+rows_visible*row_h+3
-        gfx.drawstr("altri "..tostring(search_results_total-#search_results).."…")
-    end
-    if rows_visible > 0 then
-        local track_x=x+panel_w-8; local track_y=list_y; local track_h=rows_visible*row_h
-        local max_scroll=math.max(0,#search_results-rows_visible)
-        if max_scroll>0 then
-            gfx.set(0.20,0.19,0.18,0.9); gfx.rect(track_x,track_y,4,track_h,1)
-            local thumb_h=math.max(14,track_h*rows_visible/#search_results)
-            local thumb_y=track_y+(track_h-thumb_h)*(search_list_scroll/max_scroll)
-            gfx.set(0.65,0.53,0.32,0.95); gfx.rect(track_x,thumb_y,4,thumb_h,1)
-            local mx,my=gfx.mouse_x,gfx.mouse_y; local down=(gfx.mouse_cap & 1)==1
-            local over_track=mx>=track_x-5 and mx<=track_x+8 and my>=track_y and my<=track_y+track_h
-            if down and not mouse_was_down and over_track then
-                if my>=thumb_y and my<=thumb_y+thumb_h then search_scroll_dragging=true; search_scroll_drag_offset=my-thumb_y
-                else search_list_scroll=math.floor(math.max(0,math.min(1,(my-track_y)/track_h))*max_scroll); search_scroll_dragging=true; search_scroll_drag_offset=thumb_h/2 end
-            end
-            if search_scroll_dragging and down then
-                local ratio=math.max(0,math.min(1,(my-track_y-search_scroll_drag_offset)/(track_h-thumb_h)))
-                search_list_scroll=math.floor(ratio*max_scroll+0.5)
-            elseif not down then search_scroll_dragging=false end
-        else search_scroll_dragging=false end
+        gfx.setfont(3, "Arial", 12)
+        gfx.set(0.86, 0.78, 0.58, 0.95)
+        gfx.x, gfx.y = x + panel_w - 140, y + 8
+        gfx.drawstr(search_message)
     end
 end
 
@@ -3285,106 +2812,12 @@ function DrawSettingsPanel(w, h)
     return panel_y
 end
 
--- Riga con casella da spuntare (impostazione si'/no): restituisce true al clic.
--- Rispetta il ritaglio della barra (sidebar_clip_top/bottom) come DrawButton.
-function SidebarCheck(x, y, w, label, checked)
-    local h = 22
-    if sidebar_clip_top and (y + h < sidebar_clip_top or y > sidebar_clip_bottom) then return false end
-    local mx, my = gfx.mouse_x, gfx.mouse_y
-    local hover = mx >= x and mx <= x + w and my >= y and my <= y + h
-    if sidebar_clip_top and (my < sidebar_clip_top or my > sidebar_clip_bottom) then hover = false end
-    local box = 16
-    local by = y + math.floor((h - box) / 2)
-    if checked then gfx.set(0.10, 0.24, 0.50, 1) else SetThemeColor("bg", 1) end
-    gfx.rect(x, by, box, box, 1)
-    if hover then gfx.set(0.30, 0.50, 0.85, 1) else gfx.set(0.40, 0.42, 0.55, 1) end
-    gfx.rect(x, by, box, box, 0)
-    if checked then
-        gfx.set(1, 1, 1, 1)
-        gfx.line(x + 3, by + 8, x + 6, by + 12)
-        gfx.line(x + 6, by + 12, x + 13, by + 4)
-        gfx.line(x + 3, by + 9, x + 6, by + 13)
-        gfx.line(x + 6, by + 13, x + 13, by + 5)
-    end
-    gfx.setfont(3, "Arial", 14)
-    SetThemeColor(hover and "active" or "text", 1)
-    gfx.x, gfx.y = x + box + 8, y + 3
-    gfx.drawstr(label)
-    return hover and (gfx.mouse_cap == 0) and mouse_was_down
-end
-
-function SidebarLabel(x, y, text)
-    if sidebar_clip_top and (y + 16 < sidebar_clip_top or y > sidebar_clip_bottom) then return end
-    gfx.setfont(3, "Arial", 13)
-    SetThemeColor("dim", 1)
-    gfx.x, gfx.y = x, y
-    gfx.drawstr(text)
-end
-
--- Titolo di sezione con riga sottile. Con key e' richiudibile (stato ricordato in ExtState).
--- Restituisce la y dove continuare e se la sezione e' aperta.
-function SidebarSection(x, y, title, key)
-    local pad = 12
-    local open = true
-    if key then
-        SidebarOpen = SidebarOpen or {}
-        if SidebarOpen[key] == nil then
-            SidebarOpen[key] = reaper.GetExtState(settings_section, "sidebar_open_" .. key) ~= "0"
-        end
-        open = SidebarOpen[key]
-    end
-    local visible = not sidebar_clip_top or (y + 22 >= sidebar_clip_top and y <= sidebar_clip_bottom)
-    if visible then
-        SetThemeColor("panel_line", 1)
-        gfx.rect(x + pad, y, side_panel_w - pad * 2, 1, 1)
-        gfx.setfont(3, "Arial", 12, 'b')
-        SetThemeColor("dim", 1)
-        gfx.x, gfx.y = x + pad, y + 6
-        gfx.drawstr(title)
-        if key then
-            local arrow = open and "▾" or "▸"
-            local aw = gfx.measurestr(arrow)
-            gfx.x = x + side_panel_w - pad - aw
-            gfx.drawstr(arrow)
-            local mx, my = gfx.mouse_x, gfx.mouse_y
-            local hover = mx >= x + pad and mx <= x + side_panel_w - pad and my >= y and my <= y + 22
-            if sidebar_clip_top and (my < sidebar_clip_top or my > sidebar_clip_bottom) then hover = false end
-            if hover and gfx.mouse_cap == 0 and mouse_was_down then
-                open = not open
-                SidebarOpen[key] = open
-                reaper.SetExtState(settings_section, "sidebar_open_" .. key, open and "1" or "0", true)
-            end
-        end
-    end
-    return y + 26, open
-end
-
--- Tendina del flusso testi: scegli al volo una traccia testo o "Tutti".
-function ShowTextFlowMenu(mx, my)
-    local tracks = CollectTextFlowTracks()
-    if #tracks == 0 then return end
-    local entries = {}
-    if #tracks >= 2 then entries[#entries + 1] = { guid = READ_ALL, name = "Tutti" } end
-    for _, entry in ipairs(tracks) do
-        entries[#entries + 1] = { guid = entry.guid, name = TextFlowDisplayName(entry.name) }
-    end
-    local parts = {}
-    for i, entry in ipairs(entries) do
-        local label = tostring(entry.name or ""):gsub("|", "/")
-        if label:sub(1, 1) == "#" or label:sub(1, 1) == "!" or label:sub(1, 1) == ">" or label:sub(1, 1) == "<" then label = " " .. label end
-        parts[i] = ((entry.guid == selected_text_track_guid) and "!" or "") .. label
-    end
-    gfx.x, gfx.y = mx, my
-    local choice = gfx.showmenu(table.concat(parts, "|"))
-    if choice and choice > 0 and entries[choice] then SelectTextFlow(entries[choice].guid) end
-end
-
 function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
     if panels_hidden then return end
     local x = w - (sidebar_collapsed and 30 or side_panel_w)
     local pad = 12
-    local header_h = 44
-    local y = header_h + 8 - sidebar_scroll_y
+    local header_h = 88
+    local y = header_h - sidebar_scroll_y
     local clip_top = header_h
     local clip_bottom = h
 
@@ -3408,24 +2841,175 @@ function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
     sidebar_clip_bottom = clip_bottom
 
         if not sidebar_collapsed then
-            -- Barra comandi: in alto cio' che si usa lavorando, poi le regolazioni, in fondo
-            -- quello che si imposta una volta (sezioni richiudibili). Funzioni invariate.
-            local full_w = side_panel_w - pad * 2
-            local half_w = math.floor((full_w - 6) / 2)
-
-            -- LAVORO
-            if DrawButton(x + pad, y, full_w, 28, "Cerca  (Ctrl/⌘+F)", 0.25, 0.32, 0.42) then
-                PromptSubtitleSearch()
+    local tc_label = show_timecode and "Nascondi TC" or "Mostra TC"
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, tc_label, 0.25, 0.32, 0.42, show_timecode) then
+                show_timecode = not show_timecode
+                SaveSettings()
             end
+        
+            y = y + 32
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "OSARA Menu", 0.20, 0.42, 0.50, false) then
+                OpenGobboAccessibleMenu()
+            end
+        
+            y = y + 36
+            gfx.setfont(3, "Arial", 13)
+            SetThemeColor("dim", 0.95)
+            gfx.x, gfx.y = x + pad, y
+            local theme_name = theme_mode == "dark" and "Scuro" or (theme_mode == "light" and "Chiaro" or "Medio")
+            gfx.drawstr("Tema: " .. theme_name)
+            y = y + 18
+        
+            if DrawButton(x + pad, y, 50, 26, "Scuro", 0.22, 0.22, 0.28, theme_mode == "dark") then
+                theme_mode = "dark"
+                SaveSettings()
+            end
+            if DrawButton(x + pad + 55, y, 54, 26, "Medio", 0.52, 0.48, 0.35, theme_mode == "medium") then
+                theme_mode = "medium"
+                SaveSettings()
+            end
+            if DrawButton(x + pad + 114, y, 54, 26, "Chiaro", 0.72, 0.72, 0.72, theme_mode == "light") then
+                theme_mode = "light"
+                SaveSettings()
+            end
+        
+            y = y + 46
+            SetThemeColor("dim", 0.95)
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr("Contrasto: " .. (full_contrast and "Pieno" or "Sfumato"))
+            y = y + 18
+        
+            if DrawButton(x + pad, y, 76, 26, "Sfumato", 0.28, 0.28, 0.34, not full_contrast) then
+                full_contrast = false
+                SaveSettings()
+            end
+            if DrawButton(x + pad + 84, y, 76, 26, "Pieno", 0.42, 0.34, 0.18, full_contrast) then
+                full_contrast = true
+                SaveSettings()
+            end
+        
+            y = y + 46
+            gfx.setfont(3, "Arial", 12)
+            SetThemeColor("dim", 0.95)
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr("Flusso testi")
+            local flow_y = y + 17
+            if DrawButton(x + pad, flow_y, 28, 24, "<", 0.22, 0.30, 0.42) then CycleTextFlow(-1) end
+            if DrawButton(x + side_panel_w - pad - 28, flow_y, 28, 24, ">", 0.22, 0.30, 0.42) then CycleTextFlow(1) end
+            gfx.setfont(3, "Arial", 13, 'b')
+            SetThemeColor("active", 0.95)
+            local flow_label = CurrentTextFlowLabel()
+            if #flow_label > 16 then flow_label = flow_label:sub(1, 15) .. "." end
+            local flow_tw, flow_th = gfx.measurestr(flow_label)
+            gfx.x = x + pad + 34 + (((side_panel_w - pad * 2) - 68) - flow_tw) / 2
+            gfx.y = flow_y + (24 - flow_th) / 2
+            gfx.drawstr(flow_label)
+        
+            y = y + 51
+            SetThemeColor("dim", 0.95)
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr("Punto lettura")
+            y = y + 18
+        
+            if DrawButton(x + pad, y, 48, 26, "Alto", 0.22, 0.30, 0.42, math.abs(reading_point - 0.18) < 0.01) then
+                reading_point = 0.18
+                SaveSettings()
+            end
+            if DrawButton(x + pad + 54, y, 58, 26, "Medio", 0.22, 0.30, 0.42, math.abs(reading_point - 0.34) < 0.01) then
+                reading_point = 0.34
+                SaveSettings()
+            end
+            if DrawButton(x + pad + 118, y, 48, 26, "Centro", 0.22, 0.30, 0.42, math.abs(reading_point - 0.50) < 0.01) then
+                reading_point = 0.50
+                SaveSettings()
+            end
+        
+            y = y + 46
+            local word_label = word_follow and "Parole ON" or "Parole OFF"
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, word_label, 0.36, 0.29, 0.12, word_follow) then
+                word_follow = not word_follow
+                SaveSettings()
+            end
+        
             y = y + 34
-            if DrawButton(x + pad, y, half_w, 28, "+ Nota", 0.36, 0.30, 0.14) then
-                InsertNoteAtCurrentPosition()
+            local fixed_label = fixed_block_mode and "Scorri OFF" or "Scorri ON"
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, fixed_label, 0.22, 0.38, 0.52, not fixed_block_mode) then
+                fixed_block_mode = not fixed_block_mode
+                SaveSettings()
             end
-            if DrawButton(x + pad + half_w + 6, y, half_w, 28, "+ Battuta", 0.20, 0.48, 0.40) then
+        
+            y = y + 34
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, CountdownAlertLabel(), 0.38, 0.31, 0.10, countdown_alert) then
+                countdown_alert = not countdown_alert
+                SaveSettings()
+            end
+
+            y = y + 34
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, FollowLabel(), 0.22, 0.38, 0.52, FollowEnabled()) then
+                if FollowScriptPath() then ToggleFollow() end
+            end
+        
+            y = y + 34
+            local notes_label = notes_panel_open and "Note ON" or "Note OFF"
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, notes_label, 0.38, 0.31, 0.10, notes_panel_open) then
+                notes_panel_open = not notes_panel_open
+                SaveSettings()
+                RecalculateDocumentLayout()
+            end
+        
+            y = y + 34
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, NotesTrackLabel(), 0.30, 0.30, 0.38, IsTrackVisible(FindTrackByName(notes_track_name))) then
+                ToggleNotesTrackVisibility()
+            end
+        
+            y = y + 34
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, TextFlowTracksLabel(), 0.30, 0.30, 0.38, AnyTextFlowTrackVisible()) then
+                ToggleTextFlowTracksVisibility()
+            end
+        
+            y = y + 34
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, "+ Track Gobbo", 0.20, 0.48, 0.40) then
                 AddEmptyGobboTextItem()
             end
+        
             y = y + 38
-            if SidebarCheck(x + pad, y, full_w, "Modifica (Studio/Edit)", studio_edit_mode) then
+            y = DrawSpeakerPalette(x + pad, y, side_panel_w - pad * 2)
+        
+            y = y + 24
+            SetThemeColor("dim", 0.95)
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr("Corpo")
+            gfx.setfont(3, "Arial", 20, 'b')
+            SetThemeColor("active", 0.95)
+            local font_value = tostring(master_font_size)
+            local fw = gfx.measurestr(font_value)
+            gfx.x, gfx.y = x + side_panel_w - pad - fw, y - 4
+            gfx.drawstr(font_value)
+            y = y + 20
+        
+            if DrawButton(x + pad, y, 42, 28, "-", 0.45, 0.20, 0.20) then
+                master_font_size = math.max(10, master_font_size - 1)
+                SaveSettings()
+                RecalculateDocumentLayout()
+            end
+            if DrawButton(x + pad + 48, y, 74, 28, tostring(master_font_size), 0.22, 0.30, 0.42, true) then
+                -- Solo display: il valore si cambia con -/+.
+            end
+            if DrawButton(x + pad + 128, y, 42, 28, "+", 0.20, 0.45, 0.20) then
+                master_font_size = math.min(60, master_font_size + 1)
+                SaveSettings()
+                RecalculateDocumentLayout()
+            end
+        
+            y = y + 42
+            SetThemeColor("dim", 0.95)
+            gfx.setfont(3, "Arial", 13)
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr("Comandi")
+            y = y + 18
+        
+            local studio_label = studio_edit_mode and "Studio/Edit ON" or "Studio/Edit OFF"
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, studio_label, 0.20, 0.48, 0.40, studio_edit_mode) then
                 studio_edit_mode = not studio_edit_mode
                 if studio_edit_mode then
                     reaper.OnStopButton()
@@ -3433,154 +3017,31 @@ function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
                 end
                 SaveSettings()
             end
-            y = y + 26
+            y = y + 30
+        
             if studio_edit_mode then
-                if SidebarCheck(x + pad + 18, y, full_w - 18, "Muove la timeline", studio_edit_sync) then
+                local sync_label = studio_edit_sync and "Sync ON" or "Sync OFF"
+                if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, sync_label, 0.20, 0.38, 0.58, studio_edit_sync) then
                     studio_edit_sync = not studio_edit_sync
                     SaveSettings()
                 end
-                y = y + 26
-            end
-
-            -- TESTO
-            y = SidebarSection(x, y, "TESTO")
-            SidebarLabel(x + pad, y + 5, "Flusso")
-            local flow_label = CurrentTextFlowLabel()
-            if #flow_label > 14 then flow_label = flow_label:sub(1, 13) .. "." end
-            if DrawButton(x + pad + 58, y, full_w - 58, 26, flow_label .. "  ▾", 0.22, 0.30, 0.42) then
-                ShowTextFlowMenu(x + pad + 58, y + 26)
-            end
-            y = y + 34
-            SidebarLabel(x + pad, y + 6, "Corpo")
-            if DrawButton(x + pad + 58, y, 36, 26, "−", 0.45, 0.20, 0.20) then
-                master_font_size = math.max(10, master_font_size - 1)
-                SaveSettings()
-                RecalculateDocumentLayout()
-            end
-            gfx.setfont(3, "Arial", 17, 'b')
-            SetThemeColor("active", 0.95)
-            local font_value = tostring(master_font_size)
-            local fw = gfx.measurestr(font_value)
-            if y >= (sidebar_clip_top or 0) - 4 then
-                gfx.x, gfx.y = x + pad + 58 + 36 + ((full_w - 58 - 72) - fw) / 2, y + 4
-                gfx.drawstr(font_value)
-            end
-            if DrawButton(x + pad + full_w - 36, y, 36, 26, "+", 0.20, 0.45, 0.20) then
-                master_font_size = math.min(60, master_font_size + 1)
-                SaveSettings()
-                RecalculateDocumentLayout()
-            end
-            y = y + 34
-            SidebarLabel(x + pad, y, "Punto di lettura")
-            y = y + 18
-            local seg_w = math.floor((full_w - 8) / 3)
-            if DrawButton(x + pad, y, seg_w, 26, "Alto", 0.22, 0.30, 0.42, math.abs(reading_point - 0.18) < 0.01) then
-                reading_point = 0.18
-                SaveSettings()
-            end
-            if DrawButton(x + pad + seg_w + 4, y, seg_w, 26, "Terzo", 0.22, 0.30, 0.42, math.abs(reading_point - 0.34) < 0.01) then
-                reading_point = 0.34
-                SaveSettings()
-            end
-            if DrawButton(x + pad + (seg_w + 4) * 2, y, seg_w, 26, "Centro", 0.22, 0.30, 0.42, math.abs(reading_point - 0.50) < 0.01) then
-                reading_point = 0.50
-                SaveSettings()
-            end
-            y = y + 34
-
-            -- LETTURA
-            y = SidebarSection(x, y, "LETTURA")
-            if SidebarCheck(x + pad, y, full_w, "Scorrimento continuo", not fixed_block_mode) then
-                fixed_block_mode = not fixed_block_mode
-                SaveSettings()
-            end
-            y = y + 26
-            if SidebarCheck(x + pad, y, full_w, "Parola per parola", word_follow) then
-                word_follow = not word_follow
-                SaveSettings()
-            end
-            y = y + 26
-            if SidebarCheck(x + pad, y, full_w, "Conto alla rovescia", countdown_alert) then
-                countdown_alert = not countdown_alert
-                SaveSettings()
-            end
-            y = y + 26
-            if SidebarCheck(x + pad, y, full_w, "Mostra timecode", show_timecode) then
-                show_timecode = not show_timecode
-                SaveSettings()
-            end
-            y = y + 30
-
-            -- ASPETTO (richiudibile)
-            local open
-            y, open = SidebarSection(x, y, "ASPETTO", "aspetto")
-            if open then
-                SidebarLabel(x + pad, y, "Tema")
-                y = y + 18
-                if DrawButton(x + pad, y, seg_w, 26, "Scuro", 0.22, 0.22, 0.28, theme_mode == "dark") then
-                    theme_mode = "dark"
-                    SaveSettings()
-                end
-                if DrawButton(x + pad + seg_w + 4, y, seg_w, 26, "Medio", 0.52, 0.48, 0.35, theme_mode == "medium") then
-                    theme_mode = "medium"
-                    SaveSettings()
-                end
-                if DrawButton(x + pad + (seg_w + 4) * 2, y, seg_w, 26, "Chiaro", 0.72, 0.72, 0.72, theme_mode == "light") then
-                    theme_mode = "light"
-                    SaveSettings()
-                end
-                y = y + 34
-                SidebarLabel(x + pad, y, "Contrasto")
-                y = y + 18
-                if DrawButton(x + pad, y, half_w, 26, "Sfumato", 0.28, 0.28, 0.34, not full_contrast) then
-                    full_contrast = false
-                    SaveSettings()
-                end
-                if DrawButton(x + pad + half_w + 6, y, half_w, 26, "Pieno", 0.42, 0.34, 0.18, full_contrast) then
-                    full_contrast = true
-                    SaveSettings()
-                end
-                y = y + 36
-                y = DrawSpeakerPalette(x + pad, y, full_w)
-                y = y + 4
-            end
-
-            -- NOTE E TRACCE (richiudibile)
-            y, open = SidebarSection(x, y, "NOTE E TRACCE", "tracce")
-            if open then
-                if SidebarCheck(x + pad, y, full_w, "Pannello note", notes_panel_open) then
-                    notes_panel_open = not notes_panel_open
-                    SaveSettings()
-                    RecalculateDocumentLayout()
-                end
-                y = y + 26
-                if SidebarCheck(x + pad, y, full_w, "Segui i tagli", FollowEnabled()) then
-                    if FollowScriptPath() then ToggleFollow() end
-                end
-                y = y + 26
-                if SidebarCheck(x + pad, y, full_w, "Traccia note visibile", IsTrackVisible(FindTrackByName(notes_track_name))) then
-                    ToggleNotesTrackVisibility()
-                end
-                y = y + 26
-                if SidebarCheck(x + pad, y, full_w, "Tracce gobbo visibili", AnyTextFlowTrackVisible()) then
-                    ToggleTextFlowTracksVisibility()
-                end
                 y = y + 30
             end
-
-            -- ACCESSIBILITA'
-            y = y + 6
-            if DrawButton(x + pad, y, full_w, 26, "Menu OSARA", 0.20, 0.42, 0.50, false) then
-                OpenGobboAccessibleMenu()
+        
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "Cerca", 0.25, 0.32, 0.42) then
+                PromptSubtitleSearch()
             end
-            y = y + 36
-            gfx.setfont(3, "Arial", 11)
-            SetThemeColor("dim", 0.9)
-            if y >= (sidebar_clip_top or 0) then
-                gfx.x, gfx.y = x + pad, y
-                gfx.drawstr("ZP Studio Suite v1.0.5")
-                gfx.x, gfx.y = x + pad, y + 14
-                gfx.drawstr("Paolo Balestri & Nicola Lanci")
+            y = y + 30
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "Nota", 0.36, 0.30, 0.14) then
+                InsertNoteAtCurrentPosition()
+            end
+            y = y + 30
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "MOD NOTE", 0.38, 0.31, 0.10) then
+                EditNearestNote()
+            end
+            y = y + 30
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "DEL NOTE", 0.48, 0.18, 0.14) then
+                DeleteNearestNote()
             end
             y = y + 36
         
@@ -3629,6 +3090,13 @@ function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
             gfx.x, gfx.y = x + pad, 12
             gfx.drawstr("GOBBO")
         
+            gfx.setfont(3, "Arial", 12)
+            SetThemeColor("active", 0.95)
+            -- I pulsanti occupano y=10..34: le informazioni iniziano sotto.
+            gfx.x, gfx.y = x + pad, 40
+            gfx.drawstr("ZP Studio Suite v1.0.5")
+            gfx.x, gfx.y = x + pad, 56
+            gfx.drawstr("Paolo Balestri & Nicola Lanci")
         
             DrawHelpButton(x + side_panel_w - pad - 28, 10)
             -- A sinistra di Help: un solo hit target, senza sovrapposizioni.
@@ -3780,7 +3248,6 @@ function DrawGUI()
         end
     end
     local wheel = gfx.mouse_wheel or 0
-    NotesWheel = wheel -- per il pannello NOTE (scorrimento dell'elenco)
     gfx.mouse_wheel = 0
 
     local w, h = gfx.w, gfx.h
@@ -3792,13 +3259,7 @@ function DrawGUI()
 
     local spw = not panels_hidden and (sidebar_collapsed and 30 or side_panel_w) or 0
     local over_sidebar = gfx.mouse_x >= w - spw and gfx.mouse_x <= w and gfx.mouse_y >= 0 and gfx.mouse_y <= h
-    if wheel ~= 0 and search_panel_open and search_list_rect
-        and gfx.mouse_x >= search_list_rect.x and gfx.mouse_x <= search_list_rect.x + search_list_rect.w
-        and gfx.mouse_y >= search_list_rect.y and gfx.mouse_y <= search_list_rect.y + search_list_rect.h then
-        local visible = math.max(1, math.floor(search_list_rect.h / (search_replace_open and 74 or 52)))
-        search_list_scroll = math.max(0, math.min(search_list_scroll + (wheel > 0 and -2 or 2), math.max(0, #search_results - visible)))
-        wheel = 0
-    elseif wheel ~= 0 and over_sidebar then
+    if wheel ~= 0 and over_sidebar then
         local max_sidebar_scroll = math.max(0, (sidebar_content_h or 0) - h)
         sidebar_scroll_y = math.max(0, math.min(sidebar_scroll_y + (wheel > 0 and -42 or 42), max_sidebar_scroll))
         wheel = 0
@@ -3942,12 +3403,8 @@ function DrawGUI()
         if fixed_block_mode then static_display_item = cached_items[#cached_items] end
     end
 
-    -- Studio/Edit: la rotella sul testo scorre anche con Sync ON (porta con se' il cursore della
-    -- timeline, come la barra). Per 0,6 s dopo l'ultimo scatto il testo non insegue il cursore.
-    local over_document = gfx.mouse_x >= notes_w and gfx.mouse_x <= notes_w + read_w and gfx.mouse_y >= 0 and gfx.mouse_y <= teleprompter_bottom
-    if studio_edit_mode and wheel ~= 0 and over_document then EditWheelUntil = reaper.time_precise() + 0.6 end
-    if studio_edit_mode and (not studio_edit_sync or edit_scroll_dragging or edit_scroll_was_dragging
-        or reaper.time_precise() < (EditWheelUntil or 0)) then
+    if studio_edit_mode and (not studio_edit_sync or edit_scroll_dragging or edit_scroll_was_dragging) then
+        local over_document = gfx.mouse_x >= notes_w and gfx.mouse_x <= notes_w + read_w and gfx.mouse_y >= 0 and gfx.mouse_y <= teleprompter_bottom
         if wheel ~= 0 and over_document then
             local step = math.max(42, master_font_size * 2.2)
             document_scroll_y = document_scroll_y + (wheel > 0 and -step or step)
@@ -4071,15 +3528,6 @@ function DrawGUI()
             local edit_w = math.max(240, notes_w + read_w - text_x - document_margin_x)
             HandleStudioItemClick(item.item, text_x - 8, start_py - 4, edit_w, math.max(line_h, end_py - start_py))
             HandleSubtitleEditDoubleClick(item.item, text_x - 8, start_py - 4, edit_w, math.max(line_h, end_py - start_py))
-            if inline_edit and inline_edit.item == item.item then
-                -- la battuta che stai modificando: cornice e barra a sinistra
-                local bx, by, bh = text_x - 12, start_py - 6, math.max(line_h, end_py - start_py) + 8
-                inline_edit.block = {y = by, h = bh}
-                gfx.set(1.0, 0.70, 0.12, 0.95)
-                gfx.rect(bx, by, 5, bh, 1)
-                gfx.rect(bx, by, edit_w + 8, bh, 0)
-                gfx.rect(bx + 1, by + 1, edit_w + 6, bh - 2, 0)
-            end
         end
     end
 

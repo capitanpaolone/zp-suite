@@ -65,6 +65,10 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 - Backup in `gobbo_ricerca_battuta/backup/` prima di modifiche grosse; ogni cambio in MEMORIA.md.
 
 ## REAPER (cose verificate, non intuitive)
+- `utf8.offset(s, n, i)` va in errore se i cade a meta' di una lettera UTF-8 (crash Backspace nel Gobbo, 2026-10-07):
+  per muovere il cursore usare Utf8PrevCursor/Utf8NextCursor dei Gobbi (scorrono i byte a mano).
+- `gfx.setclip` NON esiste (inventata da Codex nel Passo 2 ricerca, crash all'apertura del pannello, 2026-10-07). Per tagliare il testo:
+  `gfx.drawstr(s, 0, right, bottom)` (clip a gfx.x,gfx.y,right,bottom). Controlla ogni funzione gfx/reaper nuova sulla documentazione.
 - 40850 = "Item: Show notes for items" (NON le note del progetto). Le note del progetto non hanno
   un'azione nativa: con SWS `_S&M_SHOWNOTESHELP`, senza SWS 40021 Project settings.
 - `TrackFX_AddByName` non carica `.RfxChain`: blocco FXCHAIN in una traccia temporanea + `TrackFX_CopyToTrack`.

@@ -112,7 +112,7 @@ local show_settings_timer = 0
 local document_margin_x = 54
 local speaker_shoulder_w = 78
 local scroll_follow = 0.045
-local side_panel_w = 210
+local side_panel_w = 190
 local theme_mode = "medium"
 local full_contrast = false
 local sfumato_pre_roll = 5.0
@@ -217,7 +217,7 @@ local NOTE_DEFAULT_LEN = 3.0
 local NOTE_HOT_MARGIN = 0.35
 local NOTE_WAKE_LEAD = 5.0
 local NOTE_PIXELS_PER_SECOND = 46
-local NOTES_PANEL_W = 250
+local NOTES_PANEL_W = 210
 local TC_ALERT_LEAD = 3.0
 
 function lerp(a, b, t) return a + (b - a) * t end
@@ -577,14 +577,8 @@ function CycleTextFlow(delta)
     end
 
     local next_index = ((current_index - 1 + delta) % #tracks) + 1
-    SelectTextFlow(tracks[next_index].guid)
-end
-
--- Imposta il flusso letto dal gobbo (guid di una traccia testo, o READ_ALL = Tutti).
-function SelectTextFlow(guid)
-    selected_text_track_guid = guid
-    local entry = guid ~= READ_ALL and FindTextFlowByGuid(guid) or nil
-    current_text_track = entry and entry.track or nil
+    selected_text_track_guid = tracks[next_index].guid
+    current_text_track = tracks[next_index].track
     reaper.SetExtState(settings_section, "read_all", selected_text_track_guid == READ_ALL and "1" or "0", true)
     active_media_item = nil
     cached_items = {}
@@ -653,14 +647,6 @@ function BestTextColorForBackground(r, g, b)
     local white_ratio = ContrastRatio(lum, 1)
     if black_ratio >= white_ratio then return 0.02, 0.025, 0.03 end
     return 1.0, 0.98, 0.92
-end
-
--- Testo leggibile su una scheda nota trasparente (alpha) sopra il pannello scuro:
--- il fondo vero e' la miscela, non il colore pieno della nota (prima: nero su oro scuro).
-function SetNoteCardTextColor(r, g, b, card_alpha, alpha)
-    local base = 0.08
-    local a = card_alpha or 0.2
-    SetReadableTextColor(r * a + base * (1 - a), g * a + base * (1 - a), b * a + base * (1 - a), alpha)
 end
 
 function SetReadableTextColor(r, g, b, alpha)
@@ -1072,19 +1058,6 @@ function EditNearestNote()
     end
 
     StartInlineNoteEdit(note)
-end
-
--- Cancella una nota dal pannello (la x sulla scheda), con conferma. Undo la rimette.
-function DeleteNote(note)
-    if not note or not note.item or not reaper.ValidatePtr(note.item, "MediaItem*") then return end
-    local ok = reaper.ShowMessageBox("Cancellare questa nota?\n\n" .. FormatVideoTimecode(note.pos) .. "\n" .. note.text, "ZP Studio Suite", 4)
-    if ok ~= 6 then return end
-    local track = reaper.GetMediaItem_Track(note.item)
-    reaper.Undo_BeginBlock()
-    reaper.DeleteTrackMediaItem(track, note.item)
-    reaper.Undo_EndBlock("ZP Studio Suite cancella nota", -1)
-    reaper.UpdateArrange()
-    UpdateItems()
 end
 
 function DeleteNearestNote()
@@ -1682,12 +1655,10 @@ function DrawTextLine(line, x, y, is_active, item, word_counter, base_color_kind
     return word_counter
 end
 
-local NOTE_FONT, NOTE_LINE_H = 17, 21
-
 function DrawWrappedNoteText(text, x, y, max_w, alpha)
-    gfx.setfont(3, "Arial", NOTE_FONT)
+    gfx.setfont(3, "Arial", 14)
     local lines = WrapText(text:gsub("[\r\n]+", " "), max_w)
-    local line_h = NOTE_LINE_H
+    local line_h = 17
     for i, line in ipairs(lines) do
         gfx.x = x
         gfx.y = y + ((i - 1) * line_h)
@@ -1697,9 +1668,9 @@ function DrawWrappedNoteText(text, x, y, max_w, alpha)
 end
 
 function MeasureWrappedNoteText(text, max_w)
-    gfx.setfont(3, "Arial", NOTE_FONT)
+    gfx.setfont(3, "Arial", 14)
     local lines = WrapText((text or ""):gsub("[\r\n]+", " "), max_w)
-    return #lines * NOTE_LINE_H
+    return #lines * 17
 end
 
 function NoteVisualState(note, play_pos)
@@ -1715,171 +1686,81 @@ function NoteVisualState(note, play_pos)
     return "future", 0.26
 end
 
--- Segna una nota come fatta (bollino OK) o la riapre. Sta nell'item: P_EXT:ZP_NOTE_DONE.
-function ToggleNoteDone(note)
-    if not note or not note.item or not reaper.ValidatePtr(note.item, "MediaItem*") then return end
-    local done = not note.done
-    reaper.Undo_BeginBlock()
-    reaper.GetSetMediaItemInfo_String(note.item, "P_EXT:ZP_NOTE_DONE", done and "1" or "", true)
-    reaper.Undo_EndBlock(done and "ZP Studio Suite: nota fatta (OK)" or "ZP Studio Suite: nota riaperta", -1)
-    note.done = done
-    UpdateItems()
-end
-
--- Pannello NOTE: elenco di TUTTE le note in ordine di tempo, scorrevole con la rotella.
--- Segue da solo la nota corrente (attiva o la prossima) finche' non scorri a mano (5 s di pausa).
--- Clic = porta la timeline alla nota; doppio clic = modifica; bollino OK = fatta / riaperta.
--- Stato tra un giro e l'altro in globali (NotesScroll, NotesUserScrollTime): niente local nuovi.
 function DrawNotesPanel(h, play_pos, reading_y)
     if panels_hidden or not notes_panel_open then return end
 
     local x = 0
     local pad = 12
     local panel_w = NOTES_PANEL_W
-    local bar_w = 6
     gfx.set(0.10, 0.095, 0.075, 0.96)
     gfx.rect(x, 0, panel_w, h, 1)
+    gfx.set(0.55, 0.42, 0.18, 0.75)
+    gfx.rect(panel_w - 1, 0, 1, h, 1)
 
-    local clip_top = 42
-    local clip_bottom = h - 8
-    local max_w = panel_w - (pad * 2) - bar_w
-    local now = reaper.time_precise()
-
-    -- misure e nota corrente
-    local entries, total_h, current_i, done_n = {}, 0, nil, 0
-    for i, note in ipairs(cached_notes) do
-        local card_h = MeasureWrappedNoteText(note.text, max_w) + 38
-        entries[i] = { note = note, top = total_h, card_h = card_h }
-        total_h = total_h + card_h + 8
-        if note.done then done_n = done_n + 1 end
-        if not current_i and play_pos <= note.pos + note.len + NOTE_HOT_MARGIN then current_i = i end
-    end
-    local view_h = math.max(1, clip_bottom - clip_top)
-    local max_scroll = math.max(0, total_h - view_h)
-
-    -- rotella sopra il pannello: scorrimento a mano (NotesWheel la mette il ciclo principale)
-    local over_panel = gfx.mouse_x >= x and gfx.mouse_x < panel_w and gfx.mouse_y >= clip_top and gfx.mouse_y <= clip_bottom
-    if over_panel and (NotesWheel or 0) ~= 0 then
-        NotesScroll = (NotesScroll or 0) + (NotesWheel > 0 and -60 or 60)
-        NotesUserScrollTime = now
-        NotesWheel = 0
-    end
-    if current_i and now - (NotesUserScrollTime or 0) > 5 and not over_panel then
-        local target = entries[current_i].top - 40
-        NotesScroll = (NotesScroll or 0) + (target - (NotesScroll or 0)) * 0.25
-    end
-    NotesScroll = math.max(0, math.min(NotesScroll or 0, max_scroll))
-
-    local mouse_pressed = (gfx.mouse_cap & 1) == 1 and not mouse_was_down
-    local clicks_ok = mouse_pressed and over_panel and not inline_edit
-        and not (search_panel_open and SearchPanelBottom and gfx.mouse_y <= SearchPanelBottom)
-
-    for i, entry in ipairs(entries) do
-        local note = entry.note
-        local y = clip_top + 4 + entry.top - NotesScroll
-        local card_h = entry.card_h
-        if y > clip_bottom then break end
-        if y + card_h >= clip_top then
-            local state, alpha = NoteVisualState(note, play_pos)
-            local is_current = i == current_i
-
-            -- corrente (attiva) quasi piena; le altre trasparenti; fatte attenuate
-            local card_alpha = 0.22
-            if note.done then card_alpha = 0.08
-            elseif state == "active" then card_alpha = 0.92
-            elseif is_current or state == "imminent" then card_alpha = 0.40 end
-            local text_alpha = note.done and 0.55 or 0.95
-            gfx.set(note.r, note.g, note.b, card_alpha)
-            gfx.rect(x + 6, y - 4, panel_w - 12 - bar_w, card_h, 1)
-            if is_current then
-                gfx.set(1.0, 0.70, 0.12, 1)
-                gfx.rect(x + 2, y - 4, 4, card_h, 1)
-            end
-
-            -- x (cancella) a sinistra, lontana dal bollino OK a destra: niente cancellazioni per sbaglio
-            local ok_w, ok_h = 44, 18
-            local del_w = 20
-            local del_x = x + pad - 2
-            local ok_x, ok_y = x + panel_w - 12 - bar_w - ok_w - 4, y - 1
-
-            gfx.setfont(3, "Arial", 14, 'b')
-            SetNoteCardTextColor(note.r, note.g, note.b, card_alpha, text_alpha)
-            gfx.x, gfx.y = del_x + del_w + 8, y
-            gfx.drawstr(FormatVideoTimecode(note.pos))
-            -- x: cancella (chiede conferma)
-            SetNoteCardTextColor(note.r, note.g, note.b, card_alpha, 0.75)
-            gfx.rect(del_x, ok_y, del_w, ok_h, 0)
-            gfx.setfont(3, "Arial", 13, 'b')
-            local xw = gfx.measurestr("×")
-            gfx.x, gfx.y = del_x + math.floor((del_w - xw) / 2), ok_y + 2
-            gfx.drawstr("×")
-            if note.done then
-                gfx.set(0.25, 0.68, 0.36, 1); gfx.rect(ok_x, ok_y, ok_w, ok_h, 1)
-                gfx.set(1, 1, 1, 1)
-            else
-                SetNoteCardTextColor(note.r, note.g, note.b, card_alpha, 0.75)
-                gfx.rect(ok_x, ok_y, ok_w, ok_h, 0)
-            end
-            gfx.setfont(3, "Arial", 12, 'b')
-            local label = note.done and "✓ OK" or "OK"
-            local lw = gfx.measurestr(label)
-            gfx.x, gfx.y = ok_x + math.floor((ok_w - lw) / 2), ok_y + 3
-            gfx.drawstr(label)
-
-            SetNoteCardTextColor(note.r, note.g, note.b, card_alpha, text_alpha)
-            DrawWrappedNoteText(note.text, x + pad, y + 21, max_w, alpha)
-
-            if clicks_ok and gfx.mouse_y >= math.max(clip_top, y - 4) and gfx.mouse_y <= y - 4 + card_h then
-                local mx, my = gfx.mouse_x, gfx.mouse_y
-                if mx >= ok_x and mx <= ok_x + ok_w and my >= ok_y and my <= ok_y + ok_h then
-                    ToggleNoteDone(note)
-                elseif mx >= del_x and mx <= del_x + del_w and my >= ok_y and my <= ok_y + ok_h then
-                    DeleteNote(note)
-                elseif note_last_click_item == note.item and now - (note_last_click_time or 0) < 0.35 then
-                    StartInlineNoteEdit(note)   -- doppio clic: modifica
-                    note_last_click_item = nil
-                else
-                    reaper.SetEditCurPos(note.pos, true, false)   -- clic: timeline alla nota
-                    reaper.UpdateArrange()
-                    note_last_click_item, note_last_click_time = note.item, now
-                    NotesUserScrollTime = 0   -- torna a seguire: la nota cliccata diventa la corrente
-                end
-                clicks_ok = false
-            end
-        end
-    end
-
-    -- intestazione disegnata sopra le schede che scorrono (gfx non ha il ritaglio)
-    gfx.set(0.10, 0.095, 0.075, 1)
-    gfx.rect(x, 0, panel_w, clip_top, 1)
-    gfx.rect(x, clip_bottom, panel_w, h - clip_bottom, 1)
     gfx.setfont(3, "Arial", 15, 'b')
     gfx.set(0.95, 0.84, 0.42, 1)
     gfx.x, gfx.y = x + pad, 14
     gfx.drawstr("NOTE")
-    gfx.setfont(3, "Arial", 13)
-    gfx.set(0.85, 0.80, 0.68, 1)
-    gfx.x, gfx.y = x + pad + 52, 16
-    gfx.drawstr(#entries == 0 and "" or (tostring(#entries) .. (done_n > 0 and ("  ·  " .. done_n .. " OK") or "")))
 
-    -- barra di scorrimento
-    if max_scroll > 0 then
-        local track_x = panel_w - bar_w - 2
-        gfx.set(0.22, 0.20, 0.16, 1)
-        gfx.rect(track_x, clip_top, bar_w - 2, view_h, 1)
-        local thumb_h = math.max(24, view_h * view_h / total_h)
-        local thumb_y = clip_top + (view_h - thumb_h) * (NotesScroll / max_scroll)
-        gfx.set(0.80, 0.62, 0.25, 1)
-        gfx.rect(track_x, thumb_y, bar_w - 2, thumb_h, 1)
+    local clip_top = 42
+    local clip_bottom = h - 8
+    local shown = 0
+    local max_w = panel_w - (pad * 2)
+    local entries = {}
+
+    for _, note in ipairs(cached_notes) do
+        local text_h = MeasureWrappedNoteText(note.text, max_w)
+        local card_h = text_h + 34
+        local raw_y = (reading_y or (h * reading_point)) + ((note.pos - play_pos) * NOTE_PIXELS_PER_SECOND) - 18
+        if raw_y + card_h >= clip_top and raw_y <= clip_bottom then
+            table.insert(entries, {note=note, y=raw_y, card_h=card_h, text_h=text_h})
+        end
     end
-    gfx.set(0.55, 0.42, 0.18, 0.75)
-    gfx.rect(panel_w - 1, 0, 1, h, 1)
 
-    if #entries == 0 then
-        gfx.setfont(3, "Arial", 14)
-        gfx.set(0.80, 0.76, 0.66, 1)
+    table.sort(entries, function(a, b) return a.y < b.y end)
+
+    local last_bottom = clip_top - 8
+    for _, entry in ipairs(entries) do
+        local note = entry.note
+        local y = math.max(entry.y, last_bottom + 8)
+        local card_h = entry.card_h
+        if y > clip_bottom then break end
+        if y + card_h >= clip_top then
+            local state, alpha = NoteVisualState(note, play_pos)
+
+            if state == "active" then
+                gfx.set(note.r, note.g, note.b, 0.56)
+                gfx.rect(x + 6, y - 4, panel_w - 12, card_h, 1)
+            elseif state == "imminent" then
+                gfx.set(note.r, note.g, note.b, 0.20 + alpha * 0.20)
+                gfx.rect(x + 6, y - 4, panel_w - 12, card_h, 1)
+            elseif state == "past" then
+                gfx.set(note.r, note.g, note.b, 0.16)
+                gfx.rect(x + 6, y - 4, panel_w - 12, card_h, 1)
+            else
+                gfx.set(note.r, note.g, note.b, 0.18)
+                gfx.rect(x + 6, y - 4, panel_w - 12, card_h, 1)
+            end
+
+            local tc = FormatVideoTimecode(note.pos)
+            gfx.setfont(3, "Arial", 12, 'b')
+            SetReadableTextColor(note.r, note.g, note.b, math.max(0.62, alpha))
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr(tc)
+
+            y = y + 17
+            SetReadableTextColor(note.r, note.g, note.b, math.max(0.62, alpha))
+            DrawWrappedNoteText(note.text, x + pad, y, max_w, alpha)
+            shown = shown + 1
+        end
+        last_bottom = y + card_h
+    end
+
+    if shown == 0 then
+        gfx.setfont(3, "Arial", 13)
+        gfx.set(0.60, 0.56, 0.46, 0.8)
         gfx.x, gfx.y = x + pad, clip_top + 10
-        gfx.drawstr("Nessuna nota")
+        gfx.drawstr("Nessuna nota nel quadro")
     end
 end
 
@@ -2413,14 +2294,6 @@ function DrawInlineSubtitleEditor()
     local x = inline_edit.x
     local y = math.max(6, inline_edit.y)
     local w = math.min(inline_edit.w, gfx.w - x - 8)
-    local is_subtitle = (inline_edit.mode or "subtitle") == "subtitle"
-    if is_subtitle then
-        -- in alto, subito sotto Cerca (stessa larghezza): la battuta resta visibile sotto,
-        -- evidenziata nel gobbo (inline_edit.block, aggiornato a ogni giro dal disegno del copione)
-        w = math.min(680, math.max(260, gfx.w - 16))
-        x = math.max(4, math.floor((gfx.w - w) / 2))
-        y = (search_panel_open and SearchPanelBottom or 30) + 6
-    end
     local line_h = inline_edit.font_size * 1.45
     inline_edit.line_h = line_h
     gfx.setfont(1, default_font, inline_edit.font_size)
@@ -2430,12 +2303,6 @@ function DrawInlineSubtitleEditor()
     inline_edit.text_w = text_w
     local lines = InlineVisualLines(text_w)
     local h = math.max(inline_edit.h, (#lines * line_h) + (pad * 2) + title_h + footer_h)
-    if is_subtitle then h = (#lines * line_h) + (pad * 2) + title_h + footer_h end
-    local block = inline_edit.block
-    if is_subtitle and block and block.y < y + h + 8 and block.y + block.h > y then
-        -- la finestra coprirebbe la battuta: la metto subito sotto la battuta
-        if block.y + block.h + 10 + h <= gfx.h - 8 then y = block.y + block.h + 10 end
-    end
     if y + h > gfx.h - 8 then y = math.max(6, gfx.h - h - 8) end
     inline_edit.text_x = x + pad
     inline_edit.text_y = y + pad + title_h
@@ -2450,9 +2317,7 @@ function DrawInlineSubtitleEditor()
         gfx.x, gfx.y = x + pad, y + 10
         gfx.drawstr(inline_edit.title)
     end
-    -- il titolo cambia il font: torno a quello del testo (con cui InlineVisualLines ha misurato)
-    gfx.setfont(1, default_font, inline_edit.font_size)
-    gfx.set(0.98, 0.95, 0.88, 1)
+    gfx.set(0.96, 0.91, 0.78, 1)
     for i, line in ipairs(lines) do
         gfx.x = x + pad
         gfx.y = inline_edit.text_y + ((i - 1) * line_h)
@@ -2465,7 +2330,7 @@ function DrawInlineSubtitleEditor()
                 local sel_w = gfx.measurestr((inline_edit.text or ""):sub(a, b - 1))
                 gfx.set(0.18, 0.44, 0.95, 0.55)
                 gfx.rect(x + pad + before_w, inline_edit.text_y + ((i - 1) * line_h) - 2, math.max(2, sel_w), line_h, 1)
-                gfx.set(0.98, 0.95, 0.88, 1)
+                gfx.set(0.96, 0.91, 0.78, 1)
             end
         end
         gfx.drawstr(line.text)
@@ -2520,11 +2385,11 @@ function DrawInlineSubtitleEditor()
         SaveInlineSubtitleEdit()
         return
     end
-    gfx.setfont(3, "Arial", 14)
-    gfx.set(0.90, 0.86, 0.76, 1)
+    gfx.setfont(3, "Arial", 12)
+    gfx.set(0.72, 0.66, 0.54, 0.96)
     gfx.x = x + pad
-    gfx.y = button_y + 4
-    gfx.drawstr("Invio salva  |  Shift+Invio accapo  |  Esc annulla", 0, x + w - pad - 196, button_y + 24)
+    gfx.y = button_y + 5
+    gfx.drawstr("Invio salva  |  Shift+Invio accapo  |  Esc annulla")
 end
 
 function HandleSubtitleEditDoubleClick(item, x, y, w, h)
@@ -2781,8 +2646,7 @@ function CollectNotes()
             if text ~= "" then
                 local color = GetDisplayedItemColor(item, COLOR_NOTES)
                 local r, g, b = ColorToRGB(color, COLOR_NOTES)
-                local _, done = reaper.GetSetMediaItemInfo_String(item, "P_EXT:ZP_NOTE_DONE", "", false)
-                table.insert(notes, { item=item, pos=pos, len=len, text=text, key=NormalizeName(text), r=r, g=g, b=b, color=color, done = done == "1" })
+                table.insert(notes, { item=item, pos=pos, len=len, text=text, key=NormalizeName(text), r=r, g=g, b=b, color=color })
             end
         end
         table.sort(notes, function(a, b) return a.pos < b.pos end)
@@ -3038,7 +2902,7 @@ function DrawHelpButton(x, y)
 end
 
 function DrawSearchPanel(w, h)
-    if not search_panel_open then SearchPanelBottom = nil; return end
+    if not search_panel_open then return end
     RefreshSearchResults(false)
     local panel_w = math.min(680, math.max(80, w - 16))
     local x = math.max(4, math.min(w - panel_w - 4, math.floor((w - panel_w) / 2)))
@@ -3054,7 +2918,6 @@ function DrawSearchPanel(w, h)
     y = math.max(0, math.min(y, h - panel_h - 4))
     local pad = 10
 
-    SearchPanelBottom = y + panel_h -- la finestra Modifica battuta si mette subito sotto
     gfx.set(0.08, 0.075, 0.065, 0.97); gfx.rect(x, y, panel_w, panel_h, 1)
     gfx.set(0.72, 0.50, 0.12, 0.95); gfx.rect(x, y, panel_w, 2, 1)
     gfx.set(0.38, 0.34, 0.26, 0.8); gfx.rect(x, y, panel_w, panel_h, 0)
@@ -3285,106 +3148,12 @@ function DrawSettingsPanel(w, h)
     return panel_y
 end
 
--- Riga con casella da spuntare (impostazione si'/no): restituisce true al clic.
--- Rispetta il ritaglio della barra (sidebar_clip_top/bottom) come DrawButton.
-function SidebarCheck(x, y, w, label, checked)
-    local h = 22
-    if sidebar_clip_top and (y + h < sidebar_clip_top or y > sidebar_clip_bottom) then return false end
-    local mx, my = gfx.mouse_x, gfx.mouse_y
-    local hover = mx >= x and mx <= x + w and my >= y and my <= y + h
-    if sidebar_clip_top and (my < sidebar_clip_top or my > sidebar_clip_bottom) then hover = false end
-    local box = 16
-    local by = y + math.floor((h - box) / 2)
-    if checked then gfx.set(0.10, 0.24, 0.50, 1) else SetThemeColor("bg", 1) end
-    gfx.rect(x, by, box, box, 1)
-    if hover then gfx.set(0.30, 0.50, 0.85, 1) else gfx.set(0.40, 0.42, 0.55, 1) end
-    gfx.rect(x, by, box, box, 0)
-    if checked then
-        gfx.set(1, 1, 1, 1)
-        gfx.line(x + 3, by + 8, x + 6, by + 12)
-        gfx.line(x + 6, by + 12, x + 13, by + 4)
-        gfx.line(x + 3, by + 9, x + 6, by + 13)
-        gfx.line(x + 6, by + 13, x + 13, by + 5)
-    end
-    gfx.setfont(3, "Arial", 14)
-    SetThemeColor(hover and "active" or "text", 1)
-    gfx.x, gfx.y = x + box + 8, y + 3
-    gfx.drawstr(label)
-    return hover and (gfx.mouse_cap == 0) and mouse_was_down
-end
-
-function SidebarLabel(x, y, text)
-    if sidebar_clip_top and (y + 16 < sidebar_clip_top or y > sidebar_clip_bottom) then return end
-    gfx.setfont(3, "Arial", 13)
-    SetThemeColor("dim", 1)
-    gfx.x, gfx.y = x, y
-    gfx.drawstr(text)
-end
-
--- Titolo di sezione con riga sottile. Con key e' richiudibile (stato ricordato in ExtState).
--- Restituisce la y dove continuare e se la sezione e' aperta.
-function SidebarSection(x, y, title, key)
-    local pad = 12
-    local open = true
-    if key then
-        SidebarOpen = SidebarOpen or {}
-        if SidebarOpen[key] == nil then
-            SidebarOpen[key] = reaper.GetExtState(settings_section, "sidebar_open_" .. key) ~= "0"
-        end
-        open = SidebarOpen[key]
-    end
-    local visible = not sidebar_clip_top or (y + 22 >= sidebar_clip_top and y <= sidebar_clip_bottom)
-    if visible then
-        SetThemeColor("panel_line", 1)
-        gfx.rect(x + pad, y, side_panel_w - pad * 2, 1, 1)
-        gfx.setfont(3, "Arial", 12, 'b')
-        SetThemeColor("dim", 1)
-        gfx.x, gfx.y = x + pad, y + 6
-        gfx.drawstr(title)
-        if key then
-            local arrow = open and "▾" or "▸"
-            local aw = gfx.measurestr(arrow)
-            gfx.x = x + side_panel_w - pad - aw
-            gfx.drawstr(arrow)
-            local mx, my = gfx.mouse_x, gfx.mouse_y
-            local hover = mx >= x + pad and mx <= x + side_panel_w - pad and my >= y and my <= y + 22
-            if sidebar_clip_top and (my < sidebar_clip_top or my > sidebar_clip_bottom) then hover = false end
-            if hover and gfx.mouse_cap == 0 and mouse_was_down then
-                open = not open
-                SidebarOpen[key] = open
-                reaper.SetExtState(settings_section, "sidebar_open_" .. key, open and "1" or "0", true)
-            end
-        end
-    end
-    return y + 26, open
-end
-
--- Tendina del flusso testi: scegli al volo una traccia testo o "Tutti".
-function ShowTextFlowMenu(mx, my)
-    local tracks = CollectTextFlowTracks()
-    if #tracks == 0 then return end
-    local entries = {}
-    if #tracks >= 2 then entries[#entries + 1] = { guid = READ_ALL, name = "Tutti" } end
-    for _, entry in ipairs(tracks) do
-        entries[#entries + 1] = { guid = entry.guid, name = TextFlowDisplayName(entry.name) }
-    end
-    local parts = {}
-    for i, entry in ipairs(entries) do
-        local label = tostring(entry.name or ""):gsub("|", "/")
-        if label:sub(1, 1) == "#" or label:sub(1, 1) == "!" or label:sub(1, 1) == ">" or label:sub(1, 1) == "<" then label = " " .. label end
-        parts[i] = ((entry.guid == selected_text_track_guid) and "!" or "") .. label
-    end
-    gfx.x, gfx.y = mx, my
-    local choice = gfx.showmenu(table.concat(parts, "|"))
-    if choice and choice > 0 and entries[choice] then SelectTextFlow(entries[choice].guid) end
-end
-
 function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
     if panels_hidden then return end
     local x = w - (sidebar_collapsed and 30 or side_panel_w)
     local pad = 12
-    local header_h = 44
-    local y = header_h + 8 - sidebar_scroll_y
+    local header_h = 88
+    local y = header_h - sidebar_scroll_y
     local clip_top = header_h
     local clip_bottom = h
 
@@ -3408,24 +3177,175 @@ function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
     sidebar_clip_bottom = clip_bottom
 
         if not sidebar_collapsed then
-            -- Barra comandi: in alto cio' che si usa lavorando, poi le regolazioni, in fondo
-            -- quello che si imposta una volta (sezioni richiudibili). Funzioni invariate.
-            local full_w = side_panel_w - pad * 2
-            local half_w = math.floor((full_w - 6) / 2)
-
-            -- LAVORO
-            if DrawButton(x + pad, y, full_w, 28, "Cerca  (Ctrl/⌘+F)", 0.25, 0.32, 0.42) then
-                PromptSubtitleSearch()
+    local tc_label = show_timecode and "Nascondi TC" or "Mostra TC"
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, tc_label, 0.25, 0.32, 0.42, show_timecode) then
+                show_timecode = not show_timecode
+                SaveSettings()
             end
+        
+            y = y + 32
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "OSARA Menu", 0.20, 0.42, 0.50, false) then
+                OpenGobboAccessibleMenu()
+            end
+        
+            y = y + 36
+            gfx.setfont(3, "Arial", 13)
+            SetThemeColor("dim", 0.95)
+            gfx.x, gfx.y = x + pad, y
+            local theme_name = theme_mode == "dark" and "Scuro" or (theme_mode == "light" and "Chiaro" or "Medio")
+            gfx.drawstr("Tema: " .. theme_name)
+            y = y + 18
+        
+            if DrawButton(x + pad, y, 50, 26, "Scuro", 0.22, 0.22, 0.28, theme_mode == "dark") then
+                theme_mode = "dark"
+                SaveSettings()
+            end
+            if DrawButton(x + pad + 55, y, 54, 26, "Medio", 0.52, 0.48, 0.35, theme_mode == "medium") then
+                theme_mode = "medium"
+                SaveSettings()
+            end
+            if DrawButton(x + pad + 114, y, 54, 26, "Chiaro", 0.72, 0.72, 0.72, theme_mode == "light") then
+                theme_mode = "light"
+                SaveSettings()
+            end
+        
+            y = y + 46
+            SetThemeColor("dim", 0.95)
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr("Contrasto: " .. (full_contrast and "Pieno" or "Sfumato"))
+            y = y + 18
+        
+            if DrawButton(x + pad, y, 76, 26, "Sfumato", 0.28, 0.28, 0.34, not full_contrast) then
+                full_contrast = false
+                SaveSettings()
+            end
+            if DrawButton(x + pad + 84, y, 76, 26, "Pieno", 0.42, 0.34, 0.18, full_contrast) then
+                full_contrast = true
+                SaveSettings()
+            end
+        
+            y = y + 46
+            gfx.setfont(3, "Arial", 12)
+            SetThemeColor("dim", 0.95)
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr("Flusso testi")
+            local flow_y = y + 17
+            if DrawButton(x + pad, flow_y, 28, 24, "<", 0.22, 0.30, 0.42) then CycleTextFlow(-1) end
+            if DrawButton(x + side_panel_w - pad - 28, flow_y, 28, 24, ">", 0.22, 0.30, 0.42) then CycleTextFlow(1) end
+            gfx.setfont(3, "Arial", 13, 'b')
+            SetThemeColor("active", 0.95)
+            local flow_label = CurrentTextFlowLabel()
+            if #flow_label > 16 then flow_label = flow_label:sub(1, 15) .. "." end
+            local flow_tw, flow_th = gfx.measurestr(flow_label)
+            gfx.x = x + pad + 34 + (((side_panel_w - pad * 2) - 68) - flow_tw) / 2
+            gfx.y = flow_y + (24 - flow_th) / 2
+            gfx.drawstr(flow_label)
+        
+            y = y + 51
+            SetThemeColor("dim", 0.95)
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr("Punto lettura")
+            y = y + 18
+        
+            if DrawButton(x + pad, y, 48, 26, "Alto", 0.22, 0.30, 0.42, math.abs(reading_point - 0.18) < 0.01) then
+                reading_point = 0.18
+                SaveSettings()
+            end
+            if DrawButton(x + pad + 54, y, 58, 26, "Medio", 0.22, 0.30, 0.42, math.abs(reading_point - 0.34) < 0.01) then
+                reading_point = 0.34
+                SaveSettings()
+            end
+            if DrawButton(x + pad + 118, y, 48, 26, "Centro", 0.22, 0.30, 0.42, math.abs(reading_point - 0.50) < 0.01) then
+                reading_point = 0.50
+                SaveSettings()
+            end
+        
+            y = y + 46
+            local word_label = word_follow and "Parole ON" or "Parole OFF"
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, word_label, 0.36, 0.29, 0.12, word_follow) then
+                word_follow = not word_follow
+                SaveSettings()
+            end
+        
             y = y + 34
-            if DrawButton(x + pad, y, half_w, 28, "+ Nota", 0.36, 0.30, 0.14) then
-                InsertNoteAtCurrentPosition()
+            local fixed_label = fixed_block_mode and "Scorri OFF" or "Scorri ON"
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, fixed_label, 0.22, 0.38, 0.52, not fixed_block_mode) then
+                fixed_block_mode = not fixed_block_mode
+                SaveSettings()
             end
-            if DrawButton(x + pad + half_w + 6, y, half_w, 28, "+ Battuta", 0.20, 0.48, 0.40) then
+        
+            y = y + 34
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, CountdownAlertLabel(), 0.38, 0.31, 0.10, countdown_alert) then
+                countdown_alert = not countdown_alert
+                SaveSettings()
+            end
+
+            y = y + 34
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, FollowLabel(), 0.22, 0.38, 0.52, FollowEnabled()) then
+                if FollowScriptPath() then ToggleFollow() end
+            end
+        
+            y = y + 34
+            local notes_label = notes_panel_open and "Note ON" or "Note OFF"
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, notes_label, 0.38, 0.31, 0.10, notes_panel_open) then
+                notes_panel_open = not notes_panel_open
+                SaveSettings()
+                RecalculateDocumentLayout()
+            end
+        
+            y = y + 34
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, NotesTrackLabel(), 0.30, 0.30, 0.38, IsTrackVisible(FindTrackByName(notes_track_name))) then
+                ToggleNotesTrackVisibility()
+            end
+        
+            y = y + 34
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, TextFlowTracksLabel(), 0.30, 0.30, 0.38, AnyTextFlowTrackVisible()) then
+                ToggleTextFlowTracksVisibility()
+            end
+        
+            y = y + 34
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 28, "+ Track Gobbo", 0.20, 0.48, 0.40) then
                 AddEmptyGobboTextItem()
             end
+        
             y = y + 38
-            if SidebarCheck(x + pad, y, full_w, "Modifica (Studio/Edit)", studio_edit_mode) then
+            y = DrawSpeakerPalette(x + pad, y, side_panel_w - pad * 2)
+        
+            y = y + 24
+            SetThemeColor("dim", 0.95)
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr("Corpo")
+            gfx.setfont(3, "Arial", 20, 'b')
+            SetThemeColor("active", 0.95)
+            local font_value = tostring(master_font_size)
+            local fw = gfx.measurestr(font_value)
+            gfx.x, gfx.y = x + side_panel_w - pad - fw, y - 4
+            gfx.drawstr(font_value)
+            y = y + 20
+        
+            if DrawButton(x + pad, y, 42, 28, "-", 0.45, 0.20, 0.20) then
+                master_font_size = math.max(10, master_font_size - 1)
+                SaveSettings()
+                RecalculateDocumentLayout()
+            end
+            if DrawButton(x + pad + 48, y, 74, 28, tostring(master_font_size), 0.22, 0.30, 0.42, true) then
+                -- Solo display: il valore si cambia con -/+.
+            end
+            if DrawButton(x + pad + 128, y, 42, 28, "+", 0.20, 0.45, 0.20) then
+                master_font_size = math.min(60, master_font_size + 1)
+                SaveSettings()
+                RecalculateDocumentLayout()
+            end
+        
+            y = y + 42
+            SetThemeColor("dim", 0.95)
+            gfx.setfont(3, "Arial", 13)
+            gfx.x, gfx.y = x + pad, y
+            gfx.drawstr("Comandi")
+            y = y + 18
+        
+            local studio_label = studio_edit_mode and "Studio/Edit ON" or "Studio/Edit OFF"
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, studio_label, 0.20, 0.48, 0.40, studio_edit_mode) then
                 studio_edit_mode = not studio_edit_mode
                 if studio_edit_mode then
                     reaper.OnStopButton()
@@ -3433,154 +3353,31 @@ function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
                 end
                 SaveSettings()
             end
-            y = y + 26
+            y = y + 30
+        
             if studio_edit_mode then
-                if SidebarCheck(x + pad + 18, y, full_w - 18, "Muove la timeline", studio_edit_sync) then
+                local sync_label = studio_edit_sync and "Sync ON" or "Sync OFF"
+                if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, sync_label, 0.20, 0.38, 0.58, studio_edit_sync) then
                     studio_edit_sync = not studio_edit_sync
                     SaveSettings()
                 end
-                y = y + 26
-            end
-
-            -- TESTO
-            y = SidebarSection(x, y, "TESTO")
-            SidebarLabel(x + pad, y + 5, "Flusso")
-            local flow_label = CurrentTextFlowLabel()
-            if #flow_label > 14 then flow_label = flow_label:sub(1, 13) .. "." end
-            if DrawButton(x + pad + 58, y, full_w - 58, 26, flow_label .. "  ▾", 0.22, 0.30, 0.42) then
-                ShowTextFlowMenu(x + pad + 58, y + 26)
-            end
-            y = y + 34
-            SidebarLabel(x + pad, y + 6, "Corpo")
-            if DrawButton(x + pad + 58, y, 36, 26, "−", 0.45, 0.20, 0.20) then
-                master_font_size = math.max(10, master_font_size - 1)
-                SaveSettings()
-                RecalculateDocumentLayout()
-            end
-            gfx.setfont(3, "Arial", 17, 'b')
-            SetThemeColor("active", 0.95)
-            local font_value = tostring(master_font_size)
-            local fw = gfx.measurestr(font_value)
-            if y >= (sidebar_clip_top or 0) - 4 then
-                gfx.x, gfx.y = x + pad + 58 + 36 + ((full_w - 58 - 72) - fw) / 2, y + 4
-                gfx.drawstr(font_value)
-            end
-            if DrawButton(x + pad + full_w - 36, y, 36, 26, "+", 0.20, 0.45, 0.20) then
-                master_font_size = math.min(60, master_font_size + 1)
-                SaveSettings()
-                RecalculateDocumentLayout()
-            end
-            y = y + 34
-            SidebarLabel(x + pad, y, "Punto di lettura")
-            y = y + 18
-            local seg_w = math.floor((full_w - 8) / 3)
-            if DrawButton(x + pad, y, seg_w, 26, "Alto", 0.22, 0.30, 0.42, math.abs(reading_point - 0.18) < 0.01) then
-                reading_point = 0.18
-                SaveSettings()
-            end
-            if DrawButton(x + pad + seg_w + 4, y, seg_w, 26, "Terzo", 0.22, 0.30, 0.42, math.abs(reading_point - 0.34) < 0.01) then
-                reading_point = 0.34
-                SaveSettings()
-            end
-            if DrawButton(x + pad + (seg_w + 4) * 2, y, seg_w, 26, "Centro", 0.22, 0.30, 0.42, math.abs(reading_point - 0.50) < 0.01) then
-                reading_point = 0.50
-                SaveSettings()
-            end
-            y = y + 34
-
-            -- LETTURA
-            y = SidebarSection(x, y, "LETTURA")
-            if SidebarCheck(x + pad, y, full_w, "Scorrimento continuo", not fixed_block_mode) then
-                fixed_block_mode = not fixed_block_mode
-                SaveSettings()
-            end
-            y = y + 26
-            if SidebarCheck(x + pad, y, full_w, "Parola per parola", word_follow) then
-                word_follow = not word_follow
-                SaveSettings()
-            end
-            y = y + 26
-            if SidebarCheck(x + pad, y, full_w, "Conto alla rovescia", countdown_alert) then
-                countdown_alert = not countdown_alert
-                SaveSettings()
-            end
-            y = y + 26
-            if SidebarCheck(x + pad, y, full_w, "Mostra timecode", show_timecode) then
-                show_timecode = not show_timecode
-                SaveSettings()
-            end
-            y = y + 30
-
-            -- ASPETTO (richiudibile)
-            local open
-            y, open = SidebarSection(x, y, "ASPETTO", "aspetto")
-            if open then
-                SidebarLabel(x + pad, y, "Tema")
-                y = y + 18
-                if DrawButton(x + pad, y, seg_w, 26, "Scuro", 0.22, 0.22, 0.28, theme_mode == "dark") then
-                    theme_mode = "dark"
-                    SaveSettings()
-                end
-                if DrawButton(x + pad + seg_w + 4, y, seg_w, 26, "Medio", 0.52, 0.48, 0.35, theme_mode == "medium") then
-                    theme_mode = "medium"
-                    SaveSettings()
-                end
-                if DrawButton(x + pad + (seg_w + 4) * 2, y, seg_w, 26, "Chiaro", 0.72, 0.72, 0.72, theme_mode == "light") then
-                    theme_mode = "light"
-                    SaveSettings()
-                end
-                y = y + 34
-                SidebarLabel(x + pad, y, "Contrasto")
-                y = y + 18
-                if DrawButton(x + pad, y, half_w, 26, "Sfumato", 0.28, 0.28, 0.34, not full_contrast) then
-                    full_contrast = false
-                    SaveSettings()
-                end
-                if DrawButton(x + pad + half_w + 6, y, half_w, 26, "Pieno", 0.42, 0.34, 0.18, full_contrast) then
-                    full_contrast = true
-                    SaveSettings()
-                end
-                y = y + 36
-                y = DrawSpeakerPalette(x + pad, y, full_w)
-                y = y + 4
-            end
-
-            -- NOTE E TRACCE (richiudibile)
-            y, open = SidebarSection(x, y, "NOTE E TRACCE", "tracce")
-            if open then
-                if SidebarCheck(x + pad, y, full_w, "Pannello note", notes_panel_open) then
-                    notes_panel_open = not notes_panel_open
-                    SaveSettings()
-                    RecalculateDocumentLayout()
-                end
-                y = y + 26
-                if SidebarCheck(x + pad, y, full_w, "Segui i tagli", FollowEnabled()) then
-                    if FollowScriptPath() then ToggleFollow() end
-                end
-                y = y + 26
-                if SidebarCheck(x + pad, y, full_w, "Traccia note visibile", IsTrackVisible(FindTrackByName(notes_track_name))) then
-                    ToggleNotesTrackVisibility()
-                end
-                y = y + 26
-                if SidebarCheck(x + pad, y, full_w, "Tracce gobbo visibili", AnyTextFlowTrackVisible()) then
-                    ToggleTextFlowTracksVisibility()
-                end
                 y = y + 30
             end
-
-            -- ACCESSIBILITA'
-            y = y + 6
-            if DrawButton(x + pad, y, full_w, 26, "Menu OSARA", 0.20, 0.42, 0.50, false) then
-                OpenGobboAccessibleMenu()
+        
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "Cerca", 0.25, 0.32, 0.42) then
+                PromptSubtitleSearch()
             end
-            y = y + 36
-            gfx.setfont(3, "Arial", 11)
-            SetThemeColor("dim", 0.9)
-            if y >= (sidebar_clip_top or 0) then
-                gfx.x, gfx.y = x + pad, y
-                gfx.drawstr("ZP Studio Suite v1.0.5")
-                gfx.x, gfx.y = x + pad, y + 14
-                gfx.drawstr("Paolo Balestri & Nicola Lanci")
+            y = y + 30
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "Nota", 0.36, 0.30, 0.14) then
+                InsertNoteAtCurrentPosition()
+            end
+            y = y + 30
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "MOD NOTE", 0.38, 0.31, 0.10) then
+                EditNearestNote()
+            end
+            y = y + 30
+            if DrawButton(x + pad, y, side_panel_w - pad * 2, 24, "DEL NOTE", 0.48, 0.18, 0.14) then
+                DeleteNearestNote()
             end
             y = y + 36
         
@@ -3629,6 +3426,13 @@ function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
             gfx.x, gfx.y = x + pad, 12
             gfx.drawstr("GOBBO")
         
+            gfx.setfont(3, "Arial", 12)
+            SetThemeColor("active", 0.95)
+            -- I pulsanti occupano y=10..34: le informazioni iniziano sotto.
+            gfx.x, gfx.y = x + pad, 40
+            gfx.drawstr("ZP Studio Suite v1.0.5")
+            gfx.x, gfx.y = x + pad, 56
+            gfx.drawstr("Paolo Balestri & Nicola Lanci")
         
             DrawHelpButton(x + side_panel_w - pad - 28, 10)
             -- A sinistra di Help: un solo hit target, senza sovrapposizioni.
@@ -3780,7 +3584,6 @@ function DrawGUI()
         end
     end
     local wheel = gfx.mouse_wheel or 0
-    NotesWheel = wheel -- per il pannello NOTE (scorrimento dell'elenco)
     gfx.mouse_wheel = 0
 
     local w, h = gfx.w, gfx.h
@@ -3942,12 +3745,8 @@ function DrawGUI()
         if fixed_block_mode then static_display_item = cached_items[#cached_items] end
     end
 
-    -- Studio/Edit: la rotella sul testo scorre anche con Sync ON (porta con se' il cursore della
-    -- timeline, come la barra). Per 0,6 s dopo l'ultimo scatto il testo non insegue il cursore.
-    local over_document = gfx.mouse_x >= notes_w and gfx.mouse_x <= notes_w + read_w and gfx.mouse_y >= 0 and gfx.mouse_y <= teleprompter_bottom
-    if studio_edit_mode and wheel ~= 0 and over_document then EditWheelUntil = reaper.time_precise() + 0.6 end
-    if studio_edit_mode and (not studio_edit_sync or edit_scroll_dragging or edit_scroll_was_dragging
-        or reaper.time_precise() < (EditWheelUntil or 0)) then
+    if studio_edit_mode and (not studio_edit_sync or edit_scroll_dragging or edit_scroll_was_dragging) then
+        local over_document = gfx.mouse_x >= notes_w and gfx.mouse_x <= notes_w + read_w and gfx.mouse_y >= 0 and gfx.mouse_y <= teleprompter_bottom
         if wheel ~= 0 and over_document then
             local step = math.max(42, master_font_size * 2.2)
             document_scroll_y = document_scroll_y + (wheel > 0 and -step or step)
@@ -4071,15 +3870,6 @@ function DrawGUI()
             local edit_w = math.max(240, notes_w + read_w - text_x - document_margin_x)
             HandleStudioItemClick(item.item, text_x - 8, start_py - 4, edit_w, math.max(line_h, end_py - start_py))
             HandleSubtitleEditDoubleClick(item.item, text_x - 8, start_py - 4, edit_w, math.max(line_h, end_py - start_py))
-            if inline_edit and inline_edit.item == item.item then
-                -- la battuta che stai modificando: cornice e barra a sinistra
-                local bx, by, bh = text_x - 12, start_py - 6, math.max(line_h, end_py - start_py) + 8
-                inline_edit.block = {y = by, h = bh}
-                gfx.set(1.0, 0.70, 0.12, 0.95)
-                gfx.rect(bx, by, 5, bh, 1)
-                gfx.rect(bx, by, edit_w + 8, bh, 0)
-                gfx.rect(bx + 1, by + 1, edit_w + 6, bh - 2, 0)
-            end
         end
     end
 
