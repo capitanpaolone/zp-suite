@@ -18,6 +18,10 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 - I cue esistono solo per il Carver: un #HSC cancellato o aggiunto fuori dal Carver si ripristina/toglie
   (decisione di Paolo). Al primo giro su un progetto comanda il Carver: l'helper non cancella mai cue.
 - Il progetto si riconosce da puntatore + file (`EnumProjects(-1)`): la stessa scheda puo' contenere un altro progetto.
+- Cambio di progetto (scheda o file): l'helper rilegge SUBITO i Carver (rescan) e aspetta HSC.SETTLE prima del
+  primo confronto. Con l'elenco dei Carver vecchio (rescan ogni 1 s, sync ogni 0,25 s) il primo giro copiava i cue
+  del progetto di prima nei marker e nei cue di quello nuovo (helper 1.9, 2026-10-07; test_hsc_schede.lua).
+- carver_side: un marker per ogni cue tolto, anche con due cue nello stesso punto.
 - Le richieste in ExtState si cancellano dopo l'uso (un helper riavviato non deve rieseguirle).
 - Un solo helper: ExtState ZP_HSC/owner, l'ultimo avviato vince.
 - gmem del Carver per numero unico (parametro "HSC Slot", assegnato dall'helper fra TUTTI i progetti
@@ -82,8 +86,9 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 - Ogni array in memoria (`x[i]`) deve avere un indirizzo base assegnato in @init, in una zona libera:
   una variabile mai assegnata vale 0 e scrive sopra la memoria del DSP (Carver: cue sugli stati SVF).
   Per trovare gli array cerca anche i nomi con maiuscole (es. `buf_main_L[`): mappa TUTTA la memoria
-  usata prima di scegliere la base (Carver 2.5: 0-15 SVF, 16-6159 oscilloscopio, 8192 cue,
-  8320 backup cue, 8400-8431 tabella Partenza, 8440-8442 stato fonti SC, 16384-49151 lookahead).
+  usata prima di scegliere la base (Carver 2.6.5: 0-15 SVF, 16-6159 oscilloscopio, 8192 cue,
+  8320 backup cue, 8400-8431 tabella Partenza, 8440-8442 stato fonti SC, 8460-8523 selezione ELIMINA,
+  16384-49151 lookahead).
 - gmem del Carver: 72 celle per FX (`base+0..71`), mai oltre `+71` (sarebbe l'FX successivo). `+71` = routing SC (helper).
 - Un JSFX non vede pin mapping, invii o folder: solo `num_ch`. Quello che dipende dal routing lo legge l'helper.
   I comandi da tasti/helper passano dalla casella comune 3800-3899 (lo Shared Bus usa fino a ~606).

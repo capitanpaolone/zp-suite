@@ -1,10 +1,8 @@
 // @description ZP Harmonic Space Carver
-// @version 2.6.5
+// @version 2.6.4
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
-//   2.6.5: ELIMINA nella fila dei cue toglie i cue selezionati e i loro marker #HSC: clic su un punto per
-//     sceglierne uno, Cmd/Ctrl+clic per aggiungerne o toglierne altri, Shift+clic per un intervallo. UNDO li rimette.
 //   2.6.4: cambiare l'Anticipo non fa piu' un buco nell'audio (dissolvenza di 20 ms).
 //   2.6.3: ogni Carver ha un numero unico (assegnato dall'helper 1.8, salvato nel Carver): due progetti
 //     aperti in schede o due Carver nella stessa posizione non si mescolano piu' cue e comandi.
@@ -83,14 +81,11 @@ about:
 
   ## 6. QUICK RETURN CUES
   ADD / REMOVE mette o toglie un cue sul playhead (in Play) o sul cursore (da fermo, con
-  l'helper Cue Navigator). ELIMINA toglie i cue scelti nella fila: clic su un punto, Cmd/Ctrl+clic
-  per aggiungerne o toglierne altri, Shift+clic per un intervallo; UNDO li rimette.
-  Al cue VCA, Carver e Glue rientrano con la Rampa, poi per l'Apertura il processing resta aperto
-  e ignora il sidechain. Fino a 64 cue, salvati nel progetto.
+  l'helper Cue Navigator). Al cue VCA, Carver e Glue rientrano con la Rampa, poi per
+  l'Apertura il processing resta aperto e ignora il sidechain. Fino a 64 cue, salvati nel progetto.
   Con l'helper (1.4) ogni cue e' anche un marker "#HSC" sul righello e il marker comanda: se un
-  taglio in ripple (tutte le tracce) lo sposta, o lo sposti a mano, il Carver si aggiorna. I cue si
-  aggiungono e si tolgono solo dal Carver: un #HSC cancellato a mano torna, uno aggiunto a mano sparisce.
-  Ctrl+Z vale anche per gli spostamenti dei cue. In render il Carver usa l'ultimo elenco sincronizzato.
+  taglio in ripple (tutte le tracce) lo sposta, o lo sposti, cancelli o aggiungi a mano, il Carver
+  si aggiorna. Ctrl+Z vale anche per i cue. In render il Carver usa l'ultimo elenco sincronizzato.
   Ogni cue ricorda la voce che ha sotto (le tracce voce sono quelle che arrivano al sidechain).
   Se quella voce si sposta e il cue no, il cue diventa rosso: RIALLINEA lo porta sulla sua voce,
   TIENI QUI accetta la posizione. Un marker trascinato a mano prende la voce nel punto nuovo.
@@ -227,7 +222,6 @@ log2db = 8.68588963806504;
 DECAY = 0.99997;
 // MAPPA DELLA MEMORIA (vedi ANTI_REGRESSIONE): 0-15 stati SVF, 16-6159 oscilloscopio,
 // 8192-8255 cue, 8320-8383 backup cue, 8400-8431 tabella Partenza, 8440-8442 stato fonti SC,
-// 8460-8523 cue selezionati per ELIMINA,
 // 16384-49151 lookahead. gmem: vedi quick_service (numeri unici da 8310000).
 BUF_SIZE   = 2048;
 buf_main_L = 16; buf_sc_L = buf_main_L + BUF_SIZE; buf_out_L = buf_sc_L + BUF_SIZE;
@@ -258,12 +252,7 @@ w_pos = 0; last_srate = srate;
 last_play_pos = play_position; was_playing = play_state & 1;
 // Cue di rientro rapido. Memoria propria da 8192 e inizializzazione UNA volta sola:
 // REAPER rilancia @init a ogni Play (niente ext_noinit).
-quick_points = 8192; quick_backup = 8320; quick_msel = 8460;
-// Selezione multipla per ELIMINA (indici dei cue): si azzera a ogni cambio dell'elenco.
-function quick_msel_clear() local(i) ( i = 0; loop(64, quick_msel[i] = 0; i += 1;); quick_msel_n = 0; quick_msel_anchor = -1; );
-function quick_msel_count() local(i) (
-  quick_msel_n = 0; i = 0; loop(quick_point_count, quick_msel[i] ? (quick_msel_n += 1); i += 1;); quick_msel_n;
-);
+quick_points = 8192; quick_backup = 8320;
 function quick_insert(t) local(i) (
   quick_point_count < 64 ? (
     i = quick_point_count;
@@ -288,7 +277,7 @@ function quick_sort() local(i, j, v) (
 function quick_set_status(st) ( quick_status = st; quick_status_t = time_precise(); );
 // Aggiunge un cue in t, o lo toglie se ce n'e' gia' uno entro 80 ms. Restituisce 1 se aggiunto.
 function quick_toggle_at(t) local(i, found, added) (
-  found = -1; i = 0; added = 0; quick_msel_clear();
+  found = -1; i = 0; added = 0;
   loop(quick_point_count, abs(quick_points[i] - t) <= 0.08 ? found = i; i += 1;);
   found >= 0 ? (
     quick_last_action = 2; quick_last_action_pos = quick_points[found];
@@ -302,7 +291,7 @@ function quick_toggle_at(t) local(i, found, added) (
 );
 // Annulla l'ultima modifica. Restituisce 5 (tolto l'ultimo aggiunto), 6 (rimesso), 0 (niente).
 function quick_undo() local(i, idx, r) (
-  r = 0; quick_msel_clear();
+  r = 0;
   quick_last_action == 1 ? (
     i = 0; idx = -1;
     loop(quick_point_count, abs(quick_points[i] - quick_last_action_pos) < 0.001 ? idx = i; i += 1;);
@@ -318,28 +307,11 @@ function quick_undo() local(i, idx, r) (
   r;
 );
 function quick_clear_all() local(i) (
-  quick_msel_clear(); quick_backup_count = quick_point_count; i = 0;
+  quick_backup_count = quick_point_count; i = 0;
   loop(quick_point_count, quick_backup[i] = quick_points[i]; quick_points[i] = -1; i += 1;);
   quick_point_count = 0; quick_sel = -1; quick_last_action = 3; quick_last_action_pos = -1;
   quick_gmem_base >= 0 ? gmem[quick_gmem_base+2] = -1;
   quick_set_status(7);
-);
-// Elimina i cue selezionati (Cmd/Ctrl o Shift sulla fila) o, senza selezione multipla, il cue selezionato.
-// UNDO li rimette tutti (stessa copia di CLEAR ALL). Restituisce quanti ne ha tolti.
-function quick_delete_selected() local(i, n) (
-  quick_msel_count() == 0 && quick_sel >= 0 && quick_sel < quick_point_count ? (quick_msel[quick_sel] = 1);
-  n = quick_msel_count();
-  n > 0 ? (
-    quick_backup_count = quick_point_count; i = 0;
-    loop(quick_point_count, quick_backup[i] = quick_points[i]; i += 1;);
-    i = quick_point_count - 1;                 // dall'ultimo al primo: gli indici sotto restano validi
-    loop(quick_point_count, quick_msel[i] ? quick_delete(i); i -= 1;);
-    quick_last_action = 3; quick_last_action_pos = -1; quick_sel = -1;
-    quick_gmem_base >= 0 ? (gmem[quick_gmem_base+2] = -1);
-    quick_deleted_n = n; quick_set_status(10);
-  );
-  quick_msel_clear();
-  n;
 );
 // Collegamento gmem con l'helper Cue Navigator e con le azioni da tastiera.
 // base+0 comando GUI->helper, +1 seq, +2 cue selezionato, +3 ack helper, +4 numero cue, +5..+68 cue,
@@ -406,7 +378,7 @@ function quick_service() local(base, i, seq, cmd, res, pos, n) (
           n = max(0, min(64, floor(gmem[HSC_MB+10] + 0.5)));
           quick_point_count = 0; i = 0; loop(64, quick_points[i] = -1; i += 1;);
           i = 0; loop(n, gmem[HSC_MB+11+i] >= 0 ? quick_insert(gmem[HSC_MB+11+i]); i += 1;);
-          quick_sel = -1; quick_msel_clear(); res = 9;
+          quick_sel = -1; res = 9;
         );
         // elenco aggiornato subito, prima dell'ack: l'helper legge cue gia' nuovi
         gmem[base+4] = quick_point_count;
@@ -425,7 +397,6 @@ quick_inited != 2404 ? (
   quick_point_count = 0; quick_backup_count = 0; quick_nav_jump = 1; quick_sel = -1;
   quick_last_action = 0; quick_last_action_pos = -1; quick_status = 0; quick_status_t = 0; quick_clear_arm_t = -10;
   qpi = 0; loop(128, quick_points[qpi] = -1; qpi += 1;);
-  quick_msel_clear();
   // il preascolto non sopravvive alla riapertura del progetto (si rischia di renderizzare il "tolto")
   slider31 = 0;
   quick_gmem_base = -1; quick_place_cnt = 0; quick_ext_seen = 0; quick_slot = -1; quick_mask_addr = -1;
@@ -962,7 +933,7 @@ file_avail(0) >= 0 ? (
         quick_last_action = max(0, min(2, floor(quick_last_action)));
       ) : (quick_last_action = 0; quick_last_action_pos = -1;);
       quick_serialize_version >= 2404 ? (file_var(0, quick_nav_jump); quick_nav_jump = quick_nav_jump ? 1 : 0;) : (quick_nav_jump = 1;);
-      quick_sort(); quick_sel = -1; quick_backup_count = 0; quick_msel_clear();
+      quick_sort(); quick_sel = -1; quick_backup_count = 0;
     ) : (quick_point_count = 0; quick_last_action = 0; quick_last_action_pos = -1;);
   ) : (quick_point_count = 0; quick_last_action = 0; quick_last_action_pos = -1;);
 ) : (
@@ -1348,8 +1319,7 @@ function draw_lost_banner(x, y, w, h) local(sy, blink, tw, th) (
 
 // Barra QUICK RETURN CUES, identica in Advanced, Simple e Dock. full = con Rampa e Apertura.
 function draw_cue_bar(bx, by, bw, full)
-local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m, s, sel_w, tl_w, add_state,
-      row_w, del_w, nsel, a)
+local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m, s, sel_w, tl_w, add_state)
 (
   ui_dark_panel = 1;
   sy = ui_sy(by);
@@ -1372,10 +1342,7 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
                   : (quick_sel = quick_sel <= 0 ? quick_point_count - 1 : quick_sel - 1;);
   );
   x += 36;
-  nsel = quick_msel_count();
   quick_status == 7 ? strcpy(#quick_sel_txt, "TUTTI CANCELLATI") :
-  quick_status == 10 ? sprintf(#quick_sel_txt, "ELIMINATI: %d", quick_deleted_n) :
-  nsel > 1 ? sprintf(#quick_sel_txt, "%d CUE SELEZ.", nsel) :
   quick_sel >= 0 ? (
     m = floor(quick_points[quick_sel] / 60); s = quick_points[quick_sel] - m * 60;
     sprintf(#quick_sel_txt, "CUE %d / %d  %d:%04.1f", quick_sel + 1, quick_point_count, m, s);
@@ -1418,11 +1385,8 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
   x += 60;
   ui_cue_button(x, qy, tl_w, qh, full ? "RESTA FERMO" : "FERMO", !quick_nav_jump, 1, 58) ? (quick_nav_jump = 0;);
 
-  // Fila dei cue: dove sei (playhead rosso) rispetto ai cue. Clic su un punto = selezionalo;
-  // Cmd/Ctrl+clic aggiunge o toglie un punto, Shift+clic prende l'intervallo (convenzioni di REAPER).
-  // In fondo alla fila: ELIMINA (e RIALLINEA / TIENI QUI se il cue selezionato e' fuori posto).
-  lx = qx; row_w = full ? (bw - 130) : (bw - 20);
-  del_w = 92; lw = row_w - del_w - 10;
+  // Fila dei cue: dove sei (playhead rosso) rispetto ai cue. Clic su un punto = selezionalo.
+  lx = qx; lw = full ? (bw - 130) : (bw - 20);
   quick_sel_lost ? lw -= 214;
   ly = by + (full ? 82 : 84);
   gfx_r=0.24; gfx_g=0.24; gfx_b=0.30; gfx_a = 1; gfx_line(lx, ui_sy(ly), lx + lw, ui_sy(ly));
@@ -1437,7 +1401,6 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
       cue_lost(i) ? (gfx_r=0.95; gfx_g=0.32; gfx_b=0.28;) : (gfx_r=0.14; gfx_g=0.72; gfx_b=0.83;);
       i == quick_sel ? (gfx_circle(cx, ui_sy(ly), 6, 0, 1); gfx_r=1; gfx_g=1; gfx_b=1; gfx_circle(cx, ui_sy(ly), 4, 1, 1);)
                      : (gfx_circle(cx, ui_sy(ly), 4, 1, 1););
-      quick_msel[i] ? (gfx_r=1; gfx_g=1; gfx_b=1; gfx_circle(cx, ui_sy(ly), 7, 0, 1); gfx_circle(cx, ui_sy(ly), 4, 1, 1););
       i += 1;
     );
     px = lx + (quick_ui_pos - t0) / span * lw;
@@ -1445,20 +1408,8 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
     best >= 0 ? (
       active_info_id = 60;
       mouse_click ? (
-        (mouse_cap & 36) ? (                    // Cmd/Ctrl (4) o Ctrl su Mac (32): aggiungi o togli
-          nsel == 0 && quick_sel >= 0 && quick_sel != best ? (quick_msel[quick_sel] = 1);
-          quick_msel[best] = !quick_msel[best]; quick_msel_anchor = best;
-        ) : (mouse_cap & 8) ? (                 // Shift: intervallo dal punto scelto prima
-          a = (quick_msel_anchor >= 0 && quick_msel_anchor < quick_point_count) ? quick_msel_anchor :
-              (quick_sel >= 0 ? quick_sel : best);
-          quick_msel_clear(); quick_msel_anchor = a;
-          i = min(a, best); loop(abs(best - a) + 1, quick_msel[i] = 1; i += 1;);
-        ) : (
-          quick_msel_clear(); quick_msel_anchor = best;
-          quick_jump_ok ? (gmem[quick_gmem_base+2] = best; gmem[quick_gmem_base] = 3; gmem[quick_gmem_base+1] += 1;)
-                        : (quick_sel = best;);
-        );
-        nsel = quick_msel_count();
+        quick_jump_ok ? (gmem[quick_gmem_base+2] = best; gmem[quick_gmem_base] = 3; gmem[quick_gmem_base+1] += 1;)
+                      : (quick_sel = best;);
       );
     );
     gfx_setfont(5); gfx_r=0.50; gfx_g=0.52; gfx_b=0.60;
@@ -1475,9 +1426,6 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
     ui_cue_button(lx + lw + 12, ly - 11, 100, 22, "RIALLINEA", 2, 1, 73) ? (gmem[quick_gmem_base+2] = quick_sel; gmem[quick_gmem_base] = 6; gmem[quick_gmem_base+1] += 1;);
     ui_cue_button(lx + lw + 116, ly - 11, 96, 22, "TIENI QUI", 0, 1, 74) ? (gmem[quick_gmem_base+2] = quick_sel; gmem[quick_gmem_base] = 7; gmem[quick_gmem_base+1] += 1;);
   );
-  nsel > 1 ? sprintf(#quick_del_txt, "ELIMINA %d", nsel) : strcpy(#quick_del_txt, "ELIMINA");
-  ui_cue_button(lx + row_w - del_w, ly - 11, del_w, 22, #quick_del_txt, nsel > 0 ? 2 : 0,
-                quick_point_count > 0 && (nsel > 0 || quick_sel >= 0), 76) ? quick_delete_selected();
   full ? (
     ui_knob(56, bx + bw - 86, by + 70, 12, 10, 250, 200, "Rampa", "ms", 0.95, 0.42, 0.20, 56);
     ui_knob(57, bx + bw - 34, by + 70, 12, 0, 2000, 500, "Apertura", "ms", 0.95, 0.42, 0.20, 61);
@@ -1836,8 +1784,7 @@ view_mode == 0 ? (
   active_info_id == 58 ? (quick_gmem_base < 0 ? gfx_drawstr("TIMELINE: salto non disponibile su take FX o input FX. RESTA FERMO scorre i cue.") :
     gfx_drawstr("TIMELINE: SALTA sposta il playhead sui cue (helper Cue Navigator); RESTA FERMO solo li seleziona.")) :
   active_info_id == 59 ? gfx_drawstr("UNDO: annulla l'ultima aggiunta, rimozione o cancellazione dei cue.") :
-  active_info_id == 60 ? gfx_drawstr("FILA DEI CUE: ciano = al suo posto, rosso = fuori posto. Clic sceglie, Cmd/Ctrl+clic aggiunge, Shift+clic intervallo.") :
-  active_info_id == 76 ? gfx_drawstr("ELIMINA: toglie i cue selezionati e i loro marker #HSC (Cmd/Ctrl+clic o Shift+clic per piu' cue). UNDO li rimette.") :
+  active_info_id == 60 ? gfx_drawstr("FILA DEI CUE: ciano = al suo posto, rosso = fuori posto, linea rossa = playhead. Clic su un punto per sceglierlo.") :
   active_info_id == 61 ? gfx_drawstr("APERTURA: dopo la Rampa la musica resta aperta per questo tempo, ignorando la voce.") :
   active_info_id == 65 ? gfx_drawstr(#sc_msg0) : active_info_id == 66 ? gfx_drawstr(#sc_msg1) : active_info_id == 67 ? gfx_drawstr(#sc_msg2) :
   active_info_id == 68 ? gfx_drawstr("FONTI VOCE: compaiono quando la traccia ha i canali. Pulsante I/O del plugin, Track channels 6 (SC2) o 8 (SC3).") :

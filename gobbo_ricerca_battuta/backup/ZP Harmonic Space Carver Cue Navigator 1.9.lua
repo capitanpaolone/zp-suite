@@ -1,13 +1,9 @@
 -- @description ZP Harmonic Space Carver Cue Navigator (background helper)
--- @version 1.10
+-- @version 1.9
 -- @author Paolo Balestri / Codex
 -- @about Collega i Carver a REAPER: salti tra i cue, punto del cursore a trasporto fermo,
 --   verifica del routing sidechain e cue come marker #HSC sul righello (seguono l'editing).
 -- @changelog
---   1.10: quando passi a un'altra scheda di progetto rilegge subito i Carver di quel progetto e aspetta
---        un attimo che scrivano i loro cue prima di confrontarli con i marker #HSC: ogni progetto tiene
---        i suoi cue e i suoi marker. ELIMINA del Carver 2.6.5 toglie i marker di tutti i cue eliminati
---        (anche due cue nello stesso punto).
 --   1.9: i numeri unici si scrivono solo nel progetto attivo: i progetti aperti in sottofondo non
 --        risultano mai modificati (in caso di doppione si rinumera il Carver del progetto attivo).
 --   1.8: assegna a ogni Carver un numero unico fra tutti i progetti aperti (parametro "HSC Slot",
@@ -137,10 +133,9 @@ function HSC.carver_side(expected, cues, markers)
     for _, m in ipairs(markers) do if math.abs(m.pos - t) <= HSC.TOL then exists = true; break end end
     if not exists then create[#create + 1] = t end
   end
-  local taken = {}                      -- un marker per cue tolto (due cue nello stesso punto = due marker)
   for _, t in ipairs(removed) do
-    for k, m in ipairs(markers) do
-      if not taken[k] and math.abs(m.pos - t) <= HSC.TOL then taken[k] = true; del[#del + 1] = m.num; break end
+    for _, m in ipairs(markers) do
+      if math.abs(m.pos - t) <= HSC.TOL then del[#del + 1] = m.num; break end
     end
   end
   return { create = create, delete = del }
@@ -657,8 +652,6 @@ end
 -- ================================================================
 local synced, expected, pending, sync_key = nil, {}, nil, nil
 local last_sync, last_mb_seen = -1, 0
-local settle_until = 0                    -- dopo un cambio di progetto: attesa che i Carver scrivano i loro cue
-HSC.SETTLE = 0.75
 local save_anchors                        -- definita con le ancore
 
 local function project_key()
@@ -684,13 +677,7 @@ end
 
 local function sync()
   local key = project_key()
-  if key ~= sync_key then
-    -- altro progetto (scheda o file): mai confrontare i suoi marker con i Carver del progetto di prima
-    synced, expected, pending, sync_key = nil, {}, nil, key
-    rescan(); last_scan = reaper.time_precise()
-    settle_until = reaper.time_precise() + HSC.SETTLE
-  end
-  if reaper.time_precise() < settle_until then return end
+  if key ~= sync_key then synced, expected, pending, sync_key = nil, {}, nil, key end
   if pending then
     if math.floor(reaper.gmem_read(MB + 4) + 0.5) == pending.seq then
       expected[pending.base] = pending.list; pending = nil

@@ -56,6 +56,8 @@ cs = HSC.carver_side({10, 20, 30}, {10.001, 20, 29.997}, mk)
 check("Carver: sotto tolleranza niente", #cs.create == 0 and #cs.delete == 0)
 cs = HSC.carver_side({}, {1.000, 1.004}, {})
 check("Carver: cue a 4 ms -> due marker", #cs.create == 2)
+cs = HSC.carver_side({30, 30, 40}, {40}, M({4, 30.0}, {5, 30.0}, {6, 40.0}))
+check("Carver: ELIMINA di due cue nello stesso punto -> due marker tolti", nums(cs.delete) == "4,5")
 
 -- elenco al Carver: posizioni ordinate, massimo 64
 local many = {}
