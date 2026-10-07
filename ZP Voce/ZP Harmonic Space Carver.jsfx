@@ -3,7 +3,9 @@
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
-//   2.6.5: ELIMINA nella fila dei cue toglie i cue selezionati e i loro marker #HSC: clic su un punto per
+//   2.6.5: ogni meter ha i suoi comandi accanto: Min Duck e Max Duck vicino al meter VCA, collegati alle
+//     loro linee (gialla e arancio); il pomello Glue nel box GLUE con il suo meter.
+//     ELIMINA nella fila dei cue toglie i cue selezionati e i loro marker #HSC: clic su un punto per
 //     sceglierne uno, Cmd/Ctrl+clic per aggiungerne o toglierne altri, Shift+clic per un intervallo. UNDO li rimette.
 //   2.6.4: cambiare l'Anticipo non fa piu' un buco nell'audio (dissolvenza di 20 ms).
 //   2.6.3: ogni Carver ha un numero unico (assegnato dall'helper 1.8, salvato nel Carver): due progetti
@@ -63,8 +65,10 @@ about:
   * CARVER: confronta ogni banda della voce con la sua soglia e scava la musica nella stessa banda.
     Thresh, Intens, Low/Mid/High, Spread, Knee, Attack, Release. Crossover sulla mappa BANDE.
   * VCA: abbassa la musica quando c'e' voce. Ceiling (livello musica oltre cui agire), Prio,
-    Min Duck (riduzione minima con voce), Max Duck (massima), Attack, Release, rientro STD/GRADUAL.
-  * USCITA: Mix, Glue, Out, In, Voice Ret.
+    Attack, Release, rientro STD/GRADUAL. Min Duck (riduzione minima con voce, linea gialla) e Max Duck
+    (massima, linea arancio) stanno accanto al meter VCA, nella riga sotto.
+  * GLUE: meter e pomello Glue insieme.
+  * USCITA: Mix, Out, In, Voice Ret.
 
   ## 3. SIMPLE E ADVANCED
   Un solo motore. SIMPLE mostra i cinque controlli principali (Thresh voce, Spazio = Intens,
@@ -1633,23 +1637,22 @@ show_simple ? (
   );
   ui_knob(22, 638, 126, 17, -40, 0, -30, "Ceiling", "dB", 0.95, 0.34, 0.32, 22);
   ui_knob(25, 704, 126, 15, 0, 100, 55, "Prio", "%", 0.88, 0.22, 0.55, 25);
-  ui_knob(23, 772, 126, 13, -24, 0, -3, "Min Duck", "dB", 0.95, 0.78, 0.18, 23);
-  ui_knob(24, 846, 126, 13, -40, 0, -15, "Max Duck", "dB", 0.95, 0.58, 0.14, 24);
-  ui_knob(26, 638, 216, 13, 1, 500, 75, "Attack", "ms", 0.88, 0.42, 0.65, 26);
-  ui_knob(28, 704, 216, 13, 20, 4000, 470, "Release", "ms", 0.88, 0.42, 0.65, 28);
-  gfx_setfont(5); gfx_r=0.60; gfx_g=0.60; gfx_b=0.72; gfx_x = 752; gfx_y = ui_sy(186); gfx_drawstr("Rientro");
-  ui_tab_button(50, 0, 752, 206, 48, 22, "STD", 50);
-  ui_tab_button(50, 1, 804, 206, 78, 22, "GRADUAL", 50);
+  // Min Duck e Max Duck stanno accanto al meter VCA (riga 2), vicino alle loro linee
+  ui_knob(26, 772, 126, 13, 1, 500, 75, "Attack", "ms", 0.88, 0.42, 0.65, 26);
+  ui_knob(28, 846, 126, 13, 20, 4000, 470, "Release", "ms", 0.88, 0.42, 0.65, 28);
+  gfx_setfont(5); gfx_r=0.60; gfx_g=0.60; gfx_b=0.72; gfx_x = 624; gfx_y = ui_sy(186); gfx_drawstr("Rientro");
+  ui_tab_button(50, 0, 624, 206, 48, 22, "STD", 50);
+  ui_tab_button(50, 1, 676, 206, 78, 22, "GRADUAL", 50);
   slider(23) <= slider(24) + 0.05 ? (
-    gfx_setfont(5); gfx_r=0.95; gfx_g=0.62; gfx_b=0.15; gfx_x = 752; gfx_y = ui_sy(240); gfx_drawstr("Min = Max: VCA fisso");
-    ui_hit(748, 236, 140, 20) ? active_info_id = 76;
+    gfx_setfont(5); gfx_r=0.95; gfx_g=0.62; gfx_b=0.15; gfx_x = 764; gfx_y = ui_sy(212); gfx_drawstr("Min = Max: VCA fisso");
+    ui_hit(760, 208, 126, 20) ? active_info_id = 76;
   );
 
-  // ---- riga 2: BANDE -> VCA/GLUE -> USCITA -> LIVELLI ----
-  draw_box(10, 276, 300, 204, "BANDE", 0.82, 0.84, 0.90);
-  ui_cue_button(196, 279, 46, 19, "GR", bands_page == 0, 1, 72) ? bands_page = 0;
-  ui_cue_button(246, 279, 58, 19, "SCOPE", bands_page == 1, 1, 72) ? bands_page = 1;
-  mx = 20; my0 = 306; mw = 280; mh = 148;
+  // ---- riga 2: BANDE -> VCA (con Min/Max Duck) -> GLUE (con il suo pomello) -> USCITA -> LIVELLI ----
+  draw_box(10, 276, 260, 204, "BANDE", 0.82, 0.84, 0.90);
+  ui_cue_button(156, 279, 46, 19, "GR", bands_page == 0, 1, 72) ? bands_page = 0;
+  ui_cue_button(206, 279, 58, 19, "SCOPE", bands_page == 1, 1, 72) ? bands_page = 1;
+  mx = 20; my0 = 306; mw = 240; mh = 148;
   gfx_r=0.08; gfx_g=0.08; gfx_b=0.10; gfx_a=1; gfx_rect(mx, ui_sy(my0), mw, mh);
   log_min = log(20); log_tot = log(18000) - log_min;
   xl = mx + mw * (log(max(21, slider(11))) - log_min) / log_tot;
@@ -1712,20 +1715,28 @@ show_simple ? (
     ) : (ui_drag_id = 0;);
   );
 
-  draw_box(318, 276, 110, 204, "VCA  GLUE", 0.82, 0.84, 0.90);
-  draw_vca_bar(338, 326, 26, 120, vca_meter_gr);
+  // VCA: meter con le linee di Min Duck (gialla) e Max Duck (arancio), ognuna collegata al suo pomello
+  draw_box(278, 276, 156, 204, "VCA", 0.88, 0.22, 0.55);
+  draw_vca_bar(298, 326, 26, 120, vca_meter_gr);
   min_y = ui_sy(326 + (min(24, -slider(23)) / 24.0) * 120);
   max_y = ui_sy(326 + (min(24, -slider(24)) / 24.0) * 120);
-  gfx_r=0.95; gfx_g=0.78; gfx_b=0.18; gfx_a=1; gfx_rect(334, min_y - 1, 34, 2);
-  gfx_r=0.95; gfx_g=0.50; gfx_b=0.12; gfx_rect(334, max_y - 1, 34, 2);
-  draw_gr_bar(390, 326, 18, 120, glue_meter_gr, glue_active, "GLUE");
+  gfx_r=0.95; gfx_g=0.78; gfx_b=0.18; gfx_a=1; gfx_rect(294, min_y - 1, 38, 2);
+  gfx_line(332, min_y, 384, ui_sy(346)); gfx_line(332, min_y + 1, 384, ui_sy(347));
+  gfx_r=0.95; gfx_g=0.50; gfx_b=0.12; gfx_rect(294, max_y - 1, 38, 2);
+  gfx_line(332, max_y, 384, ui_sy(420)); gfx_line(332, max_y + 1, 384, ui_sy(421));
+  ui_knob(23, 404, 346, 13, -24, 0, -3, "Min Duck", "dB", 0.95, 0.78, 0.18, 23);
+  ui_knob(24, 404, 420, 13, -40, 0, -15, "Max Duck", "dB", 0.95, 0.50, 0.12, 24);
 
-  draw_box(436, 276, 220, 204, "USCITA", 0.82, 0.84, 0.90);
-  ui_knob(35, 476, 344, 17, 0, 100, 100, "Mix", "%", 0.7, 0.7, 0.7, 35);
-  ui_knob(33, 546, 344, 14, 0, 100, 20, "Glue", "%", 0.66, 0.42, 0.88, 33);
-  ui_knob(34, 616, 344, 14, -12, 12, 0, "Out", "dB", 0.7, 0.7, 0.7, 34);
-  ui_knob(2,  476, 428, 13, -24, 24, 0, "In", "dB", 0.7, 0.7, 0.7, 2);
-  ui_knob(32, 546, 428, 13, -120, 12, -120, "Voice Ret", "dB", 0.92, 0.65, 0.10, 32);
+  // GLUE: meter e pomello insieme
+  draw_box(442, 276, 96, 204, "GLUE", 0.66, 0.42, 0.88);
+  draw_gr_bar(458, 326, 18, 120, glue_meter_gr, glue_active, "GLUE");
+  ui_knob(33, 510, 360, 14, 0, 100, 20, "Glue", "%", 0.66, 0.42, 0.88, 33);
+
+  draw_box(546, 276, 110, 204, "USCITA", 0.82, 0.84, 0.90);
+  ui_knob(35, 574, 344, 15, 0, 100, 100, "Mix", "%", 0.7, 0.7, 0.7, 35);
+  ui_knob(34, 628, 344, 13, -12, 12, 0, "Out", "dB", 0.7, 0.7, 0.7, 34);
+  ui_knob(2,  574, 428, 13, -24, 24, 0, "In", "dB", 0.7, 0.7, 0.7, 2);
+  ui_knob(32, 628, 428, 13, -120, 12, -120, "Voice Ret", "dB", 0.92, 0.65, 0.10, 32);
 
   draw_box(664, 276, 226, 204, "LIVELLI", 0.82, 0.84, 0.90);
   draw_hmeter(674, 312, 206, 10, max(meter_main_l, meter_main_r), "MAIN", 0.18, 0.88, 0.35);
