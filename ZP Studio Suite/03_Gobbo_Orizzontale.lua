@@ -939,7 +939,12 @@ function CycleTextFlow(delta)
     end
 
     local next_index = ((current_index - 1 + delta) % #tracks) + 1
-    selected_text_track_guid = tracks[next_index].guid
+    SelectTextFlow(tracks[next_index].guid)
+end
+
+-- Imposta il flusso letto (guid di una traccia testo, o READ_ALL = Tutti).
+function SelectTextFlow(guid)
+    selected_text_track_guid = guid
     reaper.SetExtState(gobbo_settings_section, "read_all", selected_text_track_guid == READ_ALL and "1" or "0", true)
     current_text_track = nil
     active_media_item = nil
@@ -1968,6 +1973,28 @@ function DrawSettingsPanel(w, h)
     return panel_y
 end
 
+-- Tendina del flusso testi (come nel Gobbo verticale): una traccia testo o "Tutti".
+function ShowTextFlowMenu(mx, my)
+    local tracks = CollectTextFlowTracks()
+    if #tracks == 0 then return end
+    local entries = {}
+    if #tracks >= 2 then entries[#entries + 1] = { guid = READ_ALL, name = "Tutti" } end
+    for _, entry in ipairs(tracks) do
+        entries[#entries + 1] = { guid = entry.guid, name = TextFlowDisplayName(entry.name) }
+    end
+    local current = CurrentTextFlowEntry()
+    local current_guid = selected_text_track_guid == READ_ALL and READ_ALL or (current and current.guid or "")
+    local parts = {}
+    for i, entry in ipairs(entries) do
+        local label = tostring(entry.name or ""):gsub("|", "/")
+        if label:find("^[#!<>]") then label = " " .. label end
+        parts[i] = ((entry.guid == current_guid) and "!" or "") .. label
+    end
+    gfx.x, gfx.y = mx, my
+    local choice = gfx.showmenu(table.concat(parts, "|"))
+    if choice and choice > 0 and entries[choice] then SelectTextFlow(entries[choice].guid) end
+end
+
 function DrawAlertStrip(w, strip_h, play_pos, attack_x)
     gfx.set(0.075, 0.07, 0.055, 1)
     gfx.rect(0, 0, w, strip_h, 1)
@@ -2018,14 +2045,13 @@ function DrawAlertStrip(w, strip_h, play_pos, attack_x)
 
     local flow_label = CurrentTextFlowLabel()
     if #flow_label > 20 then flow_label = flow_label:sub(1, 19) .. "." end
-    if DrawButton(12, 30, 26, 22, "<", 0.22, 0.30, 0.42) then CycleTextFlow(-1) end
-    if DrawButton(42, 30, 26, 22, ">", 0.22, 0.30, 0.42) then CycleTextFlow(1) end
-    gfx.setfont(3, "Arial", 13, 'b')
-    gfx.set(0.80, 0.86, 1.0, 1)
-    gfx.x, gfx.y = 76, 34
-    gfx.drawstr("Testi: " .. flow_label)
+    -- flusso a tendina: un clic apre l'elenco delle tracce testo e "Tutti"
+    gfx.setfont(3, "Arial", 16, 'b')
+    local flow_text = "Testi: " .. flow_label .. "  ▾"
+    local flow_w = math.max(120, gfx.measurestr(flow_text) + 20)
+    if DrawButton(12, 30, flow_w, 22, flow_text, 0.22, 0.30, 0.42) then ShowTextFlowMenu(12, 52) end
     -- Segui i tagli: accanto al flusso, solo se c'e' spazio prima di Studio/Edit
-    local follow_x = 76 + gfx.measurestr("Testi: " .. flow_label) + 14
+    local follow_x = 12 + flow_w + 14
     if follow_x + 120 < w - 290 then
         if DrawButton(follow_x, 30, 120, 22, FollowLabel(), 0.22, 0.38, 0.52, FollowEnabled()) then
             if FollowScriptPath() then ToggleFollow() end
