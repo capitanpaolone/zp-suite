@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.3.5
+-- @version 2.3.6
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -16,12 +16,13 @@
 --
 --   Dopo l'installazione apri dall'Action List "33 Benvenuto" (si apre anche da
 --   solo la prima volta che usi uno strumento ZP): controlla toolbar ed effetti,
---   Cue Navigator del Carver, ZP Speech, SWS, js_ReaScriptAPI, OSARA e interfaccia
---   web, e per ognuno ha il pulsante che lo mette a posto.
+--   Cue Navigator del Carver, ZP Speech, SWS, js_ReaScriptAPI, OSARA, marker degli
+--   item e interfaccia web, e per ognuno ha il pulsante che lo mette a posto.
 -- @changelog
---   SOLO Web: pulsante Condividi con il link per aprire il SOLO da un altro dispositivo
---     della stessa rete (iPad, telefono, altro computer), Copia e QR da inquadrare; Wi-Fi e
---     cavo insieme. Il globo del SOLO Recorder copia il link negli appunti.
+--   Marker degli item protetti: trascinando sopra un take marker prendi l'item, Shift+trascina
+--     sposta il marker. 32 Installa li protegge se valgono i comandi di serie di REAPER; il 33
+--     Benvenuto ha la riga "Marker degli item" con Proteggi e Ripristina standard.
+--   Help del Harmonic Space Carver 2.6.5: ELIMINA con selezione multipla, GUI in tre colonne.
 -- @provides
 --   [main] 01_Importa_Video_SRT.lua
 --   [main] 02_Gobbo_Verticale.lua

@@ -4,6 +4,24 @@ Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
 ciascun file e nel gestore pacchetti. Questo file registra la storia della Suite
 nel suo insieme.
 
+## ZP Harmonic Space Carver 2.6.5, Cue Navigator 1.10, ZP Studio Suite 2.3.6 — 2026-10-07
+
+### ZP Harmonic Space Carver 2.6.5
+- ELIMINA nella fila dei cue: clic su un punto per sceglierlo, Cmd/Ctrl+clic per aggiungerne
+  altri, Shift+clic per un intervallo; toglie i cue e i loro marker `#HSC`, UNDO li rimette.
+- GUI Advanced in tre colonne: VOCE con LIVELLI sotto, CARVER con BANDE, VCA con il meter VCA,
+  GLUE e USCITA. Min Duck (giallo) e Max Duck (arancio) stanno accanto al meter VCA, collegati
+  alle loro linee; il pomello Glue sta con il suo meter.
+
+### Cue Navigator 1.10
+- Ogni progetto aperto in una scheda tiene i suoi cue e i suoi marker `#HSC`: al cambio di scheda
+  l'helper rilegge subito i Carver di quel progetto.
+
+### ZP Studio Suite 2.3.6
+- Marker degli item protetti: trascinando sopra un take marker prendi l'item, Shift+trascina sposta
+  il marker. Lo imposta 32 Installa; nel 33 Benvenuto la riga "Marker degli item" ha Proteggi e
+  Ripristina standard.
+
 ## ZP Studio Suite 2.0.0 — 2026-10-04
 
 - Trascrizione con whisper (29 ZP Trascrizione), gobbo che segue i tagli, Ritrascrivi.
