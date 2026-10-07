@@ -10,7 +10,7 @@
 --
 -- Pezzi controllati: toolbar ed effetti (32), Cue Navigator del Harmonic Space Carver
 -- (deve partire a ogni apertura di REAPER), ZP Speech (Trascrivi, solo Mac), SWS,
--- js_ReaScriptAPI, OSARA, marker degli item protetti (Mouse Modifiers), interfaccia web di REAPER (SOLO Web).
+-- js_ReaScriptAPI, OSARA, interfaccia web di REAPER (SOLO Web).
 -- Lo stato si ricontrolla da solo ogni secondo: fai una cosa e la spia cambia.
 
 local M = {}
@@ -132,37 +132,7 @@ function M.find_python(exists)
   return nil
 end
 
--- Marker degli item (take marker): con i comandi di serie di REAPER trascinare sopra un marker lo
--- sposta, e chi voleva spostare o selezionare l'item si ritrova a muovere il marker. Protetti
--- (scelta di Paolo, 2026-10-07): trascinare senza tasti non fa niente sul marker (l'item resta
--- prendibile), Shift+trascina sposta il marker. Contesto "Media item take marker", left drag.
--- Codici di REAPER 7.82: "0 m" = No action, "1 m" = Move take marker, "2 m" = Move take marker
--- ignoring snap (Shift di serie). GetMouseModifier restituisce "0" per No action.
-M.MARKER_CTX = "MM_CTX_ITEMTAKEMARKER"
-M.MARKER_PROTECT = { { 0, "0 m" }, { 1, "1 m" } }     -- { tasti (0 nessuno, 1 Shift), azione }
-local function mm_norm(v)
-  v = tostring(v or ""):gsub("^%s+", ""):gsub("%s+$", "")
-  if v:match("^%-?%d+$") then v = v .. " m" end
-  return v
-end
--- Stato dai valori attuali (get(tasti) -> stringa di REAPER): "ok" protetti, "serie" comandi di
--- serie di REAPER, "altro" impostazioni personali, "na" REAPER senza GetMouseModifier.
-function M.marker_state(get)
-  if not get then return "na" end
-  local d, sh = mm_norm(get(0)), mm_norm(get(1))
-  if d == "0 m" and sh == "1 m" then return "ok" end
-  if d == "1 m" and sh == "2 m" then return "serie" end
-  return "altro"
-end
--- Proteggi e Ripristina standard (set = reaper.SetMouseModifier).
-function M.marker_protect(set)
-  for _, e in ipairs(M.MARKER_PROTECT) do set(M.MARKER_CTX, e[1], e[2]) end
-end
-function M.marker_reset(set)
-  set(M.MARKER_CTX, -1, -1)                 -- tutto il contesto torna come lo da' REAPER
-end
-
-if not reaper or ZP_BENVENUTO_LIB then return M end
+if not reaper then return M end
 
 ---------------------------------------------------------------------------
 -- PARTE REAPER
@@ -354,28 +324,7 @@ local function check_all()
     buttons = osara and {} or { { "Sito OSARA", function() UI.open_url("https://osara.reaperaccessibility.com") end } },
   }
 
-  -- 7 Marker degli item: non si spostano per sbaglio
-  local get = reaper.GetMouseModifier and function(f) return reaper.GetMouseModifier(M.MARKER_CTX, f) end or nil
-  local ms = M.marker_state(get)
-  local protect = { "Proteggi", function()
-      M.marker_protect(reaper.SetMouseModifier)
-      speak("Marker degli item protetti: trascini l'item, Shift+trascina sposta il marker.")
-    end }
-  local reset = { "Ripristina standard", function()
-      M.marker_reset(reaper.SetMouseModifier)
-      speak("Marker degli item: comandi di serie di REAPER (trascinare sposta il marker).")
-    end }
-  out[#out + 1] = {
-    title = "Marker degli item",
-    state = ms == "ok" and "ok" or ms == "na" and "na" or "passo",
-    line = ms == "ok" and "Protetti: trascinando sopra un marker prendi l'item; Shift+trascina sposta il marker, doppio clic lo modifica."
-      or ms == "serie" and "Comandi di serie di REAPER: trascinare sopra un marker lo sposta invece dell'item. Proteggi: il marker si sposta solo con Shift+trascina."
-      or ms == "na" and "Questa versione di REAPER non permette di cambiarlo da uno script (Preferences > Mouse Modifiers)."
-      or "Impostazioni tue in Mouse Modifiers > Media item take marker: non le tocco. Proteggi le sostituisce (marker solo con Shift+trascina).",
-    buttons = ms == "na" and {} or ms == "ok" and { reset } or ms == "serie" and { protect } or { protect, reset },
-  }
-
-  -- 8 Interfaccia web
+  -- 7 Interfaccia web
   local port = M.web_port(read(reaper.get_ini_file()))
   out[#out + 1] = {
     title = "Interfaccia web di REAPER",
@@ -462,7 +411,7 @@ local function loop()
   reaper.defer(loop)
 end
 
-gfx.init(TITLE, 820, 76 + 8 * 78 + 60 + 34, 0, 160, 120)
+gfx.init(TITLE, 820, 76 + 7 * 78 + 60 + 34, 0, 160, 120)
 rows = check_all(); last_check = reaper.time_precise()
 local fare = 0
 for _, r in ipairs(rows) do if r.state == "fare" or r.state == "passo" then fare = fare + 1 end end

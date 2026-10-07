@@ -74,6 +74,12 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 - I take marker stanno nel progetto, non nel WAV. Tempo timeline = pos + (src - startoffs) / playrate.
 - Un solo `gfx` per script: per aprire un altro strumento senza chiudere la finestra lancialo come
   azione (`Main_OnCommand` con l'ID da reaper-kb.ini), e passa i parametri via ExtState, non `_G`.
+- Mouse modifiers: si cambiano con `SetMouseModifier`/`GetMouseModifier` (mai scrivendo reaper-mouse.ini). Il nome
+  dell'azione per esteso NON viene accettato (diventa "0 m" = No action): servono i codici. Take marker, left drag
+  (MM_CTX_ITEMTAKEMARKER, REAPER 7.82): 0 No action, 1 Move, 2 Move ignoring snap, 3/4 start position, 5/6 end
+  position, 7/8 Copy. Per i take marker non esiste "Pass through to item": No action lascia prendere l'item
+  (provato da Paolo). GetMouseModifier restituisce "0" per No action. Si prova in REAPER aperto con
+  `REAPER -nonewinst script.lua` (esegue lo script nell'istanza aperta).
 - `JS_Dialog_BrowseForFolder` restituisce 1/0/-1: in Lua 0 e' VERO, controllare `rv == 1`.
 - macOS: `open "file#ancora"` non funziona; usare l'URL file:// codificato (`UI.help_url`).
 - Messaggi: niente `ShowConsoleMsg` salvo errori gravi; preferire finestre che restano aperte

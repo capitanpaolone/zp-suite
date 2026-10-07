@@ -17,8 +17,6 @@
 -- in MenuSets/ZP_StudioSuite.ReaperMenu, da importare a mano se serve.
 -- Catene: se in FXChains c'e' gia' una catena con lo stesso nome non viene sovrascritta
 -- (puo' essere la tua, personalizzata).
--- Marker degli item: se valgono i comandi di serie di REAPER li protegge (trascinare prende l'item,
--- Shift+trascina sposta il marker); logica nel 33 Benvenuto.
 -- Preset: aggiunge in REAPER/presets i preset dei JSFX usati dal Chain Builder (BUS Chain
 -- Voiceover_Body1..., Master Pro Flat -19). REAPER li lega al percorso del JSFX installato
 -- da ReaPack. Si aggiungono solo i preset con un nome che non c'e' gia': i tuoi restano.
@@ -354,23 +352,6 @@ for _, name in ipairs(M.PRESETS) do
   end
 end
 
--- marker degli item: protetti se valgono ancora i comandi di serie di REAPER (le impostazioni
--- personali non si toccano); si torna indietro dal Benvenuto (33) con Ripristina standard
-local marker_msg
-do
-  ZP_BENVENUTO_LIB = true
-  local okb, B = pcall(dofile, here .. sep .. "33_Benvenuto_Controllo_Installazione.lua")
-  ZP_BENVENUTO_LIB = nil
-  if okb and B and reaper.GetMouseModifier and reaper.SetMouseModifier then
-    local st = B.marker_state(function(f) return reaper.GetMouseModifier(B.MARKER_CTX, f) end)
-    if st == "serie" then
-      B.marker_protect(reaper.SetMouseModifier)
-      marker_msg = "protetti: trascinando sopra un marker prendi l'item, Shift+trascina sposta il marker\n(33 Benvenuto > Ripristina standard per tornare ai comandi di REAPER)"
-    elseif st == "ok" then marker_msg = "gia' protetti (Shift+trascina sposta il marker)"
-    else marker_msg = "impostazioni tue in Mouse Modifiers, non toccate (33 Benvenuto > Proteggi)" end
-  end
-end
-
 local buttons = 0
 for _ in pairs(ids) do buttons = buttons + 1 end
 for _, e in ipairs(M.LAYOUT) do if type(e) == "table" and e.cmd then buttons = buttons + 1 end end
@@ -381,5 +362,4 @@ if #registered > 0 then msg = msg .. "\n\nRegistrati ora nell'Action List: " .. 
 if #missing > 0 then msg = msg .. "\n\nNON trovati (pulsante saltato): " .. table.concat(missing, ", ") end
 msg = msg .. "\n\nCatene di effetti per il SOLO Recorder (REAPER/FXChains):\n" .. table.concat(chain_lines, "\n")
 msg = msg .. "\n\nPreset per il Chain Builder (REAPER/presets):\n" .. table.concat(preset_lines, "\n")
-if marker_msg then msg = msg .. "\n\nMarker degli item: " .. marker_msg end
 reaper.MB(msg, "ZP Installa toolbar ed effetti", 0)

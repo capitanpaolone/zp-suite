@@ -41,5 +41,17 @@ check("toolbar ZP: assente", M.toolbar_slot("[Floating toolbar 1]\nitem_0=1\n") 
 check("da riavviare: file ancora quello scritto", M.toolbar_pending("8|10", "0123456789") == true)
 check("da riavviare: REAPER ha riscritto il file", M.toolbar_pending("8|10", "0123456789ab") == false)
 check("da riavviare: nessuna scrittura", M.toolbar_pending("", "x") == false)
+-- marker degli item (Mouse Modifiers, contesto Media item take marker)
+local function G(t) return function(f) return t[f] end end
+check("marker: comandi di serie", M.marker_state(G({ [0] = "1 m", [1] = "2 m" })) == "serie")
+check("marker: protetti (No action letto come 0)", M.marker_state(G({ [0] = "0", [1] = "1 m" })) == "ok")
+check("marker: impostazioni personali", M.marker_state(G({ [0] = "7 m", [1] = "2 m" })) == "altro")
+check("marker: REAPER senza API", M.marker_state(nil) == "na")
+local calls = {}
+local function S(ctx, f, a) calls[#calls + 1] = ctx .. "|" .. tostring(f) .. "|" .. tostring(a) end
+M.marker_protect(S)
+check("marker: Proteggi", table.concat(calls, ";") == "MM_CTX_ITEMTAKEMARKER|0|0 m;MM_CTX_ITEMTAKEMARKER|1|1 m")
+calls = {}; M.marker_reset(S)
+check("marker: Ripristina standard = contesto di serie", table.concat(calls, ";") == "MM_CTX_ITEMTAKEMARKER|-1|-1")
 if fails > 0 then print(fails .. " FALLITI") os.exit(1) end
 print("TUTTI OK")
