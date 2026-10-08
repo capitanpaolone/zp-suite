@@ -100,6 +100,9 @@ footer{padding:4px 16px 16px;color:var(--sub);font-size:14px;min-height:24px}
 .navwrap canvas{position:absolute;inset:0;width:100%;height:100%}
 .navhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .navhead span{font-size:12px;color:var(--sub)}
+.zoom{display:flex;align-items:center;gap:8px}
+.zoom .step button{width:34px;height:30px}
+.zoom .btn{height:30px;padding:0 10px}
 #qr:empty{display:none}
 </style>
 </head>
@@ -179,7 +182,17 @@ footer{padding:4px 16px 16px;color:var(--sub);font-size:14px;min-height:24px}
   </section>
 
   <section class="navsec" aria-labelledby="h-nav">
-    <div class="navhead"><h2 id="h-nav">Timeline</h2><span id="navinfo">regioni · marker · take · tocca per andarci</span></div>
+    <div class="navhead">
+      <h2 id="h-nav">Timeline</h2>
+      <div class="zoom">
+        <span id="navinfo">tutto il progetto</span>
+        <div class="step" role="group" aria-label="Zoom della timeline">
+          <button id="z-out" aria-label="Allontana: mostra piu' tempo">−</button>
+          <button id="z-in" aria-label="Avvicina: mostra meno tempo, piu' dettagli">+</button>
+        </div>
+        <button class="btn" id="z-all" aria-label="Mostra tutto il progetto">Tutto</button>
+      </div>
+    </div>
     <div class="navwrap" id="navwrap" role="slider" aria-label="Timeline: tocca un punto per portarci il cursore" aria-valuemin="0" tabindex="0">
       <canvas id="nav"></canvas>
     </div>
@@ -340,50 +353,131 @@ function navLen() {
   return Math.max(nav ? nav.len : 0, pos + 5, 30);
 }
 function fmt(t) { t = Math.max(0, t); const m = Math.floor(t / 60), s = Math.floor(t % 60); return (m >= 60 ? Math.floor(m / 60) + ":" + String(m % 60).padStart(2, "0") : m) + ":" + String(s).padStart(2, "0"); }
+// ---- zoom: span = secondi visibili (null = tutto), start = inizio della vista ----
+let zSpan = null, zStart = 0, zTouched = 0;
+const MIN_SPAN = 5;
+function viewRange() {
+  const len = navLen();
+  if (zSpan === null || zSpan >= len) return [0, len];
+  zStart = Math.max(0, Math.min(zStart, len - zSpan));
+  return [zStart, zStart + zSpan];
+}
+function zoomAt(factor, t) {          // factor < 1 avvicina; t = istante che resta fermo
+  const len = navLen(), [a, b] = viewRange(), span = b - a;
+  const next = Math.max(MIN_SPAN, Math.min(len, span * factor));
+  if (t == null) t = st && !st.off && st.pos >= a && st.pos <= b ? st.pos : (a + b) / 2;
+  const k = (t - a) / span;
+  zSpan = next >= len ? null : next;
+  zStart = t - k * next;
+  zTouched = performance.now();
+}
+function panBy(seconds) { const [a, b] = viewRange(); if (zSpan !== null) { zStart = a + seconds; zTouched = performance.now(); } }
+// durante PLAY/REC la vista rincorre la testina (non se l'hai appena mossa tu)
+function followHead() {
+  if (zSpan === null || !st || st.off || st.transport === "STOP") return;
+  if (performance.now() - zTouched < 4000) return;
+  const [a, b] = viewRange(), span = b - a;
+  if (st.pos < a || st.pos > b - span * 0.1) zStart = st.pos - span * 0.25;
+}
+function spanText(sp) { return sp < 90 ? Math.round(sp) + " s" : sp < 5400 ? Math.round(sp / 60) + " min" : (sp / 3600).toFixed(1) + " h"; }
 function drawNav() {
   const c = $("nav"), box = $("navwrap"), dpr = window.devicePixelRatio || 1;
   const w = box.clientWidth, h = box.clientHeight;
   if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
   const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
-  const len = navLen(), X = t => 6 + (t / len) * (w - 12);
+  followHead();
+  const len = navLen(), [va, vb] = viewRange(), span = vb - va, X = t => 6 + ((t - va) / span) * (w - 12);
+  const info = zSpan === null ? "tutto il progetto" : spanText(span) + " visibili, da " + fmt(va);
+  if ($("navinfo").textContent !== info) $("navinfo").textContent = info;
+  $("z-in").disabled = span <= MIN_SPAN + 0.01; $("z-out").disabled = zSpan === null; $("z-all").disabled = zSpan === null;
   // righello: tacche ogni passo "tondo"
-  const steps = [5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600];
-  const step = steps.find(s => (w - 12) / (len / s) >= 70) || 3600;
+  const steps = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600];
+  const step = steps.find(s => (w - 12) / (span / s) >= 70) || 3600;
   g.font = "11px -apple-system,Arial"; g.fillStyle = "#6c7280"; g.strokeStyle = "#ffffff18"; g.lineWidth = 1;
-  for (let t = 0; t <= len; t += step) { const x = Math.round(X(t)) + 0.5; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); g.fillText(fmt(t), x + 3, h - 4); }
+  for (let t = Math.ceil(va / step) * step; t <= vb; t += step) { const x = Math.round(X(t)) + 0.5; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); g.fillText(fmt(t), x + 3, h - 4); }
+  if (zSpan !== null) {        // dove sei nel progetto: barretta sottile in fondo
+    g.fillStyle = "#ffffff14"; g.fillRect(6, h - 2, w - 12, 2);
+    g.fillStyle = "#6bbde9"; g.fillRect(6 + (va / len) * (w - 12), h - 2, Math.max(4, (span / len) * (w - 12)), 2);
+  }
   if (nav) {
     // regioni
     arr(nav.regions).forEach(r => {
-      const x0 = X(r.s), x1 = Math.max(x0 + 2, X(r.e));
+      if (r.e < va || r.s > vb) return;
+      const x0 = Math.max(0, X(r.s)), x1 = Math.max(x0 + 2, Math.min(w, X(r.e)));
       g.fillStyle = (r.c || "#5b6b8a") + "99"; g.fillRect(x0, 6, x1 - x0, 26);
       g.save(); g.beginPath(); g.rect(x0, 6, x1 - x0 - 2, 26); g.clip();
       g.fillStyle = "#f2f3f6"; g.font = "12px -apple-system,Arial"; g.fillText(r.n, x0 + 4, 23); g.restore();
     });
     // take della traccia armata
     arr(nav.items).forEach(it => {
-      const x0 = X(it.s), x1 = Math.max(x0 + 2, X(it.e));
+      if (it.e < va || it.s > vb) return;
+      const x0 = Math.max(0, X(it.s)), x1 = Math.max(x0 + 2, Math.min(w, X(it.e)));
       g.fillStyle = "#3a8d5c"; g.fillRect(x0, 44, x1 - x0, 20);
       g.strokeStyle = "#0c0c0f"; g.strokeRect(x0 + 0.5, 44.5, x1 - x0 - 1, 19);
     });
     // marker
     arr(nav.markers).forEach(m => {
+      if (m.p < va || m.p > vb) return;
       const x = Math.round(X(m.p)) + 0.5;
       g.strokeStyle = m.c || "#e0b040"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x, 4); g.lineTo(x, h - 16); g.stroke();
       g.fillStyle = m.c || "#e0b040"; g.beginPath(); g.moveTo(x, 4); g.lineTo(x + 7, 8); g.lineTo(x, 12); g.fill();
     });
   }
   // cursore / testina
-  if (st && !st.off) {
+  if (st && !st.off && st.pos >= va && st.pos <= vb) {
     const x = Math.round(X(st.pos)) + 0.5, rec = st.transport === "REC" || st.transport === "REC_PAUSE";
     g.strokeStyle = rec ? "#ff3b30" : "#ffffff"; g.lineWidth = 2; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke();
     $("navwrap").setAttribute("aria-valuemax", Math.round(len)); $("navwrap").setAttribute("aria-valuenow", Math.round(st.pos));
   }
 }
 function navTime(ev) {
-  const r = $("navwrap").getBoundingClientRect();
-  return Math.max(0, Math.min(1, (ev.clientX - r.left - 6) / (r.width - 12))) * navLen();
+  const r = $("navwrap").getBoundingClientRect(), [a, b] = viewRange();
+  return a + Math.max(0, Math.min(1, (ev.clientX - r.left - 6) / (r.width - 12))) * (b - a);
 }
-$("navwrap").addEventListener("pointerup", ev => send("goto", navTime(ev).toFixed(3)));
+// tocco secco = vai li'; un dito che trascina = sposta la vista; due dita = pizzico (zoom)
+const ptrs = new Map(); let drag = null, pinch = null;
+const wrap = $("navwrap");
+wrap.addEventListener("pointerdown", ev => {
+  wrap.setPointerCapture(ev.pointerId);
+  ptrs.set(ev.pointerId, ev.clientX);
+  if (ptrs.size === 1) drag = { x: ev.clientX, start: viewRange()[0], moved: false };
+  else if (ptrs.size === 2) { const xs = [...ptrs.values()]; pinch = { d: Math.abs(xs[0] - xs[1]) || 1 }; drag = null; }
+});
+wrap.addEventListener("pointermove", ev => {
+  if (!ptrs.has(ev.pointerId)) return;
+  ptrs.set(ev.pointerId, ev.clientX);
+  const r = wrap.getBoundingClientRect(), [a, b] = viewRange(), perPx = (b - a) / (r.width - 12);
+  if (pinch && ptrs.size === 2) {
+    const xs = [...ptrs.values()], d = Math.abs(xs[0] - xs[1]) || 1;
+    const mid = a + (((xs[0] + xs[1]) / 2 - r.left - 6) / (r.width - 12)) * (b - a);
+    zoomAt(pinch.d / d, mid); pinch.d = d;
+  } else if (drag) {
+    const dx = ev.clientX - drag.x;
+    if (Math.abs(dx) > 6) drag.moved = true;
+    if (drag.moved && zSpan !== null) { zStart = drag.start - dx * perPx; zTouched = performance.now(); }
+  }
+});
+function endPtr(ev) {
+  if (!ptrs.has(ev.pointerId)) return;
+  ptrs.delete(ev.pointerId);
+  if (drag && !drag.moved && !pinch && ev.type === "pointerup") send("goto", navTime(ev).toFixed(3));
+  if (ptrs.size < 2) pinch = null;
+  if (ptrs.size === 0) drag = null;
+}
+wrap.addEventListener("pointerup", endPtr);
+wrap.addEventListener("pointercancel", endPtr);
+// rotella / trackpad: verticale o pizzico = zoom attorno al mouse; orizzontale = sposta
+wrap.addEventListener("wheel", ev => {
+  ev.preventDefault();
+  if (Math.abs(ev.deltaX) > Math.abs(ev.deltaY)) {
+    const [a, b] = viewRange(); panBy((ev.deltaX / (wrap.clientWidth - 12)) * (b - a));
+  } else {
+    zoomAt(Math.exp(ev.deltaY * (ev.ctrlKey ? 0.01 : 0.002)), navTime(ev));
+  }
+}, { passive: false });
+$("z-in").addEventListener("click", () => zoomAt(0.5));
+$("z-out").addEventListener("click", () => zoomAt(2));
+$("z-all").addEventListener("click", () => { zSpan = null; zTouched = performance.now(); });
 $("navwrap").addEventListener("keydown", ev => {
   if (!st) return;
   if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") { ev.preventDefault(); send("goto", Math.max(0, st.pos + (ev.key === "ArrowLeft" ? -5 : 5)).toFixed(3)); }
