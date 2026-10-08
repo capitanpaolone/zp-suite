@@ -2501,6 +2501,8 @@ local function open_window()
   local preview_visible_rows = 14
   local _, _, last_project_region_count = reaper.CountProjectMarkers(0)
 
+  -- toolbar: icona accesa finche' la finestra e' aperta; un altro clic sull'icona la chiude (REAPER 7.03+)
+  if reaper.set_action_options then reaper.set_action_options(1 | 4); reaper.atexit(function() reaper.set_action_options(8) end) end
   gfx.init(SCRIPT_TITLE, FIXED_WINDOW_W, 660)
   gfx.setfont(1, "Arial", 15)
   reset_debug_log()

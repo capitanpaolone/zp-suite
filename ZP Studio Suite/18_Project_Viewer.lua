@@ -421,6 +421,8 @@ local function draw_project_window()
   local h_drag_start_x = 0
   local h_drag_start_scroll = 0
 
+  -- toolbar: icona accesa finche' la finestra e' aperta; un altro clic sull'icona la chiude (REAPER 7.03+)
+  if reaper.set_action_options then reaper.set_action_options(1 | 4); reaper.atexit(function() reaper.set_action_options(8) end) end
   gfx.init(SCRIPT_TITLE, 920, 620, dock_state)
   gfx.setfont(1, "Arial", 15)
 

@@ -930,6 +930,8 @@ local function open_window()
   local pending_report_scroll = 0
   local calc_icon = -1
 
+  -- toolbar: icona accesa finche' la finestra e' aperta; un altro clic sull'icona la chiude (REAPER 7.03+)
+  if reaper.set_action_options then reaper.set_action_options(1 | 4); reaper.atexit(function() reaper.set_action_options(8) end) end
   gfx.init(SCRIPT_TITLE, 940, 610)
   gfx.setfont(1, "Arial", 17)
   local calc_path = find_toolbar_icon(CALC_ICON_NAME)

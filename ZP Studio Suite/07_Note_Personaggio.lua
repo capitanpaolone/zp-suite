@@ -327,6 +327,8 @@ local function prompt_roles_visual(default_role, on_done)
   local input_last_click_time = 0
   local ok = false
   local last_mouse_down = false
+  -- toolbar: icona accesa finche' la finestra e' aperta; un altro clic sull'icona la chiude (REAPER 7.03+)
+  if reaper.set_action_options then reaper.set_action_options(1 | 4); reaper.atexit(function() reaper.set_action_options(8) end) end
   gfx.init("ZP Studio Suite v1.0.5 - Actor / Note", 660, 310, 0, 180, 180)
 
   local function close_dialog(result)

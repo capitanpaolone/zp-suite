@@ -753,6 +753,8 @@ local function open_import_window(on_finish)
     state.status = string.format("Pronto: %d cartelle/sezioni con media, %d file.", #(state.plan or {}), count_plan_videos(state.plan or {}))
   end
 
+  -- toolbar: icona accesa finche' la finestra e' aperta; un altro clic sull'icona la chiude (REAPER 7.03+)
+  if reaper.set_action_options then reaper.set_action_options(1 | 4); reaper.atexit(function() reaper.set_action_options(8) end) end
   gfx.init("ZP Studio Suite v1.0.5 - Importa cartelle", 860, 620)
   gfx.setfont(1, "Arial", 15)
 

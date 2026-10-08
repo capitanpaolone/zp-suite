@@ -353,7 +353,7 @@ local AIUTI = {
   ["Regioni take"] = "Parentesi: a ogni REC crea la regione Take NNN sul nuovo audio. Azzurro = acceso.",
   ["Effetti"] = "Cursori: sessione SOLO con le catene ZP sul bus voci e sul master. Azzurro = acceso. Attenuato in Telecomando.",
   ["Pin"] = "Puntina: dritta e azzurra = finestra sempre sopra; inclinata = libera. Clic: cambia.",
-  ["Toolbar"] = "Mostra o nasconde la fila di comandi REAPER in fondo, con i secondi del pre-roll (attenuato in Mini).",
+  ["Toolbar"] = "Mostra o nasconde la fila di comandi REAPER in fondo, con i secondi del pre-roll (in ogni vista, anche Mini).",
   ["Video"] = "Cinepresa: apre e chiude la finestra video di REAPER. Azzurro = aperta.",
   ["Zoom"] = "Quanto tempo mostra il navigatore: da tutto il progetto a 10 secondi.",
   ["1/3"] = "Testina a un terzo da sinistra: vedi di piu' di quello che arriva.",
@@ -1580,8 +1580,14 @@ local function set_mode(mode)
   state.mode = mode
   state.mark_focus = false
   local w, h = mode_size(mode)
-  if mode ~= "mini" and state.toolbar then h = h + TOOLBAR_H end
+  if state.toolbar then h = h + TOOLBAR_H end
   local dock, x, y = gfx.dock(-1, 0, 0, 0, 0)
+  -- Il bordo in ALTO resta fermo e la finestra cresce/cala verso il basso. Su macOS la y della
+  -- finestra si misura dal basso: senza correzione crescerebbe verso l'alto (e il trasporto si sposta).
+  local os_name = reaper.GetOS()
+  if y and ((dock or 0) & 1) == 0 and (os_name:find("OSX") or os_name:find("mac")) then
+    y = y + (gfx.h - h)
+  end
   -- Su una finestra gia' aperta, gfx.init non sempre la ridimensiona: percio'
   -- la chiudo e la riapro alla misura giusta, tenendo posizione e dock.
   gfx.quit()
@@ -1876,7 +1882,7 @@ local function draw_header_buttons(clicked)
   }, clicked)
   xr = xr - PILL_GAP - pill_w(3)
   draw_pill(xr, y, {
-    {icon = "toolbar", key = "Toolbar", active = state.toolbar and state.mode ~= "mini", enabled = state.mode ~= "mini", act = function()
+    {icon = "toolbar", key = "Toolbar", active = state.toolbar, act = function()
       state.toolbar = not state.toolbar; save_state(); set_mode(state.mode)
     end},
     {icon = state.reaper_hidden and "reaper_up" or "reaper_down", key = "REAPER", active = state.reaper_hidden, act = toggle_reaper_window},
@@ -2565,7 +2571,7 @@ local function layout_zones(zones, x, y, w)
 end
 
 local function content_bottom()
-  return gfx.h - ((state.toolbar and state.mode ~= "mini") and TOOLBAR_H or 0) - STATUS_H
+  return gfx.h - (state.toolbar and TOOLBAR_H or 0) - STATUS_H
 end
 
 local function draw_zones(clicked)
@@ -2673,7 +2679,7 @@ local function draw_overlay(clicked)
 end
 
 local function draw_toolbar(clicked)
-  if not state.toolbar or state.mode == "mini" then return end
+  if not state.toolbar then return end
   local y = gfx.h - TOOLBAR_H + 8
   set_color({0.075, 0.078, 0.090, 1})
   gfx.rect(0, gfx.h - TOOLBAR_H, gfx.w, TOOLBAR_H, true)
@@ -2716,7 +2722,7 @@ local function draw_gui()
 
   -- Riga in basso: se il mouse e' su un pulsante spiega quel pulsante,
   -- altrimenti dice come e' andata l'ultima cosa che hai premuto.
-  local yr = gfx.h - (state.toolbar and state.mode ~= "mini" and TOOLBAR_H or 0) - 22
+  local yr = gfx.h - (state.toolbar and TOOLBAR_H or 0) - 22
   gfx.setfont(1, "Arial", 13)
   if state.hint ~= "" then
     gfx.set(0.62, 0.78, 0.92, 1)
@@ -2736,10 +2742,12 @@ end
 local function init_gui()
   load_state()
   local w, h = mode_size(state.mode)
-  if state.mode ~= "mini" and state.toolbar then h = h + TOOLBAR_H end
+  if state.toolbar then h = h + TOOLBAR_H end
   local x = tonumber(ext_get("window_x", "")) or 140
   local y = tonumber(ext_get("window_y", "")) or 120
   local dock = tonumber(ext_get("window_dock", "")) or 0
+  -- toolbar: icona accesa finche' la finestra e' aperta; un altro clic sull'icona la chiude (REAPER 7.03+)
+  if reaper.set_action_options then reaper.set_action_options(1 | 4); reaper.atexit(function() reaper.set_action_options(8) end) end
   gfx.init(SCRIPT_TITLE, w, h, dock, x, y)
   gfx.setfont(1, "Arial", 15)
 end

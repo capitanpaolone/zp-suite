@@ -57,6 +57,13 @@ local ini = "[Main toolbar]\nitem_0=40001\n\n[Floating toolbar 1]\nitem_0=1 A\n\
 check("slot: primo libero fra 1 e 16", M.pick_slot(ini) == 2)
 check("slot: quella gia' chiamata ZP Studio Suite", M.pick_slot(ini .. "\n[Floating toolbar 9]\nicon_0=x.png\nitem_0=3 C\ntitle=ZP Studio Suite\n") == 9)
 check("slot: file vuoto", M.pick_slot(nil) == 1)
+-- icone B (2026-10-08): se ci sono si usano, altrimenti restano quelle di prima (anche per le azioni native)
+local withB = M.menu_text(M.LAYOUT, setmetatable({}, { __index = function() return "_RSx" end }), nil, function() return true end)
+check("icone B quando sono installate", withB:find("icon_0=ZP_tbB_18_Project_Viewer.png", 1, true)
+  and withB:find("icon_18=ZP_tbB_Video.png", 1, true) and withB:find("icon_22=ZP_tbB_00_Help.png", 1, true)
+  and withB:find("ZP_tb_25_SOLO_Recorder.png", 1, true))
+check("senza icone B: azione nativa usa la sua riserva", full:find("icon_18=toolbar_video_screen.png", 1, true) ~= nil
+  and full:find("icon_19=ZP_tb_Importa_SRT_1_video.png", 1, true) ~= nil)
 local sec = "[Floating toolbar 2]\nitem_0=_RS1 X\ntitle=ZP Studio Suite\n"
 local w1 = M.put_section(ini, sec)
 check("sezione nuova in coda, il resto intatto", w1:sub(1, #ini) == ini and w1:find("[Floating toolbar 2]", 1, true))

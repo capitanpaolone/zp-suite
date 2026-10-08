@@ -37,34 +37,36 @@ M.PRESETS = {
   "js-ZP Suite_ZP Master_ZP Master Pro_jsfx.ini",
 }
 
--- La toolbar: la stessa che Paolo usa (Floating toolbar 8), con le icone di serie di REAPER
--- e due icone ZP nello stesso stile (Regioni_Item, Catena_FX, anche a 200% per Retina).
--- Voce: { script, testo, icona, icona di riserva } oppure { cmd = azione nativa, testo, icona }.
--- L'icona di riserva (ZP) si usa se l'icona scelta non c'e' in questo REAPER. "-" = separatore.
+-- La toolbar: la stessa che Paolo usa (Floating toolbar 8). Icone ZP in stile B (2026-10-08):
+-- riquadro scuro, disegno chiaro, verde acqua quando lo strumento e' aperto; anche a 200% per Retina.
+-- Si rifanno con gobbo_ricerca_battuta/strumenti/genera_icone_toolbar_B.py. SOLO Recorder ha la sua.
+-- Voce: { script, testo, icona, icona di riserva } oppure { cmd = azione nativa, testo, icona, riserva }.
+-- L'icona di riserva si usa se l'icona scelta non c'e' in questo REAPER (es. ReaPack non ancora
+-- aggiornato: restano le icone di prima). "-" = separatore.
 M.LAYOUT = {
-  { "18_Project_Viewer.lua", "Project Viewer", "toolbar_item_arpeggiate.png", "ZP_tb_18_Project_Viewer.png" },
-  { "17_Crea_Regioni_Export_da_Item_Nominati.lua", "Gestore Progetto", "ZP_tb_17_Regioni_Item.png" },
-  { "19_Report_Minuti_Voce.lua", "Report minuti voce", "toolbar_misc_calculate_numeric.png", "ZP_tb_19_Report_Minuti.png" },
+  { "18_Project_Viewer.lua", "Project Viewer", "ZP_tbB_18_Project_Viewer.png", "toolbar_item_arpeggiate.png" },
+  { "17_Crea_Regioni_Export_da_Item_Nominati.lua", "Gestore Progetto", "ZP_tbB_17_Gestore_Progetto.png", "ZP_tb_17_Regioni_Item.png" },
+  { "19_Report_Minuti_Voce.lua", "Report minuti voce", "ZP_tbB_19_Report_Minuti.png", "toolbar_misc_calculate_numeric.png" },
   "-",
-  { "29_ZP_Trascrizione.lua", "ZP Trascrizione", "ZP_tb_29_Pannello_Trascrizione.png" },
+  { "29_ZP_Trascrizione.lua", "ZP Trascrizione", "ZP_tbB_29_Trascrizione.png", "ZP_tb_29_Pannello_Trascrizione.png" },
   "-",
-  { "02_Gobbo_Verticale.lua", "Gobbo verticale", "toolbar_item_selected_move_vertical_track.png", "ZP_tb_02_Gobbo_Verticale.png" },
-  { "03_Gobbo_Orizzontale.lua", "Gobbo orizzontale", "toolbar_item_selected_move_horizontal_position_time.png", "ZP_tb_03_Gobbo_Orizzontale.png" },
+  { "02_Gobbo_Verticale.lua", "Gobbo verticale", "ZP_tbB_02_Gobbo_Verticale.png", "toolbar_item_selected_move_vertical_track.png" },
+  { "03_Gobbo_Orizzontale.lua", "Gobbo orizzontale", "ZP_tbB_03_Gobbo_Orizzontale.png", "toolbar_item_selected_move_horizontal_position_time.png" },
   "-",
-  { "20_Importa_Cartelle_Video_Mixdown.lua", "Importa cartelle", "toolbar_color_load_disk.png", "ZP_tb_20_Importa_Cartelle.png" },
-  { "30_ZP_SRT.lua", "ZP SRT", "ZP_tb_30_ZP_SRT.png" },
-  { "04_Crea_Marker_Item.lua", "Marker", "toolbar_marker_renum.png", "ZP_tb_04_Marker_Item.png" },
+  { "20_Importa_Cartelle_Video_Mixdown.lua", "Importa cartelle", "ZP_tbB_20_Importa_Cartelle.png", "toolbar_color_load_disk.png" },
+  { "30_ZP_SRT.lua", "ZP SRT", "ZP_tbB_30_ZP_SRT.png", "ZP_tb_30_ZP_SRT.png" },
+  { "04_Crea_Marker_Item.lua", "Marker", "ZP_tbB_04_Marker.png", "toolbar_marker_renum.png" },
   "-",
-  { "07_Note_Personaggio.lua", "Actor / Note", "toolbar_misc_mic.png", "ZP_tb_07_Actor_Note.png" },
-  { "22_Pulisci_Code_Silenzi_e_Separa_Item.lua", "Voice Cleaner", "toolbar_misc_brush_broom_clean.png", "ZP_tb_22_Voice_Cleaner.png" },
-  { "23_ZP_Chain_Builder.lua", "Chain Builder", "ZP_tb_23_Catena_FX.png" },
+  { "07_Note_Personaggio.lua", "Actor / Note", "ZP_tbB_07_Actor_Note.png", "toolbar_misc_mic.png" },
+  { "22_Pulisci_Code_Silenzi_e_Separa_Item.lua", "Voice Cleaner", "ZP_tbB_22_Voice_Cleaner.png", "toolbar_misc_brush_broom_clean.png" },
+  { "23_ZP_Chain_Builder.lua", "Chain Builder", "ZP_tbB_23_Chain_Builder.png", "ZP_tb_23_Catena_FX.png" },
   { "25_ZP_SOLO_Recorder.lua", "SOLO Recorder", "ZP_tb_25_SOLO_Recorder.png" },
   "-",
-  { cmd = 50125, "Video: Show/hide video window", "toolbar_video_screen.png" },
-  { cmd = 42653, "Project tabs: Display video from background projects if active project lacks video", "ZP_tb_Importa_SRT_1_video.png" },
-  { "24_ZP_Probe_Guard.lua", "Probe Guard", "toolbar_color_source_input_channel.png", "ZP_tb_24_Probe_Guard.png" },
+  { cmd = 50125, "Video: Show/hide video window", "ZP_tbB_Video.png", "toolbar_video_screen.png" },
+  { cmd = 42653, "Project tabs: Display video from background projects if active project lacks video", "ZP_tbB_Video_Sfondo.png", "ZP_tb_Importa_SRT_1_video.png" },
+  { "24_ZP_Probe_Guard.lua", "Probe Guard", "ZP_tbB_24_Probe_Guard.png", "toolbar_color_source_input_channel.png" },
   "-",
-  { "00_Apri_Help_ZP_Studio_Suite.lua", "Help", "ZP_tb_00_Help.png" },
+  { "00_Apri_Help_ZP_Studio_Suite.lua", "Help", "ZP_tbB_00_Help.png", "ZP_tb_00_Help.png" },
 }
 
 -- Icone di serie di REAPER (stanno dentro l'applicazione, non nella cartella dell'utente).
@@ -105,8 +107,11 @@ end
 -- Testo del file .ReaperMenu. ids: nome script -> "_RS..." (mancante = pulsante saltato)
 -- Icona del pulsante: quella scelta, o la riserva ZP se has_icon dice che qui non c'e'.
 function M.pick_icon(e, has_icon)
-  if e[4] and has_icon and not has_icon(e[3]) then return e[4] end
-  return e[3]
+  -- script: { script, testo, icona, riserva }; azione nativa: { cmd = ..., testo, icona, riserva }
+  local icon, spare = e[3], e[4]
+  if e.cmd then icon, spare = e[2], e[3] end
+  if spare and has_icon and not has_icon(icon) then return spare end
+  return icon
 end
 
 function M.menu_text(layout, ids, title, has_icon, slot)
@@ -117,7 +122,7 @@ function M.menu_text(layout, ids, title, has_icon, slot)
     else
       local id = e.cmd and tostring(e.cmd) or ids[e[1]]
       local text = e.cmd and e[1] or e[2]
-      local icon = e.cmd and e[2] or M.pick_icon(e, has_icon)
+      local icon = M.pick_icon(e, has_icon)
       if id then
         icons[#icons + 1] = string.format("icon_%d=%s", n, icon)
         items[#items + 1] = string.format("%s %s", id, text)

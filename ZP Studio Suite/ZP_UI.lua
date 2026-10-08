@@ -177,7 +177,7 @@ function UI.draw_button(rect, label, active, enabled, clicked, style)
     text_w = rect.w - 38
   end
 
-  local font_size = rect.h <= 24 and 13 or 15
+  local font_size = rect.font or (rect.h <= 24 and 13 or 15)   -- rect.font: dimensione scelta dalla finestra
   gfx.setfont(1, "Arial", font_size)
   gfx.set(enabled and colors.text[1] or 0.48, enabled and colors.text[2] or 0.48, enabled and colors.text[3] or 0.48, 1)
   gfx.x = text_x

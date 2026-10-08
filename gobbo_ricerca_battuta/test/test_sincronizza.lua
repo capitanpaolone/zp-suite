@@ -70,5 +70,17 @@ do
   check("servizio: solo le due battute, la prima dura fino alla seconda",
     #out == 2 and out[1].text == "Battuta uno" and math.abs(out[1].len - 6) < 1e-9 and out[2].text == "Battuta due")
 end
+-- traduzioni (2026-10-08): Nome.<lingua>.srt agganciato agli stessi marker
+check("tempo SRT in ms", M.srt_ms("00:01:14,580") == 74580 and M.srt_ms("01:00:00.5") == 3600500)
+local tr_srt = "\239\187\1911\r\n00:00:01,000 --> 00:00:03,200\r\nDove vai stasera?\r\n\r\n" ..
+  "2\n00:00:03,500 --> 00:00:06,000\nVado alla stazione.\nArriva alle nove.\n\n3\n00:00:06,400 --> 00:00:08,000\nAllora vengo.\n"
+local map = M.srt_by_start(tr_srt)
+check("SRT tradotto per tempo d'inizio", map[1000] == "Dove vai stasera?" and map[3500] == "Vado alla stazione.\nArriva alle nove."
+  and map[6400] == "Allora vengo.")
+check("marker -> battuta tradotta, anche con arrotondamento", M.translated_text(map, 3.5) == "Vado alla stazione.\nArriva alle nove."
+  and M.translated_text(map, 6.4015) == "Allora vengo." and M.translated_text(map, 2.0) == nil)
+check("lingua dal nome del file", M.translation_lang("Episodio 01", "Episodio 01.it.srt") == "it"
+  and M.translation_lang("Ep(1)", "Ep(1).ZH.srt") == "zh" and M.translation_lang("Ep", "Ep.srt") == nil
+  and M.translation_lang("Ep", "Ep2.it.srt") == nil and M.translation_lang("Ep", "Ep.it.srt.bak-1") == nil)
 print(fails == 0 and "\nTUTTI OK" or ("\nFALLITI: " .. fails))
 os.exit(fails == 0 and 0 or 1)

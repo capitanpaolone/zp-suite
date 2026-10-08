@@ -1535,6 +1535,8 @@ end
 
 function InitGUI()
     gfx.clear = 0x111111 
+    -- toolbar: icona accesa finche' la finestra e' aperta; un altro clic sull'icona la chiude (REAPER 7.03+)
+    if reaper.set_action_options then reaper.set_action_options(1 | 4); reaper.atexit(function() reaper.set_action_options(8) end) end
     gfx.init(WINDOW_TITLE, window_w, window_h, window_dock, window_x, window_y)
     gfx.setfont(1, default_font, master_font_size)
     last_saved_window_state = ""

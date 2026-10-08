@@ -11,6 +11,8 @@
   essere avviato in REAPER) e legge il suo stato, tutto attraverso le ExtState di REAPER:
     GET /_/GET/EXTSTATE/ZP_SOLO_WEB/state          stato (JSON)
     GET /_/SET/EXTSTATE/ZP_SOLO_WEB/cmd/<id|verbo|arg>  comando (urlencoded)
+    GET /_/GET/EXTSTATE/ZP_SOLO_WEB/nav            timeline: regioni, marker, take (riletta solo
+                                                   quando state.navv cambia)
 -->
 <style>
 :root{
@@ -93,6 +95,11 @@ footer{padding:4px 16px 16px;color:var(--sub);font-size:14px;min-height:24px}
 .share code{font-size:15px;background:#0c0d10;border:1px solid #2a2c34;border-radius:4px;padding:6px 8px;user-select:all;word-break:break-all}
 .share .note{font-size:13px;color:var(--sub);margin-top:6px;max-width:560px}
 #qr{background:#fff;padding:8px;border-radius:6px;line-height:0}
+.navsec{grid-column:1/-1}
+.navwrap{position:relative;height:96px;border:1px solid var(--panel-b);border-radius:5px;background:#0c0c0f;touch-action:none;cursor:pointer}
+.navwrap canvas{position:absolute;inset:0;width:100%;height:100%}
+.navhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.navhead span{font-size:12px;color:var(--sub)}
 #qr:empty{display:none}
 </style>
 </head>
@@ -169,6 +176,13 @@ footer{padding:4px 16px 16px;color:var(--sub);font-size:14px;min-height:24px}
       <button type="submit" class="flag" aria-label="Metti marker qui"><svg class="i" style="width:20px;height:20px"><use href="#i-flag"/></svg></button>
       <input id="markname" placeholder="Nome marker… (Invio)" aria-label="Nome del marker, vuoto per numerato" autocomplete="off">
     </form>
+  </section>
+
+  <section class="navsec" aria-labelledby="h-nav">
+    <div class="navhead"><h2 id="h-nav">Timeline</h2><span id="navinfo">regioni · marker · take · tocca per andarci</span></div>
+    <div class="navwrap" id="navwrap" role="slider" aria-label="Timeline: tocca un punto per portarci il cursore" aria-valuemin="0" tabindex="0">
+      <canvas id="nav"></canvas>
+    </div>
   </section>
 </main>
 
@@ -308,9 +322,78 @@ async function poll() {
   setTimeout(poll, 60);
 }
 
+// ---- timeline: tutta la durata del progetto in una striscia ----
+let nav = null, navv = -1, navLoading = false;
+const arr = v => Array.isArray(v) ? v : [];          // il motore scrive {} per una lista vuota
+async function loadNav() {
+  if (navLoading || !st || st.navv === navv) return;
+  navLoading = true;
+  try {
+    const txt = await req("GET/EXTSTATE/" + SEC + "/nav");
+    const line = txt.split("\n").find(l => l.startsWith("EXTSTATE\t"));
+    if (line) { nav = JSON.parse(unescapeWWR(line.split("\t").slice(3).join("\t"))); navv = st.navv; }
+  } catch (e) { /* riprovo al prossimo giro */ }
+  navLoading = false;
+}
+function navLen() {
+  const pos = st && !st.off ? st.pos : 0;
+  return Math.max(nav ? nav.len : 0, pos + 5, 30);
+}
+function fmt(t) { t = Math.max(0, t); const m = Math.floor(t / 60), s = Math.floor(t % 60); return (m >= 60 ? Math.floor(m / 60) + ":" + String(m % 60).padStart(2, "0") : m) + ":" + String(s).padStart(2, "0"); }
+function drawNav() {
+  const c = $("nav"), box = $("navwrap"), dpr = window.devicePixelRatio || 1;
+  const w = box.clientWidth, h = box.clientHeight;
+  if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const len = navLen(), X = t => 6 + (t / len) * (w - 12);
+  // righello: tacche ogni passo "tondo"
+  const steps = [5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600];
+  const step = steps.find(s => (w - 12) / (len / s) >= 70) || 3600;
+  g.font = "11px -apple-system,Arial"; g.fillStyle = "#6c7280"; g.strokeStyle = "#ffffff18"; g.lineWidth = 1;
+  for (let t = 0; t <= len; t += step) { const x = Math.round(X(t)) + 0.5; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); g.fillText(fmt(t), x + 3, h - 4); }
+  if (nav) {
+    // regioni
+    arr(nav.regions).forEach(r => {
+      const x0 = X(r.s), x1 = Math.max(x0 + 2, X(r.e));
+      g.fillStyle = (r.c || "#5b6b8a") + "99"; g.fillRect(x0, 6, x1 - x0, 26);
+      g.save(); g.beginPath(); g.rect(x0, 6, x1 - x0 - 2, 26); g.clip();
+      g.fillStyle = "#f2f3f6"; g.font = "12px -apple-system,Arial"; g.fillText(r.n, x0 + 4, 23); g.restore();
+    });
+    // take della traccia armata
+    arr(nav.items).forEach(it => {
+      const x0 = X(it.s), x1 = Math.max(x0 + 2, X(it.e));
+      g.fillStyle = "#3a8d5c"; g.fillRect(x0, 44, x1 - x0, 20);
+      g.strokeStyle = "#0c0c0f"; g.strokeRect(x0 + 0.5, 44.5, x1 - x0 - 1, 19);
+    });
+    // marker
+    arr(nav.markers).forEach(m => {
+      const x = Math.round(X(m.p)) + 0.5;
+      g.strokeStyle = m.c || "#e0b040"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x, 4); g.lineTo(x, h - 16); g.stroke();
+      g.fillStyle = m.c || "#e0b040"; g.beginPath(); g.moveTo(x, 4); g.lineTo(x + 7, 8); g.lineTo(x, 12); g.fill();
+    });
+  }
+  // cursore / testina
+  if (st && !st.off) {
+    const x = Math.round(X(st.pos)) + 0.5, rec = st.transport === "REC" || st.transport === "REC_PAUSE";
+    g.strokeStyle = rec ? "#ff3b30" : "#ffffff"; g.lineWidth = 2; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke();
+    $("navwrap").setAttribute("aria-valuemax", Math.round(len)); $("navwrap").setAttribute("aria-valuenow", Math.round(st.pos));
+  }
+}
+function navTime(ev) {
+  const r = $("navwrap").getBoundingClientRect();
+  return Math.max(0, Math.min(1, (ev.clientX - r.left - 6) / (r.width - 12))) * navLen();
+}
+$("navwrap").addEventListener("pointerup", ev => send("goto", navTime(ev).toFixed(3)));
+$("navwrap").addEventListener("keydown", ev => {
+  if (!st) return;
+  if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") { ev.preventDefault(); send("goto", Math.max(0, st.pos + (ev.key === "ArrowLeft" ? -5 : 5)).toFixed(3)); }
+});
+
 function frame() {
   drawMeter(meters.in, st && !st.off ? st.in_db : null);
   drawMeter(meters.rit, st && !st.off ? st.rit_db : null);
+  loadNav();
+  drawNav();
   requestAnimationFrame(frame);
 }
 

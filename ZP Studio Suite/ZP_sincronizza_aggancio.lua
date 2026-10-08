@@ -17,6 +17,11 @@
 --   4. una traccia testo per ogni traccia voce: "Rythmo Band Testi <nome voce>", nascosta
 --
 -- Il gobbo non cambia: riconosce il prefisso "Rythmo Band Testi" e cicla le tracce con < >.
+--
+-- Traduzioni (2026-10-08): se accanto al file audio c'e' Nome.<lingua>.srt (fatto da Traduci nella
+-- finestra 29, stessi tempi dell'originale), ogni battuta tradotta si aggancia allo stesso marker
+-- (stesso tempo d'inizio) e va su una traccia testo sua: "Rythmo Band Testi <voce> · IT".
+-- Segue i tagli come l'originale; nel gobbo e' un flusso in piu'.
 
 local M = {}
 
@@ -85,6 +90,58 @@ function M.item_lines(item, markers)
     out[#out + 1] = { src = m.src, text = m.text, pos = item.pos + (m.src - s0) / rate, len = len }
   end
   return out
+end
+
+-- Tempo SRT "hh:mm:ss,mmm" (o con il punto) -> millisecondi
+function M.srt_ms(t)
+  local h, m, sec, ms = tostring(t):match("(%d+):(%d+):(%d+)[,.](%d+)")
+  if not h then return nil end
+  ms = (ms .. "00"):sub(1, 3)
+  return ((tonumber(h) * 60 + tonumber(m)) * 60 + tonumber(sec)) * 1000 + tonumber(ms)
+end
+
+-- Testi di un SRT per tempo d'inizio: { [ms] = testo } (righe unite con a capo)
+function M.srt_by_start(text)
+  local map = {}
+  local lines = {}
+  for l in (tostring(text or ""):gsub("^\239\187\191", ""):gsub("\r\n", "\n"):gsub("\r", "\n") .. "\n"):gmatch("([^\n]*)\n") do
+    lines[#lines + 1] = l
+  end
+  local i = 1
+  while i <= #lines do
+    local a = lines[i]:match("^%s*(%d+:%d+:%d+[,.]%d+)%s*%-%->")
+    if a then
+      local body = {}
+      i = i + 1
+      while i <= #lines and lines[i]:match("%S") and not lines[i]:match("^%s*%d+:%d+:%d+[,.]%d+%s*%-%->") do
+        body[#body + 1] = lines[i]; i = i + 1
+      end
+      if #body > 0 and body[#body]:match("^%s*%d+%s*$") and lines[i] and lines[i]:match("%-%->") then body[#body] = nil end
+      local ms = M.srt_ms(a)
+      if ms then map[ms] = table.concat(body, "\n") end
+    else
+      i = i + 1
+    end
+  end
+  return map
+end
+
+-- Testo tradotto per un marker al tempo sorgente src (secondi): stesso inizio, al millisecondo
+-- (tolleranza 2 ms per gli arrotondamenti).
+function M.translated_text(map, src)
+  local ms = math.floor(src * 1000 + 0.5)
+  for d = 0, 2 do
+    if map[ms - d] then return map[ms - d] end
+    if map[ms + d] then return map[ms + d] end
+  end
+  return nil
+end
+
+-- File di traduzione accanto all'audio: "Nome.it.srt" per il file "Nome.wav" -> "it"
+function M.translation_lang(audio_stem, filename)
+  local esc = audio_stem:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0")
+  local code = filename:match("^" .. esc .. "%.(%a%a%a?)%.[Ss][Rr][Tt]$")
+  return code and code:lower() or nil
 end
 
 -- wanted:   { {key, srckey, track, pos, len, text}, ... }  cio' che i marker chiedono
@@ -185,12 +242,13 @@ local function is_text_track(tr)
   return track_s(tr, "P_NAME"):find(TEXT_PREFIX, 1, true) == 1
 end
 
--- Traccia testo di una traccia voce (cercata per GUID della voce, quindi regge i rename)
-local text_tracks = {}   -- voice_guid -> track
+-- Traccia testo di una traccia voce (cercata per GUID della voce, quindi regge i rename).
+-- lang = codice di una traduzione: traccia sua, ZP_VOICE = "<guid voce>|<lingua>".
+local text_tracks = {}   -- voice_guid[|lingua] -> track
 local tracks_changed = false   -- creata o rinominata una traccia testo
-local function text_track_for(voice, create)
-  local vguid = reaper.GetTrackGUID(voice)
-  local want = TEXT_PREFIX .. " " .. track_s(voice, "P_NAME")
+local function text_track_for(voice, create, lang)
+  local vguid = reaper.GetTrackGUID(voice) .. (lang and ("|" .. lang) or "")
+  local want = TEXT_PREFIX .. " " .. track_s(voice, "P_NAME") .. (lang and (" \194\183 " .. lang:upper()) or "")
   local tr = text_tracks[vguid]
   if not tr then
     for i = 0, reaper.CountTracks(0) - 1 do
@@ -212,6 +270,46 @@ local function text_track_for(voice, create)
     text_tracks[vguid] = tr
   end
   return tr
+end
+
+-- Traduzioni accanto a un file audio: { {lang=, map=} }. Cache in _G tra un lancio e l'altro
+-- (Segui i tagli lancia il sync spesso): si rilegge un SRT solo se cambia dimensione.
+_G.ZP_SYNC_TR_CACHE = _G.ZP_SYNC_TR_CACHE or {}
+local function file_size(p)
+  local f = io.open(p, "rb"); if not f then return nil end
+  local n = f:seek("end"); f:close(); return n
+end
+local dir_cache = {}
+local function translations_for(fname)
+  local dir, file = fname:match("^(.*)[/\\]([^/\\]+)$")
+  if not dir then return {} end
+  local stem = file:gsub("%.[^.]+$", "")
+  local key = dir .. "\0" .. stem
+  if dir_cache[key] then return dir_cache[key] end
+  local out = {}
+  local i = 0
+  while true do
+    local name = reaper.EnumerateFiles(dir, i)
+    if not name then break end
+    local lang = M.translation_lang(stem, name)
+    if lang then
+      local path = dir .. "/" .. name
+      local size = file_size(path)
+      local c = _G.ZP_SYNC_TR_CACHE[path]
+      if not c or c.size ~= size then
+        local f = io.open(path, "rb")
+        local text = f and f:read("*a") or ""
+        if f then f:close() end
+        c = { size = size, map = M.srt_by_start(text) }
+        _G.ZP_SYNC_TR_CACHE[path] = c
+      end
+      out[#out + 1] = { lang = lang, map = c.map }
+    end
+    i = i + 1
+  end
+  table.sort(out, function(a, b) return a.lang < b.lang end)
+  dir_cache[key] = out
+  return out
 end
 
 local function take_markers(take)
@@ -255,6 +353,21 @@ for t = 0, reaper.CountTracks(0) - 1 do
               srckey = M.make_srckey(fname, l.src) .. (l.carry and "|c" or ""),
               track = ttr, pos = l.pos, len = l.len, text = l.text,
             }
+          end
+          -- traduzioni: stessa battuta, stesso posto, traccia della lingua
+          for _, tr in ipairs(translations_for(fname)) do
+            local ltr = nil
+            for _, l in ipairs(lines) do
+              local t = M.translated_text(tr.map, l.src)
+              if t and t ~= "" then
+                ltr = ltr or text_track_for(voice, true, tr.lang)
+                wanted[#wanted + 1] = {
+                  key = M.make_key(tguid, l.src) .. "|" .. tr.lang .. (l.carry and "|c" or ""),
+                  srckey = M.make_srckey(fname, l.src) .. "|" .. tr.lang .. (l.carry and "|c" or ""),
+                  track = ltr, pos = l.pos, len = l.len, text = (l.carry and M.CARRY_PREFIX or "") .. t,
+                }
+              end
+            end
           end
         end
       end

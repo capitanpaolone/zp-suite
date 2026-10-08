@@ -14,6 +14,10 @@
   La pagina non registra niente da sola: i controlli (traccia armata, pre-roll in secondi,
   ingresso vero della scheda, marker numerati) stanno qui, come nel SOLO Recorder.
 
+  Timeline (2026-10-08): ZP_SOLO_WEB/nav (motore -> pagina) con durata, regioni, marker e item della
+  traccia armata; si riscrive solo quando il progetto cambia (state.navv dice la versione).
+  Il comando "goto|secondi" porta li' il cursore (anche durante la riproduzione).
+
   Prototipo: trasporto (con pausa, anche del REC), pre-roll, livelli IN/RIT, marker, Save/Undo/Redo. La traccia e'
   quella armata nel progetto (come il Telecomando del SOLO). Si ferma rilanciandolo
   (REAPER chiede se terminarlo) o chiudendo REAPER.
@@ -201,6 +205,12 @@ COMANDI.preroll_s = function(arg)
   say("Pre-roll: " .. s .. " s")
 end
 COMANDI.mark = function(arg) add_marker(arg) end
+COMANDI["goto"] = function(arg)
+  local p = tonumber(arg)
+  if not p then return say("Posizione non valida") end
+  reaper.SetEditCurPos(math.max(0, p), true, true)
+  say("Vai a " .. reaper.format_timestr_pos(math.max(0, p), "", 5))
+end
 COMANDI.save = function() reaper.Main_OnCommand(ACTION.save, 0); say("Progetto salvato") end
 COMANDI.undo = function() reaper.Main_OnCommand(ACTION.undo, 0); say("Undo") end
 COMANDI.redo = function() reaper.Main_OnCommand(ACTION.redo, 0); say("Redo") end
@@ -229,6 +239,52 @@ local function region_at(pos)
     if isrgn and pos >= s and pos <= e then return name ~= "" and name or ("Regione " .. idx) end
   end
   return "Nessuna regione"
+end
+
+-- TIMELINE PER LA PAGINA ------------------------------------------------------
+-- Regioni, marker e item della traccia armata (i take), con i colori di REAPER. Pochi dati,
+-- riscritti solo quando cambia il progetto (GetProjectStateChangeCount), non 20 volte al secondo.
+local MAX_MARKERS, MAX_ITEMS = 400, 600
+local nav_count, nav_checked, nav_version = -1, -1000, 0
+
+local function hex_color(native)
+  if not native or native == 0 then return nil end
+  local r, g, b = reaper.ColorFromNative(native & 0xFFFFFF)
+  return string.format("#%02x%02x%02x", r, g, b)
+end
+
+local function build_nav()
+  local nav = { len = reaper.GetProjectLength(0), regions = {}, markers = {}, items = {} }
+  local _, nm, nr = reaper.CountProjectMarkers(0)
+  for i = 0, nm + nr - 1 do
+    local _, isrgn, s, e, name, idx, color = reaper.EnumProjectMarkers3(0, i)
+    if isrgn then
+      nav.regions[#nav.regions + 1] = { s = s, e = e, n = name ~= "" and name or ("Regione " .. idx), c = hex_color(color) }
+    elseif #nav.markers < MAX_MARKERS then
+      nav.markers[#nav.markers + 1] = { p = s, n = name, c = hex_color(color) }
+    end
+    if e > nav.len then nav.len = e end
+  end
+  local tr = armed_tracks()[1]
+  if tr then
+    nav.track = track_name(tr)
+    for i = 0, math.min(reaper.CountTrackMediaItems(tr), MAX_ITEMS) - 1 do
+      local it = reaper.GetTrackMediaItem(tr, i)
+      local p = reaper.GetMediaItemInfo_Value(it, "D_POSITION")
+      nav.items[#nav.items + 1] = { s = p, e = p + reaper.GetMediaItemInfo_Value(it, "D_LENGTH") }
+    end
+  end
+  return nav
+end
+
+local function refresh_nav(now)
+  if now - nav_checked < 0.5 then return end
+  nav_checked = now
+  local c = reaper.GetProjectStateChangeCount(0)
+  if c == nav_count then return end
+  nav_count = c
+  nav_version = nav_version + 1
+  reaper.SetExtState(SEC, "nav", json(build_nav()), false)
 end
 
 -- CONDIVIDI ----------------------------------------------------------------------
@@ -309,6 +365,7 @@ local function publish()
     can_undo = reaper.Undo_CanUndo2(0) ~= nil,
     can_redo = reaper.Undo_CanRedo2(0) ~= nil,
     share = share,
+    navv = nav_version,
   }
   reaper.SetExtState(SEC, "state", json(st), false)
 end
@@ -319,6 +376,7 @@ local function loop()
   if now - last_publish >= PUBLISH_EVERY then
     last_publish = now
     refresh_share(now)
+    refresh_nav(now)
     publish()
   end
   reaper.defer(loop)

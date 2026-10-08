@@ -9,8 +9,8 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any, Protocol
 
-from zp_speech.exporters import transcript_to_srt
 from zp_speech.client import request_transcription
+from zp_speech.exporters import transcript_to_srt
 from zp_speech.providers import MacWhisperProvider, ProviderError
 
 
@@ -45,6 +45,17 @@ def _parser() -> argparse.ArgumentParser:
     request_service.add_argument("--timeout", type=float, default=21600)
     request_service.add_argument("--format", choices=["json", "srt"], default="srt")
     request_service.add_argument("--output", type=Path)
+    translate = commands.add_parser("translate", help="translate an SRT with a logged-in AI agent")
+    translate.add_argument("source", type=Path)
+    translate.add_argument("--to", required=True, dest="target")
+    translate.add_argument("--from", default="auto", dest="source_lang")
+    translate.add_argument("--engine", default="codex")
+    translate.add_argument("--model")
+    translate.add_argument("--timeout", type=float, default=600)
+    translate.add_argument("--block", type=int, default=60)
+    translate.add_argument("--output", type=Path)
+    translate.add_argument("--overwrite", action="store_true")
+    commands.add_parser("translators", help="list the translation engines available here")
     transcribe = commands.add_parser("transcribe", help="transcribe a local audio file")
     transcribe.add_argument("source", type=Path)
     transcribe.add_argument("--engine", choices=["macwhisper"], default="macwhisper")
@@ -55,6 +66,36 @@ def _parser() -> argparse.ArgumentParser:
     transcribe.add_argument("--format", choices=["json", "srt"], default="json")
     transcribe.add_argument("--output", type=Path)
     return parser
+
+
+def _translate(args: argparse.Namespace) -> int:
+    from zp_speech.translate import (
+        TranslationError,
+        default_output,
+        make_translator,
+        translate_srt,
+    )
+
+    source = args.source.expanduser().resolve()
+    output = (args.output or default_output(source, args.target)).expanduser()
+    if output.exists() and not args.overwrite:
+        sys.stderr.write(f"zp-speech translate: {output.name} exists already (use --overwrite)\n")
+        return 2
+
+    def progress(done: int, total: int) -> None:
+        sys.stderr.write(f"progress {done}/{total}\n")
+        sys.stderr.flush()
+
+    try:
+        translator = make_translator(args.engine, model=args.model, timeout=args.timeout)
+        rendered = translate_srt(source, args.target, translator, source_lang=args.source_lang,
+                                 block=max(1, args.block), progress=progress)
+        output.write_text(rendered, encoding="utf-8")
+    except (TranslationError, OSError, UnicodeDecodeError) as error:
+        sys.stderr.write(f"zp-speech translate: {error}\n")
+        return 2
+    sys.stdout.write(str(output) + "\n")
+    return 0
 
 
 def _default_provider() -> SpeechProvider:
@@ -77,6 +118,13 @@ def main(
             sys.stderr.write(f"zp-speech serve: {error}\n")
             return 2
         return 0
+    if args.command == "translators":
+        from zp_speech.translate import available_engines
+
+        sys.stdout.write(json.dumps({"engines": available_engines()}, ensure_ascii=False) + "\n")
+        return 0
+    if args.command == "translate":
+        return _translate(args)
     if args.command == "request":
         try:
             payload = request_transcription(

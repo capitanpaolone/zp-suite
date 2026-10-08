@@ -1119,5 +1119,7 @@ local function draw_gui()
   reaper.defer(draw_gui)
 end
 
+-- toolbar: icona accesa finche' la finestra e' aperta; un altro clic sull'icona la chiude (REAPER 7.03+)
+if reaper.set_action_options then reaper.set_action_options(1 | 4); reaper.atexit(function() reaper.set_action_options(8) end) end
 gfx.init(SCRIPT_NAME, state.win_w, state.win_h, 0, 120, 120)
 draw_gui()
