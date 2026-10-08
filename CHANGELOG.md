@@ -4,6 +4,14 @@ Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
 ciascun file e nel gestore pacchetti. Questo file registra la storia della Suite
 nel suo insieme.
 
+## ZP Studio Suite 2.4.1 — 2026-10-08
+
+- Guida della toolbar con le icone nuove, l'installazione con *32 Installa* e riavvio di REAPER, e il
+  bordo che diventa verde acqua quando lo strumento è aperto (un secondo clic lo chiude).
+- Menu OSARA del Gobbo con gli stessi nomi della barra comandi (Parola per parola, Scorrimento
+  continuo, Conto alla rovescia, Pannello note, Tracce visibili, Nuova battuta); i numeri delle voci
+  restano quelli di prima.
+
 ## ZP Studio Suite 2.4.0 — 2026-10-08
 
 - 29 ZP Trascrizione: tendine **Modello** e **Lingua** (italiano, inglese, francese, tedesco,

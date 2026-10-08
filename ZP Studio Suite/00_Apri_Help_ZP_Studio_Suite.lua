@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.4.0
+-- @version 2.4.1
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -19,18 +19,10 @@
 --   Cue Navigator del Carver, ZP Speech, SWS, js_ReaScriptAPI, OSARA, marker degli
 --   item e interfaccia web, e per ognuno ha il pulsante che lo mette a posto.
 -- @changelog
---   29 ZP Trascrizione: tendine Modello e Lingua (anche Altra... per qualsiasi codice, avviso se il
---     modello non conosce la lingua); la riga della tappa dice quanti file vanno trascritti e quanti
---     sono gia' fatti; Abbina con piu' item non apre il Finder e salta quelli gia' abbinati.
---   Trascrivi, Ritrascrivi e Traduci lavorano in background: chiudere la finestra non li ferma, il
---     titolo mostra l'avanzamento e alla fine arriva una notifica di macOS.
---   Traduci (facoltativo): traduce l'SRT con un agente AI col tuo login (Codex) e crea Nome.it.srt
---     con gli stessi tempi; nel Gobbo ogni traduzione e' un flusso in piu' che segue i tagli.
---     Serve ZP Speech aggiornato (bash speech-engine/install_macos.sh).
---   Toolbar ZP con icone nuove: il disegno resta uguale, il bordo diventa verde acqua quando lo
---     strumento e' aperto; un secondo clic sull'icona chiude la finestra. Si applica con 32 Installa.
---   SOLO Recorder: comandi REAPER anche in Mini; cambiando vista la finestra cresce verso il basso.
---   SOLO Web: timeline con regioni, marker e take; tocco per andarci, zoom con - + Tutto, rotella o pizzico.
+--   Guida della toolbar con le icone nuove, l'installazione con 32 Installa e riavvio, e il bordo che
+--     diventa verde acqua quando lo strumento e' aperto (un secondo clic lo chiude).
+--   Menu OSARA del Gobbo con gli stessi nomi della barra comandi (Parola per parola, Scorrimento
+--     continuo, Conto alla rovescia, Pannello note, Tracce visibili, Nuova battuta); numeri invariati.
 -- @provides
 --   [main] 01_Importa_Video_SRT.lua
 --   [main] 02_Gobbo_Verticale.lua

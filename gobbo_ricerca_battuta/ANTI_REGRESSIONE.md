@@ -53,6 +53,11 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
   dedicata: solo_recorder, pannello_trascrizione, toolbar...) e le spiegazioni dentro lo script
   (suggerimenti, guida ?). Prima del commit cerca nell'help le frasi del comportamento vecchio.
 - Le copie installate dell'help devono restare uguali al repo.
+- help/toolbar.html contiene le icone INCORPORATE (base64): se cambiano le icone della toolbar vanno
+  sostituite anche li' (successo con la 2.4.0: guida con le icone vecchie, corretta nella 2.4.1).
+- Il menu OSARA del Gobbo (OpenGobboAccessibleMenu) deve usare gli stessi nomi della barra comandi;
+  i numeri delle voci non si cambiano (chi usa lo screen reader li ricorda).
+- Prima di pubblicare: cercare nelle guide E negli script (suggerimenti, guida ?, menu OSARA) i nomi vecchi.
 
 ## Installazione su questo Mac
 - Prima di sovrascrivere una copia in `REAPER/Scripts/ZP Suite/...`, verifica che sia uguale
