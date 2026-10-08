@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.3.7
+-- @version 2.4.0
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -19,16 +19,18 @@
 --   Cue Navigator del Carver, ZP Speech, SWS, js_ReaScriptAPI, OSARA, marker degli
 --   item e interfaccia web, e per ognuno ha il pulsante che lo mette a posto.
 -- @changelog
---   Gobbo, ricerca: trova le parole dall'inizio ("ved" trova "vedere"), senza badare a maiuscole
---     e accenti; tra virgolette cerca la parola esatta. L'elenco dei risultati e' in ordine di
---     timeline, con timecode e file audio di ogni battuta; clic, frecce, < e > ci portano.
---   Gobbo verticale, Sostituisci: solo parole intere, gli accenti contano. Un clic mostra la
---     parola, il secondo la cambia e resta li'; Tutti chiede conferma e si annulla con un Undo.
---   Gobbo verticale: Modifica battuta si apre sotto Cerca e la battuta in modifica e' segnata.
---     Pannello note con tutte le note, scorrevole: clic porta la timeline, doppio clic modifica,
---     bollino OK per segnarle fatte o riaprirle, x a sinistra per cancellarle. In Modifica la
---     rotella scorre il testo. Barra comandi a blocchi, con caselle e flusso testi a tendina.
---   Gobbo orizzontale: flusso testi a tendina.
+--   29 ZP Trascrizione: tendine Modello e Lingua (anche Altra... per qualsiasi codice, avviso se il
+--     modello non conosce la lingua); la riga della tappa dice quanti file vanno trascritti e quanti
+--     sono gia' fatti; Abbina con piu' item non apre il Finder e salta quelli gia' abbinati.
+--   Trascrivi, Ritrascrivi e Traduci lavorano in background: chiudere la finestra non li ferma, il
+--     titolo mostra l'avanzamento e alla fine arriva una notifica di macOS.
+--   Traduci (facoltativo): traduce l'SRT con un agente AI col tuo login (Codex) e crea Nome.it.srt
+--     con gli stessi tempi; nel Gobbo ogni traduzione e' un flusso in piu' che segue i tagli.
+--     Serve ZP Speech aggiornato (bash speech-engine/install_macos.sh).
+--   Toolbar ZP con icone nuove: il disegno resta uguale, il bordo diventa verde acqua quando lo
+--     strumento e' aperto; un secondo clic sull'icona chiude la finestra. Si applica con 32 Installa.
+--   SOLO Recorder: comandi REAPER anche in Mini; cambiando vista la finestra cresce verso il basso.
+--   SOLO Web: timeline con regioni, marker e take; tocco per andarci, zoom con - + Tutto, rotella o pizzico.
 -- @provides
 --   [main] 01_Importa_Video_SRT.lua
 --   [main] 02_Gobbo_Verticale.lua

@@ -4,6 +4,27 @@ Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
 ciascun file e nel gestore pacchetti. Questo file registra la storia della Suite
 nel suo insieme.
 
+## ZP Studio Suite 2.4.0 — 2026-10-08
+
+- 29 ZP Trascrizione: tendine **Modello** e **Lingua** (italiano, inglese, francese, tedesco,
+  spagnolo, portoghese, cinese, giapponese, coreano, russo, automatica, o *Altra…* per qualsiasi
+  codice; avviso se Parakeet non conosce la lingua). La riga della tappa dice «5 selezionati: 3 da
+  trascrivere, 2 già fatti». Abbina con più item non apre il Finder e salta quelli già abbinati.
+  Ogni file ricorda con che modello e lingua è stato trascritto.
+- Trascrivi, Ritrascrivi e Traduci lavorano **in background**: chiudere la finestra non li ferma, il
+  titolo mostra l'avanzamento e alla fine arriva una notifica di macOS. Un file che non riesce non
+  ferma gli altri.
+- **Traduci** (facoltativo): l'SRT accanto al file viene tradotto da un agente AI con il tuo login
+  (Codex) in `Nome.it.srt`, con gli stessi tempi; se l'agente cambia le battute il file non viene
+  scritto. Nel Gobbo ogni traduzione è un flusso in più («Kevin · IT») agganciato agli stessi marker:
+  segue i tagli e la ricerca trova le frasi tradotte. Serve ZP Speech aggiornato
+  (`bash speech-engine/install_macos.sh`).
+- Toolbar ZP con icone nuove: il disegno resta uguale e il bordo diventa verde acqua quando lo
+  strumento è aperto; un secondo clic sull'icona chiude la finestra. Si applica con 32 Installa.
+- SOLO Recorder: i comandi REAPER anche in Mini; cambiando vista la finestra cresce verso il basso.
+- SOLO Web: timeline con regioni, marker e take della traccia armata; un tocco porta il cursore,
+  zoom con − + *Tutto*, rotella, pizzico o trascinamento, e la vista segue la testina.
+
 ## ZP Studio Suite 2.3.7 — 2026-10-08
 
 - Gobbo, ricerca: trova le parole dall'inizio (`ved` trova *vedere*), senza badare a maiuscole e
