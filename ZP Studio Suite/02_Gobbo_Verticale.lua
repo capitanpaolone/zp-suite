@@ -2915,9 +2915,9 @@ function GobboAccessibleStatus()
         "Tema " .. (theme_mode == "dark" and "scuro" or (theme_mode == "light" and "chiaro" or "medio")) .. ".",
         "Contrasto " .. (full_contrast and "pieno" or "sfumato") .. ".",
         "Flusso testi " .. CurrentTextFlowLabel() .. ".",
-        "Parole " .. (word_follow and "attive" or "spente") .. ".",
-        "Scorrimento " .. (fixed_block_mode and "fermo" or "attivo") .. ".",
-        "Countdown " .. (countdown_alert and "attivo" or "spento") .. ".",
+        "Parola per parola " .. (word_follow and "attiva" or "spenta") .. ".",
+        "Scorrimento continuo " .. (fixed_block_mode and "spento" or "attivo") .. ".",
+        "Conto alla rovescia " .. (countdown_alert and "attivo" or "spento") .. ".",
         "Pannello note " .. (notes_panel_open and "aperto" or "chiuso") .. ".",
         "Corpo testo " .. tostring(master_font_size) .. "."
     }
@@ -2930,13 +2930,13 @@ function OpenGobboAccessibleMenu()
         "2 Mostra/Nascondi TC",
         "3 Flusso precedente",
         "4 Flusso successivo",
-        "5 Parole ON/OFF",
-        "6 Scorri ON/OFF",
-        "7 Countdown ON/OFF",
-        "8 Note ON/OFF",
-        "9 Track Note VIS/NASC",
-        "10 Track Gobbo VIS/NASC",
-        "11 Aggiungi Track Gobbo",
+        "5 Parola per parola si/no",
+        "6 Scorrimento continuo si/no",
+        "7 Conto alla rovescia si/no",
+        "8 Pannello note si/no",
+        "9 Traccia note visibile si/no",
+        "10 Tracce gobbo visibili si/no",
+        "11 Nuova battuta",
         "12 Tema",
         "13 Contrasto",
         "14 Corpo -",
@@ -2974,15 +2974,15 @@ function OpenGobboAccessibleMenu()
     elseif choice == 5 then
         word_follow = not word_follow
         SaveSettings()
-        GobboAccessibleSpeak("Parole " .. (word_follow and "attive." or "spente."))
+        GobboAccessibleSpeak("Parola per parola " .. (word_follow and "attiva." or "spenta."))
     elseif choice == 6 then
         fixed_block_mode = not fixed_block_mode
         SaveSettings()
-        GobboAccessibleSpeak("Scorrimento " .. (fixed_block_mode and "fermo." or "attivo."))
+        GobboAccessibleSpeak("Scorrimento continuo " .. (fixed_block_mode and "spento: testo a scatti, una battuta alla volta." or "attivo."))
     elseif choice == 7 then
         countdown_alert = not countdown_alert
         SaveSettings()
-        GobboAccessibleSpeak("Countdown " .. (countdown_alert and "attivo." or "spento."))
+        GobboAccessibleSpeak("Conto alla rovescia " .. (countdown_alert and "attivo." or "spento."))
     elseif choice == 8 then
         notes_panel_open = not notes_panel_open
         SaveSettings()
@@ -2996,7 +2996,7 @@ function OpenGobboAccessibleMenu()
         GobboAccessibleSpeak("Visibilita' tracce gobbo aggiornata.")
     elseif choice == 11 then
         AddEmptyGobboTextItem()
-        GobboAccessibleSpeak("Traccia gobbo vuota pronta.")
+        GobboAccessibleSpeak("Nuova battuta pronta alla posizione corrente.")
     elseif choice == 12 then
         if theme_mode == "dark" then theme_mode = "medium"
         elseif theme_mode == "medium" then theme_mode = "light"

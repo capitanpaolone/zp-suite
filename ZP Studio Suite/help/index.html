@@ -269,7 +269,7 @@
     <li><strong>Segui i tagli</strong>: lo stesso interruttore di ZP Trascrizione, comodo perché il Gobbo di solito resta aperto.</li>
     <li><strong>Traccia note visibile / Tracce gobbo visibili</strong>: mostra o nasconde in REAPER le tracce di note e di testo. <strong>+ Battuta</strong> (in alto) crea un item di testo pronto da scrivere alla posizione corrente (o sulla selezione di tempo), creando la traccia di testo se manca.</li>
   </ul>
-  <p><strong>Menu OSARA</strong>: un menu leggibile dallo screen reader con tutti i comandi qui sopra (TC, flusso, parole, scorrimento, note, tema, corpo). Non legge il copione: per quello ci sono le <a href="#tool-09">azioni 09-12</a>.</p>
+  <p><strong>Menu OSARA</strong>: un menu leggibile dallo screen reader con i comandi della barra, con gli stessi nomi (timecode, flusso, parola per parola, scorrimento continuo, conto alla rovescia, pannello note, tracce visibili, nuova battuta, tema, contrasto, corpo). Non legge il copione: per quello ci sono le <a href="#tool-09">azioni 09-12</a>.</p>
 
   <!-- ================================================================== -->
   <h2 id="tool-03">Gobbo orizzontale</h2>
@@ -558,7 +558,7 @@
     <tr><th>Estensione</th><th>Senza</th><th>Con</th></tr>
     <tr><td>SWS / S&amp;M</td><td>Niente copia-incolla da tastiera nei campi di testo; i pulsanti che aprono un file (log, report) non aprono niente.</td><td>Copia-incolla e apertura dei file.</td></tr>
     <tr><td>js_ReaScriptAPI</td><td>La cartella si scrive a mano; niente selezione sincronizzata con il Region/Marker Manager; il SOLO Recorder non resta in primo piano.</td><td>Finestra di sistema per le cartelle, selezione delle regioni sincronizzata, finestra sempre sopra.</td></tr>
-    <tr><td>OSARA</td><td>Le azioni 09-12 e l'OSARA Menu non parlano.</td><td>Lettura delle battute e dei comandi con lo screen reader.</td></tr>
+    <tr><td>OSARA</td><td>Le azioni 09-12 e il Menu OSARA del Gobbo non parlano.</td><td>Lettura delle battute e dei comandi con lo screen reader.</td></tr>
     <tr><td>ZP Speech (solo macOS)</td><td>La tappa <em>Trascrivi</em> non c'è: crei l'SRT con un altro Whisper.</td><td>Trascrizione automatica dentro ZP Trascrizione.</td></tr>
   </table></div>
   <p class="small">File di supporto, da non lanciare né modificare: <code>ZP_UI.lua</code>, <code>ZP_sincronizza_aggancio.lua</code>, <code>lib_RythmoBand_Accessibile.lua</code>, i <code>worker</code> di 04 e 05, i template traccia, il ponte NVDA per Windows. Un aggiornamento ReaPack li sostituisce.</p>
