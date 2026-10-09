@@ -1,5 +1,5 @@
 // @description ZP Stagekeeper Dialogue Director
-// @version 2.5.0
+// @version 2.5.1
 // @author Paolo Balestri
 // @about
 //   Automixer per dialoghi a due voci per broadcast, podcast e doppiaggio.
@@ -17,12 +17,9 @@
 //   Complete documentation: https://latocardioide.it/strumenti/ or click '?'
 // @license GPL-3.0-or-later
 // @changelog
-//   Nuova Dominance Engine: fader smoothing in dominio dB con riduzione normalizzata.
-//   Separazione timing: takeover vocale rapido (Attack) vs ripristino ambiente a fine Hold (Release).
-//   Nuovo slider 35: Reduction Softness (%) con risposta 1-pole / 2-pole calibrata a tempo invariante.
-//   Buffer lookahead espanso a 100.000 campioni per canale (supporto trasparente fino a 192 kHz).
-//   Nuovo profilo AUTO musicale: 12 ms Attack / 200 ms Release.
-//   CHECK L/R ascolto canale isolato post-gate; monitor MIX fail-safe escluso dai preset.
+//   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+//     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+//   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
 desc:ZP Stagekeeper Dialogue Director AutoMixer - Paolo Balestri
 options:gmem=ZPVoiceoverSharedBus
 tags:dialogue gate utility paolo balestri zio ziopaolo stagekeeper voice spoken automatic mixer

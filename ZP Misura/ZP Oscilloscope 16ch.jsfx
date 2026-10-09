@@ -1,5 +1,5 @@
 // @description ZP Oscilloscope 16ch
-// @version 12.0
+// @version 12.1
 // @author Paolo Balestri
 // @license LGPL-2.1-or-later
 // @about
@@ -13,14 +13,9 @@
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: ZP Studio Suite/help/index.html#plugin-oscilloscope
 // @changelog
-//   V12: Channel Mode con quattro modi - Auto, Manual, Mono selected, Mono sum.
-//   V12: pulsante MONO in testata, e come vero interruttore: il secondo click
-//     riporta ad Auto o Manual.
-//   V12: selettore colore CH1/MONO in testata - rosso, giallo, verde.
-//   V12: pulsante GESTIONE in testata, oltre alla freccia laterale.
-//   V12: il pannello di gestione parte aperto nelle nuove istanze.
-//   V12: View Size di default a 8s, che e' il limite reale di memoria.
-//   V12: testata rifatta, con nome, firma e stato operativo compatto.
+//   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+//     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+//   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
 // Basato su "Oscilloscope Meter (Cockos)" - analysis/gfxscope
 // Copyright (C) 2007 Cockos Incorporated
 // Mod Paolo Balestri V12 - 2026

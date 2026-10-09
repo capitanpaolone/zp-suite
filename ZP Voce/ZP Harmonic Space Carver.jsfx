@@ -1,44 +1,11 @@
 // @description ZP Harmonic Space Carver
-// @version 2.6.5
+// @version 2.6.6
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
-//   2.6.5: GUI Advanced in tre colonne: VOCE con LIVELLI sotto, CARVER con BANDE, VCA con meter VCA,
-//     GLUE e USCITA. Ogni meter ha i suoi comandi accanto: Min Duck e Max Duck vicino al meter VCA, collegati alle
-//     loro linee (gialla e arancio); il pomello Glue nel box GLUE con il suo meter.
-//     ELIMINA nella fila dei cue toglie i cue selezionati e i loro marker #HSC: clic su un punto per
-//     sceglierne uno, Cmd/Ctrl+clic per aggiungerne o toglierne altri, Shift+clic per un intervallo. UNDO li rimette.
-//   2.6.4: cambiare l'Anticipo non fa piu' un buco nell'audio (dissolvenza di 20 ms).
-//   2.6.3: ogni Carver ha un numero unico (assegnato dall'helper 1.8, salvato nel Carver): due progetti
-//     aperti in schede o due Carver nella stessa posizione non si mescolano piu' cue e comandi.
-//     Forbici Min/Max Duck e crossover solo quando li muovi tu: il DSP non scrive piu' sui parametri
-//     (niente piu' scritture sopra un'automazione). Anticipo dichiarato a REAPER in @slider.
-//   2.6.2: il preascolto si spegne davvero alla riapertura del progetto. Min Duck sistemato nei
-//     progetti salvati prima (se era uguale a Max Duck il VCA restava fisso): passa a -3 dB, e il
-//     blocco VCA avvisa se Min = Max. Avviso rosso lampeggiante (non bloccante) se ci sono cue fuori
-//     posto; spia HELPER SPENTO nella barra cue. Testi a v2.6.
-//   2.6.1: cue ancorati all'audio della voce (helper Cue Navigator 1.6): se la voce si sposta e il cue no,
-//     il cue diventa rosso (punto, conteggio "FUORI POSTO", marker #HSC) con RIALLINEA e TIENI QUI.
-//   2.6.0: i cue seguono l'editing. Con l'helper Cue Navigator 1.4 ogni cue e' anche un marker di
-//     servizio "#HSC" sul righello: un taglio in ripple, uno spostamento o una cancellazione del marker
-//     aggiornano il Carver; ADD/REMOVE, UNDO e CLEAR ALL creano o tolgono i marker.
-//   2.5.1: le fonti sidechain seguono il routing vero: compaiono solo quando la traccia ha i canali,
-//     con una spia per fonte (collegata, segnale ma spenta, nessun invio, pin scollegati). Pin e invii
-//     li verifica l'helper Cue Navigator 1.3; senza helper conta i canali della traccia.
-//   GUI Advanced ridisegnata nell'ordine del segnale: VOCE -> CARVER -> VCA, poi BANDE, VCA/GLUE,
-//     USCITA, LIVELLI e la barra QUICK RETURN CUES fissa in fondo.
-//   Un solo motore: SIMPLE mostra i controlli principali dell'Advanced (stessi parametri), non e'
-//     piu' un motore a parte. SCORE / FLAT / VOCAL sono punti di partenza che spostano i pomelli
-//     veri (prima erano moltiplicatori nascosti); Carver e VCA hanno un interruttore ON.
-//   Sidechain da tre fonti: SC 1 (3/4), SC 2 (5/6), SC 3 (7/8), ciascuna con ON, guadagno e meter.
-//   Nuovi: Anticipo (lookahead 0-20 ms, con compensazione PDC), Knee del Carver, Apertura del cue.
-//   Min Duck / Max Duck (ex Floor / Max Red) a forbice: il minimo non puo' superare il massimo.
-//   Vista DOCK al posto di STATUS: striscia con stato e cue da tenere aperta mentre monti.
-//   Cue gestiti in @block: funzionano in ogni profilo, in ogni vista e a finestra chiusa;
-//     azioni da tastiera (Cue aggiungi/togli, successivo, precedente, annulla).
-//   Preascolto (CARVER / VCA / TUTTO) sempre segnalato; i livelli restano sull'uscita vera;
-//     alla riapertura del progetto il preascolto torna spento.
-//   Corretti: lettura RMS Stab nel silenzio, oscilloscopio che non si disegnava, cue all'inizio del loop.
+//   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+//     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+//   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
 desc:ZP Harmonic Space Carver Ducker - Paolo Balestri
 options:gmem=ZPVoiceoverSharedBus
 tags: zp dynamics sidechain multiband eq ducker voice podcast broadcast paolo balestri zio paolo

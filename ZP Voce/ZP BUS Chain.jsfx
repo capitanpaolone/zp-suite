@@ -1,5 +1,5 @@
 // @description ZP BUS Chain
-// @version 1.2.9
+// @version 1.3.0
 // @author Paolo Balestri
 // @about
 //   Catena di dinamica e colore per voce parlata, podcast e doppiaggio.
@@ -17,51 +17,9 @@
 //   Complete documentation: https://latocardioide.it/strumenti/ or click '?'
 // @license GPL-3.0-or-later
 // @changelog
-//   Input Trim: trovata la vera causa per cui il pomello IN non si
-//     prendeva col mouse (il debug della 1.2.8 serviva a isolarla). La
-//     testata compatta viene ridisegnata due volte per frame - una
-//     interattiva, una nel repaint della testata sticky, con
-//     ui_render_only=1 apposta per non rielaborare hover/click una
-//     seconda volta. Ogni altro controllo del file rispetta
-//     ui_render_only prima di reagire al click; ui_knob (usata dal
-//     pomello IN) no. Un click vero partiva il trascinamento nel
-//     passaggio interattivo, e il passaggio di repaint - microsecondi
-//     dopo, con last_dbl_id/last_dbl_time appena aggiornati - lo
-//     scambiava per un doppio click su se stesso, azzerando il valore e
-//     annullando il trascinamento nello stesso frame. Aggiunto
-//     !ui_render_only dentro ui_knob nei due punti che modificano stato
-//     (inizio click, continuazione trascinamento). Tolto anche l'overlay
-//     di debug temporaneo della 1.2.8, non piu' necessario.
-//   DEBUG TEMPORANEO (1.2.8, rimosso in 1.2.9): contorno magenta intorno
-//     alla zona larga 9101 e cerchio verde sull'area di click reale del
-//     pomello IN, per vedere in uno screenshot dove sono davvero le due
-//     zone attive rispetto a dove il pomello si vede. Nessun cambio
-//     funzionale.
-//   Preset NAT/BRD/DNS/WRM/MCH/FLT spariti dopo la 1.2.6: allineare le due
-//     passate ha spostato la riga Preset dentro lo spazio del Live Monitor
-//     compatto (che parte a HDR_Y+HDR_H+4, cioe' 78px con la vecchia
-//     HDR_H=70), il monitor si ridisegna sopra e la cancella alla vista.
-//     HDR_H alzata a 102 cosi' la testata include davvero tutta la riga
-//     Preset (che arriva a y=99) prima che cominci il monitor.
-//   Preset NAT/BRD/DNS/WRM/MCH/FLT: stesso difetto gia' trovato sul pomello
-//     IN. Il repaint "sticky" della testata (quello che ridisegna sopra ai
-//     pannelli scrollati) ridisegnava la riga Preset 21px piu' in alto della
-//     passata interattiva, senza riusare le coordinate salvate come gia'
-//     fatto per il pomello IN: il pulsante si vedeva in un punto e si
-//     cliccava 21px sotto. Ora il repaint riusa le stesse coordinate.
-//   Nome in testata: tolto "1.2.2" scritto fisso nel titolo GUI (due punti)
-//     e nel tooltip, rimasto indietro di quattro versioni. Il titolo ora
-//     segue la stessa regola del nome nel browser FX: nessun numero fisso.
-//   Input Trim: il pomello IN adesso si prende col mouse. Tre controlli
-//     diversi - pomello, zona di presa e striscia - usavano lo stesso id di
-//     hover, e ui_knob riconosce il doppio click dall'id: due click su cose
-//     diverse passavano per doppio click, che azzera il valore e molla il
-//     trascinamento. Ora hanno tre id distinti e la zona di presa agisce
-//     dopo il pomello, non prima.
-//   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
-//   Meter circolari di soglia su tutta la catena.
-//   Motore ANA ridotto a CALDO (Lush), CORPO (Punch), APERTO (Holo), collocato pre-limiter.
-//   LINK Drive/Gain: alzando il Drive il Gain scende in opposizione, per giudicare il colore senza salto di volume.
+//   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+//     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+//   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
 desc:ZP BUS Chain - Voice/Music Processor - Paolo Balestri
 options:gmem=ZPVoiceoverSharedBus
 tags: bus compression dynamics multiband voice podcast music paolo balestri zio paolo

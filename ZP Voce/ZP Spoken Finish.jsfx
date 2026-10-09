@@ -1,5 +1,5 @@
 // @description ZP Spoken Finish
-// @version 3.9.9
+// @version 3.10.0
 // @author Paolo Balestri
 // @about
 //   Eccitatore e de-eccitatore armonico per voce parlata, podcast e doppiaggio.
@@ -17,8 +17,9 @@
 //   Complete documentation: https://latocardioide.it/strumenti/ or click '?'
 // @license GPL-3.0-or-later
 // @changelog
-//   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
-//   Meter circolare true-peak sul ceiling del limiter.
+//   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+//     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+//   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
 desc:ZP Spoken Finish - Voice Harmonic Exciter / De-Exciter - Paolo Balestri
 options:gmem=ZPVoiceoverSharedBus
 tags: exciter utility harmonics harmonic paolo balestri zio paolo voice tool VOG AIR

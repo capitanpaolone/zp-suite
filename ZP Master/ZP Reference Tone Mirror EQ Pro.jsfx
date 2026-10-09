@@ -1,5 +1,5 @@
 // @description ZP Reference Tone Mirror EQ Pro
-// @version 0.062
+// @version 0.063
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
@@ -13,8 +13,9 @@
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: ZP Studio Suite/help/index.html#plugin-mirror-eq
 // @changelog
-//   True capture, controllo delle basse e modalita' diagnostica Null Hunter.
-//   Versione ancora sotto la 1.0: interfaccia e set di parametri non sono stabili.
+//   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+//     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+//   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
 desc:ZP Reference Tone Mirror EQ Pro - Paolo Balestri
 options:gmem=ZPVoiceoverSharedBus gfx_hz=30
 // Autore: Paolo Balestri / Codex prototype

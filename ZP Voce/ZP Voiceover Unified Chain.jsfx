@@ -1,5 +1,5 @@
 // @description ZP Voiceover Unified Chain
-// @version 4.1.6
+// @version 4.1.7
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
@@ -13,10 +13,9 @@
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: ZP Studio Suite/help/index.html#plugin-unified-chain
 // @changelog
-//   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
-//   Anelli circolari di rilevamento dal vivo su Gate, 1175, Major Tom e Limiter Ceiling.
-//   Output AUTO calcola e applica la correzione anche quando Capture e' pronta.
-//   Capture resta memoria e display, non congela piu' out_trim_db.
+//   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+//     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+//   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
 desc:ZP Voiceover Unified Chain - Voice Leveler - Paolo Balestri
 options:gmem=ZPVoiceoverSharedBus
 tags: voiceover voice leveler compressor limiter gate expander brown guard lufs rms paolo balestri zio paolo

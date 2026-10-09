@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.4.1
+-- @version 2.5.0
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -19,10 +19,17 @@
 --   Cue Navigator del Carver, ZP Speech, SWS, js_ReaScriptAPI, OSARA, marker degli
 --   item e interfaccia web, e per ognuno ha il pulsante che lo mette a posto.
 -- @changelog
---   Guida della toolbar con le icone nuove, l'installazione con 32 Installa e riavvio, e il bordo che
---     diventa verde acqua quando lo strumento e' aperto (un secondo clic lo chiude).
---   Menu OSARA del Gobbo con gli stessi nomi della barra comandi (Parola per parola, Scorrimento
---     continuo, Conto alla rovescia, Pannello note, Tracce visibili, Nuova battuta); numeri invariati.
+--   ZP Colori (35): finestrella clicca e colora con modo Item / Traccia / Tutto, 20 colori e Togli colore;
+--     la toolbar ZP Colori, facoltativa, si installa dal 33 Benvenuto.
+--   ZP Set Comandi (34): set di scorciatoie da tastiera (video, Pro Tools, Logic, i tuoi) con la pagina di
+--     ogni set, Salva, Importa, Rinomina, Archivia e backup automatico; cambia solo i tasti, dal riavvio.
+--     Spiega con l'AI, a richiesta, descrive un set in poche righe.
+--   Suite in inglese: nel 33 Benvenuto scegli la lingua della Suite e, a parte, quella di REAPER.
+--     Guide in inglese; la pagina web del SOLO ha IT / EN.
+--   Funzioni AI (Traduci, Spiega con l'AI) con l'agente che hai sul Mac: Codex, Claude, Qwen, OpenCode
+--     o Ollama in locale; prima di partire dicono dove va il testo. Richiedono ZP Speech aggiornato.
+--   Firma Lato Cardioide nelle finestre e nelle guide; toolbar ZP con i pulsanti ZP Colori e Set Comandi;
+--     il Benvenuto scorre quando la finestra e' bassa.
 -- @provides
 --   [main] 01_Importa_Video_SRT.lua
 --   [main] 02_Gobbo_Verticale.lua

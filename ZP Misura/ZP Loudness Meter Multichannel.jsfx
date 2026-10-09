@@ -1,5 +1,5 @@
 // @description ZP Loudness Meter Multichannel
-// @version 44.0.1
+// @version 44.0.2
 // @author Paolo Balestri
 // @license LGPL-2.1-or-later
 // @about
@@ -13,9 +13,9 @@
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: ZP Studio Suite/help/index.html#plugin-loudness-meter
 // @changelog
-//   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
-//   Channel Overview centrale con meter segmentati per canale.
-//   Mini UI dedicata per TCP/MCP embedded.
+//   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+//     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+//   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
 // This effect Copyright (C) 2021 and later Cockos Incorporated
 // Mod Paolo Balestri v44 - 18-05-2026
 // License: LGPL - http://www.gnu.org/licenses/lgpl.html

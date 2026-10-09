@@ -1,5 +1,5 @@
 // @description ZP Voice-Music Probe
-// @version 1.1
+// @version 1.2
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
@@ -13,7 +13,9 @@
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: ZP Studio Suite/help/index.html#plugin-probe
 // @changelog
-//   Role Switch Fix: il cambio VOICE/MUSIC funziona a trasporto fermo, dalla GUI e dal Chain Builder.
+//   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+//     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+//   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
 desc:ZP Voice-Music Probe - Passive Bus Telemetry - Paolo Balestri
 // v1.1 Role Switch Fix: VOICE/MUSIC change works at STOP, from GUI and from Chain Builder.
 tags: analysis meter voice music probe telemetry zp paolo balestri

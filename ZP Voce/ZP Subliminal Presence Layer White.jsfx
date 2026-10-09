@@ -1,5 +1,5 @@
 // @description ZP Subliminal Presence Layer White
-// @version 3.2.1
+// @version 3.2.2
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
@@ -13,8 +13,9 @@
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: ZP Studio Suite/help/index.html#plugin-subliminal
 // @changelog
-//   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
-//   Prima pubblicazione nella ZP Suite.
+//   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+//     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+//   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
 desc:ZP Subliminal Presence Layer White - Paolo Balestri
 options:no_menu gmem=ZPVoiceoverSharedBus
 // Autore: Paolo Balestri - Zio Paolo

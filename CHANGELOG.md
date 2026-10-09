@@ -4,6 +4,31 @@ Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
 ciascun file e nel gestore pacchetti. Questo file registra la storia della Suite
 nel suo insieme.
 
+## ZP Studio Suite 2.5.0 — 2026-10-10
+
+- **ZP Colori (35)**: finestrella *clicca e colora*. Scegli il modo (**Item**, **Traccia** o **Tutto**),
+  selezioni e clicchi uno dei 20 colori; **Togli colore** li toglie. Si apre e si chiude dal pulsante
+  tavolozza della toolbar ZP e si può agganciare. La stessa cosa come toolbar sempre a vista,
+  facoltativa, si installa dal 33 Benvenuto.
+- **ZP Set Comandi (34)**: set di scorciatoie da tastiera (montaggio video, abitudini Pro Tools o Logic,
+  i tuoi). Ogni set ha la sua pagina con tutte le scorciatoie scritte per esteso; Salva, Importa,
+  Rinomina, Archivia; prima di ogni cambio i tasti in uso vanno nel set *Backup automatico*. Cambia solo
+  i tasti (script e toolbar restano) e vale dal riavvio di REAPER. *Spiega con l'AI*, a richiesta,
+  descrive un set in poche righe.
+- **Inglese**: nel 33 Benvenuto scegli la lingua della Suite (italiano / English) e, a parte, quella di
+  REAPER (originale o un language pack installato). Finestre, messaggi e guide in inglese; la pagina web
+  del SOLO ha IT / EN.
+- **Funzioni AI** (Traduci, Spiega con l'AI) con l'agente che hai sul Mac: Codex, Claude, Qwen, OpenCode o
+  Ollama in locale (niente esce dal Mac). Prima di partire dicono quale agente usano e dove va il testo.
+  Serve ZP Speech aggiornato (`bash speech-engine/install_macos.sh`).
+- Firma **Lato Cardioide** nelle finestre e nelle guide; toolbar ZP con i pulsanti *ZP Colori* e
+  *Set Comandi*; il Benvenuto scorre quando la finestra è bassa.
+- **Plugin** (BUS Chain 1.3.0, Harmonic Space Carver 2.6.6, Spoken Finish 3.10.0, Stagekeeper 2.5.1,
+  Subliminal Presence Layer 3.2.2, Voiceover Unified Chain 4.1.7, Master Pro 2.46, Reference Tone Mirror
+  EQ 0.063, Loudness Meter 44.0.2, Oscilloscope 12.1, Voice-Music Probe 1.2): il pulsante **?** apre la
+  sezione del plugin nella guida (con il Cue Navigator 1.11 acceso); testi di aiuto in italiano o
+  inglese secondo la lingua della Suite; descrizione bilingue con i crediti Lato Cardioide.
+
 ## ZP Studio Suite 2.4.1 — 2026-10-08
 
 - Guida della toolbar con le icone nuove, l'installazione con *32 Installa* e riavvio di REAPER, e il
