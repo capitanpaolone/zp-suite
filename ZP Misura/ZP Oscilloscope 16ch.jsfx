@@ -2,6 +2,16 @@
 // @version 12.0
 // @author Paolo Balestri
 // @license LGPL-2.1-or-later
+// @about
+//   ### ZP Oscilloscope 16ch
+//   Oscilloscopio multicanale (fino a 16 canali) per analisi comparativa di forme d'onda,
+//   fase, transienti, bilanciamento mono e time alignment nel parlato e nel doppiaggio.
+//
+//   Multichannel oscilloscope (up to 16 channels) for comparative waveform inspection,
+//   phase, transient tracking, and mono balance verification.
+//
+//   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
+//   Guida completa: ZP Studio Suite/help/index.html#plugin-oscilloscope
 // @changelog
 //   V12: Channel Mode con quattro modi - Auto, Manual, Mono selected, Mono sum.
 //   V12: pulsante MONO in testata, e come vero interruttore: il secondo click
@@ -85,12 +95,26 @@ in_pin:CH13
 in_pin:CH14
 in_pin:CH15
 in_pin:CH16
-options:no_meter
+options:no_meter gmem=ZPVoiceoverSharedBus
 
 @init
 gfx_ext_retina == 0 ? gfx_ext_retina = 1;
 ext_nodenorm = 1;
 gfx_clear = -1;
+
+help_bridge_alive = 0;
+help_warn_until = 0;
+ui_lang = 0;
+
+function help_bridge_open(plugin_id) (
+  zp_hb_ok ? (
+    gmem[3902] = plugin_id;
+    gmem[3903] += 1;
+    help_warn_until = 0;
+  ) : (
+    help_warn_until = time_precise() + 4.0;
+  );
+);
 
 // ── Memory layout ──────────────────────────────────────────────
 // Visibilità canali: variabili scalari _sv0.._sv15 (NON pool memory)
@@ -259,6 +283,10 @@ file_var(0,_scope_color_mode);
 file_var(0,_mono_return_mode);
 
 @gfx 820 520
+// Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
+zp_hb = gmem[3900]; zp_hb_now = time_precise();
+!zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
+zp_hb_ok = zp_hb > 0 && zp_hb_now - zp_hb_t < 3;
 
 // ══════════════════════════════════════════════════════
 // FUNZIONI
@@ -461,6 +489,9 @@ function panel_row(tx,ty,pw,lh,active)
 // ══════════════════════════════════════════════════════
 // GEOMETRIA
 // ══════════════════════════════════════════════════════
+help_bridge_alive = zp_hb_ok;
+ui_lang = (gmem[3901] == 1) ? 1 : 0;
+
 rs = gfx_ext_retina > 1 ? gfx_ext_retina : 1;
 gfx_setfont(1,"Arial",12*rs);
 lh = 20*rs;
@@ -468,6 +499,7 @@ HDR_H = max(42*rs, gfx_texth*3.15);
 p_hdr_mono_x=-9999; p_hdr_mono_y=-9999; p_hdr_mono_w=0; p_hdr_mono_h=0;
 p_hdr_color_x=-9999; p_hdr_color_y=-9999; p_hdr_color_w=0; p_hdr_color_h=0;
 p_hdr_manage_x=-9999; p_hdr_manage_y=-9999; p_hdr_manage_w=0; p_hdr_manage_h=0;
+p_hdr_help_x=-9999; p_hdr_help_y=-9999; p_hdr_help_w=0; p_hdr_help_h=0;
 _scope_color_mode=max(0,min(2,_scope_color_mode|0));
 _mono_return_mode=max(0,min(1,_mono_return_mode|0));
 
@@ -576,9 +608,9 @@ p_hdr_color_x + p_hdr_color_w < gfx_w - 12*rs && p_hdr_mono_x > 120*rs ? (
                               gfx_set(1.00,0.22,0.22,1);
   gfx_rect(p_hdr_color_x+4*rs,p_hdr_color_y+4*rs,10*rs,p_hdr_color_h-8*rs);
   gfx_setfont(1,"Arial",max(8*rs,min(11*rs,HDR_H*0.22)),'b');
-  (_scope_color_mode|0)==1 ? strcpy(#color_lbl,"GIALLO") :
-  (_scope_color_mode|0)==2 ? strcpy(#color_lbl,"VERDE") :
-                              strcpy(#color_lbl,"ROSSO");
+  (_scope_color_mode|0)==1 ? strcpy(#color_lbl, ui_lang == 0 ? "GIALLO" : "YELLOW") :
+  (_scope_color_mode|0)==2 ? strcpy(#color_lbl, ui_lang == 0 ? "VERDE" : "GREEN") :
+                              strcpy(#color_lbl, ui_lang == 0 ? "ROSSO" : "RED");
   gfx_set(0.95,0.98,1,0.92);
   gfx_measurestr(#color_lbl,_cbw,_cbh);
   gfx_x=p_hdr_color_x+17*rs;
@@ -598,10 +630,37 @@ p_hdr_manage_x + p_hdr_manage_w < gfx_w - 12*rs && p_hdr_color_x > 120*rs ? (
   gfx_rect(p_hdr_manage_x,p_hdr_manage_y,p_hdr_manage_w,p_hdr_manage_h);
   gfx_set(0.95,0.98,1,0.95);
   gfx_setfont(1,"Arial",max(8*rs,min(11*rs,HDR_H*0.22)),'b');
-  gfx_measurestr("GESTIONE",_gbw,_gbh);
+  #gest_lbl = ui_lang == 0 ? "GESTIONE" : "SETUP";
+  gfx_measurestr(#gest_lbl,_gbw,_gbh);
   gfx_x=p_hdr_manage_x+(p_hdr_manage_w-_gbw)/2;
   gfx_y=p_hdr_manage_y+(p_hdr_manage_h-_gbh)/2;
-  gfx_drawstr("GESTIONE");
+  gfx_drawstr(#gest_lbl);
+);
+
+p_hdr_help_w = 26*rs;
+p_hdr_help_h = p_hdr_mono_h;
+p_hdr_help_x = p_hdr_manage_x + p_hdr_manage_w + 6*rs;
+p_hdr_help_y = p_hdr_mono_y;
+p_hdr_help_x + p_hdr_help_w < gfx_w - 12*rs && p_hdr_manage_x > 120*rs ? (
+  help_hdr_hover = hit(mouse_x,mouse_y,p_hdr_help_x,p_hdr_help_y,p_hdr_help_w,p_hdr_help_h);
+  help_hdr_hover ? gfx_set(0.18,0.34,0.66,1) : gfx_set(0.08,0.15,0.30,1);
+  gfx_rect(p_hdr_help_x,p_hdr_help_y,p_hdr_help_w,p_hdr_help_h);
+  gfx_set(0.95,0.98,1,0.95);
+  gfx_setfont(1,"Arial",max(8*rs,min(11*rs,HDR_H*0.22)),'b');
+  gfx_measurestr("?",_hbw,_hbh);
+  gfx_x=p_hdr_help_x+(p_hdr_help_w-_hbw)/2;
+  gfx_y=p_hdr_help_y+(p_hdr_help_h-_hbh)/2;
+  gfx_drawstr("?");
+);
+
+time_precise() < help_warn_until ? (
+  gfx_set(1.0,0.72,0.24,0.96);
+  gfx_setfont(1,"Arial",max(9*rs,min(11*rs,HDR_H*0.22)),'b');
+  _warn_lbl = ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Studio Suite" : "Open Cue Navigator or ZP Suite help";
+  gfx_measurestr(_warn_lbl,_wtw,_wth);
+  gfx_x=max(12*rs,gfx_w-_wtw-12*rs);
+  gfx_y=HDR_H-_wth-7*rs;
+  gfx_drawstr(_warn_lbl);
 );
 
 gfx_setfont(1,"Arial",max(10*rs,min(13*rs,HDR_H*0.25)),'b');
@@ -1131,6 +1190,9 @@ edit_ch >= 0 ? (
     cap_mode==10&&!cap_drag&&cap_timer<12?(rms_win_ms=300;cap_mode=0;slider_automate(rms_win_ms);):
     (
       cap_mode=cap_drag=cap_timer=0;
+      p_hdr_help_x + p_hdr_help_w < gfx_w - 12*rs && p_hdr_manage_x > 120*rs && hit(mouse_x,mouse_y,p_hdr_help_x,p_hdr_help_y,p_hdr_help_w,p_hdr_help_h)?(
+        help_bridge_open(10);
+      ):
       p_hdr_manage_x + p_hdr_manage_w < gfx_w - 12*rs && p_hdr_manage_x > 120*rs && hit(mouse_x,mouse_y,p_hdr_manage_x,p_hdr_manage_y,p_hdr_manage_w,p_hdr_manage_h)?(
         panel_open=panel_open?0:1;
       ):

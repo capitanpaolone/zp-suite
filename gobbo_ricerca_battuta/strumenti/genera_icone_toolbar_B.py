@@ -166,6 +166,26 @@ def g_help(d):                    # punto di domanda
     d.text((120, 124), "?", font=font, fill=INK, anchor="mm")
 
 
+def g_tastiera(d):               # tastiera: riquadro con tre file di tasti e la barra spaziatrice
+    d.rounded_rectangle([44, 74, 196, 168], radius=12, outline=INK, width=LW - 2)
+    for row, (y, n, x0) in enumerate(((90, 6, 58), (112, 6, 66), (134, 1, 0))):
+        if row < 2:
+            for i in range(n):
+                x = x0 + i * 21
+                d.rounded_rectangle([x, y, x + 14, y + 13], radius=3, fill=INK)
+        else:
+            d.rounded_rectangle([82, 136, 158, 150], radius=4, fill=INK)
+
+
+def g_colori(d):                  # tavolozza con quattro gocce di colore
+    d.ellipse([46, 56, 194, 186], outline=INK, width=LW)
+    d.ellipse([132, 128, 162, 158], fill=(30, 36, 40, 255), outline=INK, width=LW - 4)   # foro
+    for (cx, cy), col in zip(((84, 98), (120, 80), (156, 98), (82, 140)),
+                             ((158, 234, 100, 255), (236, 172, 107, 255),
+                              (74, 121, 244, 255), (230, 134, 178, 255))):
+        d.ellipse([cx - 14, cy - 14, cx + 14, cy + 14], fill=col)
+
+
 GLYPHS = {
     "ZP_tbB_18_Project_Viewer": g_project_viewer,
     "ZP_tbB_17_Gestore_Progetto": g_gestore,
@@ -183,6 +203,8 @@ GLYPHS = {
     "ZP_tbB_Video_Sfondo": g_video_sfondo,
     "ZP_tbB_24_Probe_Guard": g_probe,
     "ZP_tbB_00_Help": g_help,
+    "ZP_tbB_34_Set_Comandi": g_tastiera,
+    "ZP_tbB_35_Colori": g_colori,
 }
 
 

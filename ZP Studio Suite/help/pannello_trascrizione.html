@@ -4,9 +4,26 @@
 :root{color-scheme:light dark;--bg:#f7f7f4;--paper:#fff;--ink:#202024;--muted:#5e6068;--line:#d9d9d2;--accent:#245ba6}
 @media(prefers-color-scheme:dark){:root{--bg:#101217;--paper:#171a21;--ink:#eceff4;--muted:#adb2bd;--line:#303541;--accent:#77a9ff}}
 body{margin:0;padding:28px;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}main{max-width:900px;margin:auto}h1{margin:0 0 6px}h2{margin-top:30px;border-top:1px solid var(--line);padding-top:18px}h3{margin-bottom:4px}p,li{max-width:78ch}.lead,.muted{color:var(--muted)}.card{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:14px;margin:12px 0}code{background:rgba(127,127,127,.16);padding:2px 5px;border-radius:4px}.icon{width:180px;height:60px;image-rendering:pixelated}.note{border-left:4px solid var(--accent);padding:10px 14px;background:color-mix(in srgb,var(--accent) 10%,var(--bg))}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{text-align:left;vertical-align:top;padding:9px;border-bottom:1px solid var(--line)}
-</style></head>
+</style><style id="lc-firma">
+.lc-testata{display:flex;align-items:center;gap:.5rem;margin:0 0 .4rem;font:600 .78rem/1.2 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  letter-spacing:.08em;text-transform:uppercase;color:#565F66}
+.lc-testata a{color:inherit;text-decoration:none}.lc-testata a:hover{color:#A94F35}
+.lc-logo{width:22px;height:22px;flex:none}
+.lc-filetto{border:0;border-top:2px solid #A94F35;margin:.6rem 0 1.4rem}
+.lc-piede{display:flex;align-items:center;gap:.6rem;margin:3rem 0 1rem;padding:.8rem 1rem;border:1px solid #CFCCC3;
+  border-radius:6px;background:#FAF9F5;color:#37444E;font:.95rem/1.4 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+.lc-piede a{color:#8F4630}
+@media (prefers-color-scheme: dark){
+  .lc-testata{color:#9aa4ac}.lc-piede{background:#1d2226;border-color:#2e3439;color:#c9cfd4}.lc-piede a{color:#d98b6f}
+}
+</style>
+</head>
 <body><main>
+<!-- lc-testata --><div class="lc-testata"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><a href="https://latocardioide.it/strumenti/">Lato Cardioide</a> &middot; Strumenti</div><!-- /lc-testata -->
 <h1>29 · ZP Trascrizione</h1>
+
+
+<!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
 <p class="lead">Una finestra, una strada: dall'audio al testo nel Gobbo, che poi segue i tagli. Seleziona gli item audio e guarda quale tappa è segnata <strong>&lt;- adesso</strong>.</p>
 
 <h2>Modello e lingua</h2>
@@ -16,7 +33,7 @@ body{margin:0;padding:28px;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Sego
 <p>Trascrivi, Ritrascrivi e Traduci lavorano <strong>in background</strong>: puoi chiudere la finestra, il lavoro continua. Il titolo della finestra mostra l'avanzamento («trascrivo 3 di 14»); alla fine arriva una <strong>notifica di macOS</strong> con quanti file sono riusciti. Riaprendo la finestra a lavoro in corso ne vedi l'avanzamento; se nel frattempo è finito, raccoglie i risultati e, se avevi scelto <em>Percorri la strada</em>, fa anche Abbina e Porta nel gobbo. Un file che non riesce non ferma gli altri: nel riepilogo finale c'è il conto e i dettagli vanno nella console.</p>
 
 <h2>Traduci (facoltativo)</h2>
-<p><strong>Traduci…</strong> traduce, solo quando lo chiedi, l'SRT accanto ai file degli item selezionati. Nel menu scegli la lingua d'arrivo (parte subito, dopo una conferma), il <em>Motore</em> e il <em>Modello</em>; la scelta resta ricordata. Il risultato è <code>Nome.it.srt</code> accanto all'originale, con gli stessi tempi: l'originale non viene toccato e una traduzione già esistente non viene rifatta. Il motore oggi è <strong>Codex</strong> con il tuo account ChatGPT (il testo delle battute va a OpenAI); <em>Quello scelto in Codex</em> usa il modello della tua configurazione di Codex. Mentre lavora il pulsante mostra file, battute fatte e tempo. Se l'agente salta o unisce battute il file non viene scritto e i dettagli vanno nella console. Nell'elenco degli item, accanto all'SRT, compaiono le traduzioni presenti (per esempio <em>+it,en</em>). <strong>Nel Gobbo</strong>: con <em>Porta nel gobbo</em> (o Segui i tagli) ogni traduzione diventa un flusso in più, per esempio «Kevin · IT»: battute agganciate agli stessi marker dell'originale, quindi seguono i tagli. Scegli il flusso dalla tendina del Gobbo; con <em>Tutti</em> vedi originale e traduzione insieme, e la ricerca trova la frase tradotta portandoti dove l'originale la dice.</p>
+<p><strong>Traduci…</strong> traduce, solo quando lo chiedi, l'SRT accanto ai file degli item selezionati. Nel menu scegli la lingua d'arrivo (parte subito, dopo una conferma), il <em>Motore</em> e il <em>Modello</em>; la scelta resta ricordata. Il risultato è <code>Nome.it.srt</code> accanto all'originale, con gli stessi tempi: l'originale non viene toccato e una traduzione già esistente non viene rifatta. Nel menu, <em>Motore</em>: L'agente è quello che hai su questo Mac: <strong>Auto</strong> (di serie) usa il primo disponibile fra <strong>Codex</strong> (il testo va a OpenAI con il tuo account ChatGPT), <strong>Claude</strong> (ad Anthropic con il tuo account), <strong>Qwen</strong> e <strong>OpenCode</strong> (al servizio che hai configurato lì) e <strong>Ollama</strong> (un modello locale: il testo resta sul Mac). Prima di partire la domanda dice quale agente userà e dove va il testo. <em>Modello</em>: con Codex, <em>Quello scelto in Codex</em> usa il modello della tua configurazione; con Ollama il primo modello installato, o quello che scegli. Mentre lavora il pulsante mostra file, battute fatte e tempo. Se l'agente salta o unisce battute il file non viene scritto e i dettagli vanno nella console. Nell'elenco degli item, accanto all'SRT, compaiono le traduzioni presenti (per esempio <em>+it,en</em>). <strong>Nel Gobbo</strong>: con <em>Porta nel gobbo</em> (o Segui i tagli) ogni traduzione diventa un flusso in più, per esempio «Kevin · IT»: battute agganciate agli stessi marker dell'originale, quindi seguono i tagli. Scegli il flusso dalla tendina del Gobbo; con <em>Tutti</em> vedi originale e traduzione insieme, e la ricerca trova la frase tradotta portandoti dove l'originale la dice.</p>
 
 <h2>Le quattro tappe</h2>
 <ol>
@@ -44,4 +61,5 @@ body{margin:0;padding:28px;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Sego
 <li>Porta nel gobbo scorre tutte le tracce: anche marker di prova o di lavoro con un nome diventano testo.</li>
 </ul>
 <p class="note"><a href="index.html">Torna alla guida della Suite</a></p>
+<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Sviluppata su un'idea di Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
 </main></body></html>

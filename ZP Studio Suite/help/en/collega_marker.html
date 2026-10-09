@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZP Link Markers</title><style>
+:root{color-scheme:light dark;--bg:#f7f7f4;--paper:#fff;--ink:#202024;--muted:#5e6068;--line:#d9d9d2;--accent:#245ba6}
+@media(prefers-color-scheme:dark){:root{--bg:#101217;--paper:#171a21;--ink:#eceff4;--muted:#adb2bd;--line:#303541;--accent:#77a9ff}}
+body{margin:0;padding:28px;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}main{max-width:900px;margin:auto}h1{margin:0 0 6px}h2{margin-top:30px;border-top:1px solid var(--line);padding-top:18px}p,li{max-width:78ch}.lead,.muted{color:var(--muted)}.card{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:14px;margin:12px 0}code{background:rgba(127,127,127,.16);padding:2px 5px;border-radius:4px}.icon{width:180px;height:60px;image-rendering:pixelated}.state{display:inline-block;margin-right:12px}.note{border-left:4px solid var(--accent);padding:10px 14px;background:color-mix(in srgb,var(--accent) 10%,var(--bg))}
+</style><style id="lc-firma">
+.lc-testata{display:flex;align-items:center;gap:.5rem;margin:0 0 .4rem;font:600 .78rem/1.2 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  letter-spacing:.08em;text-transform:uppercase;color:#565F66}
+.lc-testata a{color:inherit;text-decoration:none}.lc-testata a:hover{color:#A94F35}
+.lc-logo{width:22px;height:22px;flex:none}
+.lc-filetto{border:0;border-top:2px solid #A94F35;margin:.6rem 0 1.4rem}
+.lc-piede{display:flex;align-items:center;gap:.6rem;margin:3rem 0 1rem;padding:.8rem 1rem;border:1px solid #CFCCC3;
+  border-radius:6px;background:#FAF9F5;color:#37444E;font:.95rem/1.4 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+.lc-piede a{color:#8F4630}
+@media (prefers-color-scheme: dark){
+  .lc-testata{color:#9aa4ac}.lc-piede{background:#1d2226;border-color:#2e3439;color:#c9cfd4}.lc-piede a{color:#d98b6f}
+}
+</style>
+</head><body><main>
+<!-- lc-testata --><div class="lc-testata"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><a href="https://latocardioide.it/strumenti/">Lato Cardioide</a> &middot; Tools</div><!-- /lc-testata -->
+<h1>Link Markers</h1>
+
+<!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
+<p class="lead">Imports dialogue lines from an SRT file as audio take markers in REAPER. Markers travel with the take when you move or split the item.</p>
+<div class="card"><strong>Toolbar icon</strong><br><img class="icon" src="../../icons/ZP_tb_28_Collega_Marker.png" alt="Subtitle file with linking ring">
+<p><span class="state">Idle</span><span class="state">Hover</span><span class="state">Pressed</span></p>
+<p>The icon shows a sheet with subtitle lines and a ring: the sheet represents SRT cues; the ring indicates that they are linked to audio as take markers. The three boxes are standard REAPER graphic states: normal, hover, and active. They do not indicate three different modes.</p></div>
+<h2>Before you start</h2><ol><li>Select one or more audio items with an active take.</li><li>For each audio file, keep an SRT alongside with the same base name, for example <code>Interview.wav</code> and <code>Interview.srt</code>. If not present, REAPER prompts you to select the SRT file (only when running 28 standalone; from the 29 ZP Transcription window, items without an adjacent SRT are skipped and listed).</li><li>Check that SRT timestamps are referenced to the beginning of the original audio file.</li></ol>
+<h2>Usage</h2><ol><li>Normally you don't need to run it manually: the <a href="index.html#tool-29">ZP Transcription</a> window runs it, step <strong>Match from…</strong>. Standalone, it can be launched from the Action List (<strong>28_Collega_Marker</strong>); it does not have a toolbar button.</li><li>If a take already contains take markers, choose <strong>Yes</strong> to replace them, <strong>No</strong> to skip that item, or <strong>Cancel</strong> to stop the operation before applying changes.</li><li>When finished, review the summary: linked items, imported cues, and skipped items.</li><li>To revert, use Undo in REAPER immediately: the import is a single Undo block.</li></ol>
+<h2>What gets written</h2><ul><li>Each cue becomes a take marker: position = SRT start time; name = cue text. Multiple lines are merged into a single line.</li><li>Existing text and markers are replaced only after explicit confirmation.</li><li>An invalid SRT aborts preparation before modifying items.</li><li>It does not transcribe audio. Teleprompter text items are created by the next step, <strong>Send to teleprompter</strong>, which ZP Transcription launches automatically right after.</li></ul>
+<h2>Limitations</h2><ul><li>Imports standard SRT format with timestamp <code>HH:MM:SS,mmm</code> or <code>HH:MM:SS.mmm</code>.</li><li>Uses the active take of each selected item; items without a take/source file are skipped.</li><li>For external SRTs, select the file matching the selected audio.</li></ul>
+<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Developed from an idea by Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
+</main></body></html>

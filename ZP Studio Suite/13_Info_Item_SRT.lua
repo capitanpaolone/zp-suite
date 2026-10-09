@@ -154,8 +154,7 @@ local function loop()
 
   refresh()
   UI.fill_background()
-  UI.draw_header({ title = "Info item SRT", credit = "ZP Studio Suite - 13",
-    description = "Seleziona un item: la finestra si aggiorna da sola. Sola lettura." })
+  UI.draw_header({ title = "Info item SRT", description = "Seleziona un item: la finestra si aggiorna da sola. Sola lettura." })
   UI.draw_help_button({ x = gfx.w - 54, y = 16, w = 34, h = 28 }, clicked, "tool-13")
 
   local x, y, w = 22, 92, gfx.w - 44

@@ -7,12 +7,63 @@ local UI = {}
 
 UI.VERSION = "v1.0.0"
 
+-- Firma della Suite (stile "2" scelto da Paolo il 2026-10-09): marchio Lato Cardioide piccolo +
+-- "ZP Studio Suite <versione> · Lato Cardioide". La versione si legge dalla @version del 00,
+-- cosi' non resta indietro. Il marchio e' img/lato_cardioide.png (96x96, dal favicon del sito).
+local UI_DIR = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+local LOGO_IMG = 1023   -- slot gfx alto: gli script usano quelli bassi
+local logo_state = nil  -- nil = da caricare, false = assente, true = pronto
+
+function UI.suite_version()
+  if UI._suite_version == nil then
+    local f = io.open(UI_DIR .. "/00_Apri_Help_ZP_Studio_Suite.lua", "r")
+    local head = f and f:read(4000) or ""
+    if f then f:close() end
+    UI._suite_version = head:match("@version%s+([%w%.%-]+)") or ""
+  end
+  return UI._suite_version
+end
+
+function UI.credit_text()
+  local v = UI.suite_version()
+  return "ZP Studio Suite" .. (v ~= "" and (" " .. v) or "") .. " · ", "Lato Cardioide"
+end
+
+-- Marchio Lato Cardioide quadrato di lato s a x,y. Restituisce false se l'immagine manca.
+function UI.draw_logo(x, y, s)
+  if logo_state == nil and gfx.loadimg then
+    logo_state = (gfx.loadimg(LOGO_IMG, UI_DIR .. "/img/lato_cardioide.png") or -1) >= 0
+  end
+  if logo_state then gfx.blit(LOGO_IMG, 1, 0, 0, 0, 96, 96, x, y, s, s) end
+  return logo_state
+end
+
+-- Disegna la firma a x,y (marchio alto come il testo + due parti di testo). Restituisce la larghezza.
+function UI.draw_credit(x, y, size)
+  size = size or 13
+  local x0 = x
+  if UI.draw_logo(x, y - 1, size + 3) then x = x + size + 8 end
+  local a, b = UI.credit_text()
+  gfx.setfont(1, "Arial", size)
+  local c = UI.colors.credit       -- gfx.set diretto: set_color e' definita piu' in basso
+  gfx.set(c[1], c[2], c[3], 1)
+  gfx.x, gfx.y = x, y
+  gfx.drawstr(a)
+  x = x + gfx.measurestr(a)
+  c = UI.colors.gold
+  gfx.set(c[1], c[2], c[3], 1)
+  gfx.x, gfx.y = x, y
+  gfx.drawstr(b)
+  return x + gfx.measurestr(b) - x0
+end
+
 UI.colors = {
   bg = {0.07, 0.07, 0.09, 1},
   panel = {0.10, 0.10, 0.14, 1},
   panel_border = {0.32, 0.31, 0.42, 1},
   title = {0.92, 0.88, 0.78, 1},
   credit = {0.56, 0.72, 0.86, 1},
+  gold = {0.85, 0.70, 0.48, 1},          -- oro del marchio Lato Cardioide (#d8b37a)
   text = {0.92, 0.91, 0.94, 1},
   muted = {0.68, 0.66, 0.74, 1},
   disabled = {0.48, 0.48, 0.50, 1},
@@ -215,8 +266,44 @@ function UI.open_url(url)
   end
 end
 
+local Lingua
+pcall(function()
+  local dir = script_dir_from_debug()
+  Lingua = dofile(dir .. "/ZP_Lingua.lua")
+end)
+
+function UI.T(s)
+  if Lingua and Lingua.T then return Lingua.T(s) end
+  return s
+end
+
+function UI.get_lingua()
+  if Lingua and Lingua.get_lingua then return Lingua.get_lingua() end
+  return "it"
+end
+
+function UI.set_lingua(l)
+  if Lingua and Lingua.set_lingua then return Lingua.set_lingua(l) end
+  return l
+end
+
+if not _G.T then
+  _G.T = UI.T
+end
+
 function UI.open_help(anchor, page)
-  UI.open_url(UI.help_url(script_dir_from_debug() .. "/help/" .. (page or "index.html"), anchor))
+  local base_dir = script_dir_from_debug()
+  local target_page = page or "index.html"
+  local lang = UI.get_lingua()
+  if lang and lang ~= "it" then
+    local localized = base_dir .. "/help/" .. lang .. "/" .. target_page
+    local f = io.open(localized, "r")
+    if f then
+      f:close()
+      target_page = lang .. "/" .. target_page
+    end
+  end
+  UI.open_url(UI.help_url(base_dir .. "/help/" .. target_page, anchor))
 end
 
 function UI.draw_help_button(rect, clicked, anchor)
@@ -243,11 +330,15 @@ function UI.draw_header(opts)
   gfx.y = y + 2
   gfx.drawstr(opts.title or "")
 
-  gfx.setfont(1, "Arial", opts.credit_size or 12)
-  set_color(UI.colors.credit)
-  gfx.x = x + icon_size + 10
-  gfx.y = y + (opts.credit_offset or 28)
-  gfx.drawstr(opts.credit or "ZP Studio Suite v1.0.5 - Paolo Balestri")
+  -- firma: quella comune della Suite; opts.credit_own = una firma propria (es. altri autori)
+  if opts.credit_own then
+    gfx.setfont(1, "Arial", opts.credit_size or 12)
+    set_color(UI.colors.credit)
+    gfx.x, gfx.y = x + icon_size + 10, y + (opts.credit_offset or 28)
+    gfx.drawstr(opts.credit_own)
+  else
+    UI.draw_credit(x + icon_size + 10, y + (opts.credit_offset or 28), math.max(13, opts.credit_size or 13))
+  end
 
   if opts.description and opts.description ~= "" then
     gfx.setfont(1, "Arial", opts.description_size or 15)

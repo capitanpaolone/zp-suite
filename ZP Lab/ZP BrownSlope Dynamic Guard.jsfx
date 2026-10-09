@@ -69,12 +69,34 @@ slider46:0<-18,6,0.1>-[Read] Low-Mid Dyn Gain (dB)
 slider47:0<-18,6,0.1>-[Read] Mid-High Dyn Gain (dB)
 slider48:0<-18,6,0.1>-[Read] High Dyn Gain (dB)
 
+options:gmem=ZPVoiceoverSharedBus
 in_pin:left input
 in_pin:right input
 out_pin:left output
 out_pin:right output
 
 @init
+// Ponte guida (gmem ZPVoiceoverSharedBus 3900-3905, Cue Navigator): "?" apre la sezione HTML del plugin.
+// Il ponte e' acceso solo se il battito (3900) cambia: un numero fermo da piu' di 3 s = Cue Navigator spento.
+hb_seen = 0; hb_last = 0; hb_t = -10; help_warn_until = 0;
+function help_bridge_alive() local(hb, now) (
+  hb = gmem[3900]; now = time_precise();
+  !hb_seen ? (hb_last = hb; hb_seen = 1) : hb != hb_last ? (hb_last = hb; hb_t = now);
+  hb > 0 && now - hb_t < 3;
+);
+function help_bridge_open(plugin_id) (
+  help_bridge_alive() ? (gmem[3902] = plugin_id; gmem[3903] += 1; help_warn_until = 0;)
+  : (help_warn_until = time_precise() + 4.0);
+);
+function help_bridge_warn() local(tw2, th2) (
+  time_precise() < help_warn_until ? (
+    gfx_setfont(9, "Arial", 14);
+    gfx_measurestr("Guida: avvia il Cue Navigator (33 Benvenuto) per aprirla da qui, oppure Help ZP > ZP Lab.", tw2, th2);
+    gfx_set(0.10, 0.08, 0.04, 0.95); gfx_rect(16, gfx_h - th2 - 22, tw2 + 20, th2 + 12);
+    gfx_set(1.0, 0.78, 0.35, 1); gfx_x = 26; gfx_y = gfx_h - th2 - 16;
+    gfx_drawstr("Guida: avvia il Cue Navigator (33 Benvenuto) per aprirla da qui, oppure Help ZP > ZP Lab.");
+  );
+);
 ext_tail_size = 2048;
 gfx_ext_retina = 1;
 two_pi = 2 * $pi;
@@ -1244,5 +1266,18 @@ floor(slider(21)) == 1 ? (
 );
 
 draw_footer_bar(footer_y);
+
+// "?" in testata, a sinistra dei riquadri IN / OUT / W/D: apre la sezione del plugin nella guida HTML
+help_bridge_alive();   // battito del ponte guida, a ogni giro
+help_x = gfx_w - 362; help_y = 16;
+help_hov = mouse_x >= help_x && mouse_x <= help_x + 30 && mouse_y >= help_y && mouse_y <= help_y + 30;
+help_hov ? (gfx_r = 0.16; gfx_g = 0.40; gfx_b = 0.34;) : (gfx_r = 0.12; gfx_g = 0.13; gfx_b = 0.16;); gfx_a = 1;
+gfx_rect(help_x, help_y, 30, 30);
+gfx_r = 0.40; gfx_g = 0.88; gfx_b = 0.60; gfx_a = 1;
+gfx_rect(help_x, help_y, 30, 1); gfx_rect(help_x, help_y + 29, 30, 1); gfx_rect(help_x, help_y, 1, 30); gfx_rect(help_x + 29, help_y, 1, 30);
+gfx_setfont(9, "Arial", 17, 'b'); gfx_measurestr("?", help_tw, help_th);
+gfx_r = 0.92; gfx_g = 0.94; gfx_b = 0.96; gfx_x = help_x + (30 - help_tw) / 2; gfx_y = help_y + (30 - help_th) / 2; gfx_drawstr("?");
+help_hov && mouse_click ? help_bridge_open(13);
+help_bridge_warn();
 
 last_mouse_cap = mouse_cap;

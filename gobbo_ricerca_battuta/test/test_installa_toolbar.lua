@@ -50,17 +50,22 @@ check("icona di serie tenuta, mancante -> riserva ZP, azione nativa col suo nume
   and t8:find("item_3=50125 Video", 1, true) and t8:find("icon_3=toolbar_video_screen.png", 1, true))
 local full = M.menu_text(M.LAYOUT, setmetatable({}, { __index = function() return "_RSx" end }), nil, function(n) return M.STOCK[n] end)
 local nitems = select(2, full:gsub("\nitem_", ""))
-check("layout completo = toolbar 8 (23 voci con 6 separatori)", nitems == 23 and full:find("item_18=50125", 1, true)
+check("layout completo = toolbar 8 + Colori e Set Comandi (25 voci con 6 separatori)", nitems == 25 and full:find("item_18=50125", 1, true)
   and full:find("item_19=42653", 1, true) and full:find("icon_1=ZP_tb_17_Regioni_Item.png", 1, true) and full:find("ZP_tb_23_Catena_FX.png", 1, true))
 -- scrittura diretta in reaper-menu.ini
 local ini = "[Main toolbar]\nitem_0=40001\n\n[Floating toolbar 1]\nitem_0=1 A\n\n[Floating toolbar 3]\nitem_0=2 B\ntitle=Mia\n\n[MIDI piano roll]\nitem_0=5\n"
 check("slot: primo libero fra 1 e 16", M.pick_slot(ini) == 2)
 check("slot: quella gia' chiamata ZP Studio Suite", M.pick_slot(ini .. "\n[Floating toolbar 9]\nicon_0=x.png\nitem_0=3 C\ntitle=ZP Studio Suite\n") == 9)
 check("slot: file vuoto", M.pick_slot(nil) == 1)
+local both = ini .. "\n[Floating toolbar 2]\nicon_0=x.png\nitem_0=3 C\ntitle=ZP Studio Suite\n"
+check("slot ZP Colori: il primo libero dopo la ZP Studio Suite", M.pick_slot(both, "ZP Colori") == 4)
+check("slot ZP Colori: quella gia' chiamata cosi'", M.pick_slot(both .. "\n[Floating toolbar 12]\nitem_0=1 A\ntitle=ZP Colori\n", "ZP Colori") == 12)
+check("slot: titolo simile non vale", M.pick_slot("[Floating toolbar 1]\nitem_0=1 A\ntitle=ZP Studio Suite 2\n") == 2)
 -- icone B (2026-10-08): se ci sono si usano, altrimenti restano quelle di prima (anche per le azioni native)
 local withB = M.menu_text(M.LAYOUT, setmetatable({}, { __index = function() return "_RSx" end }), nil, function() return true end)
 check("icone B quando sono installate", withB:find("icon_0=ZP_tbB_18_Project_Viewer.png", 1, true)
-  and withB:find("icon_18=ZP_tbB_Video.png", 1, true) and withB:find("icon_22=ZP_tbB_00_Help.png", 1, true)
+  and withB:find("icon_18=ZP_tbB_Video.png", 1, true) and withB:find("icon_24=ZP_tbB_00_Help.png", 1, true)
+  and withB:find("icon_22=ZP_tbB_35_Colori.png", 1, true) and withB:find("icon_23=ZP_tbB_34_Set_Comandi.png", 1, true)
   and withB:find("ZP_tb_25_SOLO_Recorder.png", 1, true))
 check("senza icone B: azione nativa usa la sua riserva", full:find("icon_18=toolbar_video_screen.png", 1, true) ~= nil
   and full:find("icon_19=ZP_tb_Importa_SRT_1_video.png", 1, true) ~= nil)

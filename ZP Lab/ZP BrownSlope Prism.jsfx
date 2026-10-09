@@ -30,6 +30,7 @@ slider14:0<-6,6,0.01>[Read] Pendenza residua (dB/oct)
 slider15:0<-40,40,0.1>[Read] Livello vs riferimento (dB)
 slider16:0<0,2,1{Non pareggiato,Quasi,Pareggiato}>[Read] Esito
 
+options:gmem=ZPVoiceoverSharedBus
 in_pin:left input
 in_pin:right input
 out_pin:left output
@@ -37,6 +38,28 @@ out_pin:right output
 
 @init
 ext_noinit = 1;   // la media lunga non si azzera a ogni Play
+
+// Ponte guida (gmem ZPVoiceoverSharedBus 3900-3905, Cue Navigator): "?" apre la sezione HTML del plugin.
+// Il ponte e' acceso solo se il battito (3900) cambia: un numero fermo da piu' di 3 s = Cue Navigator spento.
+hb_seen = 0; hb_last = 0; hb_t = -10; help_warn_until = 0;
+function help_bridge_alive() local(hb, now) (
+  hb = gmem[3900]; now = time_precise();
+  !hb_seen ? (hb_last = hb; hb_seen = 1) : hb != hb_last ? (hb_last = hb; hb_t = now);
+  hb > 0 && now - hb_t < 3;
+);
+function help_bridge_open(plugin_id) (
+  help_bridge_alive() ? (gmem[3902] = plugin_id; gmem[3903] += 1; help_warn_until = 0;)
+  : (help_warn_until = time_precise() + 4.0);
+);
+function help_bridge_warn() local(tw2, th2) (
+  time_precise() < help_warn_until ? (
+    gfx_setfont(9, "Arial", 14);
+    gfx_measurestr("Guida: avvia il Cue Navigator (33 Benvenuto) per aprirla da qui, oppure Help ZP > ZP Lab.", tw2, th2);
+    gfx_set(0.10, 0.08, 0.04, 0.95); gfx_rect(16, gfx_h - th2 - 22, tw2 + 20, th2 + 12);
+    gfx_set(1.0, 0.78, 0.35, 1); gfx_x = 26; gfx_y = gfx_h - th2 - 16;
+    gfx_drawstr("Guida: avvia il Cue Navigator (33 Benvenuto) per aprirla da qui, oppure Help ZP > ZP Lab.");
+  );
+);
 // JSFX non accetta la notazione scientifica (1e-30): costanti calcolate qui
 TINY = 10 ^ (-30); SILENCE = 10 ^ (-8); EPSDEN = 10 ^ (-9);
 target = slider1; compare = slider2; avgmode = slider3; slopesel = slider4; RANGE = slider7;
@@ -244,6 +267,12 @@ function help_overlay() local(px, py, pw, ph, cx, cy, hc, ly) (
   hc ? gfx_set(0.28, 0.12, 0.10, 1) : gfx_set(0.14, 0.12, 0.12, 1); gfx_rect(cx, cy, 28, 28);
   gfx_setfont(1, "Arial", 16, 'b'); gfx_set(0.94, 0.80, 0.78, 1); gfx_measurestr("X", tw, th); gfx_x = cx + (28 - tw) / 2; gfx_y = cy + (28 - th) / 2; gfx_drawstr("X");
   hc && click ? (help_open = 0);
+  // GUIDA COMPLETA: apre la sezione del plugin nella guida HTML (ponte del Cue Navigator)
+  hc = mouse_x >= cx - 188 && mouse_x <= cx - 8 && mouse_y >= cy && mouse_y <= cy + 28;
+  hc ? gfx_set(0.16, 0.40, 0.34, 1) : gfx_set(0.12, 0.13, 0.16, 1); gfx_rect(cx - 188, cy, 180, 28);
+  gfx_setfont(9, "Arial", 14, 'b'); gfx_set(0.72, 0.92, 0.82, 1); gfx_measurestr("GUIDA COMPLETA", tw, th);
+  gfx_x = cx - 188 + (180 - tw) / 2; gfx_y = cy + (28 - th) / 2; gfx_drawstr("GUIDA COMPLETA");
+  hc && click ? help_bridge_open(12);
   ly = py + 58; gfx_setfont(1, "Arial", 15);
   gfx_set(0.84, 0.86, 0.86, 1);
   gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Il grafico compensa 4,5 dB per ottava: un rumore brown diventa una linea piatta."); ly += 24;
@@ -307,6 +336,7 @@ file_mem(0, cal24, NB);
 cal_init = 1;
 
 @gfx 900 600
+help_bridge_alive();   // battito del ponte guida, a ogni giro
 click = (mouse_cap & 1) && !last_cap; last_cap = mouse_cap & 1;
 rclick = (mouse_cap & 2) && !last_rcap; last_rcap = mouse_cap & 2;
 gfx_set(0.07, 0.08, 0.09, 1); gfx_rect(0, 0, gfx_w, gfx_h);
@@ -443,3 +473,4 @@ verdict == 2 ? (gfx_set(0.40, 0.88, 0.60, 1); gfx_drawstr("PAREGGIATO");)
 : (gfx_set(0.98, 0.45, 0.35, 1); gfx_drawstr(have_data ? (tilt > 0.5 ? "PIU' BRILLANTE" : tilt < -0.5 ? "PIU' SCURO" : "NON PAREGGIATO") : "--"););
 
 help_open ? help_overlay();
+help_bridge_warn();

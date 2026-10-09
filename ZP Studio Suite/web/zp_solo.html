@@ -104,6 +104,11 @@ footer{padding:4px 16px 16px;color:var(--sub);font-size:14px;min-height:24px}
 .zoom .step button{width:34px;height:30px}
 .zoom .btn{height:30px;padding:0 10px}
 #qr:empty{display:none}
+.lang-pill .cell-txt{font-size:11px;font-weight:700;width:30px}
+.lc-footer{display:flex;align-items:center;justify-content:center;gap:7px;padding:12px 14px 24px;font-size:11px;color:var(--dim);text-align:center;flex-wrap:wrap}
+.lc-footer a{color:var(--sub);text-decoration:none}
+.lc-footer a:hover{color:#d8b37a}
+.lc-footer svg{width:16px;height:16px;flex:none;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -126,6 +131,10 @@ footer{padding:4px 16px 16px;color:var(--sub);font-size:14px;min-height:24px}
     </div>
     <span class="spacer"></span>
     <span class="engine" id="engine"><i></i><span>motore…</span></span>
+    <div class="pill lang-pill">
+      <button class="cell cell-txt" id="b-lang-it" aria-pressed="true" aria-label="Italiano">IT</button>
+      <button class="cell cell-txt" id="b-lang-en" aria-pressed="false" aria-label="English">EN</button>
+    </div>
     <div class="pill"><button class="cell" id="b-share" aria-pressed="false" aria-label="Condividi: indirizzo per aprire questa pagina da un altro dispositivo"><svg class="i"><use href="#i-share"/></svg></button></div>
   </div>
   <div class="state">
@@ -200,11 +209,210 @@ footer{padding:4px 16px 16px;color:var(--sub);font-size:14px;min-height:24px}
 </main>
 
 <footer id="msg" aria-live="polite"></footer>
+<footer id="lc-firma" class="lc-footer"></footer>
 
+<!-- zp-lingua -->
+<script id="zp-lingua">
+const ZP_EN = {
+  "Motore spento: in REAPER avvia l'azione <b>ZP_SOLO_Web_Motore</b> (Action List). Finché non parte, i comandi non arrivano.": "Engine offline: in REAPER launch the action <b>ZP_SOLO_Web_Motore</b> (Action List). Until running, commands will not arrive.",
+  "Salva progetto": "Save project",
+  "Annulla": "Cancel",
+  "Ripeti": "Redo",
+  "motore…": "engine…",
+  "motore acceso": "engine online",
+  "motore spento": "engine offline",
+  "Condividi: indirizzo per aprire questa pagina da un altro dispositivo": "Share: address to open this page from another device",
+  "Telecomando": "Remote",
+  "Traccia: — · Regione: — · Pre-roll: —": "Track: — · Region: — · Pre-roll: —",
+  "Traccia: ": "Track: ",
+  "nessuna traccia armata": "no armed track",
+  "Regione: ": "Region: ",
+  "Pre-roll %d s": "Pre-roll %d s",
+  "Pre-roll off": "Pre-roll off",
+  "Pre-roll: serve SWS": "Pre-roll: SWS required",
+  "Apri il SOLO da un altro dispositivo (iPad, telefono, altro computer)": "Open SOLO from another device (iPad, phone, other computer)",
+  "Condividi": "Share",
+  "Funziona sulla stessa rete Wi-Fi o cablata. Chi ha questo indirizzo puo' comandare REAPER: se la rete non e' solo tua, metti una password in REAPER, Preferences › Control/OSC/web › Web browser interface.": "Works on the same Wi-Fi or wired network. Anyone with this address can control REAPER: if the network is not private, set a password in REAPER, Preferences › Control/OSC/web › Web browser interface.",
+  "Nessun indirizzo di rete trovato: il computer e' collegato a una rete?": "No network address found: is the computer connected to a network?",
+  "Copia": "Copy",
+  "Copiato": "Copied",
+  "Trasporto": "Transport",
+  "Indietro di 5 secondi": "Back 5 seconds",
+  "-5s": "-5s",
+  "Registra": "Record",
+  "REC": "REC",
+  "Pre-roll acceso o spento": "Pre-roll on or off",
+  "PRE": "PRE",
+  "Stop": "Stop",
+  "STOP": "STOP",
+  "Pausa, anche della registrazione": "Pause, including recording",
+  "PAUSA": "PAUSE",
+  "Play": "Play",
+  "PLAY": "PLAY",
+  "Dopo l'ultimo item più 5 secondi": "After last item plus 5 seconds",
+  "fine +5s": "end +5s",
+  "Ingresso e ascolto": "Input and monitoring",
+  "Livello ingresso": "Input level",
+  "Livello ritorno": "Return level",
+  "Secondi del pre-roll": "Pre-roll seconds",
+  "Meno un secondo": "Minus one second",
+  "Più un secondo": "Plus one second",
+  "Vai a e segna": "Go to and mark",
+  "Metti marker qui": "Place marker here",
+  "Nome marker… (Invio)": "Marker name… (Enter)",
+  "Nome del marker, vuoto per numerato": "Marker name, empty for numbered",
+  "Timeline": "Timeline",
+  "tutto il progetto": "entire project",
+  "Zoom della timeline": "Timeline zoom",
+  "Allontana: mostra piu' tempo": "Zoom out: show more time",
+  "Avvicina: mostra meno tempo, piu' dettagli": "Zoom in: show less time, more details",
+  "Mostra tutto il progetto": "Show entire project",
+  "Tutto": "All",
+  "Timeline: tocca un punto per portarci il cursore": "Timeline: tap a point to position the cursor",
+  "non disponibile": "not available",
+  "%s visibili, da %s": "%s visible, from %s",
+  "❚❚ REC in pausa — %s": "❚❚ REC paused — %s",
+  "● REC — %s": "● REC — %s",
+  "Sviluppata su un'idea di Paolo Balestri": "Developed from an idea by Paolo Balestri",
+  "ZP Studio Suite": "ZP Studio Suite",
+  "Lato Cardioide": "Lato Cardioide",
+  "Motore web acceso": "Web engine online",
+  "Marker: %s": "Marker: %s",
+  "REAPER sta gia' registrando.": "REAPER is already recording.",
+  "REC bloccato: nessuna traccia armata nel progetto.": "REC blocked: no armed track in the project.",
+  "REC su %s": "REC on %s",
+  "REC ripreso": "REC resumed",
+  "REC in pausa: PLAY o PAUSA per riprendere, STOP per chiudere": "REC paused: PLAY or PAUSE to resume, STOP to close",
+  "Indietro 5 s": "Back 5 s",
+  "Dopo l'ultimo item + 5 s": "After last item + 5 s",
+  "Nessun item: cursore a 0": "No items: cursor at 0",
+  "Il pre-roll in secondi richiede SWS.": "Pre-roll in seconds requires SWS.",
+  "Pre-roll acceso, %d s": "Pre-roll on, %d s",
+  "Pre-roll spento": "Pre-roll off",
+  "Pre-roll: %d s": "Pre-roll: %d s",
+  "Posizione non valida": "Invalid position",
+  "Vai a %s": "Go to %s",
+  "Progetto salvato": "Project saved",
+  "Errore nel comando %s: %s": "Error in command %s: %s",
+  "Comando sconosciuto: %s": "Unknown command: %s",
+  "nessun ingresso": "no input"
+};
+</script>
+<!-- /zp-lingua -->
 <script>
 "use strict";
 const SEC = "ZP_SOLO_WEB", FLOOR = -60;
 const $ = id => document.getElementById(id);
+
+// ---- localizzazione ----
+let currentLang = "it";
+function t(s) {
+  if (currentLang === "en" && typeof ZP_EN !== "undefined" && ZP_EN[s]) {
+    return ZP_EN[s];
+  }
+  return s;
+}
+
+function getStoredLang() {
+  try {
+    const v = localStorage.getItem("zp_solo_lang");
+    if (v === "it" || v === "en") return v;
+  } catch (e) {}
+  return null;
+}
+
+function setLang(lang, save) {
+  currentLang = lang;
+  if (save) {
+    try { localStorage.setItem("zp_solo_lang", lang); } catch (e) {}
+  }
+  updateLangUI();
+  applyStaticTranslations();
+  render();
+}
+
+function updateLangUI() {
+  const isIt = currentLang === "it";
+  const bIt = $("b-lang-it"), bEn = $("b-lang-en");
+  if (bIt) bIt.setAttribute("aria-pressed", isIt ? "true" : "false");
+  if (bEn) bEn.setAttribute("aria-pressed", !isIt ? "true" : "false");
+  document.documentElement.lang = currentLang;
+}
+
+const LOGO_SVG = '<svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg>';
+
+function renderFirma() {
+  const f = $("lc-firma");
+  if (!f) return;
+  const idea = t("Sviluppata su un'idea di Paolo Balestri");
+  f.innerHTML = `${LOGO_SVG}<span>ZP Studio Suite &middot; ${idea} &middot; <a href="https://latocardioide.it/strumenti/" target="_blank" rel="noopener">Lato Cardioide</a></span>`;
+}
+
+function applyStaticTranslations() {
+  document.title = "ZP SOLO Web";
+  const off = $("offline");
+  if (off) off.innerHTML = t("Motore spento: in REAPER avvia l'azione <b>ZP_SOLO_Web_Motore</b> (Action List). Finché non parte, i comandi non arrivano.");
+  $("b-save")?.setAttribute("aria-label", t("Salva progetto"));
+  $("b-undo")?.setAttribute("aria-label", t("Annulla"));
+  $("b-redo")?.setAttribute("aria-label", t("Ripeti"));
+  $("b-share")?.setAttribute("aria-label", t("Condividi: indirizzo per aprire questa pagina da un altro dispositivo"));
+  const trSmall = $("transport")?.querySelector("small");
+  if (trSmall) trSmall.textContent = t("Telecomando");
+  const shHead = document.querySelector("#share .links > div");
+  if (shHead) shHead.textContent = t("Apri il SOLO da un altro dispositivo (iPad, telefono, altro computer)");
+  const shNote = document.querySelector("#share .note");
+  if (shNote) shNote.textContent = t("Funziona sulla stessa rete Wi-Fi o cablata. Chi ha questo indirizzo puo' comandare REAPER: se la rete non e' solo tua, metti una password in REAPER, Preferences › Control/OSC/web › Web browser interface.");
+  const hTr = $("h-tr"); if (hTr) hTr.textContent = t("Trasporto");
+  document.querySelector('[data-cmd="back"]')?.setAttribute("aria-label", t("Indietro di 5 secondi"));
+  $("b-rec")?.setAttribute("aria-label", t("Registra"));
+  $("b-pre")?.setAttribute("aria-label", t("Pre-roll acceso o spento"));
+  document.querySelector('[data-cmd="stop"]')?.setAttribute("aria-label", t("Stop"));
+  $("b-pause")?.setAttribute("aria-label", t("Pausa, anche della registrazione"));
+  $("b-play")?.setAttribute("aria-label", t("Play"));
+  const bFine = document.querySelector('[data-cmd="fine"]');
+  if (bFine) {
+    bFine.setAttribute("aria-label", t("Dopo l'ultimo item più 5 secondi"));
+    bFine.lastChild.textContent = t("fine +5s");
+  }
+  const hIn = $("h-in"); if (hIn) hIn.textContent = t("Ingresso e ascolto");
+  $("m-in")?.setAttribute("aria-label", t("Livello ingresso"));
+  $("m-rit")?.setAttribute("aria-label", t("Livello ritorno"));
+  document.querySelector('.step[role="group"][aria-label]')?.setAttribute("aria-label", t("Secondi del pre-roll"));
+  $("pre-minus")?.setAttribute("aria-label", t("Meno un secondo"));
+  $("pre-plus")?.setAttribute("aria-label", t("Più un secondo"));
+  const hMk = $("h-mk"); if (hMk) hMk.textContent = t("Vai a e segna");
+  document.querySelector("button.flag")?.setAttribute("aria-label", t("Metti marker qui"));
+  const mkIn = $("markname");
+  if (mkIn) {
+    mkIn.placeholder = t("Nome marker… (Invio)");
+    mkIn.setAttribute("aria-label", t("Nome del marker, vuoto per numerato"));
+  }
+  const hNav = $("h-nav"); if (hNav) hNav.textContent = t("Timeline");
+  document.querySelector(".zoom .step")?.setAttribute("aria-label", t("Zoom della timeline"));
+  $("z-out")?.setAttribute("aria-label", t("Allontana: mostra piu' tempo"));
+  $("z-in")?.setAttribute("aria-label", t("Avvicina: mostra meno tempo, piu' dettagli"));
+  const zAll = $("z-all");
+  if (zAll) {
+    zAll.setAttribute("aria-label", t("Mostra tutto il progetto"));
+    zAll.textContent = t("Tutto");
+  }
+  $("navwrap")?.setAttribute("aria-label", t("Timeline: tocca un punto per portarci il cursore"));
+  renderFirma();
+}
+
+function translateMsg(msg) {
+  if (!msg) return "";
+  let m;
+  if ((m = msg.match(/^Marker: (.*)$/))) return t("Marker: %s").replace("%s", m[1]);
+  if ((m = msg.match(/^REC su (.*)$/))) return t("REC su %s").replace("%s", m[1]);
+  if ((m = msg.match(/^Pre-roll acceso, (\d+) s$/))) return t("Pre-roll acceso, %d s").replace("%d", m[1]);
+  if ((m = msg.match(/^Pre-roll: (\d+) s$/))) return t("Pre-roll: %d s").replace("%d", m[1]);
+  if ((m = msg.match(/^Vai a (.*)$/))) return t("Vai a %s").replace("%s", m[1]);
+  if ((m = msg.match(/^Errore nel comando (.*?): (.*)$/))) return t("Errore nel comando %s: %s").replace("%s", m[1]).replace("%s", m[2]);
+  if ((m = msg.match(/^Comando sconosciuto: (.*)$/))) return t("Comando sconosciuto: %s").replace("%s", m[1]);
+  return t(msg);
+}
+
 let st = null, lastT = 0, lastChange = 0, seq = 0, queue = [], waiting = null;
 
 function unescapeWWR(v) { return String(v).replace(/\\(t|n|\\)/g, (m, c) => c === "t" ? "\t" : c === "n" ? "\n" : "\\"); }
@@ -251,7 +459,7 @@ function drawMeter(m, src) {
   m.hold.style.background = m.hdb > -1 ? "var(--red)" : "#eee";
   m.lab.textContent = src == null ? "N/A" : word(m.hdb);
   m.val.textContent = src == null ? "" : (m.hdb <= -100 ? "-inf" : m.hdb.toFixed(1) + " dB");
-  if (now - m.aria > 1000) { m.aria = now; m.el.setAttribute("aria-valuenow", Math.max(FLOOR, Math.round(m.hdb))); m.el.setAttribute("aria-valuetext", m.val.textContent || "non disponibile"); }
+  if (now - m.aria > 1000) { m.aria = now; m.el.setAttribute("aria-valuenow", Math.max(FLOOR, Math.round(m.hdb))); m.el.setAttribute("aria-valuetext", m.val.textContent || t("non disponibile")); }
 }
 meters.in = setupMeter($("m-in")); meters.rit = setupMeter($("m-rit"));
 
@@ -271,12 +479,17 @@ function renderShare() {
   if (key === shareKey) return;
   shareKey = key;
   const box = $("share-list"); box.textContent = "";
-  if (!urls.length) { box.textContent = "Nessun indirizzo di rete trovato: il computer e' collegato a una rete?"; $("qr").textContent = ""; return; }
+  if (!urls.length) { box.textContent = t("Nessun indirizzo di rete trovato: il computer e' collegato a una rete?"); $("qr").textContent = ""; return; }
   urls.forEach(u => {
     const row = document.createElement("div"); row.className = "url";
     const c = document.createElement("code"); c.textContent = u;
-    const b = document.createElement("button"); b.className = "btn"; b.textContent = "Copia";
-    b.addEventListener("click", () => { navigator.clipboard && navigator.clipboard.writeText(u).then(() => { b.textContent = "Copiato"; setTimeout(() => b.textContent = "Copia", 1500); }, () => {}); });
+    const b = document.createElement("button"); b.className = "btn"; b.textContent = t("Copia");
+    b.addEventListener("click", () => {
+      navigator.clipboard && navigator.clipboard.writeText(u).then(() => {
+        b.textContent = t("Copiato");
+        setTimeout(() => b.textContent = t("Copia"), 1500);
+      }, () => {});
+    });
     row.append(c, b); box.appendChild(row);
   });
   const qr = $("qr"); qr.textContent = "";
@@ -293,27 +506,39 @@ function render() {
   const alive = st && !st.off && (performance.now() - lastChange < 1500);
   $("offline").classList.toggle("show", !alive);
   const eng = $("engine"); eng.className = "engine " + (alive ? "ok" : "ko");
-  eng.lastChild.textContent = alive ? "motore acceso" : "motore spento";
+  eng.lastChild.textContent = alive ? t("motore acceso") : t("motore spento");
   if (!st || st.off) return;
   if ($("share").classList.contains("show")) renderShare();
   const recp = st.transport === "REC_PAUSE", rec = st.transport === "REC" || recp;
   $("head").classList.toggle("rec", rec && !recp);
   $("head").classList.toggle("recpause", recp);
-  $("transport").firstChild.textContent = recp ? "❚❚ REC in pausa — " + (st.track || "?") : rec ? "● REC — " + (st.track || "?") : st.transport === "PAUSE" ? "PAUSA" : st.transport;
+  $("transport").firstChild.textContent = recp
+    ? t("❚❚ REC in pausa — %s").replace("%s", (st.track || "?"))
+    : rec
+    ? t("● REC — %s").replace("%s", (st.track || "?"))
+    : st.transport === "PAUSE"
+    ? t("PAUSA")
+    : st.transport;
   $("b-pause").classList.toggle("on", recp || st.transport === "PAUSE");
-  $("transport").lastChild.textContent = "Telecomando";
+  $("transport").lastChild.textContent = t("Telecomando");
   $("tc").textContent = st.tc;
-  $("info").textContent = "Traccia: " + (st.armed ? st.track + (st.armed > 1 ? " + " + (st.armed - 1) : "") + " · " + st.input : "nessuna traccia armata") +
-    "   ·   Regione: " + st.region + "   ·   " + (st.sws ? (st.preroll ? "Pre-roll " + st.preroll_s + " s" : "Pre-roll off") : "Pre-roll: serve SWS");
+  const inStr = (st.input === "nessun ingresso") ? t("nessun ingresso") : st.input;
+  const armedStr = st.armed ? (st.track + (st.armed > 1 ? " + " + (st.armed - 1) : "") + " · " + inStr) : t("nessuna traccia armata");
+  const regStr = st.region || "—";
+  const preStr = st.sws
+    ? (st.preroll ? t("Pre-roll %d s").replace("%d", st.preroll_s) : t("Pre-roll off"))
+    : t("Pre-roll: serve SWS");
+  $("info").textContent = t("Traccia: ") + armedStr + "   ·   " + t("Regione: ") + regStr + "   ·   " + preStr;
   $("dirty").hidden = !st.dirty;
   $("b-undo").disabled = !st.can_undo; $("b-redo").disabled = !st.can_redo;
   $("b-rec").classList.toggle("on", rec);
   $("b-play").classList.toggle("on", st.transport === "PLAY");
   $("b-pre").setAttribute("aria-pressed", st.preroll ? "true" : "false");
   $("pre-lamp").classList.toggle("on", !!st.preroll);
-  $("pre-s").textContent = "Pre-roll " + st.preroll_s + " s";
+  $("pre-s").textContent = t("Pre-roll %d s").replace("%d", st.preroll_s);
   $("pre-minus").disabled = st.preroll_s <= 1; $("pre-plus").disabled = st.preroll_s >= 5;
-  if ($("msg").textContent !== st.msg) $("msg").textContent = st.msg;
+  const msgTr = translateMsg(st.msg);
+  if ($("msg").textContent !== msgTr) $("msg").textContent = msgTr;
 }
 
 async function poll() {
@@ -326,6 +551,10 @@ async function poll() {
         st = JSON.parse(val);
         if (st.t !== lastT) { lastT = st.t; lastChange = performance.now(); }
         if (waiting && (st.ack === waiting.id)) waiting = null;
+        const pref = getStoredLang();
+        if (!pref && st.lang && st.lang !== currentLang) {
+          setLang(st.lang, false);
+        }
       }
     }
   } catch (e) { /* REAPER non risponde: la fascia rossa lo dice */ }
@@ -387,7 +616,7 @@ function drawNav() {
   const g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
   followHead();
   const len = navLen(), [va, vb] = viewRange(), span = vb - va, X = t => 6 + ((t - va) / span) * (w - 12);
-  const info = zSpan === null ? "tutto il progetto" : spanText(span) + " visibili, da " + fmt(va);
+  const info = zSpan === null ? t("tutto il progetto") : t("%s visibili, da %s").replace("%s", spanText(span)).replace("%s", fmt(va));
   if ($("navinfo").textContent !== info) $("navinfo").textContent = info;
   $("z-in").disabled = span <= MIN_SPAN + 0.01; $("z-out").disabled = zSpan === null; $("z-all").disabled = zSpan === null;
   // righello: tacche ogni passo "tondo"
@@ -511,6 +740,11 @@ document.addEventListener("keydown", e => {
   e.preventDefault();
   send(st && st.transport !== "STOP" ? "stop" : "play");
 });
+
+$("b-lang-it")?.addEventListener("click", () => setLang("it", true));
+$("b-lang-en")?.addEventListener("click", () => setLang("en", true));
+const initialLang = getStoredLang() || "it";
+setLang(initialLang, false);
 
 poll();
 requestAnimationFrame(frame);

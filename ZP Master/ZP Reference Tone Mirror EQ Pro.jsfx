@@ -2,10 +2,21 @@
 // @version 0.062
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
+// @about
+//   ### ZP Reference Tone Mirror EQ Pro
+//   Analisi tonale comparativa e matching EQ adattivo tra traccia vocale e sorgente di riferimento (sidechain 3/4)
+//   con memorizzazione Frozen/Keep, correzione multibanda e saturazione armonica.
+//
+//   Comparative tonal analysis and adaptive matching EQ against a reference sidechain track (3/4),
+//   featuring Follow/Keep profiling, multiband correction, and harmonic enhancement.
+//
+//   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
+//   Guida completa: ZP Studio Suite/help/index.html#plugin-mirror-eq
 // @changelog
 //   True capture, controllo delle basse e modalita' diagnostica Null Hunter.
 //   Versione ancora sotto la 1.0: interfaccia e set di parametri non sono stabili.
 desc:ZP Reference Tone Mirror EQ Pro - Paolo Balestri
+options:gmem=ZPVoiceoverSharedBus gfx_hz=30
 // Autore: Paolo Balestri / Codex prototype
 // Versione: 0.062 true-capture + low-control + diag null hunter
 // Contatto: social@paolobalestri.com
@@ -196,7 +207,6 @@ out_pin:Output L
 out_pin:Output R
 
 // Meter: IN L/R su pin 0/1, OUT L/R su pin 4/5 (Reference L/R su 2/3 non meterizzati)
-options:gfx_hz=30
 
 @init
 ext_noinit = 1;
@@ -204,6 +214,20 @@ ext_nodenorm = 1;
 gfx_ext_retina = 1;
 slider19 = 0;
 ui_mode = 1;
+
+help_bridge_alive = 0;
+help_warn_until = 0;
+ui_lang = 0;
+
+function help_bridge_open(plugin_id) (
+  zp_hb_ok ? (
+    gmem[3902] = plugin_id;
+    gmem[3903] += 1;
+    help_warn_until = 0;
+  ) : (
+    help_warn_until = time_precise() + 4.0;
+  );
+);
 
 NUM_BANDS = 31;
 SHAPE_FILTERS = 7;
@@ -2721,6 +2745,14 @@ spl2 = 0;
 spl3 = 0;
 
 @gfx 760 470
+// Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
+zp_hb = gmem[3900]; zp_hb_now = time_precise();
+!zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
+zp_hb_ok = zp_hb > 0 && zp_hb_now - zp_hb_t < 3;
+help_bridge_alive = zp_hb_ok;
+ui_lang = (gmem[3901] == 1) ? 1 : 0;
+help_mouse_click = (mouse_cap & 1) && !(last_mouse_cap & 1);
+
 gfx_set(0.08, 0.09, 0.11, 1);
 gfx_rect(0, 0, gfx_w, gfx_h);
 
@@ -2813,7 +2845,9 @@ routing_state == 0 ? (
   preset_diag_x = preset_5_x + preset_btn_w + preset_btn_gap;
   preset_diag_w = 118;
 
-  jsfx_btn_x = gfx_w - right_margin - jsfx_btn_w;
+  help_btn_w = 26;
+  help_btn_x = gfx_w - right_margin - help_btn_w;
+  jsfx_btn_x = help_btn_x - top_gap - jsfx_btn_w;
   strict_btn_x = jsfx_btn_x - top_gap - strict_btn_w;
   ab_btn_x = strict_btn_x - top_gap - ab_btn_w;
   lite_btn_x = ab_btn_x - top_gap - lite_btn_w;
@@ -2838,6 +2872,25 @@ routing_state == 0 ? (
   );
   ui_button(0, lite_btn_x, mode_btn_y, lite_btn_w, 28, "Lite", ui_mode == 0);
   ui_button(1, jsfx_btn_x, mode_btn_y, jsfx_btn_w, 28, "JSFX", ui_mode == 1);
+
+  help_btn_hover = mouse_x >= help_btn_x && mouse_x <= help_btn_x + help_btn_w &&
+                   mouse_y >= mode_btn_y && mouse_y <= mode_btn_y + 28;
+  help_btn_hover ? (
+    gfx_r = 0.22; gfx_g = 0.38; gfx_b = 0.58; gfx_a = 1;
+  ) : (
+    gfx_r = 0.16; gfx_g = 0.18; gfx_b = 0.22; gfx_a = 1;
+  );
+  gfx_rect(help_btn_x, mode_btn_y, help_btn_w, 28);
+  gfx_r = 0.34; gfx_g = 0.52; gfx_b = 0.82; gfx_a = 0.9;
+  gfx_rect(help_btn_x, mode_btn_y, help_btn_w, 1); gfx_rect(help_btn_x, mode_btn_y + 27, help_btn_w, 1);
+  gfx_rect(help_btn_x, mode_btn_y, 1, 28); gfx_rect(help_btn_x + help_btn_w - 1, mode_btn_y, 1, 28);
+  gfx_setfont(1, "Arial", 14, 'b');
+  gfx_r = 0.92; gfx_g = 0.95; gfx_b = 0.98; gfx_a = 1;
+  gfx_measurestr("?", h_tw, h_th);
+  gfx_x = help_btn_x + floor((help_btn_w - h_tw) * 0.5);
+  gfx_y = mode_btn_y + floor((28 - h_th) * 0.5);
+  gfx_drawstr("?");
+  help_btn_hover && help_mouse_click ? ( help_bridge_open(8); );
 
   gfx_setfont(1, "Arial", 22);
   gfx_r = 0.93; gfx_g = 0.95; gfx_b = 0.98;
@@ -3091,6 +3144,13 @@ debug_overlay_on ? (
   sprintf(#dbg2, "HF ug:%.2f sh:%.2f rl:%.2f cap10:%+.2f cap12:%+.2f lpEff:%.1fk air:%+.1f hs:%+.2f",
     ultrahigh_guard, ultra_shoulder_guard, ultra_roll_need, dbg_ultrah_cap10_db, dbg_ultrah_cap12_db, air_lp_eff_hz * 0.001, air_trim_db, high_shape_applied);
   gfx_drawstr(#dbg2);
+);
+
+time_precise() < help_warn_until ? (
+  gfx_setfont(1, "Arial", 11);
+  gfx_r = 1.0; gfx_g = 0.72; gfx_b = 0.24; gfx_a = 0.96;
+  gfx_x = 30; gfx_y = gfx_h - 18;
+  gfx_drawstr(ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Studio Suite" : "Open Cue Navigator or ZP Suite help");
 );
 
 last_mouse_cap = mouse_down;

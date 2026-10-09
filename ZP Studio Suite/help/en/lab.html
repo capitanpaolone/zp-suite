@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZP Lab - work in progress plugins</title>
+<style>
+:root{
+  --carta:#f7f6f3; --inchiostro:#1f2b35; --tenue:#5d6a74;
+  --filo:#d8d5cd; --accento:#8f4630; --fondo-ico:#2a2f33;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --carta:#171a1d; --inchiostro:#e8e6e1; --tenue:#9aa4ac;
+         --filo:#2e3439; --accento:#d98b6f; --fondo-ico:#2a2f33; }
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:2.5rem 1.25rem 4rem;
+  background:var(--carta); color:var(--inchiostro);
+  font:16px/1.6 Georgia,"Times New Roman",serif;
+}
+main{max-width:52rem;margin:0 auto}
+h1{font-size:1.75rem;line-height:1.2;margin:0 0 .25rem}
+.occhiello{margin:0 0 1.5rem;color:var(--tenue);font-size:.95rem}
+h2{font-size:1.15rem;margin:2.5rem 0 .75rem;padding-bottom:.35rem;
+   border-bottom:1px solid var(--filo)}
+p{margin:0 0 1rem;max-width:44rem}
+code{font:.9em/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+     background:rgba(127,127,127,.14);padding:.15em .4em;border-radius:3px}
+.tabella-avvolta{overflow-x:auto;margin:0 0 1rem}
+table{border-collapse:collapse;width:100%;min-width:34rem}
+caption{text-align:left;color:var(--tenue);font-size:.9rem;padding-bottom:.6rem}
+th,td{text-align:left;vertical-align:top;padding:.7rem .8rem;
+      border-bottom:1px solid var(--filo)}
+thead th{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;
+         color:var(--tenue);font-weight:normal}
+tbody th{font-weight:bold;white-space:nowrap;width:11rem}
+.num{display:block;font-weight:normal;font-size:.78rem;color:var(--tenue)}
+.c-ico{width:3.2rem}
+.ico{display:block;width:30px;height:30px;
+     background-repeat:no-repeat;background-position:0 0;
+     background-color:var(--fondo-ico);border-radius:4px}
+.nota{color:var(--tenue);font-size:.92rem}
+a{color:var(--accento)}
+</style>
+<style id="lc-firma">
+.lc-testata{display:flex;align-items:center;gap:.5rem;margin:0 0 .4rem;font:600 .78rem/1.2 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  letter-spacing:.08em;text-transform:uppercase;color:#565F66}
+.lc-testata a{color:inherit;text-decoration:none}.lc-testata a:hover{color:#A94F35}
+.lc-logo{width:22px;height:22px;flex:none}
+.lc-filetto{border:0;border-top:2px solid #A94F35;margin:.6rem 0 1.4rem}
+.lc-piede{display:flex;align-items:center;gap:.6rem;margin:3rem 0 1rem;padding:.8rem 1rem;border:1px solid #CFCCC3;
+  border-radius:6px;background:#FAF9F5;color:#37444E;font:.95rem/1.4 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+.lc-piede a{color:#8F4630}
+@media (prefers-color-scheme: dark){
+  .lc-testata{color:#9aa4ac}.lc-piede{background:#1d2226;border-color:#2e3439;color:#c9cfd4}.lc-piede a{color:#d98b6f}
+}
+</style>
+</head><body>
+<main>
+<!-- lc-testata --><div class="lc-testata"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><a href="https://latocardioide.it/strumenti/">Lato Cardioide</a> &middot; Tools</div><!-- /lc-testata -->
+<h1>ZP Lab</h1>
+<p class="occhiello">Work-in-progress plugins: not in the ReaPack package, copied by hand. They may change.</p><!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
+
+
+<h2 id="plugin-brownslope-prism">ZP BrownSlope Prism</h2>
+<p><strong>Passive analyzer</strong>: audio passes through untouched. It shows the spectrum with a 4.5 dB per octave slope compensation, so brown noise becomes a flat line. The two green lines are the -18 and -24 LUFS references, measured from the brown loops with the plugin's own calculation; the orange curve is your audio.</p>
+<ul>
+<li><strong>You are matched</strong> when the orange curve is flat and sits on the chosen line.</li>
+<li><strong>Readings</strong>: deviation in dB per zone (Lows, Low-mids, High-mids, Highs), residual slope (+ = brighter than brown, - = darker), level against the reference, result Matched / Close / No.</li>
+<li><strong>Shape</strong> removes the level difference and compares EQ only.</li>
+<li><strong>Controls</strong>: Average, Slope, Scale knobs (drag vertically; double click or right click = default); Ref., Shape, Reset, Calibrate, Default buttons.</li>
+<li><strong>Calibrate</strong>: play the reference loop with long average and press Calibrate; the curve is saved with the project. Default removes it.</li>
+<li><strong>JSFX view</strong>: brings back REAPER's parameter list, readings included, for OSARA and screen readers.</li>
+<li><strong>?</strong> opens the guide inside the plugin; from there, <em>GUIDA COMPLETA</em> (full guide) opens this page (Cue Navigator must be running).</li>
+</ul>
+
+<h2 id="plugin-brownslope-guard">ZP BrownSlope Dynamic Guard</h2>
+<p>Advanced, visible version of the Brown module already inside ZP BUS Chain and ZP Master Pro: a <strong>4-band dynamic tonal guard</strong> for the end of a voice/music chain, before the final limiter. It gently steers long-term band energy toward a brown slope, then applies optional broadcast HPF/LPF guards.</p>
+<ul>
+<li><strong>MATCH</strong> applies a gentle static slope toward the brown target.</li>
+<li><strong>TOL</strong> (tolerance) is a dead zone: the dynamic part acts only on real deviations.</li>
+<li><strong>BIAS</strong> chooses Cut-only, Balanced or Gentle Boost; <strong>MID Focus</strong> gives more weight to the low-mid and high-mid zones.</li>
+<li><strong>Stereo and M/S analysis</strong>: L, R, Mid, Side, Width and L/R difference. Correction stays L/R linked so the stereo image does not change.</li>
+<li>Header: IN, OUT and W/D (dry/wet) tiles. The <strong>?</strong> next to them opens this page (Cue Navigator must be running).</li>
+</ul>
+<p class="nota">Status: not a beta yet. Do not use it on deliveries until it survives a real session.</p>
+
+<p class="nota"><a href="index.html">Back to the full guide</a></p>
+<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Developed from an idea by Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
+</main>
+</body>
+</html>

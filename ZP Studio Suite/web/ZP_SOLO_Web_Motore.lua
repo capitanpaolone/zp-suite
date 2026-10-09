@@ -366,6 +366,7 @@ local function publish()
     can_redo = reaper.Undo_CanRedo2(0) ~= nil,
     share = share,
     navv = nav_version,
+    lang = (reaper.GetExtState("ZP_STUDIO_SUITE", "lingua") == "en") and "en" or "it",
   }
   reaper.SetExtState(SEC, "state", json(st), false)
 end

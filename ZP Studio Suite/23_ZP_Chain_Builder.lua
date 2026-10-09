@@ -683,7 +683,6 @@ local function run_ui()
     ZP_UI.fill_background()
     ZP_UI.draw_header({
       title = TITLE,
-      credit = "ZP Studio Suite - Paolo Balestri",
       description = "Crea e adatta strutture VO, ADR, e-learning, podcast e spot.",
     })
 

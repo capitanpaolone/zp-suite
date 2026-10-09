@@ -1,6 +1,20 @@
 // @description ZP Stagekeeper Dialogue Director
 // @version 2.5.0
 // @author Paolo Balestri
+// @about
+//   Automixer per dialoghi a due voci per broadcast, podcast e doppiaggio.
+//   Dominance Engine intelligente con modalità Delta o Absolute, controllo
+//   Background, lookahead a latenza zero o compensata e monitor fail-safe.
+//
+//   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
+//   Guida completa: https://latocardioide.it/strumenti/ o dal pulsante '?'
+//
+//   Dual-mic dialogue automixer for broadcast, podcast and dubbing.
+//   Intelligent Dominance Engine with Delta and Absolute modes, Background
+//   ducking control, lookahead and fail-safe monitoring.
+//
+//   Developed from an idea by Paolo Balestri · Lato Cardioide (latocardioide.it)
+//   Complete documentation: https://latocardioide.it/strumenti/ or click '?'
 // @license GPL-3.0-or-later
 // @changelog
 //   Nuova Dominance Engine: fader smoothing in dominio dB con riduzione normalizzata.
@@ -10,6 +24,7 @@
 //   Nuovo profilo AUTO musicale: 12 ms Attack / 200 ms Release.
 //   CHECK L/R ascolto canale isolato post-gate; monitor MIX fail-safe escluso dai preset.
 desc:ZP Stagekeeper Dialogue Director AutoMixer - Paolo Balestri
+options:gmem=ZPVoiceoverSharedBus
 tags:dialogue gate utility paolo balestri zio ziopaolo stagekeeper voice spoken automatic mixer
 // Autore: Paolo Balestri - Zio Paolo
 //variant: v2.3 circular threshold meters
@@ -143,6 +158,11 @@ out_pin:left output
 out_pin:right output
 
 @init
+help_bridge_alive = 0;
+help_bridge_last_alive_t = -100;
+help_bridge_req_seq = 0;
+help_warn_until = 0;
+ui_lang = 0;
 ext_tail_size = -2;
 c_ampdB = 8.65617025;
 
@@ -2433,6 +2453,32 @@ vu_out_l = vu_out_l*rms_tc + (1-rms_tc)*s0*s0;
 vu_out_r = vu_out_r*rms_tc + (1-rms_tc)*s1*s1;
 
 @gfx 980 920
+// Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
+zp_hb = gmem[3900]; zp_hb_now = time_precise();
+!zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
+zp_hb_ok = zp_hb > 0 && zp_hb_now - zp_hb_t < 3;
+function help_bridge_open(plugin_id)
+(
+  help_bridge_alive ? (
+    gmem[3902] = plugin_id;
+    help_bridge_req_seq += 1;
+    gmem[3903] = help_bridge_req_seq;
+  ) : (
+    help_warn_until = time_precise() + 4.0;
+  );
+);
+
+time_now = time_precise();
+zp_hb_ok ? (
+  help_bridge_alive = 1;
+  help_bridge_last_alive_t = time_now;
+  ui_lang = gmem[3901] == 1 ? 1 : 0;
+) : (
+  (time_now - help_bridge_last_alive_t > 3.0) ? (
+    help_bridge_alive = 0;
+    ui_lang = 0;
+  );
+);
 mouse_down = mouse_cap & 1;
 mouse_click = mouse_down && !(last_mouse_cap & 1);
 mouse_right_click = (mouse_cap & 2) && !(last_mouse_cap & 2);
@@ -2597,7 +2643,7 @@ help_btn_x = view_box_x - help_btn_w - 10; help_btn_y = view_box_y;
 help_btn_hover = mouse_x >= help_btn_x && mouse_x <= (help_btn_x + help_btn_w) &&
                  (mouse_y + ui_scroll_y) >= help_btn_y && (mouse_y + ui_scroll_y) <= (help_btn_y + help_btn_h);
 help_btn_hover ? active_info_id = 250;
-help_btn_hover && help_real_click ? ( help_overlay_open = !help_overlay_open; help_page = 0; );
+help_btn_hover && help_real_click ? ( help_bridge_open(4); help_overlay_open = !help_overlay_open; help_page = 0; );
 
 help_overlay_open ? (
   gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b; gfx_a = 0.95;
@@ -3305,43 +3351,49 @@ gfx_r = 0.20; gfx_g = 0.22; gfx_b = 0.28; gfx_a = 1; gfx_line(0, footer_y, gfx_w
 gfx_setfont(4); gfx_r = 0.72; gfx_g = 0.75; gfx_b = 0.81;
 gfx_x = 14; gfx_y = footer_y + 7;
 ui_view_mode == 0 ? (
-  active_info_id == 201 ? gfx_drawstr("TRIM L: bilanciamento del livello di ingresso del microfono sinistro prima di detector e gate.") :
+  time_now < help_warn_until ? (
+    gfx_r = 0.95; gfx_g = 0.65; gfx_b = 0.20;
+    ui_lang == 1 ?
+      gfx_drawstr("Guide: open ZP Help > Stagekeeper (start Cue Navigator from 33 Welcome to open it from here)") :
+      gfx_drawstr("Guida: apri Help ZP > Stagekeeper (avvia il Cue Navigator dal 33 Benvenuto per aprirla da qui)");
+  ) :
+  active_info_id == 201 ? (ui_lang == 1 ? gfx_drawstr("TRIM L: input gain balancing for left microphone before detector and gate.") : gfx_drawstr("TRIM L: bilanciamento del livello di ingresso del microfono sinistro prima di detector e gate.")) :
   active_info_id == 202 ? gfx_drawstr(slider2 >= 0.5 ? "PHASE L - Inverted" : "PHASE L - Normal") :
-  active_info_id == 203 ? gfx_drawstr("TRIM R: bilanciamento del livello di ingresso del microfono destro prima di detector e gate.") :
+  active_info_id == 203 ? (ui_lang == 1 ? gfx_drawstr("TRIM R: input gain balancing for right microphone before detector and gate.") : gfx_drawstr("TRIM R: bilanciamento del livello di ingresso del microfono destro prima di detector e gate.")) :
   active_info_id == 204 ? gfx_drawstr(slider4 >= 0.5 ? "PHASE R - Inverted" : "PHASE R - Normal") :
-  active_info_id == 205 ? gfx_drawstr("ENGINE: ON = controllo dialogo attivo. OFF = entrambi i mic aperti, resto del plugin attivo; Shadow/Authority continuano a calcolare telemetria. Non e' salvato nei preset.") :
-  active_info_id == 206 ? gfx_drawstr("TRIGGER MODE: ABS usa soglie indipendenti, DELTA segue la differenza tra i due microfoni.") :
-  active_info_id == 207 ? gfx_drawstr("SPEECH DETECT L: soglia minima RMS di attivazione della voce sul microfono sinistro.") :
-  active_info_id == 208 ? gfx_drawstr("SPEECH DETECT R: soglia minima RMS di attivazione della voce sul microfono destro.") :
-  active_info_id == 209 ? gfx_drawstr("DELTA: differenza minima tra i due microfoni necessaria per dichiarare una dominance. Nella zona neutra non avviene alcuno switch.") :
-  active_info_id == 210 ? gfx_drawstr("REACTION: AUTO usa 12/200 ms, MANUAL usa Attack e Release personalizzati.") :
-  active_info_id == 211 ? gfx_drawstr("ATTACK: tempo di apertura del microfono quando la voce prende la dominance.") :
-  active_info_id == 212 ? gfx_drawstr("RELEASE: dopo l'Hold, determina quanto rapidamente il microfono scende verso il livello Background.") :
-  active_info_id == 213 ? gfx_drawstr("HOLD: dopo che la voce perde la dominance, mantiene il microfono aperto per questo tempo prima di iniziare il Release.") :
-  active_info_id == 214 ? gfx_drawstr("LOOKAHEAD: anticipo del detector sull'audio ritardato, evita troncamenti sulle consonanti iniziali.") :
-  active_info_id == 215 ? gfx_drawstr("BACKGROUND L: livello di attenuazione del microfono sinistro quando non e' dominante.") :
-  active_info_id == 216 ? gfx_drawstr("BACKGROUND R: livello di attenuazione del microfono destro quando non e' dominante.") :
-  active_info_id == 217 ? gfx_drawstr("OUTPUT MODE: Stereo mantiene i canali, Dual Mono li somma per feed coerenti.") :
-  active_info_id == 218 ? gfx_drawstr("MASTER: guadagno finale dopo il gate e prima del limiter.") :
-  active_info_id == 251 ? gfx_drawstr("OUTPUT L: correzione del microfono sinistro dopo l'Engine, prima di Dual Mono e Limiter. Non influenza il detector.") :
-  active_info_id == 252 ? gfx_drawstr("OUTPUT R: correzione del microfono destro dopo l'Engine, prima di Dual Mono e Limiter. Non influenza il detector.") :
-  active_info_id == 253 ? gfx_drawstr("LINK: quando attivo, muovere Output L o R sposta entrambi dello stesso delta, mantenendo l'offset. Non e' salvato nei preset.") :
-  active_info_id == 219 ? gfx_drawstr("LIMITER: sicurezza finale per evitare overs e livellare i picchi di scena.") :
-  active_info_id == 220 ? gfx_drawstr("LIM THR: soglia d'intervento; l'arco mostra il detector reale del limiter.") :
-  active_info_id == 221 ? gfx_drawstr("CEILING: limite massimo; l'arco mostra il livello pre-clip confrontato col tetto.") :
-  active_info_id == 222 ? gfx_drawstr("PRESET BANK: click carica, click destro salva; sul preset attivo lo elimina.") :
-  active_info_id == 230 ? gfx_drawstr("FULL VIEW: interfaccia completa con tutti i controlli, meter, preset e telemetria.") :
-  active_info_id == 231 ? gfx_drawstr("COMPACT VIEW: strip ridotta con soli meter uscita e stato runtime, utile quando la grafica completa non serve.") :
-  active_info_id == 232 ? gfx_drawstr("JSFX VIEW: mostra gli slider standard del plugin e riduce al minimo la grafica custom.") :
-  active_info_id == 233 ? gfx_drawstr("LOW L: correzione semplice delle basse sul canale sinistro, post input e pre detection.") :
-  active_info_id == 234 ? gfx_drawstr("HI L: correzione semplice delle alte sul canale sinistro, utile se il microfono suona cupo o frizzante.") :
-  active_info_id == 235 ? gfx_drawstr("LOW R: correzione semplice delle basse sul canale destro, post input e pre detection.") :
-  active_info_id == 236 ? gfx_drawstr("HI R: correzione semplice delle alte sul canale destro, post input e pre detection.") :
-  active_info_id == 239 ? gfx_drawstr("MONITOR: CHECK isola il canale POST-GATE. Gate Off = integro; Gate On = senti quando l'altro mic lo attenua.") :
-  active_info_id == 240 ? gfx_drawstr("SOFTNESS: morbidezza della curva di fader (0% Hard, 100% Smooth). Non altera i tempi nominali.") :
-  active_info_id == 241 ? gfx_drawstr("INPUT METER: doppio click per azzerare il Peak Hold di entrambi i canali.") :
-  active_info_id == 242 ? gfx_drawstr("INPUT READOUT: doppio click per alternare Display RMS e Peak Hold dBFS.") :
-  active_info_id == 250 ? gfx_drawstr("HELP: apre/chiude la guida rapida del plugin. Non modifica alcun parametro.") :
+  active_info_id == 205 ? (ui_lang == 1 ? gfx_drawstr("ENGINE: ON = automixer active. OFF = both mics open, rest of chain active; telemetry continues. Not saved in presets.") : gfx_drawstr("ENGINE: ON = controllo dialogo attivo. OFF = entrambi i mic aperti, resto del plugin attivo; Shadow/Authority continuano a calcolare telemetria. Non e' salvato nei preset.")) :
+  active_info_id == 206 ? (ui_lang == 1 ? gfx_drawstr("TRIGGER MODE: ABS uses independent thresholds, DELTA tracks difference between microphones.") : gfx_drawstr("TRIGGER MODE: ABS usa soglie indipendenti, DELTA segue la differenza tra i due microfoni.")) :
+  active_info_id == 207 ? (ui_lang == 1 ? gfx_drawstr("SPEECH DETECT L: minimum RMS voice threshold on left microphone.") : gfx_drawstr("SPEECH DETECT L: soglia minima RMS di attivazione della voce sul microfono sinistro.")) :
+  active_info_id == 208 ? (ui_lang == 1 ? gfx_drawstr("SPEECH DETECT R: minimum RMS voice threshold on right microphone.") : gfx_drawstr("SPEECH DETECT R: soglia minima RMS di attivazione della voce sul microfono destro.")) :
+  active_info_id == 209 ? (ui_lang == 1 ? gfx_drawstr("DELTA: minimum level difference between microphones to declare dominance. Neutral deadband prevents chatter.") : gfx_drawstr("DELTA: differenza minima tra i due microfoni necessaria per dichiarare una dominance. Nella zona neutra non avviene alcuno switch.")) :
+  active_info_id == 210 ? (ui_lang == 1 ? gfx_drawstr("REACTION: AUTO uses 12/200 ms, MANUAL uses custom Attack and Release.") : gfx_drawstr("REACTION: AUTO usa 12/200 ms, MANUAL usa Attack e Release personalizzati.")) :
+  active_info_id == 211 ? (ui_lang == 1 ? gfx_drawstr("ATTACK: opening speed when a voice takes dominance.") : gfx_drawstr("ATTACK: tempo di apertura del microfono quando la voce prende la dominance.")) :
+  active_info_id == 212 ? (ui_lang == 1 ? gfx_drawstr("RELEASE: after Hold, determines how smoothly the microphone drops to Background level.") : gfx_drawstr("RELEASE: dopo l'Hold, determina quanto rapidamente il microfono scende verso il livello Background.")) :
+  active_info_id == 213 ? (ui_lang == 1 ? gfx_drawstr("HOLD: holds the mic open after voice ceases before Release begins.") : gfx_drawstr("HOLD: dopo che la voce perde la dominance, mantiene il microfono aperto per questo tempo prima di iniziare il Release.")) :
+  active_info_id == 214 ? (ui_lang == 1 ? gfx_drawstr("LOOKAHEAD: detector lookahead on delayed audio, prevents initial consonant clipping.") : gfx_drawstr("LOOKAHEAD: anticipo del detector sull'audio ritardato, evita troncamenti sulle consonanti iniziali.")) :
+  active_info_id == 215 ? (ui_lang == 1 ? gfx_drawstr("BACKGROUND L: attenuation level of left microphone when non-dominant.") : gfx_drawstr("BACKGROUND L: livello di attenuazione del microfono sinistro quando non e' dominante.")) :
+  active_info_id == 216 ? (ui_lang == 1 ? gfx_drawstr("BACKGROUND R: attenuation level of right microphone when non-dominant.") : gfx_drawstr("BACKGROUND R: livello di attenuazione del microfono destro quando non e' dominante.")) :
+  active_info_id == 217 ? (ui_lang == 1 ? gfx_drawstr("OUTPUT MODE: Stereo preserves channels, Dual Mono sums them for consistent feeds.") : gfx_drawstr("OUTPUT MODE: Stereo mantiene i canali, Dual Mono li somma per feed coerenti.")) :
+  active_info_id == 218 ? (ui_lang == 1 ? gfx_drawstr("MASTER: final output gain after gate and before limiter.") : gfx_drawstr("MASTER: guadagno finale dopo il gate e prima del limiter.")) :
+  active_info_id == 251 ? (ui_lang == 1 ? gfx_drawstr("OUTPUT L: post-Engine trim for left mic, before Dual Mono and Limiter. Does not affect detector.") : gfx_drawstr("OUTPUT L: correzione del microfono sinistro dopo l'Engine, prima di Dual Mono e Limiter. Non influenza il detector.")) :
+  active_info_id == 252 ? (ui_lang == 1 ? gfx_drawstr("OUTPUT R: post-Engine trim for right mic, before Dual Mono and Limiter. Does not affect detector.") : gfx_drawstr("OUTPUT R: correzione del microfono destro dopo l'Engine, prima di Dual Mono e Limiter. Non influenza il detector.")) :
+  active_info_id == 253 ? (ui_lang == 1 ? gfx_drawstr("LINK: when active, moving Output L or R links both by the same delta. Not saved in presets.") : gfx_drawstr("LINK: quando attivo, muovere Output L o R sposta entrambi dello stesso delta, mantenendo l'offset. Non e' salvato nei preset.")) :
+  active_info_id == 219 ? (ui_lang == 1 ? gfx_drawstr("LIMITER: safety output protection against clipping.") : gfx_drawstr("LIMITER: sicurezza finale per evitare overs e livellare i picchi di scena.")) :
+  active_info_id == 220 ? (ui_lang == 1 ? gfx_drawstr("LIM THR: limiter threshold; arc shows detector level.") : gfx_drawstr("LIM THR: soglia d'intervento; l'arco mostra il detector reale del limiter.")) :
+  active_info_id == 221 ? (ui_lang == 1 ? gfx_drawstr("CEILING: ceiling limit; arc shows pre-clip level compared to ceiling.") : gfx_drawstr("CEILING: limite massimo; l'arco mostra il livello pre-clip confrontato col tetto.")) :
+  active_info_id == 222 ? (ui_lang == 1 ? gfx_drawstr("PRESET BANK: click loads, right click saves; click active preset to clear.") : gfx_drawstr("PRESET BANK: click carica, click destro salva; sul preset attivo lo elimina.")) :
+  active_info_id == 230 ? (ui_lang == 1 ? gfx_drawstr("FULL VIEW: complete interface with all controls, meters, presets and telemetry.") : gfx_drawstr("FULL VIEW: interfaccia completa con tutti i controlli, meter, preset e telemetria.")) :
+  active_info_id == 231 ? (ui_lang == 1 ? gfx_drawstr("COMPACT VIEW: reduced strip with output meters and runtime state.") : gfx_drawstr("COMPACT VIEW: strip ridotta con soli meter uscita e stato runtime, utile quando la grafica completa non serve.")) :
+  active_info_id == 232 ? (ui_lang == 1 ? gfx_drawstr("JSFX VIEW: shows standard sliders and minimizes custom graphics.") : gfx_drawstr("JSFX VIEW: mostra gli slider standard del plugin e riduce al minimo la grafica custom.")) :
+  active_info_id == 233 ? (ui_lang == 1 ? gfx_drawstr("LOW L: low shelf tilt on left mic, post input and pre detection.") : gfx_drawstr("LOW L: correzione semplice delle basse sul canale sinistro, post input e pre detection.")) :
+  active_info_id == 234 ? (ui_lang == 1 ? gfx_drawstr("HI L: high shelf tilt on left mic, useful if mic is dark or sibilant.") : gfx_drawstr("HI L: correzione semplice delle alte sul canale sinistro, utile se il microfono suona cupo o frizzante.")) :
+  active_info_id == 235 ? (ui_lang == 1 ? gfx_drawstr("LOW R: low shelf tilt on right mic, post input and pre detection.") : gfx_drawstr("LOW R: correzione semplice delle basse sul canale destro, post input e pre detection.")) :
+  active_info_id == 236 ? (ui_lang == 1 ? gfx_drawstr("HI R: high shelf tilt on right mic, post input and pre detection.") : gfx_drawstr("HI R: correzione semplice delle alte sul canale destro, post input e pre detection.")) :
+  active_info_id == 239 ? (ui_lang == 1 ? gfx_drawstr("MONITOR: CHECK isolates channel POST-GATE. Gate Off = clean; Gate On = audition attenuation from other mic.") : gfx_drawstr("MONITOR: CHECK isola il canale POST-GATE. Gate Off = integro; Gate On = senti quando l'altro mic lo attenua.")) :
+  active_info_id == 240 ? (ui_lang == 1 ? gfx_drawstr("SOFTNESS: fader smoothing curve (0% Hard, 100% Smooth). Does not alter nominal timing.") : gfx_drawstr("SOFTNESS: morbidezza della curva di fader (0% Hard, 100% Smooth). Non altera i tempi nominali.")) :
+  active_info_id == 241 ? (ui_lang == 1 ? gfx_drawstr("INPUT METER: double click to reset Peak Hold on both channels.") : gfx_drawstr("INPUT METER: doppio click per azzerare il Peak Hold di entrambi i canali.")) :
+  active_info_id == 242 ? (ui_lang == 1 ? gfx_drawstr("INPUT READOUT: double click to toggle Display RMS and Peak Hold dBFS.") : gfx_drawstr("INPUT READOUT: doppio click per alternare Display RMS e Peak Hold dBFS.")) :
+  active_info_id == 250 ? (ui_lang == 1 ? gfx_drawstr("HELP: opens/closes plugin quick guide and HTML guide. Does not alter audio parameters.") : gfx_drawstr("HELP: apre/chiude la guida rapida del plugin. Non modifica alcun parametro.")) :
   gfx_drawstr("STAGEKEEPER v2.5.0");
 );
 
@@ -3377,10 +3429,12 @@ help_overlay_open ? (
   // Title + page label
   gfx_setfont(1); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_a = 1;
   gfx_x = help_panel_x + 20; gfx_y = help_panel_y + 16;
-  gfx_drawstr("STAGEKEEPER - QUICK HELP");
+  gfx_drawstr(ui_lang == 0 ? "STAGEKEEPER - GUIDA RAPIDA" : "STAGEKEEPER - QUICK HELP");
   gfx_setfont(5); gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b;
   gfx_x = help_panel_x + 20; gfx_y = help_panel_y + 42;
-  gfx_drawstr(help_page == 0 ? "1/2  CONTROL" : "2/2  OUTPUT & MONITOR");
+  gfx_drawstr(help_page == 0 ?
+    (ui_lang == 0 ? "1/2  CONTROLLO" : "1/2  CONTROL") :
+    (ui_lang == 0 ? "2/2  USCITA E MONITOR" : "2/2  OUTPUT & MONITOR"));
 
   // Close button (top-right)
   help_close_w = 26; help_close_h = 26;
@@ -3415,83 +3469,194 @@ help_overlay_open ? (
     gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_a = 1;
     gfx_x = help_x; gfx_y = help_y; gfx_drawstr("ENGINE"); help_y += help_line_h;
     gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("ON: Stagekeeper controlla la scena. OFF: entrambi i mic restano aperti;"); help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Input, Output, Monitor e Limiter restano comunque attivi."); help_y += help_line_h + 6;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "ON: Stagekeeper controlla la scena. OFF: entrambi i mic restano aperti;" :
+      "ON: Stagekeeper controls the scene. OFF: both mics stay open;");
+    help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "Input, Output, Monitor e Limiter restano comunque attivi." :
+      "Input, Output, Monitor and Limiter remain active.");
+    help_y += help_line_h + 6;
 
     gfx_setfont(3); gfx_a = 1;
     gfx_x = help_x; gfx_y = help_y; gfx_drawstr("SPEECH DETECT"); help_y += help_line_h;
     gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Definisce quando ciascun microfono viene considerato sufficientemente"); help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("presente per partecipare alla decisione."); help_y += help_line_h + 6;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "Definisce quando ciascun microfono viene considerato sufficientemente" :
+      "Defines when each microphone is considered active enough");
+    help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "presente per partecipare alla decisione." :
+      "to take part in the dominance decision.");
+    help_y += help_line_h + 6;
 
     gfx_setfont(3); gfx_a = 1;
     gfx_x = help_x; gfx_y = help_y; gfx_drawstr("BACKGROUND"); help_y += help_line_h;
     gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Livello del microfono non dominante: 100% = nessuna attenuazione,"); help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("0% = gate profondo. Il valore in dB resta mostrato per precisione."); help_y += help_line_h + 6;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "Livello del microfono non dominante: 100% = nessuna attenuazione," :
+      "Level of the non-dominant mic: 100% = no attenuation,");
+    help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "0% = gate profondo. Il valore in dB resta mostrato per precisione." :
+      "0% = deep gate. The dB value remains shown for precision.");
+    help_y += help_line_h + 6;
 
     gfx_setfont(3); gfx_a = 1;
     gfx_x = help_x; gfx_y = help_y; gfx_drawstr("ABSOLUTE"); help_y += help_line_h;
     gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Ogni microfono viene valutato rispetto alla propria soglia."); help_y += help_line_h + 6;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "Ogni microfono viene valutato rispetto alla propria soglia." :
+      "Each microphone is evaluated against its own threshold.");
+    help_y += help_line_h + 6;
 
     gfx_setfont(3); gfx_a = 1;
     gfx_x = help_x; gfx_y = help_y; gfx_drawstr("DELTA"); help_y += help_line_h;
     gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("La decisione dipende dalla differenza fra L e R."); help_y += help_line_h + 6;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "La decisione dipende dalla differenza fra L e R." :
+      "The decision depends on the level difference between L and R.");
+    help_y += help_line_h + 6;
 
     gfx_setfont(3); gfx_a = 1;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("DOMINANCE DECISION"); help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y; gfx_drawstr(ui_lang == 0 ? "DECISIONE DOMINANZA" : "DOMINANCE DECISION"); help_y += help_line_h;
     gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("MIC L / MIC R: uno dei due microfoni e' dominante."); help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("OPEN BOTH: nessuna dominanza sufficientemente sicura; entrambi restano aperti."); help_y += help_line_h + 6;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "MIC L / MIC R: uno dei due microfoni e' dominante." :
+      "MIC L / MIC R: one of the two microphones is dominant.");
+    help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "OPEN BOTH: nessuna dominanza sufficientemente sicura; entrambi restano aperti." :
+      "OPEN BOTH: no confident dominance; both stay open.");
+    help_y += help_line_h + 6;
 
     gfx_setfont(3); gfx_a = 1;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("RESPONSE"); help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y; gfx_drawstr(ui_lang == 0 ? "RISPOSTA" : "RESPONSE"); help_y += help_line_h;
     gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Attack: velocita' di apertura."); help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Hold: tempo di mantenimento della scena."); help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Release: ritorno graduale dopo la fine della scena."); help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Lookahead: anticipa la decisione rispetto all'audio."); help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Softness: ammorbidisce la forma della transizione."); help_y += help_line_h + 6;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ? "Attack: velocita' di apertura." : "Attack: opening speed.");
+    help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ? "Hold: tempo di mantenimento della scena." : "Hold: hold duration for the scene.");
+    help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ? "Release: ritorno graduale dopo la fine della scena." : "Release: gradual return to background.");
+    help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ? "Lookahead: anticipa la decisione rispetto all'audio." : "Lookahead: decision lead time.");
+    help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ? "Softness: ammorbidisce la forma della transizione." : "Softness: transition curve shape.");
+    help_y += help_line_h + 6;
 
     gfx_setfont(3); gfx_a = 1;
     gfx_x = help_x; gfx_y = help_y; gfx_drawstr("INPUT"); help_y += help_line_h;
     gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Trim: livello pre-detection del microfono."); help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Low/Hi: correzione tonale."); help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Fase (icona O barrata): inversione di polarita' del canale."); help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ? "Trim: livello pre-detection del microfono." : "Trim: pre-detection gain.");
+    help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ? "Low/Hi: correzione tonale." : "Low/Hi: tonal balance tilt.");
+    help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "Fase (icona O barrata): inversione di polarita' del canale." :
+      "Phase (slashed O icon): polarity inversion.");
+    help_y += help_line_h;
 
   ) : (
 
     gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_a = 1;
     gfx_x = help_x; gfx_y = help_y; gfx_drawstr("MONITOR"); help_y += help_line_h;
     gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("MIX: ascolto normale."); help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("CHECK L / CHECK R: ascolto diagnostico del singolo canale."); help_y += help_line_h + 6;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ? "MIX: ascolto normale." : "MIX: normal listening.");
+    help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "CHECK L / CHECK R: ascolto diagnostico del singolo canale." :
+      "CHECK L / CHECK R: diagnostic audition of the single channel.");
+    help_y += help_line_h + 6;
 
     gfx_setfont(3); gfx_a = 1;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("OUTPUT"); help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y; gfx_drawstr(ui_lang == 0 ? "USCITA" : "OUTPUT"); help_y += help_line_h;
     gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Stereo / Dual Mono: modalita' di uscita."); help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Output L / R: trim dei due canali dopo l'Engine, prima di Dual Mono e Limiter."); help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Link: mantiene l'offset fra L e R; muovendo uno, l'altro segue dello stesso delta."); help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Master: livello globale del mix, prima del Limiter."); help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("Limiter: protezione finale di livello."); help_y += help_line_h + 24;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "Stereo / Dual Mono: modalita' di uscita." :
+      "Stereo / Dual Mono: output mode.");
+    help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "Output L / R: trim dei due canali dopo l'Engine, prima di Dual Mono e Limiter." :
+      "Output L / R: per-channel trim post-Engine, before Dual Mono and Limiter.");
+    help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "Link: mantiene l'offset fra L e R; muovendo uno, l'altro segue dello stesso delta." :
+      "Link: preserves L/R offset; moving one moves the other by the same delta.");
+    help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "Master: livello globale del mix, prima del Limiter." :
+      "Master: global mix level, before the Limiter.");
+    help_y += help_line_h;
+    gfx_x = help_x; gfx_y = help_y;
+    gfx_drawstr(ui_lang == 0 ?
+      "Limiter: protezione finale di livello." :
+      "Limiter: final peak level protection.");
+    help_y += help_line_h + 24;
 
     gfx_setfont(3); gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b; gfx_a = 1;
     gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr("Quando la decisione non e' abbastanza sicura,"); help_y += help_line_h;
+    gfx_drawstr(ui_lang == 0 ?
+      "Quando la decisione non e' abbastanza sicura," :
+      "When the decision is not confident enough,");
+    help_y += help_line_h;
     gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr("Stagekeeper lascia entrambi i microfoni aperti."); help_y += help_line_h + 4;
+    gfx_drawstr(ui_lang == 0 ?
+      "Stagekeeper lascia entrambi i microfoni aperti." :
+      "Stagekeeper keeps both microphones open.");
+    help_y += help_line_h + 4;
     gfx_setfont(5); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 0.85;
     gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr("(When uncertain, Stagekeeper keeps both microphones open.)"); help_y += help_line_h;
+    gfx_drawstr(ui_lang == 0 ?
+      "(In caso di incertezza, la protezione del dialogo e' prioritaria)" :
+      "(When uncertain, dialogue safety takes priority)");
+    help_y += help_line_h;
 
   );
 
-  // Page nav (bottom-right of panel)
+  // Guide button (bottom-left of panel)
   help_nav_y = help_panel_y + help_panel_h - 40;
+  help_guide_x = help_panel_x + 20;
+  help_guide_w = 146; help_guide_h = 26;
+  help_guide_hover = mouse_x >= help_guide_x && mouse_x <= (help_guide_x + help_guide_w) &&
+                     mouse_y >= help_nav_y && mouse_y <= (help_nav_y + help_guide_h);
+  help_guide_hover ? ( gfx_r = panel2_r + 0.08; gfx_g = panel2_g + 0.08; gfx_b = panel2_b + 0.08; ) :
+                     ( gfx_r = panel2_r + 0.02; gfx_g = panel2_g + 0.02; gfx_b = panel2_b + 0.02; );
+  gfx_a = 0.96; gfx_rect(help_guide_x, help_nav_y, help_guide_w, help_guide_h);
+  gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
+  gfx_rect(help_guide_x, help_nav_y, help_guide_w, 1); gfx_rect(help_guide_x, help_nav_y + help_guide_h - 1, help_guide_w, 1);
+  gfx_rect(help_guide_x, help_nav_y, 1, help_guide_h); gfx_rect(help_guide_x + help_guide_w - 1, help_nav_y, 1, help_guide_h);
+  gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+  help_g_lbl = ui_lang == 0 ? "GUIDA COMPLETA ↗" : "FULL GUIDE ↗";
+  gfx_measurestr(help_g_lbl, help_g_tw, help_g_th);
+  gfx_x = help_guide_x + (help_guide_w - help_g_tw) * 0.5; gfx_y = help_nav_y + (help_guide_h - help_g_th) * 0.5;
+  gfx_drawstr(help_g_lbl);
+  help_guide_hover && help_real_click ? ( help_bridge_open(4); );
+
+  // Page nav (bottom-right of panel)
   help_prev_x = help_panel_x + help_panel_w - 20 - 70 - 10 - 70;
   help_next_x = help_panel_x + help_panel_w - 20 - 70;
   help_nav_w = 70; help_nav_h = 26;
@@ -3515,12 +3680,14 @@ help_overlay_open ? (
   gfx_rect(help_next_x, help_nav_y, 1, help_nav_h); gfx_rect(help_next_x + help_nav_w - 1, help_nav_y, 1, help_nav_h);
 
   gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_measurestr("< PREV", help_nav_tw, help_nav_th);
+  help_p_lbl = ui_lang == 0 ? "< PREC" : "< PREV";
+  help_n_lbl = ui_lang == 0 ? "SUCC >" : "NEXT >";
+  gfx_measurestr(help_p_lbl, help_nav_tw, help_nav_th);
   gfx_x = help_prev_x + (help_nav_w - help_nav_tw) * 0.5; gfx_y = help_nav_y + (help_nav_h - help_nav_th) * 0.5;
-  gfx_drawstr("< PREV");
-  gfx_measurestr("NEXT >", help_nav_tw, help_nav_th);
+  gfx_drawstr(help_p_lbl);
+  gfx_measurestr(help_n_lbl, help_nav_tw, help_nav_th);
   gfx_x = help_next_x + (help_nav_w - help_nav_tw) * 0.5; gfx_y = help_nav_y + (help_nav_h - help_nav_th) * 0.5;
-  gfx_drawstr("NEXT >");
+  gfx_drawstr(help_n_lbl);
 
   help_prev_hover && help_real_click ? ( help_page = max(0, help_page - 1); );
   help_next_hover && help_real_click ? ( help_page = min(1, help_page + 1); );

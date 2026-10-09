@@ -20,8 +20,15 @@ Documentazione:
 Toolbar:
 toolbar/ZP_StudioSuite.ReaperMenu
 Customize toolbar > Import > ZP_StudioSuite.ReaperMenu
-Quattordici pulsanti, icone ZP nel formato REAPER a tre stati.
+Diciassette pulsanti (installali con 32 Installa toolbar), icone ZP a tre stati.
 Le 23 action operative hanno un'icona dedicata.
+Colori: 35 ZP Colori (pulsante tavolozza) e' una finestrella con modo Item,
+Traccia o Tutto, 20 colori e Togli colore. Selezioni, clicchi un colore.
+La stessa cosa come toolbar fissa (facoltativa) si installa dal 33 Benvenuto.
+
+Set di scorciatoie: 34 ZP Set Comandi (pulsante tastiera) mostra cosa fa ogni
+set, salva i tasti attuali come set e passa da un set all'altro (video, Pro Tools, Logic, tuoi). Cambia solo i tasti, con
+backup automatico; il set vale dal riavvio di REAPER.
 
 
 COMPONENTI OPZIONALI

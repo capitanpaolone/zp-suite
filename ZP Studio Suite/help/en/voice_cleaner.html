@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZP Studio Suite - Silence Split / Voice Cleaner</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f7f4;
+      --paper: #ffffff;
+      --ink: #202024;
+      --muted: #5e6068;
+      --line: #d9d9d2;
+      --accent: #245ba6;
+      --accent-soft: #eaf1fb;
+      --code: #ecece8;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #101217;
+        --paper: #171a21;
+        --ink: #eceff4;
+        --muted: #adb2bd;
+        --line: #303541;
+        --accent: #77a9ff;
+        --accent-soft: #172236;
+        --code: #232834;
+      }
+    }
+    body {
+      margin: 0;
+      padding: 28px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.48;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    main { max-width: 980px; margin: 0 auto; }
+    h1 { font-size: 28px; margin: 0 0 8px; }
+    h2 { font-size: 21px; margin: 34px 0 10px; border-top: 1px solid var(--line); padding-top: 22px; }
+    h3 { font-size: 17px; margin: 18px 0 6px; }
+    p { margin: 8px 0; }
+    ul, ol { padding-left: 22px; }
+    li { margin: 6px 0; }
+    code {
+      background: var(--code);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.94em;
+    }
+    .lead { color: var(--muted); font-size: 16px; max-width: 760px; }
+    .note {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 10px 14px;
+      margin: 14px 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin: 12px 0;
+    }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+  </style>
+<style id="lc-firma">
+.lc-testata{display:flex;align-items:center;gap:.5rem;margin:0 0 .4rem;font:600 .78rem/1.2 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  letter-spacing:.08em;text-transform:uppercase;color:#565F66}
+.lc-testata a{color:inherit;text-decoration:none}.lc-testata a:hover{color:#A94F35}
+.lc-logo{width:22px;height:22px;flex:none}
+.lc-filetto{border:0;border-top:2px solid #A94F35;margin:.6rem 0 1.4rem}
+.lc-piede{display:flex;align-items:center;gap:.6rem;margin:3rem 0 1rem;padding:.8rem 1rem;border:1px solid #CFCCC3;
+  border-radius:6px;background:#FAF9F5;color:#37444E;font:.95rem/1.4 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+.lc-piede a{color:#8F4630}
+@media (prefers-color-scheme: dark){
+  .lc-testata{color:#9aa4ac}.lc-piede{background:#1d2226;border-color:#2e3439;color:#c9cfd4}.lc-piede a{color:#d98b6f}
+}
+</style>
+</head>
+<body>
+<main>
+  <!-- lc-testata --><div class="lc-testata"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><a href="https://latocardioide.it/strumenti/">Lato Cardioide</a> &middot; Tools</div><!-- /lc-testata -->
+<h1>ZP Studio Suite - Silence Split / Voice Cleaner</h1>
+  
+
+<!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
+<p class="lead">Mini suite to clean leads and tails, separate long takes, and prepare voiceover files without manually editing every single pause.</p>
+
+  <h2>Overview</h2>
+  <ul>
+    <li><strong>Tail cleaning:</strong> removes long silence before and after a take.</li>
+    <li><strong>Split long recordings:</strong> divides takes into phrases or spoken blocks.</li>
+    <li><strong>Voiceover take preparation:</strong> creates tidy, renamed items with gentle fades.</li>
+  </ul>
+
+  <h2>Quick Workflow</h2>
+  <ol>
+    <li>Select one or more audio items in the REAPER timeline.</li>
+    <li>Select <code>VO Smart</code>.</li>
+    <li>Click <code>ANALYZE</code>.</li>
+    <li>Check segments, speech duration, and <code>Audio OK</code> status.</li>
+    <li>Use <code>PREVIEW</code> to create temporary regions and verify splits.</li>
+    <li>Click <code>APPLY</code> only when the result looks right.</li>
+  </ol>
+
+  <div class="note">
+    <p><strong>Rule of thumb:</strong> if <code>Audio read</code> is not OK, the tool applies no modifications. First ensure audio can be read, then adjust parameters.</p>
+  </div>
+
+  <div class="note">
+    <p><strong>When Advanced is closed:</strong> advanced parameters do not act. Ignore click, Min segment, Merge gap, Sequence spacing, and File spacing take effect only when you expand <code>Advanced Options / Output</code>.</p>
+  </div>
+
+  <h2>Modes</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Head/Tail Trim</h3>
+      <p>Trims the item from first speech to last speech. Ideal to remove head/tail room tone while keeping the performance body intact.</p>
+    </div>
+    <div class="card">
+      <h3>Split Internal Silences</h3>
+      <p>Creates separate items for detected spoken sections and removes long pauses between sentences.</p>
+    </div>
+  </div>
+
+  <h2>Presets</h2>
+  <ul>
+    <li><code>VO Smart</code>: standard voiceover setting, great starting point.</li>
+    <li><code>Gentle</code>: conservative, preserves more breathing space and tails.</li>
+    <li><code>Tight</code>: aggressive, tighter cuts.</li>
+    <li><code>Manual</code>: direct threshold control.</li>
+  </ul>
+
+  <h2>Parameters in Plain Terms</h2>
+  <ul>
+    <li><strong>Auto/Manual:</strong> in Auto the tool estimates threshold from background noise; in Manual it uses your configured value.</li>
+    <li><strong>Threshold:</strong> minimum speech level. Higher = fewer segments, lower = higher sensitivity.</li>
+    <li><strong>Min silence:</strong> minimum silence length required to end a speech segment.</li>
+    <li><strong>Gate open:</strong> minimum sound duration before speech is recognized.</li>
+    <li><strong>Gate hold:</strong> duration gate remains open during brief inter-word pauses.</li>
+    <li><strong>Ignore click:</strong> Advanced option. At <code>OFF</code> keeps all transient events; increasing ignores very short noises, mouth clicks, and isolated thumps.</li>
+    <li><strong>Min segment:</strong> Advanced option. At <code>OFF</code> does not filter by minimum duration; increasing discards tiny fragments.</li>
+    <li><strong>Merge gap:</strong> Advanced option. At <code>OFF</code> does not merge neighboring segments; increasing fuses segments separated by brief pauses.</li>
+    <li><strong>Pre-roll:</strong> margin retained before speech start.</li>
+    <li><strong>Post-roll:</strong> margin retained after speech end.</li>
+    <li><strong>Fade:</strong> short crossfade applied to created items.</li>
+    <li><strong>File spacing:</strong> Advanced option. Gap between created takes when choosing <code>Sequence spacing</code>. Not applied with <code>Original position</code> or when Advanced is closed.</li>
+  </ul>
+
+  <h2>Knobs and Controls</h2>
+  <ul>
+    <li>Drag a knob up or down to adjust values.</li>
+    <li>Hold <code>Shift</code> for fine adjustments.</li>
+    <li>Double click or right click a knob to reset to the active preset default.</li>
+    <li>Mouse wheel adjusts the value when hovering over a knob.</li>
+  </ul>
+
+  <h2>Practical Examples</h2>
+  <h3>Long file with many separate lines</h3>
+  <p>Use <code>VO Smart</code> and <code>Split Internal Silences</code>. If lines are broken into fragments, raise <code>Gate hold</code>; if needed, open Advanced and test <code>Merge gap</code>.</p>
+
+  <h3>Clean head and tail only</h3>
+  <p>Use <code>Head/Tail Trim</code>. The tool keeps everything between the first and last speech events.</p>
+
+  <h3>Tool cuts too aggressively</h3>
+  <p>Try <code>Gentle</code>, lower threshold, or raise <code>Post-roll</code>, <code>Gate hold</code>, or <code>Merge gap</code>.</p>
+
+  <h3>No segments detected</h3>
+  <p>Verify that <code>Audio OK</code> is green. Then try a lower threshold or the <code>Manual</code> preset.</p>
+
+  <h3>Too many segments created</h3>
+  <p>Raise <code>Min silence</code>, <code>Gate hold</code>, or <code>Merge gap</code>. If room noise triggers false positives, raise threshold.</p>
+
+  <h2>Safety Guarantees</h2>
+  <ul>
+    <li><code>PREVIEW</code> creates temporary red regions <code>ZPSS22_PREVIEW</code> on the timeline.</li>
+    <li><code>PREVIEW</code> is available only with <code>Original position</code>. In <code>Sequence spacing</code>, placement is computed upon Apply.</li>
+    <li><code>CLEAR PREVIEW</code> removes only these temporary preview regions.</li>
+    <li><code>APPLY</code> operates within a REAPER Undo block.</li>
+    <li>Without valid segments, the tool neither alters nor removes items.</li>
+    <li>A single Undo step reverts the entire operation.</li>
+  </ul>
+
+  <h2>Troubleshooting</h2>
+  <ul>
+    <li><strong>Unreadable audio:</strong> verify selected item is audio and has an active take.</li>
+    <li><strong>Max peak -120 dB:</strong> REAPER returns all zero samples; check offline media, muted take, or missing source.</li>
+    <li><strong>No speech detected:</strong> audio read cleanly but threshold/gate detects no sections; lower threshold.</li>
+    <li><strong>Threshold too high:</strong> few or no sentences recognized.</li>
+    <li><strong>Threshold too low:</strong> room tone and breaths turned into segments.</li>
+    <li><strong>Offline item:</strong> relink media in REAPER and click <code>ANALYZE</code> again.</li>
+    <li><strong>MIDI / non-audio take:</strong> select an actual audio item.</li>
+    <li><strong>Missing file:</strong> check source path in Project Bay / Media Bay.</li>
+  </ul>
+
+  <h2>Debug</h2>
+  <p>The <code>Debug</code> toggle is disabled by default. When OFF, the console stays closed and compact telemetry is shown. When ON, detailed AudioAccessor calls, windows, peak/RMS data, and technical diagnostic logs are printed to the console.</p>
+<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Developed from an idea by Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
+</main>
+</body>
+</html>

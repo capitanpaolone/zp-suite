@@ -2,6 +2,16 @@
 // @version 4.1.6
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
+// @about
+//   ### ZP Voiceover Unified Chain
+//   Catena completa di elaborazione vocale integrata per voiceover, doppiaggio, audiolibri e podcast:
+//   Input Smart Capture, Expander, 1175 FET, LA-2A Opto, Major Tom, Brown Guard tonale e Voice Limiter.
+//
+//   Comprehensive integrated voice processing chain for voiceover, narration, and podcasting:
+//   Smart Input, Expander, 1175 FET, LA-2A Opto, Major Tom, Brown Guard, and True Peak Limiting.
+//
+//   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
+//   Guida completa: ZP Studio Suite/help/index.html#plugin-unified-chain
 // @changelog
 //   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
 //   Anelli circolari di rilevamento dal vivo su Gate, 1175, Major Tom e Limiter Ceiling.
@@ -489,6 +499,19 @@ function zp_bus_refresh(plugin_id) (
   zp_bus_boot(); gmem[plugin_id]=905000+plugin_id; gmem[plugin_id+1]=time_precise(); gmem[plugin_id+2]+=1; zp_bus_read();
 );
 zp_bus_refresh(ZP_BUS_ID);
+help_bridge_alive = 0;
+help_warn_until = 0;
+ui_lang = 0;
+
+function help_bridge_open(plugin_id) (
+  zp_hb_ok ? (
+    gmem[3902] = plugin_id;
+    gmem[3903] += 1;
+    help_warn_until = 0;
+  ) : (
+    help_warn_until = time_precise() + 4.0;
+  );
+);
 ext_tail_size = -1;
 ext_noinit = 1;
 last_profile = -100;
@@ -2494,6 +2517,10 @@ ext_gr_meter = c1175_gr_db + la2_gr_db + mt_gr_db;
 
 
 @gfx 792 1300
+// Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
+zp_hb = gmem[3900]; zp_hb_now = time_precise();
+!zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
+zp_hb_ok = zp_hb > 0 && zp_hb_now - zp_hb_t < 3;
 
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║  MANUALE OPERATIVO — Voiceover Unified Chain ZP v4.1.0-bus-tone-beta ║
@@ -2914,6 +2941,22 @@ local(hover, state, _tw, _th)
   gfx_set(0.88,0.88,0.88,1); gfx_setfont(1,"Arial",12);
   gfx_measurestr("DBG",_tw,_th);
   gfx_x=x+floor((w-_tw)*0.5); gfx_y=y+floor((h-_th)*0.5); gfx_drawstr("DBG");
+);
+
+function ui_help_btn(x, y, w, h, hover_id)
+local(hover, _tw, _th)
+(
+  hover = hit(x,y,w,h);
+  hover ? ui_set_hover(hover_id);
+  !ui_render_only && hover && mouse_click ? ( help_bridge_open(6); );
+  hover ? gfx_set(0.24,0.52,0.92,1) : gfx_set(0.18,0.22,0.28,1);
+  gfx_rect(x,y,w,h);
+  gfx_set(0.12,0.36,0.72,0.8);
+  gfx_rect(x,y,w,1); gfx_rect(x,y+h-1,w,1);
+  gfx_rect(x,y,1,h); gfx_rect(x+w-1,y,1,h);
+  gfx_set(0.92,0.94,0.98,1); gfx_setfont(1,"Arial",12,'b');
+  gfx_measurestr("?",_tw,_th);
+  gfx_x=x+floor((w-_tw)*0.5); gfx_y=y+floor((h-_th)*0.5); gfx_drawstr("?");
 );
 
 // ═══════════════════════════════════════════════════════════════
@@ -4442,6 +4485,8 @@ local(tip_y)
   gfx_set(0.055,0.065,0.075,1); gfx_rect(0,tip_y,gfx_w,TIP_H);
   gfx_set(0.16,0.44,0.86,0.55); gfx_rect(0,tip_y,gfx_w,1);
 
+  time_precise() < help_warn_until ? strcpy(#_tip_msg, ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Studio Suite" : "Open Cue Navigator or ZP Suite help") :
+  ui_hover_id==100 ? strcpy(#_tip_msg, ui_lang == 0 ? "?: apre la guida completa alla Voiceover Unified Chain nel browser" : "?: opens full Voiceover Unified Chain guide in browser") :
   ui_hover_id==101 ? strcpy(#_tip_msg,"GUI: vista grafica pannelli modulo con knob interattivi e meter") :
   ui_hover_id==102 ? strcpy(#_tip_msg,"JSFX: vista host Reaper - pannello Output sempre visibile in fondo") :
   ui_hover_id==103 ? strcpy(#_tip_msg,"DBG: overlay diagnostica DSP - valori interni della catena") :
@@ -4550,7 +4595,7 @@ local(tip_y)
   ui_hover_id==9031 ? strcpy(#_tip_msg,"+Off Ref: offset voce sopra la musica in dB; valore tipico +6 dB voce chiara, +4 dB narrazione") :
   ui_hover_id==9040 ? strcpy(#_tip_msg,"Final Limiter ON/OFF: OFF = bypass reale del limiter di sicurezza post-Output; il segnale puo' superare 0 dBFS floating point") :
   ui_hover_id==9015 ? strcpy(#_tip_msg,"RST: click singolo, azzera tutti i parametri Output ai valori di default e deseleziona il preset attivo") :
-  strcpy(#_tip_msg,"VUC ZP v4.1.5 | circular threshold meters");
+  strcpy(#_tip_msg, ui_lang == 0 ? "VOICEOVER UNIFIED CHAIN · Livellatore Vocale Multistadio" : "VOICEOVER UNIFIED CHAIN · Multistage Voice Leveler");
 
   draw_tip_message(tip_y);
 );
@@ -4561,6 +4606,8 @@ local(tip_y)
 
 // Force fixed window size — unconditional every frame
 gfx_setimgdim(-1, 792, 1300);
+help_bridge_alive = zp_hb_ok;
+ui_lang = (gmem[3901] == 1) ? 1 : 0;
 
 // One-time init
 gfx_init_done ? 0 : (
@@ -4877,6 +4924,7 @@ ui_io_btn(128,HBTN_X+(HBTN_W+HBTN_G)*7,RY2,HBTN_W,16,"8-OUT", 227, 0.20,0.54,0.9
 ui_dbg_btn(HBTN_X, RY3, 44, 20, 103);
 ui_tab_button(52,0,HBTN_X+47,             RY3,TNAV_W,20,"GUI", 0.18,0.45,0.90,101);
 ui_tab_button(52,1,HBTN_X+47+TNAV_W+4,   RY3,TNAV_W,20,"JSFX",0.18,0.45,0.90,102);
+ui_help_btn(HBTN_X+47+(TNAV_W+4)*2,      RY3, 22, 20, 100);
 ui_render_only = 0;
 
 ); // end gfx_view_i==0
@@ -4885,24 +4933,25 @@ ui_render_only = 0;
 gfx_view_i == 1 ? (
   HDR_H = 36; HDR_Y = 8;
   gfx_set(0.10,0.10,0.12,1); gfx_rect(10,HDR_Y,gfx_w-20,HDR_H);
-  ui_tab_button(52,0,gfx_w-154,14,66,20,"GUI", 0.18,0.45,0.90,101);
-  ui_tab_button(52,1,gfx_w-82, 14,66,20,"JSFX",0.18,0.45,0.90,102);
+  ui_tab_button(52,0,gfx_w-180,14,64,20,"GUI", 0.18,0.45,0.90,101);
+  ui_tab_button(52,1,gfx_w-112,14,64,20,"JSFX",0.18,0.45,0.90,102);
+  ui_help_btn(gfx_w-44,        14,24,20,100);
   // BRN/OUT on/off toggles visible in JSFX view header
-  ui_mod_on(57, gfx_w-292, 14, 62, 20, "BRN", 218, 0.18, 0.78, 0.68);
-  ui_mod_on(56, gfx_w-224, 14, 62, 20, "OUT", 217, 0.20, 0.54, 0.92);
+  ui_mod_on(57, gfx_w-318, 14, 62, 20, "BRN", 218, 0.18, 0.78, 0.68);
+  ui_mod_on(56, gfx_w-250, 14, 62, 20, "OUT", 217, 0.20, 0.54, 0.92);
   apply_host_slider_visibility(1);
   VX=10; VY=HDR_Y+HDR_H+4; VW=gfx_w-20;
   PBH=24; PBY=max(VY+88, gfx_h - TIP_H - PBH - 6);
   VH=max(60, PBY - VY - 4);
   gfx_set(0.09,0.09,0.11,1); gfx_rect(VX,VY,VW,VH);
   gfx_setfont(1,"Arial",14,'b'); gfx_set(0.88,0.90,0.94,1);
-  gfx_x=VX+16; gfx_y=VY+16; gfx_drawstr("JSFX HOST VIEW ACTIVE");
+  gfx_x=VX+16; gfx_y=VY+16; gfx_drawstr(ui_lang == 0 ? "VISTA HOST JSFX ATTIVA" : "JSFX HOST VIEW ACTIVE");
   gfx_setfont(1,"Arial",11); gfx_set(0.68,0.72,0.76,1);
   profile_nm=profile==1?"Natural":profile==2?"Broadcast":profile==3?"Dense":profile==4?"Warm":profile==5?"Match":profile==6?"Flat":"Manual";
   sprintf(#,"Profile: %s   LUFS-I %.1f   RMS %.1f",profile_nm,ui_global_lufs_i,ui_global_rms_db);
   gfx_x=VX+16; gfx_y=VY+44; gfx_drawstr(#);
   gfx_setfont(1,"Arial",10); gfx_set(0.50,0.58,0.64,1);
-  gfx_x=VX+16; gfx_y=VY+66; gfx_drawstr("Usa i cursori host per modificare i parametri. Il pannello Output e' in fondo.");
+  gfx_x=VX+16; gfx_y=VY+66; gfx_drawstr(ui_lang == 0 ? "Usa i cursori host per modificare i parametri. Il pannello Output e' in fondo." : "Use host sliders to adjust parameters. Output panel is at the bottom.");
 
   // Fixed JSFX module navigation bar: stable position regardless of host slider list height.
   gfx_set(0.07,0.08,0.10,1); gfx_rect(10,PBY-2,gfx_w-20,PBH+4);

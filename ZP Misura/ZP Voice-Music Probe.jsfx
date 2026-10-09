@@ -2,6 +2,16 @@
 // @version 1.1
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
+// @about
+//   ### ZP Voice-Music Probe
+//   Sonda telemetrica passiva per bus voce e musica su memoria condivisa gmem (ZP Shared Bus):
+//   misura RMS, picco, crest factor, densita', brillantezza e speech activity senza toccare l'audio o la latenza.
+//
+//   Passive telemetry probe for voice and music buses using gmem shared memory (ZP Shared Bus):
+//   tracks RMS, peak, crest factor, density, brightness, and speech activity with zero latency and no audio alteration.
+//
+//   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
+//   Guida completa: ZP Studio Suite/help/index.html#plugin-probe
 // @changelog
 //   Role Switch Fix: il cambio VOICE/MUSIC funziona a trasporto fermo, dalla GUI e dal Chain Builder.
 desc:ZP Voice-Music Probe - Passive Bus Telemetry - Paolo Balestri
@@ -14,6 +24,20 @@ slider1:probe_mode=0<0,1,1{Voice Probe,Music Probe}>Probe role
 // ZP Probe misura il risultato reale del bus. Non modifica audio, gain o latenza.
 
 @init
+help_bridge_alive = 0;
+help_warn_until = 0;
+ui_lang = 0;
+
+function help_bridge_open(plugin_id) (
+  zp_hb_ok ? (
+    gmem[3902] = plugin_id;
+    gmem[3903] += 1;
+    help_warn_until = 0;
+  ) : (
+    help_warn_until = time_precise() + 4.0;
+  );
+);
+
 ZP_BUS_MAGIC=905026;
 ZP_BUS_VERSION=220;
 ZP_BUS_FRESH_SEC=12;
@@ -116,6 +140,13 @@ speech_env=speech_target+(speech_env-speech_target)*speech_c;
 probe_speech=clamp(speech_env*100,0,100);
 
 @gfx 520 250
+// Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
+zp_hb = gmem[3900]; zp_hb_now = time_precise();
+!zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
+zp_hb_ok = zp_hb > 0 && zp_hb_now - zp_hb_t < 3;
+help_bridge_alive = zp_hb_ok;
+ui_lang = (gmem[3901] == 1) ? 1 : 0;
+
 // Keep GUI and externally-set parameter synchronized even when REAPER is stopped.
 _role_now=max(0,min(1,floor(slider1+0.5)));
 _role_now!=probe_mode ? set_probe_role(_role_now);
@@ -136,14 +167,36 @@ _voice_hit=mouse_x>=_voice_x&&mouse_x<=_voice_x+_btn_w&&mouse_y>=_btn_y&&mouse_y
 _music_hit=mouse_x>=_music_x&&mouse_x<=_music_x+_btn_w&&mouse_y>=_btn_y&&mouse_y<=_btn_y+_btn_h;
 _mouse_click&&_voice_hit&&probe_mode!=0 ? (set_probe_role(0); sliderchange(slider1););
 _mouse_click&&_music_hit&&probe_mode!=1 ? (set_probe_role(1); sliderchange(slider1););
+
+// Help button (?)
+_help_w=22; _help_h=22; _help_x=gfx_w-32; _help_y=16;
+_help_hit=mouse_x>=_help_x && mouse_x<=_help_x+_help_w && mouse_y>=_help_y && mouse_y<=_help_y+_help_h;
+_help_hit ? (
+  gfx_set(0.18,0.52,0.88,0.35); gfx_circle(_help_x+11,_help_y+11,11,1);
+  gfx_set(1,1,1,0.95);
+) : (
+  gfx_set(0.25,0.28,0.35,0.4); gfx_circle(_help_x+11,_help_y+11,11,1);
+  gfx_set(0.72,0.76,0.82,0.85);
+);
+gfx_circle(_help_x+11,_help_y+11,11,0);
+gfx_setfont(1,"Arial",12,'b');
+gfx_measurestr("?",_htw,_hth);
+gfx_x=_help_x+(_help_w-_htw)*0.5; gfx_y=_help_y+(_help_h-_hth)*0.5;
+gfx_drawstr("?");
+_mouse_click && _help_hit ? ( help_bridge_open(11); );
+
 last_mouse_cap=mouse_cap;
 
 bus_read();
 bus_connection_state==2 ? gfx_set(0.25,0.90,0.58,1) : bus_connection_state==1 ? gfx_set(1.0,0.72,0.20,1) : gfx_set(1.0,0.30,0.25,1);
 gfx_circle(220,27,5,1); gfx_setfont(1,"Arial",10,'b'); gfx_x=232; gfx_y=20;
-bus_connection_state==2 ? gfx_drawstr("BUS CONNECTED") : bus_connection_state==1 ? gfx_drawstr("BUS DATA OLD") : gfx_drawstr("BUS OFFLINE");
+bus_connection_state==2 ? gfx_drawstr(ui_lang == 0 ? "BUS COLLEGATO" : "BUS CONNECTED") :
+bus_connection_state==1 ? gfx_drawstr(ui_lang == 0 ? "DATI BUS VECCHI" : "BUS DATA OLD") :
+                          gfx_drawstr(ui_lang == 0 ? "BUS NON ATTIVO" : "BUS OFFLINE");
 gfx_setfont(1,"Arial",13);
-gfx_set(0.62,0.68,0.78,1); gfx_x=18; gfx_y=54; gfx_drawstr("Misura passiva post-chain.");
+gfx_set(0.62,0.68,0.78,1); gfx_x=18; gfx_y=54;
+gfx_drawstr(ui_lang == 0 ? "Misura passiva post-catena." : "Passive post-chain measurement.");
+
 function metric(label,val,unit,x,y) (
   gfx_set(0.22,0.25,0.31,1); gfx_rect(x,y,150,52);
   gfx_set(0.56,0.64,0.76,1); gfx_setfont(1,"Arial",10,'b'); gfx_x=x+10; gfx_y=y+7; gfx_drawstr(label);
@@ -155,4 +208,12 @@ metric("CREST",probe_crest_db," dB",338,82);
 metric("DENSITY",probe_density," %",18,144);
 metric("BRIGHTNESS",probe_brightness_db," dB",178,144);
 probe_mode<0.5 ? metric("SPEECH",probe_speech," %",338,144) : metric("ROLE",1," MUSIC",338,144);
-gfx_set(0.40,0.44,0.52,1); gfx_setfont(1,"Arial",10); gfx_x=18; gfx_y=gfx_h-24; gfx_drawstr("ZP Shared Bus v2 | Probe deve essere l'ultimo FX del bus.");
+
+time_precise() < help_warn_until ? (
+  gfx_set(1.0,0.72,0.20,0.96); gfx_setfont(1,"Arial",10,'b');
+  gfx_x=18; gfx_y=gfx_h-38;
+  gfx_drawstr(ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Studio Suite" : "Open Cue Navigator or ZP Suite help");
+);
+
+gfx_set(0.40,0.44,0.52,1); gfx_setfont(1,"Arial",10); gfx_x=18; gfx_y=gfx_h-20;
+gfx_drawstr(ui_lang == 0 ? "ZP Shared Bus v2 | La Probe deve essere l'ultimo FX del bus." : "ZP Shared Bus v2 | Probe must be the last FX in the bus.");

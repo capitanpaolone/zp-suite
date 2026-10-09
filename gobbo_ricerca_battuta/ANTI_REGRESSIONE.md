@@ -67,11 +67,24 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
   sezione della toolbar "ZP Studio Suite" (backup accanto) e chiede di riavviare. REAPER riscrive il file solo
   quando si modificano menu/toolbar (non ad avvio o chiusura): fino al riavvio niente Customize toolbars.
   L'Import di REAPER non porta il nome della toolbar se la si importa in un'altra toolbar.
+- I file .ini di REAPER (reaper-menu.ini & co.) si leggono RIGA PER RIGA, sezione per sezione. Un pattern su tutto
+  il testo tipo `\n%[sezione%]\n(.-)\n%f[%[]` consuma la riga vuota fra due sezioni e salta una sezione si' e una
+  no: il 32 vedeva libere toolbar piene (trovato il 2026-10-09 aggiungendo ZP Colori; test_installa_toolbar).
+  Stesso errore nel 33 (toolbar_slot): diceva "Floating toolbar 23" invece della 32; e cercava solo icone `ZP_tb_`,
+  non le nuove `ZP_tbB_`. Ora M.menu_sections (riga per riga). Chi legge reaper-menu.ini usa quella.
+- Mai `git stash` in questo repo: c'e' uno stash vecchio di Paolo (stagekeeper-wip) e con file `git add -N` lo stash
+  non si crea e `stash pop` prova ad applicare quello vecchio (2026-10-09, fermato senza danni).
+- Il 32 scrive la toolbar "ZP Studio Suite" e, SOLO se chiesta dal 33 (ExtState ZP_STUDIO_SUITE/toolbar_colori=1) o gia'
+  presente, "ZP Colori" (pick_slot con il titolo). Di serie i colori sono nella finestrella 35. Pulsanti di ZP Colori =
+  script in colori/ che leggono dal proprio nome cosa fare: non rinominarli (il 32 e la toolbar li cercano per nome).
 - Backup in `gobbo_ricerca_battuta/backup/` prima di modifiche grosse; ogni cambio in MEMORIA.md.
 
 ## REAPER (cose verificate, non intuitive)
 - `utf8.offset(s, n, i)` va in errore se i cade a meta' di una lettera UTF-8 (crash Backspace nel Gobbo, 2026-10-07):
   per muovere il cursore usare Utf8PrevCursor/Utf8NextCursor dei Gobbi (scorrono i byte a mano).
+- Lua: una funzione locale (es. `set_color` in ZP_UI) esiste solo DOPO la riga che la definisce; usata prima diventa
+  una globale nil e lo script si ferma ('attempt to call a nil value', firma UI.draw_credit, 2026-10-09). Controllo:
+  `luac -l -p file.lua | grep 'GETTABUP.*_ENV "nome"'` non deve trovare helper locali.
 - `gfx.setclip` NON esiste (inventata da Codex nel Passo 2 ricerca, crash all'apertura del pannello, 2026-10-07). Per tagliare il testo:
   `gfx.drawstr(s, 0, right, bottom)` (clip a gfx.x,gfx.y,right,bottom). Controlla ogni funzione gfx/reaper nuova sulla documentazione.
 - 40850 = "Item: Show notes for items" (NON le note del progetto). Le note del progetto non hanno
@@ -95,6 +108,10 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
   e si chiudono a mano ai `MB` bloccanti; OSARA (`osara_outputMessage`) per l'accessibilita'.
 
 ## JSFX / EEL2
+- Dopo ogni modifica a un JSFX: run_all controlla le parentesi (test/parentesi_jsfx.py). Sostituzioni automatiche nel codice
+  EEL2: espressione esatta, mai pattern con parentesi facoltative (una regex si e' mangiata la '(' di un corpo funzione, 2026-10-10).
+- Funzioni usate in @gfx: definirle in @init o all'inizio di @gfx, MAI in @sample/@block (lo Stagekeeper l'aveva in fondo a
+  @sample, 2026-10-10). Le funzioni definite in @init valgono ovunque.
 - Niente notazione scientifica (`1e-30`): calcolare la costante in @init.
 - Assegnazioni dentro `?:` sempre tra parentesi. `slider_show` vuole la maschera `2^(n-1)`.
 
@@ -105,6 +122,13 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
   8320 backup cue, 8400-8431 tabella Partenza, 8440-8442 stato fonti SC, 8460-8523 selezione ELIMINA,
   16384-49151 lookahead).
 - gmem del Carver: 72 celle per FX (`base+0..71`), mai oltre `+71` (sarebbe l'FX successivo). `+71` = routing SC (helper).
+- Mappa gmem complessiva (options:gmem=ZPVoiceoverSharedBus):
+  - 0..606: Shared Bus telemetria / profili (Probe, BUS Chain, Spoken Finish, Unified Chain, Master Pro)
+  - 3800..3899: casella comune comandi HSC Carver (3800 destinatario, 3801 comando, 3802 pos, 3803 seq, 3804 ack)
+  - 3900..3919: casella PONTE HELP / LINGUA (3900 ponte vivo / heartbeat incrementale, 3901 lingua 0=IT 1=EN, 3902 req_plugin 1..11, 3903 req_seq, 3904 ack_seq, 3905 ack_status; 3906..3919 riserva)
+  - 4032..4095: maschere cue per-traccia Carver
+  - 4096..8300000: istanze Carver per traccia/posizione (4096 + (traccia+2)*4096 + fx*72)
+  - 8310000..8378476: slot Carver unici assegnati dall'helper (slot 1-900)
 - Un JSFX non vede pin mapping, invii o folder: solo `num_ch`. Quello che dipende dal routing lo legge l'helper.
   I comandi da tasti/helper passano dalla casella comune 3800-3899 (lo Shared Bus usa fino a ~606).
 - GUI JSFX: prima di aggiungere un pannello, mappa le coordinate di TUTTO cio' che e' gia' disegnato

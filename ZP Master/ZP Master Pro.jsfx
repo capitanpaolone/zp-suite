@@ -2,6 +2,16 @@
 // @version 2.45
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
+// @about
+//   ### ZP Master Pro
+//   Processore di mastering integrato con Tape Glue, Compressore Glue Matrix, Tone Guard dinamico,
+//   Limiter lookahead brickwall, metering broadcast LUFS/LRA/True-Peak e Auto dB Target.
+//
+//   Integrated master processor featuring Tape Glue, Glue Matrix compressor, dynamic Tone Guard,
+//   brickwall lookahead limiter, broadcast LUFS/LRA/True-Peak metering, and Auto dB Target leveling.
+//
+//   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
+//   Guida completa: ZP Studio Suite/help/index.html#plugin-master-pro
 // @changelog
 //   Anelli circolari di soglia su compressore e ceiling del limiter.
 //   ISP Guard: picchi interpolati 2x/4x per tenere limiter e safety lontani dal soffitto.
@@ -131,6 +141,21 @@ ui_layout_schema != 2 ? (
   ui_layout_schema=2;
 );
 (ui_show_engine<0.5 && ui_show_meter<0.5 && ui_show_nav<0.5) ? ui_show_meter=1;
+
+help_bridge_alive = 0;
+help_warn_until = 0;
+ui_lang = 0;
+
+function help_bridge_open(plugin_id) (
+  zp_hb_ok ? (
+    gmem[3902] = plugin_id;
+    gmem[3903] += 1;
+    help_warn_until = 0;
+  ) : (
+    help_warn_until = time_precise() + 4.0;
+  );
+);
+
 function zp_bus_boot() (
   gmem[0] != ZP_BUS_MAGIC || gmem[1] < ZP_BUS_VERSION ? (
     gmem[0] = ZP_BUS_MAGIC;
@@ -1609,6 +1634,10 @@ lra_tick_cnt+=1;lra_tick_cnt>=lra_tick_rate?(lra_tick_cnt=0;meter_play_state?(
 ext_gr_meter=mt_gr_db;
 
 @gfx 900 1345
+// Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
+zp_hb = gmem[3900]; zp_hb_now = time_precise();
+!zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
+zp_hb_ok = zp_hb > 0 && zp_hb_now - zp_hb_t < 3;
 
 // ═══════════════════════════════════════════════════════════════════
 // ZP Master Pro — GUI  (VUC v4.0 style)  v0.2
@@ -1729,6 +1758,9 @@ play_state>0?(
   );
 );
 ui_prev_play_state=play_state;
+
+help_bridge_alive = zp_hb_ok;
+ui_lang = (gmem[3901] == 1) ? 1 : 0;
 
 gfx_set(0.09,0.08,0.07,1);gfx_rect(0,0,gfx_w,gfx_h);
 btn_down=mouse_cap&1;
@@ -3440,7 +3472,21 @@ glue_help_open>=0.5?(
   gfx_set(0.72,0.82,0.92,1);gfx_x=_hpx+24;gfx_y=_hpy+258;gfx_drawstr("Texture: SM morbido, API punch, SSA piu' compatto.");
   gfx_set(0.72,0.92,0.82,1);gfx_x=_hpx+24;gfx_y=_hpy+290;gfx_drawstr("ISP OFF/2x/4x e' detection interpolata globale, non uno stadio audio.");
   gfx_set(0.88,0.78,0.62,1);gfx_x=_hpx+24;gfx_y=_hpy+334;gfx_drawstr("A/B: AMU e Glue possono alzare la loudness percepita.");
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_hpx+24;gfx_y=_hpy+366;gfx_drawstr("Manuale HTML: ZP Master Pro Glue Matrix Help.html");
+
+  // Pulsante Guida Completa HTML
+  _og_w = 150; _og_h = 24; _og_x = _hpx + 24; _og_y = _hpy + _hph - 38;
+  _og_hover = hit(_og_x, _og_y, _og_w, _og_h);
+  _og_hover ? gfx_set(0.24,0.48,0.88,0.95) : gfx_set(0.14,0.22,0.36,0.9);
+  gfx_rect(_og_x, _og_y, _og_w, _og_h);
+  gfx_set(0.40,0.65,0.95,0.95);
+  gfx_rect(_og_x, _og_y, _og_w, 1); gfx_rect(_og_x, _og_y+_og_h-1, _og_w, 1);
+  gfx_rect(_og_x, _og_y, 1, _og_h); gfx_rect(_og_x+_og_w-1, _og_y, 1, _og_h);
+  gfx_setfont(1,"Arial",12,'b'); gfx_set(0.92,0.96,1,1);
+  _og_lbl = ui_lang == 0 ? "GUIDA COMPLETA ↗" : "FULL GUIDE ↗";
+  gfx_measurestr(_og_lbl, _og_tw, _og_th);
+  gfx_x = _og_x + floor((_og_w - _og_tw)*0.5); gfx_y = _og_y + floor((_og_h - _og_th)*0.5);
+  gfx_drawstr(_og_lbl);
+  _og_hover && mouse_click ? ( help_bridge_open(7); );
 );
 
 // Auto dB / Target help overlay.
@@ -3526,13 +3572,15 @@ gfx_set(0.16,0.44,0.86,0.45);gfx_rect(0,gfx_h-TIP_H,gfx_w,1);
 _ghw=24;_ghh=22;_ghx=gfx_w-_ghw-10;_ghy=gfx_h-TIP_H+5;
 _ghover=hit(_ghx,_ghy,_ghw,_ghh);
 _ghover?ui_set_hover(1060);
-_ghover&&mouse_click?(glue_help_open=1-glue_help_open;auto_help_open=0;);
+_ghover&&mouse_click?(glue_help_open=1-glue_help_open;auto_help_open=0;help_bridge_open(7););
 glue_help_open>=0.5?gfx_set(0.18,0.36,0.58,1):_ghover?gfx_set(0.18,0.22,0.28,1):gfx_set(0.12,0.14,0.17,1);
 gfx_rect(_ghx,_ghy,_ghw,_ghh);
 gfx_set(0.34,0.56,0.82,0.92);gfx_rect(_ghx,_ghy,_ghw,1);gfx_rect(_ghx,_ghy+_ghh-1,_ghw,1);
 gfx_setfont(1,"Arial",14,'b');gfx_set(0.88,0.94,1.00,1);
 gfx_measurestr("?",_tw,_th);gfx_x=_ghx+floor((_ghw-_tw)*0.5);gfx_y=_ghy+floor((_ghh-_th)*0.5);gfx_drawstr("?");
 gfx_setfont(1,"Arial",14,'b');gfx_set(0.74,0.84,0.90,1);gfx_x=10;gfx_y=gfx_h-23;
+time_precise() < help_warn_until ? gfx_drawstr(ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Studio Suite" : "Open Cue Navigator or ZP Suite help") :
+ui_hover_id==1060?gfx_drawstr(ui_lang == 0 ? "?: apre la guida rapida e la documentazione nel browser" : "?: opens quick help and documentation in browser"):
 ui_hover_id==1001?gfx_drawstr("Drive: ingresso del Tape Glue; 0.50 e' unity, sopra spinge la saturazione"):
 ui_hover_id==1002?gfx_drawstr("Ceil: tetto brickwall del limiter (dBFS)"):
 ui_hover_id==1003?gfx_drawstr("Rel: rilascio limiter (ms)"):
@@ -3608,7 +3656,7 @@ ui_hover_id==9105?gfx_drawstr("EQD: dynamic EQ mirata sui punti; comprime le zon
 ui_hover_id==9106?gfx_drawstr("RST Tone: click reset punti EQ/frequenze; tieni 0.5s per reset completo Tone"):
 ui_hover_id>=9100&&ui_hover_id<=9103?gfx_drawstr("Tone point: numero=freq+EQ fisso; barra DYN=correzione DIN+EQD (+ verde / - rosso)"):
 ui_hover_id==9015?gfx_drawstr("RST: azzera tutti i parametri Output ai valori di default"):
-0;
+gfx_drawstr(ui_lang == 0 ? "ZP MASTER PRO · Processore di Mastering Integrato" : "ZP MASTER PRO · Integrated Mastering Processor");
 
 // ZP Target Engine: il LED indica solo connessione, mai livello audio.
 // In @gfx si legge il bus ma non si pubblica heartbeat: nessuna dipendenza dalla GUI.

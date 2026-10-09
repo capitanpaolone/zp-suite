@@ -1,0 +1,761 @@
+# ZP Studio Suite — Catalogo Inglese (en.txt)
+# Formato: originale<TAB>traduzione (una voce per riga, newline escapati con \n)
+
+\nL'SRT gia' accanto a %d file lo rinomino in .srt.bak-<data>, non lo cancello.	\nRenaming existing SRT next to %d files to .srt.bak-<date>, not deleting.
+   <- adesso	   <- now
+  Altre righe: rotella.	  More rows: mouse wheel.
+  Testi: %s	  Texts: %s
+  Versione 	  Version 
+  ·  	  ·  
+  ·  con i tasti OSARA	  ·  with OSARA keys
+ (%d di %d, poi altri %d)	 (%d of %d, then %d more)
+ (%d/%d battute)	 (%d/%d lines)
+ (non installato)	 (not installed)
+ (spento: accendilo con PRE sul REC)	 (off: enable it with PRE on REC)
+ .. title then return slot end\n        if l:match(	
+ con 	 with 
+ cose da fare.	 items to do.
+ cose da fare. Ogni riga ha il suo pulsante.	 items to do. Each row has its own button.
+ e' gia' in uso.	 is already in use.
+ indicizzato — %s	 indexed — %s
+ poi altri %d	 then %d more
+ registrato (senza regione) — %s	 recorded (no region) — %s
+ scorciatoia	 shortcut
+ scorciatoie	 shortcuts
+ scorciatoie che non sono in nessun set	 shortcuts not part of any set
+ tasti di serie spenti	 default keys disabled
+ tracce	 tracks
+ traccia	 track
+" e' in KeyMaps/Archivio.	" is in KeyMaps/Archivio.
+" sara' attivo dal prossimo riavvio di REAPER.	" will be active on next REAPER restart.
+"%s" e' gia' in uso.	"%s" is already in use.
+".	".
+".\n\n	".\n\n
+". Lo sostituisco con i tasti attuali?	" already exists. Replace it with current keys?
+": ora e' nell'elenco.	": now in list.
+"?	" already exists?
+"?\n\nLe scorciatoie cambiano quando REAPER si riapre. Script, azioni e toolbar restano come sono.\nPrima del cambio i tasti di adesso vanno nel set "	"?\n\nShortcuts will change when REAPER restarts. Scripts, actions and toolbars remain unchanged.\nBefore switching, current keys are saved to "
+"…	"…
+%d di %d con marker	%d of %d with markers
+%d di %d con testi in timeline	%d of %d with timeline texts
+%d gia' fatti, lasciati come sono.	%d already done, left as is.
+%s visibili, da %s	%s visible, from %s
+(ZP Speech non risponde: nessun elenco)	(ZP Speech not responding: no list)
+(nessun motore trovato)	(no engine found)
+(selezionata)	(selected)
+(senza nome)	(unnamed)
+). Scaricalo da python.org prima di installare ZP Speech.	). Download from python.org before installing ZP Speech.
+): nessuna traccia selezionata	): no tracks selected
++ Battuta	+ Cue
++ Nota	+ Note
+, %d NON riusciti (dettagli nella console)	, %d FAILED (details in console)
+, %d gia' tradotti	, %d already translated
+, %d senza SRT	, %d without SRT
+, audio %s	, audio %s
+, dovrei finire a momenti	, should finish momentarily
+, lingua %s	, language %s
+, mancano circa %s	, about %s remaining
+-5s	-5s
+. Lo stato si aggiorna da solo.	. Status updates automatically.
+... e altri %d	... and %d more
+1 Stato	1 Status
+10 Tracce gobbo visibili si/no	10 Teleprompter tracks visible yes/no
+11 Nuova battuta	11 New cue
+12 Tema	12 Theme
+13 Contrasto	13 Contrast
+14 Corpo -	14 Font size -
+15 Corpo +	15 Font size +
+16 Help	16 Help
+2 Mostra/Nascondi TC	2 Show/Hide TC
+3 Flusso precedente	3 Previous flow
+4 Flusso successivo	4 Next flow
+5 Parola per parola si/no	5 Word by word yes/no
+6 Scorrimento continuo si/no	6 Continuous scroll yes/no
+7 Conto alla rovescia si/no	7 Countdown yes/no
+8 Pannello note si/no	8 Notes panel yes/no
+9 Traccia note visibile si/no	9 Notes track visible yes/no
+: il globo del SOLO apre la versione web.	: SOLO globe opens web version.
+: il primo disponibile	: first available
+A ogni REC crea la regione Take NNN.	Creates Take NNN region on each REC.
+A ogni apertura	At startup
+AL RIAVVIO	ON RESTART
+ANTICIPO VOCE	VOICE LEAD
+ASPETTO	APPEARANCE
+ATTENZIONE: questo set non ha i tasti di OSARA, che adesso usi.\n\n	WARNING: this set lacks OSARA keys currently in use.\n\n
+Abbina da...	Link from...
+Abbina: nessuna modifica.	Link: no changes.
+Accende o spegne il metronomo.	Toggles metronome on or off.
+Accesa sulla porta 	Active on port 
+Acceso adesso, ma alla prossima apertura di REAPER non ripartira': mettilo all'avvio.	Running now, but will not restart on next launch: set it to run on startup.
+Acceso, e parte da solo a ogni apertura di REAPER.	Running, starts automatically every time REAPER launches.
+Acceso: a ogni REC crea la regione Take NNN sopra il nuovo audio, utile per rinominare e ritrovare i take. Spento: registra senza regioni; Togli take funziona lo stesso.	On: creates Take NNN region on each REC over new audio, useful to rename and locate takes. Off: records without regions; Remove take still works.
+Acceso: quando nasce la sessione SOLO inserisce ZP Bus VoiceChain sul bus delle voci e ZP MasterChain sul master. Le catene le installa il comando 32. Non le duplica se ci sono gia'. Spegnendo, quelle gia' inserite restano.	On: when SOLO session is created, adds ZP Bus VoiceChain on voice bus and ZP MasterChain on master. Chains are installed by tool 32. Will not duplicate if present. Turning off keeps existing ones intact.
+Acqua	Aqua
+Adesso in uso: 	Currently in use: 
+Adesso: 	Current: 
+Agente AI: 	AI Agent: 
+Agente: 	Agent: 
+Aggiorna	Update
+Aggiorna ora	Update now
+Al prossimo riavvio: 	On next restart: 
+Allontana: mostra piu' tempo	Zoom out: show more time
+Alto	Top
+Altra...	Other...
+Annulla	Cancel
+Annulla l'ultima operazione di REAPER (attenuato se non c'e' niente da annullare).	Undoes last REAPER action (dimmed if nothing to undo).
+Apre il Navigator di REAPER.	Opens REAPER Navigator.
+Apre il gestore di marker e regioni.	Opens markers and regions manager.
+Apre il mixer di REAPER.	Opens REAPER mixer.
+Apre il routing della traccia selezionata.	Opens routing for selected track.
+Apre la catena effetti della traccia selezionata.	Opens FX chain for selected track.
+Apre la pagina di help del SOLO Recorder nel browser.	Opens SOLO Recorder help page in browser.
+Apre le note del progetto (finestra Notes di SWS; senza SWS, Project settings).	Opens project notes (SWS Notes window; without SWS, Project settings).
+Apri Extensions > ReaPack > Browse packages e cerca js_ReaScriptAPI.	Open Extensions > ReaPack > Browse packages and search for js_ReaScriptAPI.
+Apri cartella	Open folder
+Apri il SOLO da un altro dispositivo (iPad, telefono, altro computer)	Open SOLO from another device (iPad, phone, other computer)
+Apri l'help	Open help
+Apri la toolbar	Open toolbar
+Apro help ZP Studio Suite.	Opening ZP Studio Suite help.
+Arancio	Orange
+Archivia…	Archive…
+Arma traccia	Arm track
+Armata: %s	Armed: %s
+Ascolto dell'ingresso sulla traccia attiva. Clic: acceso / spento.	Input monitoring on active track. Click: on / off.
+Ascolto in cuffia dell'ingresso sulla traccia attiva. Auto vuol dire che REAPER lo accende da solo quando la traccia e' armata.	Headphone input monitoring on active track. Auto means REAPER enables it automatically when armed.
+Aspetta: c'e' gia' un lavoro in corso.	Wait: a job is already in progress.
+Aspetta: l'AI sta gia' scrivendo una spiegazione.	Wait: AI is already generating an explanation.
+Attiva	Activate
+Attivare il set "	Activate set "
+Attivo a ogni avvio (Scripts/__startup.lua).	Active at every startup (Scripts/__startup.lua).
+Attivo all'avvio via SWS GlobalStartupAction.	Active at startup via SWS GlobalStartupAction.
+Automatica	Automatic
+Avvia adesso	Start now
+Avvia ora	Start now
+Avvia sempre	Always start
+Avviato per questa sessione. Per farlo partire sempre: 'Avvia sempre'.	Started for this session. To launch it automatically: 'Always start'.
+Avvicina: mostra meno tempo, piu' dettagli	Zoom in: show less time, more details
+Azzurro	Sky blue
+Backup automatico	Automatic backup
+Benvenuto	Welcome
+Benvenuto nella ZP Studio Suite	Welcome to ZP Studio Suite
+Bianco	White
+Blu	Blue
+C'e' in ogni vista: una riga di icone a gruppi. A sinistra il progetto (salva, annulla, ripeti), la modalita' (cartella = Sessione SOLO, telecomando = Telecomando) e la sessione (regioni, effetti, video); a destra le tre viste, toolbar e REAPER, la guida e la puntina. Azzurro = acceso o in uso; attenuato = non disponibile. Sotto: stato del trasporto con la modalita', timecode, traccia, regione, take e pre-roll.	Present in every view: row of grouped icons. Left: project (save, undo, redo), mode (folder = SOLO Session, remote = Remote) and session (regions, FX, video); right: three views, toolbar and REAPER, guide and pin. Cyan = on/active; dimmed = unavailable. Below: transport status with mode, timecode, track, region, take and pre-roll.
+CORPO TESTO	FONT SIZE
+Cambio annullato: al riavvio restano i tasti di adesso.	Change cancelled: current keys remain after restart.
+Cancellare la nota vicina?\n\n	Delete the nearby note?\n\n
+Cancellare questa nota?\n\n	Delete this note?\n\n
+Cartella: sessione SOLO, la cartella ZP SOLO SESSION con le sue tracce voce. Azzurro = in uso.	Folder: SOLO session, the ZP SOLO SESSION folder with its voice tracks. Cyan = active.
+Celeste	Light blue
+Centro	Center
+Cerca	Search
+Cerca  (Ctrl/⌘+F)	Search  (Ctrl/⌘+F)
+Cerca js_ReaScriptAPI e installalo.	Search for js_ReaScriptAPI and install it.
+Cerca parola/frase...	Search word/phrase...
+Chiaro	Light
+Chiedo all'AI una spiegazione breve di "	Requesting a brief AI explanation for "
+Chiedo all'AI una spiegazione breve di "%s".\n\nMando SOLO l'elenco delle %d scorciatoie (tasto e nome dell'azione), niente altro.\nAgente: %s\n\nLa spiegazione resta salvata accanto al set. Procedo?	Ask AI for a brief explanation of "%s".\n\nSending ONLY the list of %d shortcuts (key and action name), nothing else.\nAgent: %s\n\nThe explanation is saved next to the set. Proceed?
+Chiesta: lancia Installa (32) e riavvia REAPER.	Requested: run Install (32) and restart REAPER.
+Chiude il take in corso, lascia cinque secondi di stacco dopo la fine reale dell'audio e riparte subito a registrare.	Closes current take, leaves a five-second gap after actual audio end and immediately resumes recording.
+Chiude il take, lascia cinque secondi di stacco e riparte a registrare.	Closes take, leaves five seconds gap and resumes recording.
+Chiudi	Close
+Chiudo REAPER per applicare la nuova lingua...	Closing REAPER to apply the new language...
+Chiudo REAPER per attivare 	Closing REAPER to activate 
+Cinepresa: apre e chiude la finestra video di REAPER. Azzurro = aperta.	Camera: toggles REAPER video window. Cyan = open.
+Cinese	Chinese
+Clic	Click
+Clic nella casella e scrivi il nome: mentre scrivi i tasti vanno li' (anche la barra spaziatrice). Invio, o il pulsante marker, mette il marker nel punto in cui sei con quel nome; Esc lascia perdere. Casella vuota: il marker e' di servizio e numerato (SOLO_MARK_001...). Un marker col nome tuo e' un marker normale: se vuoi che resti di servizio, comincialo con #.	Click box and type name: keystrokes go there while typing (including spacebar). Enter or marker button places marker at cursor with that name; Esc cancels. Empty box: numbered service marker (SOLO_MARK_001...). A custom-named marker is a regular marker: prefix with # if you want it as a service marker.
+Clic o trascina per spostare il cursore (fermo durante il REC).	Click or drag to move cursor (stays still during REC).
+Codice della lingua (es. nl, ar, hi, yue):,extrawidth=60	Language code (e.g. nl, ar, hi, yue):,extrawidth=60
+Codice lingua non valido: servono 2 o 3 lettere (it, fr, yue...).	Invalid language code: 2 or 3 letters required (it, fr, yue...).
+Colore tolto	Color removed
+Colori (modo 	Colors (mode 
+Colori (modo Item): nessun item selezionato	Colors (Item mode): no items selected
+Colori: modo 	Colors: mode 
+Comandi di serie di REAPER: trascinare sopra un marker lo sposta invece dell'item. Proteggi: il marker si sposta solo con Shift+trascina.	REAPER default behavior: dragging over a marker moves it instead of the item. Protect: marker moves only with Shift+drag.
+Comando sconosciuto: %s	Unknown command: %s
+Come si fa	How-to
+Come si usa	How to use
+Condividi	Share
+Condividi: indirizzo per aprire questa pagina da un altro dispositivo	Share: address to open this page from another device
+Consigliata per la ZP Suite: serve al SOLO Recorder per il pre-roll e le note. Scaricala dal sito.	Recommended for ZP Suite: required by SOLO Recorder for pre-roll and notes. Download from website.
+Consigliata: copia-incolla nei pannelli, file che si aprono, secondi del pre-roll del SOLO.	Recommended: paste in text fields, file opening, SOLO pre-roll seconds.
+Consigliata: permette di scegliere le cartelle col selettore nativo del sistema (es. export SRT dall'audio). Si installa da ReaPack.	Recommended: enables native folder browsing (e.g. SRT export from audio). Install via ReaPack.
+Consigliata: scelta cartelle di sistema, finestra del SOLO sempre sopra. Si installa da ReaPack.	Recommended: system folder dialogs, SOLO window always on top. Install via ReaPack.
+Conto alla rovescia	Countdown
+Conto alla rovescia attivo.	Countdown enabled.
+Conto alla rovescia spento.	Countdown disabled.
+Contrasto	Contrast
+Contrasto pieno.	Solid contrast.
+Contrasto sfumato.	Faded contrast.
+Copia	Copy
+Copiato	Copied
+Coreano	Korean
+Corpo	Size
+Corpo testo %s.	Font size %s.
+Cosa entra e cosa senti: meter dell'ingresso e del ritorno, da dove pesca la traccia, monitor. Il pomello regola il ritorno.	What enters and what you hear: input and return meters, track source input, monitor. Knob adjusts return volume.
+Crema	Cream
+Cue Navigator (Harmonic Space Carver)	Cue Navigator (Harmonic Space Carver)
+Cue Navigator avviato.	Cue Navigator started.
+Cue del WAV -> marker in timeline	WAV cues -> timeline markers
+Cue del WAV in timeline: %d marker di progetto. Sistemali in REAPER; per fissarli nell'item: Abbina da > marker di progetto.	WAV cues in timeline: %d project markers. Adjust them in REAPER; to embed them into items: Link from > project markers.
+Cursore all'inizio della regione (o dell'item) in cui ti trovi.	Cursor to start of current region (or item).
+Cursore alla regione (o all'item) precedente.	Cursor to previous region (or item).
+Cursore alla regione (o all'item) successiva.	Cursor to next region (or item).
+Cursori: sessione SOLO con le catene ZP sul bus voci e sul master. Azzurro = acceso. Attenuato in Telecomando.	Sliders: SOLO session with ZP chains on voice bus and master. Cyan = on. Dimmed in Remote.
+Da installare: toolbar "ZP Studio Suite" (pronta dopo un riavvio di REAPER), catene di effetti del SOLO Recorder e preset del Chain Builder.	To install: "ZP Studio Suite" toolbar (ready after REAPER restart), SOLO Recorder FX chains and Chain Builder presets.
+Da marker di progetto: nessuna modifica.	From project markers: no changes.
+Da quale ingresso della scheda pesca la traccia. Clic: cambia ingresso (in Telecomando, anche quale traccia armare).	Which audio interface input the track takes from. Click: change input (in Remote, also which track to arm).
+Disarmata: %s	Disarmed: %s
+Dopo l'ultimo item + 5 s	After last item + 5 s
+Dopo l'ultimo item più 5 secondi	After last item plus 5 seconds
+Dopo ultimo item +%ss	After last item +%ss
+Edit testo gobbo	Edit teleprompter text
+Effetti OFF: non inserisco piu' le catene; quelli gia' inseriti restano.	FX OFF: no more chains added; existing ones remain.
+Effetti ON: li inserisco quando nasce la sessione SOLO.	FX ON: added when SOLO session is created.
+Effetti: %s	FX: %s
+Errore in %s: %s	Error in %s: %s
+Errore nel comando %s: %s	Error in command %s: %s
+Esc ignorato: chiudi dalla X finestra se necessario.	Esc ignored: close from window X if needed.
+Esiste gia' un set "	A set named "
+Etichette	Labels
+FONT COPIONE: %d	SCRIPT FONT: %d
+Facoltativo, serve a Trascrivi (29). Installa: il Terminale scarica e installa tutto da solo.	Optional, needed for Transcribe (29). Install: Terminal downloads and installs everything automatically.
+Facoltativo, serve a Trascrivi (29). Prima di installarlo serve: %s.	Optional, needed for Transcribe (29). Before installing it requires: %s.
+Ferma la registrazione o la riproduzione e numera il take appena inciso.	Stops recording or playback and numbers the newly recorded take.
+Ferma la registrazione o la riproduzione. Dopo un REC numera il take e, se Regioni take e' acceso, crea la sua regione.	Stops recording or playback. After a REC numbers the take and, if Take regions is on, creates its region.
+Finestra video aperta	Video window opened
+Finestra video chiusa	Video window closed
+Finestre, messaggi e guide della ZP Studio Suite. Vale subito per le finestre che si aprono dopo.	Windows, messages and guides of the ZP Studio Suite. Applies immediately to windows opened after.
+Flusso	Flow
+Flusso testi %s.	Text flow %s.
+Flusso:	Flow:
+Francese	French
+Funziona sulla stessa rete Wi-Fi o cablata. Chi ha questo indirizzo puo' comandare REAPER: se la rete non e' solo tua, metti una password in REAPER, Preferences › Control/OSC/web › Web browser interface.	Works on the same Wi-Fi or wired network. Anyone with this address can control REAPER: if the network is not private, set a password in REAPER, Preferences › Control/OSC/web › Web browser interface.
+GOBBO ORIZZONTALE	HORIZONTAL TELEPROMPTER
+Giallo	Yellow
+Giapponese	Japanese
+Glicine	Wisteria
+Globo: apre il SOLO nel browser (anche da iPad), accendendo il motore web se serve. Azzurro = motore acceso. Prototipo.	Globe: opens SOLO in browser (also iPad), starting web engine if needed. Cyan = engine on. Prototype.
+Gobbo	Teleprompter
+Gobbo Orizzontale	Horizontal Teleprompter
+Gobbo accessibile	Accessible teleprompter
+Grigio	Gray
+Guida chiusa	Guide closed
+Guida completa	Full guide
+Guida rapida	Quick guide
+Help del SOLO aperto nel browser	SOLO Help opened in browser
+Help non trovato:\n\n	Help not found:\n\n
+I comandi di ogni secondo. REC e' il piu' grande; sul suo bordo PRE accende il pre-roll di REAPER e il lucchetto decide se la barra spaziatrice puo' fermarlo.	Essential transport controls. REC is largest; on its edge PRE toggles REAPER pre-roll and lock determines if spacebar can stop it.
+I tasti originali di REAPER	Original REAPER keys
+IMPOSTAZIONI GOBBO	TELEPROMPTER SETTINGS
+IMPOSTAZIONI GOBBO ORIZZONTALE	HORIZONTAL TELEPROMPTER SETTINGS
+IN USO	IN USE
+IN USO  ·  	IN USE  ·  
+Il Cue Navigator partira' a ogni apertura di REAPER (Scripts/__startup.lua).	Cue Navigator will start every time REAPER opens (Scripts/__startup.lua).
+Il file non contiene scorciatoie di REAPER.	File does not contain REAPER shortcuts.
+Il lavoro in background si e' interrotto (%d di %d fatti). Riprova: riparte da quelli che mancano.	The background job was interrupted (%d of %d done). Try again: it resumes from the remaining ones.
+Il livello vero dell'ingresso della scheda audio da cui registra la traccia, prima di effetti, fader e monitor: e' quello che finisce nel file. Scala in dB da -60 a 0, tacche a -18 e -6: verde fino a -18, giallo fino a -6, poi arancio e rosso sopra -1. La riga chiara e' il picco, che resta fermo un secondo e mezzo; a destra il suo valore. Per MIDI o ReaRoute mostra il meter della traccia.	Actual interface input level the track records from, before FX, faders and monitor: what is written to disk. Scale in dB from -60 to 0, notches at -18 and -6: green up to -18, yellow up to -6, orange and red above -1. Light bar is peak, held for 1.5s; value on right. For MIDI/ReaRoute shows track meter.
+Il lucchetto sul REC protegge la registrazione. Parte spento. Acceso (giallo, chiuso): durante il REC la barra spaziatrice non ferma niente, solo il pulsante STOP. Spento (grigio, aperto): la barra ferma anche il REC, come in REAPER. Vale quando la finestra del SOLO e' in primo piano.	The lock on REC protects recording. Starts off. On (yellow, closed): during REC spacebar does not stop anything, only STOP button. Off (gray, open): spacebar also stops REC, like in REAPER. Applies when SOLO window is focused.
+Il pre-roll e' quello di REAPER (Options > Metronome/pre-roll, 'Pre-roll before recording'): premuto REC, la riproduzione parte qualche secondo prima del cursore, cosi' senti l'attacco, e la registrazione comincia dal cursore. PRE sul bordo sinistro del REC lo accende (giallo) e lo spegne. I secondi, da 1 a 5, si regolano nella toolbar in basso (pulsante Toolbar in testata). REAPER lo misura in battute: il SOLO converte i secondi al tempo del progetto a ogni REC. Serve SWS. E' un'impostazione di REAPER: vale anche fuori dal SOLO.	Pre-roll is REAPER native (Options > Metronome/pre-roll, 'Pre-roll before recording'): on REC, playback starts a few seconds before cursor, letting you hear the cue, and recording begins at cursor. PRE on left edge of REC toggles it (yellow). Seconds, 1 to 5, adjusted in bottom toolbar (Toolbar button in header). REAPER measures in bars: SOLO converts seconds to project time on each REC. Requires SWS. Global REAPER setting.
+Il pre-roll in secondi richiede SWS.	Pre-roll in seconds requires SWS.
+Il progetto in una striscia, con lo spazio che resta (in Compact piu' basso). Lo zoom e la posizione della testina sono in alto a destra.	The project in a single strip, using remaining space (shorter in Compact). Zoom and playhead position at top right.
+Il progetto non ha tracce.	Project has no tracks.
+Importa file…	Import file…
+Importato "	Imported "
+Impossibile creare la traccia note.	Cannot create notes track.
+Impostazioni tue in Mouse Modifiers > Media item take marker: non le tocco. Proteggi le sostituisce (marker solo con Shift+trascina).	Custom settings in Mouse Modifiers > Media item take marker: left untouched. Protect overrides them (marker moves only with Shift+drag).
+In alto i comandi che registrano (pallino rosso): Next take, Retake, Insert, Alt take. Sotto quelli che gestiscono il take appena fatto: Nome / nota e Togli take.	Top row: record triggers (red dot): Next take, Retake, Insert, Alt take. Bottom row: take management: Name / note and Remove take.
+Indietro 5 s	Back 5 s
+Indietro di 5 secondi	Back 5 seconds
+Inglese	English
+Ingresso	Input
+Ingresso di %s: %s	Input of %s: %s
+Ingresso e ascolto	Input and monitoring
+Inizio	Start
+Inizio item	Item start
+Inizio regione	Region start
+Installa	Install
+Installa js_ReaScriptAPI	Install js_ReaScriptAPI
+Installa/Aggiorna	Install/Update
+Installata (%s).	Installed (%s).
+Installata: la toolbar e' nella toolbar principale.	Installed: the toolbar is in the main toolbar.
+Installata: le battute si leggono con lo screen reader.	Installed: speech lines can be read with screen reader.
+Installata: pre-roll in battute del SOLO e note di progetto attive.	Installed: SOLO bar pre-roll and project notes active.
+Installata: scelta cartelle nativa nelle finestre di salvataggio.	Installed: native folder dialog in save windows.
+Installato ma il servizio non risponde. Lancia 'Installa/Aggiorna' per riavviarlo.	Installed but service does not respond. Run 'Install/Update' to restart it.
+Installato, ma per trascrivere serve MacWhisper in Applicazioni (aprilo una volta).	Installed, but transcribing requires MacWhisper in Applications (open it once).
+Installato: 29 Trascrivi crea l'SRT dal WAV con whisper (MacWhisper).	Installed: 29 Transcribe creates SRT from WAV using whisper (MacWhisper).
+Interfaccia web di REAPER	REAPER web interface
+Invio salva  |  Shift+Invio accapo  |  Ctrl+E evidenzia  |  Esc annulla	Enter saves  |  Shift+Enter newline  |  Ctrl+E highlight  |  Esc cancels
+Invio salva  |  Shift+Invio accapo  |  Esc annulla	Enter saves  |  Shift+Enter newline  |  Esc cancels
+Italiano	Italian
+Item	Item
+Item a %s	Item at %s
+Item selezionati: %d	Selected items: %d
+L'AI non ha risposto: 	AI did not respond: 
+L'AI sta scrivendo la spiegazione di "	AI is writing explanation for "
+L'AI sta scrivendo…	AI is writing…
+L'ingresso della scheda audio da cui registra la traccia di destinazione: In 1, In 1/2 per lo stereo, e cosi' via. Clic: scegli da un elenco. In Telecomando il pulsante mostra anche la traccia armata, e il menu si apre con 'Traccia da registrare': l'elenco delle tracce del progetto con il loro ingresso, le armate spuntate; un clic arma o disarma (le altre restano come sono). Senza tracce armate il pulsante dice 'Arma traccia'.	Interface input the target track records from: In 1, In 1/2 for stereo, etc. Click: choose from list. In Remote, button also shows armed track, opening with 'Track to record': project tracks list with inputs, armed checked; click arms or disarms. Without armed tracks, button reads 'Arm track'.
+LETTURA	READING
+La toolbar ZP e' la Floating toolbar %s: View > Toolbars.	ZP toolbar is Floating toolbar %s: View > Toolbars.
+La toolbar ZP e' nella toolbar principale.	ZP toolbar is in main toolbar.
+La toolbar con 20 colori per item e tracce (stile Reapertips). Di serie i colori sono nella finestrella 35.	Toolbar with 20 colors for items and tracks (Reapertips style). By default colors are in window 35.
+La toolbar e' pronta ma mancano le catene FX nel percorso di REAPER. Reinstalla le rimette a posto.	The toolbar is ready but FX chains are missing in REAPER's folder. Reinstall restores them.
+La trascrizione automatica e' configurata solo su macOS.\nSu Windows/Linux: crea l'SRT con il tuo whisper (stesso nome del WAV, accanto al file) e parti dalla tappa Abbina.	Automatic transcription is configured for macOS only.\nOn Windows/Linux: generate the SRT with your whisper (same name as WAV, next to file) and start from the Link step.
+Lato Cardioide	Lato Cardioide
+Lilla	Lilac
+Lingua	Language
+Lingua della Suite	Suite language
+Lingua di REAPER	REAPER language
+Lingua per le prossime trascrizioni: %s.	Language for upcoming transcriptions: %s.
+Livello del master, cioe' quello che senti, in dB.	Master level, what you hear, in dB.
+Livello dell'ingresso della scheda da cui registri, in dB. La riga chiara e' il picco.	Audio interface input level you record from, in dB. Light line is peak.
+Livello ingresso	Input level
+Livello ritorno	Return level
+Lucchetto del REC: acceso, la barra spaziatrice non ferma la registrazione. Clic: cambia.	REC lock: when on, spacebar will not stop recording. Click: toggle.
+Manca ZP_UI.lua accanto a questo script: reinstalla la ZP Studio Suite da ReaPack.	Missing ZP_UI.lua next to this script: reinstall ZP Studio Suite from ReaPack.
+Manca ZP_UI.lua aggiornato accanto a questo script.\nReinstalla la ZP Studio Suite da ReaPack.	Updated ZP_UI.lua missing next to this script.\nReinstall ZP Studio Suite from ReaPack.
+Marker ALT: qui c'e' una versione alternativa.	Marker ALT: alternative version here.
+Marker BAD: questo punto e' da rifare.	Marker BAD: this spot needs to be redone.
+Marker NOISE: c'e' un rumore da sistemare.	Marker NOISE: noise to fix here.
+Marker OK: questo punto e' buono.	Marker OK: this spot is good.
+Marker degli item	Item markers
+Marker degli item protetti: trascini l'item, Shift+trascina sposta il marker.	Item markers protected: drag moves item, Shift+drag moves marker.
+Marker degli item: comandi di serie di REAPER (trascinare sposta il marker).	Item markers: REAPER default behavior (drag moves marker).
+Marker di giudizio nel punto in cui sei: OK, BAD, ALT, NOISE.	Assessment markers at cursor position: OK, BAD, ALT, NOISE.
+Marker di progetto in timeline (14)	Project markers in timeline (14)
+Marker lasciato perdere	Marker cancelled
+Marker: %s	Marker: %s
+Medio	Medium
+Meno un secondo	Minus one second
+Menu OSARA	OSARA menu
+Menu e finestre di REAPER. Originale = inglese, come le guide ufficiali.	REAPER menus and windows. Original = English, as in official guides.
+Mette un marker qui: col nome scritto nella casella accanto, se c'e', altrimenti numerato.	Places a marker here: with name from adjacent box if present, otherwise numbered.
+Metti marker qui	Place marker here
+Metto "	Move "
+Metto "%s" in archivio?\n\nNon si cancella: va nella cartella KeyMaps/Archivio e sparisce da questo elenco. Per riaverlo, rimettilo in KeyMaps (Apri cartella).	Archive "%s"?\n\nNothing is deleted: moves to KeyMaps/Archivio folder and disappears from this list. To restore it, move it back to KeyMaps (Open folder).
+Modello	Model
+Modello di traduzione: %s.	Translation model: %s.
+Modello per le prossime trascrizioni: %s.	Model for upcoming transcriptions: %s.
+Modifica (Studio/Edit)	Edit mode (Studio/Edit)
+Modifica battuta corrente	Edit current cue
+Monitor	Monitor
+Monitoring acceso su %s	Monitoring on on %s
+Monitoring spento su %s	Monitoring off on %s
+Mostra o nasconde la fila di comandi REAPER in fondo, con i secondi del pre-roll (in ogni vista, anche Mini).	Shows or hides REAPER command row at bottom, with pre-roll seconds (in every view, including Mini).
+Mostra timecode	Show timecode
+Mostra tracce testo	Show text tracks
+Mostra tutto il progetto	Show entire project
+Motore	Engine
+Motore di traduzione: %s.	Translation engine: %s.
+Motore di trascrizione locale (Whisper). Funziona solo su macOS.	Local transcription engine (Whisper). macOS only.
+Motore spento: in REAPER avvia l'azione <b>ZP_SOLO_Web_Motore</b> (Action List). Finché non parte, i comandi non arrivano.	Engine offline: in REAPER launch the action <b>ZP_SOLO_Web_Motore</b> (Action List). Until running, commands will not arrive.
+Motore web acceso	Web engine online
+Muove la timeline	Moves timeline
+Muoversi tra regioni o item, e mettere marker: il pulsante col simbolo marker, e accanto la casella per dargli un nome.	Navigate between regions or items, and place markers: marker symbol button, and box alongside to name it.
+NEXT TAKE: stop e preparo nuovo take	NEXT TAKE: stop and prepare new take
+NOTE	NOTES
+NOTE E TRACCE	NOTES AND TRACKS
+Nascondi	Hide
+Nascondi tracce testo	Hide text tracks
+Navigator non disponibile.	Navigator not available.
+Navigatore	Navigator
+Navigatore (%s): clic o trascina per spostare il cursore (fermo durante il REC).	Navigator (%s): click or drag to move cursor (still during REC).
+Navigatore: %s	Navigator: %s
+Nella Floating toolbar %s: modo Item/Traccia/Tutto, 20 colori, Togli.	In Floating toolbar %s: Item/Track/All mode, 20 colors, Remove.
+Nero	Black
+Nessun agente AI trovato (Codex, Claude, Qwen, OpenCode, Ollama).	No AI agent found (Codex, Claude, Qwen, OpenCode, Ollama).
+Nessun agente AI trovato su questo Mac (Codex, Claude, Qwen, OpenCode, Ollama).	No AI agent found on this Mac (Codex, Claude, Qwen, OpenCode, Ollama).
+Nessun cue trovato nei file degli item selezionati.	No cues found in selected item files.
+Nessun indirizzo di rete trovato: il computer e' collegato a una rete?	No network address found: is the computer connected to a network?
+Nessun ingresso	No input
+Nessun item audio selezionato.	No audio items selected.
+Nessun item: cursore a 0	No items: cursor at 0
+Nessun risultato	No results
+Nessun testo	No text
+Nessuna battuta sotto il cursore/playhead.	No cue under cursor/playhead.
+Nessuna nota vicina al playhead/cursore.	No note near playhead/cursor.
+Nessuna parola intera da sostituire	No whole words to replace
+Nessuna regione	No region
+Nessuna regione nel progetto.	No regions in project.
+Nessuna scorciatoia personale: i tasti originali di REAPER	No custom shortcuts: original REAPER keys
+Nessuna scorciatoia personale: valgono i tasti di serie di REAPER.	No custom shortcuts: default REAPER keys apply.
+Nessuna spiegazione.	No explanation.
+Nessuna traccia armata: clic per scegliere quale armare.	No track armed: click to choose which to arm.
+Nessuna traccia armata: su quale registro?	No track armed: which one to record on?
+Nessuna traccia di destinazione.	No target track.
+Niente da ritrascrivere: seleziona item WAV.	Nothing to retranscribe: select WAV items.
+Niente da tradurre in %s: %d gia' tradotti, %d senza SRT.	Nothing to translate into %s: %d already translated, %d without SRT.
+Niente da trascrivere: gli item hanno gia' SRT o marker, o non sono WAV.	Nothing to transcribe: items already have SRT or markers, or are not WAV.
+Nome / nota	Name / note
+Nome del marker, vuoto per numerato	Marker name, empty for numbered
+Nome del set (es. Video, Doppiaggio):,extrawidth=220	Set name (e.g. Video, Dubbing):,extrawidth=220
+Nome marker…	Marker name…
+Nome marker… (Invio)	Marker name… (Enter)
+Non ancora installata. Installa scrive la toolbar 'ZP Studio Suite' e mette le catene effetti (FXChains) e i preset al loro posto.	Not yet installed. Install writes the 'ZP Studio Suite' toolbar and puts effect chains (FXChains) and presets in place.
+Non ho toccato niente.	Nothing touched.
+Non riesco a copiarlo in KeyMaps	Cannot copy to KeyMaps
+Non riesco a leggere reaper-kb.ini	Cannot read reaper-kb.ini
+Non riesco a preparare il set	Cannot prepare set
+Non riesco a preparare l'installazione di ZP Speech.	Cannot prepare ZP Speech installation.
+Non riesco a salvare il set	Cannot save set
+Non riesco a scrivere Scripts/__startup.lua.	Cannot write Scripts/__startup.lua.
+Non riesco a scrivere il backup in KeyMaps: niente cambiato	Cannot write backup to KeyMaps: nothing changed
+Non riesco a spostarlo in Archivio	Cannot move to Archive
+Non riesco ad avviare il cambio: niente cambiato	Cannot start change process: nothing changed
+Non riesco: c'e' gia' un set "	Cannot rename: set "
+Non serve per forza: i colori ci sono gia' nella finestrella ZP Colori (tavolozza nella toolbar ZP). Installala se vuoi i colori sempre a vista, per esempio accanto al trasporto.	Optional: colors are already in the ZP Colori window (palette in ZP toolbar). Install if you want colors always visible, e.g. next to transport.
+Non serve: il Harmonic Space Carver non e' installato (pacchetto ZP Voce).	Not needed: Harmonic Space Carver is not installed (ZP Voce package).
+Non trovo %s	Cannot find %s
+Non trovo ZP_UI.lua accanto allo script.	Cannot find ZP_UI.lua next to the script.
+Note del progetto (finestra Notes di SWS): apri/chiudi	Project notes (SWS Notes window): toggle
+Nuova battuta pronta alla posizione corrente.	New cue ready at current position.
+Nuovo nome:,extrawidth=240	New name:,extrawidth=240
+OSARA	OSARA
+Ora si chiama "	Now named "
+Originale (inglese)	Original (English)
+PAUSA	PAUSE
+PLAY	PLAY
+PRE	PRE
+Pannello note	Notes panel
+Pannello note aperto.	Notes panel open.
+Pannello note chiuso.	Notes panel closed.
+Parakeet non conosce %s: usa large-v3 o small (Whisper).	Parakeet does not support %s: use large-v3 or small (Whisper).
+Parentesi: a ogni REC crea la regione Take NNN sul nuovo audio. Azzurro = acceso.	Brackets: creates Take NNN region on each REC over new audio. Cyan = on.
+Parola per parola	Word by word
+Parola per parola attiva.	Word by word enabled.
+Parola per parola spenta.	Word by word disabled.
+Parte a ogni apertura di REAPER, ma adesso e' spento: avvialo ora.	Starts on REAPER launch, but is currently stopped: start it now.
+Passa con il mouse su un comando per sapere cosa fa; clic per fissare la spiegazione (OSARA la legge). Le zone sono numerate. Esc o ? per chiudere; Guida completa apre l'help nel browser.	Hover over a control to see what it does; click to pin explanation (read by OSARA). Zones are numbered. Esc or ? to close; Full guide opens help in browser.
+Pausa, anche della registrazione	Pause, including recording
+Pausa: ferma senza chiudere. Durante il REC la registrazione resta aperta; di nuovo per riprendere.	Pause: holds without closing. During REC recording stays open; press again to resume.
+Per poterci tornare, salvale con "Salva tasti attuali" qui sotto.	To restore them later, save them with "Save current keys" below.
+Percorri la strada (da tappa %d)	Walk the road (from step %d)
+Pieno	Solid
+Pin spento: la finestra puo' andare sotto	Pin off: window can go below
+Pin: finestra sempre sopra	Pin: window always on top
+Più un secondo	Plus one second
+Play	Play
+Porta il cursore cinque secondi dopo la fine dell'ultimo item. Non cancella niente.	Moves cursor five seconds after the end of last item. Deletes nothing.
+Porta nel gobbo	Send to teleprompter
+Portoghese	Portuguese
+Posizione non valida	Invalid position
+Pre-roll %d s	Pre-roll %d s
+Pre-roll %s s	Pre-roll %s s
+Pre-roll acceso o spento	Pre-roll on or off
+Pre-roll acceso, %d s	Pre-roll on, %d s
+Pre-roll di REAPER sul REC: riparte qualche secondo prima e registra dal cursore. Clic: acceso / spento.	REAPER pre-roll on REC: starts playback a few seconds earlier and records from cursor. Click: on / off.
+Pre-roll off	Pre-roll off
+Pre-roll spento	Pre-roll off
+Pre-roll: %d s	Pre-roll: %d s
+Pre-roll: %s s%s	Pre-roll: %s s%s
+Pre-roll: serve SWS	Pre-roll: SWS required
+Precedente	Previous
+Precedente / inizio / successivo si muovono tra gli item della traccia di destinazione.	Previous / start / next navigate between target track items.
+Precedente / inizio / successivo si muovono tra le regioni.	Previous / start / next navigate between regions.
+Predefinito del motore	Engine default
+Preferenze	Preferences
+Progetto salvato	Project saved
+Pronto	Ready
+Pronto (servizio 8770 attivo, MacWhisper disponibile).	Ready (service 8770 active, MacWhisper available).
+Proteggi	Protect
+Protetti: trascinando sopra un marker prendi l'item; Shift+trascina sposta il marker, doppio clic lo modifica.	Protected: dragging over a marker moves the item; Shift+drag moves the marker, double click edits it.
+Puntina in alto a destra, come in REAPER: dritta e azzurra, la finestra del SOLO sta sempre sopra le altre; inclinata e grigia, e' libera. Serve js_ReaScriptAPI. Sta in testata, cosi' c'e' anche in Mini.	Pin at top right, as in REAPER: upright and cyan, SOLO window stays always on top; tilted and gray, free. Requires js_ReaScriptAPI. Placed in header so it is available in Mini view as well.
+Puntina: dritta e azzurra = finestra sempre sopra; inclinata = libera. Clic: cambia.	Pin: upright and cyan = window always on top; tilted = normal. Click: toggle.
+Punto di lettura	Reading point
+Quanto tempo mostra il navigatore: da tutto il progetto a 10 secondi.	How much time the navigator displays: from entire project down to 10 seconds.
+Quanto tempo mostra il navigatore: tutto il progetto, poi 10, 5, 2, 1 minuto, 30 e 10 secondi. Con lo zoom la striscia segue la testina. Trascina o rotella; doppio clic = tutto.	How much time navigator shows: entire project, then 10, 5, 2, 1 minute, 30 and 10 seconds. When zoomed, strip follows playhead. Drag or wheel; double-click = whole project.
+Quello di serie	Standard default
+Quello scelto in %s	Chosen in %s
+Questa versione di REAPER non permette di cambiarlo da uno script (Preferences > Mouse Modifiers).	This REAPER version does not allow changing it from a script (Preferences > Mouse Modifiers).
+Questo set non ha scorciatoie da spiegare.	This set has no shortcuts to explain.
+REAPER di nuovo visibile	REAPER visible again
+REAPER di serie	Default REAPER
+REAPER nascosto: premi Mostra REAPER per riportarlo su	REAPER hidden: press Show REAPER to bring it up
+REAPER passa a %s al riavvio.	REAPER switches to %s upon restart.
+REAPER sta gia' registrando.	REAPER is already recording.
+REC	REC
+REC annullato: nessuna traccia scelta.	REC cancelled: no track selected.
+REC bloccato: nessuna traccia armata nel progetto.	REC blocked: no armed track in the project.
+REC in pausa	REC paused
+REC in pausa: PLAY o PAUSA per riprendere, STOP per chiudere	REC paused: PLAY or PAUSE to resume, STOP to close
+REC in pausa: PLAY o PAUSA per riprendere, STOP per chiudere il take	REC paused: PLAY or PAUSE to resume, STOP to close take
+REC protetto (Lock REC): per fermare premi STOP.	REC protected (Lock REC): press STOP to halt.
+REC ripreso	REC resumed
+REC senza regione: il take resta, la regione no.	REC without region: take remains, region does not.
+REC su %s	REC on %s
+Regione %s	Region %s
+Regione: 	Region: 
+Regione: %s	Region: %s
+Regioni	Regions
+Registra	Record
+Registra sulla traccia degli inserti.	Records on inserts track.
+Registra sulla traccia dei rifacimenti.	Records on retakes track.
+Registra sulla traccia delle versioni alternative.	Records on alternate versions track.
+Registra sulla traccia di destinazione (zona 4). Prima controlla che sia l'unica armata. Con il pre-roll acceso (PRE sul bordo del REC) REAPER riparte qualche secondo prima e registra dal cursore. In Telecomando, se non c'e' nessuna traccia armata, ti chiede quale armare.	Records on target track (zone 4). First checks that it is the only one armed. With pre-roll on (PRE on REC border) REAPER starts playback a few seconds earlier and records from cursor. In Remote, if no track is armed, asks which one to arm.
+Registra sulla traccia principale VO_MAIN.	Records on main track VO_MAIN.
+Registra sulla traccia scelta, dopo aver verificato che sia l'unica armata.	Records on selected track, after ensuring it is the only one armed.
+Registra un inserto senza toccare quello che c'e' gia'.	Records an insert without touching existing audio.
+Registra una versione alternativa sulla traccia ALT.	Records an alternative version on ALT track.
+Reinstalla	Reinstall
+Riapri questo pannello quando vuoi: Action List > 33 Benvenuto.	Reopen this panel whenever you want: Action List > 33 Welcome.
+Riavvia ora	Restart now
+Richiede Python 3.11 o successivo (trovato: 	Requires Python 3.11 or later (found: 
+Richiede l'app MacWhisper (gratuita). Installala in /Applications prima di procedere.	Requires the MacWhisper app (free). Install it in /Applications before continuing.
+Rifa' la regione corrente sulla traccia dei retake.	Redoes current region on retakes track.
+Rifai con l'AI	Regenerate with AI
+Rinomina l'ultima regione take, per annotarci com'e' andata.	Renames last take region, to note how it went.
+Rinomina…	Rename…
+Ripete l'operazione annullata (attenuato se non c'e' niente da ripetere).	Redoes undone action (dimmed if nothing to redo).
+Ripeti	Redo
+Ripristina standard	Restore default
+Riproduce dalla posizione del cursore. Durante il REC, come in REAPER, mette in pausa e riprende.	Plays from cursor position. During REC, as in REAPER, pauses and resumes.
+Ritorno	Return
+Ritorno: %s a %+.1f dB (e' un cambio di mix, resta nel progetto)	Return: %s at %+.1f dB (actual mix change, saved in project)
+Ritrascrivi annullato.	Retranscribe cancelled.
+Ritrascrivi...	Retranscribe...
+Ritrascrivo da capo %d file, come se fossero nuovi.\n\nPrima tolgo i take marker da %d item selezionati (solo da questi; Annulla li rimette).%s\n\nPoi: trascrizione con %s (si cambiano dalle tendine in alto),\nAbbina e testi nel gobbo.\nI testi del gobbo legati ai vecchi marker: quelli mai toccati spariscono,\nquelli corretti a mano restano in mute.\n\nProcedo?	Retranscribing %d files from scratch, as if new.\n\nFirst removing take markers from %d selected items (only these; Undo restores them).%s\n\nThen: transcription with %s (switchable from top dropdowns),\nLink and texts in the teleprompter.\nTeleprompter texts linked to old markers: untouched ones disappear,\nmanually edited ones remain muted.\n\nProceed?
+Ritrascrivo: tolti %d marker. %s	Retranscribing: removed %d markers. %s
+Rosa	Pink
+Rosso	Red
+Russo	Russian
+SCALA / VELOCITA	SCALE / SPEED
+SCALA: %d px/s | CORPO: %d | ANTICIPO VOCE: %.1fs	SCALE: %d px/s | SIZE: %d | VOICE LEAD: %.1fs
+SOLO Web aperto. Da iPad o telefono: %s	SOLO Web opened. From iPad or phone: %s
+SRT accanto al file (automatico)	SRT next to file (automatic)
+SRT esterno o tradotto per gli item selezionati	External or translated SRT for selected items
+SRT esterno o tradotto...	External or translated SRT...
+SRT no	SRT no
+SRT si	SRT yes
+SRT, SRT tradotto, marker di progetto o cue -> marker sull'item	SRT, translated SRT, project markers or cues -> item markers
+STOP	STOP
+STOP — preparo indice take	STOP — preparing take index
+SWS	SWS
+Salmone	Salmon
+Salva	Save
+Salva il progetto. Il pallino arancio vuol dire che ci sono modifiche non salvate.	Saves project. Orange dot indicates unsaved changes.
+Salva progetto	Save project
+Salva tasti attuali…	Save current keys…
+Salvato "	Saved "
+Salvato "%s" con %d scorciatoie.	Saved "%s" with %d shortcuts.
+Salvia	Sage
+Scarica MacWhisper	Download MacWhisper
+Scarica Python	Download Python
+Scegli il language pack in Preferences > General > Language pack.	Choose the language pack in Preferences > General > Language pack.
+Scegli il set di scorciatoie che ti serve. Clic sul nome di un set per vedere cosa fa. Cambia solo i tasti: script e toolbar restano.	Choose the shortcut set you need. Click a set name to see details. Only shortcuts change: scripts and toolbars remain.
+Scegli un altro nome.	Choose another name.
+Scelta non disponibile.	Choice unavailable.
+Scelta non valida.	Invalid choice.
+Scorrimento continuo	Continuous scroll
+Scorrimento continuo attivo.	Continuous scroll enabled.
+Scorrimento continuo spento: testo a scatti, una battuta alla volta.	Continuous scroll disabled: stepped text, one cue at a time.
+Scritta in reaper-menu.ini: RIAVVIA REAPER per caricarla.	Written to reaper-menu.ini: RESTART REAPER to load it.
+Scritta nella %s. Ultimo passo: chiudi e riapri REAPER. Fino ad allora non aprire Customize toolbars (la scrittura andrebbe persa).	Written to %s. Final step: restart REAPER. Do not open Customize toolbars until then (changes would be lost).
+Scritta: RIAVVIA REAPER per caricarla.	Written: RESTART REAPER to load it.
+Scrivi il nome del marker e premi Invio (o il pulsante marker). Esc lascia perdere.	Type marker name and press Enter (or marker button). Esc cancels.
+Scuro	Dark
+Secondi del pre-roll	Pre-roll seconds
+Secondi del pre-roll, da 1 a 5: - e +, oppure la rotella. La spia gialla dice che e' acceso (PRE sul REC).	Pre-roll seconds, from 1 to 5: - and +, or mouse wheel. Yellow light shows it is on (PRE on REC).
+Segui i tagli	Follow cuts
+Segui tagli OFF	Follow cuts OFF
+Segui tagli ON	Follow cuts ON
+Segui: ACCESO	Follow: ON
+Segui: manca script	Follow: script missing
+Segui: spento	Follow: off
+Seguito automatico: %s	Automatic follow: %s
+Seleziona gli item audio da lavorare.	Select the audio items to process.
+Seleziona gli item audio e segui la strada. Ogni tappa si puo' fare anche a mano.	Select audio items and follow the road. Each step can also be performed manually.
+Seleziona la traccia Copione!	Select Script track!
+Seleziona la traccia testi per ZP Studio Suite!	Select text track for ZP Studio Suite!
+Seleziona prima gli item audio.	Select audio items first.
+Seleziona un item sulla traccia VOCE/RB, oppure porta il cursore/playhead vicino a uno speaker item.	Select an item on the VOICE/RB track, or move the cursor/playhead near a speaker item.
+Seleziona, poi clicca un colore.	Select, then click a color.
+Senza SWS: le note del progetto sono nella scheda Notes di Project settings.	Without SWS: project notes are in Notes tab of Project settings.
+Serve all'Harmonic Space Carver per sincronizzare i cue con i marker e muovere la testina. 'Installa' lo aggiunge all'avvio di REAPER (Scripts/__startup.lua).	Required by Harmonic Space Carver to sync cues with markers and move playhead. 'Install' adds it to REAPER startup (Scripts/__startup.lua).
+Serve solo al SOLO Web (browser, iPad). Preferences > Control/OSC/web > Add > Web browser interface.	Only needed for SOLO Web (browser, iPad). Preferences > Control/OSC/web > Add > Web browser interface.
+Servizio 8770 attivo ma MacWhisper non risponde: aprilo almeno una volta.	Service 8770 active but MacWhisper does not respond: open it at least once.
+Sessione SOLO	SOLO Session
+Sessione SOLO: al primo REC crea la cartella ZP SOLO SESSION con le sue tracce.	SOLO Session: creates ZP SOLO SESSION folder with tracks on first REC.
+Sessione SOLO: il SOLO lavora nella sua cartella ZP SOLO SESSION, con le tracce MAIN, INSERTS, RETAKES e ALT; arma solo quella scelta. In testata e' la cella con la cartella, accanto a quella col telecomando. La cella accesa dice in che modalita' sei; clic sull'altra per cambiare.	SOLO session: SOLO operates in its ZP SOLO SESSION folder, with MAIN, INSERTS, RETAKES and ALT tracks; arms only chosen one. In header, folder icon next to remote icon. Active cell shows mode; click other to switch.
+Sfumato	Faded
+Si apre il Terminale: segui li' l'installazione di ZP Speech.	Terminal is opening: follow ZP Speech installation there.
+Si' = chiudi e riapri REAPER adesso (salva prima il progetto)\nNo = piu' tardi: vale dal prossimo riavvio\nAnnulla = non cambiare niente	Yes = quit and reopen REAPER now (save project first)\nNo = later: applies on next restart\nCancel = do not change anything
+Sito OSARA	OSARA website
+Sito SWS	SWS website
+Solo OSARA/NVDA, max 10 s	OSARA/NVDA only, max 10 s
+Solo nella sessione SOLO: su quale delle sue tracce registri (MAIN, INSERTS, RETAKES, ALT), con il loro ingresso. In Telecomando la traccia si arma dal menu dell'ingresso.	SOLO session only: which session track to record on (MAIN, INSERTS, RETAKES, ALT), with their inputs. In Remote, arming is done via input menu.
+Solo per chi usa uno screen reader: lettura delle battute (09-12).	Only for screen reader users: speech line reading (09-12).
+Solo su Mac. Altrove crea l'SRT con il tuo whisper e parti da Abbina.	Mac only. Elsewhere create SRT with your whisper and start from Match.
+Sostituisce solo parole intere; gli accenti contano (è non cambia e).	Replaces whole words only; accents matter (è does not match e).
+Sostituisci	Replace
+Sostituisci con	Replace with
+Sostituisci…	Replace…
+Sostituisco %d occorrenze in %d battute?	Replace %d occurrences across %d cues?
+Spagnolo	Spanish
+Spiega con l'AI	Explain with AI
+Spiega con l'AI usa ZP Speech (macOS): non e' installato qui.	Explain with AI uses ZP Speech (macOS): not installed here.
+Spiegazione pronta per "	Explanation ready for "
+Sposta il cursore indietro di cinque secondi.	Moves cursor back five seconds.
+Spostamenti tra gli item della traccia di destinazione	Move between target track items
+Spostamenti tra le regioni	Move between regions
+Stato gobbo.	Teleprompter status.
+Stereo In %d/%d	Stereo In %d/%d
+Sto lavorando, non sono bloccato: %s, %s trascorsi	Working, not stuck: %s, %s elapsed
+Sto percorrendo la strada...	Walking the road...
+Stop	Stop
+Strada completa	Road complete
+Strada percorsa. %s	Road completed. %s
+Studio/Edit OFF	Studio/Edit OFF
+Studio/Edit ON	Studio/Edit ON
+Successivo	Next
+Sviluppata su un'idea di Paolo Balestri	Developed from an idea by Paolo Balestri
+TESTO	TEXT
+Take	Take
+Tedesco	German
+Telecomando	Remote
+Telecomando: il SOLO registra sulle tracce del tuo progetto, quelle che armi tu. Non crea la cartella SOLO e non cambia l'armamento. Retake, Insert, Alt take ed Effetti qui sono spenti, perche' usano le tracce della sessione SOLO.	Remote: SOLO records on project tracks you arm yourself. Does not create SOLO folder or alter arming. Retake, Insert, Alt take and FX are disabled here, as they depend on SOLO session tracks.
+Telecomando: il progetto non ha tracce su cui registrare.	Remote: project has no tracks to record on.
+Telecomando: registra sulle tracce che armi tu nel progetto. Non crea tracce.	Remote: records on project tracks you arm yourself. Does not create tracks.
+Telecomando: registra sulle tracce del tuo progetto, non crea le tracce SOLO. Azzurro = in uso.	Remote: records on your project tracks, does not create SOLO tracks. Cyan = active.
+Tema	Theme
+Tema chiaro.	Light theme.
+Tema medio.	Medium theme.
+Tema scuro.	Dark theme.
+Terzo	Third
+Testata	Header
+Testi in timeline: %s	Timeline texts: %s
+Testi:	Texts:
+Testina a un terzo da sinistra: vedi di piu' di quello che arriva.	Playhead at one third from left: see more of what is coming.
+Testina al centro della striscia.	Playhead at center of strip.
+Testo (usa \\n per andare a capo):,extrawidth=700	Text (use \\n for newline):,extrawidth=700
+Testo sostitutivo...	Replacement text...
+Testo:,extrawidth=700	Text:,extrawidth=700
+Timecode nascosto.	Timecode hidden.
+Timecode visibile.	Timecode visible.
+Timeline	Timeline
+Timeline: tocca un punto per portarci il cursore	Timeline: tap a point to position the cursor
+Togli	Remove
+Togli colore	Remove color
+Togli take	Remove take
+Toglie dalla timeline il take appena registrato (e la sua regione) e riporta il cursore dov'era. Il file audio resta nella cartella Media: se serve, lo ritrovi.	Removes newly recorded take from timeline (and its region) and returns cursor to previous position. Audio file remains in Media folder if needed.
+Toglie dalla timeline il take appena registrato. Il file resta nella cartella Media.	Removes newly recorded take from timeline. File remains in Media folder.
+Toolbar "ZP Studio Suite" nella %s (Switch toolbar o View > Toolbars); catene di effetti e preset al loro posto.	Toolbar "ZP Studio Suite" in %s (Switch toolbar or View > Toolbars); effect chains and presets in place.
+Toolbar ZP Colori (facoltativa)	ZP Colors toolbar (optional)
+Toolbar ZP Colori: installazione avviata.	ZP Colors toolbar: installation started.
+Toolbar ZP: Floating toolbar %s, aperta o chiusa.	ZP Toolbar: Floating toolbar %s, opened or closed.
+Toolbar ed effetti	Toolbar and effects
+Toolbar ed effetti: installazione avviata.	Toolbar and effects: installation started.
+Tracce gobbo visibili	Teleprompter tracks visible
+Traccia	Track
+Traccia SOLO non trovata: %s	SOLO track not found: %s
+Traccia da registrare (clic: arma / disarma)	Track to record (click: arm / disarm)
+Traccia di destinazione	Target track
+Traccia non trovata: scegline un'altra o costruisci la catena.	Track not found: choose another or build chain.
+Traccia note visibile	Notes track visible
+Traccia: 	Track: 
+Traccia: — · Regione: — · Pre-roll: —	Track: — · Region: — · Pre-roll: —
+Traduci gli SRT degli item selezionati in:	Translate SRTs of selected items into:
+Traduci...   (%s)	Translate...   (%s)
+Traduco %d SRT in %s con %s.\n\n%sGli originali non vengono toccati: accanto nasce Nome.%s.srt, con gli stessi tempi.\n\nProcedo?	Translating %d SRTs into %s with %s.\n\n%sOriginals are untouched: Name.%s.srt will be created alongside, with identical timings.\n\nProceed?
+Traduco %d SRT in background: puoi chiudere la finestra, alla fine arriva una notifica.	Translating %d SRTs in the background: you can close the window, a notification will appear when done.
+Traduco %s%s, %s...	Translating %s%s, %s...
+Traduzione annullata.	Translation cancelled.
+Traduzione in %s finita: %d file tradotti	Translation into %s completed: %d files translated
+Trascrivi	Transcribe
+Trascrivo %d file in background: puoi chiudere la finestra, alla fine arriva una notifica.	Transcribing %d files in the background: you can close the window, a notification will appear when done.
+Trascrivo...	Transcribing...
+Trascrizione -> Gobbo	Transcription -> Teleprompter
+Trascrizione finita: %d file, %d NON riusciti (dettagli nella console).	Transcription completed: %d files, %d FAILED (details in console).
+Trascrizione finita: %d file. Prossima tappa: Abbina.	Transcription completed: %d files. Next step: Link.
+Trasporto	Transport
+Trova	Find
+Turchese	Turquoise
+Tutti	All
+Tutto	All
+Tutto il progetto (o la finestra di zoom) in una striscia: in alto, tenui, gli item di tutte le tracce; in verde quelli della traccia di destinazione. Regioni in blu, marker in giallo, il riquadro e' la parte visibile della timeline. Clic o trascina per spostare il cursore; durante il REC non si muove.	Entire project (or zoom window) in one strip: top faint items from all tracks; green items from target track. Blue regions, yellow markers, box is visible timeline. Click or drag to move cursor; still during REC.
+Tutto pronto.	All ready.
+Ultima regione: %s	Last region: %s
+Ultimo take	Last take
+Una cosa da fare.	One item to do.
+Una trascrizione e' gia' in corso.	A transcription is already in progress.
+Vai a %s	Go to %s
+Vai a e segna	Go to and mark
+Verde	Green
+Verde lime	Lime green
+Viola	Violet
+Visibilita' tracce gobbo aggiornata.	Teleprompter tracks visibility updated.
+Visibilita' traccia note aggiornata.	Notes track visibility updated.
+Volume della traccia selezionata in REAPER (reference o video). Trascina o rotella.	Volume of selected track in REAPER (reference or video). Drag or wheel.
+Volume della traccia selezionata in REAPER: di solito la reference o l'audio del video. Trascina in su o in giu' (con Shift e' piu' fine), oppure usa la rotella; doppio clic = 0 dB. E' un cambio di mix vero: resta nel progetto.	Volume of selected track in REAPER: usually reference or video audio. Drag up or down (Shift for finer control), or use wheel; double-click = 0 dB. Actual mix change: saved in project.
+ZP Benvenuto	ZP Welcome
+ZP Colori	ZP Colors
+ZP Colori: 	ZP Colors: 
+ZP SOLO Recorder	ZP SOLO Recorder
+ZP SOLO Recorder: crea/trova struttura SOLO	ZP SOLO Recorder: create/find SOLO structure
+ZP SOLO: effetti della sessione (bus voci + master)	ZP SOLO: session FX (vocal bus + master)
+ZP SOLO: tolto %s dalla timeline	ZP SOLO: removed %s from timeline
+ZP Set Comandi	ZP Command Sets
+ZP Set Comandi - Spiega con l'AI	ZP Command Sets - Explain with AI
+ZP Set Comandi: rinomina	ZP Command Sets: rename
+ZP Set Comandi: salva i tasti attuali	ZP Command Sets: save current keys
+ZP Set Comandi: scegli un file di scorciatoie	ZP Command Sets: choose a shortcuts file
+ZP Speech (Trascrivi)	ZP Speech (Transcribe)
+ZP Speech non e' installato.\nNel repo zp-suite lancia: bash speech-engine/install_macos.sh\n(serve Python 3.11+ e MacWhisper). Oppure crea l'SRT con il tuo whisper e parti dalla tappa Abbina.	ZP Speech is not installed.\nIn the zp-suite repo run: bash speech-engine/install_macos.sh\n(requires Python 3.11+ and MacWhisper). Or create the SRT with your whisper and start from the Link step.
+ZP Studio Suite	ZP Studio Suite
+ZP Studio Suite - Sostituisci tutto	ZP Studio Suite - Replace all
+ZP Studio Suite - ZP Trascrizione	ZP Studio Suite - ZP Transcription
+ZP Studio Suite - ricerca	ZP Studio Suite - Search
+ZP Studio Suite: 	ZP Studio Suite: 
+ZP Studio Suite: tutto pronto.	ZP Studio Suite: all ready.
+ZP Trascrizione	ZP Transcription
+ZP Trascrizione - Ritrascrivi	ZP Transcription - Retranscribe
+ZP Trascrizione - Traduci	ZP Transcription - Translate
+ZP Trascrizione - lingua	ZP Transcription - language
+ZP Trascrizione - traduco %d di %d	ZP Transcription - translating %d of %d
+ZP Trascrizione - trascrivo %d di %d	ZP Transcription - transcribing %d of %d
+ZP Trascrizione: togli i take marker per ritrascrivere	ZP Transcription: remove take markers to retranscribe
+ZP_cerca.lua non è disponibile o non si carica. Il Gobbo userà una ricerca semplice per sottostringa finché il file non viene ripristinato.	ZP_cerca.lua is unavailable or failed to load. The Teleprompter will use simple substring search until the file is restored.
+Zoom della timeline	Timeline zoom
+acceso: i testi seguono tagli e spostamenti	on: texts follow cuts and moves
+altri %s…	%s more…
+altri set: scorri con la rotella	more sets: scroll with mouse wheel
+arma un'altra traccia o cambia ingresso.	arm another track or change input.
+audio %s	audio %s
+cambia ingresso.	change input.
+centro	center
+con i tasti OSARA	with OSARA keys
+da fare	to do
+dopo 10 s di quiete i testi seguono l'audio (interruttore anche nei Gobbi)	after 10s of quiet texts follow audio (toggle also in Teleprompters)
+dovrei finire a momenti	should finish momentarily
+errore sconosciuto	unknown error
+facoltativo	optional
+fine +5s	end +5s
+i marker diventano testi magnetici per il gobbo	markers become magnetic texts for the teleprompter
+i tasti di prima dell'ultimo cambio	keys from before last change
+js_ReaScriptAPI	js_ReaScriptAPI
+l'ultimo take	last take
+manca un passo	one step missing
+mancano circa %s	about %s remaining
+motore acceso	engine online
+motore spento	engine offline
+motore…	engine…
+nessun ingresso	no input
+nessun item selezionato	no item selected
+nessuna traccia	no track
+nessuna traccia armata	no armed track
+non disponibile	not available
+non serve	not needed
+predefinito	default
+pronto	ready
+quello scelto in %s	chosen in %s
+salvato il 	saved on 
+spento	off
+toolbar principale	main toolbar
+tutto	all
+tutto il progetto	entire project
+whisper crea l'SRT accanto al file audio	whisper creates SRT next to audio file
+← Elenco	← List
+● REC ripreso — %s	● REC resumed — %s
+● REC — %s	● REC — %s
+❚❚ REC in pausa — %s	❚❚ REC paused — %s

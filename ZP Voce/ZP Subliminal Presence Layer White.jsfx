@@ -2,11 +2,21 @@
 // @version 3.2.1
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
+// @about
+//   ### ZP Subliminal Presence Layer White
+//   Generatore sub-liminale di presenza basato su risonanza stocastica e modulazione anarmonica
+//   a sezione aurea per il contrasto della fatica cognitiva nel parlato e nell'eLearning prolungato.
+//
+//   Subliminal presence generator based on stochastic resonance and golden-ratio modulation,
+//   designed to prevent cognitive fatigue during extended speech listening.
+//
+//   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
+//   Guida completa: ZP Studio Suite/help/index.html#plugin-subliminal
 // @changelog
 //   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
 //   Prima pubblicazione nella ZP Suite.
 desc:ZP Subliminal Presence Layer White - Paolo Balestri
-options:no_menu
+options:no_menu gmem=ZPVoiceoverSharedBus
 // Autore: Paolo Balestri - Zio Paolo
 // Contatto: social@paolobalestri.com
 /**
@@ -52,6 +62,21 @@ lp_x1=0; lp_x2=0; lp_y1=0; lp_y2=0;
 env_follow = 0; update_counter = 0; UPDATE_INTERVAL = 64; last_profile = -1;
 lfo1=0; lfo2=0; lfo3=0; lfo4=0; intensity_mod = 0; mod = 0;
 ui_scan = 0; gfx_t = 0;
+
+help_bridge_alive = 0;
+help_warn_until = 0;
+ui_lang = 0;
+last_mouse_cap = 0;
+
+function help_bridge_open(plugin_id) (
+  zp_hb_ok ? (
+    gmem[3902] = plugin_id;
+    gmem[3903] += 1;
+    help_warn_until = 0;
+  ) : (
+    help_warn_until = time_precise() + 4.0;
+  );
+);
 
 function white_noise() (
   rng_state = (rng_state * 1664525 + 1013904223) & 0xFFFFFFFF;
@@ -129,6 +154,14 @@ active ? (
 );
 
 @gfx 450 200
+// Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
+zp_hb = gmem[3900]; zp_hb_now = time_precise();
+!zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
+zp_hb_ok = zp_hb > 0 && zp_hb_now - zp_hb_t < 3;
+help_bridge_alive = zp_hb_ok;
+ui_lang = (gmem[3901] == 1) ? 1 : 0;
+help_mouse_click = (mouse_cap & 1) && !(last_mouse_cap & 1);
+
 gfx_set(0.05, 0.05, 0.06, 1); gfx_rect(0,0,gfx_w,gfx_h);
 gfx_t += 0.04;
 
@@ -150,8 +183,41 @@ gfx_y = (gfx_h - sh) / 2 - 10 + (rand(vibration) - vibration/2);
 gfx_drawstr(str_f);
 
 gfx_setfont(2, "Arial", 12, 'i'); gfx_set(0.6, 0.6, 0.6, 1);
-str_s = "Stochastic Resonance Protocol"; gfx_measurestr(str_s, sw2, sh2);
+str_s = ui_lang == 0 ? "Protocollo di Risonanza Stocastica" : "Stochastic Resonance Protocol";
+gfx_measurestr(str_s, sw2, sh2);
 gfx_x = (gfx_w - sw2) / 2; gfx_y += sh + 5; gfx_drawstr(str_s);
+
+// Help button (?)
+help_btn_w = 22; help_btn_h = 22;
+help_btn_x = gfx_w - help_btn_w - 10;
+help_btn_y = 10;
+help_btn_hover = mouse_x >= help_btn_x && mouse_x <= (help_btn_x + help_btn_w) &&
+                 mouse_y >= help_btn_y && mouse_y <= (help_btn_y + help_btn_h);
+help_btn_hover ? (
+  gfx_set(pr, pg, pb, 0.35); gfx_circle(help_btn_x + 11, help_btn_y + 11, 11, 1);
+  gfx_set(1, 1, 1, 0.95);
+) : (
+  gfx_set(0.25, 0.25, 0.3, 0.35); gfx_circle(help_btn_x + 11, help_btn_y + 11, 11, 1);
+  gfx_set(0.7, 0.7, 0.75, 0.75);
+);
+gfx_circle(help_btn_x + 11, help_btn_y + 11, 11, 0);
+gfx_setfont(2, "Arial", 12, 'b');
+gfx_measurestr("?", help_tw, help_th);
+gfx_x = help_btn_x + (help_btn_w - help_tw) * 0.5;
+gfx_y = help_btn_y + (help_btn_h - help_th) * 0.5;
+gfx_drawstr("?");
+help_btn_hover && help_mouse_click ? ( help_bridge_open(5); );
+
+time_precise() < help_warn_until ? (
+  gfx_setfont(3, "Arial", 11);
+  warn_txt = ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Suite" : "Open Cue Navigator or ZP Suite help";
+  gfx_measurestr(warn_txt, wtw, wth);
+  gfx_set(0.12, 0.12, 0.14, 0.92);
+  gfx_rect((gfx_w - wtw) * 0.5 - 8, 8, wtw + 16, wth + 6);
+  gfx_set(1, 0.7, 0.2, 0.95);
+  gfx_x = (gfx_w - wtw) * 0.5; gfx_y = 11;
+  gfx_drawstr(warn_txt);
+);
 
 gfx_set(0.1, 0.1, 0.12, 1); gfx_rect(0, gfx_h-35, gfx_w, 35);
 ui_scan += 0.015; ui_scan > 1 ? ui_scan = 0;
@@ -186,19 +252,25 @@ active ? (
 );
 
 gfx_set(0.5, 0.5, 0.5, 1); gfx_setfont(3, "Arial", 10);
-gfx_x = 25; gfx_y = gfx_h - 12; gfx_drawstr("RANDOMIZATION LFO (1-4)");
-gfx_x = 175; gfx_y = gfx_h - 12; gfx_drawstr("INTENSITY DRIVE");
+gfx_x = 25; gfx_y = gfx_h - 12;
+gfx_drawstr(ui_lang == 0 ? "LFO CASUALI (1-4)" : "RANDOMIZATION LFO (1-4)");
+gfx_x = 175; gfx_y = gfx_h - 12;
+gfx_drawstr(ui_lang == 0 ? "PILOTAGGIO INTENSITA'" : "INTENSITY DRIVE");
 
 led_x = gfx_w - 25; led_y = gfx_h - 18;
 active ? (
   gfx_set(pr, pg, pb, 0.25); gfx_circle(led_x, led_y, 12, 1);
   gfx_set(pr, pg, pb, 1); gfx_circle(led_x, led_y, 7, 1);
   gfx_set(1, 1, 1, 0.5); gfx_circle(led_x, led_y, 2, 1);
-  t_st = "SYSTEM ACTIVE"; gfx_set(0.7, 0.7, 0.7, 1);
+  t_st = ui_lang == 0 ? "SISTEMA ATTIVO" : "SYSTEM ACTIVE";
+  gfx_set(0.7, 0.7, 0.7, 1);
 ) : (
   gfx_set(1, 0, 0, 0.2); gfx_circle(led_x, led_y, 12, 1);
   gfx_set(1, 0, 0, 1); gfx_circle(led_x, led_y, 7, 1);
-  t_st = "SYSTEM BYPASS"; gfx_set(1, 0.3, 0.3, 1);
+  t_st = ui_lang == 0 ? "SISTEMA ESCLUSO" : "SYSTEM BYPASS";
+  gfx_set(1, 0.3, 0.3, 1);
 );
 gfx_setfont(2); gfx_measurestr(t_st, tw, th);
 gfx_x = led_x - tw - 15; gfx_y = led_y - th/2; gfx_drawstr(t_st);
+
+last_mouse_cap = mouse_cap;

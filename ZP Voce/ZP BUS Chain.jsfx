@@ -1,6 +1,20 @@
 // @description ZP BUS Chain
 // @version 1.2.9
 // @author Paolo Balestri
+// @about
+//   Catena di dinamica e colore per voce parlata, podcast e doppiaggio.
+//   Integra espansore, compressori analogici modellati (1175, LA2, MajorTom),
+//   saturazione bus ANA (CALDO, CORPO, APERTO), Brown Guard e limiter finale.
+//
+//   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
+//   Guida completa: https://latocardioide.it/strumenti/ o dal pulsante '?'
+//
+//   Dynamics and bus-color processor for spoken voice, podcast and dubbing.
+//   Combines expander, modeled analog compressors (1175, LA2, MajorTom),
+//   ANA bus saturation (CALDO, CORPO, APERTO), Brown Guard and safety limiter.
+//
+//   Developed from an idea by Paolo Balestri · Lato Cardioide (latocardioide.it)
+//   Complete documentation: https://latocardioide.it/strumenti/ or click '?'
 // @license GPL-3.0-or-later
 // @changelog
 //   Input Trim: trovata la vera causa per cui il pomello IN non si
@@ -541,6 +555,11 @@ COL_NEU_R = 0.60; COL_NEU_G = 0.60; COL_NEU_B = 0.60;    // GRIGIO   - Neutro/Ra
 
 ui_show_help = 0;
 ui_help_page = 0; // 0:Colori, 1:Routing, 2:»LIM, 3:Brown
+help_bridge_alive = 0;
+help_bridge_last_alive_t = -100;
+help_bridge_req_seq = 0;
+help_warn_until = 0;
+ui_lang = 0;
 
 // ─── THEME & COLORS ───────────────────────────────────────────────────
 function ui_init_theme(is_light) (
@@ -2670,6 +2689,10 @@ lra_needs_reset ? (
 );
 
 @gfx 792 1300
+// Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
+zp_hb = gmem[3900]; zp_hb_now = time_precise();
+!zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
+zp_hb_ok = zp_hb > 0 && zp_hb_now - zp_hb_t < 3;
 // ║                    brown, preset toggle, Slope Map XY e AMU.        ║
 // ║  7  Voice Limiter — zero latency, controllo picchi/densita':         ║
 // ║                    Ceil tetto, Soft presa ms, Rel release,           ║
@@ -3297,12 +3320,26 @@ local(hover, state, _tw, _th)
   gfx_x=x+floor((w-_tw)*0.5); gfx_y=y+floor((h-_th)*0.5); gfx_drawstr("DBG");
 );
 
+function help_bridge_open(plugin_id)
+(
+  help_bridge_alive ? (
+    gmem[3902] = plugin_id;
+    help_bridge_req_seq += 1;
+    gmem[3903] = help_bridge_req_seq;
+  ) : (
+    help_warn_until = time_precise() + 4.0;
+  );
+);
+
 function ui_help_toggle_btn(x, y, w, h, hover_id)
 local(hover, _tw, _th)
 (
   hover = hit(x,y,w,h);
   hover ? ui_set_hover(hover_id);
-  !ui_render_only && hover && mouse_click ? ( ui_show_help = 1 - ui_show_help; );
+  !ui_render_only && hover && mouse_click ? (
+    help_bridge_open(1);
+    ui_show_help = 1 - ui_show_help;
+  );
   ui_show_help ? gfx_set(0.95,0.20,0.28,1) : gfx_set(0.18,0.18,0.22,1);
   gfx_rect(x,y,w,h);
   gfx_set(0.88,0.88,0.88,1); gfx_setfont(1,"Arial",12,'b');
@@ -5186,9 +5223,11 @@ local(tip_y)
 (
   tip_y = gfx_h - TIP_H;
   gfx_set(0.055,0.065,0.075,1); gfx_rect(0,tip_y,gfx_w,TIP_H);
-  gfx_set(0.16,0.44,0.86,0.55); gfx_rect(0,tip_y,gfx_w,1);
-
-  ui_hover_id==100 ? strcpy(#_tip_msg,"?: Guida rapida e mappa colori della BUS Chain") :
+  time_now < help_warn_until ? (
+    gfx_set(0.95,0.65,0.20,1);
+    strcpy(#_tip_msg, ui_lang == 1 ? "Guide: open ZP Help > BUS Chain (start Cue Navigator from 33 Welcome to open it from here)" : "Guida: apri Help ZP > BUS Chain (avvia il Cue Navigator dal 33 Benvenuto per aprirla da qui)");
+  ) :
+  ui_hover_id==100 ? strcpy(#_tip_msg, ui_lang == 1 ? "?: Click to open HTML Guide in browser & toggle quick overlay" : "?: Clic per aprire la Guida HTML nel browser e mostrare la guida rapida") :
   ui_hover_id==101 ? strcpy(#_tip_msg,"GUI: vista grafica pannelli modulo con knob interattivi e meter") :
   ui_hover_id==102 ? strcpy(#_tip_msg,"JSFX: vista host Reaper; Output non ha piu pannello dedicato") :
   ui_hover_id==103 ? strcpy(#_tip_msg,"DBG: overlay diagnostica DSP - valori interni della catena") :
@@ -5305,7 +5344,7 @@ local(tip_y)
   ui_hover_id==9031 ? strcpy(#_tip_msg,"+Off Ref: offset voce sopra la musica in dB; valore tipico +6 dB voce chiara, +4 dB narrazione") :
   ui_hover_id==9040 ? strcpy(#_tip_msg,"Final Limiter ON/OFF: OFF = bypass reale del limiter di sicurezza post-Output; il segnale puo' superare 0 dBFS floating point") :
   ui_hover_id==9015 ? strcpy(#_tip_msg,"RST: click singolo, azzera tutti i parametri Output ai valori di default e deseleziona il preset attivo") :
-  strcpy(#_tip_msg,"ZP BUS Chain GPLv3 | BROWN + Chloe-derived ANA | Output gestito da LIM/Reaper");
+  strcpy(#_tip_msg, ui_lang == 1 ? "ZP BUS Chain GPLv3 | BROWN + Chloe-derived ANA | Output via LIM/Reaper" : "ZP BUS Chain GPLv3 | BROWN + Chloe-derived ANA | Output gestito da LIM/Reaper");
 
   draw_tip_message(tip_y);
 );
@@ -5342,6 +5381,18 @@ gfx_init_done ? 0 : (
   // True Peak previous samples
   outL_prev = 0;
   outR_prev = 0;
+);
+
+time_now = time_precise();
+zp_hb_ok ? (
+  help_bridge_alive = 1;
+  help_bridge_last_alive_t = time_now;
+  ui_lang = gmem[3901] == 1 ? 1 : 0;
+) : (
+  (time_now - help_bridge_last_alive_t > 3.0) ? (
+    help_bridge_alive = 0;
+    ui_lang = 0;
+  );
 );
 
 // Display values: update while transport is running or live monitoring carries signal.
@@ -5747,7 +5798,7 @@ gfx_view_i == 0 ? (
 
 
 function draw_help_overlay()
-local(ov_w, ov_h, ov_x, ov_y, pad, lh, tab_y, tab_w, i, txt_h)
+local(ov_w, ov_h, ov_x, ov_y, pad, lh, tab_y, tab_w, i, txt_h, btn_w, btn_x, btn_txt, _tw, _th)
 (
   ui_show_help ? (
     // Dim the background
@@ -5767,8 +5818,25 @@ local(ov_w, ov_h, ov_x, ov_y, pad, lh, tab_y, tab_w, i, txt_h)
 
     // Title & Close Button
     gfx_setfont(1,"Arial",18,'b'); gfx_set(0.9,0.9,0.9,1);
-    gfx_x = ov_x + 16; gfx_y = ov_y + 16; gfx_drawstr("GUIDA BUS CHAIN");
-    
+    gfx_x = ov_x + 16; gfx_y = ov_y + 16;
+    gfx_drawstr(ui_lang == 1 ? "BUS CHAIN GUIDE" : "GUIDA BUS CHAIN");
+
+    // Help link button
+    btn_w = ui_lang == 1 ? 116 : 136;
+    btn_x = ov_x + ov_w - 36 - btn_w - 8;
+    gfx_set(0.18, 0.45, 0.90, 1);
+    gfx_rect(btn_x, ov_y + 12, btn_w, 24);
+    gfx_set(1, 1, 1, 1);
+    gfx_setfont(1, "Arial", 11, 'b');
+    btn_txt = ui_lang == 1 ? "FULL GUIDE ↗" : "GUIDA COMPLETA ↗";
+    gfx_measurestr(btn_txt, _tw, _th);
+    gfx_x = btn_x + floor((btn_w - _tw) * 0.5);
+    gfx_y = ov_y + 12 + floor((24 - _th) * 0.5);
+    gfx_drawstr(btn_txt);
+    hit(btn_x, ov_y + 12, btn_w, 24) && mouse_click ? (
+      help_bridge_open(1);
+    );
+
     // Close button (X)
     gfx_set(0.8,0.3,0.3,1);
     gfx_rect(ov_x + ov_w - 36, ov_y + 12, 24, 24);
@@ -5784,12 +5852,15 @@ local(ov_w, ov_h, ov_x, ov_y, pad, lh, tab_y, tab_w, i, txt_h)
     gfx_setfont(1,"Arial",13,'b');
     i = 0;
     loop(4,
-      i == 0 ? strcpy(#_t, "COLORI") : i == 1 ? strcpy(#_t, "ROUTING") : i == 2 ? strcpy(#_t, "» LIM") : strcpy(#_t, "BROWN");
+      i == 0 ? strcpy(#_t, ui_lang == 1 ? "COLORS" : "COLORI") :
+      i == 1 ? strcpy(#_t, "ROUTING") :
+      i == 2 ? strcpy(#_t, "» LIM") : strcpy(#_t, "BROWN");
       hit(ov_x + pad + i*(tab_w+8), tab_y, tab_w, 24) && mouse_click ? ui_help_page = i;
       ui_help_page == i ? gfx_set(0.8,0.8,0.8,1) : gfx_set(0.3,0.3,0.3,1);
       gfx_rect(ov_x + pad + i*(tab_w+8), tab_y, tab_w, 24);
       ui_help_page == i ? gfx_set(0.1,0.1,0.1,1) : gfx_set(0.7,0.7,0.7,1);
-      gfx_x = ov_x + pad + i*(tab_w+8) + floor((tab_w - 40)*0.5);
+      gfx_measurestr(#_t, _tw, _th);
+      gfx_x = ov_x + pad + i*(tab_w+8) + floor((tab_w - _tw)*0.5);
       gfx_y = tab_y + 4; gfx_drawstr(#_t);
       i += 1;
     );
@@ -5800,56 +5871,56 @@ local(ov_w, ov_h, ov_x, ov_y, pad, lh, tab_y, tab_w, i, txt_h)
     gfx_x = ov_x + pad; gfx_y = tab_y + 40;
 
     ui_help_page == 0 ? (
-      gfx_set(1.00,0.82,0.20,1); gfx_drawstr("ORO"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(" = Sidechain / detector"); gfx_y += lh;
+      gfx_set(1.00,0.82,0.20,1); gfx_drawstr(ui_lang == 1 ? "GOLD" : "ORO"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(ui_lang == 1 ? " = Sidechain / detector" : " = Sidechain / detector"); gfx_y += lh;
       gfx_x = ov_x + pad;
-      gfx_set(0.95,0.20,0.28,1); gfx_drawstr("ROSSO"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(" = Gain / Makeup / Amount / Drive / PAR RT (spinta/energia)"); gfx_y += lh;
+      gfx_set(0.95,0.20,0.28,1); gfx_drawstr(ui_lang == 1 ? "RED" : "ROSSO"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(ui_lang == 1 ? " = Gain / Makeup / Amount / Drive / PAR RT (boost/energy)" : " = Gain / Makeup / Amount / Drive / PAR RT (spinta/energia)"); gfx_y += lh;
       gfx_x = ov_x + pad;
-      gfx_set(0.80,0.20,0.95,1); gfx_drawstr("VIOLA"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(" = Reduction / Threshold / Compression"); gfx_y += lh;
+      gfx_set(0.80,0.20,0.95,1); gfx_drawstr(ui_lang == 1 ? "PURPLE" : "VIOLA"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(ui_lang == 1 ? " = Reduction / Threshold / Compression" : " = Reduction / Threshold / Compression"); gfx_y += lh;
       gfx_x = ov_x + pad;
-      gfx_set(0.20,0.60,0.95,1); gfx_drawstr("BLU"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(" = Attack / Release / tempi"); gfx_y += lh;
+      gfx_set(0.20,0.60,0.95,1); gfx_drawstr(ui_lang == 1 ? "BLUE" : "BLU"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(ui_lang == 1 ? " = Attack / Release / timings" : " = Attack / Release / tempi"); gfx_y += lh;
       gfx_x = ov_x + pad;
-      gfx_set(0.20,0.85,0.85,1); gfx_drawstr("CIANO"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(" = Mix / Dry-Wet"); gfx_y += lh;
+      gfx_set(0.20,0.85,0.85,1); gfx_drawstr(ui_lang == 1 ? "CYAN" : "CIANO"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(ui_lang == 1 ? " = Mix / Dry-Wet" : " = Mix / Dry-Wet"); gfx_y += lh;
       gfx_x = ov_x + pad;
-      gfx_set(0.20,0.85,0.45,1); gfx_drawstr("VERDE"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(" = Tone / Slope / Color"); gfx_y += lh;
+      gfx_set(0.20,0.85,0.45,1); gfx_drawstr(ui_lang == 1 ? "GREEN" : "VERDE"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(ui_lang == 1 ? " = Tone / Slope / Color" : " = Tone / Slope / Color"); gfx_y += lh;
       gfx_x = ov_x + pad;
-      gfx_set(0.90,0.35,0.10,1); gfx_drawstr("ARANCIO"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(" = Limiter / Ceiling / Safety / Saturation"); gfx_y += lh;
+      gfx_set(0.90,0.35,0.10,1); gfx_drawstr(ui_lang == 1 ? "ORANGE" : "ARANCIO"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(ui_lang == 1 ? " = Limiter / Ceiling / Safety / Saturation" : " = Limiter / Ceiling / Safety / Saturation"); gfx_y += lh;
       gfx_x = ov_x + pad;
-      gfx_set(0.60,0.60,0.60,1); gfx_drawstr("GRIGIO"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(" = funzioni tecniche / routing / modalita'");
+      gfx_set(0.60,0.60,0.60,1); gfx_drawstr(ui_lang == 1 ? "GREY" : "GRIGIO"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(ui_lang == 1 ? " = technical functions / routing / mode" : " = funzioni tecniche / routing / modalita'");
     );
 
     ui_help_page == 1 ? (
-      gfx_drawstr("ROUTING E ORDINE DEI MODULI:"); gfx_y += lh*1.5;
-      gfx_x = ov_x + pad; gfx_drawstr("ORD cambia l'ordine reale della cascata audio."); gfx_y += lh;
-      gfx_x = ov_x + pad; gfx_drawstr("I pannelli si riordinano graficamente per mostrare il percorso audio reale."); gfx_y += lh*1.5;
+      gfx_drawstr(ui_lang == 1 ? "ROUTING & MODULE ORDER:" : "ROUTING E ORDINE DEI MODULI:"); gfx_y += lh*1.5;
+      gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "ORD changes the actual audio cascade order." : "ORD cambia l'ordine reale della cascata audio."); gfx_y += lh;
+      gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "Panels graphically reorder to show the real audio path." : "I pannelli si riordinano graficamente per mostrare il percorso audio reale."); gfx_y += lh*1.5;
       gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("CLASSIC"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(": 1175 -> LA2 -> MT -> BRN"); gfx_y += lh;
       gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("SMOOTH"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(": LA2 -> 1175 -> MT -> BRN"); gfx_y += lh;
       gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("TONE FIRST"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(": MT -> BRN -> 1175 -> LA2"); gfx_y += lh;
       gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("DENSE"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(": 1175 -> MT -> LA2 -> BRN"); gfx_y += lh;
       gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("BROWN FIRST"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(": BRN -> 1175 -> LA2 -> MT"); gfx_y += lh*1.5;
-      gfx_x = ov_x + pad; gfx_drawstr("VISTE WORK:"); gfx_y += lh*1.5;
-      gfx_x = ov_x + pad; gfx_drawstr("ALL mostra tutti i moduli. ACTIVE mostra solo i moduli accesi."); gfx_y += lh;
-      gfx_x = ov_x + pad; gfx_drawstr("TONE mostra i moduli timbrici. LEVEL mostra i moduli dinamici/livello."); gfx_y += lh;
-      gfx_x = ov_x + pad; gfx_drawstr("WORK filtra solo la vista, non cambia il DSP.");
+      gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "WORK VIEWS:" : "VISTE WORK:"); gfx_y += lh*1.5;
+      gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "ALL shows all modules. ACTIVE shows active modules only." : "ALL mostra tutti i moduli. ACTIVE mostra solo i moduli accesi."); gfx_y += lh;
+      gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "TONE shows tonal modules. LEVEL shows dynamic/level modules." : "TONE mostra i moduli timbrici. LEVEL mostra i moduli dinamici/livello."); gfx_y += lh;
+      gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "WORK filters the view only, does not affect DSP." : "WORK filtra solo la vista, non cambia il DSP.");
     );
 
     ui_help_page == 2 ? (
-      gfx_drawstr("» LIM (MANDATA PARALLELA AL LIMITER):"); gfx_y += lh*1.5;
-      gfx_x = ov_x + pad; gfx_drawstr("Il pulsante » LIM manda il modulo in parallelo direttamente al limiter finale."); gfx_y += lh*1.5;
-      gfx_x = ov_x + pad; gfx_drawstr("Quando e' attivo, il modulo non processa piu' il main path in cascata."); gfx_y += lh;
-      gfx_x = ov_x + pad; gfx_drawstr("Il main path prosegue dry/pass-through verso il modulo successivo."); gfx_y += lh;
-      gfx_x = ov_x + pad; gfx_drawstr("Il segnale processato entra nel parallel bus e viene sommato pre-limiter."); gfx_y += lh*1.5;
-      gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("PAR RT"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(" controlla il livello globale di questo ritorno parallelo."); gfx_y += lh;
-      gfx_x = ov_x + pad; gfx_drawstr("Compare nel pannello Limiter solo quando almeno un modulo ha » LIM attivo.");
+      gfx_drawstr(ui_lang == 1 ? "» LIM (PARALLEL SEND TO LIMITER):" : "» LIM (MANDATA PARALLELA AL LIMITER):"); gfx_y += lh*1.5;
+      gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "The » LIM button sends the module in parallel directly to the final limiter." : "Il pulsante » LIM manda il modulo in parallelo direttamente al limiter finale."); gfx_y += lh*1.5;
+      gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "When active, the module no longer processes the main cascaded path." : "Quando e' attivo, il modulo non processa piu' il main path in cascata."); gfx_y += lh;
+      gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "The main path continues dry/pass-through to the next module." : "Il main path prosegue dry/pass-through verso il modulo successivo."); gfx_y += lh;
+      gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "Processed signal enters the parallel bus and sums pre-limiter." : "Il segnale processato entra nel parallel bus e viene sommato pre-limiter."); gfx_y += lh*1.5;
+      gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("PAR RT"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(ui_lang == 1 ? " controls the overall level of this parallel return." : " controlla il livello globale di questo ritorno parallelo."); gfx_y += lh;
+      gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "Appears in Limiter panel only when at least one module has » LIM active." : "Compare nel pannello Limiter solo quando almeno un modulo ha » LIM attivo.");
     );
 
     ui_help_page == 3 ? (
       gfx_drawstr("BROWN GUARD:"); gfx_y += lh*1.5;
-      gfx_x = ov_x + pad; gfx_drawstr("Brown Guard e' un correttore tonale dinamico che lavora full-range 20 Hz - 20 kHz."); gfx_y += lh*1.5;
-      gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("SLOPE"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(" definisce la direzione tonale (es. scuro o brillante)."); gfx_y += lh;
-      gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("AMT"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(" decide quanto la correzione accompagna il segnale verso la curva."); gfx_y += lh*1.5;
-      gfx_x = ov_x + pad; gfx_drawstr("Non e' un match EQ rigido: usa una correzione musicale soft-knee."); gfx_y += lh;
-      gfx_x = ov_x + pad; gfx_drawstr("I punti interni della mappa sono fulcri/zone di lettura, non limiti di banda."); gfx_y += lh*1.5;
-      gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("DIN"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(" ON scala i punti della mappa in base al parametro AMT.");
+      gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "Brown Guard is a dynamic tone equalizer working full-range 20 Hz - 20 kHz." : "Brown Guard e' un correttore tonale dinamico che lavora full-range 20 Hz - 20 kHz."); gfx_y += lh*1.5;
+      gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("SLOPE"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(ui_lang == 1 ? " sets tonal tilt direction (e.g. dark or bright)." : " definisce la direzione tonale (es. scuro o brillante)."); gfx_y += lh;
+      gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("AMT"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(ui_lang == 1 ? " controls how strongly correction follows the curve." : " decide quanto la correzione accompagna il segnale verso la curva."); gfx_y += lh*1.5;
+      gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "Not a stiff match EQ: uses musical soft-knee dynamic shaping." : "Non e' un match EQ rigido: usa una correzione musicale soft-knee."); gfx_y += lh;
+      gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "Inner map points are pivot/reading zones, not steep crossover bands." : "I punti interni della mappa sono fulcri/zone di lettura, non limiti di banda."); gfx_y += lh*1.5;
+      gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("DIN"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(ui_lang == 1 ? " ON scales map points according to the AMT parameter." : " ON scala i punti della mappa in base al parametro AMT.");
     );
 
     // Consume all clicks inside overlay so they don't fall through

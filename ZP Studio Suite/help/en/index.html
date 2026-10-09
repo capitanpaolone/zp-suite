@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZP Studio Suite - Guide</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f7f4;
+      --paper: #ffffff;
+      --ink: #202024;
+      --muted: #5e6068;
+      --line: #d9d9d2;
+      --accent: #245ba6;
+      --accent-soft: #eaf1fb;
+      --code: #ecece8;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #101217;
+        --paper: #171a21;
+        --ink: #eceff4;
+        --muted: #adb2bd;
+        --line: #303541;
+        --accent: #77a9ff;
+        --accent-soft: #172236;
+        --code: #232834;
+      }
+    }
+    body {
+      margin: 0;
+      padding: 28px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    main { max-width: 1040px; margin: 0 auto; }
+    h1 { font-size: 28px; margin: 0 0 6px; }
+    h2 { font-size: 21px; margin: 34px 0 10px; border-top: 1px solid var(--line); padding-top: 22px; }
+    h3 { font-size: 17px; margin: 0 0 6px; }
+    p { margin: 8px 0; }
+    a { color: var(--accent); }
+    code {
+      background: var(--code);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.94em;
+    }
+    .lead { color: var(--muted); font-size: 16px; max-width: 780px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin: 16px 0 6px;
+    }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .num {
+      display: inline-block;
+      min-width: 32px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .note {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 10px 14px;
+      margin: 14px 0;
+    }
+    ul, ol { padding-left: 22px; }
+    li { margin: 6px 0; }
+    .small { color: var(--muted); font-size: 13px; }
+    .flow { counter-reset: passo; list-style: none; padding-left: 0; }
+    .flow > li { counter-increment: passo; position: relative; padding-left: 34px; }
+    .flow > li::before {
+      content: counter(passo); position: absolute; left: 0; top: 0;
+      width: 24px; height: 24px; border-radius: 12px; text-align: center;
+      background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 13px; line-height: 24px;
+    }
+    .when { color: var(--muted); font-style: italic; margin-top: 2px; }
+    dl.win { margin: 10px 0 0; }
+    dl.win dt { font-weight: 700; margin-top: 8px; }
+    dl.win dd { margin: 2px 0 0 0; }
+    table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+    th, td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-weight: 600; font-size: 13px; }
+    .wrap { overflow-x: auto; }
+    @media (max-width: 600px) { body { padding: 16px; } }
+  </style>
+<style id="lc-firma">
+.lc-testata{display:flex;align-items:center;gap:.5rem;margin:0 0 .4rem;font:600 .78rem/1.2 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  letter-spacing:.08em;text-transform:uppercase;color:#565F66}
+.lc-testata a{color:inherit;text-decoration:none}.lc-testata a:hover{color:#A94F35}
+.lc-logo{width:22px;height:22px;flex:none}
+.lc-filetto{border:0;border-top:2px solid #A94F35;margin:.6rem 0 1.4rem}
+.lc-piede{display:flex;align-items:center;gap:.6rem;margin:3rem 0 1rem;padding:.8rem 1rem;border:1px solid #CFCCC3;
+  border-radius:6px;background:#FAF9F5;color:#37444E;font:.95rem/1.4 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+.lc-piede a{color:#8F4630}
+@media (prefers-color-scheme: dark){
+  .lc-testata{color:#9aa4ac}.lc-piede{background:#1d2226;border-color:#2e3439;color:#c9cfd4}.lc-piede a{color:#d98b6f}
+}
+</style>
+</head>
+<body>
+<main>
+  <!-- lc-testata --><div class="lc-testata"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><a href="https://latocardioide.it/strumenti/">Lato Cardioide</a> &middot; Tools</div><!-- /lc-testata -->
+<h1>ZP Studio Suite for REAPER</h1>
+  
+
+<!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
+<p class="lead">A specialized toolkit inside REAPER designed for voice workflows: dubbing, voiceover, podcasts, audiobooks, e-learning, and commercial spots. Places scripts on the timeline, prompts lines live while recording, follows audio editing cuts, and prepares delivery stems and audio chains. Fully accessible with screen readers.</p>
+
+  <div class="note">
+    <a href="toolbar.html"><strong>Toolbar guide, button by button &rarr;</strong></a> &middot;
+    <a href="solo_recorder.html">SOLO Recorder &rarr;</a> &middot;
+    <a href="pannello_trascrizione.html">ZP Transcription &rarr;</a> &middot;
+    <a href="voice_cleaner.html">Voice Cleaner &rarr;</a><br>
+    <strong>Fresh install:</strong> open <a href="#tool-33"><strong>33 Welcome</strong></a> from the Action List (it opens automatically on first tool launch). It checks all components and offers one-click fixes for each.<br>
+    If this is your first time, read the first three sections: <em>overview</em>, <em>core concepts</em>, and <em>workflows</em>. Each window has its dedicated section, and clicking <strong>?</strong> in any window title bar jumps straight to its documentation.
+  </div>
+
+  <h2 id="indice">Table of Contents</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Fundamentals</h3>
+      <a href="#scopo">Overview and purpose</a><br>
+      <a href="#concetti">Core concepts</a><br>
+      <a href="#percorsi">Starting workflows</a>
+    </div>
+    <div class="card">
+      <h3>Script & Subtitles</h3>
+      <a href="#tool-29">ZP Transcription</a><br>
+      <a href="#tool-02">Vertical Teleprompter</a> &middot; <a href="#tool-03">Horizontal</a><br>
+      <a href="#tool-30">ZP SRT</a> &middot; <a href="#tool-04">Markers</a><br>
+      <a href="#zp-regia-ruoli">Actor / Notes</a>
+    </div>
+    <div class="card">
+      <h3>Recording & Editing</h3>
+      <a href="#tool-solo">SOLO Recorder</a><br>
+      <a href="#tool-22">Voice Cleaner</a><br>
+      <a href="#tool-09">OSARA Speech (09-12)</a>
+    </div>
+    <div class="card">
+      <h3>Organizing & Delivery</h3>
+      <a href="#zp-mixdown-render">Import Folders</a><br>
+      <a href="#tool-17">Project Manager</a> &middot; <a href="#zp-project-viewer">Project Viewer</a><br>
+      <a href="#zp-report-minuti">Voice Minutes Report</a>
+    </div>
+    <div class="card">
+      <h3>Audio & DSP</h3>
+      <a href="#zp-chain-builder">Chain Builder</a> &middot; <a href="#zp-probe-guard">Probe Guard</a><br>
+      <a href="#zp-shared-bus">ZP Shared Bus Plugins</a>
+    </div>
+    <div class="card">
+      <h3>Reference & Setup</h3>
+      <a href="#strumenti-srt">Standalone SRT Tools</a><br>
+      <a href="#azioni">Background Actions</a><br>
+      <a href="#installazione">Installation & Optional Components</a>
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <h2 id="scopo">Overview and purpose</h2>
+  <p>REAPER excels at recording and editing, but does not natively know the contents of your script. ZP Studio Suite bridges this gap:</p>
+  <ol>
+    <li><strong>The text lives on the timeline.</strong> Every script line becomes a text item positioned exactly where spoken. It originates from SRT files, translations, automatic speech-to-text, or custom markers.</li>
+    <li><strong>Read text live while recording.</strong> The two <em>Teleprompters</em> display scrolling text locked to the playhead; screen reader users hear lines read aloud via OSARA or NVDA.</li>
+    <li><strong>Text tracks audio cuts.</strong> When script cues are linked to audio takes, splitting or moving audio clips moves the corresponding dialogue cues automatically. You can export updated subtitles at any point.</li>
+  </ol>
+  <p>Complementing this core are dedicated production utilities: a remote recording panel (SOLO Recorder), automatic silence trimming, batch region organization for delivery renders, billing minute calculation, and automatic ZP audio chain construction with loudness monitoring.</p>
+  <p class="small">Legacy track prefixes <em>RythmoBand / Rythmo Band</em> are retained internally to ensure seamless backward compatibility with older projects.</p>
+
+  <!-- ================================================================== -->
+  <h2 id="concetti">Core concepts</h2>
+  <dl class="win">
+    <dt>Text items and Rythmo Band Testi tracks</dt>
+    <dd>A dialogue cue is an empty text item with script content stored in its item notes. They reside on tracks named <code>Rythmo Band Testi</code>: main voice, reference languages (<code>… REF</code>, <code>… ENG</code>), or transcribed speakers. Transcription tracks are created <strong>hidden</strong> by default, visible inside the Teleprompter rather than cluttering the arrangement timeline (toggle visibility with <em>Show text tracks</em> in ZP Transcription).</dd>
+
+    <dt>Text flows</dt>
+    <dd>Selects which text track the Teleprompter displays. Switch using <code>&lt;</code> <code>&gt;</code> controls. <strong>All</strong> reads all text tracks combined (including hidden ones) in chronological sequence: invaluable during editing to search keywords across the entire project. The window title always indicates the active flow.</dd>
+
+    <dt>Project markers vs Take markers</dt>
+    <dd>A <strong>project marker</strong> sits on the global timeline ruler: moving audio items leaves the marker behind. A <strong>take marker</strong> is bound directly to an audio item take at a specific point in the speech waveform: moving or trimming the item moves the marker along with it. Cues are locked to take markers for this reason. Take markers are protected from accidental dragging: clicking a marker selects the item, and dragging requires <strong>Shift+drag</strong> (configured under <em>Item markers</em> in <a href="#tool-33">33 Welcome</a>).</dd>
+
+    <dt>Timeline time vs File source time</dt>
+    <dd>Video subtitles use timeline timecode (an SRT starts at the movie start point). Audio transcription uses file source time (a cue at 0:12 is at the 12th second of the WAV, wherever placed on the timeline). Video tools (01, 05, 08) work in timeline time; ZP Transcription and SRT from audio (29, 31) operate in file source time.</dd>
+
+    <dt>Follow cuts</dt>
+    <dd>Toggle available in ZP Transcription and both Teleprompters. When active, after 10 seconds of project inactivity, text items realign under their corresponding audio takes. Manually edited script lines are never overwritten.</dd>
+
+    <dt>Actor / character notes</dt>
+    <dd>For each role, the suite creates a voice track and a paired <code>BB Note Personaggio - role</code> track. Teleprompters read character colors and directorial notes from these tracks.</dd>
+
+    <dt>Sections and regions (delivery)</dt>
+    <dd>Batch deliveries use <strong>one region per delivery file</strong> and <strong>one marker per subfolder</strong>. Project Manager sets up regions and renders cleanly into <code>Mixdown/&lt;marker&gt;/</code>.</dd>
+  </dl>
+
+  <!-- ================================================================== -->
+  <h2 id="percorsi">Starting workflows</h2>
+  <p>Pick the workflow best matching your immediate production needs.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Dubbing / ADR to Picture</h3>
+      <p class="when">You have picture and an SRT script (or translation) to record in sync.</p>
+      <ol class="flow">
+        <li><a href="#zp-chain-builder">Chain Builder</a>, select <em>ADR / Dubbing</em>.</li>
+        <li><a href="#tool-30">ZP SRT</a> &rarr; <em>Video + SRT</em>. For reference audio: <em>Add language</em>.</li>
+        <li><a href="#zp-regia-ruoli">Actor / Notes</a> to define character roles.</li>
+        <li>Open <a href="#tool-02">Vertical Teleprompter</a> and record with <a href="#tool-solo">SOLO Recorder</a>.</li>
+        <li>When done, export via <a href="#tool-30">ZP SRT</a> &rarr; <em>Export SRT</em>.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>Spoken Dialogue Editing</h3>
+      <p class="when">Podcasts, interviews, audiobooks: you have WAV files and need text to search and cut.</p>
+      <ol class="flow">
+        <li>Select audio items and open <a href="#tool-29">ZP Transcription</a>: <em>Follow the path</em>.</li>
+        <li>In <a href="#tool-02">Teleprompter</a>, choose flow <em>All</em> and search keywords with Ctrl/⌘+F.</li>
+        <li>Edit freely: with <em>Follow cuts</em> active, text follows take edits.</li>
+        <li>After editing, <a href="#tool-31">SRT from audio</a> exports finalized subtitles.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>Recording Dubbing from Translated Script</h3>
+      <p class="when">Audio in source language, translated script in Word/Excel with timecode.</p>
+      <ol class="flow">
+        <li><a href="#tool-srt-tools">SRT Tools</a>: paste text to generate clean SRT (set offset if TC starts at 01:00:00).</li>
+        <li><a href="#tool-29">ZP Transcription</a> &rarr; <em>Match from…</em> &rarr; External or translated SRT.</li>
+        <li>Read inside <a href="#tool-02">Teleprompter</a> while recording.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>Batch Deliveries</h3>
+      <p class="when">Commercials, prompts, e-learning: dozens of named files in specific folders.</p>
+      <ol class="flow">
+        <li><a href="#zp-mixdown-render">Import Folders</a>, or record via <a href="#tool-solo">SOLO Recorder</a>.</li>
+        <li><a href="#tool-22">Voice Cleaner</a> to trim head/tails and split takes.</li>
+        <li><a href="#tool-17">Project Manager</a>: regions, naming lists, render to <code>Mixdown/</code>.</li>
+        <li><a href="#zp-project-viewer">Project Viewer</a> to verify, <a href="#zp-report-minuti">Minutes Report</a> for billing.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-29">ZP Transcription</h2>
+  <p><strong>Overview.</strong> Transfers speech to text into the Teleprompter and locks cues to audio takes. Follows a streamlined 4-stage path, showing current status of selected items.</p>
+  <p class="when">When: you have spoken audio items (or external SRT / translation) and want to read and search text while editing.</p>
+  <ol class="flow">
+    <li><strong>Transcribe</strong> &mdash; Whisper (ZP Speech) generates an SRT alongside the WAV file. Skips items that already have an SRT or take markers. To re-read a file from scratch &mdash; after a <em>glue</em>, or when audio timings changed &mdash; the button becomes <strong>Retranscribe…</strong>: prompts for confirmation, clears existing take markers from selected items (Undo restores them), archives existing SRT to <code>.srt.bak-&lt;date&gt;</code> without deleting, and runs the path fresh. Unaltered teleprompter cues disappear while manually edited lines are muted. Requires macOS with ZP Speech installed; on other systems generate SRT with external Whisper and proceed from stage 2.</li>
+    <li><strong>Match from…</strong> &mdash; Select dialogue cue source: adjacent SRT, external/translated SRT, timeline project markers, or WAV embedded cues.</li>
+    <li><strong>Send to teleprompter</strong> &mdash; Runs automatically after Match: each marker becomes a text item on hidden track <code>Rythmo Band Testi &lt;voice&gt;</code>. <em>Update now</em> refreshes at any time.</li>
+    <li><strong>Follow cuts</strong> &mdash; When active, after 10 s of idle time, text items realign to audio cuts.</li>
+  </ol>
+  <p><strong>Follow the path</strong> executes only missing steps in order. <a href="pannello_trascrizione.html">Full guide &rarr;</a></p>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-02">Vertical Teleprompter</h2>
+  <p><strong>Overview.</strong> Live scrolling prompter: displays script lines moving synchronously with playhead, highlighting the current cue, character colors, countdown lead-in timer, and directorial notes. Supports in-place text corrections.</p>
+  <p class="when">When: in the voice booth while reading; during editing to locate and tweak dialogue cues. Ideal format for multi-voice scripts.</p>
+  <p>The right side panel is grouped logically: top controls for daily operations, <strong>Text</strong> and <strong>Reading</strong>, and collapsible <strong>Theme</strong> and <strong>Notes and Tracks</strong> sections (state is remembered). Toggles ☑ turn options on or off. Click <strong>&gt;</strong> to collapse the sidebar.</p>
+  <h3>Text and Reading</h3>
+  <ul>
+    <li><strong>Flow</strong> (dropdown ▾): select which text track to read (main, reference languages, individual voice tracks, or <em>All</em>).</li>
+    <li><strong>Font Size</strong>: scale text readability.</li>
+    <li><strong>Reading Guide</strong> (Top / Third / Center): vertical playhead anchor inside the prompter window. Top shows upcoming text below; Center focuses on current line while leaving space above for a video window.</li>
+    <li><strong>Continuous Scrolling</strong>: on, text glides continuously with the timeline like a rythmo band; off, text flips page-by-page, cue by cue.</li>
+    <li><strong>Word by Word</strong>: highlights words progressively across each spoken line.</li>
+    <li><strong>Countdown</strong>: numeric countdown before each incoming dialogue cue.</li>
+    <li><strong>Show Timecode</strong>, and in <strong>Theme</strong>: <strong>Mode</strong> (dark, medium, light), <strong>Contrast</strong> (soft, full), <strong>Speaker Colors</strong> (distinct hue per character/voice track).</li>
+  </ul>
+  <h3>Editing and Notes</h3>
+  <ul>
+    <li><strong>Search</strong> (Ctrl/⌘+F): prefix and keyword search (e.g. <code>hijac</code> finds <em>hijacking</em>). Case and accent insensitive. Quote phrases for exact matching. Result list displays timecode, text, and track in <em>All</em> mode; click or use ↑/↓, <code>&lt;</code>, <code>&gt;</code> to jump.
+      <br><strong>Replace</strong>: expands replace field (Tab jumps between inputs). Replace matches <strong>whole words</strong> only and respects exact accents. Click <strong>Replace</strong> to step through occurrences; <strong>All</strong> replaces across the project with a single Undo step. Only teleprompter item notes are altered: take markers and source SRT files remain untouched.</li>
+    <li><strong>Double click</strong> on any cue opens inline editor. Enter saves, Shift+Enter inserts newline, Esc cancels.</li>
+    <li><strong>Studio/Edit Mode</strong>: stops playback and unlocks free text navigation; <strong>Moves timeline</strong> controls whether scrubbing text also moves the REAPER edit cursor.</li>
+    <li><strong>+ Note</strong>: adds a director's note at edit cursor. <strong>Notes Panel</strong> displays chronological list of notes, following playback automatically. Clicking jumps to note position, double click edits; <strong>OK</strong> marks note completed (green badge); <strong>×</strong> deletes note after confirmation. Undoable via Ctrl/⌘+Z.</li>
+    <li><strong>Follow cuts</strong>: toggles automatic realigning.</li>
+    <li><strong>Notes visible / Prompter tracks visible</strong>: toggles arrangement visibility of notes and text tracks. <strong>+ Line</strong> adds a new cue item at current position.</li>
+  </ul>
+  <p><strong>OSARA Menu</strong>: accessible popup menu containing all toolbar options with identical labels. Screen reader playback actions are handled separately by <a href="#tool-09">actions 09-12</a>.</p>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-03">Horizontal Teleprompter</h2>
+  <p><strong>Overview.</strong> Displays script scrolling horizontally right-to-left across the screen, mimicking a traditional dubbing rythmo band: lines pass beneath a central reading cursor with timecode.</p>
+  <p class="when">When: single-voice narration requiring tight picture sync (lip-sync dubbing, commercial voiceovers, video narration).</p>
+  <ul>
+    <li><strong>Scale / Speed</strong> (pixels per second) and <strong>Font Size</strong>.</li>
+    <li><strong>Speech Lead</strong> (0-10 s): announces cues in advance via OSARA or NVDA for screen reader users.</li>
+    <li>Shared feature set: <strong>Text flow</strong> with <em>All</em>, <strong>Search</strong>, <strong>Studio/Edit</strong>, inline editing, <strong>Follow cuts</strong>.</li>
+  </ul>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-30">ZP SRT</h2>
+  <p><strong>Overview.</strong> Central hub gathering all subtitle and script actions in one unified panel, organized by workflow order. Hovering displays contextual advice.</p>
+  <p class="when">When: handling SRT files and looking for the exact tool for the job.</p>
+  <div class="wrap"><table>
+    <tr><th>Column</th><th>Button</th><th>Action</th><th>When to use</th></tr>
+    <tr><td rowspan="5">1 Import</td><td>Video + SRT</td><td><a href="#zp-import">01</a></td><td>Starting a video production.</td></tr>
+    <tr><td>Replace Text</td><td><a href="#zp-gestione-srt">05</a></td><td>Updated script/subtitles arrived.</td></tr>
+    <tr><td>Add Language</td><td><a href="#zp-gestione-srt">05</a></td><td>Add reference language alongside main script.</td></tr>
+    <tr><td>Link to Audio</td><td><a href="#tool-29">29</a></td><td>SRT belongs to an audio take and must track cuts.</td></tr>
+    <tr><td>From Text / Translation</td><td><a href="#tool-srt-tools">26</a></td><td>You have text with timecode (Word/Excel) instead of an SRT.</td></tr>
+    <tr><td rowspan="3">2 Inspect</td><td>SRT Item Info</td><td><a href="#tool-13">13</a></td><td>Check source cue, file, and take marker bindings.</td></tr>
+    <tr><td>Empty Prompter Track</td><td><a href="#zp-gestione-srt">05</a></td><td>Write or transcribe a script manually.</td></tr>
+    <tr><td>Read in Prompter</td><td><a href="#tool-02">02</a></td><td>Open prompter to rehearse, search, and edit.</td></tr>
+    <tr><td rowspan="2">3 Export</td><td>Export SRT</td><td><a href="#tool-08">08</a></td><td>Deliver finalized video subtitles.</td></tr>
+    <tr><td>SRT from Audio</td><td><a href="#tool-31">31</a></td><td>Export updated dialogue cues from edited audio.</td></tr>
+  </table></div>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-04">Markers</h2>
+  <p><strong>Overview.</strong> Single panel with two tabs managing markers linked to selected items.</p>
+  <dl class="win">
+    <dt>Create from Items</dt>
+    <dd>Places a timeline project marker at the start of each selected item: empty, named, or numbered (NAME 001, 002…). <em>Video TC</em> names markers using video or region timecode. <span class="when">Use to mark start of takes or scenes before building regions.</span></dd>
+    <dt id="tool-14">Embed into Items</dt>
+    <dd>Embeds project markers falling within selected items as audio take markers, preserving name, position, and color. Choose <em>All selected</em> or <em>First only</em>, and optionally clear them from the timeline ruler. Works on trimmed or time-stretched items. <strong>Service markers:</strong> markers starting with <code>#</code> (e.g. <code>#scene 2</code>), action markers (<code>!</code>), SOLO Recorder markers (<code>SOLO_MARK_…</code>, <code>OK_…</code>, <code>BAD_…</code>), and empty markers are never converted into dialogue text or exported. <span class="when">Use when cues were marked manually on the timeline and now need to follow audio edits.</span></dd>
+  </dl>
+
+  <!-- ================================================================== -->
+  <h2 id="zp-regia-ruoli">Actor / Notes</h2>
+  <p><strong>Overview.</strong> Role setup tool. Enter character names separated by commas (<code>Narrator, Alice, Bob</code>): creates a voice track and a paired child <code>BB Note Personaggio</code> track for each character.</p>
+  <p class="when">When: starting a multi-voice dubbing or narration session before launching the Teleprompter. The prompter extracts character colors and notes from these tracks.</p>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-solo">SOLO Recorder</h2>
+  <p><strong>Overview.</strong> Recording remote control allowing you to track without switching window focus back to REAPER. Enforces exclusive track arming, numbers take regions (<em>Take 001, 002…</em>) on each stop, and handles markers, retakes, inserts, and alternate takes across dedicated tracks (MAIN, INSERTS, RETAKES, ALT). Features Mini, Compact, and Expanded views. Live hardware input metering in dB, pre-roll in seconds, and built-in marker naming. The web icon launches a <strong>Web Remote</strong> in your browser for iPad/phone control.</p>
+  <p class="when">When: recording voiceover or dubbing sessions, especially unattended solo tracking. Supports <strong>SOLO Session</strong> (creates ZP SOLO SESSION folder) and <strong>Remote Control</strong> (controls pre-existing tracks). <a href="solo_recorder.html">Full control guide &rarr;</a></p>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-22">Voice Cleaner (Silence Split)</h2>
+  <p><strong>Overview.</strong> Detects spoken speech in audio takes and trims room tone: removes head/tail silence or splits long files into individual phrases, applying configurable pre/post-roll margins and crossfades.</p>
+  <p class="when">When: cleaning raw voice takes or splitting long sessions into individual phrases before creating delivery regions.</p>
+  <ol class="flow">
+    <li>Select items and click <strong>ANALYZE</strong>: inspects waveform without modifying items. Check <em>Audio read</em> status.</li>
+    <li><strong>PREVIEW</strong> draws temporary red preview regions; <strong>CLEAR PREVIEW</strong> removes them.</li>
+    <li><strong>APPLY</strong> performs cuts within a single Undo step.</li>
+  </ol>
+  <p>Modes: <em>Head/tail trim</em> or <em>Split internal silences</em>; <em>Original position</em> or <em>Sequence spacing</em>. Presets: VO Smart, Gentle, Tight, Manual. <a href="voice_cleaner.html">Detailed guide &rarr;</a></p>
+
+  <!-- ================================================================== -->
+  <h2 id="zp-mixdown-render">Import Folders</h2>
+  <p><strong>Overview.</strong> Imports entire folder structures of audio or video files in order onto the timeline. Selected parent directory subfolders become timeline section markers, and media files become named regions with configurable gaps.</p>
+  <p class="when">When: importing batches of organized files (e.g. 40 commercial spots across 4 languages) to deliver in the same directory structure. Render is triggered via <a href="#tool-17">Project Manager</a>.</p>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-17">Project Manager</h2>
+  <p><strong>Overview.</strong> Delivery manager: creates export regions (one per take/file) and routes batch renders to correct destinations without altering original audio takes.</p>
+  <p class="when">When: delivering numerous files requiring strict naming conventions and directory structures.</p>
+  <h3>Create Regions</h3>
+  <ul>
+    <li><strong>Source</strong>: <em>Items</em> (selected), <em>Tracks</em> (selected), <em>Folder+</em>, <em>All</em>. Only valid audio/video items are processed; empty items, notes, and MIDI are skipped. <strong>Video</strong> includes video files; <strong>Skip muted</strong> ignores muted clips.</li>
+    <li><strong>File Gap</strong>: silence duration triggering a new region. Head/Tail <strong>Padding</strong> expands region boundaries without moving audio.</li>
+    <li><strong>Naming</strong>: paste a list of names (one per line or <code>;</code> separated) to apply sequentially; <em>No. + name</em> prefixes sequential numbers. Double-click to rename in preview.</li>
+    <li><strong>Create Regions</strong>. <strong>Remove Export</strong> clears only regions created by this tool.</li>
+  </ul>
+  <h3>Prepare Mixdown</h3>
+  <ul>
+    <li><strong>Section Selection</strong>: chooses marker section; encompasses regions up to the next marker.</li>
+    <li><strong>Marker Lanes</strong>: Lane 1 = <code>Mixdown/&lt;marker&gt;/</code>; Lane 2 = subfolder; Lane 3+ = standard markers. Regions outside Lane 1 are excluded.</li>
+    <li>Quick format settings (WAV/MP3, mono/stereo, sample rate). <strong>Render</strong> configures output path, <code>$region</code> wildcard, and opens REAPER Render dialog. <strong>+ Queue</strong> queues batch jobs.</li>
+    <li><strong>Log</strong>: writes history to <code>Mixdown/Mixdown_History.csv</code>. <strong>Index</strong>: creates <code>Mixdown_Index.csv</code> in section folders verifying rendered files.</li>
+  </ul>
+
+  <!-- ================================================================== -->
+  <h2 id="zp-project-viewer">Project Viewer</h2>
+  <p><strong>Overview.</strong> Project table of contents: displays all markers and regions chronologically on separate rows. Click to navigate, double-click to rename, spacebar to audition. Selecting regions sets render bounds for Ctrl/⌘+Alt+R, and <a href="#zp-report-minuti">Minutes Report</a> counts selections.</p>
+  <p class="when">When: verifying section and region names prior to final render, or navigating large multi-hour timelines. Can be docked beside the arrange window.</p>
+
+  <!-- ================================================================== -->
+  <h2 id="zp-report-minuti">Voice Minutes Report</h2>
+  <p><strong>Overview.</strong> Calculates total voice minutes: exact duration, rounded billable minutes, and estimated word counts. Counts selected regions, all regions, selected items, or tracks.</p>
+  <p class="when">When: preparing billing invoices, client estimates, or auditing character workloads.</p>
+  <ul>
+    <li>Only items with real audio takes are counted. <strong>Skip muted</strong> excludes muted clips.</li>
+    <li><strong>Copy + HTML</strong> copies summary and generates HTML delivery report.</li>
+    <li><strong>Add to History</strong>: updates cumulative project history without duplicating entries.</li>
+    <li><strong>Save Session</strong>: creates standalone snapshot report.</li>
+  </ul>
+
+  <!-- ================================================================== -->
+  <h2 id="zp-chain-builder">Chain Builder</h2>
+  <p><strong>Overview.</strong> Automatically sets up the professional ZP track hierarchy, routing, and plugins tailored to your specific project format, configuring master loudness targets.</p>
+  <p class="when">When: starting a new production or checking existing projects for chain integrity.</p>
+  <div class="wrap"><table>
+    <tr><th>Profile</th><th>Created Tracks & Plugins</th><th>Master Target</th></tr>
+    <tr><td>Voiceover</td><td>ZP VO BUS with REC & EDIT; BUS Chain and Probe VOICE (last FX); Master Pro on Master.</td><td>-18 LUFS, ceiling -3 dB</td></tr>
+    <tr><td>ADR / Dubbing</td><td>Same as Voiceover, plus VIDEO AUDIO reference track routed directly to hardware 1/2.</td><td>-21 LUFS, ceiling -6 dB</td></tr>
+    <tr><td>E-learning</td><td>Same as Voiceover.</td><td>-14 LUFS, ceiling -3 dB</td></tr>
+    <tr><td>Podcast</td><td>VO BUS plus ZP Music Bus with Harmonic Space Carver and Probe MUSIC (last FX).</td><td>-16 LUFS, ceiling -1 dB</td></tr>
+    <tr><td>Commercial Spot</td><td>Same as Podcast.</td><td>-9 LUFS, ceiling -1 dB</td></tr>
+  </table></div>
+  <ul>
+    <li><strong>Transform Project</strong> creates missing elements only. Never deletes user FX or clips.</li>
+    <li><strong>Presets:</strong> <em>ZP BUS Chain</em> loads preset <code>Voiceover_Body1_BG80HzDyn_-3dBLim</code>; existing instances are preserved. <em>ZP Master Pro</em> initializes to <code>Flat -19</code> and configures profile targets. Installed via <a href="#tool-32">32 Install toolbar and FX</a>.</li>
+    <li><strong>Check / Repair</strong> audits status (FOUND, MISSING, MISCONFIGURED) and prompts before applying fixes. Launches <a href="#zp-probe-guard">Probe Guard</a> on finish.</li>
+  </ul>
+
+  <!-- ================================================================== -->
+  <h2 id="zp-probe-guard">Probe Guard</h2>
+  <p><strong>Overview.</strong> Because the Probe measures actual output loudness, it must remain the last plugin on the bus. Probe Guard checks once per second that Voice Probe and Music Probe occupy the final slot, moving them back if plugins are inserted after them.</p>
+  <p class="when">When: runs automatically with Chain Builder. Keeping the window open keeps the guard active.</p>
+
+  <!-- ================================================================== -->
+  <h2 id="zp-shared-bus">ZP Shared Bus Plugins</h2>
+  <p>ZP plugins communicate via shared memory (<code>gmem=ZPVoiceoverSharedBus</code>): each plugin reports real-time activity, the Probe measures real bus audio output, and Master Pro compares results against the target loudness engine to offer advisory suggestions. No plugin ever alters another plugin's DSP parameters. Installed via ReaPack in <code>Effects/ZP_Paolo Balestri JSFX</code>.</p>
+  <div class="grid">
+    <div class="card" id="plugin-bus-chain">
+      <h3>ZP BUS Chain</h3>
+      <p><strong>Purpose:</strong> Primary voice bus processor (dialogue, voiceover, dubbing). Combines Expander/Gate, De-Esser/Air, 1175, LA-2A, and Major Tom compressors, analog Brown stage, and safety Limiter.</p>
+      <p><strong>Where to place:</strong> On Voice Bus (voice folder or master dialogue bus).</p>
+      <p><strong>Key controls:</strong> Expander Thresh/Range, compressor RED/MAKEUP, Brown Drive/Mix, High Air, Limiter Ceiling/Release, module toggles. Broadcasts full telemetry to Shared Bus.</p>
+    </div>
+    <div class="card" id="plugin-carver">
+      <h3>ZP Harmonic Space Carver</h3>
+      <p><strong>Purpose:</strong> Mix/music bed ducking assistant. Dynamically creates spectral and volume room under dialogue using voice-guided multibanda carving and VCA ducking, synchronized via timeline cues (#HSC).</p>
+      <p><strong>Where to place:</strong> On Music Bus. Chain Builder places it here for Podcast and Commercial Spot profiles.</p>
+      <p><strong>Key controls:</strong> VOICE sidechain inputs (3/4, 5/6, 7/8), Min Duck & Max Duck, VCA Ceiling, Glue, Carver bands (B1-B4), and Cue bar (#HSC) with automatic audio anchor tracking.</p>
+    </div>
+    <div class="card" id="plugin-spoken-finish">
+      <h3>ZP Spoken Finish</h3>
+      <p><strong>Purpose:</strong> Optional harmonic voice enhancer. Adds body, even/odd harmonics, presence, air, and VOG (Voice of God) sub-bass for authoritative broadcast density.</p>
+      <p><strong>Where to place:</strong> On Voice Bus after BUS Chain, or on individual voice tracks.</p>
+      <p><strong>Key controls:</strong> Harmonic Amount (Even/Odd), Body, Air/Presence, VOG Sub-bass, Dynamic Drive. Reports telemetry for Master Pro comparison.</p>
+    </div>
+    <div class="card" id="plugin-stagekeeper">
+      <h3>ZP Stagekeeper Dialogue Director</h3>
+      <p><strong>Purpose:</strong> Intelligent dual-mic (L/R) dialogue automixer for podcasts, interviews, and roundtables. Detects dominant speaker and smoothly attenuates acoustic bleed on the listening mic without abrupt gating.</p>
+      <p><strong>Where to place:</strong> On dual-microphone stereo track (or preceding voice sum bus).</p>
+      <p><strong>Key controls:</strong> Input Trim L/R, Speech Detect thresholds, Delta margin, Response (Attack, Release, Hold, Lookahead, Softness HARD ↔ SMOOTH), Background Attenuation, monitor MIX / CHECK L / CHECK R, built-in Limiter.</p>
+    </div>
+    <div class="card" id="plugin-subliminal">
+      <h3>ZP Subliminal Presence Layer White</h3>
+      <p><strong>Purpose:</strong> Psychoacoustic micro-modulation presence layer (shaped white spectrum). Eliminates eerie digital silence between voice phrases, providing subtle natural continuity.</p>
+      <p><strong>Where to place:</strong> End of voice processing chain or parallel voice auxiliary track at a gentle level.</p>
+      <p><strong>Key controls:</strong> Level, Color/Filter, Modulation Depth, Voice Envelope Ducking, Mute/Audition.</p>
+    </div>
+    <div class="card" id="plugin-unified-chain">
+      <h3>ZP Voiceover Unified Chain</h3>
+      <p><strong>Purpose:</strong> Integrated all-in-one channel strip for single tracking and voice capture. Packs high-pass filter, noise gate, de-esser, 1175/LA-2A/Major Tom compression, and safety limiter into a single interface.</p>
+      <p><strong>Where to place:</strong> On recording microphone tracks or voice input templates.</p>
+      <p><strong>Key controls:</strong> Input Gain, Gate Threshold, Compressor Amount/Mix, Tone Tilt, Output Ceiling. Sends gain reduction data to Shared Bus.</p>
+    </div>
+    <div class="card" id="plugin-master-pro">
+      <h3>ZP Master Pro</h3>
+      <p><strong>Purpose:</strong> Master bus supervisory intelligence. Analyzes multi-plugin telemetry and Probe readings against target loudness profiles (ADR, Voiceover, E-learning, Podcast, Spot, Radio).</p>
+      <p><strong>Where to place:</strong> On final project Master Bus.</p>
+      <p><strong>Key controls:</strong> Target Profile selector, Navigator (MANUAL / AUTO SIMPLE / AUTO COMPLEX), causal Measure Engine display, [Target] thresholds, bus status LEDs.</p>
+    </div>
+    <div class="card" id="plugin-mirror-eq">
+      <h3>ZP Reference Tone Mirror EQ Pro</h3>
+      <p><strong>Purpose:</strong> Comparative matching equalizer. Compares real-time voice spectrum against broadcast target curves or captured reference audio files to assist tonal balance.</p>
+      <p><strong>Where to place:</strong> On Voice Bus or Master track during timbre mastering.</p>
+      <p><strong>Key controls:</strong> Learn Reference, Target Curves (Neutral, Warm, Bright, Broadcast), Amount/Matching Gain, spectral smoothing, difference display.</p>
+    </div>
+    <div class="card" id="plugin-loudness-meter">
+      <h3>ZP Loudness Meter Multichannel</h3>
+      <p><strong>Purpose:</strong> High-precision loudness meter conforming to ITU-R BS.1770-4 and EBU R128 standards, from stereo up to 16 surround channels.</p>
+      <p><strong>Where to place:</strong> At end of master chain or across any multichannel monitor bus.</p>
+      <p><strong>Key controls:</strong> Numerical & bar meters for Integrated LUFS, Short-term LUFS, Momentary LUFS, LRA (Loudness Range), True Peak dBTP, measure reset, standard target scales (-23 EBU, -24 ATSC, -14 Streaming).</p>
+    </div>
+    <div class="card" id="plugin-oscilloscope">
+      <h3>ZP Oscilloscope 16ch</h3>
+      <p><strong>Purpose:</strong> Multichannel real-time waveform oscilloscope supporting up to 16 synchronized channels, for analyzing envelope, transient peaks, and acoustic phase relationships.</p>
+      <p><strong>Where to place:</strong> On multichannel tracks or monitor aux bus.</p>
+      <p><strong>Key controls:</strong> Timebase (ms/div), Vertical Gain/Zoom, trigger modes (Free, Normal, Single, Channel), overlay or split channel views.</p>
+    </div>
+    <div class="card" id="plugin-probe">
+      <h3>ZP Voice-Music Probe</h3>
+      <p><strong>Purpose:</strong> Passive transparent shared bus metering probe. Never alters audio; accurately measures RMS, True Peak, crest factor, density, brightness, and speech activity.</p>
+      <p><strong>Where to place:</strong> Absolute final slot on Voice Bus (Voice role) and Music Bus (Music role), guarded by Probe Guard.</p>
+      <p><strong>Key controls:</strong> Role switch (Voice / Music), real-time meter display, Shared Bus gmem activity indicator.</p>
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <h2 id="strumenti-srt">Standalone SRT Tools</h2>
+  <p>Accessible from <a href="#tool-30">ZP SRT</a> or directly via the Action List.</p>
+
+  <h3 id="zp-import"><span id="tool-01"></span>01 &middot; Video + SRT</h3>
+  <p>Imports video and paired subtitle files: sets up video track and <code>Rythmo Band Testi</code> track with one text item per cue. Modes: <em>Single</em>, <em>Folder batch</em>, <em>SRT/VTT only</em>, <em>Empty text track</em>.</p>
+
+  <h3 id="zp-gestione-srt"><span id="tool-05"></span>05 &middot; SRT Management</h3>
+  <p>Replaces or supplements subtitles in existing sessions: <em>Replace SRT</em>, <em>Add language/reference</em>, <em>Batch matching</em>. Archives previous items onto BKP backup tracks.</p>
+
+  <h3 id="tool-08">08 &middot; Export SRT</h3>
+  <p>Exports finalized SRT files from timeline text items. Times are calculated relative to each video or region start point, ready for distribution.</p>
+
+  <h3 id="tool-13">13 &middot; SRT Item Info</h3>
+  <p>Read-only inspector window that updates automatically when clicking different timeline items. Displays cue origin, binding status, and full text.</p>
+
+  <h3 id="tool-srt-tools"><span id="tool-26"></span>26 &middot; SRT Tools (from text or translation)</h3>
+  <p>Local browser utility to convert plain text scripts containing timecode into clean SRT files, with offset calibration.</p>
+
+  <h3 id="tool-31">31 &middot; SRT from Audio</h3>
+  <p>Exports SRT files from take markers embedded inside selected audio items, capturing manual adjustments made in REAPER.</p>
+
+  <h3 id="tool-collega-marker"><span id="tool-28"></span>28 &middot; Link Markers</h3>
+  <p>Underlying engine for ZP Transcription stage 2: embeds SRT cues as take markers inside audio items. <a href="collega_marker.html">Details &rarr;</a></p>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-34">34 &middot; ZP Command Sets (Keyboard Shortcuts)</h2>
+  <p>Switch keyboard shortcut layouts with one click: video editing layout, Pro Tools or Logic key habits, or custom setups. Open from the keyboard toolbar icon:</p>
+  <ul>
+    <li><strong>Activate</strong>: switches to selected set. Prompts to restart REAPER immediately or on next launch.</li>
+    <li><strong>Inspect Layout</strong>: displays complete key-to-action list.</li>
+    <li><strong>AI Explanation</strong> (optional): generates plain-English summary of shortcut layout using local or cloud AI agents via ZP Speech.</li>
+    <li><strong>Automatic Backup</strong>: archives current keys to <em>Automatic Backup</em> before any switch.</li>
+    <li><strong>Save Current Keys…</strong> / <strong>Import File…</strong>: manage custom <code>.ReaperKeyMap</code> files.</li>
+  </ul>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-35">35 &middot; ZP Colors (Click & Color)</h2>
+  <p>Color palette tool: three modes &mdash; <strong>Item</strong>, <strong>Track</strong>, <strong>All</strong> &mdash;, twenty custom colors, and <strong>Remove Color</strong>. Fully reversible with Ctrl/Cmd+Z. Available as floating window or optional toolbar <a href="toolbar.html#colori">ZP Colors</a>.</p>
+
+  <!-- ================================================================== -->
+  <h2 id="azioni">Background Actions</h2>
+  <h3 id="tool-09">09-12 &middot; OSARA Cue Reading</h3>
+  <p>Designed for voice artists working with screen readers: reads script cues aloud without opening windows or losing REAPER arrange focus.</p>
+  <ul>
+    <li><strong>09 Current Cue</strong>: reads line at cursor.</li>
+    <li><strong>10 Next Cue</strong> / <strong>11 Previous Cue</strong>: navigates and reads.</li>
+    <li><strong>12 Auto Read</strong>: announces cues automatically during playback.</li>
+  </ul>
+
+  <h3>14 &middot; Timeline Markers to Items</h3>
+  <p>Interactive version of Marker embed tab. Preserved for legacy shortcut mappings.</p>
+
+  <h3 id="tool-27">27 &middot; Clean Previous Install</h3>
+  <p>Safely archives legacy scripts and plugin versions into <code>ZP Studio Suite Archives/</code> without deleting files.</p>
+
+  <h3>00 &middot; Help</h3>
+  <p>Opens this documentation.</p>
+
+  <!-- ================================================================== -->
+  <h2 id="installazione">Installation & Optional Components</h2>
+  <p>Install and update via <strong>ReaPack</strong>: <em>Extensions &rarr; ReaPack &rarr; Import repositories</em>, paste <code>https://github.com/capitanpaolone/zp-suite/raw/master/index.xml</code>, browse packages, and install <em>ZP Studio Suite</em>.</p>
+  <p id="tool-33"><strong>33 Welcome (Installation Check):</strong> opens automatically on first tool launch or from the Action List. Verifies installed components:</p>
+  <ul>
+    <li><strong>Suite language</strong>: side-by-side buttons (<em>Italiano</em> | <em>English</em>). Applies immediately to windows, messages and guides opened after.</li>
+    <li><strong>REAPER language</strong>: dropdown menu showing the active language pack (or <em>Original (English)</em>) from <code>REAPER/LangPack</code>. Selecting a pack shows a restart button to apply immediately.</li>
+    <li><strong>Toolbar & FX</strong>: <em>Install</em> runs tool 32. Restart REAPER to finalize.</li>
+    <li><strong>Cue Navigator</strong> (Harmonic Space Carver helper): starts helper on launch.</li>
+    <li><strong>ZP Speech</strong> (macOS): powers Whisper transcription and translation.</li>
+    <li><strong>SWS</strong>, <strong>js_ReaScriptAPI</strong>, <strong>OSARA</strong>: optional enhancements.</li>
+    <li><strong>Item Markers</strong>: sets mouse modifier to protect take markers from accidental displacement.</li>
+  </ul>
+  <p id="tool-32"><strong>Toolbar & FX:</strong> run <strong>32 Install ZP Toolbar</strong> after installation to register action IDs and install FX chains. Details in <a href="toolbar.html">toolbar guide</a>.</p>
+<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Developed from an idea by Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
+</main>
+</body>
+</html>

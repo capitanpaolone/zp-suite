@@ -1,4 +1,7 @@
-"""SRT translation through a logged-in AI agent CLI (Codex first).
+"""SRT translation (and short questions) through an AI agent CLI already on this Mac.
+
+Agents: Codex, Claude, Qwen, OpenCode (logged-in cloud agents) and Ollama (local models:
+nothing leaves the Mac). "auto" = the first one available, in that order.
 
 Only the subtitle text travels to the agent, numbered and in blocks; timings never
 leave this module. The translated file keeps the original cue count and timestamps,
@@ -223,8 +226,118 @@ class CodexTranslator:
                 raise TranslationError("codex failed: " + " | ".join(detail))
             return parse_answer(answer.read_text(encoding="utf-8"), list(lines))
 
+    def ask(self, prompt: str) -> str:
+        """Plain-text answer (no JSON schema)."""
+        with tempfile.TemporaryDirectory(prefix="zp-ask-") as work:
+            answer = Path(work) / "answer.txt"
+            command = [
+                self.executable, "exec", "--sandbox", "read-only", "--skip-git-repo-check",
+                "--ephemeral", "--color", "never", "-C", work, "-o", str(answer),
+            ]
+            if self.model:
+                command += ["-m", self.model]
+            command.append("-")
+            result = _run(self.runner, command, prompt, self.timeout, work, "codex")
+            if result.returncode != 0 or not answer.exists():
+                raise TranslationError("codex failed: " + _tail(result))
+            return _clean(answer.read_text(encoding="utf-8"))
 
-ENGINES: dict[str, str] = {"codex": "codex"}
+
+def _tail(result: subprocess.CompletedProcess[str]) -> str:
+    return " | ".join((result.stderr or result.stdout or "").strip().splitlines()[-3:])
+
+
+def _run(runner: Runner, command: list[str], prompt: str | None, timeout: float, cwd: str,
+         name: str) -> subprocess.CompletedProcess[str]:
+    env = dict(os.environ, PATH=search_path(), NO_COLOR="1")
+    try:
+        return runner(command, input=prompt, capture_output=True, text=True, timeout=timeout,
+                      env=env, check=False, cwd=cwd)
+    except subprocess.TimeoutExpired as error:
+        raise TranslationError(f"{name} did not answer within {timeout:.0f} s") from error
+
+
+ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
+THINK = re.compile(r"<think>.*?</think>", re.S)
+
+
+def _clean(text: str) -> str:
+    """Answer text without terminal colours or the 'thinking' of local reasoning models."""
+    return THINK.sub("", ANSI.sub("", text or "")).strip()
+
+
+def extract_json(text: str) -> str:
+    """The JSON object inside an agent's free-text answer (code fences, words around it)."""
+    text = _clean(text)
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end <= start:
+        raise TranslationError("the agent did not answer with JSON")
+    return text[start:end + 1]
+
+
+JSON_FORMAT = (
+    '\nAnswer ONLY with this JSON, nothing before or after: '
+    '{"lines": [{"n": <number>, "text": "<translation>"}, ...]}\n'
+)
+
+
+class PromptAgent:
+    """Any agent CLI that takes a prompt and prints the answer (Claude, Qwen, OpenCode, Ollama)."""
+
+    def __init__(self, name: str, executable: str, *, model: str | None = None,
+                 timeout: float = 600, runner: Runner = subprocess.run) -> None:
+        self.name = name
+        self.executable = executable
+        self.model = model
+        self.timeout = timeout
+        self.runner = runner
+
+    def command(self, work: str, prompt_file: str) -> tuple[list[str], bool]:
+        """argv, and whether the prompt goes on stdin."""
+        exe, model = self.executable, self.model
+        if self.name == "claude":
+            cmd = [exe, "-p", "--output-format", "text", "--disallowedTools",
+                   "Bash,Edit,Write,NotebookEdit,WebFetch,WebSearch"]
+            return cmd + (["--model", model] if model else []), True
+        if self.name == "qwen":
+            return [exe] + (["-m", model] if model else []) + ["Answer the request above."], True
+        if self.name == "opencode":
+            cmd = [exe, "run", "--file", prompt_file]
+            cmd += ["-m", model] if model else []
+            return cmd + ["Do what the attached file asks and answer only with the result."], False
+        if self.name == "ollama":
+            return [exe, "run", model or "", "--hidethinking"], True
+        raise TranslationError(f"unknown engine: {self.name}")
+
+    def ask(self, prompt: str) -> str:
+        if self.name == "ollama" and not self.model:
+            raise TranslationError("ollama: no local model installed (ollama pull ...)")
+        with tempfile.TemporaryDirectory(prefix="zp-ask-") as work:
+            prompt_file = str(Path(work) / "richiesta.txt")
+            Path(prompt_file).write_text(prompt, encoding="utf-8")
+            command, stdin = self.command(work, prompt_file)
+            result = _run(self.runner, command, prompt if stdin else None, self.timeout, work,
+                          self.name)
+            text = _clean(result.stdout)
+            if result.returncode != 0 or not text:
+                raise TranslationError(f"{self.name} failed: " + _tail(result))
+            return text
+
+    def translate(self, lines: Mapping[int, str], source: str, target: str) -> dict[int, str]:
+        answer = self.ask(build_prompt(lines, source, target) + JSON_FORMAT)
+        return parse_answer(extract_json(answer), list(lines))
+
+
+# engine -> (CLI, where the text goes); "auto" tries them in this order
+ENGINES: dict[str, str] = {"codex": "codex", "claude": "claude", "qwen": "qwen",
+                           "opencode": "opencode", "ollama": "ollama"}
+WHERE = {
+    "codex": "OpenAI (your ChatGPT account)",
+    "claude": "Anthropic (your Claude account)",
+    "qwen": "the Qwen Code provider you set up",
+    "opencode": "the provider set up in OpenCode",
+    "ollama": "nowhere: a local model on this Mac",
+}
 
 
 def codex_models(executable: str, runner: Runner = subprocess.run) -> list[str]:
@@ -241,23 +354,61 @@ def codex_models(executable: str, runner: Runner = subprocess.run) -> list[str]:
     return [m["slug"] for m in rows]
 
 
+def ollama_models(executable: str, runner: Runner = subprocess.run) -> list[str]:
+    """Local models (`ollama list`), in the order Ollama prints them."""
+    try:
+        result = runner([executable, "list"], capture_output=True, text=True, timeout=20,
+                        env=dict(os.environ, PATH=search_path()), check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    rows = (result.stdout or "").splitlines()[1:]
+    return [r.split()[0] for r in rows if r.strip()]
+
+
+def engine_models(engine: str, path: str) -> list[str]:
+    if engine == "codex":
+        return codex_models(path)
+    if engine == "ollama":
+        return ollama_models(path)
+    return []
+
+
 def available_engines() -> list[dict[str, Any]]:
-    """Engines this Mac can use now, for the REAPER menu."""
+    """Engines this Mac can use now, for the REAPER menus (with where the text goes)."""
     found = []
     for engine, cli in ENGINES.items():
         path = find_cli(cli)
-        models = codex_models(path) if path else []
-        found.append({"engine": engine, "available": path is not None, "path": path,
-                      "cloud": True, "login": True, "models": models})
+        models = engine_models(engine, path) if path else []
+        usable = path is not None and (engine != "ollama" or bool(models))
+        found.append({"engine": engine, "available": usable, "path": path,
+                      "cloud": engine != "ollama", "login": engine != "ollama",
+                      "where": WHERE[engine], "models": models})
     return found
 
 
-def make_translator(engine: str, *, model: str | None = None, timeout: float = 600) -> Translator:
+def resolve_engine(engine: str) -> str:
+    """'auto' -> the first engine available here; any other name is returned as it is."""
+    if engine != "auto":
+        return engine
+    for item in available_engines():
+        if item["available"]:
+            return str(item["engine"])
+    raise TranslationError("no AI agent found on this Mac (Codex, Claude, Qwen, OpenCode, Ollama)")
+
+
+def make_translator(engine: str, *, model: str | None = None,
+                    timeout: float = 600) -> CodexTranslator | PromptAgent:
+    engine = resolve_engine(engine)
     if engine not in ENGINES:
         raise TranslationError(f"unknown engine: {engine}")
     path = find_cli(ENGINES[engine])
     if path is None:
         raise TranslationError(f"{engine} is not installed or not found")
+    if engine != "codex":
+        if engine == "ollama" and not model:
+            offered = ollama_models(path)
+            model = offered[0] if offered else None
+        return PromptAgent(engine, path, model=model, timeout=timeout)
     if not model:
         # il modello scelto nella configurazione di Codex, se questo Codex lo offre;
         # altrimenti il primo dell'elenco (non passare mai un modello che rifiuterebbe)

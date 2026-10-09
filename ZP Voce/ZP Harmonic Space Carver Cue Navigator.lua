@@ -343,6 +343,83 @@ function HSC.masks(lost)
   return m1, m2
 end
 
+-- ================================================================
+-- Ponte Help e Lingua per i plugin JSFX (gmem 3900-3919)
+-- ================================================================
+local Bridge = {
+  GMEM_ALIVE = 3900,
+  GMEM_LANG = 3901,
+  GMEM_REQ_PLUGIN = 3902,
+  GMEM_REQ_SEQ = 3903,
+  GMEM_ACK_SEQ = 3904,
+  GMEM_ACK_STATUS = 3905,
+  PLUGIN_IDS = {
+    [1] = "plugin-bus-chain",
+    [2] = "plugin-carver",
+    [3] = "plugin-spoken-finish",
+    [4] = "plugin-stagekeeper",
+    [5] = "plugin-subliminal",
+    [6] = "plugin-unified-chain",
+    [7] = "plugin-master-pro",
+    [8] = "plugin-mirror-eq",
+    [9] = "plugin-loudness-meter",
+    [10] = "plugin-oscilloscope",
+    [11] = "plugin-probe",
+    -- ZP Lab (plugin in lavorazione, non pubblicati): pagina a parte, help/lab.html
+    [12] = "plugin-brownslope-prism",
+    [13] = "plugin-brownslope-guard",
+  },
+  PLUGIN_PAGES = { [12] = "lab.html", [13] = "lab.html" },   -- di serie index.html
+  FALLBACK_URL = "https://latocardioide.it/strumenti/"
+}
+HSC.Bridge = Bridge
+
+function Bridge.help_url(path, anchor)
+  path = tostring(path):gsub("\\", "/")
+  if not path:match("^/") then path = "/" .. path end
+  local encoded = path:gsub("[^%w%-%._~/:]", function(c) return string.format("%%%02X", c:byte()) end)
+  local suffix = (anchor and anchor ~= "") and ("#" .. tostring(anchor):gsub("#", "")) or ""
+  return "file://" .. encoded .. suffix
+end
+
+function Bridge.find_help_file(page, lang, res_path, script_source)
+  local sub = (lang == "en") and "en/" or ""
+  if script_source and script_source ~= "" then
+    local dir = script_source:gsub("^@", ""):match("^(.*)[/\\]")
+    if dir then
+      local cand1 = dir .. "/../ZP Studio Suite/help/" .. sub .. page
+      local f = io.open(cand1, "r")
+      if f then f:close(); return cand1 end
+    end
+  end
+  if res_path and res_path ~= "" then
+    local cand2 = res_path .. "/Scripts/ZP Suite/ZP Studio Suite/help/" .. sub .. page
+    local f = io.open(cand2, "r")
+    if f then f:close(); return cand2 end
+  end
+  return nil
+end
+
+function Bridge.resolve_url(plugin_num, lang, res_path, script_source)
+  local anchor = Bridge.PLUGIN_IDS[plugin_num]
+  if not anchor then return Bridge.FALLBACK_URL end
+  local path = Bridge.find_help_file(Bridge.PLUGIN_PAGES[plugin_num] or "index.html", lang, res_path, script_source)
+  if path then
+    return Bridge.help_url(path, anchor)
+  end
+  return Bridge.FALLBACK_URL
+end
+
+function Bridge.open_url(url)
+  local os_name = reaper and reaper.GetOS and reaper.GetOS() or ""
+  if os_name:match("Win") then
+    os.execute(string.format('start "" "%s"', url))
+  else
+    os.execute(string.format('open "%s"', url))
+  end
+  return true
+end
+
 if HSC_SYNC_TEST or HSC_LIBRARY then return HSC end
 
 local GMEM_NAME = "ZPVoiceoverSharedBus"
@@ -890,8 +967,34 @@ local function serve_requests()
   end
 end
 
+local bridge_tick = 0
+local function serve_bridge()
+  if not reaper or not reaper.gmem_write then return end
+  local lang_str = reaper.GetExtState and reaper.GetExtState("ZP_STUDIO_SUITE", "lingua") or ""
+  local lang_val = (lang_str == "en") and 1 or 0
+  reaper.gmem_write(Bridge.GMEM_LANG, lang_val)
+
+  bridge_tick = ((bridge_tick or 0) + 1) % 1000000000
+  reaper.gmem_write(Bridge.GMEM_ALIVE, bridge_tick)
+
+  local req_seq = math.floor(reaper.gmem_read(Bridge.GMEM_REQ_SEQ) + 0.5)
+  local ack_seq = math.floor(reaper.gmem_read(Bridge.GMEM_ACK_SEQ) + 0.5)
+  if req_seq > 0 and req_seq ~= ack_seq then
+    local plugin_num = math.floor(reaper.gmem_read(Bridge.GMEM_REQ_PLUGIN) + 0.5)
+    local res_path = reaper.GetResourcePath and reaper.GetResourcePath() or ""
+    local info = debug.getinfo(1, "S")
+    local script_src = info and info.source or ""
+    local url = Bridge.resolve_url(plugin_num, lang_str, res_path, script_src)
+    Bridge.open_url(url)
+    local status = (url == Bridge.FALLBACK_URL) and 2 or 1
+    reaper.gmem_write(Bridge.GMEM_ACK_STATUS, status)
+    reaper.gmem_write(Bridge.GMEM_ACK_SEQ, req_seq)
+  end
+end
+
 local function run()
   if not i_am_owner() then return end     -- un helper piu' nuovo ha preso il posto: questo si ferma
+  serve_bridge()
   local now = reaper.time_precise()
   if now - last_scan >= 1.0 then rescan(); last_scan = now end
   for _, base in ipairs(bases) do handle(base) end
@@ -903,5 +1006,5 @@ end
 reaper.SetExtState("ZP_HSC", "owner", MY_ID, false)
 reaper.DeleteExtState("ZP_HSC", "req", false)   -- richieste rimaste da prima: vecchie
 -- simulazione fuori REAPER (test): espone i passi senza avviare il ciclo
-if HSC_SYNC_SIM then return { sync = sync, rescan = rescan, anchors_tick = anchors_tick, anchor_command = anchor_command, serve_requests = serve_requests, run_once = function() local d = reaper.defer; reaper.defer = function() end; run(); reaper.defer = d end, id = MY_ID } end
+if HSC_SYNC_SIM then return { sync = sync, rescan = rescan, anchors_tick = anchors_tick, anchor_command = anchor_command, serve_requests = serve_requests, bridge = Bridge, serve_bridge = serve_bridge, run_once = function() local d = reaper.defer; reaper.defer = function() end; run(); reaper.defer = d end, id = MY_ID } end
 run()

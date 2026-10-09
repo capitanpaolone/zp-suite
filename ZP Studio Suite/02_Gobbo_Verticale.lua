@@ -19,6 +19,23 @@ local settings_section = "RythmoBand_Teleprompter"
 local gobbo_state_section = "RythmoBand_Gobbo_State"
 local gobbo_state_key = "vertical_ts"
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
+local ZP_LINGUA
+do
+    local path = SCRIPT_DIR .. "ZP_Lingua.lua"
+    local f = io.open(path, "r")
+    if f then
+        f:close()
+        local ok, loaded = pcall(dofile, path)
+        if ok and type(loaded) == "table" and type(loaded.T) == "function" then
+            ZP_LINGUA = loaded
+        end
+    end
+end
+local function T(s)
+    if ZP_LINGUA then return ZP_LINGUA.T(s) end
+    if _G.T then return _G.T(s) end
+    return s
+end
 local function SimpleSearchFallback()
     local M = {}
     function M.fold(s) return tostring(s or ""):gsub("\r\n", "\n"):gsub("\r", "\n"):lower() end
@@ -80,7 +97,7 @@ do
     end
     if not ZP_CERCA then
         if reaper.GetExtState("ZP_STUDIO_SUITE", "cerca_helper_missing_session") ~= "1" then
-            reaper.ShowMessageBox("ZP_cerca.lua non è disponibile o non si carica. Il Gobbo userà una ricerca semplice per sottostringa finché il file non viene ripristinato.", "ZP Studio Suite - ricerca", 0)
+            reaper.ShowMessageBox(T("ZP_cerca.lua non è disponibile o non si carica. Il Gobbo userà una ricerca semplice per sottostringa finché il file non viene ripristinato."), T("ZP Studio Suite - ricerca"), 0)
             reaper.SetExtState("ZP_STUDIO_SUITE", "cerca_helper_missing_session", "1", false)
         end
         ZP_CERCA = SimpleSearchFallback()
@@ -96,7 +113,7 @@ local character_lane_by_key = {}
 local last_proj_state = -1
 local last_track_guid = ""
 local selected_text_track_guid = ""
-local WINDOW_TITLE = "ZP Studio Suite v1.0.5 - Gobbo"
+local WINDOW_TITLE = "ZP Studio Suite v1.0.5 - " .. T("Gobbo")
 local READ_ALL = "ALL"   -- flusso virtuale "Tutti" (Leggi tutto): tutte le tracce testo insieme
 local current_text_track = nil
 local last_win_w = 0
@@ -507,7 +524,7 @@ end
 local window_title_shown = ""
 function UpdateWindowTitle()
     if not gfx.w or gfx.w <= 0 then return end
-    local title = WINDOW_TITLE .. " - Flusso: " .. CurrentTextFlowLabel()
+    local title = WINDOW_TITLE .. " - " .. T("Flusso:") .. " " .. CurrentTextFlowLabel()
     if title ~= window_title_shown then
         window_title_shown = title
         gfx.init(title)
@@ -866,7 +883,7 @@ function ApplySpeakerPaletteColor(palette_color)
 
     reaper.Undo_EndBlock("ZP Studio Suite colore speaker", -1)
     if changed == 0 then
-        reaper.ShowMessageBox("Seleziona un item sulla traccia VOCE/RB, oppure porta il cursore/playhead vicino a uno speaker item.", "ZP Studio Suite", 0)
+        reaper.ShowMessageBox(T("Seleziona un item sulla traccia VOCE/RB, oppure porta il cursore/playhead vicino a uno speaker item."), "ZP Studio Suite", 0)
     end
     reaper.UpdateArrange()
     UpdateItems()
@@ -1023,13 +1040,13 @@ end
 function EditCurrentText()
     local item = active_media_item or FindItemAtPosition(GetCurrentProjectPosition())
     if not item then
-        reaper.ShowMessageBox("Nessuna battuta sotto il cursore/playhead.", "ZP Studio Suite", 0)
+        reaper.ShowMessageBox(T("Nessuna battuta sotto il cursore/playhead."), "ZP Studio Suite", 0)
         return
     end
 
     local _, notes = reaper.GetSetMediaItemInfo_String(item, "P_NOTES", "", false)
     local edit_text = notes:gsub("[\r\n]+", " / ")
-    local ok, new_text = reaper.GetUserInputs("Modifica battuta corrente", 1, "Testo:,extrawidth=700", edit_text)
+    local ok, new_text = reaper.GetUserInputs(T("Modifica battuta corrente"), 1, T("Testo:,extrawidth=700"), edit_text)
     if not ok then return end
 
     new_text = new_text:gsub("%s*/%s*", "\n")
@@ -1067,7 +1084,7 @@ end
 function EditNearestNote()
     local note, distance = FindNearestNote(GetCurrentProjectPosition())
     if not note or (distance and distance > 12) then
-        reaper.ShowMessageBox("Nessuna nota vicina al playhead/cursore.", "ZP Studio Suite", 0)
+        reaper.ShowMessageBox(T("Nessuna nota vicina al playhead/cursore."), "ZP Studio Suite", 0)
         return
     end
 
@@ -1077,7 +1094,7 @@ end
 -- Cancella una nota dal pannello (la x sulla scheda), con conferma. Undo la rimette.
 function DeleteNote(note)
     if not note or not note.item or not reaper.ValidatePtr(note.item, "MediaItem*") then return end
-    local ok = reaper.ShowMessageBox("Cancellare questa nota?\n\n" .. FormatVideoTimecode(note.pos) .. "\n" .. note.text, "ZP Studio Suite", 4)
+    local ok = reaper.ShowMessageBox(T("Cancellare questa nota?\n\n") .. FormatVideoTimecode(note.pos) .. "\n" .. note.text, "ZP Studio Suite", 4)
     if ok ~= 6 then return end
     local track = reaper.GetMediaItem_Track(note.item)
     reaper.Undo_BeginBlock()
@@ -1090,11 +1107,11 @@ end
 function DeleteNearestNote()
     local note, distance = FindNearestNote(GetCurrentProjectPosition())
     if not note or (distance and distance > 12) then
-        reaper.ShowMessageBox("Nessuna nota vicina al playhead/cursore.", "ZP Studio Suite", 0)
+        reaper.ShowMessageBox(T("Nessuna nota vicina al playhead/cursore."), "ZP Studio Suite", 0)
         return
     end
 
-    local ok = reaper.ShowMessageBox("Cancellare la nota vicina?\n\n" .. note.text, "ZP Studio Suite", 4)
+    local ok = reaper.ShowMessageBox(T("Cancellare la nota vicina?\n\n") .. note.text, "ZP Studio Suite", 4)
     if ok ~= 6 then return end
 
     local track = reaper.GetMediaItem_Track(note.item)
@@ -1339,11 +1356,11 @@ function ApplySearchReplacement(all)
             if count > 0 then total_replacements = total_replacements + count; matched_items = matched_items + 1 end
         end
         if total_replacements == 0 then
-            search_message = "Nessuna parola intera da sostituire"
+            search_message = T("Nessuna parola intera da sostituire")
             search_message_until = reaper.time_precise() + 2.5
             return
         end
-        local answer = reaper.ShowMessageBox(string.format("Sostituisco %d occorrenze in %d battute?", total_replacements, matched_items), "ZP Studio Suite - Sostituisci tutto", 4)
+        local answer = reaper.ShowMessageBox(string.format(T("Sostituisco %d occorrenze in %d battute?"), total_replacements, matched_items), T("ZP Studio Suite - Sostituisci tutto"), 4)
         if answer ~= 6 then return end
         reaper.Undo_BeginBlock()
         for _, result in ipairs(all_results) do
@@ -1858,7 +1875,7 @@ function DrawNotesPanel(h, play_pos, reading_y)
     gfx.setfont(3, "Arial", 15, 'b')
     gfx.set(0.95, 0.84, 0.42, 1)
     gfx.x, gfx.y = x + pad, 14
-    gfx.drawstr("NOTE")
+    gfx.drawstr(T("NOTE"))
     gfx.setfont(3, "Arial", 13)
     gfx.set(0.85, 0.80, 0.68, 1)
     gfx.x, gfx.y = x + pad + 52, 16
@@ -1904,9 +1921,9 @@ function EditSubtitleItemText(item)
     local _, old_text = reaper.GetSetMediaItemInfo_String(item, "P_NOTES", "", false)
     local edit_text = (old_text or ""):gsub("\r\n", "\n"):gsub("\r", "\n"):gsub("\n", " \\n ")
     local ok, new_text = reaper.GetUserInputs(
-        "Edit testo gobbo",
+        T("Edit testo gobbo"),
         1,
-        "Testo (usa \\n per andare a capo):,extrawidth=700",
+        T("Testo (usa \\n per andare a capo):,extrawidth=700"),
         edit_text
     )
     if not ok then return end
@@ -2315,7 +2332,7 @@ function SaveInlineSubtitleEdit()
     if mode == "note_new" and new_text ~= "" then
         local track = GetOrCreateNotesTrack()
         if not track then
-            reaper.ShowMessageBox("Impossibile creare la traccia note.", "ZP Studio Suite", 0)
+            reaper.ShowMessageBox(T("Impossibile creare la traccia note."), "ZP Studio Suite", 0)
             return
         end
         reaper.Undo_BeginBlock()
@@ -2514,11 +2531,11 @@ function DrawInlineSubtitleEditor()
     end
     local button_y = y + h - 34
     local cancel_w, save_w = 92, 92
-    if DrawButton(x + w - pad - cancel_w - save_w - 8, button_y, cancel_w, 24, "Annulla", 0.42, 0.20, 0.18) then
+    if DrawButton(x + w - pad - cancel_w - save_w - 8, button_y, cancel_w, 24, T("Annulla"), 0.42, 0.20, 0.18) then
         inline_edit = nil
         return
     end
-    if DrawButton(x + w - pad - save_w, button_y, save_w, 24, "Salva", 0.20, 0.48, 0.40, true) then
+    if DrawButton(x + w - pad - save_w, button_y, save_w, 24, T("Salva"), 0.20, 0.48, 0.40, true) then
         SaveInlineSubtitleEdit()
         return
     end
@@ -2526,7 +2543,7 @@ function DrawInlineSubtitleEditor()
     gfx.set(0.90, 0.86, 0.76, 1)
     gfx.x = x + pad
     gfx.y = button_y + 4
-    gfx.drawstr("Invio salva  |  Shift+Invio accapo  |  Esc annulla", 0, x + w - pad - 196, button_y + 24)
+    gfx.drawstr(T("Invio salva  |  Shift+Invio accapo  |  Esc annulla"), 0, x + w - pad - 196, button_y + 24)
 end
 
 function HandleSubtitleEditDoubleClick(item, x, y, w, h)
@@ -2882,7 +2899,7 @@ function OpenSuiteHelp()
     if f then
         f:close()
     else
-        reaper.ShowMessageBox("Help non trovato:\n\n" .. help_path, "ZP Studio Suite", 0)
+        reaper.ShowMessageBox(T("Help non trovato:\n\n") .. help_path, "ZP Studio Suite", 0)
         return
     end
 
@@ -2904,48 +2921,48 @@ function GobboAccessibleSpeak(text)
     if type(reaper.osara_outputMessage) == "function" then
         reaper.osara_outputMessage(text)
     else
-        reaper.ShowMessageBox(text, "ZP Studio Suite - Gobbo", 0)
+        reaper.ShowMessageBox(text, "ZP Studio Suite - " .. T("Gobbo"), 0)
     end
 end
 
 function GobboAccessibleStatus()
     local lines = {
-        "Stato gobbo.",
-        "Timecode " .. (show_timecode and "visibile" or "nascosto") .. ".",
-        "Tema " .. (theme_mode == "dark" and "scuro" or (theme_mode == "light" and "chiaro" or "medio")) .. ".",
-        "Contrasto " .. (full_contrast and "pieno" or "sfumato") .. ".",
-        "Flusso testi " .. CurrentTextFlowLabel() .. ".",
-        "Parola per parola " .. (word_follow and "attiva" or "spenta") .. ".",
-        "Scorrimento continuo " .. (fixed_block_mode and "spento" or "attivo") .. ".",
-        "Conto alla rovescia " .. (countdown_alert and "attivo" or "spento") .. ".",
-        "Pannello note " .. (notes_panel_open and "aperto" or "chiuso") .. ".",
-        "Corpo testo " .. tostring(master_font_size) .. "."
+        T("Stato gobbo."),
+        show_timecode and T("Timecode visibile.") or T("Timecode nascosto."),
+        theme_mode == "dark" and T("Tema scuro.") or (theme_mode == "light" and T("Tema chiaro.") or T("Tema medio.")),
+        full_contrast and T("Contrasto pieno.") or T("Contrasto sfumato."),
+        string.format(T("Flusso testi %s."), CurrentTextFlowLabel()),
+        word_follow and T("Parola per parola attiva.") or T("Parola per parola spenta."),
+        fixed_block_mode and T("Scorrimento continuo spento: testo a scatti, una battuta alla volta.") or T("Scorrimento continuo attivo."),
+        countdown_alert and T("Conto alla rovescia attivo.") or T("Conto alla rovescia spento."),
+        notes_panel_open and T("Pannello note aperto.") or T("Pannello note chiuso."),
+        string.format(T("Corpo testo %s."), tostring(master_font_size))
     }
     return table.concat(lines, " ")
 end
 
 function OpenGobboAccessibleMenu()
     local prompt = table.concat({
-        "1 Stato",
-        "2 Mostra/Nascondi TC",
-        "3 Flusso precedente",
-        "4 Flusso successivo",
-        "5 Parola per parola si/no",
-        "6 Scorrimento continuo si/no",
-        "7 Conto alla rovescia si/no",
-        "8 Pannello note si/no",
-        "9 Traccia note visibile si/no",
-        "10 Tracce gobbo visibili si/no",
-        "11 Nuova battuta",
-        "12 Tema",
-        "13 Contrasto",
-        "14 Corpo -",
-        "15 Corpo +",
-        "16 Help"
+        T("1 Stato"),
+        T("2 Mostra/Nascondi TC"),
+        T("3 Flusso precedente"),
+        T("4 Flusso successivo"),
+        T("5 Parola per parola si/no"),
+        T("6 Scorrimento continuo si/no"),
+        T("7 Conto alla rovescia si/no"),
+        T("8 Pannello note si/no"),
+        T("9 Traccia note visibile si/no"),
+        T("10 Tracce gobbo visibili si/no"),
+        T("11 Nuova battuta"),
+        T("12 Tema"),
+        T("13 Contrasto"),
+        T("14 Corpo -"),
+        T("15 Corpo +"),
+        T("16 Help")
     }, ", ")
 
     local ok, value = reaper.GetUserInputs(
-        "ZP Studio Suite - Gobbo accessibile",
+        "ZP Studio Suite - " .. T("Gobbo accessibile"),
         1,
         prompt .. ",extrawidth=640",
         "1"
@@ -2954,7 +2971,7 @@ function OpenGobboAccessibleMenu()
 
     local choice = tonumber((value or ""):match("%d+"))
     if not choice then
-        GobboAccessibleSpeak("Scelta non valida.")
+        GobboAccessibleSpeak(T("Scelta non valida."))
         return
     end
 
@@ -2964,64 +2981,64 @@ function OpenGobboAccessibleMenu()
     elseif choice == 2 then
         show_timecode = not show_timecode
         SaveSettings()
-        GobboAccessibleSpeak("Timecode " .. (show_timecode and "visibile." or "nascosto."))
+        GobboAccessibleSpeak(show_timecode and T("Timecode visibile.") or T("Timecode nascosto."))
     elseif choice == 3 then
         CycleTextFlow(-1)
-        GobboAccessibleSpeak("Flusso testi " .. CurrentTextFlowLabel() .. ".")
+        GobboAccessibleSpeak(string.format(T("Flusso testi %s."), CurrentTextFlowLabel()))
     elseif choice == 4 then
         CycleTextFlow(1)
-        GobboAccessibleSpeak("Flusso testi " .. CurrentTextFlowLabel() .. ".")
+        GobboAccessibleSpeak(string.format(T("Flusso testi %s."), CurrentTextFlowLabel()))
     elseif choice == 5 then
         word_follow = not word_follow
         SaveSettings()
-        GobboAccessibleSpeak("Parola per parola " .. (word_follow and "attiva." or "spenta."))
+        GobboAccessibleSpeak(word_follow and T("Parola per parola attiva.") or T("Parola per parola spenta."))
     elseif choice == 6 then
         fixed_block_mode = not fixed_block_mode
         SaveSettings()
-        GobboAccessibleSpeak("Scorrimento continuo " .. (fixed_block_mode and "spento: testo a scatti, una battuta alla volta." or "attivo."))
+        GobboAccessibleSpeak(fixed_block_mode and T("Scorrimento continuo spento: testo a scatti, una battuta alla volta.") or T("Scorrimento continuo attivo."))
     elseif choice == 7 then
         countdown_alert = not countdown_alert
         SaveSettings()
-        GobboAccessibleSpeak("Conto alla rovescia " .. (countdown_alert and "attivo." or "spento."))
+        GobboAccessibleSpeak(countdown_alert and T("Conto alla rovescia attivo.") or T("Conto alla rovescia spento."))
     elseif choice == 8 then
         notes_panel_open = not notes_panel_open
         SaveSettings()
         RecalculateDocumentLayout()
-        GobboAccessibleSpeak("Pannello note " .. (notes_panel_open and "aperto." or "chiuso."))
+        GobboAccessibleSpeak(notes_panel_open and T("Pannello note aperto.") or T("Pannello note chiuso."))
     elseif choice == 9 then
         ToggleNotesTrackVisibility()
-        GobboAccessibleSpeak("Visibilita' traccia note aggiornata.")
+        GobboAccessibleSpeak(T("Visibilita' traccia note aggiornata."))
     elseif choice == 10 then
         ToggleTextFlowTracksVisibility()
-        GobboAccessibleSpeak("Visibilita' tracce gobbo aggiornata.")
+        GobboAccessibleSpeak(T("Visibilita' tracce gobbo aggiornata."))
     elseif choice == 11 then
         AddEmptyGobboTextItem()
-        GobboAccessibleSpeak("Nuova battuta pronta alla posizione corrente.")
+        GobboAccessibleSpeak(T("Nuova battuta pronta alla posizione corrente."))
     elseif choice == 12 then
         if theme_mode == "dark" then theme_mode = "medium"
         elseif theme_mode == "medium" then theme_mode = "light"
         else theme_mode = "dark" end
         SaveSettings()
-        GobboAccessibleSpeak("Tema " .. (theme_mode == "dark" and "scuro." or (theme_mode == "light" and "chiaro." or "medio.")))
+        GobboAccessibleSpeak(theme_mode == "dark" and T("Tema scuro.") or (theme_mode == "light" and T("Tema chiaro.") or T("Tema medio.")))
     elseif choice == 13 then
         full_contrast = not full_contrast
         SaveSettings()
-        GobboAccessibleSpeak("Contrasto " .. (full_contrast and "pieno." or "sfumato."))
+        GobboAccessibleSpeak(full_contrast and T("Contrasto pieno.") or T("Contrasto sfumato."))
     elseif choice == 14 then
         master_font_size = math.max(10, master_font_size - 1)
         SaveSettings()
         RecalculateDocumentLayout()
-        GobboAccessibleSpeak("Corpo testo " .. tostring(master_font_size) .. ".")
+        GobboAccessibleSpeak(string.format(T("Corpo testo %s."), tostring(master_font_size)))
     elseif choice == 15 then
         master_font_size = math.min(60, master_font_size + 1)
         SaveSettings()
         RecalculateDocumentLayout()
-        GobboAccessibleSpeak("Corpo testo " .. tostring(master_font_size) .. ".")
+        GobboAccessibleSpeak(string.format(T("Corpo testo %s."), tostring(master_font_size)))
     elseif choice == 16 then
         OpenSuiteHelp()
-        GobboAccessibleSpeak("Apro help ZP Studio Suite.")
+        GobboAccessibleSpeak(T("Apro help ZP Studio Suite."))
     else
-        GobboAccessibleSpeak("Scelta non disponibile.")
+        GobboAccessibleSpeak(T("Scelta non disponibile."))
     end
 end
 
@@ -3062,8 +3079,8 @@ function DrawSearchPanel(w, h)
     gfx.set(0.38, 0.34, 0.26, 0.8); gfx.rect(x, y, panel_w, panel_h, 0)
 
     gfx.setfont(3, "Arial", 13, 'b'); gfx.set(0.93, 0.90, 0.83, 1)
-    gfx.x, gfx.y = x + pad, y + 7; gfx.drawstr("Cerca")
-    if DrawButton(x + panel_w - 112, y + 4, 102, 22, search_replace_open and "Nascondi" or "Sostituisci…", 0.34, 0.25, 0.12) then
+    gfx.x, gfx.y = x + pad, y + 7; gfx.drawstr(T("Cerca"))
+    if DrawButton(x + panel_w - 112, y + 4, 102, 22, search_replace_open and T("Nascondi") or T("Sostituisci…"), 0.34, 0.25, 0.12) then
         search_replace_open = not search_replace_open
         search_active_field = search_replace_open and "replace" or "find"
         ScheduleSearchResults(); search_results_deadline = 0
@@ -3086,7 +3103,7 @@ function DrawSearchPanel(w, h)
             gfx.set(0.18, 0.44, 0.95, 0.55); gfx.rect(input_x + 7 + before_w, input_y + 3, math.max(2,sel_w), 18, 1)
             gfx.set(0.95,0.92,0.84,1); gfx.x,gfx.y=input_x+7,input_y+4
         end
-        gfx.drawstr(value ~= "" and value or (field == "find" and "Cerca parola/frase..." or "Testo sostitutivo..."))
+        gfx.drawstr(value ~= "" and value or (field == "find" and T("Cerca parola/frase...") or T("Testo sostitutivo...")))
         if search_active_field == field and math.floor(reaper.time_precise()*2)%2==0 then
             local caret_w=gfx.measurestr(value:sub(1,cursor-1)); gfx.set(0.95,0.70,0.18,1); gfx.rect(input_x+8+caret_w,input_y+5,2,15,1)
         end
@@ -3109,7 +3126,7 @@ function DrawSearchPanel(w, h)
     local input_y = y + 27
     local action_x = x + panel_w - 138
     local input_w = math.max(48, action_x - (x + 58) - 6)
-    draw_field("find", "Trova", search_query, search_cursor, search_sel_start, search_sel_end, search_input_rect or {}, input_y, 58, input_w)
+    draw_field("find", T("Trova"), search_query, search_cursor, search_sel_start, search_sel_end, search_input_rect or {}, input_y, 58, input_w)
     search_input_rect = search_input_rect or {}; search_input_rect.x=x+58; search_input_rect.y=input_y; search_input_rect.w=input_w; search_input_rect.h=24
     if DrawButton(x + panel_w - 138, input_y, 30, 24, "<", 0.34, 0.25, 0.12) then ExecuteSubtitleSearch(-1) end
     if DrawButton(x + panel_w - 104, input_y, 30, 24, ">", 0.34, 0.25, 0.12) then ExecuteSubtitleSearch(1) end
@@ -3117,12 +3134,12 @@ function DrawSearchPanel(w, h)
 
     if search_replace_open then
         local ry=y+57; local bx=x+panel_w-126; local rw=math.max(48,bx-(x+105)-6)
-        draw_field("replace", "Sostituisci con", replace_query, replace_cursor, replace_sel_start, replace_sel_end, replace_input_rect or {}, ry, 105, rw)
+        draw_field("replace", T("Sostituisci con"), replace_query, replace_cursor, replace_sel_start, replace_sel_end, replace_input_rect or {}, ry, 105, rw)
         replace_input_rect=replace_input_rect or {}; replace_input_rect.x=x+105; replace_input_rect.y=ry; replace_input_rect.w=rw; replace_input_rect.h=24
-        if DrawButton(bx,ry,62,24,"Sostituisci",0.34,0.25,0.12) then ApplySearchReplacement(false) end
-        if DrawButton(bx+66,ry,48,24,"Tutti",0.34,0.25,0.12) then ApplySearchReplacement(true) end
+        if DrawButton(bx,ry,62,24,T("Sostituisci"),0.34,0.25,0.12) then ApplySearchReplacement(false) end
+        if DrawButton(bx+66,ry,48,24,T("Tutti"),0.34,0.25,0.12) then ApplySearchReplacement(true) end
         gfx.setfont(3,"Arial",13); gfx.set(0.90, 0.86, 0.76, 1); gfx.x=x+pad; gfx.y=ry+27
-        gfx.drawstr("Sostituisce solo parole intere; gli accenti contano (è non cambia e).")
+        gfx.drawstr(T("Sostituisce solo parole intere; gli accenti contano (è non cambia e)."))
     end
     if search_message ~= "" and reaper.time_precise() <= search_message_until then
         gfx.setfont(3,"Arial",13); gfx.set(0.98, 0.90, 0.70, 1); gfx.x=x+125; gfx.y=y+8; gfx.drawstr(search_message,0,x+122+math.max(0,panel_w-240),y+24)
@@ -3134,7 +3151,7 @@ function DrawSearchPanel(w, h)
     local start_i=search_list_scroll+1
     search_list_rect={x=x,y=list_y,w=panel_w,h=rows_visible*row_h}
     if search_results_total==0 then
-        gfx.setfont(3,"Arial",15); gfx.set(0.90, 0.86, 0.78, 1); gfx.x=list_x; gfx.y=list_y+5; gfx.drawstr("Nessun risultato")
+        gfx.setfont(3,"Arial",15); gfx.set(0.90, 0.86, 0.78, 1); gfx.x=list_x; gfx.y=list_y+5; gfx.drawstr(T("Nessun risultato"))
     else
         for row=1,rows_visible do
             local i=start_i+row-1; local result=search_results[i]
@@ -3245,7 +3262,7 @@ function DrawSettingsPanel(w, h)
     gfx.setfont(3, "Arial", 15, 'b')
     gfx.set(0.5, 0.5, 0.8, alpha)
     gfx.x, gfx.y = 14, panel_y + 8
-    gfx.drawstr("IMPOSTAZIONI GOBBO")
+    gfx.drawstr(T("IMPOSTAZIONI GOBBO"))
     
     if DrawButton(w - 14 - 28, panel_y + 8, 28, 22, "X", 0.5, 0.2, 0.15) then
         panel_open = false
@@ -3262,7 +3279,7 @@ function DrawSettingsPanel(w, h)
     gfx.setfont(3, "Arial", 14, 'b')
     gfx.set(0.6, 0.7, 1.0, alpha)
     gfx.x, gfx.y = col1_x, row_y
-    gfx.drawstr("CORPO TESTO")
+    gfx.drawstr(T("CORPO TESTO"))
     
     gfx.setfont(3, "Arial", 20, 'b')
     gfx.set(1, 1, 1, alpha)
@@ -3366,7 +3383,7 @@ function ShowTextFlowMenu(mx, my)
     local tracks = CollectTextFlowTracks()
     if #tracks == 0 then return end
     local entries = {}
-    if #tracks >= 2 then entries[#entries + 1] = { guid = READ_ALL, name = "Tutti" } end
+    if #tracks >= 2 then entries[#entries + 1] = { guid = READ_ALL, name = T("Tutti") } end
     for _, entry in ipairs(tracks) do
         entries[#entries + 1] = { guid = entry.guid, name = TextFlowDisplayName(entry.name) }
     end
@@ -3416,18 +3433,18 @@ function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
             local half_w = math.floor((full_w - 6) / 2)
 
             -- LAVORO
-            if DrawButton(x + pad, y, full_w, 28, "Cerca  (Ctrl/⌘+F)", 0.25, 0.32, 0.42) then
+            if DrawButton(x + pad, y, full_w, 28, T("Cerca  (Ctrl/⌘+F)"), 0.25, 0.32, 0.42) then
                 PromptSubtitleSearch()
             end
             y = y + 34
-            if DrawButton(x + pad, y, half_w, 28, "+ Nota", 0.36, 0.30, 0.14) then
+            if DrawButton(x + pad, y, half_w, 28, T("+ Nota"), 0.36, 0.30, 0.14) then
                 InsertNoteAtCurrentPosition()
             end
-            if DrawButton(x + pad + half_w + 6, y, half_w, 28, "+ Battuta", 0.20, 0.48, 0.40) then
+            if DrawButton(x + pad + half_w + 6, y, half_w, 28, T("+ Battuta"), 0.20, 0.48, 0.40) then
                 AddEmptyGobboTextItem()
             end
             y = y + 38
-            if SidebarCheck(x + pad, y, full_w, "Modifica (Studio/Edit)", studio_edit_mode) then
+            if SidebarCheck(x + pad, y, full_w, T("Modifica (Studio/Edit)"), studio_edit_mode) then
                 studio_edit_mode = not studio_edit_mode
                 if studio_edit_mode then
                     reaper.OnStopButton()
@@ -3437,7 +3454,7 @@ function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
             end
             y = y + 26
             if studio_edit_mode then
-                if SidebarCheck(x + pad + 18, y, full_w - 18, "Muove la timeline", studio_edit_sync) then
+                if SidebarCheck(x + pad + 18, y, full_w - 18, T("Muove la timeline"), studio_edit_sync) then
                     studio_edit_sync = not studio_edit_sync
                     SaveSettings()
                 end
@@ -3445,15 +3462,15 @@ function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
             end
 
             -- TESTO
-            y = SidebarSection(x, y, "TESTO")
-            SidebarLabel(x + pad, y + 5, "Flusso")
+            y = SidebarSection(x, y, T("TESTO"))
+            SidebarLabel(x + pad, y + 5, T("Flusso"))
             local flow_label = CurrentTextFlowLabel()
             if #flow_label > 14 then flow_label = flow_label:sub(1, 13) .. "." end
             if DrawButton(x + pad + 58, y, full_w - 58, 26, flow_label .. "  ▾", 0.22, 0.30, 0.42) then
                 ShowTextFlowMenu(x + pad + 58, y + 26)
             end
             y = y + 34
-            SidebarLabel(x + pad, y + 6, "Corpo")
+            SidebarLabel(x + pad, y + 6, T("Corpo"))
             if DrawButton(x + pad + 58, y, 36, 26, "−", 0.45, 0.20, 0.20) then
                 master_font_size = math.max(10, master_font_size - 1)
                 SaveSettings()
@@ -3473,41 +3490,41 @@ function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
                 RecalculateDocumentLayout()
             end
             y = y + 34
-            SidebarLabel(x + pad, y, "Punto di lettura")
+            SidebarLabel(x + pad, y, T("Punto di lettura"))
             y = y + 18
             local seg_w = math.floor((full_w - 8) / 3)
-            if DrawButton(x + pad, y, seg_w, 26, "Alto", 0.22, 0.30, 0.42, math.abs(reading_point - 0.18) < 0.01) then
+            if DrawButton(x + pad, y, seg_w, 26, T("Alto"), 0.22, 0.30, 0.42, math.abs(reading_point - 0.18) < 0.01) then
                 reading_point = 0.18
                 SaveSettings()
             end
-            if DrawButton(x + pad + seg_w + 4, y, seg_w, 26, "Terzo", 0.22, 0.30, 0.42, math.abs(reading_point - 0.34) < 0.01) then
+            if DrawButton(x + pad + seg_w + 4, y, seg_w, 26, T("Terzo"), 0.22, 0.30, 0.42, math.abs(reading_point - 0.34) < 0.01) then
                 reading_point = 0.34
                 SaveSettings()
             end
-            if DrawButton(x + pad + (seg_w + 4) * 2, y, seg_w, 26, "Centro", 0.22, 0.30, 0.42, math.abs(reading_point - 0.50) < 0.01) then
+            if DrawButton(x + pad + (seg_w + 4) * 2, y, seg_w, 26, T("Centro"), 0.22, 0.30, 0.42, math.abs(reading_point - 0.50) < 0.01) then
                 reading_point = 0.50
                 SaveSettings()
             end
             y = y + 34
 
             -- LETTURA
-            y = SidebarSection(x, y, "LETTURA")
-            if SidebarCheck(x + pad, y, full_w, "Scorrimento continuo", not fixed_block_mode) then
+            y = SidebarSection(x, y, T("LETTURA"))
+            if SidebarCheck(x + pad, y, full_w, T("Scorrimento continuo"), not fixed_block_mode) then
                 fixed_block_mode = not fixed_block_mode
                 SaveSettings()
             end
             y = y + 26
-            if SidebarCheck(x + pad, y, full_w, "Parola per parola", word_follow) then
+            if SidebarCheck(x + pad, y, full_w, T("Parola per parola"), word_follow) then
                 word_follow = not word_follow
                 SaveSettings()
             end
             y = y + 26
-            if SidebarCheck(x + pad, y, full_w, "Conto alla rovescia", countdown_alert) then
+            if SidebarCheck(x + pad, y, full_w, T("Conto alla rovescia"), countdown_alert) then
                 countdown_alert = not countdown_alert
                 SaveSettings()
             end
             y = y + 26
-            if SidebarCheck(x + pad, y, full_w, "Mostra timecode", show_timecode) then
+            if SidebarCheck(x + pad, y, full_w, T("Mostra timecode"), show_timecode) then
                 show_timecode = not show_timecode
                 SaveSettings()
             end
@@ -3515,30 +3532,30 @@ function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
 
             -- ASPETTO (richiudibile)
             local open
-            y, open = SidebarSection(x, y, "ASPETTO", "aspetto")
+            y, open = SidebarSection(x, y, T("ASPETTO"), "aspetto")
             if open then
-                SidebarLabel(x + pad, y, "Tema")
+                SidebarLabel(x + pad, y, T("Tema"))
                 y = y + 18
-                if DrawButton(x + pad, y, seg_w, 26, "Scuro", 0.22, 0.22, 0.28, theme_mode == "dark") then
+                if DrawButton(x + pad, y, seg_w, 26, T("Scuro"), 0.22, 0.22, 0.28, theme_mode == "dark") then
                     theme_mode = "dark"
                     SaveSettings()
                 end
-                if DrawButton(x + pad + seg_w + 4, y, seg_w, 26, "Medio", 0.52, 0.48, 0.35, theme_mode == "medium") then
+                if DrawButton(x + pad + seg_w + 4, y, seg_w, 26, T("Medio"), 0.52, 0.48, 0.35, theme_mode == "medium") then
                     theme_mode = "medium"
                     SaveSettings()
                 end
-                if DrawButton(x + pad + (seg_w + 4) * 2, y, seg_w, 26, "Chiaro", 0.72, 0.72, 0.72, theme_mode == "light") then
+                if DrawButton(x + pad + (seg_w + 4) * 2, y, seg_w, 26, T("Chiaro"), 0.72, 0.72, 0.72, theme_mode == "light") then
                     theme_mode = "light"
                     SaveSettings()
                 end
                 y = y + 34
-                SidebarLabel(x + pad, y, "Contrasto")
+                SidebarLabel(x + pad, y, T("Contrasto"))
                 y = y + 18
-                if DrawButton(x + pad, y, half_w, 26, "Sfumato", 0.28, 0.28, 0.34, not full_contrast) then
+                if DrawButton(x + pad, y, half_w, 26, T("Sfumato"), 0.28, 0.28, 0.34, not full_contrast) then
                     full_contrast = false
                     SaveSettings()
                 end
-                if DrawButton(x + pad + half_w + 6, y, half_w, 26, "Pieno", 0.42, 0.34, 0.18, full_contrast) then
+                if DrawButton(x + pad + half_w + 6, y, half_w, 26, T("Pieno"), 0.42, 0.34, 0.18, full_contrast) then
                     full_contrast = true
                     SaveSettings()
                 end
@@ -3548,23 +3565,23 @@ function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
             end
 
             -- NOTE E TRACCE (richiudibile)
-            y, open = SidebarSection(x, y, "NOTE E TRACCE", "tracce")
+            y, open = SidebarSection(x, y, T("NOTE E TRACCE"), "tracce")
             if open then
-                if SidebarCheck(x + pad, y, full_w, "Pannello note", notes_panel_open) then
+                if SidebarCheck(x + pad, y, full_w, T("Pannello note"), notes_panel_open) then
                     notes_panel_open = not notes_panel_open
                     SaveSettings()
                     RecalculateDocumentLayout()
                 end
                 y = y + 26
-                if SidebarCheck(x + pad, y, full_w, "Segui i tagli", FollowEnabled()) then
+                if SidebarCheck(x + pad, y, full_w, T("Segui i tagli"), FollowEnabled()) then
                     if FollowScriptPath() then ToggleFollow() end
                 end
                 y = y + 26
-                if SidebarCheck(x + pad, y, full_w, "Traccia note visibile", IsTrackVisible(FindTrackByName(notes_track_name))) then
+                if SidebarCheck(x + pad, y, full_w, T("Traccia note visibile"), IsTrackVisible(FindTrackByName(notes_track_name))) then
                     ToggleNotesTrackVisibility()
                 end
                 y = y + 26
-                if SidebarCheck(x + pad, y, full_w, "Tracce gobbo visibili", AnyTextFlowTrackVisible()) then
+                if SidebarCheck(x + pad, y, full_w, T("Tracce gobbo visibili"), AnyTextFlowTrackVisible()) then
                     ToggleTextFlowTracksVisibility()
                 end
                 y = y + 30
@@ -3572,7 +3589,7 @@ function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
 
             -- ACCESSIBILITA'
             y = y + 6
-            if DrawButton(x + pad, y, full_w, 26, "Menu OSARA", 0.20, 0.42, 0.50, false) then
+            if DrawButton(x + pad, y, full_w, 26, T("Menu OSARA"), 0.20, 0.42, 0.50, false) then
                 OpenGobboAccessibleMenu()
             end
             y = y + 36
@@ -3870,7 +3887,7 @@ function DrawGUI()
     if #cached_items == 0 then
         gfx.setfont(1, "Arial", 18)
         gfx.set(0.4, 0.4, 0.4, 1)
-        local warn_text = "Seleziona la traccia Copione!"
+        local warn_text = T("Seleziona la traccia Copione!")
         local tw, th = gfx.measurestr(warn_text)
         gfx.x = notes_w + ((read_w - tw) / 2)
         gfx.y = (teleprompter_bottom - th) / 2
@@ -4095,7 +4112,7 @@ function DrawGUI()
     if show_settings_timer > 0 then
         local hud_alpha = math.min(1, show_settings_timer / 20)
         gfx.setfont(2, "Arial", 18, 'b')
-        local hud_txt = string.format("FONT COPIONE: %d", master_font_size)
+        local hud_txt = string.format(T("FONT COPIONE: %d"), master_font_size)
         local tw, th = gfx.measurestr(hud_txt)
         
         gfx.set(0, 0, 0, 0.7 * hud_alpha)

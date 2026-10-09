@@ -22,6 +22,7 @@
 -- Gli script delle tappe non vengono riscritti: la finestra li lancia con dofile.
 
 local M = {}
+local function T(s) return (_G.T and _G.T(s)) or s end
 
 ---------------------------------------------------------------------------
 -- LOGICA PURA (collaudabile con lua5.4 fuori da REAPER)
@@ -38,9 +39,9 @@ function M.road(rows, follow)
   end
   local steps = {
     { done = n > 0 and srt == n,    info = M.summary(rows) },
-    { done = n > 0 and linked == n, info = string.format("%d di %d con marker", linked, n) },
-    { done = linked > 0 and shown == linked, info = string.format("%d di %d con testi in timeline", shown, linked) },
-    { done = follow, info = follow and "acceso: i testi seguono tagli e spostamenti" or "spento" },
+    { done = n > 0 and linked == n, info = string.format(T("%d di %d con marker"), linked, n) },
+    { done = linked > 0 and shown == linked, info = string.format(T("%d di %d con testi in timeline"), shown, linked) },
+    { done = follow, info = follow and T("acceso: i testi seguono tagli e spostamenti") or T("spento") },
   }
   local next_step
   if n > 0 then
@@ -61,7 +62,13 @@ function M.summary(rows)
     elseif r.wav then todo = todo + 1
     else other = other + 1 end
   end
-  if n == 0 then return "nessun item selezionato" end
+  if n == 0 then return T("nessun item selezionato") end
+  local lang = (_G.UI and _G.UI.get_lingua and _G.UI.get_lingua()) or "it"
+  if lang == "en" then
+    local msg = string.format("%d selected: %d to transcribe, %d already done", n, todo, done)
+    if other > 0 then msg = msg .. string.format(", %d non-WAV", other) end
+    return msg
+  end
   local msg = string.format("%d selezionat%s: %d da trascrivere, %d gia' fatt%s",
     n, n == 1 and "o" or "i", todo, done, done == 1 and "o" or "i")
   if other > 0 then msg = msg .. string.format(", %d non WAV", other) end
@@ -110,7 +117,7 @@ local PARAKEET_LANGS = {}
 for c in ("bg hr cs da nl en et fi fr de el hu it lv lt mt pl pt ro sk sl es sv ru uk auto"):gmatch("%S+") do PARAKEET_LANGS[c] = true end
 function M.lang_warning(model, code)
   if tostring(model or ""):lower():find("parakeet", 1, true) and not PARAKEET_LANGS[code or ""] then
-    return "Parakeet non conosce " .. M.lang_label(code) .. ": usa large-v3 o small (Whisper)."
+    return string.format(T("Parakeet non conosce %s: usa large-v3 o small (Whisper)."), T(M.lang_label(code)))
   end
   return nil
 end
@@ -216,12 +223,12 @@ end
 -- ratio = secondi di lavoro per secondo di audio misurati in passato (nil se mai misurato)
 function M.heartbeat(name, elapsed, audio_len, ratio, tick)
   local spin = ({ "|", "/", "-", "\\" })[(tick % 4) + 1]
-  local msg = string.format("%s  Sto lavorando, non sono bloccato: %s, %s trascorsi", spin, name, M.clock(elapsed))
+  local msg = string.format("%s  " .. T("Sto lavorando, non sono bloccato: %s, %s trascorsi"), spin, name, M.clock(elapsed))
   if audio_len and audio_len > 0 then
-    msg = msg .. ", audio " .. M.clock(audio_len)
+    msg = msg .. ", " .. string.format(T("audio %s"), M.clock(audio_len))
     if ratio and ratio > 0 then
       local left = audio_len * ratio - elapsed
-      msg = msg .. (left > 0 and (", mancano circa " .. M.clock(left)) or ", dovrei finire a momenti")
+      msg = msg .. (left > 0 and (", " .. string.format(T("mancano circa %s"), M.clock(left))) or (", " .. T("dovrei finire a momenti")))
     end
   end
   return msg
@@ -253,16 +260,17 @@ local function get_s(fn, obj, key) local _, v = fn(obj, key, "", false); return 
 
 local ui_path = find_file("ZP_UI.lua")
 if not ui_path then
-  reaper.ShowMessageBox("Non trovo ZP_UI.lua accanto allo script.", "ZP Trascrizione", 0)
+  reaper.ShowMessageBox(T("Non trovo ZP_UI.lua accanto allo script."), T("ZP Trascrizione"), 0)
   return
 end
 local UI = dofile(ui_path)
+local AG = dofile((ui_path:gsub("ZP_UI%.lua$", "ZP_Agenti.lua")))   -- agenti AI (Traduci)
 
 local EXT = "ZP_STUDIO_SUITE"
 local follow = reaper.GetExtState(EXT, "PanelAutofollow") == "1"
 local FOLLOW_DELAY = 10.0
 
-local status = "Seleziona gli item audio da lavorare."
+local status = T("Seleziona gli item audio da lavorare.")
 local rows, rows_t = {}, -1
 local text_names = {}          -- nomi delle tracce testo delle voci selezionate
 local texts_visible = false
@@ -283,10 +291,11 @@ local speech_models = nil                                         -- nil = non a
 
 -- Traduzione degli SRT (a richiesta): motore, modello e lingua d'arrivo ricordati.
 local TR_ENGINE_KEY, TR_MODEL_KEY, TR_LANG_KEY = "PanelTranslateEngine", "PanelTranslateModel", "PanelTranslateLang"
-local tr_engine = reaper.GetExtState(EXT, TR_ENGINE_KEY); if tr_engine == "" then tr_engine = "codex" end
+local tr_engine = reaper.GetExtState(EXT, TR_ENGINE_KEY); if tr_engine == "" then tr_engine = "auto" end
 local tr_model = reaper.GetExtState(EXT, TR_MODEL_KEY)            -- "" = quello scelto in Codex
 local tr_lang = reaper.GetExtState(EXT, TR_LANG_KEY); if tr_lang == "" then tr_lang = "it" end
 local tr_engines = nil                                            -- nil = non ancora chiesti
+local tr_run_engine = nil                                         -- agente vero (auto risolto) del lavoro
 local tr_queue, tr_running, tr_report = {}, nil, nil
 
 ---------------------------------------------------------------------------
@@ -350,18 +359,18 @@ end
 ---------------------------------------------------------------------------
 local function run_script(name, flags)
   local p = find_file(name)
-  if not p then status = "Non trovo " .. name; return nil end
+  if not p then status = string.format(T("Non trovo %s"), name); return nil end
   for k, v in pairs(flags) do _G[k] = v end
   local ok, res = pcall(dofile, p)
   for k in pairs(flags) do _G[k] = nil end
-  if not ok then status = "Errore in " .. name .. ": " .. tostring(res); return nil end
+  if not ok then status = string.format(T("Errore in %s: %s"), name, tostring(res)); return nil end
   return res
 end
 
 -- Tappa 3
 local function do_bring(quiet)
   local msg = run_script("ZP_sincronizza_aggancio.lua", { ZP_SYNC_QUIET = true })
-  if msg and not quiet then status = "Testi in timeline: " .. tostring(msg):gsub("\n", " ") end
+  if msg and not quiet then status = string.format(T("Testi in timeline: %s"), tostring(msg):gsub("\n", " ")) end
   last_count = reaper.GetProjectStateChangeCount(0)   -- i cambi del sync non riaccendono il follow
   pending = false
   refresh_rows()
@@ -379,8 +388,8 @@ local function do_link(skip_existing, srt_path)
   local msg = run_script("28_Collega_Marker.lua",
     { ZP_COLLEGA_QUIET = true, ZP_COLLEGA_SKIP_EXISTING = skip_existing or nil, ZP_COLLEGA_SRT_PATH = srt_path })
   local brought = do_bring(true)
-  status = (msg and tostring(msg):match("^[^\n]*") or "Abbina: nessuna modifica.") ..
-    (brought and ("  Testi: " .. tostring(brought):gsub("\n", " ")) or "")
+  status = (msg and tostring(msg):match("^[^\n]*") or T("Abbina: nessuna modifica.")) ..
+    (brought and string.format(T("  Testi: %s"), tostring(brought):gsub("\n", " ")) or "")
 end
 
 -- Tappa 2 da marker di progetto: motore del 14 su tutti gli item selezionati,
@@ -388,8 +397,8 @@ end
 local function do_link_markers()
   local msg = run_script("14_Marker_da_Timeline_a_Item.lua", { ZP_14_ALL = true, ZP_14_QUIET = true })
   local brought = do_bring(true)
-  status = (msg and (tostring(msg):gsub("\n", "  ")) or "Da marker di progetto: nessuna modifica.") ..
-    (brought and ("  Testi: " .. tostring(brought):gsub("\n", " ")) or "")
+  status = (msg and (tostring(msg):gsub("\n", "  ")) or T("Da marker di progetto: nessuna modifica.")) ..
+    (brought and string.format(T("  Testi: %s"), tostring(brought):gsub("\n", " ")) or "")
 end
 
 -- Cue gia' scritti dentro il WAV -> marker di progetto in timeline (azione nativa 40692),
@@ -400,18 +409,21 @@ local function do_cues_to_timeline()
   local _, after = reaper.CountProjectMarkers(0)
   local n = after - before
   status = n > 0 and string.format(
-    "Cue del WAV in timeline: %d marker di progetto. Sistemali in REAPER; per fissarli nell'item: Abbina da > marker di progetto.", n)
-    or "Nessun cue trovato nei file degli item selezionati."
+    T("Cue del WAV in timeline: %d marker di progetto. Sistemali in REAPER; per fissarli nell'item: Abbina da > marker di progetto."), n)
+    or T("Nessun cue trovato nei file degli item selezionati.")
 end
 
 local function abbina_menu()
   gfx.x, gfx.y = gfx.mouse_x, gfx.mouse_y
   local choice = gfx.showmenu(
-    "SRT accanto al file (automatico)|SRT esterno o tradotto...|Marker di progetto in timeline (14)|Cue del WAV -> marker in timeline")
+    T("SRT accanto al file (automatico)") .. "|" ..
+    T("SRT esterno o tradotto...") .. "|" ..
+    T("Marker di progetto in timeline (14)") .. "|" ..
+    T("Cue del WAV -> marker in timeline"))
   if choice == 1 then
     do_link(true)   -- gli item gia' abbinati restano com'erano: per rifarli c'e' Ritrascrivi
   elseif choice == 2 then
-    local ok, path = reaper.GetUserFileNameForRead("", "SRT esterno o tradotto per gli item selezionati", "srt")
+    local ok, path = reaper.GetUserFileNameForRead("", T("SRT esterno o tradotto per gli item selezionati"), "srt")
     if ok and path ~= "" then do_link(false, path) end
   elseif choice == 3 then
     do_link_markers()
@@ -424,7 +436,7 @@ local function finish_chain()
   chain = false
   do_link(true)
   if not follow then set_follow(true) end
-  status = "Strada percorsa. " .. status
+  status = string.format(T("Strada percorsa. %s"), status)
 end
 
 ---------------------------------------------------------------------------
@@ -502,7 +514,7 @@ local function poll_batch(kind, on_item, on_end)
     if pid and not os.execute("kill -0 " .. pid .. " 2>/dev/null") and not read_file(dir .. sep .. "end") then
       clear_dir(dir)
       batches[kind] = nil
-      status = "Il lavoro in background si e' interrotto (" .. b.seen .. " di " .. b.total .. " fatti). Riprova: riparte da quelli che mancano."
+      status = string.format(T("Il lavoro in background si e' interrotto (%d di %d fatti). Riprova: riparte da quelli che mancano."), b.seen, b.total)
       return nil
     end
   end
@@ -534,7 +546,7 @@ local function start_next()
   queue = {}
   if #items == 0 then return end
   start_batch("trascrivi", items, chain, "ZP Trascrizione", "Trascrizione")
-  status = string.format("Trascrivo %d file in background: puoi chiudere la finestra, alla fine arriva una notifica.", #items)
+  status = string.format(T("Trascrivo %d file in background: puoi chiudere la finestra, alla fine arriva una notifica."), #items)
 end
 
 local function speech_ratio()
@@ -558,13 +570,13 @@ local function poll_job()
     refresh_rows()
     if ko > 0 then
       chain = false
-      status = string.format("Trascrizione finita: %d file, %d NON riusciti (dettagli nella console).", ok, ko)
+      status = string.format(T("Trascrizione finita: %d file, %d NON riusciti (dettagli nella console)."), ok, ko)
     elseif chain_flag then
       chain = true
       finish_chain()
     else
       chain = false
-      status = string.format("Trascrizione finita: %d file. Prossima tappa: Abbina.", ok)
+      status = string.format(T("Trascrizione finita: %d file. Prossima tappa: Abbina."), ok)
     end
   end)
   if running and running.chain then chain = true end
@@ -573,11 +585,11 @@ end
 local function speech_ready()
   local osname = reaper.GetOS()
   if not (osname:match("OSX") or osname:match("macOS")) then
-    reaper.ShowMessageBox("La trascrizione automatica e' configurata solo su macOS.\nSu Windows/Linux: crea l'SRT con il tuo whisper (stesso nome del WAV, accanto al file) e parti dalla tappa Abbina.", "ZP Trascrizione", 0)
+    reaper.ShowMessageBox(T("La trascrizione automatica e' configurata solo su macOS.\nSu Windows/Linux: crea l'SRT con il tuo whisper (stesso nome del WAV, accanto al file) e parti dalla tappa Abbina."), T("ZP Trascrizione"), 0)
     return false
   end
   if not exists((speech_cli())) then
-    reaper.ShowMessageBox("ZP Speech non e' installato.\nNel repo zp-suite lancia: bash speech-engine/install_macos.sh\n(serve Python 3.11+ e MacWhisper). Oppure crea l'SRT con il tuo whisper e parti dalla tappa Abbina.", "ZP Trascrizione", 0)
+    reaper.ShowMessageBox(T("ZP Speech non e' installato.\nNel repo zp-suite lancia: bash speech-engine/install_macos.sh\n(serve Python 3.11+ e MacWhisper). Oppure crea l'SRT con il tuo whisper e parti dalla tappa Abbina."), T("ZP Trascrizione"), 0)
     return false
   end
   -- il servizio va avviato se non gira (come in 26_SRT_Tools.lua)
@@ -604,65 +616,65 @@ local function model_menu()
     speech_ready()          -- se il servizio non gira lo avvia, poi riprovo
     load_models()
   end
-  local items, parts = { "" }, { (speech_model == "" and "!" or "") .. "Predefinito del motore" }
+  local items, parts = { "" }, { (speech_model == "" and "!" or "") .. T("Predefinito del motore") }
   for _, m in ipairs(speech_models or {}) do
     items[#items + 1] = m
     parts[#parts + 1] = (m == speech_model and "!" or "") .. M.model_label(m)
   end
-  if #items == 1 then parts[#parts + 1] = "#(ZP Speech non risponde: nessun elenco)" end
+  if #items == 1 then parts[#parts + 1] = "#" .. T("(ZP Speech non risponde: nessun elenco)") end
   gfx.x, gfx.y = gfx.mouse_x, gfx.mouse_y
   local choice = gfx.showmenu(table.concat(parts, "|"))
   if choice > 0 and items[choice] then
     speech_model = items[choice]
     reaper.SetExtState(EXT, MODEL_KEY, speech_model, true)
-    status = "Modello per le prossime trascrizioni: " .. M.model_label(speech_model) .. "."
+    status = string.format(T("Modello per le prossime trascrizioni: %s."), T(M.model_label(speech_model)))
   end
 end
 
 local function lang_menu()
   local parts, known = {}, false
   for i, l in ipairs(M.LANGS) do
-    parts[i] = (l.code == speech_lang and "!" or "") .. l.label
+    parts[i] = (l.code == speech_lang and "!" or "") .. T(l.label)
     if l.code == speech_lang then known = true end
   end
-  parts[#parts + 1] = (known and "" or "!") .. "Altra..." .. (known and "" or (" (" .. speech_lang .. ")"))
+  parts[#parts + 1] = (known and "" or "!") .. T("Altra...") .. (known and "" or (" (" .. speech_lang .. ")"))
   gfx.x, gfx.y = gfx.mouse_x, gfx.mouse_y
   local choice = gfx.showmenu(table.concat(parts, "|"))
   local code
   if choice > 0 and M.LANGS[choice] then
     code = M.LANGS[choice].code
   elseif choice == #M.LANGS + 1 then
-    local ok, text = reaper.GetUserInputs("ZP Trascrizione - lingua", 1,
-      "Codice della lingua (es. nl, ar, hi, yue):,extrawidth=60", known and "" or speech_lang)
+    local ok, text = reaper.GetUserInputs(T("ZP Trascrizione - lingua"), 1,
+      T("Codice della lingua (es. nl, ar, hi, yue):,extrawidth=60"), known and "" or speech_lang)
     if ok then
       code = M.clean_lang_code(text)
-      if not code then status = "Codice lingua non valido: servono 2 o 3 lettere (it, fr, yue...)." end
+      if not code then status = T("Codice lingua non valido: servono 2 o 3 lettere (it, fr, yue...).") end
     end
   end
   if code then
     speech_lang = code
     reaper.SetExtState(EXT, LANG_KEY, speech_lang, true)
-    status = "Lingua per le prossime trascrizioni: " .. M.lang_label(speech_lang) .. "."
+    status = string.format(T("Lingua per le prossime trascrizioni: %s."), T(M.lang_label(speech_lang)))
   end
 end
 
 local function speech_choice_text()
-  return M.model_label(speech_model) .. ", lingua " .. M.lang_label(speech_lang):lower()
+  return T(M.model_label(speech_model)) .. string.format(T(", lingua %s"), T(M.lang_label(speech_lang)):lower())
 end
 
 -- Restituisce true se ha messo in coda qualcosa
 local function do_transcribe()
-  if running then status = "Una trascrizione e' gia' in corso."; return false end
+  if running then status = T("Una trascrizione e' gia' in corso."); return false end
   refresh_rows()
   local list = M.to_transcribe(rows)
-  if #list == 0 then status = "Niente da trascrivere: gli item hanno gia' SRT o marker, o non sono WAV."; return false end
+  if #list == 0 then status = T("Niente da trascrivere: gli item hanno gia' SRT o marker, o non sono WAV."); return false end
   if not speech_ready() then return false end
   queue = list
   start_next()
   local skipped = 0
   for _, r in ipairs(rows) do if r.srt or r.markers > 0 then skipped = skipped + 1 end end
   status = status .. string.format("  [%s]%s", speech_choice_text(),
-    skipped > 0 and string.format("  %d gia' fatti, lasciati come sono.", skipped) or "")
+    skipped > 0 and string.format("  " .. T("%d gia' fatti, lasciati come sono."), skipped) or "")
   return true
 end
 
@@ -670,22 +682,23 @@ end
 -- Prima chiede; poi toglie i take marker degli item selezionati (Undo li rimette), rinomina
 -- l'SRT accanto al file in .srt.bak-<data> (non lo cancella) e percorre la strada da capo.
 local function do_retranscribe()
-  if running then status = "Una trascrizione e' gia' in corso."; return end
+  if running then status = T("Una trascrizione e' gia' in corso."); return end
   refresh_rows()
   local list, n_mark, n_srt = M.to_retranscribe(rows)
-  if #list == 0 then status = "Niente da ritrascrivere: seleziona item WAV."; return end
+  if #list == 0 then status = T("Niente da ritrascrivere: seleziona item WAV."); return end
   if not speech_ready() then return end
   -- l'SRT vecchio esiste solo se rileggi un file gia' trascritto (un file glued ha un nome
   -- nuovo e non ce l'ha): solo allora lo metto da parte e lo dico
   local msg = string.format(
-    "Ritrascrivo da capo %d file, come se fossero nuovi.\n\n" ..
+    T("Ritrascrivo da capo %d file, come se fossero nuovi.\n\n" ..
     "Prima tolgo i take marker da %d item selezionati (solo da questi; Annulla li rimette).%s\n\n" ..
-    "Poi: trascrizione con " .. speech_choice_text() .. " (si cambiano dalle tendine in alto),\nAbbina e testi nel gobbo.\n" ..
+    "Poi: trascrizione con %s (si cambiano dalle tendine in alto),\nAbbina e testi nel gobbo.\n" ..
     "I testi del gobbo legati ai vecchi marker: quelli mai toccati spariscono,\n" ..
-    "quelli corretti a mano restano in mute.\n\nProcedo?", #list, n_mark,
-    n_srt > 0 and string.format("\nL'SRT gia' accanto a %d file lo rinomino in .srt.bak-<data>, non lo cancello.", n_srt) or "")
-  if reaper.ShowMessageBox(msg, "ZP Trascrizione - Ritrascrivi", 4) ~= 6 then
-    status = "Ritrascrivi annullato."
+    "quelli corretti a mano restano in mute.\n\nProcedo?"), #list, n_mark,
+    n_srt > 0 and string.format(T("\nL'SRT gia' accanto a %d file lo rinomino in .srt.bak-<data>, non lo cancello."), n_srt) or "",
+    speech_choice_text())
+  if reaper.ShowMessageBox(msg, T("ZP Trascrizione - Ritrascrivi"), 4) ~= 6 then
+    status = T("Ritrascrivi annullato.")
     return
   end
   local wanted = {}
@@ -702,7 +715,7 @@ local function do_retranscribe()
       end
     end
   end
-  reaper.Undo_EndBlock("ZP Trascrizione: togli i take marker per ritrascrivere", -1)
+  reaper.Undo_EndBlock(T("ZP Trascrizione: togli i take marker per ritrascrivere"), -1)
   reaper.UpdateArrange()
   local stamp = os.date("%Y%m%d_%H%M%S")
   for _, p in ipairs(list) do
@@ -713,7 +726,7 @@ local function do_retranscribe()
   chain = true
   queue = list
   start_next()
-  status = string.format("Ritrascrivo: tolti %d marker. ", removed) .. status
+  status = string.format(T("Ritrascrivo: tolti %d marker. %s"), removed, status)
 end
 
 ---------------------------------------------------------------------------
@@ -727,12 +740,12 @@ local function load_engines()
 end
 
 local function tr_choice_text()
-  return M.lang_label(tr_lang) .. " · " .. tr_engine .. (tr_model ~= "" and (" " .. tr_model) or "")
+  return T(M.lang_label(tr_lang)) .. " · " .. AG.label(tr_engines or {}, tr_engine) .. (tr_model ~= "" and (" " .. tr_model) or "")
 end
 
 local function tr_start_next()
   local items = {}
-  local opts = " --to " .. shell_quote(tr_lang) .. " --engine " .. shell_quote(tr_engine)
+  local opts = " --to " .. shell_quote(tr_lang) .. " --engine " .. shell_quote(tr_run_engine or tr_engine)
   if tr_model ~= "" then opts = opts .. " --model " .. shell_quote(tr_model) end
   for _, job in ipairs(tr_queue) do
     items[#items + 1] = { path = job, cmd = shell_quote((speech_cli())) .. " translate " .. shell_quote(job) .. opts }
@@ -741,7 +754,7 @@ local function tr_start_next()
   if #items == 0 then return end
   write_file(JOBS .. sep .. "traduci_report", string.format("%s %d %d", tr_lang, tr_report.skipped, tr_report.nosrt))
   start_batch("traduci", items, false, "ZP Traduci", "Traduzione")
-  status = string.format("Traduco %d SRT in background: puoi chiudere la finestra, alla fine arriva una notifica.", #items)
+  status = string.format(T("Traduco %d SRT in background: puoi chiudere la finestra, alla fine arriva una notifica."), #items)
 end
 
 local function tr_poll()
@@ -753,15 +766,15 @@ local function tr_poll()
     refresh_rows()
     local lang, skipped, nosrt = (read_file(JOBS .. sep .. "traduci_report") or ""):match("(%S+)%s+(%d+)%s+(%d+)")
     skipped, nosrt = tonumber(skipped) or 0, tonumber(nosrt) or 0
-    status = string.format("Traduzione in %s finita: %d file tradotti", M.lang_label(lang or tr_lang):lower(), ok) ..
-      (skipped > 0 and string.format(", %d gia' tradotti", skipped) or "") ..
-      (nosrt > 0 and string.format(", %d senza SRT", nosrt) or "") ..
-      (ko > 0 and string.format(", %d NON riusciti (dettagli nella console)", ko) or "") .. "."
+    status = string.format(T("Traduzione in %s finita: %d file tradotti"), T(M.lang_label(lang or tr_lang)):lower(), ok) ..
+      (skipped > 0 and string.format(T(", %d gia' tradotti"), skipped) or "") ..
+      (nosrt > 0 and string.format(T(", %d senza SRT"), nosrt) or "") ..
+      (ko > 0 and string.format(T(", %d NON riusciti (dettagli nella console)"), ko) or "") .. "."
   end)
 end
 
 local function do_translate()
-  if running or tr_running then status = "Aspetta: c'e' gia' un lavoro in corso."; return end
+  if running or tr_running then status = T("Aspetta: c'e' gia' un lavoro in corso."); return end
   refresh_rows()
   local list, seen = {}, {}
   tr_report = { ok = 0, skipped = 0, nosrt = 0, failed = 0 }
@@ -775,15 +788,19 @@ local function do_translate()
     end
   end
   if #list == 0 then
-    status = "Niente da tradurre in " .. M.lang_label(tr_lang):lower() .. ": " ..
-      string.format("%d gia' tradotti, %d senza SRT.", tr_report.skipped, tr_report.nosrt)
+    status = string.format(T("Niente da tradurre in %s: %d gia' tradotti, %d senza SRT."),
+      T(M.lang_label(tr_lang)):lower(), tr_report.skipped, tr_report.nosrt)
     return
   end
-  local where = tr_engine == "codex" and "Il testo delle battute va a OpenAI con il tuo account ChatGPT.\n" or ""
-  local msg = string.format("Traduco %d SRT in %s con %s.\n\n%sGli originali non vengono toccati: " ..
-    "accanto nasce Nome.%s.srt, con gli stessi tempi.\n\nProcedo?", #list, M.lang_label(tr_lang):lower(),
-    tr_engine .. (tr_model ~= "" and (" (" .. tr_model .. ")") or ""), where, tr_lang)
-  if reaper.ShowMessageBox(msg, "ZP Trascrizione - Traduci", 4) ~= 6 then status = "Traduzione annullata."; return end
+  if not tr_engines then load_engines() end
+  local eng = AG.resolve(tr_engines, tr_engine)
+  if not eng then status = T("Nessun agente AI trovato (Codex, Claude, Qwen, OpenCode, Ollama)."); return end
+  tr_run_engine = eng      -- quello detto nella domanda e' quello che si usa
+  local where = AG.where(eng):gsub("Il testo", "Il testo delle battute") .. "\n"
+  local msg = string.format(T("Traduco %d SRT in %s con %s.\n\n%sGli originali non vengono toccati: " ..
+    "accanto nasce Nome.%s.srt, con gli stessi tempi.\n\nProcedo?"), #list, T(M.lang_label(tr_lang)):lower(),
+    (AG.NAMES[eng] or eng) .. (tr_model ~= "" and (" (" .. tr_model .. ")") or ""), where, tr_lang)
+  if reaper.ShowMessageBox(msg, T("ZP Trascrizione - Traduci"), 4) ~= 6 then status = T("Traduzione annullata."); return end
   tr_queue = list
   tr_start_next()
 end
@@ -791,27 +808,29 @@ end
 -- Menu di Traduci: lingua d'arrivo (avvia), oppure motore / modello (solo scelta).
 local function translate_menu()
   if not tr_engines then load_engines() end
-  local parts, actions = { "#Traduci gli SRT degli item selezionati in:" }, { false }
+  local parts, actions = { "#" .. T("Traduci gli SRT degli item selezionati in:") }, { false }
   for _, l in ipairs(M.LANGS) do
     if l.code ~= "auto" then
-      parts[#parts + 1] = (l.code == tr_lang and "!" or "") .. l.label
+      parts[#parts + 1] = (l.code == tr_lang and "!" or "") .. T(l.label)
       actions[#actions + 1] = { lang = l.code }
     end
   end
   parts[#parts + 1] = ""; actions[#actions + 1] = false
-  parts[#parts + 1] = ">Motore"; actions[#actions + 1] = false
+  parts[#parts + 1] = ">" .. T("Motore"); actions[#actions + 1] = false
   local engines = tr_engines or {}
+  parts[#parts + 1] = (tr_engine == "auto" and "!" or "") .. AG.label(engines, "auto") .. T(": il primo disponibile")
+  actions[#actions + 1] = { engine = "auto" }
   for i, e in ipairs(engines) do
-    local label = e.engine .. (e.available and "" or " (non installato)")
+    local label = (AG.NAMES[e.engine] or e.engine) .. (e.available and "" or T(" (non installato)"))
     parts[#parts + 1] = (i == #engines and "<" or "") .. (e.available and "" or "#") ..
       (e.engine == tr_engine and "!" or "") .. label
     actions[#actions + 1] = { engine = e.engine }
   end
-  if #engines == 0 then parts[#parts + 1] = "<#(nessun motore trovato)"; actions[#actions + 1] = false end
+  if #engines == 0 then parts[#parts + 1] = "<#" .. T("(nessun motore trovato)"); actions[#actions + 1] = false end
   local current = nil
   for _, e in ipairs(engines) do if e.engine == tr_engine then current = e end end
-  parts[#parts + 1] = ">Modello"; actions[#actions + 1] = false
-  parts[#parts + 1] = (tr_model == "" and "!" or "") .. "Quello scelto in " .. tr_engine
+  parts[#parts + 1] = ">" .. T("Modello"); actions[#actions + 1] = false
+  parts[#parts + 1] = (tr_model == "" and "!" or "") .. (tr_engine == "auto" and T("Quello di serie") or string.format(T("Quello scelto in %s"), (AG.NAMES[tr_engine] or tr_engine)))
   actions[#actions + 1] = { model = "" }
   local models = current and current.models or {}
   for _, m in ipairs(models) do
@@ -836,10 +855,10 @@ local function translate_menu()
         elseif a and a.engine then
           tr_engine = a.engine; reaper.SetExtState(EXT, TR_ENGINE_KEY, tr_engine, true)
           tr_model = ""; reaper.SetExtState(EXT, TR_MODEL_KEY, "", true)
-          status = "Motore di traduzione: " .. tr_engine .. "."
+          status = string.format(T("Motore di traduzione: %s."), AG.label(engines, tr_engine))
         elseif a and a.model then
           tr_model = a.model; reaper.SetExtState(EXT, TR_MODEL_KEY, tr_model, true)
-          status = "Modello di traduzione: " .. (tr_model ~= "" and tr_model or ("quello scelto in " .. tr_engine)) .. "."
+          status = string.format(T("Modello di traduzione: %s."), (tr_model ~= "" and tr_model or string.format(T("quello scelto in %s"), tr_engine)))
         end
         return
       end
@@ -848,7 +867,7 @@ local function translate_menu()
 end
 
 local function walk_road()
-  if #rows == 0 then status = "Seleziona prima gli item audio."; return end
+  if #rows == 0 then status = T("Seleziona prima gli item audio."); return end
   chain = true
   if not do_transcribe() and not running then finish_chain() end
 end
@@ -869,12 +888,12 @@ end
 ---------------------------------------------------------------------------
 -- Finestra
 ---------------------------------------------------------------------------
-local TITLES = { "Trascrivi", "Abbina da...", "Porta nel gobbo", "Segui i tagli" }
+local TITLES = { T("Trascrivi"), T("Abbina da..."), T("Porta nel gobbo"), T("Segui i tagli") }
 local HINTS = {
-  "whisper crea l'SRT accanto al file audio",
-  "SRT, SRT tradotto, marker di progetto o cue -> marker sull'item",
-  "i marker diventano testi magnetici per il gobbo",
-  "dopo 10 s di quiete i testi seguono l'audio (interruttore anche nei Gobbi)",
+  T("whisper crea l'SRT accanto al file audio"),
+  T("SRT, SRT tradotto, marker di progetto o cue -> marker sull'item"),
+  T("i marker diventano testi magnetici per il gobbo"),
+  T("dopo 10 s di quiete i testi seguono l'audio (interruttore anche nei Gobbi)"),
 }
 local GREEN, BLUE, GRAY = { 0.20, 0.62, 0.34, 1 }, { 0.24, 0.52, 0.80, 1 }, { 0.36, 0.36, 0.42, 1 }
 
@@ -906,7 +925,7 @@ local function draw_step(i, s, is_next, y, clicked)
   gfx.setfont(1, "Arial", 19, string.byte("b"))
   UI.set_color(is_next and UI.colors.title or UI.colors.text)
   gfx.x, gfx.y = tx, y + 4
-  gfx.drawstr(i .. "  " .. TITLES[i] .. (is_next and "   <- adesso" or ""))
+  gfx.drawstr(i .. "  " .. TITLES[i] .. (is_next and T("   <- adesso") or ""))
   gfx.setfont(1, "Arial", 16)
   UI.set_color(UI.colors.muted)
   gfx.x, gfx.y = tx, y + 29
@@ -917,7 +936,7 @@ local function draw_step(i, s, is_next, y, clicked)
   if i == 1 and running then
     info = M.heartbeat(running.job:match("[^/\\]+$") or running.job, reaper.time_precise() - running.t0,
       running.len, speech_ratio(), math.floor(reaper.time_precise() * 4))
-    if running.left and running.left > 0 then info = info .. string.format(" (%d di %d, poi altri %d)", running.index, running.total, running.left) end
+    if running.left and running.left > 0 then info = info .. string.format(T(" (%d di %d, poi altri %d)"), running.index, running.total, running.left) end
   end
   if i == 3 and #text_names > 0 then info = info .. "  -  " .. table.concat(text_names, ", ") end
   gfx.drawstr(UI.fit_text(info, gfx.w - tx - pad))
@@ -928,26 +947,26 @@ local function draw_step(i, s, is_next, y, clicked)
   if i == 1 then
     -- tappa gia' fatta (SRT o marker): il pulsante diventa Ritrascrivi, per rileggere da capo
     local redo = s.done and not running
-    local label = running and "Trascrivo..." or (redo and "Ritrascrivi..." or "Trascrivi")
+    local label = running and T("Trascrivo...") or (redo and T("Ritrascrivi...") or T("Trascrivi"))
     if UI.draw_button(b, label, running ~= nil, not busy and #rows > 0, clicked, redo and "play_select" or "play_now") then
       if redo then do_retranscribe() else do_transcribe() end
     end
   elseif i == 2 then
-    if UI.draw_button(b, "Abbina da...", false, not busy and #rows > 0, clicked, "play_select") then abbina_menu() end
+    if UI.draw_button(b, T("Abbina da..."), false, not busy and #rows > 0, clicked, "play_select") then abbina_menu() end
   elseif i == 3 then
-    if UI.draw_button(b, "Aggiorna ora", false, not busy, clicked, "save") then do_bring(false) end
+    if UI.draw_button(b, T("Aggiorna ora"), false, not busy, clicked, "save") then do_bring(false) end
   else
-    if UI.draw_button(b, follow and "Segui: ACCESO" or "Segui: spento", follow, true, clicked, "tab") then set_follow(not follow) end
+    if UI.draw_button(b, follow and T("Segui: ACCESO") or T("Segui: spento"), follow, true, clicked, "tab") then set_follow(not follow) end
   end
 end
 
 -- Titolo con l'avanzamento: si vede anche con la finestra agganciata o coperta.
 -- gfx.init(nome) a finestra aperta cambia solo il titolo.
-local BASE_TITLE, shown_title = "ZP Studio Suite - ZP Trascrizione", nil
+local BASE_TITLE, shown_title = T("ZP Studio Suite - ZP Trascrizione"), nil
 local function update_title()
   local t = BASE_TITLE
-  if running and running.total then t = string.format("ZP Trascrizione - trascrivo %d di %d", running.index, running.total)
-  elseif tr_running and tr_running.total then t = string.format("ZP Trascrizione - traduco %d di %d", tr_running.index, tr_running.total) end
+  if running and running.total then t = string.format(T("ZP Trascrizione - trascrivo %d di %d"), running.index, running.total)
+  elseif tr_running and tr_running.total then t = string.format(T("ZP Trascrizione - traduco %d di %d"), tr_running.index, tr_running.total) end
   if t ~= shown_title then shown_title = t; gfx.init(t) end
 end
 
@@ -969,13 +988,12 @@ local function loop()
     if c ~= last_count then last_count = c; last_change = now; pending = true end
     if pending and now - last_change >= FOLLOW_DELAY then
       local msg = do_bring(true)
-      if msg then status = "Seguito automatico: " .. tostring(msg):gsub("\n", " ") end
+      if msg then status = string.format(T("Seguito automatico: %s"), tostring(msg):gsub("\n", " ")) end
     end
   end
 
   UI.fill_background()
-  UI.draw_header({ title = "Trascrizione -> Gobbo", credit = "ZP Studio Suite - 29",
-    description = "Seleziona gli item audio e segui la strada. Ogni tappa si puo' fare anche a mano.", description_size = 16 })
+  UI.draw_header({ title = T("Trascrizione -> Gobbo"), description = T("Seleziona gli item audio e segui la strada. Ogni tappa si puo' fare anche a mano."), description_size = 16 })
   UI.draw_help_button({ x = gfx.w - 54, y = 16, w = 34, h = 28 }, clicked, "tool-29")
 
   -- modello e lingua di whisper
@@ -984,15 +1002,15 @@ local function loop()
     gfx.setfont(1, "Arial", 16)
     UI.set_color(UI.colors.muted)
     gfx.x, gfx.y = pad, 103
-    gfx.drawstr("Modello")
-    if UI.draw_button({ x = pad + 72, y = 96, w = 220, h = 30, font = 16 }, M.model_label(speech_model) .. "  ▾", false, not busy, clicked, "tab") then
+    gfx.drawstr(T("Modello"))
+    if UI.draw_button({ x = pad + 72, y = 96, w = 220, h = 30, font = 16 }, T(M.model_label(speech_model)) .. "  ▾", false, not busy, clicked, "tab") then
       model_menu()
     end
     UI.set_color(UI.colors.muted)
     gfx.x, gfx.y = pad + 316, 103
-    gfx.drawstr("Lingua")
+    gfx.drawstr(T("Lingua"))
     local warn = M.lang_warning(speech_model ~= "" and speech_model or (speech_models and speech_models[1]), speech_lang)
-    if UI.draw_button({ x = pad + 378, y = 96, w = 170, h = 30, font = 16 }, (warn and "! " or "") .. M.lang_label(speech_lang) .. "  ▾", false, not busy, clicked, "tab") then
+    if UI.draw_button({ x = pad + 378, y = 96, w = 170, h = 30, font = 16 }, (warn and "! " or "") .. T(M.lang_label(speech_lang)) .. "  ▾", false, not busy, clicked, "tab") then
       lang_menu()
     end
     if warn then
@@ -1012,13 +1030,13 @@ local function loop()
 
   local pad = 22
   local bw = gfx.w - pad * 2 - 200
-  local label = chain and "Sto percorrendo la strada..." or
-    (next_step and ("Percorri la strada (da tappa " .. next_step .. ")") or "Strada completa")
+  local label = chain and T("Sto percorrendo la strada...") or
+    (next_step and string.format(T("Percorri la strada (da tappa %d)"), next_step) or T("Strada completa"))
   if UI.draw_button({ x = pad, y = y + 4, w = bw, h = 40, font = 17 }, label, chain, not chain and next_step ~= nil, clicked, "play_now") then
     walk_road()
   end
   if UI.draw_button({ x = pad + bw + 10, y = y + 4, w = 190, h = 40, font = 16 },
-      texts_visible and "Nascondi tracce testo" or "Mostra tracce testo", texts_visible, true, clicked, "tab") then
+      texts_visible and T("Nascondi tracce testo") or T("Mostra tracce testo"), texts_visible, true, clicked, "tab") then
     toggle_texts_visible()
   end
 
@@ -1028,11 +1046,11 @@ local function loop()
     local tr_label
     if tr_running then
       local done, total = M.progress_from_log(read_file(tr_running.log))
-      tr_label = string.format("Traduco %s%s, %s...", tr_running.job:match("[^/\\]+$") or "",
-        done and string.format(" (%d/%d battute)", done, total) or "",
-        M.clock(reaper.time_precise() - tr_running.t0)) .. (tr_running.left > 0 and string.format(" poi altri %d", tr_running.left) or "")
+      tr_label = string.format(T("Traduco %s%s, %s..."), tr_running.job:match("[^/\\]+$") or "",
+        done and string.format(T(" (%d/%d battute)"), done, total) or "",
+        M.clock(reaper.time_precise() - tr_running.t0)) .. (tr_running.left > 0 and string.format(T(" poi altri %d"), tr_running.left) or "")
     else
-      tr_label = "Traduci...   (" .. tr_choice_text() .. ")"
+      tr_label = string.format(T("Traduci...   (%s)"), tr_choice_text())
     end
     if UI.draw_button({ x = pad, y = y + 4, w = gfx.w - pad * 2, h = 38, font = 17 }, tr_label, tr_running ~= nil,
         not (running or chain or tr_running) and #rows > 0, clicked, "play_select") then
@@ -1045,12 +1063,12 @@ local function loop()
   gfx.setfont(1, "Arial", 16)
   UI.set_color(UI.colors.muted)
   gfx.x, gfx.y = pad, y
-  gfx.drawstr(#rows == 0 and "Nessun item audio selezionato." or string.format("Item selezionati: %d", #rows))
+  gfx.drawstr(#rows == 0 and T("Nessun item audio selezionato.") or string.format(T("Item selezionati: %d"), #rows))
   y = y + 24
   for i, r in ipairs(rows) do
     if y > gfx.h - 60 then
       UI.set_color(UI.colors.muted); gfx.x, gfx.y = pad, y
-      gfx.drawstr(string.format("... e altri %d", #rows - i + 1)); break
+      gfx.drawstr(string.format(T("... e altri %d"), #rows - i + 1)); break
     end
     UI.set_color(UI.colors.text)
     gfx.x, gfx.y = pad, y
@@ -1059,7 +1077,7 @@ local function loop()
     gfx.x = gfx.w - pad - 350
     local made = (r.made and r.made ~= "") and (" (" .. r.made .. ")") or ""
     local trs = (r.translations and #r.translations > 0) and (" +" .. table.concat(r.translations, ",")) or ""
-    gfx.drawstr(string.format("%s%s%s   marker %d   testi %d", r.srt and "SRT si" or "SRT no", made, trs, r.markers, r.texts))
+    gfx.drawstr(string.format("%s%s%s   marker %d   testi %d", r.srt and T("SRT si") or T("SRT no"), made, trs, r.markers, r.texts))
     y = y + 22
   end
 

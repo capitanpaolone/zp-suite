@@ -206,8 +206,7 @@ local function loop()
   end
 
   UI.fill_background()
-  UI.draw_header({ title = "SRT dall'audio", credit = "ZP Studio Suite - 31",
-    description = "I marker delle battute degli item selezionati diventano un SRT." })
+  UI.draw_header({ title = "SRT dall'audio", description = "I marker delle battute degli item selezionati diventano un SRT." })
   UI.draw_help_button({ x = gfx.w - 54, y = 16, w = 34, h = 28 }, clicked, "tool-31")
 
   local x, y = 22, 92

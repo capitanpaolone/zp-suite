@@ -118,8 +118,7 @@ local function loop()
   hover_help = nil
 
   UI.fill_background()
-  UI.draw_header({ title = "ZP SRT", credit = "ZP Studio Suite - 30",
-    description = "Scegli cosa vuoi fare con gli SRT: apre lo strumento giusto e resta aperta, la chiudi tu." })
+  UI.draw_header({ title = "ZP SRT", description = "Scegli cosa vuoi fare con gli SRT: apre lo strumento giusto e resta aperta, la chiudi tu." })
   UI.draw_help_button({ x = gfx.w - 54, y = 16, w = 34, h = 28 }, clicked, "tool-30")
 
   local pad, gap = 22, 18

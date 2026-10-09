@@ -53,21 +53,58 @@
 --   [main] 31_SRT_da_Marker_Audio.lua
 --   [main] 32_Installa_Toolbar_ZP.lua
 --   [main] 33_Benvenuto_Controllo_Installazione.lua
+--   [main] 34_ZP_Set_Comandi.lua
+--   [main] 35_ZP_Colori.lua
 --   [main] web/ZP_SOLO_Web_Motore.lua
+--   [main] colori/ZP_Colori_01_Verde_lime.lua
+--   [main] colori/ZP_Colori_02_Crema.lua
+--   [main] colori/ZP_Colori_03_Arancio.lua
+--   [main] colori/ZP_Colori_04_Rosa.lua
+--   [main] colori/ZP_Colori_05_Lilla.lua
+--   [main] colori/ZP_Colori_06_Viola.lua
+--   [main] colori/ZP_Colori_07_Blu.lua
+--   [main] colori/ZP_Colori_08_Azzurro.lua
+--   [main] colori/ZP_Colori_09_Acqua.lua
+--   [main] colori/ZP_Colori_10_Verde.lua
+--   [main] colori/ZP_Colori_11_Giallo.lua
+--   [main] colori/ZP_Colori_12_Salmone.lua
+--   [main] colori/ZP_Colori_13_Glicine.lua
+--   [main] colori/ZP_Colori_14_Celeste.lua
+--   [main] colori/ZP_Colori_15_Turchese.lua
+--   [main] colori/ZP_Colori_16_Salvia.lua
+--   [main] colori/ZP_Colori_17_Bianco.lua
+--   [main] colori/ZP_Colori_18_Nero.lua
+--   [main] colori/ZP_Colori_19_Grigio.lua
+--   [main] colori/ZP_Colori_20_Rosso.lua
+--   [main] colori/ZP_Colori_Modo_Item.lua
+--   [main] colori/ZP_Colori_Modo_Traccia.lua
+--   [main] colori/ZP_Colori_Modo_Tutto.lua
+--   [main] colori/ZP_Colori_Togli.lua
 --   [nomain] 04_worker_Crea_Marker_Item.lua
 --   [nomain] 05_worker_Gestione_SRT.lua
 --   [nomain] 28_Collega_Marker.lua
 --   [nomain] ZP_UI.lua
 --   [nomain] ZP_sincronizza_aggancio.lua
 --   [nomain] ZP_cerca.lua
+--   [nomain] ZP_Colori.lua
+--   [nomain] ZP_Agenti.lua
+--   [nomain] ZP_Lingua.lua
 --   [nomain] lib_RythmoBand_Accessibile.lua
 --   web/zp_solo.html
+--   lang/en.txt
+--   img/lato_cardioide.png
 --   help/index.html
 --   help/toolbar.html
 --   help/solo_recorder.html
 --   help/voice_cleaner.html
 --   help/pannello_trascrizione.html
 --   help/collega_marker.html
+--   help/en/index.html
+--   help/en/toolbar.html
+--   help/en/solo_recorder.html
+--   help/en/voice_cleaner.html
+--   help/en/pannello_trascrizione.html
+--   help/en/collega_marker.html
 --   fxchains/ZP_Bus_VoiceChain.RfxChain
 --   fxchains/ZP_MasterChain.RfxChain
 --   presets/js-ZP Suite_ZP Voce_ZP BUS Chain_jsfx.ini
@@ -143,6 +180,58 @@
 --   [data] icons/200/ZP_tbB_30_ZP_SRT.png > toolbar_icons/200/ZP_tbB_30_ZP_SRT.png
 --   [data] icons/200/ZP_tbB_Video.png > toolbar_icons/200/ZP_tbB_Video.png
 --   [data] icons/200/ZP_tbB_Video_Sfondo.png > toolbar_icons/200/ZP_tbB_Video_Sfondo.png
+--   [data] icons/ZP_tbC_01.png > toolbar_icons/ZP_tbC_01.png
+--   [data] icons/ZP_tbC_02.png > toolbar_icons/ZP_tbC_02.png
+--   [data] icons/ZP_tbC_03.png > toolbar_icons/ZP_tbC_03.png
+--   [data] icons/ZP_tbC_04.png > toolbar_icons/ZP_tbC_04.png
+--   [data] icons/ZP_tbC_05.png > toolbar_icons/ZP_tbC_05.png
+--   [data] icons/ZP_tbC_06.png > toolbar_icons/ZP_tbC_06.png
+--   [data] icons/ZP_tbC_07.png > toolbar_icons/ZP_tbC_07.png
+--   [data] icons/ZP_tbC_08.png > toolbar_icons/ZP_tbC_08.png
+--   [data] icons/ZP_tbC_09.png > toolbar_icons/ZP_tbC_09.png
+--   [data] icons/ZP_tbC_10.png > toolbar_icons/ZP_tbC_10.png
+--   [data] icons/ZP_tbC_11.png > toolbar_icons/ZP_tbC_11.png
+--   [data] icons/ZP_tbC_12.png > toolbar_icons/ZP_tbC_12.png
+--   [data] icons/ZP_tbC_13.png > toolbar_icons/ZP_tbC_13.png
+--   [data] icons/ZP_tbC_14.png > toolbar_icons/ZP_tbC_14.png
+--   [data] icons/ZP_tbC_15.png > toolbar_icons/ZP_tbC_15.png
+--   [data] icons/ZP_tbC_16.png > toolbar_icons/ZP_tbC_16.png
+--   [data] icons/ZP_tbC_17.png > toolbar_icons/ZP_tbC_17.png
+--   [data] icons/ZP_tbC_18.png > toolbar_icons/ZP_tbC_18.png
+--   [data] icons/ZP_tbC_19.png > toolbar_icons/ZP_tbC_19.png
+--   [data] icons/ZP_tbC_20.png > toolbar_icons/ZP_tbC_20.png
+--   [data] icons/ZP_tbC_Item.png > toolbar_icons/ZP_tbC_Item.png
+--   [data] icons/ZP_tbC_Togli.png > toolbar_icons/ZP_tbC_Togli.png
+--   [data] icons/ZP_tbC_Traccia.png > toolbar_icons/ZP_tbC_Traccia.png
+--   [data] icons/ZP_tbC_Tutto.png > toolbar_icons/ZP_tbC_Tutto.png
+--   [data] icons/200/ZP_tbC_01.png > toolbar_icons/200/ZP_tbC_01.png
+--   [data] icons/200/ZP_tbC_02.png > toolbar_icons/200/ZP_tbC_02.png
+--   [data] icons/200/ZP_tbC_03.png > toolbar_icons/200/ZP_tbC_03.png
+--   [data] icons/200/ZP_tbC_04.png > toolbar_icons/200/ZP_tbC_04.png
+--   [data] icons/200/ZP_tbC_05.png > toolbar_icons/200/ZP_tbC_05.png
+--   [data] icons/200/ZP_tbC_06.png > toolbar_icons/200/ZP_tbC_06.png
+--   [data] icons/200/ZP_tbC_07.png > toolbar_icons/200/ZP_tbC_07.png
+--   [data] icons/200/ZP_tbC_08.png > toolbar_icons/200/ZP_tbC_08.png
+--   [data] icons/200/ZP_tbC_09.png > toolbar_icons/200/ZP_tbC_09.png
+--   [data] icons/200/ZP_tbC_10.png > toolbar_icons/200/ZP_tbC_10.png
+--   [data] icons/200/ZP_tbC_11.png > toolbar_icons/200/ZP_tbC_11.png
+--   [data] icons/200/ZP_tbC_12.png > toolbar_icons/200/ZP_tbC_12.png
+--   [data] icons/200/ZP_tbC_13.png > toolbar_icons/200/ZP_tbC_13.png
+--   [data] icons/200/ZP_tbC_14.png > toolbar_icons/200/ZP_tbC_14.png
+--   [data] icons/200/ZP_tbC_15.png > toolbar_icons/200/ZP_tbC_15.png
+--   [data] icons/200/ZP_tbC_16.png > toolbar_icons/200/ZP_tbC_16.png
+--   [data] icons/200/ZP_tbC_17.png > toolbar_icons/200/ZP_tbC_17.png
+--   [data] icons/200/ZP_tbC_18.png > toolbar_icons/200/ZP_tbC_18.png
+--   [data] icons/200/ZP_tbC_19.png > toolbar_icons/200/ZP_tbC_19.png
+--   [data] icons/200/ZP_tbC_20.png > toolbar_icons/200/ZP_tbC_20.png
+--   [data] icons/200/ZP_tbC_Item.png > toolbar_icons/200/ZP_tbC_Item.png
+--   [data] icons/200/ZP_tbC_Togli.png > toolbar_icons/200/ZP_tbC_Togli.png
+--   [data] icons/200/ZP_tbC_Traccia.png > toolbar_icons/200/ZP_tbC_Traccia.png
+--   [data] icons/200/ZP_tbC_Tutto.png > toolbar_icons/200/ZP_tbC_Tutto.png
+--   [data] icons/ZP_tbB_34_Set_Comandi.png > toolbar_icons/ZP_tbB_34_Set_Comandi.png
+--   [data] icons/200/ZP_tbB_34_Set_Comandi.png > toolbar_icons/200/ZP_tbB_34_Set_Comandi.png
+--   [data] icons/ZP_tbB_35_Colori.png > toolbar_icons/ZP_tbB_35_Colori.png
+--   [data] icons/200/ZP_tbB_35_Colori.png > toolbar_icons/200/ZP_tbB_35_Colori.png
 
 --[[
 ZP Studio Suite for REAPER

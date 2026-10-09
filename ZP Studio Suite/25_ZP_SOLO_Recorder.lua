@@ -405,8 +405,9 @@ local ZONE_AIUTO = {
   navigatore = "Il progetto in una striscia, con lo spazio che resta (in Compact piu' basso). Lo zoom e la posizione della testina sono in alto a destra.",
 }
 
-local function aiuto_per(key)
-  return AIUTI[key]
+local function aiuto_per(key, long)
+  local t = long and (DETTAGLI[key] or AIUTI[key]) or AIUTI[key]
+  return t and (_G.T and _G.T(t) or t)
 end
 
 local function sotto_il_mouse(rect)
@@ -742,11 +743,11 @@ local function choose_input(track)
   if remote and reaper.CountTracks(0) > 0 then
     local n = reaper.CountTracks(0)
     local selected = reaper.GetSelectedTrack(0, 0)
-    entries[#entries + 1] = ">Traccia da registrare (clic: arma / disarma)"
+    entries[#entries + 1] = ">" .. (_G.T and _G.T("Traccia da registrare (clic: arma / disarma)") or "Traccia da registrare (clic: arma / disarma)")
     for i = 0, n - 1 do
       local tr = reaper.GetTrack(0, i)
-      local name = track_name(tr); if name == "" then name = "(senza nome)" end
-      add(string.format("%d   %s   ·   %s%s", i + 1, name, input_short(tr), tr == selected and "   (selezionata)" or ""),
+      local name = track_name(tr); if name == "" then name = (_G.T and _G.T("(senza nome)") or "(senza nome)") end
+      add(string.format("%d   %s   ·   %s%s", i + 1, name, input_short(tr), tr == selected and ("   " .. (_G.T and _G.T("(selezionata)") or "(selezionata)")) or ""),
         reaper.GetMediaTrackInfo_Value(tr, "I_RECARM") == 1, function() toggle_arm(tr) end, i == n - 1 and "<" or nil)
     end
     if track then entries[#entries + 1] = "" end
@@ -757,7 +758,7 @@ local function choose_input(track)
     local function set_in(v)
       return function()
         reaper.SetMediaTrackInfo_Value(track, "I_RECINPUT", v)
-        state.status = "Ingresso di " .. track_name(track) .. ": " .. input_long(track)
+        state.status = string.format(_G.T and _G.T("Ingresso di %s: %s") or "Ingresso di %s: %s", track_name(track), input_long(track))
       end
     end
     for i = 0, n - 1 do
@@ -765,9 +766,9 @@ local function choose_input(track)
       add("In " .. (i + 1) .. ((name ~= "" and name ~= ("In " .. (i + 1))) and ("   " .. name) or ""), current == i, set_in(i))
     end
     for i = 0, n - 2, 2 do add("Stereo In " .. (i + 1) .. "/" .. (i + 2), current == 1024 + i, set_in(1024 + i)) end
-    add("Nessun ingresso", current == -1, set_in(-1))
+    add(_G.T and _G.T("Nessun ingresso") or "Nessun ingresso", current == -1, set_in(-1))
   end
-  if #actions == 0 then warn("Il progetto non ha tracce."); return end
+  if #actions == 0 then warn(_G.T and _G.T("Il progetto non ha tracce.") or "Il progetto non ha tracce."); return end
   gfx.x, gfx.y = gfx.mouse_x, gfx.mouse_y
   local fn = actions[gfx.showmenu(table.concat(entries, "|")) or 0]
   if fn then fn() end
@@ -780,15 +781,15 @@ end
 local function choose_track_to_arm()
   local n = reaper.CountTracks(0)
   if n == 0 then
-    warn("Telecomando: il progetto non ha tracce su cui registrare.")
+    warn(_G.T and _G.T("Telecomando: il progetto non ha tracce su cui registrare.") or "Telecomando: il progetto non ha tracce su cui registrare.")
     return nil
   end
   local selected = reaper.GetSelectedTrack(0, 0)
-  local entries, tracks = { "#Nessuna traccia armata: su quale registro?" }, {}
+  local entries, tracks = { "#" .. (_G.T and _G.T("Nessuna traccia armata: su quale registro?") or "Nessuna traccia armata: su quale registro?") }, {}
   for i = 0, n - 1 do
     local tr = reaper.GetTrack(0, i)
     local name = track_name(tr)
-    if name == "" then name = "(senza nome)" end
+    if name == "" then name = (_G.T and _G.T("(senza nome)") or "(senza nome)") end
     name = name:gsub("[|#!<>]", " ")
     entries[#entries + 1] = (tr == selected and "!" or "") .. menu_safe(string.format("%d   %s   ·   %s", i + 1, name, input_short(tr)))
     tracks[#tracks + 1] = tr
@@ -797,7 +798,7 @@ local function choose_track_to_arm()
   local choice = gfx.showmenu(table.concat(entries, "|"))
   local tr = tracks[(choice or 0) - 1]   -- la prima voce e' il titolo
   if not tr then
-    warn("REC annullato: nessuna traccia scelta.")
+    warn(_G.T and _G.T("REC annullato: nessuna traccia scelta.") or "REC annullato: nessuna traccia scelta.")
     return nil
   end
   reaper.SetMediaTrackInfo_Value(tr, "I_RECARM", 1)
@@ -930,8 +931,8 @@ local function apply_preroll_seconds()
 end
 
 local function preroll_label()
-  if not preroll_api() then return "Pre-roll: serve SWS" end
-  return preroll_on() and ("Pre-roll " .. state.preroll_s .. " s") or "Pre-roll off"
+  if not preroll_api() then return _G.T and _G.T("Pre-roll: serve SWS") or "Pre-roll: serve SWS" end
+  return preroll_on() and string.format(_G.T and _G.T("Pre-roll %s s") or "Pre-roll %s s", state.preroll_s) or (_G.T and _G.T("Pre-roll off") or "Pre-roll off")
 end
 
 local function toggle_preroll()
@@ -1086,14 +1087,14 @@ end
 
 local function region_label()
   local r = current_region()
-  if not r then return "Nessuna regione" end
-  return r.name ~= "" and r.name or ("Regione " .. tostring(r.idx or "?"))
+  if not r then return _G.T and _G.T("Nessuna regione") or "Nessuna regione" end
+  return r.name ~= "" and r.name or string.format(_G.T and _G.T("Regione %s") or "Regione %s", tostring(r.idx or "?"))
 end
 
 local function goto_region(delta)
   if not can_click("region_" .. tostring(delta)) then return end
   local regions = collect_regions()
-  if #regions == 0 then warn("Nessuna regione nel progetto."); return end
+  if #regions == 0 then warn(_G.T and _G.T("Nessuna regione nel progetto.") or "Nessuna regione nel progetto."); return end
   local pos = current_position()
   local target = nil
   if delta < 0 then
@@ -1918,7 +1919,7 @@ local function draw_status_header(clicked)
   gfx.set(1, 1, 1, 1)
   gfx.x, gfx.y = 14, 44
   local active_name = target_name()
-  local big = fit_text(rec_paused and ("\u{275A}\u{275A} REC in pausa \u{2014} " .. active_name)
+  local big = fit_text(rec_paused and ("\u{275A}\u{275A} " .. (_G.T and _G.T("REC in pausa") or "REC in pausa") .. " \u{2014} " .. active_name)
     or rec and ("\u{25CF} REC \u{2014} " .. active_name) or label, tc_x - 40)
   gfx.drawstr(big)
   -- la modalita' resta scritta, in piccolo, accanto allo stato
@@ -1929,7 +1930,7 @@ local function draw_status_header(clicked)
   if spazio > 60 then
     gfx.set(rec and 1 or 0.62, rec and 0.86 or 0.66, rec and 0.86 or 0.74, 1)
     gfx.x, gfx.y = 14 + bw + 8, 44 + bh - mh - 2
-    gfx.drawstr(fit_text("\u{00B7} " .. (remote_mode() and "Telecomando" or "Sessione SOLO"), spazio))
+    gfx.drawstr(fit_text("\u{00B7} " .. (remote_mode() and (_G.T and _G.T("Telecomando") or "Telecomando") or (_G.T and _G.T("Sessione SOLO") or "Sessione SOLO")), spazio))
   end
   if state.mode ~= "mini" then
     gfx.setfont(3, "Arial", 14)
@@ -1998,7 +1999,7 @@ local NAV_ZOOM_SECONDS = { 600, 300, 120, 60, 30, 10 }   -- livelli dopo "tutto"
 
 local function nav_zoom_label()
   local z = NAV_ZOOM_SECONDS[state.nav_zoom]
-  if not z then return "tutto" end
+  if not z then return _G.T and _G.T("tutto") or "tutto" end
   return z >= 60 and (tostring(z // 60) .. " min") or (tostring(z) .. " s")
 end
 
@@ -2236,10 +2237,10 @@ function Z.ingresso.draw(c, clicked)
     "IN: meter della traccia di destinazione (questo ingresso non si legge direttamente), in dB.")
   local r1 = {x=c.x + 28 + mw + 8, y=c.y, w=bw, h=28}
   local remote = remote_mode()
-  local in_txt = tr and ((remote and (track_name(tr) .. " · ") or "") .. input_short(tr)) or (remote and "Arma traccia" or "nessuna traccia")
-  local in_tip = tr and ("Ingresso di " .. track_name(tr) .. ": " .. input_long(tr) .. ". Clic: " ..
-    (remote and "arma un'altra traccia o cambia ingresso." or "cambia ingresso.")) or
-    (remote and "Nessuna traccia armata: clic per scegliere quale armare." or nil)
+  local in_txt = tr and ((remote and (track_name(tr) .. " · ") or "") .. input_short(tr)) or (remote and (_G.T and _G.T("Arma traccia") or "Arma traccia") or (_G.T and _G.T("nessuna traccia") or "nessuna traccia"))
+  local in_tip = tr and (string.format(_G.T and _G.T("Ingresso di %s: %s") or "Ingresso di %s: %s", track_name(tr), input_long(tr)) .. ". " .. (_G.T and _G.T("Clic") or "Clic") .. ": " ..
+    (remote and (_G.T and _G.T("arma un'altra traccia o cambia ingresso.") or "arma un'altra traccia o cambia ingresso.") or (_G.T and _G.T("cambia ingresso.") or "cambia ingresso."))) or
+    (remote and (_G.T and _G.T("Nessuna traccia armata: clic per scegliere quale armare.") or "Nessuna traccia armata: clic per scegliere quale armare.") or nil)
   if btn(r1, in_txt .. " \u{25BE}", false, tr ~= nil or remote, clicked, "tab", "Ingresso", in_tip) then
     choose_input(tr)
   end
@@ -2370,23 +2371,23 @@ Z.vai = { id = "vai", n = 5, title = "Vai a e segna", min_w = 420, weight = 1,
 function Z.vai.draw(c, clicked)
   local by_item = state.nav == "item"
   local x, h = c.x, 32
-  if btn({x=x, y=c.y, w=66, h=h}, "Regioni", not by_item, true, clicked, "tab") then
-    state.nav = "regioni"; save_state(); state.status = "Spostamenti tra le regioni"
+  if btn({x=x, y=c.y, w=66, h=h}, _G.T and _G.T("Regioni") or "Regioni", not by_item, true, clicked, "tab") then
+    state.nav = "regioni"; save_state(); state.status = _G.T and _G.T("Spostamenti tra le regioni") or "Spostamenti tra le regioni"
   end
   x = x + 68
   if btn({x=x, y=c.y, w=54, h=h}, "Item", by_item, true, clicked, "tab") then
-    state.nav = "item"; save_state(); state.status = "Spostamenti tra gli item della traccia di destinazione"
+    state.nav = "item"; save_state(); state.status = _G.T and _G.T("Spostamenti tra gli item della traccia di destinazione") or "Spostamenti tra gli item della traccia di destinazione"
   end
   x = x + 54 + 12
-  if sbtn({x=x, y=c.y, w=34, h=h}, "Precedente", "left", false, true, clicked) then
+  if sbtn({x=x, y=c.y, w=34, h=h}, _G.T and _G.T("Precedente") or "Precedente", "left", false, true, clicked) then
     if by_item then goto_item(-1) else goto_region(-1) end
   end
   x = x + 38
-  if sbtn({x=x, y=c.y, w=34, h=h}, "Inizio", "start", false, true, clicked) then
+  if sbtn({x=x, y=c.y, w=34, h=h}, _G.T and _G.T("Inizio") or "Inizio", "start", false, true, clicked) then
     if by_item then goto_item_start() else goto_region_start() end
   end
   x = x + 38
-  if sbtn({x=x, y=c.y, w=34, h=h}, "Successivo", "right", false, true, clicked) then
+  if sbtn({x=x, y=c.y, w=34, h=h}, _G.T and _G.T("Successivo") or "Successivo", "right", false, true, clicked) then
     if by_item then goto_item(1) else goto_region(1) end
   end
   x = x + 34 + 12
@@ -2438,8 +2439,8 @@ function Z.take.draw(c, clicked)
   end
   -- riga 2: gestiscono il take appena fatto
   local hw = math.floor((c.w - 6) / 2)
-  if btn({x=c.x, y=c.y + 36, w=hw, h=30}, "Nome / nota", false, true, clicked) then rename_last_take_region() end
-  if btn({x=c.x + hw + 6, y=c.y + 36, w=c.w - hw - 6, h=30}, "Togli take", false, true, clicked, "danger") then undo_last_take() end
+  if btn({x=c.x, y=c.y + 36, w=hw, h=30}, _G.T and _G.T("Nome / nota") or "Nome / nota", false, true, clicked) then rename_last_take_region() end
+  if btn({x=c.x + hw + 6, y=c.y + 36, w=c.w - hw - 6, h=30}, _G.T and _G.T("Togli take") or "Togli take", false, true, clicked, "danger") then undo_last_take() end
 end
 
 -- 7 ETICHETTE -------------------------------------------------------------
@@ -2476,7 +2477,7 @@ local function draw_preroll_stepper(r, clicked)
   gfx.circle(mx + 11, r.y + r.h / 2, 4, true, true)
   gfx.setfont(1, "Arial", 13, "b")
   gfx.set(0.95, 0.95, 0.97, 1)
-  local t = fit_text("Pre-roll " .. state.preroll_s .. " s", mw - 24)
+  local t = fit_text(string.format(_G.T and _G.T("Pre-roll %s s") or "Pre-roll %s s", state.preroll_s), mw - 24)
   local tw, th = gfx.measurestr(t)
   gfx.x, gfx.y = mx + 20 + (mw - 24 - tw) / 2, r.y + (r.h - th) / 2
   gfx.drawstr(t)
@@ -2495,14 +2496,14 @@ function Z.navigatore.draw(c, clicked)
   }, "Zoom")
   if changed then
     state.nav_zoom = math.floor(v + 0.5); save_state()
-    state.status = "Navigatore: " .. nav_zoom_label()
+    state.status = string.format(_G.T and _G.T("Navigatore: %s") or "Navigatore: %s", nav_zoom_label())
   end
   local zoomed = state.nav_zoom > 0
   local x = c.x + c.w - 48 - 4 - 70
   if btn({x=x, y=c.y + 2, w=48, h=26}, "1/3", state.nav_focus ~= "centro", zoomed, clicked, "tab") then
     state.nav_focus = "terzo"; save_state()
   end
-  if btn({x=x + 52, y=c.y + 2, w=70, h=26}, "centro", state.nav_focus == "centro", zoomed, clicked, "tab") then
+  if btn({x=x + 52, y=c.y + 2, w=70, h=26}, _G.T and _G.T("centro") or "centro", state.nav_focus == "centro", zoomed, clicked, "tab") then
     state.nav_focus = "centro"; save_state()
   end
   local band = {x=c.x, y=c.y + 38, w=c.w, h=c.h - 38}
@@ -2585,7 +2586,7 @@ local function draw_zones(clicked)
   local remote = state.target == "progetto"
   local opts = remote and { fill = {0.235, 0.245, 0.26, 1}, border = {0.36, 0.37, 0.40, 1} } or nil
   for _, p in ipairs(placed) do
-    local c = ZP_UI.draw_panel(p.rect, p.zone.title, opts)
+    local c = ZP_UI.draw_panel(p.rect, _G.T and _G.T(p.zone.title) or p.zone.title, opts)
     p.zone.draw(c, clicked)
     state.zones[#state.zones + 1] = { id = p.zone.id, n = p.zone.n, title = p.zone.title, rect = p.rect }
   end
@@ -2608,7 +2609,8 @@ local function draw_overlay(clicked)
     gfx.set(0.30, 0.68, 1.0, 0.75)
     gfx.rect(r.x + 1, r.y + 1, r.w - 2, r.h - 2, false)
     gfx.setfont(1, "Arial", 12, "b")
-    local tw = gfx.measurestr(z.title)
+    local z_title = _G.T and _G.T(z.title) or z.title
+    local tw = gfx.measurestr(z_title)
     gfx.set(0.04, 0.07, 0.12, 1)
     gfx.rect(r.x + 2, r.y + 2, tw + 36, 19, true)
     gfx.set(0.30, 0.68, 1.0, 1)
@@ -2622,7 +2624,7 @@ local function draw_overlay(clicked)
     gfx.setfont(1, "Arial", 12, "b")
     gfx.set(0.86, 0.93, 1, 1)
     gfx.x, gfx.y = r.x + 26, r.y + 5
-    gfx.drawstr(z.title)
+    gfx.drawstr(z_title)
     if sotto_il_mouse(r) then zone_hit = z end
   end
   if hit then
@@ -2630,7 +2632,7 @@ local function draw_overlay(clicked)
     gfx.rect(hit.rect.x - 2, hit.rect.y - 2, hit.rect.w + 4, hit.rect.h + 4, false)
     gfx.rect(hit.rect.x - 3, hit.rect.y - 3, hit.rect.w + 6, hit.rect.h + 6, false)
     if clicked then
-      state.overlay_pick = { key = hit.key, text = DETTAGLI[hit.key] or hit.text or aiuto_per(hit.key) or "" }
+      state.overlay_pick = { key = hit.key, text = aiuto_per(hit.key, true) or hit.text or "" }
       speak(hit.key .. ": " .. state.overlay_pick.text)
     end
   end
@@ -2638,14 +2640,14 @@ local function draw_overlay(clicked)
   -- riquadro della spiegazione: comando sotto il mouse, oppure quello fissato, oppure la zona
   local title, text
   if hit then
-    title, text = hit.key, DETTAGLI[hit.key] or hit.text or aiuto_per(hit.key) or ""
+    title, text = hit.key, aiuto_per(hit.key, true) or hit.text or ""
   elseif state.overlay_pick then
     title, text = state.overlay_pick.key, state.overlay_pick.text
   elseif zone_hit then
-    title, text = zone_hit.n .. "  " .. zone_hit.title, ZONE_AIUTO[zone_hit.id] or ""
+    title, text = zone_hit.n .. "  " .. (_G.T and _G.T(zone_hit.title) or zone_hit.title), (_G.T and _G.T(ZONE_AIUTO[zone_hit.id]) or ZONE_AIUTO[zone_hit.id] or "")
   else
-    title = "Guida rapida"
-    text = "Passa con il mouse su un comando per sapere cosa fa; clic per fissare la spiegazione (OSARA la legge). Le zone sono numerate. Esc o ? per chiudere; Guida completa apre l'help nel browser."
+    title = _G.T and _G.T("Guida rapida") or "Guida rapida"
+    text = _G.T and _G.T("Passa con il mouse su un comando per sapere cosa fa; clic per fissare la spiegazione (OSARA la legge). Le zone sono numerate. Esc o ? per chiudere; Guida completa apre l'help nel browser.") or "Passa con il mouse su un comando per sapere cosa fa; clic per fissare la spiegazione (OSARA la legge). Le zone sono numerate. Esc o ? per chiudere; Guida completa apre l'help nel browser."
   end
   local bw = math.min(gfx.w - 32, 640)
   gfx.setfont(1, "Arial", 14)
@@ -2674,7 +2676,7 @@ local function draw_overlay(clicked)
     if draw_cell(hr, {icon = "help", active = true}) and clicked then toggle_overlay() end
     gfx.set(0.34, 0.36, 0.43, 1); gfx.rect(hr.x, hr.y, hr.w, hr.h, false)
     local gr = {x=hr.x - 136, y=hr.y, w=130, h=hr.h}
-    if ZP_UI.draw_button(gr, "Guida completa", false, true, clicked, "play_select") then apri_help_solo() end
+    if ZP_UI.draw_button(gr, _G.T and _G.T("Guida completa") or "Guida completa", false, true, clicked, "play_select") then apri_help_solo() end
   end
 end
 

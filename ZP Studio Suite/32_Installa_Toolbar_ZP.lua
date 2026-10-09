@@ -66,8 +66,34 @@ M.LAYOUT = {
   { cmd = 42653, "Project tabs: Display video from background projects if active project lacks video", "ZP_tbB_Video_Sfondo.png", "ZP_tb_Importa_SRT_1_video.png" },
   { "24_ZP_Probe_Guard.lua", "Probe Guard", "ZP_tbB_24_Probe_Guard.png", "toolbar_color_source_input_channel.png" },
   "-",
+  { "35_ZP_Colori.lua", "ZP Colori", "ZP_tbB_35_Colori.png", "toolbar_color_random_question.png" },
+  { "34_ZP_Set_Comandi.lua", "Set Comandi", "ZP_tbB_34_Set_Comandi.png" },
   { "00_Apri_Help_ZP_Studio_Suite.lua", "Help", "ZP_tbB_00_Help.png", "ZP_tb_00_Help.png" },
 }
+
+-- Toolbar "ZP Colori" (clicca e colora, 2026-10-09), FACOLTATIVA: si scrive solo se chiesta dal 33
+-- Benvenuto (ExtState persistente ZP_STUDIO_SUITE/toolbar_colori = 1) o se c'e' gia' (si aggiorna).
+-- Senza toolbar si usa la finestrella 35 ZP Colori, dal pulsante tavolozza della toolbar ZP.
+-- Pulsanti: tre interruttori di modo (Item, Traccia, Tutto),
+-- i 20 colori della palette e Togli colore. Logica in ZP_Colori.lua, pulsanti in colori/.
+-- Icone: gobbo_ricerca_battuta/strumenti/genera_icone_colori.py
+M.TITLE_COLORI = "ZP Colori"
+M.LAYOUT_COLORI = {
+  { "colori/ZP_Colori_Modo_Item.lua", "ZP Colori: modo Item (colora gli item selezionati)", "ZP_tbC_Item.png" },
+  { "colori/ZP_Colori_Modo_Traccia.lua", "ZP Colori: modo Traccia (colora le tracce, non gli item)", "ZP_tbC_Traccia.png" },
+  { "colori/ZP_Colori_Modo_Tutto.lua", "ZP Colori: modo Tutto (tracce e item dentro)", "ZP_tbC_Tutto.png" },
+  "-",
+}
+do
+  local ok, C = pcall(dofile, (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\][^/\\]+$") or ".") .. "/ZP_Colori.lua")
+  if ok and C then
+    for i, p in ipairs(C.PALETTE) do
+      M.LAYOUT_COLORI[#M.LAYOUT_COLORI + 1] = { "colori/" .. C.color_file(i), "ZP Colori: " .. p[1], string.format("ZP_tbC_%02d.png", i) }
+    end
+  end
+  M.LAYOUT_COLORI[#M.LAYOUT_COLORI + 1] = "-"
+  M.LAYOUT_COLORI[#M.LAYOUT_COLORI + 1] = { "colori/ZP_Colori_Togli.lua", "ZP Colori: togli colore", "ZP_tbC_Togli.png" }
+end
 
 -- Icone di serie di REAPER (stanno dentro l'applicazione, non nella cartella dell'utente).
 M.STOCK = {
@@ -76,7 +102,7 @@ M.STOCK = {
   ["toolbar_item_selected_move_horizontal_position_time.png"] = true,
   ["toolbar_color_load_disk.png"] = true, ["toolbar_marker_renum.png"] = true, ["toolbar_misc_mic.png"] = true,
   ["toolbar_misc_brush_broom_clean.png"] = true, ["toolbar_video_screen.png"] = true,
-  ["toolbar_color_source_input_channel.png"] = true,
+  ["toolbar_color_source_input_channel.png"] = true, ["toolbar_color_random_question.png"] = true,
 }
 
 ---------------------------------------------------------------------------
@@ -138,16 +164,22 @@ function M.menu_text(layout, ids, title, has_icon, slot)
   return table.concat(out, "\n") .. "\n"
 end
 
--- reaper-menu.ini: in quale Floating toolbar scrivere la toolbar ZP. Quella che si chiama gia'
--- "ZP Studio Suite" (si aggiorna), altrimenti la prima libera fra 1 e 16 (stanno in View > Toolbars),
--- poi fra 17 e 32. Libera = sezione assente o senza pulsanti.
-function M.pick_slot(ini)
-  ini = "\n" .. (ini or "") .. "\n["
-  local used = {}
-  for num, body in ini:gmatch("\n%[Floating toolbar (%d+)%]\n(.-)\n%f[%[]") do
-    local n = tonumber(num)
-    if body:find("\ntitle=ZP Studio Suite", 1, true) or body:match("^title=ZP Studio Suite") then return n end
-    if body:find("item_", 1, true) then used[n] = true end
+-- reaper-menu.ini: in quale Floating toolbar scrivere una toolbar ZP. Quella che si chiama gia'
+-- cosi' (title, di serie "ZP Studio Suite": si aggiorna), altrimenti la prima libera fra 1 e 16
+-- (stanno in View > Toolbars), poi fra 17 e 32. Libera = sezione assente o senza pulsanti.
+function M.pick_slot(ini, title)
+  title = title or "ZP Studio Suite"
+  -- riga per riga: con un pattern su tutto il testo la riga vuota fra due sezioni veniva
+  -- consumata e una toolbar si' e una no restava fuori (sembrava libera)
+  local used, cur = {}, nil
+  for line in tostring(ini or ""):gsub("\r", ""):gmatch("[^\n]+") do
+    local sec = line:match("^%[(.-)%]%s*$")
+    if sec then
+      cur = tonumber(sec:match("^Floating toolbar (%d+)$"))
+    elseif cur then
+      if line == "title=" .. title then return cur end
+      if line:match("^item_%d+=") then used[cur] = true end
+    end
   end
   for n = 1, 32 do if not used[n] then return n end end
   return nil
@@ -239,9 +271,12 @@ local function exists(p) local f = io.open(p, "rb"); if f then f:close() return 
 local kb_ids = M.ids_from_kb(read(resource .. sep .. "reaper-kb.ini") or "", resource .. "/Scripts")
 local ids, registered, missing = {}, {}, {}
 local to_register = {}
-for _, e in ipairs(M.LAYOUT) do
+local all_buttons = {}
+for _, e in ipairs(M.LAYOUT) do all_buttons[#all_buttons + 1] = e end
+for _, e in ipairs(M.LAYOUT_COLORI) do all_buttons[#all_buttons + 1] = e end
+for _, e in ipairs(all_buttons) do
   if e ~= "-" and not e.cmd then
-    local path = here .. sep .. e[1]
+    local path = here .. sep .. e[1]:gsub("/", sep)
     if not exists(path) then
       missing[#missing + 1] = e[1]
     else
@@ -311,6 +346,38 @@ if not slot_msg then
     "menus/toolbars > Import, file " .. target
 end
 
+-- Toolbar "ZP Colori": stessa strada, in un'altra Floating toolbar (quella che si chiama gia' cosi',
+-- o la prima libera dopo aver scritto la ZP Studio Suite).
+local colori_msg
+local want_colori = reaper.GetExtState("ZP_STUDIO_SUITE", "toolbar_colori") == "1"
+  or (function()
+    for line in (read(menu_ini_path) or ""):gmatch("[^\r\n]+") do if line == "title=" .. M.TITLE_COLORI then return true end end
+  end)()
+if want_colori then
+  local colori_text = M.menu_text(M.LAYOUT_COLORI, ids, M.TITLE_COLORI, has_icon)
+  local cf = io.open(menu_dir .. sep .. "ZP_Colori.ReaperMenu", "wb")
+  if cf then cf:write(colori_text); cf:close() end
+  local ini_now = read(menu_ini_path) or ""
+  local cslot = M.pick_slot(ini_now, M.TITLE_COLORI)
+  local w = cslot and io.open(menu_ini_path, "wb")
+  if w then
+    local new_ini = M.put_section(ini_now, M.menu_text(M.LAYOUT_COLORI, ids, M.TITLE_COLORI, has_icon, cslot))
+    w:write(new_ini)
+    w:close()
+    if slot then reaper.SetExtState("ZP_STUDIO_SUITE", "toolbar_da_riavviare", slot .. "|" .. #new_ini, false) end
+    colori_msg = "Toolbar \"ZP Colori\" (clicca e colora) scritta nella Floating toolbar " .. cslot .. "."
+  else
+    colori_msg = "Toolbar \"ZP Colori\": importala a mano dal file " .. menu_dir .. sep .. "ZP_Colori.ReaperMenu"
+  end
+  -- i tre pulsanti dei modi: il loro identificativo serve a ZP_Colori per accendere quello giusto
+  for _, mode in ipairs({ "Item", "Traccia", "Tutto" }) do
+    local id = ids["colori/ZP_Colori_Modo_" .. mode .. ".lua"]
+    if id then reaper.SetExtState("ZP_COLORI", "cmd_" .. mode:lower(), id, true) end
+  end
+else
+  colori_msg = "Colori: pulsante tavolozza nella toolbar (finestrella 35 ZP Colori). La toolbar ZP Colori, facoltativa, si installa dal 33 Benvenuto."
+end
+
 -- catene di effetti in REAPER/FXChains
 local chain_dir = resource .. sep .. "FXChains"
 reaper.RecursiveCreateDirectory(chain_dir, 0)
@@ -377,11 +444,11 @@ do
 end
 
 local buttons = 0
-for _ in pairs(ids) do buttons = buttons + 1 end
-for _, e in ipairs(M.LAYOUT) do if type(e) == "table" and e.cmd then buttons = buttons + 1 end end
+for _, e in ipairs(M.LAYOUT) do if type(e) == "table" and (e.cmd or ids[e[1]]) then buttons = buttons + 1 end end
 local msg = string.format(
   "Toolbar con %d pulsanti, con gli identificativi di questo REAPER.\n\n%s\n\n(Copia da importare a mano, se serve: %s)",
   buttons, slot_msg, target)
+msg = msg .. "\n\n" .. colori_msg
 if #registered > 0 then msg = msg .. "\n\nRegistrati ora nell'Action List: " .. table.concat(registered, ", ") end
 if #missing > 0 then msg = msg .. "\n\nNON trovati (pulsante saltato): " .. table.concat(missing, ", ") end
 msg = msg .. "\n\nCatene di effetti per il SOLO Recorder (REAPER/FXChains):\n" .. table.concat(chain_lines, "\n")

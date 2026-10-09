@@ -53,5 +53,28 @@ M.marker_protect(S)
 check("marker: Proteggi", table.concat(calls, ";") == "MM_CTX_ITEMTAKEMARKER|0|0 m;MM_CTX_ITEMTAKEMARKER|1|1 m")
 calls = {}; M.marker_reset(S)
 check("marker: Ripristina standard = contesto di serie", table.concat(calls, ";") == "MM_CTX_ITEMTAKEMARKER|-1|-1")
+
+-- Language pack di REAPER (nuove funzioni pure per 33 Benvenuto)
+check("langpack clean: nome con estensione", M.langpack_clean_name("Italiano (ZP).ReaperLangPack") == "Italiano (ZP)")
+check("langpack clean: maiuscole/minuscole", M.langpack_clean_name("Deutsch.reaperlangpack") == "Deutsch")
+check("langpack clean: vuoto o nil", M.langpack_clean_name("") == nil and M.langpack_clean_name(nil) == nil)
+check("langpack display: originale di default", M.langpack_display_name("") == "Originale (inglese)")
+check("langpack display: con T_fn personalizzata", M.langpack_display_name(nil, function(s) return "Tradotto: " .. s end) == "Tradotto: Originale (inglese)")
+check("langpack display: con nome pack", M.langpack_display_name("Italiano (ZP).ReaperLangPack") == "Italiano (ZP)")
+
+local files = { "README.txt", "Italiano (ZP).ReaperLangPack", "deutsch.reaperlangpack", "note.doc" }
+local filtered = M.filter_langpack_files(files)
+check("filter langpack: solo estensioni giuste e ordine alfabetico", #filtered == 2 and filtered[1] == "deutsch.reaperlangpack" and filtered[2] == "Italiano (ZP).ReaperLangPack")
+
+check("langpack state: invariato = ok", M.langpack_state("Italiano (ZP).ReaperLangPack", "Italiano (ZP).ReaperLangPack") == "ok")
+check("langpack state: entrambi vuoti = ok", M.langpack_state("", "") == "ok")
+check("langpack state: modificato = passo", M.langpack_state("Italiano (ZP).ReaperLangPack", "") == "passo")
+check("langpack state: tornato a originale ma partito da pack = passo", M.langpack_state("", "Italiano (ZP).ReaperLangPack") == "passo")
+
+local sh = M.restart_sh("/Applications/REAPER.app")
+check("restart sh: pgrep e open inclusi", sh:find("pgrep -x 'REAPER'", 1, true) ~= nil and sh:find("open '/Applications/REAPER.app'", 1, true) ~= nil)
+local ps1 = M.restart_ps1("C:\\REAPER\\reaper.exe")
+check("restart ps1: Wait-Process e Start-Process inclusi", ps1:find("Wait-Process", 1, true) ~= nil and ps1:find("C:\\REAPER\\reaper.exe", 1, true) ~= nil)
+
 if fails > 0 then print(fails .. " FALLITI") os.exit(1) end
 print("TUTTI OK")

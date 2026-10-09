@@ -35,12 +35,25 @@ while IFS= read -r f; do
   grep -nE '^[^/]*[0-9]e[-+]?[0-9]' "$f" | grep -vE '^\s*[0-9]+:\s*//' && { say "   ^ in $f"; fail=1; }
 done < <(git ls-files '*.jsfx')
 
+say "== 3b. JSFX: parentesi bilanciate (una persa = plugin che non compila)"
+python3 gobbo_ricerca_battuta/test/parentesi_jsfx.py || fail=1
+
 say "== 4. Test della logica pura"
-for t in gobbo_ricerca_battuta/test/*.lua; do
+for t in gobbo_ricerca_battuta/test/test_*.lua; do
   out=$(lua "$t" 2>&1); last=$(printf '%s\n' "$out" | tail -1)
   say "   $(basename "$t"): $last"
   [ "$last" = "TUTTI OK" ] || { printf '%s\n' "$out" | grep -E 'FAIL|rror' | head -5; fail=1; }
 done
+
+if [ -f "gobbo_ricerca_battuta/test/test_langpack.py" ]; then
+  say "== 4b. Verifica Language Pack Italiano REAPER"
+  python3 gobbo_ricerca_battuta/test/test_langpack.py || fail=1
+fi
+
+if [ -f "gobbo_ricerca_battuta/test/test_web_server.py" ]; then
+  say "== 4c. Verifica Telecomando SOLO Web e Mock Server"
+  python3 gobbo_ricerca_battuta/test/test_web_server.py || fail=1
+fi
 
 if command -v reapack-index >/dev/null; then
   say "== 5. reapack-index --check"

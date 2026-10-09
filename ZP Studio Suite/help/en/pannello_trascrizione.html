@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>29 ZP Transcription — guide</title><style>
+:root{color-scheme:light dark;--bg:#f7f7f4;--paper:#fff;--ink:#202024;--muted:#5e6068;--line:#d9d9d2;--accent:#245ba6}
+@media(prefers-color-scheme:dark){:root{--bg:#101217;--paper:#171a21;--ink:#eceff4;--muted:#adb2bd;--line:#303541;--accent:#77a9ff}}
+body{margin:0;padding:28px;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}main{max-width:900px;margin:auto}h1{margin:0 0 6px}h2{margin-top:30px;border-top:1px solid var(--line);padding-top:18px}h3{margin-bottom:4px}p,li{max-width:78ch}.lead,.muted{color:var(--muted)}.card{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:14px;margin:12px 0}code{background:rgba(127,127,127,.16);padding:2px 5px;border-radius:4px}.icon{width:180px;height:60px;image-rendering:pixelated}.note{border-left:4px solid var(--accent);padding:10px 14px;background:color-mix(in srgb,var(--accent) 10%,var(--bg))}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{text-align:left;vertical-align:top;padding:9px;border-bottom:1px solid var(--line)}
+</style><style id="lc-firma">
+.lc-testata{display:flex;align-items:center;gap:.5rem;margin:0 0 .4rem;font:600 .78rem/1.2 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  letter-spacing:.08em;text-transform:uppercase;color:#565F66}
+.lc-testata a{color:inherit;text-decoration:none}.lc-testata a:hover{color:#A94F35}
+.lc-logo{width:22px;height:22px;flex:none}
+.lc-filetto{border:0;border-top:2px solid #A94F35;margin:.6rem 0 1.4rem}
+.lc-piede{display:flex;align-items:center;gap:.6rem;margin:3rem 0 1rem;padding:.8rem 1rem;border:1px solid #CFCCC3;
+  border-radius:6px;background:#FAF9F5;color:#37444E;font:.95rem/1.4 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+.lc-piede a{color:#8F4630}
+@media (prefers-color-scheme: dark){
+  .lc-testata{color:#9aa4ac}.lc-piede{background:#1d2226;border-color:#2e3439;color:#c9cfd4}.lc-piede a{color:#d98b6f}
+}
+</style>
+</head>
+<body><main>
+<!-- lc-testata --><div class="lc-testata"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><a href="https://latocardioide.it/strumenti/">Lato Cardioide</a> &middot; Tools</div><!-- /lc-testata -->
+<h1>29 · ZP Transcription</h1>
+
+
+<!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
+<p class="lead">One window, one path: from audio to text in the Teleprompter, which then follows splits and edits. Select audio items and see which stage is marked <strong>&lt;- now</strong>.</p>
+
+<h2>Model and language</h2>
+<p>At the top, two dropdowns: <strong>Model</strong> (the list comes from ZP Speech, showing your installed models, for example large-v3, more accurate, or small, faster; <em>Default</em> is the engine's primary model) and <strong>Language</strong> (Italian, English, French, German, Spanish, Portuguese, Chinese, Japanese, Korean, Russian, <em>Auto</em>, or <em>Other…</em> to enter a language code, e.g. <code>nl</code> or <code>yue</code>). Whisper models (large-v3, small) know about 99 languages; Parakeet supports 25 European languages: if you pick Parakeet with an unsupported language, the window warns you. The selection is remembered and applies to Transcribe and Retranscribe. Each transcribed file remembers the settings used: in the item list it appears next to «SRT yes», for example <em>(small en)</em>. To redo a file with another model: choose the model, select the item, and click <strong>Retranscribe…</strong>.</p>
+
+<h2>Background processing</h2>
+<p>Transcribe, Retranscribe, and Translate work <strong>in the background</strong>: you can close the window, processing continues. The window title shows progress («transcribing 3 of 14»); upon completion, a <strong>macOS notification</strong> reports how many files succeeded. Reopening the window during processing shows live progress; if finished in the meantime, it collects results and, if you chose <em>Follow the path</em>, proceeds through Match and Send to teleprompter. A failed file does not stop others: the final summary shows the tally and details go to the console.</p>
+
+<h2>Translate (optional)</h2>
+<p><strong>Translate…</strong> translates, only when requested, the SRT alongside selected items. From the menu choose the target language (starts immediately after confirmation), the <em>Engine</em>, and the <em>Model</em>; preferences are saved. The output is <code>Name.en.srt</code> alongside the original, with matching timestamps: the original remains untouched and an existing translation is not redone. In the menu, <em>Engine</em>: the agent available on your Mac: <strong>Auto</strong> (default) uses the first available among <strong>Codex</strong> (OpenAI via your ChatGPT account), <strong>Claude</strong> (Anthropic via your account), <strong>Qwen</strong>, <strong>OpenCode</strong> (configured service), and <strong>Ollama</strong> (local model: text stays on your Mac). Before starting, a prompt specifies which agent is used and where text is processed. <em>Model</em>: with Codex, <em>Selected in Codex</em> uses your configured model; with Ollama, the default installed model or your selection. While running, the button displays current file, processed lines, and elapsed time. If an agent skips or merges cues, the file is not written and details are logged to the console. In the item list, alongside SRT, existing translations appear (e.g. <em>+it,en</em>). <strong>In the Teleprompter</strong>: with <em>Send to teleprompter</em> (or Follow cuts), each translation becomes an additional flow, e.g. «Kevin · EN»: cues are attached to the original take markers, following cuts automatically. Select the flow from the Teleprompter dropdown; with <em>All</em> you see both original and translation together, and search finds translated lines navigating directly to the original audio cue.</p>
+
+<h2>The four stages</h2>
+<ol>
+<li><strong>Transcribe.</strong> Whisper (ZP Speech) creates an SRT alongside the WAV, with the same base name. Only missing files are transcribed: items already having an SRT or markers are left as they are, and the stage status indicates this («5 selected: 3 to transcribe, 2 already done»). If a file needs re-reading from scratch &mdash; after a <em>glue</em>, which preserves old marker times, or if timing has changed &mdash; the button becomes <strong>Retranscribe…</strong>: it asks for confirmation, clears take markers from selected items (Undo restores them), renames any existing adjacent SRT to <code>.srt.bak-&lt;date&gt;</code> without deleting it, and runs the path fresh. Teleprompter texts tied to old markers: untouched ones are removed, manually edited ones are muted. While running, the window displays «Working, not frozen» with elapsed time and an ETA. If the process stops without responding, a warning appears.</li>
+<li><strong>Match from…</strong> Choose the source of dialogue cues; they become take markers on the item, in source time:
+<ul>
+<li><em>SRT alongside file</em>: the standard case after stage 1. With multiple items, it never opens Finder: matches files having a matching SRT name, skips already matched items without prompts (to redo one, use <strong>Retranscribe…</strong>), and lists remaining items below (no SRT &rarr; Transcribe; markers but no SRT, typical after <em>glue</em> &rarr; kept as-is, Retranscribe if needed);</li>
+<li><em>External or translated SRT</em>: a file chosen by you for all selected items, even if an adjacent Whisper SRT exists (dubbing workflow: English audio, Italian SRT created via 26 SRT Tools). If items already contain markers, a single prompt asks whether to replace or keep them;</li>
+<li><em>Project markers on timeline</em>: uses script 14, without duplicates; prompts whether to delete them from timeline;</li>
+<li><em>WAV cues → timeline markers</em>: imports embedded WAV cues to timeline to manage them in REAPER; to embed them in items, then choose «Project markers».</li>
+</ul></li>
+<li><strong>Send to teleprompter.</strong> Runs automatically after Match. Each marker becomes a text item on a hidden track <code>Rythmo Band Testi &lt;voice track name&gt;</code>. Manually corrected text is never overwritten. «Update now» reruns it whenever needed.</li>
+<li><strong>Follow cuts.</strong> After 10 seconds of project inactivity, texts realign to audio, even after cuts and moves. The same switch exists in both Teleprompters, which usually stay open while working: keeping this window open is not required.</li>
+</ol>
+<p><strong>Follow the path</strong> executes only missing steps in order. <strong>Show text tracks</strong> reveals hidden text tracks.</p>
+
+<h2>In the Teleprompter</h2>
+<p>Under <em>Text flow</em>, browse with <code>&lt;</code> <code>&gt;</code>: beside individual flows, <strong>All</strong> reads all text tracks together (Read all), including hidden ones. The window title indicates which flow is active. Search operates on the selected flow; in All, it searches across the entire project.</p>
+
+<h2>Good to know</h2>
+<ul>
+<li>Transcription is a working guide: word timings may have small variances, the segment remains the listening reference.</li>
+<li>Automatic transcription runs on macOS with ZP Speech installed. On other systems, create the SRT with your preferred Whisper setup, using the same name as the WAV, and start from «Match from…».</li>
+<li>If a translated SRT uses video timecode (e.g. starting at 01:00:00) while the WAV starts at zero, configure the offset in SRT Tools: otherwise lines will fall outside the item.</li>
+<li>Send to teleprompter scans all tracks: named reference or rehearsal markers will also become text.</li>
+</ul>
+<p class="note"><a href="index.html">Return to Suite Guide</a></p>
+<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Developed from an idea by Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
+</main></body></html>

@@ -2,6 +2,16 @@
 // @version 44.0.1
 // @author Paolo Balestri
 // @license LGPL-2.1-or-later
+// @about
+//   ### ZP Loudness Meter Multichannel
+//   Loudness e channel meter multicanale professionale per controllo rapido in produzione,
+//   doppiaggio, voiceover, broadcast e mastering (LUFS-I, LUFS-S, LUFS-M, LRA, True Peak e RMS-M).
+//
+//   Professional multichannel loudness and peak meter for production, broadcast, voiceover, and mastering
+//   (LUFS-I, LUFS-S, LUFS-M, LRA, True Peak, and RMS-M up to 64 channels).
+//
+//   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
+//   Guida completa: ZP Studio Suite/help/index.html#plugin-loudness-meter
 // @changelog
 //   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
 //   Channel Overview centrale con meter segmentati per canale.
@@ -119,10 +129,24 @@ slider34:outparm_lufs_s=-100<-100,0,1>-LUFS-S (output)
 slider35:outparm_lufs_i=-100<-100,0,1>-LUFS-I (output)
 slider36:outparm_lufs_lra=0<0,100,1>-LRA (output)
 
-options:no_meter
+options:no_meter gmem=ZPVoiceoverSharedBus
 
 
 @init
+
+help_bridge_alive = 0;
+help_warn_until = 0;
+ui_lang = 0;
+
+function help_bridge_open(plugin_id) (
+  zp_hb_ok ? (
+    gmem[3902] = plugin_id;
+    gmem[3903] += 1;
+    help_warn_until = 0;
+  ) : (
+    help_warn_until = time_precise() + 4.0;
+  );
+);
 
 // =====================================================
 
@@ -618,6 +642,10 @@ rval=lval=0;
 
 
 @gfx 420 400
+// Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
+zp_hb = gmem[3900]; zp_hb_now = time_precise();
+!zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
+zp_hb_ok = zp_hb > 0 && zp_hb_now - zp_hb_t < 3;
 
 <? do_all_channels("ch%d.copypks(); ");?>;
 
@@ -631,6 +659,8 @@ has_click = (mouse_cap&1) && !(last_cap&1) ? 1 : 0;
 last_cap=mouse_cap;
 tip_active=0;
 #tip_msg="";
+help_bridge_alive = zp_hb_ok;
+ui_lang = (gmem[3901] == 1) ? 1 : 0;
 
 gfx_clear=((BG_COLOR&$xff)<<16)|(BG_COLOR&$xff00)|((BG_COLOR&$xff0000)>>16);
 
@@ -995,6 +1025,11 @@ local(cx, cy, r, pct, ang_min, ang_max, ang, nx, ny, _tw, _th, _fs1, _fs2, _ow, 
 function draw_tip_bar()
 local(_tw, _th, _tx, _ty, _w, _h)
 (
+  time_precise() < help_warn_until ? (
+    tip_active = 1;
+    #tip_msg = ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Studio Suite" : "Open Cue Navigator or ZP Suite help";
+  );
+
   tip_active ? (
     _h=max(24,min(36,fsz*1.50));
     _w=min(gfx_w-18,max(220,strlen(#tip_msg)*fsz*0.52));
@@ -1051,8 +1086,10 @@ _hw=max(40,gfx_w-SB_W-20);
 _hdr_btn_h=max(22,min(30,HDR_H-12));
 _hdr_btn_w=max(54,min(72,gfx_texth*4.4));
 _hdr_gap=6;
+_help_w=max(22,min(28,gfx_texth*1.8));
+_help_x=SB_W+gfx_w-SB_W-10-_help_w;
 _rst_w=max(62,min(86,gfx_texth*5.0));
-_rst_x=SB_W+gfx_w-SB_W-10-_rst_w;
+_rst_x=_help_x-_rst_w-_hdr_gap;
 _menu_x=_rst_x-_hdr_btn_w-_hdr_gap;
 _sum_w = (_menu_x-_hx) > 470 ? 258 : (_menu_x-_hx) > 340 ? 190 : 0;
 _sum_x = _sum_w > 0 ? _menu_x-_sum_w-_hdr_gap : _menu_x;
@@ -1147,6 +1184,30 @@ reset_pressing && !(mouse_cap&1) ? (
   !reset_long_done ? Reset();
   reset_pressing=0;
 );
+
+_help_hover = chip_hit(_help_x, _hy, _help_w, _hdr_btn_h);
+_help_hover ? (
+  tip_active=1;
+  #tip_msg = ui_lang == 0 ? "?: apre la guida al Loudness Meter nel browser." : "?: opens Loudness Meter documentation in browser.";
+);
+_help_hover ? gfx_set(0.24,0.44,0.82,1) : gfx_set(0.14,0.18,0.24,1);
+gfx_rect(_help_x, _hy, _help_w, _hdr_btn_h);
+gfx_set(0.32,0.56,0.92,0.85);
+gfx_rect(_help_x, _hy, _help_w, 1);
+gfx_rect(_help_x, _hy+_hdr_btn_h-1, _help_w, 1);
+gfx_rect(_help_x, _hy, 1, _hdr_btn_h);
+gfx_rect(_help_x+_help_w-1, _hy, 1, _hdr_btn_h);
+gfx_setfont(4,"Arial",max(10,min(fsz*0.72,_hdr_btn_h*0.62)),'b');
+gfx_set(0.92,0.96,1,1);
+gfx_measurestr("?", _tw, _th);
+gfx_x = _help_x + floor((_help_w - _tw) * 0.5);
+gfx_y = _hy + floor((_hdr_btn_h - _th) * 0.5);
+gfx_drawstr("?");
+has_click && _help_hover ? (
+  help_bridge_open(9);
+  has_click=0;
+);
+
 gfx_setfont(1,"Arial",fsz);
 
 want_vu ? (

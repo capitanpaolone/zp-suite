@@ -823,7 +823,6 @@ local function open_import_window(on_finish)
     ZP_UI.draw_header({
       fallback_icon = draw_import_icon,
       title = "Importa cartelle",
-      credit = "ZP Studio Suite v1.0.5 - Paolo Balestri",
       description = "Importa cartelle audio/video e crea sulla timeline marker e regioni ordinate.",
       title_size = 23,
       credit_size = 13,

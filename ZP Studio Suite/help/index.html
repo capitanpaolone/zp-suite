@@ -94,11 +94,28 @@
     .wrap { overflow-x: auto; }
     @media (max-width: 600px) { body { padding: 16px; } }
   </style>
+<style id="lc-firma">
+.lc-testata{display:flex;align-items:center;gap:.5rem;margin:0 0 .4rem;font:600 .78rem/1.2 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  letter-spacing:.08em;text-transform:uppercase;color:#565F66}
+.lc-testata a{color:inherit;text-decoration:none}.lc-testata a:hover{color:#A94F35}
+.lc-logo{width:22px;height:22px;flex:none}
+.lc-filetto{border:0;border-top:2px solid #A94F35;margin:.6rem 0 1.4rem}
+.lc-piede{display:flex;align-items:center;gap:.6rem;margin:3rem 0 1rem;padding:.8rem 1rem;border:1px solid #CFCCC3;
+  border-radius:6px;background:#FAF9F5;color:#37444E;font:.95rem/1.4 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+.lc-piede a{color:#8F4630}
+@media (prefers-color-scheme: dark){
+  .lc-testata{color:#9aa4ac}.lc-piede{background:#1d2226;border-color:#2e3439;color:#c9cfd4}.lc-piede a{color:#d98b6f}
+}
+</style>
 </head>
 <body>
 <main>
-  <h1>ZP Studio Suite for REAPER</h1>
-  <p class="lead">Una cassetta degli attrezzi dentro REAPER per chi lavora con la voce: doppiaggio, voiceover, podcast, e-learning, spot. Porta il copione in timeline, te lo fa leggere mentre registri, segue i tagli del montaggio, prepara i file da consegnare e la catena audio. Tutto si può usare anche con lo screen reader.</p>
+  <!-- lc-testata --><div class="lc-testata"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><a href="https://latocardioide.it/strumenti/">Lato Cardioide</a> &middot; Strumenti</div><!-- /lc-testata -->
+<h1>ZP Studio Suite for REAPER</h1>
+  
+
+<!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
+<p class="lead">Una cassetta degli attrezzi dentro REAPER per chi lavora con la voce: doppiaggio, voiceover, podcast, e-learning, spot. Porta il copione in timeline, te lo fa leggere mentre registri, segue i tagli del montaggio, prepara i file da consegnare e la catena audio. Tutto si può usare anche con lo screen reader.</p>
 
   <div class="note">
     <a href="toolbar.html"><strong>La toolbar, pulsante per pulsante &rarr;</strong></a> &middot;
@@ -407,35 +424,72 @@
   <h2 id="zp-shared-bus">Plugin ZP Shared Bus</h2>
   <p>I plugin ZP si parlano attraverso una memoria condivisa (<code>gmem=ZPVoiceoverSharedBus</code>): ognuno dice chi è e cosa sta facendo, la Probe misura cosa esce davvero, Master Pro confronta tutto con il target del profilo e suggerisce. Nessun plugin cambia i parametri di un altro. Si installano dallo stesso repository ReaPack, in <code>Effects/ZP_Paolo Balestri JSFX</code>.</p>
   <div class="grid">
-    <div class="card">
+    <div class="card" id="plugin-bus-chain">
       <h3>ZP BUS Chain</h3>
-      <p>Catena VO principale. Pubblica telemetria granulare: Expander GR, 1175 GR, LA2 GR, Major Tom GR, Brown activity, ANA Drive/Gain/Mix, Limiter GR, output RMS/Peak, density e brightness estimate.</p>
+      <p><strong>A cosa serve:</strong> Processore di canale principale per bus voci (dialogo, voiceover, doppiaggio). Combina Expander/Gate, De-Esser/Air, compressori 1175, LA-2A, Major Tom, stadio analogico Brown e Limiter di sicurezza finale.</p>
+      <p><strong>Dove si inserisce:</strong> Sul Voice Bus (traccia cartella delle voci o bus master voce).</p>
+      <p><strong>Controlli principali:</strong> Expander Thresh/Range, compressori RED/MAKEUP, Brown Drive/Mix, High Air, Limiter Ceiling/Release, interruttori modulo. Pubblica telemetria completa sullo Shared Bus.</p>
     </div>
-    <div class="card">
-      <h3>ZP Spoken Finish</h3>
-      <p>Finalizzatore armonico opzionale. Pubblica harmonic amount, body, presence, brightness, VOG activity e output activity. Master Pro usa questi dati per capire se l'energia armonica e' coerente col risultato della Probe.</p>
-    </div>
-    <div class="card">
+    <div class="card" id="plugin-carver">
       <h3>ZP Harmonic Space Carver</h3>
-      <p>Assistente mix/music bus. Lavora sul rapporto voce-musica e non e' uno stadio mastering. Il Chain Builder lo mette sul Music Bus nei profili Podcast e Spot.</p>
-      <p>Dalla 2.5 la GUI segue il segnale: VOCE (fino a tre fonti sidechain: 3/4, 5/6, 7/8; compaiono solo se la traccia ha i canali, con una spia che segnala pin scollegati o invii mancanti), CARVER, VCA; sotto, in colonna con loro, LIVELLI (sotto VOCE), BANDE (sotto CARVER) e meter VCA, Glue e uscita (sotto VCA). Ogni meter ha accanto i suoi comandi: Min Duck (giallo) e Max Duck (arancio) stanno vicino al meter VCA, collegati alle loro linee; il pomello Glue sta con il meter Glue. SIMPLE mostra i controlli principali dello stesso motore; SCORE / FLAT / VOCAL sono punti di partenza che spostano i pomelli. Il preascolto del "tolto" e' sempre segnalato e torna OFF alla riapertura del progetto.</p>
-      <p>I cue di rientro rapido stanno in una barra fissa (anche in Simple) e nella vista DOCK, da tenere aperta mentre monti. Azioni da assegnare ai tasti: <em>ZP HSC Cue - Aggiungi o togli</em>, <em>Successivo</em>, <em>Precedente</em>, <em>Annulla</em>.</p>
-      <p>Dalla 2.6, con l'helper <em>Cue Navigator</em> in esecuzione, ogni cue e' anche un marker di servizio <code>#HSC</code> sul righello (ciano). I cue si aggiungono e si tolgono solo dal Carver (ADD/REMOVE, ELIMINA, UNDO, CLEAR ALL, tasti): un marker <code>#HSC</code> cancellato a mano torna, uno aggiunto a mano sparisce. Per togliere cue precisi usa <strong>ELIMINA</strong> in fondo alla fila dei cue: clic su un punto per sceglierlo, <strong>Cmd/Ctrl+clic</strong> per aggiungerne o toglierne altri, <strong>Shift+clic</strong> per prendere tutti quelli fra due punti; ELIMINA toglie i cue scelti e i loro marker, UNDO li rimette. Ogni progetto aperto in una scheda tiene i suoi cue e i suoi marker. Spostarli invece e' libero (a mano o con il ripple) e il Carver segue; Ctrl+Z annulla gli spostamenti. I marker stanno nella lane 4, fuori dalle lane del Gestore Progetto. I tagli in ripple spostano i marker solo in modalita' ripple <strong>tutte le tracce</strong>; con il ripple per traccia i marker restano fermi. I marker <code>#HSC</code> non diventano mai testo (gobbo, SRT, 14).</p>
-      <p>Quali tracce sono voce lo decide il routing: quelle che arrivano ai pin delle fonti sidechain accese (invii e tracce figlie, risalendo le cartelle; le tracce mute non contano). L'azione <em>ZP HSC - Mostra tracce voce</em> le seleziona e le elenca: e' il modo per controllare che il Carver ascolti le voci giuste.</p>
-      <p>Ogni cue ricorda la voce che ha sotto (il file e il punto nel file). Se quella voce si sposta e il cue no, per esempio con un ripple sulla sola traccia della voce, il cue diventa <strong>rosso</strong>: marker <code>#HSC</code> rosso, punto rosso e "FUORI POSTO" nel Carver. <strong>RIALLINEA</strong> porta il cue dove adesso c'e' la sua voce, <strong>TIENI QUI</strong> accetta la posizione attuale. Se sposti audio e cue insieme (ripple su tutte le tracce, regione spostata con il contenuto) il cue resta al suo posto e non si colora. Un marker trascinato a mano prende come riferimento la voce nel punto nuovo. Il tasto <em>ZP HSC Cue - Riallinea</em> riallinea tutti i cue rossi. I cue rossi continuano a scattare (nel punto sbagliato): il Carver lo segnala con un avviso rosso che lampeggia, senza bloccare niente.</p>
-      <p>Se nel blocco VCA compare "Min = Max: VCA fisso", con la voce la musica scende sempre di Max Duck e Ceiling e Prio non lavorano: alza Min Duck. I progetti salvati prima della 2.6.2 con Min = Max passano da soli a Min Duck -3 dB. Se la barra cue dice "HELPER SPENTO", avvia l'azione <em>ZP Harmonic Space Carver Cue Navigator</em> (ne gira sempre uno solo: l'ultimo avviato prende il posto dei precedenti).</p>
+      <p><strong>A cosa serve:</strong> Assistente mix/music bus. Crea spazio spettrale e dinamico nella base musicale sotto il parlato, mediante ducking VCA e carving multibanda guidato dalla voce, con cue di rientro rapido sulla timeline (#HSC).</p>
+      <p><strong>Dove si inserisce:</strong> Sul Music Bus (traccia della musica/base). Il Chain Builder lo posiziona nei profili Podcast e Spot.</p>
+      <p><strong>Controlli principali:</strong> Fonti sidechain VOCE (3/4, 5/6, 7/8), Min Duck e Max Duck, Ceiling VCA, Glue, bande Carver (B1-B4), barra Cue (#HSC) con navigazione e allineamento ancore audio.</p>
+      <p>Dalla 2.5 la GUI segue il segnale: VOCE, CARVER, VCA con i rispettivi livelli, bande e meter. Dalla 2.6, con l'helper <em>Cue Navigator</em> in esecuzione, ogni cue e' un marker di servizio <code>#HSC</code> sul righello (lane 4) che segue la timeline e verifica l'allineamento con la voce sottostante.</p>
     </div>
-    <div class="card">
-      <h3>ZP Voice-Music Probe</h3>
-      <p>Probe passiva. In ruolo Voice misura RMS, peak, crest, density, brightness e speech activity del VO BUS. In ruolo Music misura il Music Bus. Deve stare ultima per misurare il risultato reale.</p>
+    <div class="card" id="plugin-spoken-finish">
+      <h3>ZP Spoken Finish</h3>
+      <p><strong>A cosa serve:</strong> Finalizzatore armonico opzionale per la voce. Arricchisce corpo, armoniche pari/dispari, aria e VOG (Voice of God) per dare densità e presenza broadcast.</p>
+      <p><strong>Dove si inserisce:</strong> Sul Voice Bus a valle del BUS Chain o su singole tracce recitanti.</p>
+      <p><strong>Controlli principali:</strong> Harmonic Amount (Even/Odd), Body, Air/Presence, VOG Sub-bass, Dynamic Drive. Pubblica telemetria per il confronto con Master Pro.</p>
     </div>
-    <div class="card">
+    <div class="card" id="plugin-stagekeeper">
+      <h3>ZP Stagekeeper Dialogue Director</h3>
+      <p><strong>A cosa serve:</strong> Dialogue Director e automixer intelligente per due microfoni (L/R) in podcast, interviste e dialoghi. Riconosce la voce dominante e attenua il bleed sul microfono di chi ascolta, mantenendo naturalezza senza scatti.</p>
+      <p><strong>Dove si inserisce:</strong> Su traccia stereo che riceve i due microfoni (o prima del bus sommato).</p>
+      <p><strong>Controlli principali:</strong> Input Trim L/R, soglie Speech Detect L/R, Delta margin, Response (Attack, Release, Hold, Lookahead, Softness HARD ↔ SMOOTH), Background Attenuation, monitor MIX / CHECK L / CHECK R, Limiter integrato.</p>
+    </div>
+    <div class="card" id="plugin-subliminal">
+      <h3>ZP Subliminal Presence Layer White</h3>
+      <p><strong>A cosa serve:</strong> Strato opzionale di micro-modulazione lenta e sagomata (rumore di presenza calibrato). Riempie e scalda i vuoti digitali tra le battute donando coesione organica senza farsi percepire come fruscio.</p>
+      <p><strong>Dove si inserisce:</strong> In coda alla catena vocale o in parallelo sul bus voce, a volume discreto.</p>
+      <p><strong>Controlli principali:</strong> Level, Color/Filter, Modulation Depth, Envelope follower / Ducking della voce, Mute/Audition.</p>
+    </div>
+    <div class="card" id="plugin-unified-chain">
+      <h3>ZP Voiceover Unified Chain</h3>
+      <p><strong>A cosa serve:</strong> Catena vocale integrata all-in-one per singole tracce di registrazione. Raggruppa pre-filtering, noise gate, de-esser, compressori 1175/LA-2A/Major Tom e limiter in un'unica interfaccia essenziale.</p>
+      <p><strong>Dove si inserisce:</strong> Sulla singola traccia microfonica o nel template di registrazione.</p>
+      <p><strong>Controlli principali:</strong> Input Gain, Gate Threshold, Compressors Amount/Mix, Tone Tilt, Out Ceiling. Dialoga con lo Shared Bus trasmettendo i dati di riduzione.</p>
+    </div>
+    <div class="card" id="plugin-master-pro">
       <h3>ZP Master Pro</h3>
-      <p>Supervisore finale. Legge telemetria plugin e Probe, mantiene l'ultima misura valida, applica il Target Engine per ADR, Voiceover, E-learning, Podcast, Spot e Radio, e mostra suggerimenti senza correggere automaticamente il DSP.</p>
+      <p><strong>A cosa serve:</strong> Supervisore e analizzatore intelligente per il bus Master finale. Confronta la telemetria di tutti i plugin ZP e le misure delle Probe contro profili target (ADR, Voiceover, E-learning, Podcast, Spot, Radio).</p>
+      <p><strong>Dove si inserisce:</strong> Sul Master Bus finale del progetto (prima o dopo il limiter di consegna).</p>
+      <p><strong>Controlli principali:</strong> Selezione Target Profile, Navigator (MANUAL / AUTO SIMPLE / AUTO COMPLEX), Measure Engine con display causale, parametri di tolleranza [Target], LED di stato del bus.</p>
     </div>
-    <div class="card">
-      <h3>ZP Subliminal Presence Layer</h3>
-      <p>Strato opzionale di modulazione molto lenta e discreta. Introduce movimento percettivo controllato senza partecipare alla telemetria Shared Bus.</p>
+    <div class="card" id="plugin-mirror-eq">
+      <h3>ZP Reference Tone Mirror EQ Pro</h3>
+      <p><strong>A cosa serve:</strong> Equalizzatore di confronto e matching timbrico. Permette di confrontare lo spettro della voce con curve di riferimento standard broadcast o di campionare una traccia reference per guidare la correzione spettrale.</p>
+      <p><strong>Dove si inserisce:</strong> Sul bus voce o sulla traccia master durante il bilanciamento timbrico.</p>
+      <p><strong>Controlli principali:</strong> Cattura reference (Learn Reference), Curve Target (Neutral, Warm, Bright, Broadcast), Amount/Matching Gain, smoothing per banda, visualizzazione spettro differenziale.</p>
+    </div>
+    <div class="card" id="plugin-loudness-meter">
+      <h3>ZP Loudness Meter Multichannel</h3>
+      <p><strong>A cosa serve:</strong> Metering di loudness di precisione secondo gli standard ITU-R BS.1770-4 ed EBU R128 su formati da stereo fino a 16 canali surround.</p>
+      <p><strong>Dove si inserisce:</strong> In chiusura della catena Master, o su qualsiasi bus multicanale da monitorare.</p>
+      <p><strong>Controlli principali:</strong> Display numerico e barre per Integrated LUFS, Short-term LUFS, Momentary LUFS, LRA (Loudness Range), True Peak dBTP, reset delle misure, scale broadcast (-23 EBU, -24 ATSC, -14 Streaming).</p>
+    </div>
+    <div class="card" id="plugin-oscilloscope">
+      <h3>ZP Oscilloscope 16ch</h3>
+      <p><strong>A cosa serve:</strong> Oscilloscopio multicanale e visualizzatore di forma d'onda in tempo reale fino a 16 canali sincronizzati, per controllare inviluppo, transienti e relazione di fase tra tracce e microfoni multipli.</p>
+      <p><strong>Dove si inserisce:</strong> Su tracce multicanale o bus d'ascolto di controllo.</p>
+      <p><strong>Controlli principali:</strong> Timebase (ms/div), Gain/Zoom verticale, modalità di trigger (Free, Normal, Single, Channel), visualizzazione sovrapposta o split per canale.</p>
+    </div>
+    <div class="card" id="plugin-probe">
+      <h3>ZP Voice-Music Probe</h3>
+      <p><strong>A cosa serve:</strong> Sonda di misurazione passiva e trasparente per lo Shared Bus. Non altera l'audio ma misura con precisione RMS, True Peak, crest factor, densità, brillantezza e presenza del parlato.</p>
+      <p><strong>Dove si inserisce:</strong> Ultimo slot assoluto del Voice Bus (in ruolo Voice) e del Music Bus (in ruolo Music), protetto dal Probe Guard.</p>
+      <p><strong>Controlli principali:</strong> Selettore di ruolo (Voice / Music), meter di verifica istantanea, stato trasmissione gmem Shared Bus.</p>
     </div>
   </div>
   <p>Il LED dei plugin indica solo stato connessione: verde dati recenti, giallo dati parziali/vecchi, rosso componente essenziale assente. Il livello audio resta sui meter separati.</p>
@@ -518,6 +572,24 @@
   <p>Il motore della tappa <em>Abbina da…</em> di ZP Trascrizione: legge l'SRT accanto all'audio (o uno scelto da te) e scrive ogni cue come marker dell'item. Si può ancora lanciare da solo dall'Action List, ma non ha più un pulsante. <a href="collega_marker.html">Dettagli &rarr;</a></p>
 
   <!-- ================================================================== -->
+  <h2 id="tool-34">34 &middot; ZP Set Comandi (scorciatoie da tastiera)</h2>
+  <p>Per passare da un set di scorciatoie a un altro con un clic: quello per il montaggio video, quello con le abitudini di Pro Tools o di Logic, i tuoi. Apri <strong>34 ZP Set Comandi</strong> dal pulsante tastiera della toolbar ZP (o dall'Action List): c'è un riquadro per ogni set, con il nome, quante scorciatoie ha, quando l'hai salvato e se contiene i tasti di OSARA. Il set in uso ha il bordo verde acqua e la scritta <strong>IN USO</strong>.</p>
+  <ul>
+    <li><strong>Attiva</strong>: sceglie quel set. REAPER carica le scorciatoie solo all'avvio, quindi ti chiede se chiuderlo e riaprirlo adesso (<em>Sì</em>, salva prima il progetto) o se il set deve valere dal prossimo riavvio (<em>No</em>). Finché non riavvii, in alto c'è la riga gialla <em>Al prossimo riavvio</em> con <strong>Annulla</strong>.</li>
+    <li><strong>Cosa fa un set</strong>: clic sul nome e si apre la sua pagina, con tutte le scorciatoie scritte per esteso (tasto &rarr; azione; i tasti di serie spenti in fondo). Lì ci sono anche <strong>Attiva</strong>, <strong>Rinomina…</strong> e <strong>Archivia…</strong> (il set va in <code>KeyMaps/Archivio</code>: niente si cancella). <strong>Esc</strong> o <em>&larr; Elenco</em> per tornare.</li>
+    <li><strong>Spiega con l'AI</strong> (facoltativo, solo quando lo chiedi): una spiegazione breve, in parole semplici, di a cosa serve il set. All'AI va solo l'elenco "tasto &rarr; azione" di quel set, niente altro; prima di partire te lo chiede. Il pulsante <em>Agente</em> accanto sceglie chi la scrive (lo stesso vale per Traduci): L'agente è quello che hai su questo Mac: <strong>Auto</strong> (di serie) usa il primo disponibile fra <strong>Codex</strong> (il testo va a OpenAI con il tuo account ChatGPT), <strong>Claude</strong> (ad Anthropic con il tuo account), <strong>Qwen</strong> e <strong>OpenCode</strong> (al servizio che hai configurato lì) e <strong>Ollama</strong> (un modello locale: il testo resta sul Mac). Prima di partire la domanda dice quale agente userà e dove va il testo. La spiegazione resta salvata accanto al set (<code>Nome.spiegazione.txt</code>) e segue il set se lo rinomini o lo archivi. Serve ZP Speech (Mac).</li>
+    <li><strong>Cambia solo i tasti.</strong> Gli script, le azioni personalizzate, le toolbar e i menu restano come sono.</li>
+    <li><strong>Backup automatico</strong>: prima di ogni cambio i tasti di quel momento vanno nel set <em>Backup automatico</em>; per tornare indietro basta attivarlo. In più, accanto a <code>reaper-kb.ini</code> resta una copia del file intero (<code>reaper-kb.ini.ZP_backup_…</code>).</li>
+    <li><strong>Salva tasti attuali…</strong>: salva le scorciatoie di adesso come set nuovo, col nome che scegli (es. <em>Video</em>, <em>Doppiaggio</em>).</li>
+    <li><strong>Importa file…</strong>: aggiunge un set da un file <code>.ReaperKeyMap</code> (per esempio una mappa Pro Tools scaricata o quella di un collega).</li>
+    <li><strong>REAPER di serie</strong>: i tasti originali di REAPER, senza scorciatoie personali.</li>
+    <li><strong>Apri cartella</strong>: i set sono file in <code>REAPER/KeyMaps</code>; quelli che ci metti tu compaiono da soli.</li>
+  </ul>
+  <p class="nota">Se usi OSARA e il set che scegli non ha i suoi tasti, prima del cambio la finestra lo dice. Come si fa: REAPER riscrive <code>reaper-kb.ini</code> mentre è aperto, quindi il cambio lo fa un piccolo script di sistema che aspetta la chiusura di REAPER, fa la copia di sicurezza, sostituisce le righe dei tasti e, se l'hai chiesto, riapre REAPER.</p>
+
+  <h2 id="tool-35">35 &middot; ZP Colori (clicca e colora)</h2>
+  <p>La finestrella dei colori, dal pulsante tavolozza della toolbar ZP: si apre, si usa, si chiude (o resta agganciata). Tre pulsanti per il modo &mdash; <strong>Item</strong> (gli item selezionati), <strong>Traccia</strong> (le tracce selezionate, non gli item: quelli con un colore loro lo tengono), <strong>Tutto</strong> (le tracce e tutti gli item che ci stanno dentro) &mdash;, venti colori (i sedici della palette, più bianco, nero, grigio e rosso acceso) e <strong>Togli colore</strong>. Passando sopra un colore ne leggi il nome; sotto, una riga dice cosa è stato colorato o cosa manca da selezionare. Ogni colorazione si annulla con Ctrl/Cmd+Z. La stessa cosa, sempre a vista, è la toolbar facoltativa <a href="toolbar.html#colori">ZP Colori</a>.</p>
+
   <h2 id="azioni">Azioni senza finestra</h2>
   <p>Si lanciano dall'Action List (cerca <em>ZP Studio Suite</em>) o da una scorciatoia da tastiera.</p>
 
@@ -544,6 +616,8 @@
   <p>La suite si installa e si aggiorna con <strong>ReaPack</strong>: <em>Extensions &rarr; ReaPack &rarr; Import repositories</em>, incolla <code>https://github.com/capitanpaolone/zp-suite/raw/master/index.xml</code>, poi <em>Browse packages</em>, cerca <em>ZP</em> e installa <em>ZP Studio Suite</em> e i plugin che ti servono. Le azioni compaiono nell'Action List come <em>ZP Studio Suite - …</em>.</p>
   <p id="tool-33"><strong>33 Benvenuto (controllo installazione):</strong> si apre da solo la prima volta che usi uno strumento ZP, e poi quando vuoi dall'Action List. Una riga per pezzo, con una spia: <strong>verde</strong> pronto, <strong>rossa</strong> da fare, <strong>grigio-azzurra</strong> facoltativo assente, <strong>grigia</strong> non serve. Lo stato si aggiorna da solo ogni secondo.</p>
   <ul>
+    <li><strong>Lingua della Suite</strong>: due pulsanti a vista (<em>Italiano</em> | <em>English</em>). Vale subito per le finestre, i messaggi e le guide che si aprono dopo.</li>
+    <li><strong>Lingua di REAPER</strong>: menu con la scelta attuale (<em>Originale (inglese)</em> o i pack in <code>REAPER/LangPack</code>). Quando cambi lingua la spia diventa gialla (<em>manca un passo</em>) e compare il pulsante <em>Riavvia ora</em> per applicarla subito.</li>
     <li><strong>Toolbar ed effetti</strong>: <em>Installa</em> lancia il 32 (vedi sotto). Poi la spia è gialla, <em>manca un passo</em>: chiudi e riapri REAPER, e prima di farlo non aprire Customize toolbars. Al riavvio la spia è verde, la riga dice in quale toolbar si trova la <em>ZP Studio Suite</em> e <em>Apri la toolbar</em> la apre; si sceglie anche con Switch toolbar.</li>
     <li><strong>Cue Navigator</strong> del Harmonic Space Carver (solo se il Carver è installato): deve girare sempre. <em>Avvia ora</em> lo accende; <em>A ogni apertura</em> aggiunge a <code>Scripts/__startup.lua</code> un blocco segnato che lo avvia quando apri REAPER (senza SWS e senza toccare il resto del file). Se l'hai già messo come azione di avvio di SWS, il Benvenuto lo riconosce.</li>
     <li><strong>ZP Speech</strong> (solo Mac, facoltativo): serve a Trascrivi. <em>Installa</em> apre il Terminale, che scarica da GitHub l'installatore e fa tutto da solo; quando ha finito la spia diventa verde (<em>Aggiorna</em> lo rifà). Prima servono Python 3.11 o più recente e MacWhisper: se mancano, la riga lo dice e ha i pulsanti per scaricarli.</li>
@@ -551,7 +625,7 @@
     <li><strong>Marker degli item</strong>: con i comandi di serie di REAPER, trascinando sopra un take marker si sposta il marker invece dell'item. Protetti (lo fa già il 32 se non hai impostazioni tue): trascinando sopra un marker prendi l'item, <strong>Shift+trascina</strong> sposta il marker, il doppio clic lo modifica. <em>Ripristina standard</em> rimette i comandi di serie di REAPER; <em>Proteggi</em> torna alla protezione. È l'impostazione di REAPER <em>Preferences &gt; Mouse Modifiers &gt; Media item take marker &gt; left drag</em> (Default action = No action, Shift = Move take marker): se l'hai cambiata a mano, la riga lo dice e non la tocca senza il tuo clic.</li>
     <li><strong>Interfaccia web di REAPER</strong>: serve solo al SOLO Web; <em>Preferenze</em> apre le impostazioni di REAPER.</li>
   </ul>
-  <p id="tool-32"><strong>Toolbar ed effetti:</strong> dopo l'installazione lancia dall'Action List <strong>32 Installa toolbar ZP</strong>. Scrive la toolbar <em>ZP Studio Suite</em> (Project Viewer, Gestore Progetto, Report minuti, Trascrizione, i due Gobbi, Importa cartelle, ZP SRT, Marker, Actor/Note, Voice Cleaner, Chain Builder, SOLO Recorder, finestra video e video dai progetti in sottofondo, Probe Guard, Help) con le icone di REAPER e gli identificativi delle azioni del tuo REAPER, e la mette direttamente fra le toolbar di REAPER, col suo nome: nella toolbar che si chiama già così, altrimenti nella prima Floating toolbar libera fra 1 e 16 (le altre toolbar restano come sono; accanto a <code>reaper-menu.ini</code> lascia un backup). La vedi dopo aver chiuso e riaperto REAPER; fino ad allora non aprire Customize toolbars, altrimenti va rifatto. Una copia resta in <code>MenuSets/ZP_StudioSuite.ReaperMenu</code> per importarla a mano dove vuoi; mette anche in REAPER/FXChains le catene di effetti del SOLO Recorder (ZP Bus VoiceChain e ZP MasterChain), senza sovrascrivere quelle che hai già. Aggiunge in REAPER/presets i preset usati dal Chain Builder (BUS Chain <code>Voiceover_Body1_BG80HzDyn_-3dBLim</code>, Master Pro <code>Flat -19</code>): solo se non hai già un preset con lo stesso nome, e i tuoi restano. Rilancialo se un pulsante resta vuoto o dopo un aggiornamento che aggiunge strumenti. <a href="toolbar.html">I pulsanti, uno per uno</a>.</p>
+  <p id="tool-32"><strong>Toolbar ed effetti:</strong> dopo l'installazione lancia dall'Action List <strong>32 Installa toolbar ZP</strong>. Scrive la toolbar <em>ZP Studio Suite</em> (Project Viewer, Gestore Progetto, Report minuti, Trascrizione, i due Gobbi, Importa cartelle, ZP SRT, Marker, Actor/Note, Voice Cleaner, Chain Builder, SOLO Recorder, finestra video e video dai progetti in sottofondo, Probe Guard, Help) con le icone di REAPER e gli identificativi delle azioni del tuo REAPER, e la mette direttamente fra le toolbar di REAPER, col suo nome: nella toolbar che si chiama già così, altrimenti nella prima Floating toolbar libera fra 1 e 16 (le altre toolbar restano come sono; accanto a <code>reaper-menu.ini</code> lascia un backup). La vedi dopo aver chiuso e riaperto REAPER; fino ad allora non aprire Customize toolbars, altrimenti va rifatto. Una copia resta in <code>MenuSets/ZP_StudioSuite.ReaperMenu</code> per importarla a mano dove vuoi; mette anche in REAPER/FXChains le catene di effetti del SOLO Recorder (ZP Bus VoiceChain e ZP MasterChain), senza sovrascrivere quelle che hai già. Aggiunge in REAPER/presets i preset usati dal Chain Builder (BUS Chain <code>Voiceover_Body1_BG80HzDyn_-3dBLim</code>, Master Pro <code>Flat -19</code>): solo se non hai già un preset con lo stesso nome, e i tuoi restano. La toolbar <strong>ZP Colori</strong> (facoltativa: di serie i colori stanno nella finestrella <a href="#tool-35">35 ZP Colori</a>) la scrive solo se l'hai chiesta dal 33 Benvenuto, in un'altra Floating toolbar (<a href="toolbar.html#colori">come si usa</a>). Rilancialo se un pulsante resta vuoto o dopo un aggiornamento che aggiunge strumenti. <a href="toolbar.html">I pulsanti, uno per uno</a>.</p>
   <p>In alternativa c'è il file pronto <code>toolbar/ZP_StudioSuite.ReaperMenu</code> nella cartella della suite (Options &rarr; Customize menus/toolbars &rarr; Import), ma è fatto con gli identificativi di un altro REAPER: i pulsanti degli strumenti più recenti possono restare vuoti. Meglio la 32. <a href="toolbar.html">Cosa fa ogni pulsante &rarr;</a></p>
   <p>Funziona su un REAPER pulito. Queste estensioni non sono obbligatorie, ma aggiungono qualcosa:</p>
   <div class="wrap"><table>
@@ -562,8 +636,7 @@
     <tr><td>ZP Speech (solo macOS)</td><td>La tappa <em>Trascrivi</em> non c'è: crei l'SRT con un altro Whisper.</td><td>Trascrizione automatica dentro ZP Trascrizione.</td></tr>
   </table></div>
   <p class="small">File di supporto, da non lanciare né modificare: <code>ZP_UI.lua</code>, <code>ZP_sincronizza_aggancio.lua</code>, <code>lib_RythmoBand_Accessibile.lua</code>, i <code>worker</code> di 04 e 05, i template traccia, il ponte NVDA per Windows. Un aggiornamento ReaPack li sostituisce.</p>
-
-  <p class="small">ZP Studio Suite for REAPER &middot; Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">latocardioide.it</a> &middot; help locale incluso nel pacchetto.</p>
+<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Sviluppata su un'idea di Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
 </main>
 </body>
 </html>

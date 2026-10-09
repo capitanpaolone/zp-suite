@@ -1,0 +1,1532 @@
+# Catalogo traduzioni Italiano (ZP) per REAPER
+# Formato: ORIGINALE<TAB>TRADUZIONE
+Cancel	Annulla
+OK	OK
+dB	dB
+ms	ms
+Close	Chiudi
+Browse...	Sfoglia...
+Track	Track
+Mute	Mute
+Hz	Hz
+Delete	Elimina
+All	Tutto
+Options	Opzioni
+Clear	Cancella
+Apply	Applica
+Remove	Rimuovi
+Length:	Lunghezza:
+Close window	Chiudi finestra
+Delete preset	Elimina preset
+None	Nessuno
+Channel	Canale
+%	%
+Copy	Copia
+Reset	Reimposta
+Volume	Volume
+Paste	Incolla
+Stereo	Stereo
+Default	Predefinito
+Filename:	Nome file:
+Add	Aggiungi
+Name:	Nome:
+Pan	Pan
+New name:	Nuovo nome:
+Project	Progetto
+Square	Quadrata
+Save preset...	Salva preset...
+File info:	Info file:
+Filter:	Filtro:
+Wildcards	Caratteri jolly
+BPM	BPM
+Reverse	Inverti
+Solo	Solo
+Cut	Taglia
+Linear	Lineare
+Mono	Mono
+Enabled	Abilitato
+Normal	Normale
+Name	Nome
+Play	Play
+Stop	Stop
+Position:	Posizione:
+Output	Uscita
+pixels	pixel
+Custom1	Personalizzato 1
+Mode:	Modalità:
+&Options	&Opzioni
+Bezier	Bézier
+Fast end	Fine rapida
+Fast start	Inizio rapido
+Slow start/end	Inizio/fine lenta
+Time	Tempo
+Send all keyboard input to plug-in	Invia tutti gli input da tastiera al plug-in
+Wet	Wet
+Volume:	Volume:
++	+
+Edit	Edit
+Markers	Marker
+Load	Carica
+Description	Descrizione
+semitones	semitoni
+Gain:	Guadagno:
+1	1
+Group	Gruppo
+Undo	Annulla
+Move down	Sposta giù
+Move up	Sposta su
+Rename preset...	Rinomina preset...
+R	R
+Pitch	Pitch
+Event properties...	Proprietà evento...
+Release	Release
+Dry	Dry
+Dry:	Dry:
+Wet:	Wet:
+Sample rate:	Frequenza di campionamento:
+samples	campioni
+Pause	Pausa
+...	...
+LUFS-M	LUFS-M
+Regions	Region
+Save	Salva
+Release:	Release:
+2	2
+4	4
+File	File
+Master Track	Master Track
+Media	Media
+Redo	Ripeti
+Samples	Campioni
+Select all	Seleziona tutto
+FX	FX
+Channel %d	Canale %d
+Export preset library (.rpl)...	Esporta libreria preset (.rpl)...
+Import preset library (.rpl)...	Importa libreria preset (.rpl)...
+Save preset as default...	Salva preset come predefinito...
+Width	Ampiezza
+----  User Presets (.rpl)  ----	----  Preset utente (.rpl)  ----
+Insert note	Inserisci nota
+Media item	Media item
+Gain	Guadagno
+Input channels:	Canali di ingresso:
+Value	Valore
+/	/
+Recording	Registrazione
+Param	Parametro
+Channels:	Canali:
+Record arm	Arma per registrazione
+Automation items	Automation item
+Combined RMS	RMS combinato
+Stereo RMS	RMS stereo
+Attack:	Attack:
+Actions	Actions
+Rename	Rinomina
+Input	Ingresso
+Help	Aiuto
+&Edit	&Modifica
+10	10
+11	11
+12	12
+13	13
+14	14
+15	15
+16	16
+3	3
+5	5
+6	6
+7	7
+8	8
+9	9
+Insert virtual instrument on new track...	Inserisci virtual instrument su nuova track...
+Show track template path in explorer/finder	Mostra percorso template track in explorer/finder
+Comment	Commento
+#	#
+No preset	Nessun preset
+Reset to factory default	Reimposta ai valori di fabbrica
+Error opening file	Errore nell'apertura del file
+ (folder)	 (cartella)
+Multichannel	Multicanale
+Channels	Canali
+Length	Lunghezza
+File not opened	File non aperto
+&New project	&Nuovo progetto
+&Open project...	&Apri progetto...
+&Save project	&Salva progetto
+Save project &as...	Salva progetto &come...
+Save project as...	Salva progetto come...
+Save new version of project	Salva nuova versione del progetto
+Save all projects	Salva tutti i progetti
+Project &templates	&Template di progetto
+Project templates	Template di progetto
+Save project as template...	Salva progetto come template...
+(project template list)	(elenco template di progetto)
+&Recent projects	Progetti &recenti
+Recent projects	Progetti recenti
+Hold shift to open in new project tab, alt/opt to open with FX offline	Tieni premuto Shift per aprire in nuova scheda, Alt/Opt per aprire con FX offline
+(recent project list)	(elenco progetti recenti)
+&Project settings...	Impostazioni &progetto...
+R&ender...	R&ender...
+Save live output to disk (bounce)...	Salva output dal vivo su disco (bounce)...
+Consolidate/E&xport tracks...	Consolida/E&sporta track...
+Consolidate/Export tracks...	Consolida/Esporta track...
+Export project MIDI...	Esporta MIDI del progetto...
+&Clean current project directory...	&Pulisci directory del progetto corrente...
+Clean current project directory...	Pulisci directory del progetto corrente...
+&Quit	&Esci
+Quit	Esci
+&Undo	&Annulla
+&Redo	&Ripeti
+Cu&t	&Taglia
+&Copy	&Copia
+Cu&t within time selection	&Taglia dentro la selezione temporale
+Cut within time selection	Taglia dentro la selezione temporale
+&Copy within time selection	&Copia dentro la selezione temporale
+Copy within time selection	Copia dentro la selezione temporale
+Crossfade Editor...	Crossfade Editor...
+Dynamic Split...	Dynamic Split...
+Nudge/Set Items...	Nudge/Imposta item...
+Phase Align Items...	Allinea fase item...
+Repair Pops/Clicks...	Ripara Pop/Click...
+Tempo Envelope	Envelope di tempo
+Track Panels	Pannelli track
+Floating Mixer Master	Master mixer fluttuante
+Monitoring FX	FX di monitoraggio
+Transport (Play/Record/Stop...)	Transport (Play/Record/Stop...)
+Track Wiring	Cablaggio track (Wiring)
+Project Media/FX Bay	Media/FX Bay del progetto
+Show/hide all floating windows	Mostra/nascondi tutte le finestre fluttuanti
+Cascade all floating windows	Disponi a cascata tutte le finestre fluttuanti
+Time unit for ruler	Unità di tempo per il righello
+Zoom &in	Zoom ava&nti
+Zoom in	Zoom avanti
+Zoom &out	Zoom indietr&o
+Zoom to time &selection	Zoom alla &selezione temporale
+Zoom to time selection	Zoom alla selezione temporale
+Zoom to selected media items	Zoom agli item selezionati
+All tracks the same height and size up	Tutte le track alla stessa altezza e ingrandisci
+All tracks the same height and size down	Tutte le track alla stessa altezza e rimpicciolisci
+Toggle track zoom to minimum height	Attiva/disattiva zoom track ad altezza minima
+Toggle track zoom to maximum height	Attiva/disattiva zoom track ad altezza massima
+Expand selected tracks, minimize others	Espandi track selezionate, minimizza le altre
+Minimize all tracks	Minimizza tutte le track
+Go to	Vai a
+Jump to...	Salta a...
+Go to edit cursor	Vai al cursore di edit
+Go to play cursor	Vai al cursore di riproduzione
+Move cursor forward one measure	Sposta cursore avanti di una battuta
+Move cursor back one measure	Sposta cursore indietro di una battuta
+Always on top	Sempre in primo piano
+Fullscreen	Schermo intero
+&Media file...	File &media...
+Media file...	File media...
+New MIDI item	Nuovo item MIDI
+SMPTE LTC/MTC Timecode Generator	Generatore timecode SMPTE LTC/MTC
+&Click source	Sorgente &click
+New subproject	Nuovo sottoprogetto
+Marker (prompt for name)	Marker (chiedi nome)
+Region (from time selection)	Region (da selezione temporale)
+Measure from time selection (detect tempo)	Misura da selezione temporale (rileva tempo)
+Measure from time selection (new time signature)...	Misura da selezione temporale (nuovo metro)...
+Multiple tracks...	Track multiple...
+Virtual instrument on new track...	Virtual instrument su nuova track...
+Track from template	Track da template
+Empty space at time selection	Spazio vuoto alla selezione temporale
+&Copy loop of selected area of items	&Copia loop dell'area selezionata degli item
+Nudge/set items...	Nudge/imposta item...
+Take channel mode: Reverse Stereo	Modalità canale take: Stereo invertito
+Take channel mode: Mono (Downmix)	Modalità canale take: Mono (Downmix)
+Take channel mode: Mono (Left)	Modalità canale take: Mono (Sinistro)
+Take channel mode: Mono (Right)	Modalità canale take: Mono (Destro)
+Pea&ks	Picc&hi
+Peaks	Picchi
+Build peaks	Costruisci picchi
+Rebuild all peaks	Ricostruisci tutti i picchi
+Rebuild peaks for selected items	Ricostruisci picchi per gli item selezionati
+Remove all peaks (and do not rebuild)	Rimuovi tutti i picchi (senza ricostruire)
+Me&dia	Me&dia
+Set all media online	Imposta tutti i media online
+Set selected media online	Imposta media selezionati online
+Set all media offline	Imposta tutti i media offline
+Set selected media temporarily offline	Imposta media selezionati temporaneamente offline
+Force selected item media offline	Forza offline il media dell'item selezionato
+Force selected item inactive take media offline	Forza offline il media dei take inattivi dell'item selezionato
+Set all tracks to automatic record-arm when track selected	Imposta tutte le track su armamento automatico quando selezionate
+Remove envelope points	Rimuovi punti envelope
+Remove envelope points in time selection	Rimuovi punti envelope nella selezione temporale
+Overlapping recording behavior	Comportamento registrazioni sovrapposte
+Do not add lanes	Non aggiungere corsie
+Add lanes (new lanes play exclusively)	Aggiungi corsie (le nuove suonano in esclusiva)
+Add lanes in layers (multiple lanes play at once)	Aggiungi corsie a strati (più corsie suonano insieme)
+When not adding lanes, or recording into a specific lane:	Quando non aggiungi corsie o registri in una corsia specifica:
+Split existing items and add takes (default)	Dividi gli item esistenti e aggiungi take (predefinito)
+Trim existing items (tape mode)	Trim degli item esistenti (modalità nastro)
+Add media items in layers	Aggiungi media item a strati
+Loop recording always adds takes	La registrazione in loop aggiunge sempre take
+Offset overlapping media items vertically	Sfalsa verticalmente i media item sovrapposti
+Show all takes (when room)	Mostra tutti i take (se c'è spazio)
+Take behavior	Comportamento dei take
+Display empty takes	Mostra take vuoti
+Allow selecting empty takes	Consenti selezione di take vuoti
+Select takes for all selected items when clicking take	Seleziona i take di tutti gli item selezionati cliccando sul take
+Ripple edit settings	Impostazioni ripple edit
+Ripple when editing media item edges	Ripple quando modifichi i bordi dei media item
+Ripple per-track affects each track lane separately	Ripple per-track influisce su ciascuna corsia della track separatamente
+Ripple all affects tempo map	Ripple totale influisce sulla mappa di tempo
+Ripple all affects regions/markers	Ripple totale influisce su region/marker
+Ripple all affects envelopes on all tracks	Ripple totale influisce sugli envelope di tutte le track
+Loop points linked to time selection	Punti di loop collegati alla selezione temporale
+Item and track media/razor edit grouping	Raggruppamento media item e track / razor edit
+Snap/grid	Snap/griglia
+Snap/&grid settings...	Impostazioni snap/&griglia...
+Snap/grid settings...	Impostazioni snap/griglia...
+Locking	Blocco
+Locking enabled	Blocco abilitato
+Locking settings...	Impostazioni blocco...
+Razor edits on collapsed fixed lane tracks affect all lanes	I razor edit su track a corsie fisse compresse influiscono su tutte le corsie
+Razor edits on small fixed lane tracks affect all lanes	I razor edit su track a corsie fisse piccole influiscono su tutte le corsie
+Metronome/pre-roll settings...	Impostazioni metronomo/pre-roll...
+Solo in front	Solo in primo piano (Solo in front)
+Pre-fader track metering	Metering track pre-fader
+Peaks display mode	Modalità visualizzazione picchi
+Show REAPER resource path in explorer/finder...	Mostra percorso risorse REAPER in explorer/finder...
+Customize menus/toolbars...	Personalizza menu/toolbar...
+&Themes	&Temi
+Themes	Temi
+Theme Adjuster / Color Controls	Theme Adjuster / Controlli colore
+Default Classic	Classico predefinito
+&Layouts	&Layout
+Default Layout	Layout predefinito
+&Preferences...	&Preferenze...
+&Help	&Aiuto
+Documentation	Documentazione
+(documentation list)	(elenco documentazione)
+Key bindings and mouse modifiers	Assegnazioni tasti e modificatori del mouse
+Action list as HTML	Action list in formato HTML
+ReaScript documentation	Documentazione ReaScript
+Purchasing information	Informazioni sull'acquisto
+REAPER EULA	EULA di REAPER
+Changelog (whatsnew.txt)	Changelog (whatsnew.txt)
+Check for new versions of REAPER	Controlla aggiornamenti di REAPER
+&File	&File
+New project	Nuovo progetto
+New project tab	Nuova scheda di progetto
+Open project...	Apri progetto...
+Save project	Salva progetto
+Duplicate project in new tab...	Duplica progetto in nuova scheda...
+Show project template path in explorer/finder	Mostra percorso template di progetto in explorer/finder
+Close project	Chiudi progetto
+Close all projects	Chiudi tutti i progetti
+Project settings...	Impostazioni progetto...
+Render...	Render...
+Queued Renders	Render in coda
+Region Render Matrix	Region Render Matrix
+Project Render Metadata	Metadati di render del progetto
+Batch File/Item Converter	Convertitore batch di file/item
+Undo History	Cronologia Undo
+&Paste	&Incolla
+&View	&Visualizza
+View	Visualizza
+Mixer	Mixer
+Video	Video
+Docker	Docker
+Toolbar Docker	Docker delle toolbar
+Media Explorer	Media Explorer
+Routing Matrix	Routing Matrix
+Track Grouping Matrix	Track Grouping Matrix
+Track Manager	Track Manager
+Track Group Manager	Track Group Manager
+Envelope Manager	Envelope Manager
+Screensets/Layouts	Screenset/Layout
+Region/Marker Manager	Region/Marker Manager
+Ruler Lane Manager	Ruler Lane Manager
+FX Browser	FX Browser
+Media Item Properties	Proprietà Media Item
+Big Clock Plus	Orologio grande (Big Clock Plus)
+Performance Meter	Misuratore di prestazioni (Performance Meter)
+Peaks Display Settings	Impostazioni visualizzazione picchi
+Navigator	Navigatore
+Scale Finder	Cerca scale (Scale Finder)
+Virtual MIDI Keyboard	Tastiera MIDI virtuale
+Minutes:Seconds	Minuti:Secondi
+Minutes:Seconds (minimal)	Minuti:Secondi (minimo)
+Measures.Beats	Misure.Battiti
+Measures.Beats (minimal)	Misure.Battiti (minimo)
+Measures.Fractions	Misure.Frazioni
+Seconds	Secondi
+Hours:Minutes:Seconds:Frames	Ore:Minuti:Secondi:Frame
+Absolute Frames	Frame assoluti
+Secondary time unit	Unità di tempo secondaria
+Display parent project time as secondary	Mostra tempo del progetto genitore come secondario
+Zoom	Zoom
+Zoom out	Zoom indietro
+&Insert	&Inserisci
+Insert	Inserisci
+Empty item	Item vuoto
+Click source	Sorgente click
+Marker	Marker
+Tempo/time signature change marker	Marker cambio tempo/metro
+Open template...	Apri template...
+Offset template items by edit cursor	Sfalsa item del template rispetto al cursore di edit
+Insert track templates at end of project	Inserisci template track alla fine del progetto
+(track template list)	(elenco template track)
+Ite&m	Ite&m
+Item	Item
+Remove items	Rimuovi item
+&Trim items to selected area	&Trim degli item all'area selezionata
+Trim items to selected area	Trim degli item all'area selezionata
+Copy loop of selected area of items	Copia loop dell'area selezionata degli item
+Enclose media items in razor edit	Racchiudi media item nel razor edit
+Phase align items...	Allinea fase degli item...
+Split items at cursor	Dividi item al cursore
+Split items at time selection	Dividi item alla selezione temporale
+Heal splits in items	Ricongiungi divisioni negli item
+Item settings	Impostazioni item
+Loop item source	Metti in loop la sorgente dell'item
+Play all takes	Riproduci tutti i take
+Lock item	Blocca item
+Display item ruler	Mostra righello dell'item
+Item time	Tempo dell'item
+Item H:M:S:F	Item O:M:S:F
+Item beats (constant time signature)	Battiti item (metro costante)
+Item beats, minimal (constant time signature)	Battiti item, minimo (metro costante)
+Source time	Tempo sorgente
+Source H:M:S:F	Sorgente O:M:S:F
+Item ruler settings...	Impostazioni righello item...
+Item notes...	Note item...
+Invert polarity/phase	Inverti polarità/fase
+Loop section of item source	Metti in loop sezione della sorgente dell'item
+Preserve pitch when changing playrate	Mantieni pitch quando cambi la velocità di riproduzione
+Reverse active take	Inverti take attivo
+Take channel mode: Normal	Modalità canale take: Normale
+Set item timebase to project/track default	Imposta base temporale item sul predefinito di progetto/track
+Set item timebase to time	Imposta base temporale item su tempo
+Set item timebase to beats (position, length, rate)	Imposta base temporale item su battiti (posizione, lunghezza, velocità)
+Set item timebase to beats (position only)	Imposta base temporale item su battiti (solo posizione)
+Set item timebase to beats (auto-stretch at tempo changes)	Imposta base temporale item su battiti (auto-stretch ai cambi di tempo)
+Force media offline	Forza media offline
+Force inactive take media offline	Forza offline il media dei take inattivi
+Item &properties...	&Proprietà item...
+Item properties...	Proprietà item...
+Source &properties...	&Proprietà sorgente...
+Source properties...	Proprietà sorgente...
+&Group	&Gruppo
+Group items	Raggruppa item
+Remove items from group	Rimuovi item dal gruppo
+Select all items in group	Seleziona tutti gli item nel gruppo
+Set group name...	Imposta nome gruppo...
+Set group color...	Imposta colore gruppo...
+Set group to random color	Imposta gruppo su colore casuale
+Display group names/colors in arrange view	Mostra nomi/colori gruppo nella vista arrange
+T&ake	T&ake
+Take	Take
+Next take	Take successivo
+Previous take	Take precedente
+Delete active take	Elimina take attivo
+Crop to active take	Ritaglia al take attivo
+Duplicate active take	Duplica take attivo
+Lock to active take	Blocca al take attivo
+Show FX chain for active take	Mostra catena FX per il take attivo
+Remove FX for active take	Rimuovi FX per il take attivo
+Take envelopes...	Envelope del take...
+Take volume envelope	Envelope volume del take
+Take pan envelope	Envelope pan del take
+Take mute envelope	Envelope mute del take
+Take pitch envelope	Envelope pitch del take
+Take sample edits (only editable when zoomed in)	Edit dei campioni del take (modificabile solo con zoom ravvicinato)
+Explode all takes to new tracks	Esplodi tutti i take su nuove track
+Explode all takes (in place)	Esplodi tutti i take (sul posto)
+Explode all takes (in order)	Esplodi tutti i take (in ordine)
+Implode items across tracks into takes	Implodi gli item tra le track in take
+Implode items on same track into takes	Implodi gli item sulla stessa track in take
+Paste to takes in items	Incolla nei take degli item
+(take list)	(elenco take)
+Comps	Comp
+Save/rename active comp...	Salva/rinomina comp attivo...
+Remove active comp from list	Rimuovi comp attivo dall'elenco
+Crop list to active comp	Ritaglia elenco al comp attivo
+Move active comp to top	Sposta comp attivo in cima
+(comp list)	(elenco comp)
+Item and take colors	Colori item e take
+Set items to custom color...	Imposta item su colore personalizzato...
+Set items to random colors	Imposta item su colori casuali
+Set items to one random color	Imposta item su un colore casuale
+Set items to default color	Imposta item su colore predefinito
+Set active takes to custom color...	Imposta take attivi su colore personalizzato...
+Set active takes to one random color	Imposta take attivi su un colore casuale
+Set active takes to default color	Imposta take attivi su colore predefinito
+Set all takes of selected items to default color	Imposta tutti i take degli item selezionati su colore predefinito
+Item processing	Elaborazione item
+Normalize items (peak/RMS/LUFS)...	Normalizza item (peak/RMS/LUFS)...
+Dynamic split items...	Dynamic split degli item...
+Repair pops/clicks...	Ripara pop/click...
+Quantize item positions to grid...	Quantizza posizioni degli item alla griglia...
+Move items to source preferred position (BWF timecode start offset)	Sposta item alla posizione preferita sorgente (offset timecode BWF)
+Implode items across tracks into items on one track	Implodi gli item tra le track in item su una sola track
+Auto-reposition items in free item positioning mode	Riposiziona automaticamente gli item in modalità di posizionamento libero
+Explode multichannel audio or MIDI items to new one-channel items	Esplodi item audio multicanale o MIDI in nuovi item monocanale
+Explode MIDI item by note row (pitch)	Esplodi item MIDI per fila di note (pitch)
+Convert active take MIDI to in-project source data	Converti take MIDI attivo in dati sorgente nel progetto
+Convert active take MIDI to .mid file reference	Converti take MIDI attivo in riferimento a file .mid
+Import media cues from items as project markers	Importa cue dei media dagli item come marker di progetto
+Propagate take to similarly-named active takes on track	Propaga take ai take attivi con nome simile sulla track
+Propagate item to similarly-named items on track	Propaga item agli item con nome simile sulla track
+Propagate take to all similarly-named active takes	Propaga take a tutti i take attivi con nome simile
+Propagate item to all similarly-named items	Propaga item a tutti gli item con nome simile
+Stretch markers	Stretch marker
+Add stretch marker at cursor	Aggiungi stretch marker al cursore
+Add stretch markers at time selection	Aggiungi stretch marker alla selezione temporale
+Stretch marker at cursor	Stretch marker al cursore
+Edit rate	Modifica velocità (rate)
+Stretch markers in selected items	Stretch marker negli item selezionati
+Snap to grid	Snap alla griglia
+Stretch markers in selected items within time selection	Stretch marker negli item selezionati nella selezione temporale
+Transient guides	Guide per transienti
+Calculate transient guides	Calcola guide per transienti
+Calculate transient guides for visible areas	Calcola guide per transienti per le aree visibili
+Clear transient guides	Cancella guide per transienti
+Force balanced mode	Forza modalità bilanciata
+Force tonal-optimized mode	Forza modalità ottimizzata per i toni
+Force transient-optimized mode	Forza modalità ottimizzata per i transienti
+Force no pre-echo reduction mode	Forza modalità senza riduzione pre-eco
+Take markers	Take marker
+Add/edit take marker at cursor	Aggiungi/modifica take marker al cursore
+Add/edit take marker at time selection	Aggiungi/modifica take marker alla selezione temporale
+Delete take marker at cursor	Elimina take marker al cursore
+Delete take markers in time selection	Elimina take marker nella selezione temporale
+Delete take markers in item	Elimina take marker nell'item
+Up-rank take	Promuovi grado take
+Down-rank take	Abbassa grado take
+Clear take rankings	Cancella gradimento take
+Up-rank take marker at cursor	Promuovi grado take marker al cursore
+Down-rank take marker at cursor	Abbassa grado take marker al cursore
+Up-rank take marker at time selection	Promuovi grado take marker alla selezione temporale
+Down-rank take marker at time selection	Abbassa grado take marker alla selezione temporale
+This media item	Questo media item
+Split item at take markers (active take only)	Dividi item ai take marker (solo take attivo)
+Split item at take markers (all takes)	Dividi item ai take marker (tutti i take)
+Delete takes that are not up-ranked	Elimina take non promossi
+Delete takes that are down-ranked	Elimina take declassati
+This track	Questa track
+Split items at take markers (active takes only)	Dividi item ai take marker (solo take attivi)
+Split items at take markers (all takes)	Dividi item ai take marker (tutti i take)
+Clear all take rankings	Cancella tutti i gradimenti dei take
+Spectral edits	Edit spettrali
+Always show spectrogram	Mostra sempre spettrogramma
+Add spectral edit to item	Aggiungi edit spettrale all'item
+Spectral repair sample values in time selection...	Riparazione spettrale dei valori campione nella selezione temporale...
+Open items in editor	Apri item nell'editor
+Open in editor	Apri nell'editor
+Open in secondary editor	Apri nell'editor secondario
+Open copies in editor	Apri copie nell'editor
+Open copies in secondary editor	Apri copie nell'editor secondario
+Open in inline editor	Apri nell'editor inline
+Open associated project in new tab	Apri progetto associato in nuova scheda
+Open in built-in MIDI editor (set default behavior in preferences)	Apri nell'editor MIDI integrato (imposta comportamento predefinito nelle preferenze)
+Apply track/take FX to items as new take	Applica FX di track/take agli item come nuovo take
+Apply track/take FX to items as new take (mono output)	Applica FX di track/take agli item come nuovo take (uscita mono)
+Apply track/take FX to items as new take (multichannel output)	Applica FX di track/take agli item come nuovo take (uscita multicanale)
+Apply track/take FX to items as new take (MIDI output)	Applica FX di track/take agli item come nuovo take (uscita MIDI)
+Render items as new take	Render degli item come nuovo take
+&Reverse items as new take	&Inverti item come nuovo take
+Reverse items as new take	Inverti item come nuovo take
+Glue items	Incolla (Glue) item
+Glue items within time selection	Incolla (Glue) item nella selezione temporale
+Move items to new subproject	Sposta item in nuovo sottoprogetto
+&Track	&Track
+Insert new track	Inserisci nuova track
+Insert new track as first track	Inserisci nuova track come prima track
+Insert new track at end of track list	Inserisci nuova track alla fine dell'elenco track
+Insert multiple tracks...	Inserisci track multiple...
+Insert track from template	Inserisci track da template
+Save tracks as track template...	Salva track come template track...
+Remove tracks	Rimuovi track
+Duplicate tracks	Duplica track
+Move tracks to folder	Sposta track nella cartella
+New folder track	Nuova track cartella
+Move tracks to new subproject	Sposta track in nuovo sottoprogetto
+Render/freeze tracks	Render/freeze delle track
+Render tracks to mono stem tracks (and mute originals)	Render delle track in tracce stem mono (e muta originali)
+Render tracks to stereo stem tracks (and mute originals)	Render delle track in tracce stem stereo (e muta originali)
+Render tracks to multichannel stem tracks (and mute originals)	Render delle track in tracce stem multicanale (e muta originali)
+Freeze tracks to mono (render pre-fader, save/remove items and online FX)	Freeze delle track in mono (render pre-fader, salva/rimuovi item ed FX online)
+Freeze tracks to stereo (render pre-fader, save/remove items and online FX)	Freeze delle track in stereo (render pre-fader, salva/rimuovi item ed FX online)
+Freeze tracks to multichannel (render pre-fader, save/remove items and online FX)	Freeze delle track in multicanale (render pre-fader, salva/rimuovi item ed FX online)
+Unfreeze tracks (restore previous items and FX)	Unfreeze delle track (ripristina item ed FX precedenti)
+MIDI track controls	Controlli track MIDI
+Show MIDI track control panel	Mostra pannello controlli track MIDI
+Link track volume/pan to all MIDI channels	Collega volume/pan della track a tutti i canali MIDI
+Link track volume/pan to MIDI channel	Collega volume/pan della track al canale MIDI
+Do not link track volume/pan to MIDI	Non collegare volume/pan della track al MIDI
+Lock track controls	Blocca controlli track
+Lock track height	Blocca altezza track
+Lock track items	Blocca item della track
+Fixed item lanes	Corsie item fisse (Fixed item lanes)
+Free item positioning	Posizionamento libero item (Free item positioning)
+Meters	Meter
+Stereo peaks	Picchi stereo
+Multichannel peaks	Picchi multicanale
+LUFS-S (readout=max)	LUFS-S (lettura=max)
+LUFS-S (readout=current)	LUFS-S (lettura=corrente)
+LUFS measures first two channels only	LUFS misura solo i primi due canali
+Display gain reduction for plug-ins that support it	Mostra riduzione del guadagno per i plug-in che la supportano
+Track color	Colore track
+Set tracks to custom color...	Imposta track su colore personalizzato...
+Set tracks to random colors	Imposta track su colori casuali
+Set tracks to one random color	Imposta track su un colore casuale
+Set tracks to default color	Imposta track su colore predefinito
+Track icon	Icona track
+Set track icon...	Imposta icona track...
+Remove track icon	Rimuovi icona track
+Track timebase	Base temporale track
+Use project timebase	Usa base temporale del progetto
+Beats (position, length, rate)	Battiti (posizione, lunghezza, velocità)
+Beats (position only)	Battiti (solo posizione)
+Track automation mode	Modalità automazione track
+Trim/Read	Trim/Read
+Read	Read
+Touch	Touch
+Latch	Latch
+Latch Preview	Latch Preview
+Write	Write
+Track performance options	Opzioni prestazioni track
+Allow media buffering	Consenti buffering dei media
+Prevent media buffering	Impedisci buffering dei media
+Allow anticipative FX	Consenti FX anticipatori
+Prevent anticipative FX	Impedisci FX anticipatori
+Enable track metering	Abilita metering track
+Prevent spectral peaks/spectrogram	Impedisci picchi spettrali/spettrogramma
+Track layout	Layout track
+&Envelopes	&Envelope
+Envelopes	Envelope
+Toggle &volume active	Attiva/disattiva &volume
+Toggle volume active	Attiva/disattiva volume
+Toggle &pan active	Attiva/disattiva &pan
+Toggle pan active	Attiva/disattiva pan
+Toggle volume (pre-FX) active	Attiva/disattiva volume (pre-FX)
+Toggle pan (pre-FX) active	Attiva/disattiva pan (pre-FX)
+Toggle volume visible	Mostra/nascondi volume
+Toggle pan visible	Mostra/nascondi pan
+Toggle volume (pre-FX) visible	Mostra/nascondi volume (pre-FX)
+Toggle pan (pre-FX) visible	Mostra/nascondi pan (pre-FX)
+Select all points	Seleziona tutti i punti
+Unselect all points	Deseleziona tutti i punti
+Select points in time selection	Seleziona punti nella selezione temporale
+Set shape for selected points	Imposta forma per i punti selezionati
+Invert selected points	Inverti punti selezionati
+Reset selected points to zero/center	Reimposta punti selezionati a zero/centro
+Set envelope default point shape	Imposta forma punto predefinita per l'envelope
+Clear envelope	Cancella envelope
+Track grouping	Raggruppamento track
+Track grouping parameters...	Parametri raggruppamento track...
+Track grouping enabled	Raggruppamento track abilitato
+Automatically group all tracks for media/razor editing	Raggruppa automaticamente tutte le track per media/razor edit
+Automatically group selected tracks for media/razor editing	Raggruppa automaticamente le track selezionate per media/razor edit
+Automatically group folder/child tracks for media/razor editing	Raggruppa automaticamente le track cartella/figlie per media/razor edit
+Automatically group folder sibling tracks for media/razor editing	Raggruppa automaticamente le track sorelle della cartella per media/razor edit
+Create new media/razor editing group for selected tracks	Crea nuovo gruppo media/razor edit per le track selezionate
+Remove selected tracks from all track media/razor editing groups	Rimuovi track selezionate da tutti i gruppi media/razor edit delle track
+Track Group Manager...	Track Group Manager...
+Track Grouping Matrix...	Track Grouping Matrix...
+Record mode: normal	Modalità registrazione: normale
+Record mode: time selection auto punch	Modalità registrazione: auto punch su selezione temporale
+Record mode: auto-punch selected items	Modalità registrazione: auto-punch sugli item selezionati
+Auto-crossfade media items when editing	Auto-crossfade dei media item durante l'edit
+Trim content behind media items when editing	Trim del contenuto dietro i media item durante l'edit
+Always trim content behind razor edits	Esegui sempre trim del contenuto dietro i razor edit
+Ripple edit per-track	Ripple edit per-track
+Ripple edit all tracks	Ripple edit su tutte le track
+Add envelope edge points when ripple editing or inserting time	Aggiungi punti bordo envelope con ripple edit o inserimento tempo
+Enable item and track media/razor edit grouping	Abilita raggruppamento media/razor edit di item e track
+Selecting one item selects group	Selezionare un item seleziona il gruppo
+Track media/razor edit grouping affects items that are enclosed by the edited item	Il raggruppamento media/razor edit delle track influisce sugli item racchiusi dall'item modificato
+Track media/razor edit grouping affects items that start and end at the same time	Il raggruppamento media/razor edit delle track influisce sugli item che iniziano e finiscono allo stesso tempo
+Track media/razor edit grouping affects items that start or end at the same time	Il raggruppamento media/razor edit delle track influisce sugli item che iniziano o finiscono allo stesso tempo
+Enable snapping	Abilita snap
+Show grid	Mostra griglia
+Envelope points	Punti envelope
+Move envelope points with media items	Sposta punti envelope insieme ai media item
+Move take envelope points when moving media item contents	Sposta punti envelope del take quando sposti il contenuto dei media item
+Envelope point selection follows time selection	La selezione dei punti envelope segue la selezione temporale
+Add edge points when moving envelope points with items	Aggiungi punti bordo quando sposti punti envelope con gli item
+Add edge points when ripple editing or inserting time	Aggiungi punti bordo con ripple edit o inserimento tempo
+Add edge points when moving multiple envelope points	Aggiungi punti bordo quando sposti punti envelope multipli
+Preserve trailing values when recording automation	Mantieni valori di coda durante la registrazione dell'automazione
+Reduce envelope point data when recording or drawing automation	Riduci dati dei punti envelope durante la registrazione o disegno dell'automazione
+Bypass underlying envelopes outside of automation items	Bypassa envelope sottostanti al di fuori degli automation item
+Automation items do not attach to the underlying envelope	Gli automation item non si agganciano all'envelope sottostante
+Automation items attach to the underlying envelope on the right side	Gli automation item si agganciano all'envelope sottostante sul lato destro
+Automation items attach to the underlying envelope on both sides	Gli automation item si agganciano all'envelope sottostante su entrambi i lati
+Chase non-FX envelopes to automation items when underlying envelope is bypassed	Insegui gli envelope non-FX negli automation item quando l'envelope sottostante è in bypass
+Razor edits	Razor edit
+Razor edits in media item lane affect all track envelopes	I razor edit nella corsia dei media item influiscono su tutti gli envelope della track
+Metronome enabled	Metronomo abilitato
+Show FX inserts in TCP (when size permits)	Mostra insert FX nel TCP (se le dimensioni lo consentono)
+Show sends in TCP (when size permits)	Mostra send nel TCP (se le dimensioni lo consentono)
+Allow empty slots in TCP/MCP FX lists	Consenti slot vuoti negli elenchi FX di TCP/MCP
+Allow reordering/empty slots in TCP/MCP send lists	Consenti riordino/slot vuoti negli elenchi send di TCP/MCP
+Normal peaks	Picchi normali
+Spectral peaks	Picchi spettrali
+LUFS-M peaks (momentary loudness)	Picchi LUFS-M (loudness momentanea)
+LUFS-S peaks (short-term loudness)	Picchi LUFS-S (loudness a breve termine)
+Normal peaks + LUFS-M graph	Picchi normali + grafico LUFS-M
+Normal peaks + LUFS-S graph	Picchi normali + grafico LUFS-S
+Spectral peaks + LUFS-M graph	Picchi spettrali + grafico LUFS-M
+Spectral peaks + LUFS-S graph	Picchi spettrali + grafico LUFS-S
+Spectrogram	Spettrogramma
+Normal peaks + spectrogram	Picchi normali + spettrogramma
+Spectral peaks + spectrogram	Picchi spettrali + spettrogramma
+Scale peaks by square root (half of range is 12dB rather than 6dB)	Scala i picchi per radice quadrata (metà scala a 12 dB invece di 6 dB)
+Rectify peaks	Raddrizza picchi (rettificazione)
+Force mono peaks	Forza picchi mono
+Automatically scroll view during playback	Scorri automaticamente la vista durante la riproduzione
+Continuous scrolling	Scorrimento continuo
+Smooth seeking (seeks at end of measure)	Seek fluido (seek alla fine della battuta)
+Chase MIDI note-on/CC/PC/pitch in project playback	Insegui note-on/CC/PC/pitch MIDI durante la riproduzione del progetto
+External Timecode Synchronization	Sincronizzazione timecode esterno
+Synchronization enabled	Sincronizzazione abilitata
+Synchronization settings...	Impostazioni sincronizzazione...
+Layouts	Layout
+Preferences...	Preferenze...
+&Actions	&Actions
+Show action list...	Mostra Action list...
+Show recent actions	Mostra azioni recenti
+About REAPER	Informazioni su REAPER
+[recording settings]	[impostazioni di registrazione]
+Presets	Preset
+Audio device settings	Impostazioni dispositivo audio
+File name:	Nome file:
+Reset to defaults	Reimposta ai valori predefiniti
+Input device:	Dispositivo di ingresso:
+Output device:	Dispositivo di uscita:
+Output channels:	Canali di uscita:
+Allow projects to override device sample rate	Consenti ai progetti di sovrascrivere il sample rate del dispositivo
+clickpatternedit	clickpatternedit
+Alias name:	Nome alias:
+ins	ins
+Set color...	Imposta colore...
+Reset color	Reimposta colore
+Resample mode:	Modalità resample:
+Process	Elabora
+Gain compensation (boost pans)	Compensazione guadagno (boost sul pan)
+Threshold:	Soglia:
+Directory:	Directory:
+Advanced UI/system settings	Impostazioni avanzate interfaccia/sistema
+Custom splash screen image:	Immagine splash screen personalizzata:
+Scale UI elements of track/mixer panels, transport, etc, by:	Scala elementi interfaccia pannelli track/mixer, transport, ecc. per:
+(0.3x-3x)	(0.3x-3x)
+Font size adjustment for theme/arrange/ruler:	Regolazione dimensione font per tema/arrange/righello:
+Allow snap/grid/routing windows to stay open	Consenti alle finestre snap/griglia/routing di restare aperte
+Allow keyboard commands even when mouse-editing	Consenti comandi da tastiera anche durante l'editing con il mouse
+Modal window positioning:	Posizionamento finestre modali:
+Open with FX offline (recovery mode)	Apri con FX offline (modalità di ripristino)
+Bring FX online after load	Porta gli FX online dopo il caricamento
+Add...	Aggiungi...
+seconds	secondi
+beats	battiti
+Sample format:	Formato campioni:
+16 bit	16 bit
+24 bit	24 bit
+32 bit	32 bit
+x	x
+Request sample rate:	Richiedi frequenza di campionamento:
+Request block size:	Richiedi dimensione blocco:
+Run	Esegui
+Start	Avvia
+Audio system:	Sistema audio:
+BPM:	BPM:
+Click pattern:	Pattern del click:
+Relative gain of click BCD:	Guadagno relativo dei click BCD:
+Sample:	Campione:
+- or -	- oppure -
+Frequency:	Frequenza:
+A:	A:
+B:	B:
+C:	C:
+D:	D:
+When not using samples:	Quando non usi campioni:
+Sample presets	Preset campioni
+Output file	File di uscita
+Render status	Stato del render
+Repeat	Ripeti (Repeat)
+Stats/Charts	Statistiche/Grafici
+BPM basis:	Base BPM:
+Time signature:	Metro (Time signature):
+Prompt to save/delete/rename new files:	Chiedi se salvare/eliminare/rinominare nuovi file:
+on punch-out/play	su punch-out/play
+on stop	su stop
+Save...	Salva...
+UI	Interfaccia
+Reset all MIDI devices	Reimposta tutti i dispositivi MIDI
+Automatic	Automatico
+Embed:	Incorpora:
+Shape:	Forma:
+Word wrap	A capo automatico
+ID:	ID:
+Lane	Corsia
+Lane:	Corsia:
+End:	Fine:
+Entire project	Intero progetto
+Selected	Selezionato
+Start:	Inizio:
+Time selection	Selezione temporale
+Frame rate:	Frame rate:
+Region Manager...	Region Manager...
+Automation mode:	Modalità automazione:
+Context:	Contesto:
+Width:	Ampiezza:
+Media items	Media item
+Pan Law	Pan Law
+Pan mode:	Modalità pan:
+Pan law:	Pan law:
+Current	Corrente
+Loudness	Loudness
+Edit path list...	Modifica elenco percorsi...
+Special key (Enter, Tab, etc...)	Tasto speciale (Invio, Tab, ecc...)
+Fade pad	Pad di fade
+Hysteresis:	Isteresi:
+Leading pad:	Pad iniziale:
+Trailing pad:	Pad finale:
+Quantize to:	Quantizza a:
+Enable only when effect configuration is focused	Abilita solo quando la configurazione effetto ha il focus
+Enable only when effect configuration is visible	Abilita solo quando la configurazione effetto è visibile
+Enable only when track or item is selected	Abilita solo quando la track o l'item è selezionato
+Soft takeover (absolute mode only)	Soft takeover (solo modalità assoluta)
+Render to:	Render in:
+Silently increment filenames to avoid overwriting	Incrementa silenziosamente i nomi file per evitare sovrascritture
+Docker selected tab	Scheda selezionata del docker
+Items	Item
+Main window position	Posizione finestra principale
+Mixer flags	Opzioni mixer
+Tool window positions	Posizioni finestre strumenti
+Horizontal zoom	Zoom orizzontale
+Track cursor position	Posizione cursore track
+Track scroll positions	Posizioni di scorrimento track
+Strength:	Intensità:
+Device name:	Nome dispositivo:
+Do not warn if unable to open device	Non avvisare se impossibile aprire il dispositivo
+Offset:	Offset:
+Output:	Uscita:
+Phase:	Fase:
+Section:	Sezione:
+Rename...	Rinomina...
+Selected items only	Solo item selezionati
+Resize ruler when lane count changes	Ridimensiona righello quando cambia il numero di corsie
+<	<
+>	>
+Metadata	Metadati
+Postprocess...	Post-elaborazione...
+Save settings	Salva impostazioni
+Timecode start offset	Offset inizio timecode
+to	a
+Create folder tracks for imported directories	Crea track cartella per le directory importate
+Replace	Sostituisci
+Sensitivity:	Sensibilità:
+Curve:	Curva:
+Fade:	Fade:
+Item mix behavior:	Comportamento mix dell'item:
+track	track
+Open render queue...	Apri coda di render...
+Render Warning	Avviso di render
+Pre-roll:	Pre-roll:
+Continue	Continua
+Warning	Avviso
+Render Queue Delay	Ritardo coda di render
+Some sampler plugins may require initialization time to ensure all samples are loaded before starting to render output.	Alcuni plugin campionatori possono richiedere tempo di inizializzazione per garantire che tutti i campioni siano caricati prima di avviare il render.
+REAPER Query	Richiesta REAPER
+Note: some of these options are or have been considered experimental.	Nota: alcune di queste opzioni sono o sono state considerate sperimentali.
+time	tempo
+Fade-in:	Fade-in:
+Fade-out:	Fade-out:
+Save as default	Salva come predefinito
+Back	Indietro
+Media Explorer...	Media Explorer...
+Rewind	Riavvolgi
+vol	vol
+Project Settings	Impostazioni progetto
+Find	Trova
+Edit FX comment	Modifica commento FX
+Clear filter	Cancella filtro
+Type:	Tipo:
+Stop playback at end of loop if repeat is disabled	Interrompi riproduzione alla fine del loop se repeat è disattivato
+Load...	Carica...
+Browse for file...	Sfoglia file...
+=>	=>
+MIDI input devices	Dispositivi di ingresso MIDI
+Plug-ins	Plug-in
+Regions and markers	Region e marker
+Write BWF metadata	Scrivi metadati BWF
+Project Directory Cleanup	Pulizia directory del progetto
+to:	a:
+Value:	Valore:
+Author:	Autore:
+Edit Marker	Modifica marker
+Time selection change	Cambio selezione temporale
+Preset name:	Nome preset:
+Edit Region	Modifica region
+Transport	Transport
+Description:	Descrizione:
+Track Envelopes	Envelope di track
+Pan:	Pan:
+Track channels:	Canali track:
+Adjust	Regola
+Snap settings	Impostazioni snap
+Use the same grid division in arrange view and MIDI editor	Usa la stessa divisione griglia nella vista arrange e nell'editor MIDI
+LRA	LRA
+LUFS-I	LUFS-I
+LUFS-S	LUFS-S
+Peak	Peak
+--	--
+Import license key...	Importa chiave di licenza...
+ReWire	ReWire
+Enable locking	Abilita blocco
+Keyboard	Tastiera
+Auto trim/split items	Auto trim/split degli item
+notes	note
+Item Properties	Proprietà item
+Muted	Mutato
+Not muted	Non mutato
+Notes	Note
+Enable metronome	Abilita metronomo
+Pre-roll	Pre-roll
+Project grid follows metronome click pattern	La griglia del progetto segue il pattern del click del metronomo
+Center note:	Nota centrale:
+MIDI channel:	Canale MIDI:
+MB	MB
+Windows	Finestre
+octaves	ottave
+Format	Formato
+Swing:	Swing:
+Playback	Riproduzione
+Do not send reset messages	Non inviare messaggi di reset
+(none)	(nessuno)
+Split	Dividi
+Show embedded UI in MCP	Mostra UI incorporata nel MCP
+Show embedded UI in TCP	Mostra UI incorporata nel TCP
+Use automatic tail detection (allows project-wide auto-bypass for plug-in)	Usa rilevamento automatico della coda (consente l'auto-bypass globale per il plug-in)
+&FX Plug-ins settings...	Impostazioni plug-in &FX...
+(if chain oversampling is enabled, maximum of instance and chain is used)	(se l'oversampling della catena è abilitato, viene usato il massimo tra istanza e catena)
+(requires playback stop/start to take effect)	(richiede stop/play della riproduzione per avere effetto)
+Add FX...	Aggiungi FX...
+Add container	Aggiungi container
+Auto-float new FX windows	Fai fluttuare automaticamente le nuove finestre FX
+Chain oversampling	Oversampling della catena
+FX Plug-ins settings...	Impostazioni plug-in FX...
+FX instance oversampling	Oversampling dell'istanza FX
+Move FX to container	Sposta FX nel container
+No oversampling	Nessun oversampling
+Oversample up to 176.4k/192k	Oversampling fino a 176.4k/192k
+Oversample up to 352.8k/384k	Oversampling fino a 352.8k/384k
+Oversample up to 705.6k/768k	Oversampling fino a 705.6k/768k
+Oversample up to 88.2k/96k	Oversampling fino a 88.2k/96k
+Paste FX	Incolla FX
+Rename FX instance	Rinomina istanza FX
+Replace FX...	Sostituisci FX...
+FX chains	Catene FX
+Drag below the main toolbar to expand the ruler	Trascina sotto la toolbar principale per espandere il righello
+Ruler Lane Manager...	Ruler Lane Manager...
+<automation items on disk>	<automation item su disco>
+Create pooled duplicate	Crea duplicato in pool
+Create unpooled duplicate	Crea duplicato indipendente (unpooled)
+Delete automation item, preserve points	Elimina automation item, preserva punti
+Glue	Glue
+Insert new automation item	Inserisci nuovo automation item
+Properties...	Proprietà...
+Remove from pool	Rimuovi dal pool
+Show automation item path in explorer/finder	Mostra percorso automation item in explorer/finder
+Run FX in parallel with previous FX	Esegui FX in parallelo con l'FX precedente
+Run FX in parallel with previous FX (merge MIDI)	Esegui FX in parallelo con l'FX precedente (unisci MIDI)
+Compatibility settings	Impostazioni compatibilità
+Ignore plug-in reported tail size of %d samples (prevents project-wide auto-bypass for plug-in)	Ignora dimensione coda di %d campioni segnalata dal plug-in (impedisce auto-bypass)
+Plug-in state data size:  0 kB	Dimensione dati di stato plug-in:  0 kB
+Enable input for control messages	Abilita ingresso per messaggi di controllo
+Import	Importa
+&Copy selected FX	Ctrl+C	&Copia FX selezionati	Ctrl+C
+&FX	&FX
+&Paste FX	Ctrl+V, Ctrl+Insert	&Incolla FX	Ctrl+V, Ctrl+Insert
+&Remove selected FX	Delete	&Rimuovi FX selezionati	Delete
+Build 16 channels of MIDI routing to this track	Crea routing di 16 canali MIDI verso questa track
+Build multi-mono FX	Crea FX multi-mono
+Build multi-stereo FX	Crea FX multi-stereo
+Build multichannel routing for output of selected FX...	Crea routing multicanale per l'uscita degli FX selezionati...
+C&ut selected FX	Ctrl+X	&Taglia FX selezionati	Ctrl+X
+Chain PDC mode	Modalità PDC della catena
+Copy &all FX	Ctrl+Shift+C	Copia &tutti gli FX	Ctrl+Shift+C
+Copy all FX	Copia tutti gli FX
+Copy selected FX	Copia FX selezionati
+Copy selected FX (include automation)	Copia FX selezionati (includi automazione)
+Copy selected FX (include automation)	Ctrl+Alt+C	Copia FX selezionati (includi automazione)	Ctrl+Alt+C
+Cut selected FX	Taglia FX selezionati
+Cut selected FX (include automation)	Taglia FX selezionati (includi automazione)
+Display CPU utilization as 1.0! = longest-block is realtime (worst-case)	Mostra utilizzo CPU come 1.0! = blocco più lungo in tempo reale (caso peggiore)
+Display CPU utilization as 1.0c = one core fully utilized	Mostra utilizzo CPU come 1.0c = un core completamente utilizzato
+Display CPU utilization as 100% = all cores fully utilized	Mostra utilizzo CPU come 100% = tutti i core completamente utilizzati
+Display CPU utilization as 100%c = one core fully utilized	Mostra utilizzo CPU come 100%c = un core completamente utilizzato
+Dock FX window in Docker	Aggancia finestra FX nel Docker
+FX bypass	Bypass FX
+FX bypass	Ctrl+B	Bypass FX	Ctrl+B
+FX offline	FX offline
+FX offline	Ctrl+Alt+B	FX offline	Ctrl+Alt+B
+Force auto-bypass on silence for selected FX	Forza auto-bypass sul silenzio per gli FX selezionati
+Freeze track	Freeze track
+Freeze track to mono, up to last non-offline FX	Freeze track in mono, fino all'ultimo FX non offline
+Freeze track to mono, up to last selected FX	Freeze track in mono, fino all'ultimo FX selezionato
+Freeze track to multichannel, up to last non-offline FX	Freeze track in multicanale, fino all'ultimo FX non offline
+Freeze track to multichannel, up to last selected FX	Freeze track in multicanale, fino all'ultimo FX selezionato
+Freeze track to stereo, up to last non-offline FX	Freeze track in stereo, fino all'ultimo FX non offline
+Freeze track to stereo, up to last selected FX	Freeze track in stereo, fino all'ultimo FX selezionato
+Hardware output compensation (master track only)	Compensazione uscite hardware (solo master track)
+Ignore plug-in delay	Ignora ritardo del plug-in
+Per-FX compensation (classic REAPER 1.0-6.19)	Compensazione per-FX (classica REAPER 1.0-6.19)
+Per-chain compensation	Compensazione per catena
+Remove all FX	Rimuovi tutti gli FX
+Remove all FX	Shift+Delete	Rimuovi tutti gli FX	Shift+Delete
+Remove selected FX	Rimuovi FX selezionati
+Rename FX instance	F2	Rinomina istanza FX	F2
+Run selected FX in parallel with previous FX	Esegui gli FX selezionati in parallelo con l'FX precedente
+Run selected FX in parallel with previous FX (merge MIDI)	Esegui gli FX selezionati in parallelo con l'FX precedente (unisci MIDI)
+Save selected FX as chain...	Salva FX selezionati come catena...
+Show FX chain path in explorer/finder	Mostra percorso catena FX in explorer/finder
+Unfreeze track	Unfreeze track
+Window float selected FX	Fai fluttuare la finestra degli FX selezionati
+&Edit JS FX...	&Modifica JS FX...
+AU	AU
+AUi	AUi
+Always search all FX when using search field	Cerca sempre in tutti gli FX quando usi il campo di ricerca
+Auto-clear folder view on close	Cancella automaticamente vista cartella alla chiusura
+Auto-clear search field on close	Cancella automaticamente campo di ricerca alla chiusura
+Auto-clear search field on folder change	Cancella automaticamente campo di ricerca al cambio cartella
+CLAP	CLAP
+CLAPi	CLAPi
+Categories	Categorie
+Clear cache and re-scan all plugins	Cancella cache e ripeti la scansione di tutti i plug-in
+Cockos	Cockos
+Container	Container
+Create new &JS FX...	Crea nuovo &JS FX...
+Create new JS FX...	Crea nuovo JS FX...
+DX	DX
+DXi	DXi
+Default FX presets	Preset FX predefiniti
+Developers	Sviluppatori
+Dock FX browser in Docker	Aggancia FX browser nel Docker
+Duplicate JS FX...	Duplica JS FX...
+Duplicate plug-ins of different types	Duplica plug-in di tipi diversi
+Edit JS FX...	Modifica JS FX...
+FX shortcuts	Scorciatoie FX
+First priority	Prima priorità
+Fourth priority	Quarta priorità
+Instruments	Strumenti (Instruments)
+JS	JS
+JSFX descriptions	Descrizioni JSFX
+JSFX filenames	Nomi file JSFX
+LV2	LV2
+LV2i	LV2i
+Plug-in type prefixes	Prefissi tipo plug-in
+Plug-ins that begin with '#'	Plug-in che iniziano con '#'
+Recent	Recenti
+Remove all empty folders	Rimuovi tutte le cartelle vuote
+Rename FX...	Rinomina FX...
+Scan for new plugins	Cerca nuovi plug-in
+Second priority	Seconda priorità
+Show all duplicates	Mostra tutti i duplicati
+Show in FX list	Mostra nell'elenco FX
+Show in left pane list	Mostra nell'elenco riquadro sinistro
+Third priority	Terza priorità
+VST	VST
+VST folders	Cartelle VST
+VST3	VST3
+VST3i	VST3i
+VSTi	VSTi
+Vertical pane configuration	Configurazione riquadro verticale
+Video processor	Video processor
+Track Manager (show/hide tracks)...	Track Manager (mostra/nascondi track)...
+Copy selected area of items	Copia area selezionata degli item
+Arm envelope for recording	Arma envelope per registrazione
+Automation item options for this envelope	Opzioni automation item per questo envelope
+Average	Media
+Bypass envelope	Bypass envelope
+Bypass underlying envelope outside of automation items	Bypassa envelope sottostante fuori dagli automation item
+Chase non-FX envelope to automation items when underlying envelope is bypassed	Insegui envelope non-FX negli automation item se in bypass
+Clear or remove envelope	Cancella o rimuovi envelope
+Copy points	Copia punti
+Cut points	Taglia punti
+Visual spacer	Spaziatore visivo
+Insert spacer before tracks	Inserisci spaziatore prima delle track
+Insert spacer after tracks	Inserisci spaziatore dopo le track
+Insert spacer before and after tracks	Inserisci spaziatore prima e dopo le track
+Remove spacer before tracks	Rimuovi spaziatore prima delle track
+Remove spacer after tracks	Rimuovi spaziatore dopo le track
+Remove spacers	Rimuovi spaziatori
+(folder list)	(elenco cartelle)
+Copy selected envelope points	Copia punti envelope selezionati
+Cut selected envelope points	Taglia punti envelope selezionati
+Set shape for all selected points	Imposta forma per tutti i punti selezionati
+Delete selected envelope points	Elimina punti envelope selezionati
+Delete envelope points in time selection	Elimina punti envelope nella selezione temporale
+Pin tracks to top of arrange view	Fissa track in cima alla vista arrange
+Automatic record-arm when track selected	Arma automaticamente per la registrazione alla selezione della track
+Take channel mode: Reverse stereo	Modalità canale take: Stereo invertito
+Take channel mode: Mono (downmix)	Modalità canale take: Mono (downmix)
+Take channel mode: Mono (left)	Modalità canale take: Mono (sinistro)
+Take channel mode: Mono (right)	Modalità canale take: Mono (destro)
+Take channel mode: Mono (3-64)	Modalità canale take: Mono (3-64)
+Take channel mode: Stereo (1-64)	Modalità canale take: Stereo (1-64)
+&Copy items	&Copia item
+Copy items	Copia item
+Cu&t items	&Taglia item
+Cut items	Taglia item
+Cut selected area of items	Taglia area selezionata degli item
+Nudge/Set items...	Nudge/Imposta item...
+Split items at prior zero crossing	Dividi item al passaggio per lo zero precedente
+&Remove time selection	&Rimuovi selezione temporale
+Zoom time selection	Zoom alla selezione temporale
+Insert marker...	Inserisci marker...
+Insert region from time selection	Inserisci region da selezione temporale
+Insert tempo/time signature marker...	Inserisci marker di tempo/metro...
+Remove all markers from time selection	Rimuovi tutti i marker dalla selezione temporale
+Change start time/measure	Cambia tempo/misura iniziale
+Ruler display	Visualizzazione del righello
+Display tempo changes	Mostra cambi di tempo
+Display time signature changes	Mostra cambi di metro
+Display tempo and time signature changes in separate lanes	Mostra cambi di tempo e di metro in corsie separate
+Hide tempo/time signature area if project has no tempo/time signature changes	Nascondi area tempo/metro se il progetto non ha cambi di tempo/metro
+Set project tempo from time selection (detect tempo, align items)	Imposta tempo del progetto da selezione temporale (rileva tempo, allinea item)
+Create measure from time selection (detect tempo)	Crea misura da selezione temporale (rileva tempo)
+Remove time selection	Rimuovi selezione temporale
+Set time selection to items	Imposta selezione temporale sugli item
+Set 0:00 to current edit cursor	Imposta 0:00 al cursore di edit corrente
+Reset project start time	Reimposta tempo iniziale del progetto
+Set measure 1 to nearest measure to current edit cursor	Imposta misura 1 alla misura più vicina al cursore di edit
+Reset project start measure	Reimposta misura iniziale del progetto
+Set project tempo from time selection (detect tempo)	Imposta tempo del progetto da selezione temporale (rileva tempo)
+Set project tempo from time selection (new time signature)...	Imposta tempo del progetto da selezione temporale (nuovo metro)...
+Create measure from time selection (new time signature)...	Crea misura da selezione temporale (nuovo metro)...
+Crop project to selection	Ritaglia progetto alla selezione
+Insert empty space in selection	Inserisci spazio vuoto nella selezione
+Remove contents of selection (moving later items)	Rimuovi contenuto della selezione (spostando gli item successivi)
+Show master track	Mostra master track
+Show TCP on right side of arrange	Mostra TCP sul lato destro dell'arrange
+Customize empty TCP area toolbar...	Personalizza toolbar area vuota TCP...
+Set point value...	Imposta valore punto...
+Set point shape	Imposta forma punto
+Delete point	Elimina punto
+Delete selected points	Elimina punti selezionati
+Select envelope (env name)	Seleziona envelope (nome env)
+Delete points in time selection	Elimina punti nella selezione temporale
+Reset points to zero/center	Reimposta punti a zero/centro
+Reduce number of points...	Riduci numero di punti...
+Project default behavior outside of automation items	Comportamento predefinito del progetto fuori dagli automation item
+FX envelope: overlapping automation item combination mode	Envelope FX: combinazione degli automation item sovrapposti
+Sum	Somma
+Sum with midpoint bias	Somma con bias al punto medio
+Multiply	Moltiplica
+Default point shape for this envelope	Forma punto predefinita per questo envelope
+Range/scaling for this envelope	Intervallo/scala per questo envelope
+Volume envelope: amplitude scaling	Envelope volume: scala di ampiezza
+Volume envelope: fader scaling	Envelope volume: scala del fader
+Pitch envelope: range/snap...	Envelope pitch: intervallo/snap...
+Tempo envelope: range...	Envelope tempo: intervallo...
+Show envelope in lane	Mostra envelope in corsia
+Hide envelope	Nascondi envelope
+Set segment shape	Imposta forma segmento
+Select all points in time selection	Seleziona tutti i punti nella selezione temporale
+Delete points	Elimina punti
+Invert points	Inverti punti
+Insert point	Inserisci punto
+Global automation override:	Override globale dell'automazione:
+No global override (set automation modes per track)	Nessun override globale (imposta modalità automazione per singola track)
+Bypass all envelopes	Bypassa tutti gli envelope
+Trim/Read (default, faders are active for trim but not recorded)	Trim/Read (predefinito, fader attivi per il trim ma non registrati)
+Latch Preview (allow temporary override of armed envelopes but do not write changes)	Latch Preview (override temporaneo degli envelope armati senza scrivere)
+Read (play faders with armed envelopes)	Read (riproduci fader con envelope armati)
+Touch (record fader movements to armed envelopes)	Touch (registra movimenti fader sugli envelope armati)
+Latch (record fader movements after first movement)	Latch (registra movimenti fader dopo il primo movimento)
+Write (record fader positions to armed envelopes)	Write (registra posizioni dei fader sugli envelope armati)
+Show all active track envelopes	Mostra tutti gli envelope attivi della track
+Audio thread priority:	Priorità thread audio:
+Playback settings	Impostazioni di riproduzione
+Stop/repeat playback at end of project	Stop/ripeti riproduzione alla fine del progetto
+Scroll view to edit cursor on stop	Scorri vista al cursore di edit allo stop
+Max MIDI playback speed when applying negative media playback offset:	Velocità max riproduzione MIDI con offset di riproduzione negativo:
+(0=immediate)	(0=immediato)
+Flush FX when looping (good for autotune, bad for instruments, etc)	Svuota buffer FX durante il loop (ottimo per autotune, non per strumenti)
+Run FX when stopped (good for certain VSTi)	Esegui FX a riproduzione ferma (utile per certi VSTi)
+Flush FX on stop	Svuota buffer FX allo stop
+Run FX for	Esegui FX per
+ms after stopping (for reverb tails, etc)	ms dopo lo stop (per code di riverbero, ecc.)
+Tiny fade out on playback stop	Micro fade out allo stop della riproduzione
+Tiny fade in on playback start	Micro fade in all'avvio della riproduzione
+Reduce mixing CPU use of silent tracks during playback	Riduci carico CPU di mixaggio delle track silenziose durante la riproduzione
+Send MIDI note-offs when un-record-arming a track	Invia note-off MIDI quando disarmi una track dalla registrazione
+Reset MIDI CC/Pitch on:	Reimposta MIDI CC/Pitch su:
+playback start	avvio riproduzione
+playback stop	stop riproduzione
+playback loop/skip	loop/salto riproduzione
+CC reset overrides:	Override reset CC:
+Recording settings	Impostazioni di registrazione
+Scroll arrange view while recording (if enabled for playback in options menu)	Scorri vista arrange durante la registrazione (se abilitato per il play nelle opzioni)
+Show preview of recording items while recording, update frequency:	Mostra anteprima degli item registrati durante la registrazione, frequenza:
+Hz (default 3)	Hz (predefinito 3)
+Build peaks for recorded files:	Crea picchi per i file registrati:
+On the fly (recommended)	Al volo (consigliato)
+After recording	Dopo la registrazione
+Manually	Manualmente
+Always show full track control panel on armed tracks	Mostra sempre pannello di controllo track completo sulle track armate
+Start new files every	Inizia nuovi file ogni
+megabytes (approximate)	megabyte (approssimativi)
+When recording multiple tracks, offset file switches for better performance	Con più track registrate, sfalsa i cambi file per migliorare le prestazioni
+Prevent recording from starting when no tracks armed	Impedisci avvio registrazione se nessuna track è armata
+Recorded filenames:	Nomi file registrati:
+In-project MIDI items:	Item MIDI interni al progetto:
+Check free disk space on record start, warn if less than:	Controlla spazio libero su disco all'avvio della registrazione, avvisa se inferiore a:
+megabytes	megabyte
+Show free disk space in menu bar	Mostra spazio libero su disco nella barra dei menu
+Show primary recording path in menu bar	Mostra percorso primario di registrazione nella barra dei menu
+Record audio during pre-roll	Registra audio durante il pre-roll
+Use audio driver reported latency	Usa latenza segnalata dal driver audio
+Output manual offset:	Offset manuale uscita:
+ms +	ms +
+Input manual offset:	Offset manuale ingresso:
+General settings	Impostazioni generali
+Language:	Lingua:
+Language pack options	Opzioni language pack
+Import configuration...	Importa configurazione...
+Export configuration...	Esporta configurazione...
+Startup settings	Impostazioni di avvio
+Open project(s) on startup:	Apri progetto/i all'avvio:
+Automatically check for new versions of REAPER on startup	Controlla automaticamente aggiornamenti di REAPER all'avvio
+Create new project tab when opening media from explorer/finder	Crea nuova scheda progetto quando apri media da explorer/finder
+Show splash screen on startup	Mostra schermata iniziale (splash screen) all'avvio
+Skip animation	Salta animazione
+Check for multiple instances when launching	Controlla istanze multiple all'avvio
+When launching with project/media	All'avvio con progetto/media
+Maximum projects in recent project list:	Numero massimo progetti nell'elenco recenti:
+Recent project list display	Visualizzazione elenco progetti recenti
+Warn when REAPER's memory use reaches	Avvisa quando l'uso memoria di REAPER raggiunge
+megabytes (0 to never warn)	megabyte (0 per disattivare avviso)
+Prevent OS screensaver/screen blanking when audio is active or when rendering	Impedisci salvaschermo o spegnimento schermo del sistema con audio attivo o in render
+Auto-increment filename suffix:	Suffisso auto-incremento nome file:
+Ensure auto-incremented filenames have a higher number than all similarly named files	Assicura che i nomi file auto-incrementati abbiano numero maggiore di file simili
+Treat _ and - as interchangeable when auto-incrementing	Tratta _ e - come intercambiabili nell'auto-incremento
+Unload projects in background when quitting	Scarica progetti in background durante l'uscita
+Advanced UI/system tweaks...	Ottimizzazioni avanzate UI/sistema...
+REAPER Preferences	Preferenze di REAPER
+Media settings	Impostazioni media
+Set media items offline when application is not active	Metti media item offline quando l'applicazione non è attiva
+Allow videos to go offline (slow)	Consenti ai video di andare offline (lento)
+Prompt to confirm filename on "open copy in editor"	Chiedi conferma del nome file su "apri copia nell'editor"
+Tail length when using Apply FX to items:	Lunghezza coda quando usi Applica FX agli item:
+Take FX tail length:	Lunghezza coda FX del take:
+Duplicate take FX when splitting items (including splits caused by recording new takes)	Duplica FX del take quando dividi item (incluse divisioni da registrazione nuovi take)
+Add virtual MIDI...	Aggiungi MIDI virtuale...
+Cascade	Cascata
+Modal default	Modale predefinito
+Automatically resize FX windows:	Ridimensiona automaticamente finestre FX:
+up	in alto
+down	in basso
+Auto-float UI for FX created via FX browser	Fai fluttuare automaticamente la UI per gli FX creati dal browser FX
+Auto-float UI for FX created via right-click menu	Fai fluttuare automaticamente la UI per gli FX creati dal menu tasto destro
+Auto-open UI after drag/drop entire FX chain	Apri automaticamente la UI dopo drag/drop di un'intera catena FX
+Auto-open FX browser when opening empty FX chain	Apri automaticamente il browser FX quando apri una catena FX vuota
+Hide chain until added	Nascondi catena fino all'aggiunta
+FX chain positioning:	Posizionamento catena FX:
+Floating FX positioning:	Posizionamento FX fluttuanti:
+Auto-dock new FX chain windows	Aggancia automaticamente nuove finestre di catene FX
+Only allow one FX chain window at a time	Consenti solo una finestra di catena FX alla volta
+Open track FX window on track selection change	Apri finestra FX della track al cambio di selezione track
+Only if any FX window is open	Solo se una finestra FX è già aperta
+Only allow one FX floating at a time	Consenti un solo FX fluttuante alla volta
+Exclude monitoring FX	Escludi FX di monitoraggio
+Exclude master track FX	Escludi FX della master track
+One per track	Uno per track
+Automatically foreground floating window, if open, when selecting FX in the FX chain	Porta automaticamente in primo piano la finestra fluttuante selezionando l'FX nella catena
+Show FX list on right side of FX chain windows	Mostra elenco FX sul lato destro delle finestre di catena FX
+Show FX chain buttons above FX list	Mostra pulsanti della catena FX sopra l'elenco FX
+Show comment field above FX UI	Mostra campo commenti sopra la UI degli FX
+Show FX state as accessible text in name	Mostra stato FX come testo accessibile nel nome
+Disable FX windows while rendering	Disabilita finestre FX durante il render
+Show current track FX in FX button right-click menu	Mostra gli FX correnti della track nel menu tasto destro del pulsante FX
+Do not create undo points when closing FX windows	Non creare punti undo alla chiusura delle finestre FX
+Prompt to create routing when inserting new multichannel instruments	Chiedi se creare il routing quando inserisci nuovi strumenti multicanale
+Preserve pin mappings when loading presets	Conserva mappatura pin al caricamento dei preset
+Only show FX matching filter string:	Mostra solo FX corrispondenti alla stringa filtro:
+reset to recommended default	reimposta al predefinito consigliato
+Recently Used list max:	Max elementi elenco usati di recente:
+Audio settings	Impostazioni audio
+Close audio device when stopped and application is inactive	Chiudi dispositivo audio a riproduzione ferma e applicazione non attiva
+Close audio device when inactive and tracks are record armed	Chiudi dispositivo audio ad applicazione non attiva e track armate per registrazione
+Close audio device when inactive and ReWire devices are open	Chiudi dispositivo audio ad applicazione non attiva e dispositivi ReWire aperti
+Close audio device when stopped and active (less responsive)	Chiudi dispositivo audio a riproduzione ferma e attiva (meno reattivo)
+Warn when unable to open audio devices	Avvisa se impossibile aprire i dispositivi audio
+Warn when unable to open MIDI devices	Avvisa se impossibile aprire i dispositivi MIDI
+Warn when enabled MIDI devices are not present	Avvisa quando i dispositivi MIDI abilitati non sono presenti
+Auto-bypass FX on record arm-affected tracks whose PDC exceeds:	Auto-bypass FX sulle track con registrazione armata con PDC superiore a:
+Only bypass while actually recording (glitch on punch in/out)	Bypassa solo durante l'effettiva registrazione (possibili glitch su punch in/out)
+Temporarily bypass oversampling on record arm-affected tracks	Bypassa temporaneamente l'oversampling sulle track con registrazione armata
+Auto-bypass FX (when set via project or manual setting) even when FX configuration open	Auto-bypass FX (da impostazione progetto o manuale) anche a configurazione FX aperta
+Stop processing audio while warning of failed disk writes/disk full	Interrompi elaborazione audio durante l'avviso di scrittura su disco fallita o disco pieno
+Virtual loopback audio hardware channels:	Canali hardware audio di loopback virtuale:
+Channel naming/mapping	Nomi/mappatura canali
+Input channel name aliasing/remapping	Alias/rimappatura nomi canali di ingresso
+Edit Names/Map...	Modifica nomi/mappa...
+Output channel name aliasing/remapping	Alias/rimappatura nomi canali di uscita
+Show non-standard stereo channel pairs (i.e. Input 2/Input 3 etc)	Mostra coppie stereo non standard (es. Input 2/Input 3 ecc.)
+main outs	uscite principali (main out)
+Default metronome output:	Uscita predefinita del metronomo:
+Control surfaces/OSC/web control	Superfici di controllo / OSC / controllo web
+(changes will be applied immediately)	(le modifiche saranno applicate immediatamente)
+Control surface display update frequency:	Frequenza aggiornamento display superfici di controllo:
+Hz (default: 15)	Hz (predefinito: 15)
+Warn when errors opening surface MIDI devices	Avvisa in caso di errore nell'apertura dei dispositivi MIDI di superficie
+Close control surface devices when stopped and not active application	Chiudi dispositivi di superficie di controllo a stop e applicazione non attiva
+Close control surface devices when rendering	Chiudi dispositivi di superficie di controllo durante il render
+External editors	Editor esterni
+Editing behavior	Comportamento di editing
+Move edit cursor on:	Sposta cursore di edit su:
+Razor edit change	Modifica del razor edit
+Pasting/inserting media	Incolla/inserimento media
+Clicking fixed lane comp area	Clic sull'area comp a corsie fisse
+Move edit cursor to end of recorded items on record stop	Sposta cursore di edit alla fine degli item registrati allo stop della registrazione
+Link loop points to time selection	Collega punti di loop alla selezione temporale
+Clear loop points on click in ruler	Cancella punti di loop con clic nel righello
+Clear time selection when edit cursor moves on click in arrange view	Cancella selezione temporale quando il cursore di edit si sposta con clic nell'arrange
+Minimum time selection/loop/razor edit length:	Lunghezza minima selezione temporale/loop/razor edit:
+Transient detection	Rilevamento transienti
+Adjust sensitivity...	Regola sensibilità...
+Tab through MIDI notes	Spostati tra le note MIDI con Tab
+Treat media item edges as transients	Tratta i bordi dei media item come transienti
+Clear existing media item/envelope selection when creating razor edit area	Cancella selezione media item/envelope esistente quando crei un'area razor edit
+Allow dual trim (edit shared media item edges) only if both items are selected	Consenti doppio trim (bordi condivisi media item) solo se entrambi gli item sono selezionati
+Crossfades stay together during fade edits when trim content behind media items is enabled	I crossfade rimangono uniti durante l'edit dei fade con trim contenuto dietro item abilitato
+Automatically delete empty tracks created by dragging items below the last track and back	Elimina automaticamente track vuote create trascinando item sotto l'ultima track e indietro
+Dragging the source start offset of the active take adjusts the offset for all takes	Trascinare l'offset iniziale sorgente del take attivo regola l'offset per tutti i take
+If no items are selected, some split/trim/delete actions affect all items at the edit cursor	Se nessun item è selezionato, le azioni split/trim/delete influiscono su tutti gli item al cursore di edit
+Stretching razor edit area adds stretch markers to audio items	Allungare l'area razor edit aggiunge stretch marker agli item audio
+Normalize actions affect all takes within a media item	Le azioni di normalizzazione influiscono su tutti i take dentro un media item
+Automatically zoom to time selection when running sample edit actions	Esegui zoom automatico alla selezione temporale durante azioni di edit dei campioni
+Automatically select regions/markers when navigating via action or Jump To Time dialog	Seleziona automaticamente region/marker navigando tramite action o finestra Salta al tempo
+Take marker ranking levels:	Livelli di gradimento dei take marker:
+Up/down/cycle actions skip 'no ranking'	Le azioni su/giù/ciclo saltano 'nessun gradimento'
+Defaults for new tracks/sends/track hardware outputs	Predefiniti per nuove track/send/uscite hardware track
+Track volume fader gain:	Guadagno fader volume track:
+Enable main (parent) send	Abilita send principale (parent)
+Visible envelopes:	Envelope visibili:
+Volume (pre-FX)	Volume (pre-FX)
+Pan (pre-FX)	Pan (pre-FX)
+Envelope point shape:	Forma punto envelope:
+Arm new envelopes	Arma nuovi envelope
+Track height in new projects:	Altezza track nei nuovi progetti:
+Show in Mixer	Mostra nel Mixer
+Fixed lane defaults	Predefiniti corsie fisse
+Record config:	Configurazione registrazione:
+Button1	Pulsante1
+Scaling for new volume envelopes:	Scala per nuovi envelope di volume:
+Amplitude scaling	Scala di ampiezza
+Volume fader scaling	Scala del fader di volume
+Warn when changing volume envelope scaling will change envelope sound	Avvisa quando il cambio scala dell'envelope di volume altera il suono dell'envelope
+Track meter display:	Visualizzazione meter della track:
+Sends / Track Hardware Outputs	Send / Uscite hardware track
+Send gain:	Guadagno send:
+Hardware output gain:	Guadagno uscita hardware:
+Send/hardware output mode:	Modalità send/uscita hardware:
+Sends send MIDI by default	Le send inviano MIDI per impostazione predefinita
+Sends send audio by default	Le send inviano audio per impostazione predefinita
+Audio buffering settings	Impostazioni buffer audio
+Auto-detect the number of needed audio processing threads	Rileva automaticamente numero thread di elaborazione audio necessari
+Audio reading/processing threads:	Thread di lettura/elaborazione audio:
+(recommended: 1 per CPU core. can also be 0)	(consigliato: 1 per core CPU; può essere anche 0)
+Thread priority:	Priorità dei thread:
+Behavior:	Comportamento:
+Media buffer size:	Dimensione buffer media:
+ms (default is 1200ms), prebuffer:	ms (predefinito: 1200 ms), prebuffer:
+% (default is 100%)	% (predefinito: 100%)
+Disable media buffering for tracks with open MIDI editors (recommended)	Disabilita buffer media per track con editor MIDI aperti (consigliato)
+Disable media buffering for tracks that are selected	Disabilita buffer media per le track selezionate
+Media buffer size when per-take FX UI open:	Dimensione buffer media con UI FX del take aperta:
+ms (default is 200ms)	ms (predefinito: 200 ms)
+FX processing/multiprocessing settings	Impostazioni elaborazione/multiprocessing FX
+Anticipative FX processing - superior multiprocessing and lower interface latencies	Elaborazione FX anticipatrice - multiprocessing avanzato e minori latenze interfaccia
+Render-ahead:	Render anticipato:
+ms (default: 200)	ms (predefinito: 200)
+Allow on tracks without FX (may give higher multiprocessor utilization)	Consenti su track senza FX (può aumentare utilizzo multiprocessore)
+Allow on tracks with open MIDI editors (will increase MIDI preview latency)	Consenti su track con editor MIDI aperti (aumenta latenza anteprima MIDI)
+Allow on tracks in touch/latch/write automation mode	Consenti su track in modalità automazione touch/latch/write
+Allow live FX multiprocessing on:	Consenti multiprocessing FX dal vivo su:
+CPUs	CPU
+Advanced Disk I/O options...	Opzioni avanzate I/O disco...
+[enables multiprocessing of live input, but may reduce performance at low latencies]	[abilita multiprocessing ingresso live, ma può ridurre prestazioni a basse latenze]
+ReWire settings	Impostazioni ReWire
+ReWire/Direct-X plug-ins settings	Impostazioni plug-in ReWire/Direct-X
+ReWire mixer support (act as ReWire mixer, show ReWire devices in plug-in browser)	Supporto mixer ReWire (opera come mixer ReWire, mostra dispositivi ReWire nel browser plug-in)
+Auto-open panels when opening ReWire devices	Apri automaticamente pannelli all'apertura dispositivi ReWire
+Run FX on stop when ReWire devices are active	Esegui FX allo stop quando i dispositivi ReWire sono attivi
+Check for ReWire mixer/device on startup (and automatically enter client mode if present)	Controlla mixer/dispositivo ReWire all'avvio (ed entra automaticamente in modalità client)
+Use alternate configuration file (reaper-rewire.ini) when in client mode	Usa file di configurazione alternativo (reaper-rewire.ini) in modalità client
+ReWire client project settings	Impostazioni progetto client ReWire
+Direct-X (DX)	Direct-X (DX)
+Enable DX plug-ins	Abilita plug-in DX
+Scan DX plug-ins on startup (not required)	Scansiona plug-in DX all'avvio (non richiesto)
+Disable DX plug-ins scanning	Disabilita scansione plug-in DX
+Scan for new DX plug-ins	Cerca nuovi plug-in DX
+Rescan all DX plug-ins	Ripeti scansione di tutti i plug-in DX
+VST plug-ins settings	Impostazioni plug-in VST
+Prompt to confirm filename on "open copy in editor"	Chiedi conferma del nome file su "apri copia nell'editor"
+VST plug-in paths (can be multiple paths separated by semicolons):	Percorsi dei plug-in VST (possono essere percorsi multipli separati da punto e virgola):
+Re-scan...	Ripeti scansione...
+Scan new/updated plug-ins on startup	Cerca plug-in nuovi/aggiornati all'avvio
+If multiple VSTs are scanned with the same dll name, only one will be available: either the plugin found later in the path list, or highest in the directory structure for a given path.	Se più VST hanno lo stesso nome file, solo uno sarà disponibile: o quello trovato più avanti nell'elenco percorsi o il più alto nella struttura directory.
+Default VST to generic UI (instead of plug-in UI)	Imposta UI generica come predefinita per i VST (invece della UI del plug-in)
+Knob mode:	Modalità manopole (Knob mode):
+VST compatibility	Compatibilità VST
+Don't flush synthesizer plug-ins on stop/reset	Non svuotare buffer dei sintetizzatori su stop/reset
+Don't send note-offs or pitch reset messages on stop/reset	Non inviare note-off o reset pitch su stop/reset
+Inform plug-ins of offline rendering state	Informa i plug-in dello stato di render offline
+Bypass audio while opening plug-in config window (good for some non-threadsafe VSTs)	Bypassa audio all'apertura finestra config plug-in (utile per VST non thread-safe)
+UAD-1 synchronous mode (reduces CPU munch) - requires anticipative FX disabled	Modalità sincrona UAD-1 (riduce consumo CPU) - richiede FX anticipatori disabilitati
+Allow complete unload of VST plug-ins (reduces memory use, but may not be compatible)	Consenti scaricamento completo plug-in VST (riduce memoria, ma può dare incompatibilità)
+Parameter automation notifications:	Notifiche automazione parametri:
+Project settings	Impostazioni progetto
+When creating new projects, use the following project file as a template:	Alla creazione di nuovi progetti, usa il seguente file di progetto come template:
+Prompt to save on new project	Chiedi di salvare alla creazione di un nuovo progetto
+Open properties on new project	Apri proprietà alla creazione di un nuovo progetto
+Open project settings	Apri impostazioni progetto
+Note: if a project template is not set, many settings of new projects can be customized by using the 'Save as default project settings' button in the Project Settings window.	Nota: se non è impostato un template, molte impostazioni possono essere personalizzate con il pulsante 'Salva come predefinito' nelle Impostazioni progetto.
+Project loading	Caricamento progetto
+Look for project media items in project directory before qualified path	Cerca i media item del progetto nella cartella del progetto prima del percorso assoluto
+Prompt when files are not found on project load	Chiedi conferma quando i file non vengono trovati al caricamento del progetto
+Show load status and splash while loading projects	Mostra stato caricamento e schermata iniziale durante il caricamento progetti
+Project saving	Salvataggio progetto
+Save project file references with relative pathnames	Salva riferimenti ai file di progetto con percorsi relativi
+Default save-as wildcard pattern:	Pattern jolly predefinito per Salva con nome:
+'Save new version of project' suffix:	Suffisso per 'Salva nuova versione del progetto':
+Show last undo point in title bar	Mostra ultimo punto undo nella barra del titolo
+Faster text rendering	Rendering del testo più veloce
+Appearance settings	Impostazioni aspetto
+Tooltips:	Suggerimenti (Tooltip):
+UI elements	Elementi interfaccia
+Items/envelopes	Item/envelope
+Envs on hover	Envelope al passaggio del mouse
+Delay:	Ritardo:
+Peak and loudness value when mouse is over media item	Valore di picco e loudness quando il mouse è sopra il media item
+Legacy text rendering mode (not recommended)	Modalità rendering testo legacy (non consigliata)
+Draw vertical text bottom-up	Disegna testo verticale dal basso verso l'alto
+Frameless floating toolbar windows	Finestre toolbar fluttuanti senza cornice
+Don't scale toolbar buttons below 1:1	Non scalare pulsanti toolbar sotto 1:1
+Don't scale toolbar buttons above 1:1	Non scalare pulsanti toolbar sopra 1:1
+Don't animate armed-action toolbar buttons	Non animare pulsanti toolbar con azioni armate
+Don't animate any toolbar buttons	Non animare alcun pulsante toolbar
+Vertical space at bottom of track:	Spazio verticale in fondo alla track:
+Visual track spacer size:	Dimensione spaziatore visivo track:
+Limit TCP spacer height to lane size	Limita altezza spaziatore TCP alla dimensione corsia
+Antialiased fades and envelopes	Fade ed envelope con antialiasing
+Horizontal grid lines in automation lanes	Linee di griglia orizzontali nelle corsie di automazione
+Filled automation envelopes	Envelope di automazione con riempimento
+Filled envelopes when drawn over media	Envelope con riempimento quando disegnati sopra i media
+Envelope point size scaling:	Scala dimensione punti envelope:
+Scale non-selected points:	Scala punti non selezionati:
+Highlight edit cursor over last selected track	Evidenzia cursore di edit sull'ultima track selezionata
+Show guide lines when editing	Mostra linee guida durante l'edit
+Solid edge on time selection highlight	Bordo pieno sull'evidenziazione selezione temporale
+Solid edge on loop selection	Bordo pieno sulla selezione del loop
+Display vertical line at mouse position:	Mostra linea verticale alla posizione del mouse:
+Play cursor width:	Larghezza cursore di riproduzione:
+Hide docker tabs when single window and smaller than:	Nascondi schede del docker se finestra singola e più piccola di:
+Please stop any playback or recording to view this page.	Interrompi riproduzione o registrazione per visualizzare questa pagina.
+Mouse editing behavior	Comportamento di edit con il mouse
+Mousewheel targets:	Destinazioni rotella del mouse:
+Ignore mousewheel on all faders	Ignora rotella del mouse su tutti i fader
+Ignore mouse click unless directly on fader handle	Ignora clic del mouse a meno che sia direttamente sulla maniglia del fader
+Ignore mousewheel on all track control panel controls	Ignora rotella del mouse su tutti i controlli del pannello track
+Ignore mousewheel on transport edit fields	Ignora rotella del mouse sui campi edit del transport
+Mousewheel moves transport time selection by beats (alt toggles)	La rotella sposta selezione temporale del transport per battiti (Alt inverte)
+Treat scroll messages from some laptop trackpads as mousewheel	Tratta messaggi di scorrimento trackpad portatili come rotella del mouse
+Use pen/tablet-safe mode -- do not reposition mouse cursor while adjusting knobs/etc	Modalità per penna/tavoletta grafica -- non riposizionare cursore durante la regolazione dei pomelli
+Reordering tracks via mouse drag, create folder if:	Nel riordinare track trascinando con il mouse, crea cartella se:
+Edit track names on single click (otherwise doubleclick required)	Modifica nome track con clic singolo (altrimenti richiede doppio clic)
+Mouse click on volume/pan faders and track controls changes track selection	Il clic del mouse su fader volume/pan e controlli track cambia la selezione track
+Mouse click/edit in arrange view:	Clic/edit del mouse nella vista arrange:
+Selects track	Seleziona track
+Sets target track for insert/paste	Imposta track di destinazione per inserisci/incolla
+Allow modifying edges of time selection over items in tracks	Consenti modifica bordi della selezione temporale sopra gli item nelle track
+Allow resizing ruler by dragging bottom edge (otherwise drag below toolbar)	Consenti ridimensionamento righello trascinando bordo inferiore (altrimenti sotto toolbar)
+Control+left-click emulates right-click (control key will be unavailable as a modifier)	Ctrl+clic sinistro emula clic destro (il tasto Ctrl non sarà disponibile come modificatore)
+Commit changes to some edit fields after 1 second of no typing	Conferma modifiche ai campi di testo dopo 1 secondo senza digitazione
+Use alternate keyboard section when recording	Usa sezione tastiera alternativa durante la registrazione
+Prevent ALT key from focusing main menu	Impedisci al tasto ALT di portare il focus sul menu principale
+Allow space key to be used for navigation in various windows	Consenti l'uso della barra spaziatrice per navigare nelle varie finestre
+When space key is pressed in plug-in text fields, send to main window	Quando premi la barra spaziatrice nei campi testo dei plug-in, invia alla finestra principale
+Timeout for momentary keyboard section override:	Timeout per override momentaneo della sezione tastiera:
+Assign keyboard shortcuts to actions or change existing shortcuts	Assegna scorciatoie da tastiera alle azioni o modifica quelle esistenti
+View keyboard shortcuts as printable/searchable web page	Visualizza scorciatoie da tastiera come pagina web stampabile/ricercabile
+Multitouch	Multitouch
+Enable multitouch swipe	Abilita swipe multitouch
+Suppress inertia	Disattiva inerzia
+Gearing:	Rapporto di velocità:
+Enable multitouch zoom	Abilita zoom multitouch
+Enable multitouch rotate	Abilita rotazione multitouch
+Ignore scroll after multitouch gesture:	Ignora scorrimento dopo gesto multitouch:
+Reverse vertical scroll	Inverti scorrimento verticale
+Ignore new gesture after multitouch gesture:	Ignora nuovo gesto dopo gesto multitouch:
+Reverse horizontal scroll	Inverti scorrimento orizzontale
+Assign multitouch gestures to actions or change existing shortcuts	Assegna gesti multitouch alle azioni o modifica scorciatoie esistenti
+Find Key/MIDI/OSC	Trova Tasto/MIDI/OSC
+Automatically close window on matching action	Chiudi automaticamente finestra all'azione corrispondente
+Settings Unavailable	Impostazioni non disponibili
+These settings are not available in ReWire client mode.	Queste impostazioni non sono disponibili in modalità client ReWire.
+Asynchronous unbuffered	Asincrono senza buffer
+Asynchronous buffered (default)	Asincrono con buffer (predefinito)
+Synchronous	Sincrono
+Asynchronous (default)	Asincrono (predefinito)
+Asynchronous (write-through)	Asincrono (write-through)
+Buffered	Con buffer
+Unbuffered (default)	Senza buffer (predefinito)
+buffers (default is 8)	buffer (predefinito: 8)
+bytes (default is %u)	byte (predefinito: %u)
+Automatically increase open-file limit on REAPER startup [current limit: %d files]	Aumenta automaticamente limite file aperti all'avvio di REAPER [limite attuale: %d file]
+Advanced Disk I/O settings	Impostazioni avanzate I/O disco
+You may need to close and reopen your project for these settings to take effect.	Potrebbe essere necessario chiudere e riaprire il progetto per applicare queste impostazioni.
+Disk reads (used when playing/etc)	Letture da disco (usate in riproduzione/ecc.)
+Preferred disk read mode:	Modalità lettura disco preferita:
+Read buffers:	Buffer di lettura:
+buffers (default is 3)	buffer (predefinito: 3)
+Read buffer size:	Dimensione buffer di lettura:
+Disk writes (used when recording)	Scritture su disco (usate in registrazione)
+Preferred disk write mode:	Modalità scrittura disco preferita:
+Write buffers:	Buffer di scrittura:
+buffers (default is 16)	buffer (predefinito: 16)
+Write buffers (maximum):	Buffer di scrittura (massimo):
+buffers (default is 128)	buffer (predefinito: 128)
+Write buffer size:	Dimensione buffer di scrittura:
+bytes (default is 65536)	byte (predefinito: 65536)
+Fully-buffer peak files smaller than:	Bufferizza completamente file di picco inferiori a:
+KB (reduces open file count)	KB (riduce numero file aperti)
+Memory-map peak files smaller than:	Mappa in memoria file di picco inferiori a:
+KB (faster, uses more address space)	KB (più veloce, usa più spazio di indirizzamento)
+Periodically close excess file handles (experimental)	Chiudi periodicamente file handle in eccesso (sperimentale)
+Media item appearance	Aspetto dei media item
+Media item labels	Etichette dei media item
+Display media item take name	Mostra nome del take del media item
+Display media item gain if set	Mostra guadagno del media item se impostato
+Display media item pitch/playrate if set	Mostra pitch/playrate del media item se impostato
+Draw labels over solid background for easier reading	Disegna etichette su sfondo pieno per facilitare la lettura
+Show labels for items when item edges are not visible	Mostra etichette per gli item quando i bordi non sono visibili
+Draw labels above the item when media item height is more than:	Disegna etichette sopra l'item quando l'altezza del media item supera:
+Hide labels when media item height is less than:	Nascondi etichette quando l'altezza del media item è inferiore a:
+Item take rate/pitch:	Rate/pitch take dell'item:
+Normal labels	Etichette normali
+Abbreviate	Abbrevia
+Numbers only	Solo numeri
+Automatically color any recording pass that adds takes or lanes	Colora automaticamente ogni sessione di registrazione che aggiunge take o corsie
+Automatically color any media items that share pooled MIDI events	Colora automaticamente i media item che condividono eventi MIDI in pool
+Faster/less precise item background display (requires theme reload)	Visualizzazione sfondo item più rapida/meno precisa (richiede ricaricamento tema)
+Prevent retina drawing for arrange view (faster)	Disattiva disegno retina per la vista arrange (più veloce)
+Draw selection indicator on items	Disegna indicatore di selezione sugli item
+Maximum stretch marker handle size:	Dimensione massima maniglia dello stretch marker:
+pixels, or:	pixel, o:
+% of take height	% dell'altezza del take
+Media item buttons	Pulsanti dei media item
+Display buttons	Mostra pulsanti
+Locked	Bloccato
+Not locked	Non bloccato
+Per-take FX	FX per-take
+No FX	Nessun FX

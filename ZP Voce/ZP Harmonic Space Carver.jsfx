@@ -50,61 +50,23 @@ about:
   # ZP HARMONIC SPACE CARVER v2.6
   # =========================================================
   Space Carver crea spazio tra VOCE e MUSICA: un Carver multibanda guidato dalla voce
-  e un ducker VCA, con cue di rientro rapido sulla timeline.
+  e un ducker VCA, con cue di rientro rapido sulla timeline (#HSC).
+  
+  ## ITALIANO
+  * A cosa serve: crea spazio spettrale e dinamico nella base musicale sotto il parlato.
+  * Dove si inserisce: sul Music Bus (musica/base). In 1/2: Main audio. In 3/4, 5/6, 7/8: sidechain voci.
+  * Controlli principali: VOCE (fonti sidechain, soglie), CARVER (bande, intensita'), VCA (Min/Max Duck, Ceiling),
+    QUICK RETURN CUES (marker #HSC sincronizzati con la timeline e verifica allineamento voce).
+  * Guida completa: ZP Studio Suite > Help > Harmonic Space Carver (latocardioide.it/strumenti).
+  * Crediti: Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it).
 
-  ## 1. ROUTING
-  * In 1/2: Main (musica / base da abbassare)
-  * In 3/4: SC 1, in 5/6: SC 2, in 7/8: SC 3 (voci che guidano). La traccia deve avere
-    abbastanza canali (8 per usare tutte e tre le fonti). Ogni fonte ha ON e guadagno.
-  * Nel blocco VOCE compaiono solo le fonti che la traccia puo' ricevere: per SC2 porta
-    Track channels a 6, per SC3 a 8 (pulsante I/O del plugin). La spia di ogni fonte dice se
-    i pin sono collegati e se un invio o una traccia figlia del folder arriva su quei canali
-    (verifica dell'helper Cue Navigator 1.3; senza helper conta solo i canali).
-
-  ## 2. LA CATENA (come appare nella GUI)
-  * VOCE: fonti sidechain, Thresh voce, RMS Stab, Hold, Anticipo. Decide quando "c'e' voce".
-  * CARVER: confronta ogni banda della voce con la sua soglia e scava la musica nella stessa banda.
-    Thresh, Intens, Low/Mid/High, Spread, Knee, Attack, Release. Crossover sulla mappa BANDE.
-  * VCA: abbassa la musica quando c'e' voce. Ceiling (livello musica oltre cui agire), Prio,
-    Attack, Release, rientro STD/GRADUAL. Min Duck (riduzione minima con voce, linea gialla) e Max Duck
-    (massima, linea arancio) stanno accanto al meter VCA, nella riga sotto.
-  * GLUE: meter e pomello Glue insieme.
-  * USCITA: Mix, Out, In, Voice Ret.
-  Riga sotto, in colonna: LIVELLI sotto VOCE, BANDE sotto CARVER, meter VCA, GLUE e USCITA sotto VCA.
-
-  ## 3. SIMPLE E ADVANCED
-  Un solo motore. SIMPLE mostra i cinque controlli principali (Thresh voce, Spazio = Intens,
-  Duck = Max Duck, Rientro = VCA Release, Mix): sono gli stessi parametri dell'Advanced.
-
-  ## 4. PARTENZA: SCORE / FLAT / VOCAL
-  Punti di partenza: un clic imposta Depth, Intens, Spread, Prio, Min e Max Duck.
-  * SCORE: il Carver fa il lavoro, il VCA tocca appena (cinema, trailer).
-  * FLAT: equilibrio tra Carver e VCA.
-  * VOCAL: il VCA comanda come un fader, il Carver lavora poco (podcast, radio).
-  Il pulsante resta acceso finche' i valori coincidono; se ritocchi, si spegne.
-
-  ## 5. PREASCOLTO
-  OFF = uscita normale. CARVER / VCA / TUTTO fanno ascoltare solo cio' che viene tolto.
-  Quando e' attivo la GUI lo segnala in alto. Alla riapertura del progetto torna OFF.
-
-  ## 6. QUICK RETURN CUES
-  ADD / REMOVE mette o toglie un cue sul playhead (in Play) o sul cursore (da fermo, con
-  l'helper Cue Navigator). ELIMINA toglie i cue scelti nella fila: clic su un punto, Cmd/Ctrl+clic
-  per aggiungerne o toglierne altri, Shift+clic per un intervallo; UNDO li rimette.
-  Al cue VCA, Carver e Glue rientrano con la Rampa, poi per l'Apertura il processing resta aperto
-  e ignora il sidechain. Fino a 64 cue, salvati nel progetto.
-  Con l'helper (1.4) ogni cue e' anche un marker "#HSC" sul righello e il marker comanda: se un
-  taglio in ripple (tutte le tracce) lo sposta, o lo sposti a mano, il Carver si aggiorna. I cue si
-  aggiungono e si tolgono solo dal Carver: un #HSC cancellato a mano torna, uno aggiunto a mano sparisce.
-  Ctrl+Z vale anche per gli spostamenti dei cue. In render il Carver usa l'ultimo elenco sincronizzato.
-  Ogni cue ricorda la voce che ha sotto (le tracce voce sono quelle che arrivano al sidechain).
-  Se quella voce si sposta e il cue no, il cue diventa rosso: RIALLINEA lo porta sulla sua voce,
-  TIENI QUI accetta la posizione. Un marker trascinato a mano prende la voce nel punto nuovo.
-  Azioni da tastiera: "ZP HSC Cue - Aggiungi o togli", "Successivo", "Precedente", "Annulla".
-  Vista DOCK: una striscia con stato e cue da tenere aperta mentre monti.
-
-  ## 7. ACCESSIBILITA' E AUTOMAZIONI
-  Tutti i parametri e i meter sono nella REAPER FX Parameter List (tasto 'P' o 'Param').
+  ## ENGLISH
+  * Purpose: dynamically carves spectral and dynamic space in music beds under speech.
+  * Where to place: on Music Bus. In 1/2: Main music bed. In 3/4, 5/6, 7/8: voice sidechain inputs.
+  * Key controls: VOICE (sidechain sources, thresholds), CARVER (multiband depth, intensity), VCA (Min/Max Duck, Ceiling),
+    QUICK RETURN CUES (#HSC markers synchronized to timeline with audio anchor verification).
+  * Full guide: ZP Studio Suite > Help > Harmonic Space Carver (latocardioide.it/strumenti).
+  * Credits: Developed from an idea by Paolo Balestri · Lato Cardioide (latocardioide.it).
 
 // ================================================================
 // PARAMETRI (nascosti alla GUI, esposti alla DAW e a OSARA)
@@ -448,6 +410,11 @@ ui_drag_id = 0;
 ui_drag_start_y = 0;
 ui_drag_start_v = 0;
 active_info_id = 0;
+bridge_last_alive_tick = -1;
+bridge_last_alive_t = 0;
+bridge_req_seq = 0;
+help_warn_until = 0;
+ui_lang = 0;
 ui_scroll_y = 0;
 ui_max_scroll = 0;
 ui_scroll_widgets = 0;
@@ -1024,6 +991,16 @@ active_info_id = 0;
 ui_scroll_widgets = 0;
 ui_dark_panel = 0;
 quick_now = time_precise();
+
+// Polling ponte Cue Navigator (gmem 3900-3919)
+b_tick = gmem[3900];
+b_tick != bridge_last_alive_tick ? (
+  bridge_last_alive_tick = b_tick;
+  bridge_last_alive_t = quick_now;
+);
+bridge_alive = (bridge_last_alive_t > 0 && quick_now - bridge_last_alive_t <= 3.0);
+ui_lang = bridge_alive ? floor(gmem[3901] + 0.5) : 0;
+
 // se @block non gira (trasporto fermo senza elaborazione) il servizio dei cue lo fa la GUI
 quick_now - quick_service_t > 0.5 ? quick_service();
 
@@ -1061,13 +1038,23 @@ loop(3,
   sc_on && (sc_stat[i] == 3 || sc_stat[i] == 4 || sc_stat[i] == 7) ? sc_problem = 1;
   i == 0 ? strcpy(#scn, "SC1") : i == 1 ? strcpy(#scn, "SC2") : strcpy(#scn, "SC3");
   i == 0 ? strcpy(#scc, "3/4") : i == 1 ? strcpy(#scc, "5/6") : strcpy(#scc, "7/8");
-  sc_stat[i] == 1 ? sprintf(#sc_tmp, "%s: collegata e alimentata (invio o traccia figlia sui canali %s).", #scn, #scc) :
-  sc_stat[i] == 2 ? sprintf(#sc_tmp, "%s: arriva segnale sui canali %s ma la fonte e' spenta. Premi %s per usarla.", #scn, #scc, #scn) :
-  sc_stat[i] == 3 ? sprintf(#sc_tmp, "%s accesa ma nessun invio o traccia figlia arriva sui canali %s: controlla il routing.", #scn, #scc) :
-  sc_stat[i] == 4 ? sprintf(#sc_tmp, "%s: i pin del plugin non sono collegati ai canali della traccia (pulsante I/O del plugin).", #scn) :
-  sc_stat[i] == 6 ? sprintf(#sc_tmp, "%s accesa. Routing non verificato: l'helper Cue Navigator non e' in esecuzione.", #scn) :
-  sc_stat[i] == 7 ? sprintf(#sc_tmp, "%s accesa ma la traccia ha %d canali: ne servono %d (pulsante I/O, Track channels).", #scn, num_ch, 4 + 2 * i) :
-  sprintf(#sc_tmp, "%s spenta. Il campo e' il guadagno della fonte.", #scn);
+  ui_lang == 1 ? (
+    sc_stat[i] == 1 ? sprintf(#sc_tmp, "%s: connected and receiving (send or folder child on channels %s).", #scn, #scc) :
+    sc_stat[i] == 2 ? sprintf(#sc_tmp, "%s: signal on channels %s but source disabled. Press %s to use.", #scn, #scc, #scn) :
+    sc_stat[i] == 3 ? sprintf(#sc_tmp, "%s active but no send or folder child on channels %s: check routing.", #scn, #scc) :
+    sc_stat[i] == 4 ? sprintf(#sc_tmp, "%s: plugin pins not connected to track channels (plugin I/O).", #scn) :
+    sc_stat[i] == 6 ? sprintf(#sc_tmp, "%s active. Routing unverified: Cue Navigator helper not running.", #scn) :
+    sc_stat[i] == 7 ? sprintf(#sc_tmp, "%s active but track has %d channels: %d required (I/O, Track channels).", #scn, num_ch, 4 + 2 * i) :
+    sprintf(#sc_tmp, "%s disabled. Field sets input gain.", #scn);
+  ) : (
+    sc_stat[i] == 1 ? sprintf(#sc_tmp, "%s: collegata e alimentata (invio o traccia figlia sui canali %s).", #scn, #scc) :
+    sc_stat[i] == 2 ? sprintf(#sc_tmp, "%s: arriva segnale sui canali %s ma la fonte e' spenta. Premi %s per usarla.", #scn, #scc, #scn) :
+    sc_stat[i] == 3 ? sprintf(#sc_tmp, "%s accesa ma nessun invio o traccia figlia arriva sui canali %s: controlla il routing.", #scn, #scc) :
+    sc_stat[i] == 4 ? sprintf(#sc_tmp, "%s: i pin del plugin non sono collegati ai canali della traccia (pulsante I/O del plugin).", #scn) :
+    sc_stat[i] == 6 ? sprintf(#sc_tmp, "%s accesa. Routing non verificato: l'helper Cue Navigator non e' in esecuzione.", #scn) :
+    sc_stat[i] == 7 ? sprintf(#sc_tmp, "%s accesa ma la traccia ha %d canali: ne servono %d (pulsante I/O, Track channels).", #scn, num_ch, 4 + 2 * i) :
+    sprintf(#sc_tmp, "%s spenta. Il campo e' il guadagno della fonte.", #scn);
+  );
   i == 0 ? strcpy(#sc_msg0, #sc_tmp) : i == 1 ? strcpy(#sc_msg1, #sc_tmp) : strcpy(#sc_msg2, #sc_tmp);
   i += 1;
 );
@@ -1144,6 +1131,39 @@ function ui_cue_button(bx, by, bw, bh, label, state, enabled, info_id) local(is_
   );
   gfx_x = bx + max(4, (bw-tw)/2); gfx_y = sy + (bh-th)/2; gfx_drawstr(label);
   clicked;
+);
+
+function ui_help_button(bx, by, bw, bh, pid) local(is_hover, clicked, light, sy, tw, th) (
+  sy = ui_sy(by);
+  is_hover = ui_hit(bx, by, bw, bh);
+  is_hover ? active_info_id = 99;
+  clicked = is_hover && mouse_click;
+  light = show_simple && !ui_dark_panel;
+  light ? (
+    gfx_r = is_hover ? 0.30 : 0.22;
+    gfx_g = is_hover ? 0.50 : 0.38;
+    gfx_b = is_hover ? 0.68 : 0.54;
+  ) : (
+    gfx_r = is_hover ? 0.16 : 0.12;
+    gfx_g = is_hover ? 0.62 : 0.52;
+    gfx_b = is_hover ? 0.75 : 0.62;
+  );
+  gfx_a = 1;
+  gfx_rect(bx, sy, bw, bh);
+  gfx_r = 1; gfx_g = 1; gfx_b = 1; gfx_a = is_hover ? 1.0 : 0.85;
+  gfx_setfont(3);
+  gfx_measurestr("?", tw, th);
+  gfx_x = bx + (bw - tw) / 2; gfx_y = sy + (bh - th) / 2;
+  gfx_drawstr("?");
+  clicked ? (
+    bridge_alive ? (
+      bridge_req_seq += 1;
+      gmem[3902] = pid;
+      gmem[3903] = bridge_req_seq;
+    ) : (
+      help_warn_until = quick_now + 4.0;
+    );
+  );
 );
 
 // Trascinamento comune a pomelli e campi: doppio clic/destro = default, Shift+clic = neutro, Shift+drag = fine.
@@ -1364,9 +1384,9 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
   gfx_setfont(3); gfx_x = bx + 10; gfx_y = sy + 8; gfx_drawstr("QUICK RETURN CUES");
   sprintf(#quick_count_txt, "  %d / 64", quick_point_count);
   gfx_setfont(5); gfx_r=0.62; gfx_g=0.66; gfx_b=0.73; gfx_y = sy + 10; gfx_drawstr(#quick_count_txt);
-  quick_gmem_base < 0 ? (gfx_r=0.85; gfx_g=0.55; gfx_b=0.20; gfx_drawstr("   (take/input FX: salto non disponibile)"));
-  quick_lost_n > 0 ? (sprintf(#quick_lost_txt, "   %d FUORI POSTO", quick_lost_n); gfx_r=0.95; gfx_g=0.32; gfx_b=0.28; gfx_drawstr(#quick_lost_txt););
-  quick_gmem_base >= 0 && !sc_route_fresh ? (gfx_r=0.92; gfx_g=0.60; gfx_b=0.18; gfx_drawstr("   HELPER SPENTO"););
+  quick_gmem_base < 0 ? (gfx_r=0.85; gfx_g=0.55; gfx_b=0.20; gfx_drawstr(ui_lang == 1 ? "   (take/input FX: jump unavailable)" : "   (take/input FX: salto non disponibile)"));
+  quick_lost_n > 0 ? (sprintf(#quick_lost_txt, ui_lang == 1 ? "   %d MISALIGNED" : "   %d FUORI POSTO", quick_lost_n); gfx_r=0.95; gfx_g=0.32; gfx_b=0.28; gfx_drawstr(#quick_lost_txt););
+  quick_gmem_base >= 0 && !sc_route_fresh ? (gfx_r=0.92; gfx_g=0.60; gfx_b=0.18; gfx_drawstr(ui_lang == 1 ? "   HELPER OFF" : "   HELPER SPENTO"););
   ui_hit(bx, by, 420, 26) && quick_gmem_base >= 0 && !sc_route_fresh ? active_info_id = 75;
 
   qx = bx + 10; qy = by + 32; qh = 24;
@@ -1379,13 +1399,13 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
   );
   x += 36;
   nsel = quick_msel_count();
-  quick_status == 7 ? strcpy(#quick_sel_txt, "TUTTI CANCELLATI") :
-  quick_status == 10 ? sprintf(#quick_sel_txt, "ELIMINATI: %d", quick_deleted_n) :
-  nsel > 1 ? sprintf(#quick_sel_txt, "%d CUE SELEZ.", nsel) :
+  quick_status == 7 ? strcpy(#quick_sel_txt, ui_lang == 1 ? "ALL CLEARED" : "TUTTI CANCELLATI") :
+  quick_status == 10 ? sprintf(#quick_sel_txt, ui_lang == 1 ? "DELETED: %d" : "ELIMINATI: %d", quick_deleted_n) :
+  nsel > 1 ? sprintf(#quick_sel_txt, ui_lang == 1 ? "%d CUES SEL." : "%d CUE SELEZ.", nsel) :
   quick_sel >= 0 ? (
     m = floor(quick_points[quick_sel] / 60); s = quick_points[quick_sel] - m * 60;
     sprintf(#quick_sel_txt, "CUE %d / %d  %d:%04.1f", quick_sel + 1, quick_point_count, m, s);
-  ) : quick_point_count > 0 ? strcpy(#quick_sel_txt, "NESSUN CUE SELEZ.") : strcpy(#quick_sel_txt, "NESSUN CUE");
+  ) : quick_point_count > 0 ? strcpy(#quick_sel_txt, ui_lang == 1 ? "NO CUE SELECTED" : "NESSUN CUE SELEZ.") : strcpy(#quick_sel_txt, ui_lang == 1 ? "NO CUES" : "NESSUN CUE");
   ui_cue_button(x, qy, sel_w, qh, #quick_sel_txt, quick_sel_lost ? 2 : quick_sel >= 0, quick_jump_ok && quick_point_count > 0, quick_sel_lost ? 73 : 56) ? (
     gmem[quick_gmem_base] = 3; gmem[quick_gmem_base+1] += 1;
   );
@@ -1396,9 +1416,9 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
   );
   x += 32 + 14;
   // ADD / REMOVE, UNDO, CLEAR ALL (il messaggio compare nel pulsante stesso)
-  quick_status == 8 ? strcpy(#quick_add_txt, "MANCA HELPER") : quick_status == 4 ? strcpy(#quick_add_txt, "PREMI PLAY") :
-  quick_status == 2 ? strcpy(#quick_add_txt, "TOLTO") : quick_status == 1 ? strcpy(#quick_add_txt, "AGGIUNTO") :
-  quick_status == 3 ? strcpy(#quick_add_txt, "PIENO") : strcpy(#quick_add_txt, "ADD / REMOVE");
+  quick_status == 8 ? strcpy(#quick_add_txt, ui_lang == 1 ? "HELPER NEEDED" : "MANCA HELPER") : quick_status == 4 ? strcpy(#quick_add_txt, ui_lang == 1 ? "PRESS PLAY" : "PREMI PLAY") :
+  quick_status == 2 ? strcpy(#quick_add_txt, ui_lang == 1 ? "REMOVED" : "TOLTO") : quick_status == 1 ? strcpy(#quick_add_txt, ui_lang == 1 ? "ADDED" : "AGGIUNTO") :
+  quick_status == 3 ? strcpy(#quick_add_txt, ui_lang == 1 ? "FULL" : "PIENO") : strcpy(#quick_add_txt, "ADD / REMOVE");
   add_state = quick_status == 1 ? 1 : (quick_status == 8 || quick_status == 3) ? 3 : 0;
   ui_cue_button(x, qy, 110, qh, #quick_add_txt, add_state, 1, 56) ? (
     (play_state & 1) ? (quick_request = 1;) :
@@ -1408,10 +1428,10 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
     ) : (quick_set_status(4););
   );
   x += 114;
-  ui_cue_button(x, qy, 60, qh, (quick_status == 5 || quick_status == 6) ? "FATTO" : "UNDO", 0, quick_last_action > 0, 59) ? quick_undo();
+  ui_cue_button(x, qy, 60, qh, (quick_status == 5 || quick_status == 6) ? (ui_lang == 1 ? "DONE" : "FATTO") : "UNDO", 0, quick_last_action > 0, 59) ? quick_undo();
   x += 64;
   quick_clear_armed = quick_clear_arm_t > 0;
-  ui_cue_button(x, qy, 80, qh, quick_clear_armed ? "CONFERMA?" : "CLEAR ALL", quick_clear_armed ? 2 : 0, quick_point_count > 0, 57) ? (
+  ui_cue_button(x, qy, 80, qh, quick_clear_armed ? (ui_lang == 1 ? "CONFIRM?" : "CONFERMA?") : "CLEAR ALL", quick_clear_armed ? 2 : 0, quick_point_count > 0, 57) ? (
     quick_clear_armed ? (quick_clear_all(); quick_clear_arm_t = -10;) : (quick_clear_arm_t = quick_now;);
   );
   x += 80 + 12;
@@ -1420,9 +1440,9 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
     gfx_setfont(5); gfx_r=0.60; gfx_g=0.60; gfx_b=0.72; gfx_x = x; gfx_y = ui_sy(qy + 5); gfx_drawstr("Timeline");
     x += 58; tl_w = 104;
   ) : (tl_w = 60;);
-  ui_cue_button(x, qy, 56, qh, "SALTA", quick_nav_jump, quick_gmem_base >= 0, 58) ? (quick_nav_jump = 1; quick_sel = -1;);
+  ui_cue_button(x, qy, 56, qh, ui_lang == 1 ? "JUMP" : "SALTA", quick_nav_jump, quick_gmem_base >= 0, 58) ? (quick_nav_jump = 1; quick_sel = -1;);
   x += 60;
-  ui_cue_button(x, qy, tl_w, qh, full ? "RESTA FERMO" : "FERMO", !quick_nav_jump, 1, 58) ? (quick_nav_jump = 0;);
+  ui_cue_button(x, qy, tl_w, qh, full ? (ui_lang == 1 ? "STAY" : "RESTA FERMO") : (ui_lang == 1 ? "STAY" : "FERMO"), !quick_nav_jump, 1, 58) ? (quick_nav_jump = 0;);
 
   // Fila dei cue: dove sei (playhead rosso) rispetto ai cue. Clic su un punto = selezionalo;
   // Cmd/Ctrl+clic aggiunge o toglie un punto, Shift+clic prende l'intervallo (convenzioni di REAPER).
@@ -1474,19 +1494,19 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
     gfx_measurestr(#ql_txt, tw, th); gfx_x = lx + lw - tw; gfx_drawstr(#ql_txt);
   ) : (
     gfx_setfont(5); gfx_r=0.50; gfx_g=0.52; gfx_b=0.60; gfx_x = lx; gfx_y = ui_sy(ly + 8);
-    gfx_drawstr("Nessun cue: premi ADD / REMOVE dove la musica deve rientrare subito.");
+    gfx_drawstr(ui_lang == 1 ? "No cues: press ADD / REMOVE where music must return instantly." : "Nessun cue: premi ADD / REMOVE dove la musica deve rientrare subito.");
   );
 
   quick_sel_lost && quick_gmem_base >= 0 ? (
-    ui_cue_button(lx + lw + 12, ly - 11, 100, 22, "RIALLINEA", 2, 1, 73) ? (gmem[quick_gmem_base+2] = quick_sel; gmem[quick_gmem_base] = 6; gmem[quick_gmem_base+1] += 1;);
-    ui_cue_button(lx + lw + 116, ly - 11, 96, 22, "TIENI QUI", 0, 1, 74) ? (gmem[quick_gmem_base+2] = quick_sel; gmem[quick_gmem_base] = 7; gmem[quick_gmem_base+1] += 1;);
+    ui_cue_button(lx + lw + 12, ly - 11, 100, 22, ui_lang == 1 ? "REALIGN" : "RIALLINEA", 2, 1, 73) ? (gmem[quick_gmem_base+2] = quick_sel; gmem[quick_gmem_base] = 6; gmem[quick_gmem_base+1] += 1;);
+    ui_cue_button(lx + lw + 116, ly - 11, 96, 22, ui_lang == 1 ? "KEEP HERE" : "TIENI QUI", 0, 1, 74) ? (gmem[quick_gmem_base+2] = quick_sel; gmem[quick_gmem_base] = 7; gmem[quick_gmem_base+1] += 1;);
   );
-  nsel > 1 ? sprintf(#quick_del_txt, "ELIMINA %d", nsel) : strcpy(#quick_del_txt, "ELIMINA");
+  nsel > 1 ? sprintf(#quick_del_txt, ui_lang == 1 ? "DELETE %d" : "ELIMINA %d", nsel) : strcpy(#quick_del_txt, ui_lang == 1 ? "DELETE" : "ELIMINA");
   ui_cue_button(lx + row_w - del_w, ly - 11, del_w, 22, #quick_del_txt, nsel > 0 ? 2 : 0,
                 quick_point_count > 0 && (nsel > 0 || quick_sel >= 0), 77) ? quick_delete_selected();
   full ? (
-    ui_knob(56, bx + bw - 86, by + 70, 12, 10, 250, 200, "Rampa", "ms", 0.95, 0.42, 0.20, 56);
-    ui_knob(57, bx + bw - 34, by + 70, 12, 0, 2000, 500, "Apertura", "ms", 0.95, 0.42, 0.20, 61);
+    ui_knob(56, bx + bw - 86, by + 70, 12, 10, 250, 200, ui_lang == 1 ? "Ramp" : "Rampa", "ms", 0.95, 0.42, 0.20, 56);
+    ui_knob(57, bx + bw - 34, by + 70, 12, 0, 2000, 500, ui_lang == 1 ? "Release" : "Apertura", "ms", 0.95, 0.42, 0.20, 61);
   );
   ui_dark_panel = 0;
 );
@@ -1501,12 +1521,14 @@ function draw_header() local(rx, ban_w) (
   gfx_setfont(5); show_simple ? (gfx_r=0.43; gfx_g=0.49; gfx_b=0.56;) : (gfx_r=0.45; gfx_g=0.45; gfx_b=0.52;);
   gfx_x = 18; gfx_y = 30; show_simple ? gfx_drawstr("Simple  v2.6") : gfx_drawstr("Advanced  v2.6");
 
-  gfx_x = 110; gfx_y = 18; gfx_drawstr("PARTENZA");
+  gfx_x = 110; gfx_y = 18; gfx_drawstr(ui_lang == 1 ? "START" : "PARTENZA");
   ui_cue_button(184, 12, 62, 26, "SCORE", preset_match(0), 1, 70) ? preset_apply(0);
   ui_cue_button(250, 12, 54, 26, "FLAT", preset_match(1), 1, 70) ? preset_apply(1);
   ui_cue_button(308, 12, 62, 26, "VOCAL", preset_match(2), 1, 70) ? preset_apply(2);
 
   rx = gfx_w - 20;
+  ui_help_button(rx - 26, 12, 26, 26, 2);
+  rx -= 32;
   ui_tab_button(51, 1, rx - 60, 12, 60, 26, "DOCK", 51);
   ui_tab_button(51, 0, rx - 60 - 4 - 56, 12, 56, 26, "FULL", 51);
   ui_tab_button(4, 1, rx - 120 - 16 - 92, 12, 92, 26, "ADVANCED", 4);
@@ -1527,14 +1549,14 @@ ui_scroll_widgets = 1;
 show_simple ? (
   // ================= SIMPLE: i controlli principali dell'Advanced =================
   sx = 18; sw = gfx_w - 36;
-  draw_box(sx, 58, sw, 232, "CONTROLLI PRINCIPALI", 0.20, 0.36, 0.50);
+  draw_box(sx, 58, sw, 232, ui_lang == 1 ? "PRIMARY CONTROLS" : "CONTROLLI PRINCIPALI", 0.20, 0.36, 0.50);
   gfx_setfont(5); gfx_r=0.36; gfx_g=0.42; gfx_b=0.49; gfx_x = sx + 200; gfx_y = ui_sy(64);
-  gfx_drawstr("Gli stessi parametri dell'Advanced: cio' che cambi qui cambia anche la'.");
+  gfx_drawstr(ui_lang == 1 ? "Same parameters as Advanced: changes here apply to both." : "Gli stessi parametri dell'Advanced: cio' che cambi qui cambia anche la'.");
   sk = (sw - 300) / 5;
-  ui_knob(6,  sx + sk * 0.5, 175, 26, -60, 0, -35, "Voce", "dB", 0.20, 0.70, 0.40, 6);
-  ui_knob(16, sx + sk * 1.5, 175, 26, 0, 150, 100, "Spazio", "%", 0.16, 0.62, 0.80, 16);
+  ui_knob(6,  sx + sk * 0.5, 175, 26, -60, 0, -35, ui_lang == 1 ? "Voice" : "Voce", "dB", 0.20, 0.70, 0.40, 6);
+  ui_knob(16, sx + sk * 1.5, 175, 26, 0, 150, 100, ui_lang == 1 ? "Space" : "Spazio", "%", 0.16, 0.62, 0.80, 16);
   ui_knob(24, sx + sk * 2.5, 175, 26, -40, 0, -15, "Duck", "dB", 0.84, 0.30, 0.55, 24);
-  ui_knob(28, sx + sk * 3.5, 175, 26, 20, 4000, 470, "Rientro", "ms", 0.84, 0.50, 0.22, 28);
+  ui_knob(28, sx + sk * 3.5, 175, 26, 20, 4000, 470, ui_lang == 1 ? "Release" : "Rientro", "ms", 0.84, 0.50, 0.22, 28);
   ui_knob(35, sx + sk * 4.5, 175, 26, 0, 100, 100, "Mix", "%", 0.48, 0.48, 0.52, 35);
 
   stx = sx + sw - 286;
@@ -1547,18 +1569,18 @@ show_simple ? (
   draw_led(stx + 6, 252, speech_state == 1, "VOCE", 0.18, 0.70, 0.40);
   draw_led(stx + 80, 252, speech_state == 2, "HOLD", 0.90, 0.58, 0.16);
   draw_led(stx + 154, 252, glue_active, "GLUE", 0.62, 0.40, 0.90);
-  sc_problem ? (gfx_setfont(5); gfx_r=0.85; gfx_g=0.35; gfx_b=0.20; gfx_x = stx; gfx_y = ui_sy(268); gfx_drawstr("Sidechain: controlla il routing (Advanced, blocco VOCE)"););
+  sc_problem ? (gfx_setfont(5); gfx_r=0.85; gfx_g=0.35; gfx_b=0.20; gfx_x = stx; gfx_y = ui_sy(268); gfx_drawstr(ui_lang == 1 ? "Sidechain: check routing (Advanced, VOICE block)" : "Sidechain: controlla il routing (Advanced, blocco VOCE)"););
 
   draw_cue_bar(sx, 302, sw, 1);
 
-  draw_box(sx, 430, sw, 64, "PREASCOLTO DEL TOLTO", 0.20, 0.36, 0.50);
+  draw_box(sx, 430, sw, 64, ui_lang == 1 ? "DELTA AUDITION" : "PREASCOLTO DEL TOLTO", 0.20, 0.36, 0.50);
   ui_tab_button(31, 0, sx + 12, 460, 60, 24, "OFF", 31);
   ui_tab_button(31, 1, sx + 76, 460, 80, 24, "CARVER", 31);
   ui_tab_button(31, 2, sx + 160, 460, 60, 24, "VCA", 31);
-  ui_tab_button(31, 3, sx + 224, 460, 74, 24, "TUTTO", 31);
+  ui_tab_button(31, 3, sx + 224, 460, 74, 24, ui_lang == 1 ? "ALL" : "TUTTO", 31);
   gfx_setfont(5); gfx_r=0.36; gfx_g=0.42; gfx_b=0.49; gfx_x = sx + 312; gfx_y = ui_sy(465);
-  slider(31) > 0 ? (gfx_r=0.80; gfx_g=0.45; gfx_b=0.05; gfx_drawstr("Stai ascoltando solo cio' che viene tolto. OFF = uscita normale.")) :
-                   gfx_drawstr("OFF = uscita normale. I livelli misurano sempre l'uscita vera.");
+  slider(31) > 0 ? (gfx_r=0.80; gfx_g=0.45; gfx_b=0.05; gfx_drawstr(ui_lang == 1 ? "Auditioning removed sound only. OFF = normal output." : "Stai ascoltando solo cio' che viene tolto. OFF = uscita normale.")) :
+                   gfx_drawstr(ui_lang == 1 ? "OFF = normal output. Meters always display true output." : "OFF = uscita normale. I livelli misurano sempre l'uscita vera.");
 ) : (
   // ================= ADVANCED =================
   // ---- riga 1: VOCE -> CARVER -> VCA ----
@@ -1588,7 +1610,7 @@ show_simple ? (
       sc_row += 1;
     ) : !sc_hint_done ? (
       gfx_setfont(5); gfx_r=0.50; gfx_g=0.52; gfx_b=0.60; gfx_x = 20; gfx_y = ui_sy(sy_row + 3);
-      sprintf(#sc_hint, "SC%d: porta Track channels a %d (I/O)", i + 1, 4 + 2 * i); gfx_drawstr(#sc_hint);
+      sprintf(#sc_hint, ui_lang == 1 ? "SC%d: set Track channels to %d (I/O)" : "SC%d: porta Track channels a %d (I/O)", i + 1, 4 + 2 * i); gfx_drawstr(#sc_hint);
       ui_hit(18, sy_row, 236, 20) ? active_info_id = 68;
       sc_hint_done = 1; sc_row += 1;
     );
@@ -1597,7 +1619,7 @@ show_simple ? (
   ui_knob(6,  42, 204, 17, -60, 0, -35, "Thresh", "dB", 0.20, 0.85, 0.45, 6);
   ui_knob(8,  102, 204, 13, 0, 100, 55, "RMS Stab", "%", 0.95, 0.62, 0.15, 8);
   ui_knob(27, 162, 204, 13, 10, 2000, 150, "Hold", "ms", 0.20, 0.85, 0.45, 27);
-  ui_knob(63, 222, 204, 13, 0, 20, 0, "Anticipo", "ms", 0.20, 0.85, 0.45, 63);
+  ui_knob(63, 222, 204, 13, 0, 20, 0, ui_lang == 1 ? "Pre-Det" : "Anticipo", "ms", 0.20, 0.85, 0.45, 63);
   draw_led(26, 256, speech_state == 1, "VOCE", 0.20, 0.95, 0.45);
   draw_led(96, 256, speech_state == 2, "HOLD", 0.95, 0.62, 0.15);
   draw_led(166, 256, glue_active, "GLUE", 0.72, 0.42, 0.95);
@@ -1642,17 +1664,17 @@ show_simple ? (
   // Min Duck e Max Duck stanno accanto al meter VCA (riga 2), vicino alle loro linee
   ui_knob(26, 772, 126, 13, 1, 500, 75, "Attack", "ms", 0.88, 0.42, 0.65, 26);
   ui_knob(28, 846, 126, 13, 20, 4000, 470, "Release", "ms", 0.88, 0.42, 0.65, 28);
-  gfx_setfont(5); gfx_r=0.60; gfx_g=0.60; gfx_b=0.72; gfx_x = 624; gfx_y = ui_sy(186); gfx_drawstr("Rientro");
+  gfx_setfont(5); gfx_r=0.60; gfx_g=0.60; gfx_b=0.72; gfx_x = 624; gfx_y = ui_sy(186); gfx_drawstr(ui_lang == 1 ? "Recovery" : "Rientro");
   ui_tab_button(50, 0, 624, 206, 48, 22, "STD", 50);
   ui_tab_button(50, 1, 676, 206, 78, 22, "GRADUAL", 50);
   slider(23) <= slider(24) + 0.05 ? (
-    gfx_setfont(5); gfx_r=0.95; gfx_g=0.62; gfx_b=0.15; gfx_x = 764; gfx_y = ui_sy(212); gfx_drawstr("Min = Max: VCA fisso");
+    gfx_setfont(5); gfx_r=0.95; gfx_g=0.62; gfx_b=0.15; gfx_x = 764; gfx_y = ui_sy(212); gfx_drawstr(ui_lang == 1 ? "Min = Max: fixed VCA" : "Min = Max: VCA fisso");
     ui_hit(760, 208, 126, 20) ? active_info_id = 76;
   );
 
   // ---- riga 2, in colonna con la riga 1: LIVELLI sotto VOCE, BANDE sotto CARVER,
   //      VCA (con Min/Max Duck), GLUE e USCITA sotto VCA ----
-  draw_box(268, 276, 262, 204, "BANDE", 0.82, 0.84, 0.90);
+  draw_box(268, 276, 262, 204, ui_lang == 1 ? "BANDS" : "BANDE", 0.82, 0.84, 0.90);
   ui_cue_button(414, 279, 46, 19, "GR", bands_page == 0, 1, 72) ? bands_page = 0;
   ui_cue_button(464, 279, 58, 19, "SCOPE", bands_page == 1, 1, 72) ? bands_page = 1;
   mx = 278; my0 = 306; mw = 242; mh = 148;
@@ -1735,27 +1757,27 @@ show_simple ? (
   draw_gr_bar(708, 326, 18, 120, glue_meter_gr, glue_active, "GLUE");
   ui_knob(33, 753, 360, 14, 0, 100, 20, "Glue", "%", 0.66, 0.42, 0.88, 33);
 
-  draw_box(786, 276, 104, 204, "USCITA", 0.82, 0.84, 0.90);
+  draw_box(786, 276, 104, 204, ui_lang == 1 ? "OUTPUT" : "USCITA", 0.82, 0.84, 0.90);
   ui_knob(35, 808, 344, 15, 0, 100, 100, "Mix", "%", 0.7, 0.7, 0.7, 35);
   ui_knob(34, 860, 344, 13, -12, 12, 0, "Out", "dB", 0.7, 0.7, 0.7, 34);
   ui_knob(2,  808, 428, 13, -24, 24, 0, "In", "dB", 0.7, 0.7, 0.7, 2);
   ui_knob(32, 860, 428, 13, -120, 12, -120, "Voice Ret", "dB", 0.92, 0.65, 0.10, 32);
 
-  draw_box(10, 276, 250, 204, "LIVELLI", 0.82, 0.84, 0.90);
+  draw_box(10, 276, 250, 204, ui_lang == 1 ? "LEVELS" : "LIVELLI", 0.82, 0.84, 0.90);
   draw_hmeter(20, 312, 230, 10, max(meter_main_l, meter_main_r), "MAIN", 0.18, 0.88, 0.35);
   draw_hmeter(20, 336, 230, 10, max(meter_sc_l, meter_sc_r), "VOCE", 0.08, 0.70, 0.88);
   draw_hmeter(20, 360, 230, 10, max(meter_out_l, meter_out_r), "OUT", 0.18, 0.88, 0.35);
-  gfx_setfont(5); gfx_r=0.60; gfx_g=0.60; gfx_b=0.72; gfx_x = 20; gfx_y = ui_sy(384); gfx_drawstr("Preascolto del tolto");
+  gfx_setfont(5); gfx_r=0.60; gfx_g=0.60; gfx_b=0.72; gfx_x = 20; gfx_y = ui_sy(384); gfx_drawstr(ui_lang == 1 ? "Delta audition" : "Preascolto del tolto");
   ui_tab_button(31, 0, 20, 402, 44, 22, "OFF", 31);
   ui_tab_button(31, 1, 68, 402, 54, 22, "CARV", 31);
   ui_tab_button(31, 2, 126, 402, 44, 22, "VCA", 31);
-  ui_tab_button(31, 3, 174, 402, 54, 22, "TUTTO", 31);
+  ui_tab_button(31, 3, 174, 402, 54, 22, ui_lang == 1 ? "ALL" : "TUTTO", 31);
   slider(31) > 0 ? (
-    draw_hmeter(20, 436, 230, 10, max(meter_delta_l, meter_delta_r), "TOLTO", 0.92, 0.65, 0.10);
-    gfx_setfont(5); gfx_r=0.95; gfx_g=0.62; gfx_b=0.15; gfx_x = 20; gfx_y = ui_sy(456); gfx_drawstr("Senti solo il tolto. OFF per l'uscita.");
+    draw_hmeter(20, 436, 230, 10, max(meter_delta_l, meter_delta_r), ui_lang == 1 ? "DELTA" : "TOLTO", 0.92, 0.65, 0.10);
+    gfx_setfont(5); gfx_r=0.95; gfx_g=0.62; gfx_b=0.15; gfx_x = 20; gfx_y = ui_sy(456); gfx_drawstr(ui_lang == 1 ? "Delta audition only. OFF for output." : "Senti solo il tolto. OFF per l'uscita.");
   ) : (
-    gfx_setfont(5); gfx_r=0.45; gfx_g=0.45; gfx_b=0.52; gfx_x = 20; gfx_y = ui_sy(440); gfx_drawstr("I livelli misurano sempre");
-    gfx_x = 20; gfx_y = ui_sy(456); gfx_drawstr("l'uscita vera.");
+    gfx_setfont(5); gfx_r=0.45; gfx_g=0.45; gfx_b=0.52; gfx_x = 20; gfx_y = ui_sy(440); gfx_drawstr(ui_lang == 1 ? "Meters always display" : "I livelli misurano sempre");
+    gfx_x = 20; gfx_y = ui_sy(456); gfx_drawstr(ui_lang == 1 ? "true output." : "l'uscita vera.");
   );
 
   // ---- riga 3: QUICK RETURN CUES ----
@@ -1803,6 +1825,7 @@ ui_max_scroll > 0 ? (
   draw_listen_banner(20, 104, 150, 16);
   draw_cue_bar(188, 10, gfx_w - 198, 0);
   ui_dark_panel = 1;
+  ui_help_button(gfx_w - 70, 12, 52, 24, 2);
   ui_tab_button(51, 0, gfx_w - 70, 40, 52, 24, "FULL", 51);
   ui_dark_panel = 0;
 );
@@ -1818,53 +1841,65 @@ view_mode == 0 ? (
   show_simple ? (gfx_r=0.28; gfx_g=0.33; gfx_b=0.39;) : (gfx_r=0.7; gfx_g=0.7; gfx_b=0.7;);
   gfx_x = 15; gfx_y = footer_top + 6;
 
-  active_info_id == 2  ? gfx_drawstr("IN: livello della musica prima del processamento.") :
-  active_info_id == 4  ? gfx_drawstr("PROFILO: SIMPLE mostra i controlli principali, ADVANCED tutti. Il motore e il suono sono gli stessi.") :
-  active_info_id == 6  ? gfx_drawstr("THRESH VOCE: sopra questa soglia c'e' voce e il VCA lavora. Anello esterno = livello della voce.") :
-  active_info_id == 7  ? gfx_drawstr("THRESH CARVER: soglia di ogni banda della voce. Anello esterno = banda della voce piu' forte.") :
-  active_info_id == 8  ? gfx_drawstr("RMS STAB: rende la lettura della voce piu' stabile (100%) o piu' pronta (0%). Non comprime la voce.") :
-  active_info_id == 13 ? gfx_drawstr("LOW: quanto il Carver puo' scavare nei bassi della musica.") :
-  active_info_id == 14 ? gfx_drawstr("MID: quanto il Carver puo' scavare nelle medie (dove sta la voce).") :
-  active_info_id == 15 ? gfx_drawstr("HIGH: quanto il Carver puo' scavare negli alti della musica.") :
-  active_info_id == 16 ? gfx_drawstr("INTENS (in Simple: SPAZIO): forza complessiva del Carver su tutte le bande.") :
-  active_info_id == 17 ? gfx_drawstr("CARVER ATTACK: velocita' con cui lo scavo si apre alla voce.") :
-  active_info_id == 18 ? gfx_drawstr("CARVER RELEASE: quanto dolcemente la musica torna piena nelle bande.") :
-  active_info_id == 19 ? gfx_drawstr("SPREAD: allarga lo scavo alle bande vicine per un effetto piu' morbido.") :
-  active_info_id == 22 ? gfx_drawstr("CEILING: il VCA agisce quando la musica supera questo livello. Anello esterno = livello della musica.") :
-  active_info_id == 23 ? gfx_drawstr("MIN DUCK: riduzione minima quando c'e' voce. Non puo' superare Max Duck (lo trascina con se').") :
-  active_info_id == 24 ? gfx_drawstr("MAX DUCK (in Simple: DUCK): riduzione massima della musica. Segno arancio sul meter VCA.") :
-  active_info_id == 25 ? gfx_drawstr("PRIO: quanto il VCA porta la musica verso il Ceiling, tra Min e Max Duck.") :
-  active_info_id == 26 ? gfx_drawstr("VCA ATTACK: rapidita' con cui la musica si abbassa.") :
-  active_info_id == 27 ? gfx_drawstr("HOLD: quanto la voce resta 'accesa' tra parole, pause e respiri.") :
-  active_info_id == 28 ? gfx_drawstr("VCA RELEASE (in Simple: RIENTRO): velocita' con cui la musica torna su.") :
-  active_info_id == 31 ? gfx_drawstr("PREASCOLTO: OFF = uscita normale. CARVER / VCA / TUTTO fanno sentire solo cio' che viene tolto.") :
-  active_info_id == 32 ? gfx_drawstr("VOICE RET: aggiunge la voce all'uscita (OFF di serie). Utile solo fuori dalla DAW.") :
-  active_info_id == 33 ? gfx_drawstr("GLUE: rifinitura finale vincolata alla voce; a riposo resta a 0 dB.") :
-  active_info_id == 34 ? gfx_drawstr("OUT: guadagno finale in uscita.") :
-  active_info_id == 35 ? gfx_drawstr("MIX: quantita' di processamento (100% = tutto, 0% = musica intatta).") :
-  active_info_id == 50 ? gfx_drawstr("RIENTRO VCA: STD classico, GRADUAL riapre la musica con una rampa lunga e morbida dopo l'Hold.") :
-  active_info_id == 51 ? gfx_drawstr("VISTA: FULL tutta la GUI, DOCK una striscia con stato e cue da tenere aperta mentre monti.") :
-  active_info_id == 53 ? gfx_drawstr("DBG: mostra o nasconde la diagnostica VCA nel footer.") :
-  active_info_id == 56 ? gfx_drawstr("CUE: ADD/REMOVE sul playhead o sul cursore; diventa un marker #HSC che segue i tagli. < > saltano (SALTA) o selezionano.") :
-  active_info_id == 57 ? gfx_drawstr("CLEAR ALL: primo clic arma (CONFERMA?), secondo clic entro 3 s cancella tutti i cue. UNDO li rimette.") :
-  active_info_id == 58 ? (quick_gmem_base < 0 ? gfx_drawstr("TIMELINE: salto non disponibile su take FX o input FX. RESTA FERMO scorre i cue.") :
-    gfx_drawstr("TIMELINE: SALTA sposta il playhead sui cue (helper Cue Navigator); RESTA FERMO solo li seleziona.")) :
-  active_info_id == 59 ? gfx_drawstr("UNDO: annulla l'ultima aggiunta, rimozione o cancellazione dei cue.") :
-  active_info_id == 60 ? gfx_drawstr("FILA DEI CUE: ciano = al suo posto, rosso = fuori posto. Clic sceglie, Cmd/Ctrl+clic aggiunge, Shift+clic intervallo.") :
-  active_info_id == 77 ? gfx_drawstr("ELIMINA: toglie i cue selezionati e i loro marker #HSC (Cmd/Ctrl+clic o Shift+clic per piu' cue). UNDO li rimette.") :
-  active_info_id == 61 ? gfx_drawstr("APERTURA: dopo la Rampa la musica resta aperta per questo tempo, ignorando la voce.") :
+  quick_now < help_warn_until ? (
+    gfx_r = 0.95; gfx_g = 0.65; gfx_b = 0.20;
+    ui_lang == 1 ?
+      gfx_drawstr("Guide: open ZP Help > Harmonic Space Carver (start Cue Navigator from 33 Welcome to open it from here)") :
+      gfx_drawstr("Guida: apri Help ZP > Harmonic Space Carver (avvia il Cue Navigator dal 33 Benvenuto per aprirla da qui)");
+  ) :
+  active_info_id == 99 ? (
+    ui_lang == 1 ? gfx_drawstr("GUIDE: click to open the dedicated HTML guide section in browser.") :
+                   gfx_drawstr("GUIDA: clic per aprire la sezione dedicata della guida HTML nel browser.");
+  ) :
+  active_info_id == 2  ? (ui_lang == 1 ? gfx_drawstr("IN: music level before processing.") : gfx_drawstr("IN: livello della musica prima del processamento.")) :
+  active_info_id == 4  ? (ui_lang == 1 ? gfx_drawstr("PROFILE: SIMPLE shows primary controls, ADVANCED shows all. Same DSP engine and sound.") : gfx_drawstr("PROFILO: SIMPLE mostra i controlli principali, ADVANCED tutti. Il motore e il suono sono gli stessi.")) :
+  active_info_id == 6  ? (ui_lang == 1 ? gfx_drawstr("VOICE THRESH: voice detected above threshold activates VCA. Outer ring = voice level.") : gfx_drawstr("THRESH VOCE: sopra questa soglia c'e' voce e il VCA lavora. Anello esterno = livello della voce.")) :
+  active_info_id == 7  ? (ui_lang == 1 ? gfx_drawstr("CARVER THRESH: voice threshold per band. Outer ring = loudest voice band.") : gfx_drawstr("THRESH CARVER: soglia di ogni banda della voce. Anello esterno = banda della voce piu' forte.")) :
+  active_info_id == 8  ? (ui_lang == 1 ? gfx_drawstr("RMS STAB: makes voice detection more stable (100%) or more reactive (0%). Does not compress voice.") : gfx_drawstr("RMS STAB: rende la lettura della voce piu' stabile (100%) o piu' pronta (0%). Non comprime la voce.")) :
+  active_info_id == 13 ? (ui_lang == 1 ? gfx_drawstr("LOW: maximum ducking amount in music low frequencies.") : gfx_drawstr("LOW: quanto il Carver puo' scavare nei bassi della musica.")) :
+  active_info_id == 14 ? (ui_lang == 1 ? gfx_drawstr("MID: maximum ducking amount in music midrange (voice region).") : gfx_drawstr("MID: quanto il Carver puo' scavare nelle medie (dove sta la voce).")) :
+  active_info_id == 15 ? (ui_lang == 1 ? gfx_drawstr("HIGH: maximum ducking amount in music high frequencies.") : gfx_drawstr("HIGH: quanto il Carver puo' scavare negli alti della musica.")) :
+  active_info_id == 16 ? (ui_lang == 1 ? gfx_drawstr("INTENS (Simple: SPACE): overall Carver carving strength across all bands.") : gfx_drawstr("INTENS (in Simple: SPAZIO): forza complessiva del Carver su tutte le bande.")) :
+  active_info_id == 17 ? (ui_lang == 1 ? gfx_drawstr("CARVER ATTACK: how quickly spectral carving opens for speech.") : gfx_drawstr("CARVER ATTACK: velocita' con cui lo scavo si apre alla voce.")) :
+  active_info_id == 18 ? (ui_lang == 1 ? gfx_drawstr("CARVER RELEASE: how smoothly music recovers across spectral bands.") : gfx_drawstr("CARVER RELEASE: quanto dolcemente la musica torna piena nelle bande.")) :
+  active_info_id == 19 ? (ui_lang == 1 ? gfx_drawstr("SPREAD: broadens carving to adjacent bands for smoother transition.") : gfx_drawstr("SPREAD: allarga lo scavo alle bande vicine per un effetto piu' morbido.")) :
+  active_info_id == 22 ? (ui_lang == 1 ? gfx_drawstr("CEILING: VCA acts when music exceeds this level. Outer ring = music level.") : gfx_drawstr("CEILING: il VCA agisce quando la musica supera questo livello. Anello esterno = livello della musica.")) :
+  active_info_id == 23 ? (ui_lang == 1 ? gfx_drawstr("MIN DUCK: minimum ducking when voice is present. Cannot exceed Max Duck.") : gfx_drawstr("MIN DUCK: riduzione minima quando c'e' voce. Non puo' superare Max Duck (lo trascina con se').")) :
+  active_info_id == 24 ? (ui_lang == 1 ? gfx_drawstr("MAX DUCK (Simple: DUCK): maximum music reduction. Orange mark on VCA meter.") : gfx_drawstr("MAX DUCK (in Simple: DUCK): riduzione massima della musica. Segno arancio sul meter VCA.")) :
+  active_info_id == 25 ? (ui_lang == 1 ? gfx_drawstr("PRIO: how strongly VCA pulls music towards Ceiling between Min and Max Duck.") : gfx_drawstr("PRIO: quanto il VCA porta la musica verso il Ceiling, tra Min e Max Duck.")) :
+  active_info_id == 26 ? (ui_lang == 1 ? gfx_drawstr("VCA ATTACK: how quickly music ducks.") : gfx_drawstr("VCA ATTACK: rapidita' con cui la musica si abbassa.")) :
+  active_info_id == 27 ? (ui_lang == 1 ? gfx_drawstr("HOLD: how long voice remains active across pauses and breaths.") : gfx_drawstr("HOLD: quanto la voce resta 'accesa' tra parole, pause e respiri.")) :
+  active_info_id == 28 ? (ui_lang == 1 ? gfx_drawstr("VCA RELEASE (Simple: RELEASE): how fast music recovers.") : gfx_drawstr("VCA RELEASE (in Simple: RIENTRO): velocita' con cui la musica torna su.")) :
+  active_info_id == 31 ? (ui_lang == 1 ? gfx_drawstr("AUDITION: OFF = normal out. CARVER / VCA / ALL audition removed material only.") : gfx_drawstr("PREASCOLTO: OFF = uscita normale. CARVER / VCA / TUTTO fanno sentire solo cio' che viene tolto.")) :
+  active_info_id == 32 ? (ui_lang == 1 ? gfx_drawstr("VOICE RET: blends dry voice into output (OFF by default). Useful outside DAW.") : gfx_drawstr("VOICE RET: aggiunge la voce all'uscita (OFF di serie). Utile solo fuori dalla DAW.")) :
+  active_info_id == 33 ? (ui_lang == 1 ? gfx_drawstr("GLUE: final voice-linked polish; rests at 0 dB.") : gfx_drawstr("GLUE: rifinitura finale vincolata alla voce; a riposo resta a 0 dB.")) :
+  active_info_id == 34 ? (ui_lang == 1 ? gfx_drawstr("OUT: final output gain.") : gfx_drawstr("OUT: guadagno finale in uscita.")) :
+  active_info_id == 35 ? (ui_lang == 1 ? gfx_drawstr("MIX: dry/wet processing amount (100% = full, 0% = dry).") : gfx_drawstr("MIX: quantita' di processamento (100% = tutto, 0% = musica intatta).")) :
+  active_info_id == 50 ? (ui_lang == 1 ? gfx_drawstr("VCA RETURN: STD classic, GRADUAL restores music with a long smooth ramp after Hold.") : gfx_drawstr("RIENTRO VCA: STD classico, GRADUAL riapre la musica con una rampa lunga e morbida dopo l'Hold.")) :
+  active_info_id == 51 ? (ui_lang == 1 ? gfx_drawstr("VIEW: FULL complete interface, DOCK compact strip with status and cues.") : gfx_drawstr("VISTA: FULL tutta la GUI, DOCK una striscia con stato e cue da tenere aperta mentre monti.")) :
+  active_info_id == 53 ? (ui_lang == 1 ? gfx_drawstr("DBG: toggles VCA diagnostics in footer.") : gfx_drawstr("DBG: mostra o nasconde la diagnostica VCA nel footer.")) :
+  active_info_id == 56 ? (ui_lang == 1 ? gfx_drawstr("CUE: ADD/REMOVE at playhead or edit cursor; syncs to #HSC marker. < > jump or select.") : gfx_drawstr("CUE: ADD/REMOVE sul playhead o sul cursore; diventa un marker #HSC che segue i tagli. < > saltano (SALTA) o selezionano.")) :
+  active_info_id == 57 ? (ui_lang == 1 ? gfx_drawstr("CLEAR ALL: click 1 arms (CONFIRM?), click 2 within 3s clears all cues. UNDO restores.") : gfx_drawstr("CLEAR ALL: primo clic arma (CONFERMA?), secondo clic entro 3 s cancella tutti i cue. UNDO li rimette.")) :
+  active_info_id == 58 ? (quick_gmem_base < 0 ? (ui_lang == 1 ? gfx_drawstr("TIMELINE: jump unavailable on take/input FX. HOLD browses cues.") : gfx_drawstr("TIMELINE: salto non disponibile su take FX o input FX. RESTA FERMO scorre i cue.")) :
+    (ui_lang == 1 ? gfx_drawstr("TIMELINE: JUMP moves playhead to cues (Cue Navigator helper); HOLD selects only.") : gfx_drawstr("TIMELINE: SALTA sposta il playhead sui cue (helper Cue Navigator); RESTA FERMO solo li seleziona."))) :
+  active_info_id == 59 ? (ui_lang == 1 ? gfx_drawstr("UNDO: reverts last cue add, remove, or clear action.") : gfx_drawstr("UNDO: annulla l'ultima aggiunta, rimozione o cancellazione dei cue.")) :
+  active_info_id == 60 ? (ui_lang == 1 ? gfx_drawstr("CUE ROW: cyan = aligned, red = displaced. Click selects, Cmd/Ctrl+click adds, Shift+click range.") : gfx_drawstr("FILA DEI CUE: ciano = al suo posto, rosso = fuori posto. Clic sceglie, Cmd/Ctrl+clic aggiunge, Shift+clic intervallo.")) :
+  active_info_id == 77 ? (ui_lang == 1 ? gfx_drawstr("DELETE: removes selected cues and their #HSC markers (Cmd/Ctrl+click or Shift+click for multiple). UNDO restores.") : gfx_drawstr("ELIMINA: toglie i cue selezionati e i loro marker #HSC (Cmd/Ctrl+clic o Shift+clic per piu' cue). UNDO li rimette.")) :
+  active_info_id == 61 ? (ui_lang == 1 ? gfx_drawstr("OPENING: music remains open for this duration after ramp, ignoring voice.") : gfx_drawstr("APERTURA: dopo la Rampa la musica resta aperta per questo tempo, ignorando la voce.")) :
   active_info_id == 65 ? gfx_drawstr(#sc_msg0) : active_info_id == 66 ? gfx_drawstr(#sc_msg1) : active_info_id == 67 ? gfx_drawstr(#sc_msg2) :
-  active_info_id == 68 ? gfx_drawstr("FONTI VOCE: compaiono quando la traccia ha i canali. Pulsante I/O del plugin, Track channels 6 (SC2) o 8 (SC3).") :
-  active_info_id == 63 ? gfx_drawstr("ANTICIPO: il Carver vede la voce prima della musica (lookahead). Aggiunge la stessa latenza (PDC).") :
-  active_info_id == 75 ? gfx_drawstr("HELPER SPENTO: salti, marker #HSC, tracce voce e cue rossi non funzionano. Avvia l'azione ZP Harmonic Space Carver Cue Navigator.") :
-  active_info_id == 76 ? gfx_drawstr("MIN = MAX: con la voce la musica scende sempre di Max Duck; Ceiling e Prio non lavorano. Alza Min Duck (es. -3 dB).") :
-  active_info_id == 73 ? gfx_drawstr("FUORI POSTO: la voce sotto il cue si e' spostata; il cue scatta nel punto sbagliato. RIALLINEA lo porta sulla sua voce.") :
-  active_info_id == 74 ? gfx_drawstr("TIENI QUI: il cue resta dov'e' e prende come riferimento la voce che ha sotto adesso.") :
-  active_info_id == 64 ? gfx_drawstr("KNEE: morbidezza dell'ingresso in soglia del Carver (0 = netto).") :
-  active_info_id == 70 ? gfx_drawstr("PARTENZA: imposta Depth, Intens, Spread, Prio, Min e Max Duck. SCORE cinema, FLAT equilibrio, VOCAL podcast.") :
-  active_info_id == 71 ? gfx_drawstr("ON/OFF: spegne il Carver o il VCA (resta sempre acceso almeno uno dei due).") :
-  active_info_id == 72 ? gfx_drawstr("BANDE: GR = riduzione per banda; trascina le linee per i crossover (destro = valore iniziale). SCOPE = forme d'onda.") :
-  gfx_drawstr("ZP HARMONIC SPACE CARVER v2.6 - Doppio clic = default | Shift+clic = zero | Shift+drag = precisione");
+  active_info_id == 68 ? (ui_lang == 1 ? gfx_drawstr("VOICE INPUTS: visible when track has channels. Plugin I/O, Track channels 6 (SC2) or 8 (SC3).") : gfx_drawstr("FONTI VOCE: compaiono quando la traccia ha i canali. Pulsante I/O del plugin, Track channels 6 (SC2) o 8 (SC3).")) :
+  active_info_id == 63 ? (ui_lang == 1 ? gfx_drawstr("LOOKAHEAD: Carver analyzes voice before music (lookahead), adding matching latency (PDC).") : gfx_drawstr("ANTICIPO: il Carver vede la voce prima della musica (lookahead). Aggiunge la stessa latenza (PDC).")) :
+  active_info_id == 75 ? (ui_lang == 1 ? gfx_drawstr("HELPER STOPPED: jumps, #HSC markers, and cue realignment disabled. Start ZP Harmonic Space Carver Cue Navigator.") : gfx_drawstr("HELPER SPENTO: salti, marker #HSC, tracce voce e cue rossi non funzionano. Avvia l'azione ZP Harmonic Space Carver Cue Navigator.")) :
+  active_info_id == 76 ? (ui_lang == 1 ? gfx_drawstr("MIN = MAX: music always ducks to Max Duck with voice; Ceiling/Prio inactive. Raise Min Duck (e.g. -3 dB).") : gfx_drawstr("MIN = MAX: con la voce la musica scende sempre di Max Duck; Ceiling e Prio non lavorano. Alza Min Duck (es. -3 dB).")) :
+  active_info_id == 73 ? (ui_lang == 1 ? gfx_drawstr("DISPLACED: voice beneath cue has moved; cue triggers at wrong point. REALIGN snaps to voice.") : gfx_drawstr("FUORI POSTO: la voce sotto il cue si e' spostata; il cue scatta nel punto sbagliato. RIALLINEA lo porta sulla sua voce.")) :
+  active_info_id == 74 ? (ui_lang == 1 ? gfx_drawstr("KEEP HERE: cue stays at current position and locks to current voice below.") : gfx_drawstr("TIENI QUI: il cue resta dov'e' e prende come riferimento la voce che ha sotto adesso.")) :
+  active_info_id == 64 ? (ui_lang == 1 ? gfx_drawstr("KNEE: Carver threshold knee softness (0 = hard).") : gfx_drawstr("KNEE: morbidezza dell'ingresso in soglia del Carver (0 = netto).")) :
+  active_info_id == 70 ? (ui_lang == 1 ? gfx_drawstr("STARTING POINT: sets Depth, Intens, Spread, Prio, Min/Max Duck. SCORE cinema, FLAT balanced, VOCAL podcast.") : gfx_drawstr("PARTENZA: imposta Depth, Intens, Spread, Prio, Min e Max Duck. SCORE cinema, FLAT equilibrio, VOCAL podcast.")) :
+  active_info_id == 71 ? (ui_lang == 1 ? gfx_drawstr("ON/OFF: toggles Carver or VCA (at least one remains active).") : gfx_drawstr("ON/OFF: spegne il Carver o il VCA (resta sempre acceso almeno uno dei due).")) :
+  active_info_id == 72 ? (ui_lang == 1 ? gfx_drawstr("BANDS: GR = reduction per band; drag crossover lines (right click = default). SCOPE = waveforms.") : gfx_drawstr("BANDE: GR = riduzione per banda; trascina le linee per i crossover (destro = valore iniziale). SCOPE = forme d'onda.")) :
+  (ui_lang == 1 ?
+    gfx_drawstr("ZP HARMONIC SPACE CARVER v2.6 - Double-click = default | Shift+click = zero | Shift+drag = fine tune") :
+    gfx_drawstr("ZP HARMONIC SPACE CARVER v2.6 - Doppio clic = default | Shift+clic = zero | Shift+drag = precisione"));
 
   dbg_bx = gfx_w - 60; dbg_by = footer_top + 7; dbg_bw = 44; dbg_bh = max(24, ui_font_small + 8);
   dbg_hover = (mouse_x >= dbg_bx && mouse_x <= dbg_bx + dbg_bw && mouse_y >= dbg_by && mouse_y <= dbg_by + dbg_bh);

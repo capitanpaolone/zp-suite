@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZP SOLO Recorder - controls guide</title>
+<style>
+:root{
+  --carta:#f7f6f3; --inchiostro:#1f2b35; --tenue:#5d6a74;
+  --filo:#d8d5cd; --accento:#8f4630; --nota:#e9eef5;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --carta:#171a1d; --inchiostro:#e8e6e1; --tenue:#9aa4ac;
+         --filo:#2e3439; --accento:#d98b6f; --nota:#1e262e; }
+}
+*{box-sizing:border-box}
+body{margin:0;padding:2.5rem 1.25rem 4rem;background:var(--carta);color:var(--inchiostro);
+     font:16px/1.6 Georgia,"Times New Roman",serif}
+main{max-width:52rem;margin:0 auto}
+h1{font-size:1.75rem;line-height:1.2;margin:0 0 .25rem}
+.occhiello{margin:0 0 1.5rem;color:var(--tenue);font-size:.95rem}
+h2{font-size:1.15rem;margin:2.5rem 0 .5rem;padding-bottom:.35rem;border-bottom:1px solid var(--filo)}
+h2 .liv{float:right;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;
+        color:var(--tenue);font-weight:normal;padding-top:.35rem}
+h3{font-size:1rem;margin:1.6rem 0 .4rem}
+p{margin:0 0 1rem;max-width:44rem}
+code{font:.9em/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+     background:rgba(127,127,127,.14);padding:.15em .4em;border-radius:3px}
+.tabella-avvolta{overflow-x:auto;margin:0 0 1rem}
+table{border-collapse:collapse;width:100%;min-width:30rem}
+th,td{text-align:left;vertical-align:top;padding:.6rem .8rem;border-bottom:1px solid var(--filo)}
+thead th{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--tenue);font-weight:normal}
+tbody th{font-weight:bold;white-space:nowrap;width:11rem;font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+.nota{background:var(--nota);border-left:3px solid var(--accento);padding:.85rem 1rem;margin:1.25rem 0}
+.nota p:last-child{margin:0}
+.tenue{color:var(--tenue);font-size:.92rem}
+a{color:var(--accento)}
+</style>
+<style id="lc-firma">
+.lc-testata{display:flex;align-items:center;gap:.5rem;margin:0 0 .4rem;font:600 .78rem/1.2 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  letter-spacing:.08em;text-transform:uppercase;color:#565F66}
+.lc-testata a{color:inherit;text-decoration:none}.lc-testata a:hover{color:#A94F35}
+.lc-logo{width:22px;height:22px;flex:none}
+.lc-filetto{border:0;border-top:2px solid #A94F35;margin:.6rem 0 1.4rem}
+.lc-piede{display:flex;align-items:center;gap:.6rem;margin:3rem 0 1rem;padding:.8rem 1rem;border:1px solid #CFCCC3;
+  border-radius:6px;background:#FAF9F5;color:#37444E;font:.95rem/1.4 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+.lc-piede a{color:#8F4630}
+@media (prefers-color-scheme: dark){
+  .lc-testata{color:#9aa4ac}.lc-piede{background:#1d2226;border-color:#2e3439;color:#c9cfd4}.lc-piede a{color:#d98b6f}
+}
+</style>
+</head>
+<body>
+<main>
+
+<!-- lc-testata --><div class="lc-testata"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><a href="https://latocardioide.it/strumenti/">Lato Cardioide</a> &middot; Tools</div><!-- /lc-testata -->
+<h1>ZP SOLO Recorder</h1>
+<p class="occhiello">Recording remote panel: what each button does.</p><!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
+
+
+
+
+<p>Designed to record without constantly switching focus back and forth to the REAPER main window.
+Maintains exclusive track arming, numbers takes automatically, and keeps the few essential controls
+right under your fingers while reading.</p>
+
+<h2>SOLO Session or Remote Control</h2>
+<p>SOLO Recorder operates in two modes and remembers the choice per project.</p>
+<ul>
+<li><strong>SOLO Session</strong>: on first REC it creates the folder <em>ZP SOLO SESSION</em> with VO_MAIN, VO_INSERTS, VO_RETAKES, VO_ALT, and REF. It arms exclusively the selected track and disarms all others in the project, guaranteeing you record in one place only.</li>
+<li><strong>Remote Control</strong>: creates no tracks and touches no track arming. Records on tracks already armed by you in REAPER; warns if none is armed. When REC is pressed with no track armed, prompts which track to arm. To pick the track, open the input dropdown menu (button beside the IN meter). Use it when working in your existing project structure where you only need SOLO convenience controls (REC, NEXT TAKE, REMOVE TAKE, take names, regions, pre-roll, markers). <strong>RETAKE REGION</strong>, <strong>INSERT</strong>, and <strong>ALT TAKE</strong> are dimmed since they rely on dedicated SOLO session tracks.</li>
+</ul>
+<p>When opened in a project: if empty, or already containing the ZP SOLO SESSION folder, starts in SOLO Session; if containing pre-existing tracks, starts in Remote Control. To toggle, use the header icons: <strong>folder</strong> (SOLO Session) and <strong>remote</strong> (Remote Control).</p>
+
+<p><strong>Input selection:</strong> in the Input & Monitoring section, next to the IN meter, the <strong>Input ▾</strong> button indicates the physical input used by the target track (e.g. <em>In 1 (Mic Pre 1)</em> or <em>In 1/2</em> stereo). Click to select another input.</p>
+
+<h2>Window Layout</h2>
+<p>Controls are organized in responsive <strong>zones</strong>. Resizing wraps zones naturally without overlapping controls. Three display views fit different workflows:</p>
+<ul>
+<li><strong>Mini</strong>: Transport, Input & Monitoring. Bare essentials while recording.</li>
+<li><strong>Compact</strong>: Adds Target Track (SOLO session only), Navigate & Mark, and a compact Navigator. The everyday session view.</li>
+<li><strong>Expanded</strong>: Adds Takes, Labels, and full-height Navigator. Comprehensive take direction.</li>
+</ul>
+
+<h2>Quick Guide <span class="liv">?</span></h2>
+<p>The <strong>?</strong> button in the header (or pressing ?) dims the window and numbers the zones. Hover over any control to see its explanation. A click pins the explanation and OSARA announces it. Press <strong>Esc</strong> or <strong>?</strong> to dismiss; <strong>Full guide</strong> opens this page.</p>
+
+<h2>1 · Header</h2>
+<p>Permanently docked at the top across all views. The top strip features grouped pill icons: <strong>cyan</strong> = active/enabled, <strong>dimmed</strong> = currently unavailable. Hovering shows descriptions in the footer status line.</p>
+<div class="tabella-avvolta"><table><thead><tr><th scope="col">Group · icons</th><th scope="col">Function</th></tr></thead><tbody>
+<tr><th scope="row">Project<br>disk · undo arrow · redo arrow</th><td>Save, Undo, Redo. Save is separated from arrows to prevent accidental clicks. An orange dot indicates unsaved changes. Arrows dim when no undo/redo history exists.</td></tr>
+<tr><th scope="row">Mode<br>folder · remote</th><td>SOLO Session or Remote Control (see above). Cyan indicates active mode.</td></tr>
+<tr><th scope="row">Session<br>brackets · faders · camera</th><td><strong>Take regions</strong>: active, each REC creates a Take NNN region over the recorded audio; off, records without regions. <strong>FX Chains</strong>: active, inserts <em>ZP Bus VoiceChain</em> on the ZP SOLO SESSION folder and <em>ZP MasterChain</em> on Master. <strong>Video</strong>: toggles the REAPER video window.</td></tr>
+<tr><th scope="row">Views<br>windows 1, 2, 3 rows</th><td>Mini, Compact, Expanded.</td></tr>
+<tr><th scope="row">Window<br>toolbar · REAPER · web globe</th><td><strong>Toolbar</strong>: toggles the bottom REAPER control strip (Metronome, Mixer, Routing, FX Chain, Notes, Markers, Navigator, and Pre-roll −/+ seconds). <strong>REAPER</strong>: minimize / restore REAPER window. <strong>Web globe</strong>: launches the SOLO Web Remote in your browser (http://localhost:8080/zp_solo.html) for phone or iPad control. The page language follows the Suite (Italian or English), with an <strong>IT | EN</strong> switcher in the header to override it on that device. Includes timeline overview with pinch/wheel zoom and network sharing QR code.</td></tr>
+<tr><th scope="row">Help<br>? · pin</th><td><strong>?</strong>: quick guide. <strong>Pin</strong>: keep window always on top (requires js_ReaScriptAPI).</td></tr>
+</tbody></table></div>
+
+<h2>2 · Transport</h2>
+<div class="tabella-avvolta"><table><thead><tr><th scope="col">Control</th><th scope="col">Function</th></tr></thead><tbody><tr><th scope="row">REC</th><td>The large red button. Records on the target track. Verifies exclusivity before punching in.</td></tr><tr><th scope="row">PRE on REC</th><td>REAPER pre-roll before recording (Options › Metronome/pre-roll). Active (yellow): playback starts several seconds early before punching in at the cursor. Requires SWS.</td></tr><tr><th scope="row">Lock REC</th><td>REC protection lock. When active (yellow, locked), pressing spacebar will not stop recording; only STOP does. Prevents accidental interruptions.</td></tr><tr><th scope="row">STOP</th><td>Stops recording, registers newly recorded items, and creates <code>Take 001</code>, <code>Take 002</code> regions when Take Regions is active.</td></tr><tr><th scope="row">PAUSE</th><td>Pauses playback/recording without finalizing the take. Active (amber) during pause.</td></tr><tr><th scope="row">PLAY</th><td>Plays from edit cursor. During REC, toggles pause/resume.</td></tr><tr><th scope="row">-5s</th><td>Moves cursor backward by five seconds.</td></tr><tr><th scope="row">end +5s</th><td>Jumps cursor five seconds past the end of the last item. <strong>Does not delete anything</strong>.</td></tr></tbody></table></div>
+
+<h2>3 · Input and Monitoring</h2>
+<div class="tabella-avvolta"><table><thead><tr><th scope="col">Control</th><th scope="col">Function</th></tr></thead><tbody><tr><th scope="row">IN</th><td>Real hardware audio interface input level before FX, faders, and monitor: the exact level recorded to disk. −60 to 0 dB scale with −18 and −6 dB markings. Peak hold display.</td></tr><tr><th scope="row">Input ▾</th><td>Hardware input selector (In 1, In 1/2 stereo…). Click to choose from list.</td></tr><tr><th scope="row">RTN</th><td>Return meter: Master playback output.</td></tr><tr><th scope="row">Monitor</th><td>Direct input monitoring toggle (tape auto style).</td></tr><tr><th scope="row">Return Knob</th><td>Volume fader of the <strong>selected track in REAPER</strong>, −60 to +12 dB (double click = 0 dB). Used to balance reference audio against voice. Modifies project track volume.</td></tr></tbody></table></div>
+
+<h2>4 · Target Track <span class="liv">SOLO Session</span></h2>
+<div class="tabella-avvolta"><table><thead><tr><th scope="col">Control</th><th scope="col">Function</th></tr></thead><tbody><tr><th scope="row">MAIN INSERTS<br>RETAKES ALT</th><td>SOLO Session: selects which voice track to record on. Displays assigned hardware input below track name.</td></tr></tbody></table></div>
+
+<h2>5 · Navigate and Mark</h2>
+<div class="tabella-avvolta"><table><thead><tr><th scope="col">Control</th><th scope="col">Function</th></tr></thead><tbody><tr><th scope="row">Regions / Items</th><td>Selects whether navigation arrows jump between regions or target track items.</td></tr><tr><th scope="row">◀ prev<br>|◀ start<br>▶ next</th><td>Moves cursor to previous region/item, start of current, or next.</td></tr><tr><th scope="row">Marker button</th><td>Flag icon: drops a marker at current cursor position. Uses entered name or sequential number (<code>SOLO_MARK_001</code>…).</td></tr><tr><th scope="row">Name box</th><td>Click to type marker name directly inside the panel. <strong>Enter</strong> places marker, <strong>Esc</strong> cancels.</td></tr></tbody></table></div>
+
+<p class="nota">Numbered SOLO service markers (empty flag, OK, BAD, ALT, NOISE, Insert markers) are filtered out from Teleprompter scripts and subtitle generation. Custom markers starting with <code>#</code> remain service markers.</p>
+
+<h2>6 · Takes <span class="liv">Expanded</span></h2>
+<div class="tabella-avvolta"><table><thead><tr><th scope="col">Control</th><th scope="col">Function</th></tr></thead><tbody><tr><th scope="row">● Next take</th><td>Finalizes current take, leaves a five-second gap, and restarts recording. Ideal for long narration sessions.</td></tr><tr><th scope="row">● Retake</th><td>Re-records current region on the RETAKES track.</td></tr><tr><th scope="row">● Insert</th><td>Records a punch-in insert without modifying existing audio around it.</td></tr><tr><th scope="row">● Alt take</th><td>Records an alternate version on the ALT track.</td></tr><tr><th scope="row">Name / note</th><td>Renames the last take region to document performance notes.</td></tr><tr><th scope="row">Remove take</th><td>Removes the freshly recorded take from the timeline and returns cursor to start. Prompts for confirmation. <strong>Audio file on disk is never deleted.</strong></td></tr></tbody></table></div>
+
+<h2>7 · Labels <span class="liv">Expanded</span></h2>
+<div class="tabella-avvolta"><table><thead><tr><th scope="col">Control</th><th scope="col">Function</th></tr></thead><tbody><tr><th scope="row">OK BAD ALT NOISE</th><td>Drop evaluation markers at the playhead position for quick editing reference.</td></tr></tbody></table></div>
+
+<h2>8 · Navigator <span class="liv">Compact · Expanded</span></h2>
+<div class="tabella-avvolta"><table><thead><tr><th scope="col">Control</th><th scope="col">Function</th></tr></thead><tbody><tr><th scope="row">Strip</th><td>Full project overview: items (dimmed), target track items (green), regions (blue), markers (yellow), visible view boundaries, and playhead cursor. Click or drag to scrub.</td></tr><tr><th scope="row">Zoom Knob</th><td>Time scale: All project, 10 min, 5 min, 2 min, 1 min, 30 s, 10 s. Double click = Full project.</td></tr><tr><th scope="row">1/3 · center</th><td>Playhead tracking anchor: one third from left or centered.</td></tr></tbody></table></div>
+
+<h2>The Four Recording Modes</h2>
+<div class="tabella-avvolta"><table><thead><tr><th scope="col">Mode</th><th scope="col">Usage</th></tr></thead><tbody><tr><th scope="row">REC</th><td>Standard recording on selected track from cursor position.</td></tr><tr><th scope="row">INSERT</th><td>Punch-in insert recording: punches into silence or replaces a phrase without moving surroundings.</td></tr><tr><th scope="row">ALT TAKE</th><td>Alternate take on dedicated ALT track to compare readings without committing immediately.</td></tr><tr><th scope="row">NEXT TAKE</th><td>Continuous take recording: stops, indexes take, advances 5 seconds past audio end, and restarts recording automatically.</td></tr></tbody></table></div>
+
+<h2>Safety and Undo</h2>
+<div class="nota">
+<p><strong>REMOVE TAKE removes the item from the timeline, never from disk.</strong>
+Recorded audio remains preserved inside the project's <code>Media</code> folder.
+Because operations run inside REAPER Undo blocks, <code>Ctrl+Z</code> (or <code>Cmd+Z</code>)
+instantly restores the item to the timeline.</p>
+</div>
+
+<h2>Troubleshooting</h2>
+<p><strong>REC will not start</strong> — Target track is not exclusively armed. Switch target track to re-arm cleanly.</p>
+<p><strong>Return knob disabled ("--")</strong> — No track is selected in REAPER. Select a track in REAPER once.</p>
+<p><strong>Monitor button says "auto"</strong> — Track is in REAPER auto-monitoring state; click to turn off.</p>
+<p><strong>REAPER window hidden</strong> — Click the header REAPER icon with upward arrow, or close SOLO Recorder.</p>
+
+<p class="tenue"><a href="index.html">Return to Suite Guide</a> &middot;
+<a href="toolbar.html">Toolbar guide</a></p>
+
+<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Developed from an idea by Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
+</main>
+</body>
+</html>

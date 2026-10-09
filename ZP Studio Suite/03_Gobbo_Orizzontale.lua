@@ -19,6 +19,23 @@ local gobbo_settings_section = "ZP_VoiceOver_Studio_Gobbo_Orizzontale"
 local speech_lead_key = "accessibility_speech_lead"
 local studio_mode_key = "studio_edit_mode"
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
+local ZP_LINGUA
+do
+    local path = SCRIPT_DIR .. "ZP_Lingua.lua"
+    local f = io.open(path, "r")
+    if f then
+        f:close()
+        local ok, loaded = pcall(dofile, path)
+        if ok and type(loaded) == "table" and type(loaded.T) == "function" then
+            ZP_LINGUA = loaded
+        end
+    end
+end
+local function T(s)
+    if ZP_LINGUA then return ZP_LINGUA.T(s) end
+    if _G.T then return _G.T(s) end
+    return s
+end
 local function SimpleSearchFallback()
     local M = {}
     function M.fold(s) return tostring(s or ""):gsub("\r\n", "\n"):gsub("\r", "\n"):lower() end
@@ -80,7 +97,7 @@ do
     end
     if not ZP_CERCA then
         if reaper.GetExtState("ZP_STUDIO_SUITE", "cerca_helper_missing_session") ~= "1" then
-            reaper.ShowMessageBox("ZP_cerca.lua non è disponibile o non si carica. Il Gobbo userà una ricerca semplice per sottostringa finché il file non viene ripristinato.", "ZP Studio Suite - ricerca", 0)
+            reaper.ShowMessageBox(T("ZP_cerca.lua non è disponibile o non si carica. Il Gobbo userà una ricerca semplice per sottostringa finché il file non viene ripristinato."), T("ZP Studio Suite - ricerca"), 0)
             reaper.SetExtState("ZP_STUDIO_SUITE", "cerca_helper_missing_session", "1", false)
         end
         ZP_CERCA = SimpleSearchFallback()
@@ -97,9 +114,9 @@ local last_proj_state = -1
 local last_track_guid = ""
 local selected_text_track_guid = ""
 local READ_ALL = "ALL"   -- flusso virtuale "Tutti" (Leggi tutto): tutte le tracce testo insieme
-local WINDOW_TITLE = "ZP Studio Suite v1.0.5 - Gobbo Orizzontale"
+local WINDOW_TITLE = "ZP Studio Suite v1.0.5 - " .. T("Gobbo Orizzontale")
 local current_text_track = nil
-local current_text_flow_label = "Nessun testo"
+local current_text_flow_label = T("Nessun testo")
 local cached_project_fps = 25
 local global_max_y = 0
 local tape_origin_pos = 0
@@ -862,7 +879,7 @@ end
 local window_title_shown = ""
 function UpdateWindowTitle()
     if not gfx.w or gfx.w <= 0 then return end
-    local title = WINDOW_TITLE .. " - Flusso: " .. CurrentTextFlowLabel()
+    local title = WINDOW_TITLE .. " - " .. T("Flusso:") .. " " .. CurrentTextFlowLabel()
     if title ~= window_title_shown then
         window_title_shown = title
         gfx.init(title)
@@ -896,8 +913,8 @@ function ToggleFollow()
 end
 
 function FollowLabel()
-    if not FollowScriptPath() then return "Segui: manca script" end
-    return FollowEnabled() and "Segui tagli ON" or "Segui tagli OFF"
+    if not FollowScriptPath() then return T("Segui: manca script") end
+    return FollowEnabled() and T("Segui tagli ON") or T("Segui tagli OFF")
 end
 
 function FollowTick()
@@ -1240,10 +1257,10 @@ function DrawSearchPanel(w, h)
     gfx.set(0.08,0.075,0.065,0.97); gfx.rect(x,y,panel_w,panel_h,1)
     gfx.set(0.72,0.50,0.12,0.95); gfx.rect(x,y,panel_w,2,1)
     gfx.set(0.38,0.34,0.26,0.85); gfx.rect(x,y,panel_w,panel_h,0)
-    gfx.setfont(3,"Arial",13,'b'); gfx.set(0.93, 0.90, 0.83, 1); gfx.x,gfx.y=x+pad,y+7; gfx.drawstr("Trova")
+    gfx.setfont(3,"Arial",13,'b'); gfx.set(0.93, 0.90, 0.83, 1); gfx.x,gfx.y=x+pad,y+7; gfx.drawstr(T("Trova"))
     gfx.set(0.12,0.11,0.10,1); gfx.rect(input_x,input_y,input_w,24,1)
     gfx.set(0.82,0.58,0.13,1); gfx.rect(input_x,input_y,input_w,24,0)
-    gfx.setfont(3,"Arial",15); local shown=search_query~="" and search_query or "Cerca parola/frase..."
+    gfx.setfont(3,"Arial",15); local shown=search_query~="" and search_query or T("Cerca parola/frase...")
     gfx.x,gfx.y=input_x+8,input_y+4
     if search_query=="" then gfx.set(0.58,0.55,0.50,0.9) else gfx.set(0.95,0.92,0.84,1) end
     gfx.drawstr(shown)
@@ -1264,7 +1281,7 @@ function DrawSearchPanel(w, h)
     end
     search_results_rect={x=x,y=list_y,w=panel_w,h=shown_rows*row_h}
     if search_results_total==0 then
-        gfx.setfont(3,"Arial",15); gfx.set(0.90, 0.86, 0.78, 1); gfx.x,gfx.y=list_x,list_y+5; gfx.drawstr("Nessun risultato")
+        gfx.setfont(3,"Arial",15); gfx.set(0.90, 0.86, 0.78, 1); gfx.x,gfx.y=list_x,list_y+5; gfx.drawstr(T("Nessun risultato"))
     else
         for row=1,shown_rows do
             local i=search_results_scroll+row; local result=search_results[i]
@@ -1288,7 +1305,7 @@ function DrawSearchPanel(w, h)
             end
         end
     end
-    if overflow>0 then gfx.setfont(3,"Arial",13); gfx.set(0.88, 0.84, 0.76, 1); gfx.x,gfx.y=list_x+4,list_y+shown_rows*row_h+3; gfx.drawstr("altri "..tostring(search_results_total-#search_results).."…") end
+    if overflow>0 then gfx.setfont(3,"Arial",13); gfx.set(0.88, 0.84, 0.76, 1); gfx.x,gfx.y=list_x+4,list_y+shown_rows*row_h+3; gfx.drawstr(string.format(T("altri %s…"), tostring(search_results_total-#search_results))) end
     local wheel=gfx.mouse_wheel or 0; gfx.mouse_wheel=0
     if wheel~=0 and search_results_rect and gfx.mouse_x>=search_results_rect.x and gfx.mouse_x<=search_results_rect.x+search_results_rect.w and gfx.mouse_y>=search_results_rect.y and gfx.mouse_y<=search_results_rect.y+search_results_rect.h then
         search_results_scroll=math.max(0,math.min(search_results_scroll+(wheel>0 and -2 or 2),math.max(0,#search_results-shown_rows)))
@@ -1331,7 +1348,7 @@ function EditSubtitleItemText(item)
     if not item then return end
     local _, current = reaper.GetSetMediaItemInfo_String(item, "P_NOTES", "", false)
     local edit_text = (current or ""):gsub("\r", ""):gsub("\n", "\\n")
-    local ok, values = reaper.GetUserInputs("Edit testo gobbo", 1, "Testo (usa \\n per andare a capo):,extrawidth=700", edit_text)
+    local ok, values = reaper.GetUserInputs(T("Edit testo gobbo"), 1, T("Testo (usa \\n per andare a capo):,extrawidth=700"), edit_text)
     if not ok then return end
     local new_text = (values or ""):gsub("\\n", "\n")
     new_text = new_text:match("^%s*(.-)%s*$") or ""
@@ -1831,7 +1848,7 @@ function DrawInlineSubtitleEditor()
     gfx.set(0.84, 0.70, 0.38, 0.88)
     gfx.x = x + pad
     gfx.y = y + h - 17
-    gfx.drawstr("Invio salva  |  Shift+Invio accapo  |  Ctrl+E evidenzia  |  Esc annulla")
+    gfx.drawstr(T("Invio salva  |  Shift+Invio accapo  |  Ctrl+E evidenzia  |  Esc annulla"))
 end
 
 function HandleSubtitleEditDoubleClick(item, x, y, w, h)
@@ -1876,7 +1893,7 @@ function DrawSettingsPanel(w, h)
     gfx.setfont(3, "Arial", 15, 'b')
     gfx.set(0.5, 0.5, 0.8, alpha)
     gfx.x, gfx.y = 14, panel_y + 8
-    gfx.drawstr("IMPOSTAZIONI GOBBO ORIZZONTALE")
+    gfx.drawstr(T("IMPOSTAZIONI GOBBO ORIZZONTALE"))
 
     gfx.set(0.25, 0.25, 0.4, alpha)
     gfx.line(0, panel_y + 32, w, panel_y + 32)
@@ -1891,7 +1908,7 @@ function DrawSettingsPanel(w, h)
     gfx.setfont(3, "Arial", 14, 'b')
     gfx.set(0.6, 0.7, 1.0, alpha)
     gfx.x, gfx.y = col1_x, row_y
-    gfx.drawstr("SCALA / VELOCITA")
+    gfx.drawstr(T("SCALA / VELOCITA"))
     
     gfx.setfont(3, "Arial", 20, 'b')
     gfx.set(1, 1, 1, alpha)
@@ -1915,7 +1932,7 @@ function DrawSettingsPanel(w, h)
     gfx.setfont(3, "Arial", 14, 'b')
     gfx.set(0.6, 0.7, 1.0, alpha)
     gfx.x, gfx.y = col2_x, row_y
-    gfx.drawstr("CORPO TESTO")
+    gfx.drawstr(T("CORPO TESTO"))
     
     gfx.setfont(3, "Arial", 20, 'b')
     gfx.set(1, 1, 1, alpha)
@@ -1939,7 +1956,7 @@ function DrawSettingsPanel(w, h)
         gfx.setfont(3, "Arial", 14, 'b')
         gfx.set(0.6, 0.7, 1.0, alpha)
         gfx.x, gfx.y = col3_x, row_y
-        gfx.drawstr("ANTICIPO VOCE")
+        gfx.drawstr(T("ANTICIPO VOCE"))
 
         gfx.setfont(3, "Arial", 20, 'b')
         gfx.set(1, 1, 1, alpha)
@@ -1964,7 +1981,7 @@ function DrawSettingsPanel(w, h)
         gfx.setfont(3, "Arial", 12)
         gfx.set(0.78, 0.80, 0.92, alpha * 0.85)
         gfx.x, gfx.y = col3_x, row_y + 54
-        gfx.drawstr("Solo OSARA/NVDA, max 10 s")
+        gfx.drawstr(T("Solo OSARA/NVDA, max 10 s"))
     end
     
     if changed then 
@@ -1980,7 +1997,7 @@ function ShowTextFlowMenu(mx, my)
     local tracks = CollectTextFlowTracks()
     if #tracks == 0 then return end
     local entries = {}
-    if #tracks >= 2 then entries[#entries + 1] = { guid = READ_ALL, name = "Tutti" } end
+    if #tracks >= 2 then entries[#entries + 1] = { guid = READ_ALL, name = T("Tutti") } end
     for _, entry in ipairs(tracks) do
         entries[#entries + 1] = { guid = entry.guid, name = TextFlowDisplayName(entry.name) }
     end
@@ -2006,7 +2023,7 @@ function DrawAlertStrip(w, strip_h, play_pos, attack_x)
     gfx.setfont(3, "Arial", 15, 'b')
     gfx.set(0.95, 0.82, 0.40, 1)
     gfx.x, gfx.y = 12, 8
-    gfx.drawstr("GOBBO ORIZZONTALE")
+    gfx.drawstr(T("GOBBO ORIZZONTALE"))
 
     local tc_box_x, tc_box_w = nil, 0
     if show_timecode then
@@ -2039,7 +2056,7 @@ function DrawAlertStrip(w, strip_h, play_pos, attack_x)
     gfx.x, gfx.y = label_x, 10
     gfx.drawstr(label)
 
-    local studio_label = studio_edit_mode and "Studio/Edit ON" or "Studio/Edit OFF"
+    local studio_label = studio_edit_mode and T("Studio/Edit ON") or T("Studio/Edit OFF")
     if DrawButton(w - 282, 29, 138, 24, studio_label, 0.20, 0.48, 0.40, studio_edit_mode) then
         SetStudioEditMode(not studio_edit_mode)
     end
@@ -2049,7 +2066,7 @@ function DrawAlertStrip(w, strip_h, play_pos, attack_x)
     if #flow_label > 20 then flow_label = flow_label:sub(1, 19) .. "." end
     -- flusso a tendina: un clic apre l'elenco delle tracce testo e "Tutti"
     gfx.setfont(3, "Arial", 16, 'b')
-    local flow_text = "Testi: " .. flow_label .. "  ▾"
+    local flow_text = T("Testi:") .. " " .. flow_label .. "  ▾"
     local flow_w = math.max(120, gfx.measurestr(flow_text) + 20)
     if DrawButton(12, 30, flow_w, 22, flow_text, 0.22, 0.30, 0.42) then ShowTextFlowMenu(12, 52) end
     -- Segui i tagli: accanto al flusso, solo se c'e' spazio prima di Studio/Edit
@@ -2358,7 +2375,7 @@ function DrawGUI()
     if #cached_items == 0 then
         gfx.setfont(1, "Arial", 24, 'b')
         gfx.set(0.4, 0.4, 0.4, 1)
-        local warn_text = "Seleziona la traccia testi per ZP Studio Suite!"
+        local warn_text = T("Seleziona la traccia testi per ZP Studio Suite!")
         local tw, th = gfx.measurestr(warn_text)
         gfx.x = (w - tw) / 2
         gfx.y = band_y + ((band_h - th) / 2)
@@ -2386,7 +2403,7 @@ function DrawGUI()
     if show_settings_timer > 0 then
         local hud_alpha = math.min(1, show_settings_timer / 20)
         gfx.setfont(2, "Arial", 18, 'b')
-        local hud_txt = string.format("SCALA: %d px/s | CORPO: %d | ANTICIPO VOCE: %.1fs", pixels_per_second, master_font_size, accessibility_speech_lead)
+        local hud_txt = string.format(T("SCALA: %d px/s | CORPO: %d | ANTICIPO VOCE: %.1fs"), pixels_per_second, master_font_size, accessibility_speech_lead)
         local tw, th = gfx.measurestr(hud_txt)
         
         gfx.set(0, 0, 0, 0.7 * hud_alpha)

@@ -1,6 +1,20 @@
 // @description ZP Spoken Finish
 // @version 3.9.9
 // @author Paolo Balestri
+// @about
+//   Eccitatore e de-eccitatore armonico per voce parlata, podcast e doppiaggio.
+//   Controllo fine di armoniche pari, dispari, saturazione naturale e aria,
+//   con gain match dinamico e limiter finale anti-clip.
+//
+//   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
+//   Guida completa: https://latocardioide.it/strumenti/ o dal pulsante '?'
+//
+//   Voice harmonic exciter and de-exciter for spoken word, podcast and dubbing.
+//   Precise control of even and odd harmonics, natural saturation and air,
+//   with dynamic gain matching and true-peak safety limiter.
+//
+//   Developed from an idea by Paolo Balestri · Lato Cardioide (latocardioide.it)
+//   Complete documentation: https://latocardioide.it/strumenti/ or click '?'
 // @license GPL-3.0-or-later
 // @changelog
 //   Solo il nome mostrato nel browser FX: tolti numero di versione e appunti interni.
@@ -381,6 +395,11 @@ slider33:1<0,1,1{Off,On}>-TP Limiter
 // La GUI telemetrica e' definita nel blocco @gfx finale.
 
 @init
+help_bridge_alive = 0;
+help_bridge_last_alive_t = -100;
+help_bridge_req_seq = 0;
+help_warn_until = 0;
+ui_lang = 0;
 // ZP Shared Bus: Spoken Finish dichiara soltanto presenza e heartbeat.
 ZP_BUS_MAGIC = 905026;
 ZP_BUS_VERSION = 220;
@@ -1257,10 +1276,25 @@ simple_mode ? (
 );
 
 @gfx 980 620
+// Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
+zp_hb = gmem[3900]; zp_hb_now = time_precise();
+!zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
+zp_hb_ok = zp_hb > 0 && zp_hb_now - zp_hb_t < 3;
 // ----------------------------------------------------
 // SPOKEN FINISH - DUAL PROFILE GUI (Harmonic Style)
 // ----------------------------------------------------
 ui_gfx_frame += 1;
+time_now = time_precise();
+zp_hb_ok ? (
+  help_bridge_alive = 1;
+  help_bridge_last_alive_t = time_now;
+  ui_lang = gmem[3901] == 1 ? 1 : 0;
+) : (
+  (time_now - help_bridge_last_alive_t > 3.0) ? (
+    help_bridge_alive = 0;
+    ui_lang = 0;
+  );
+);
 gfx_setfont(1, "Arial", 18, 'b');
 gfx_setfont(2, "Arial", 14);
 gfx_setfont(3, "Arial", 13, 'b');
@@ -1492,6 +1526,38 @@ function apply_adv_tr_preset(preset_id) (
     set_ui_slider(1, 1700); set_ui_slider(2, 28);  set_ui_slider(3, 34);
     set_ui_slider(6, 46);   set_ui_slider(7, 1);   set_ui_slider(11, 28); set_ui_slider(12, 42);
   );
+);
+
+function ui_help_button(bx, by, bw, bh, plugin_id)
+local(is_hover, clicked, tw, th) (
+  is_hover = hit(mouse_x, mouse_y, bx, by, bw, bh);
+  clicked = is_hover && mouse_click;
+  is_hover ? active_info_id = 99;
+  clicked ? (
+    help_bridge_alive ? (
+      gmem[3902] = plugin_id;
+      help_bridge_req_seq += 1;
+      gmem[3903] = help_bridge_req_seq;
+    ) : (
+      help_warn_until = time_now + 4.0;
+    );
+  );
+  gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 1;
+  is_hover ? ( gfx_r += 0.08; gfx_g += 0.08; gfx_b += 0.08; );
+  gfx_rect(bx, by, bw, bh);
+  gfx_r = is_hover ? 0.95 : line_r;
+  gfx_g = is_hover ? 0.65 : line_g;
+  gfx_b = is_hover ? 0.20 : line_b;
+  gfx_a = 0.95;
+  gfx_rect(bx, by, bw, 1); gfx_rect(bx, by + bh - 1, bw, 1);
+  gfx_rect(bx, by, 1, bh); gfx_rect(bx + bw - 1, by, 1, bh);
+  gfx_setfont(3);
+  gfx_r = is_hover ? 1 : text_r;
+  gfx_g = is_hover ? 0.85 : text_g;
+  gfx_b = is_hover ? 0.40 : text_b;
+  gfx_measurestr("?", tw, th);
+  gfx_x = bx + (bw - tw) * 0.5; gfx_y = by + (bh - th) * 0.5; gfx_drawstr("?");
+  clicked;
 );
 
 function ui_action_button(bx, by, bw, bh, label, is_active, info_id, cr, cg, cb)
@@ -1737,6 +1803,7 @@ view_mode != 1 && !head_compact ? (
   gfx_drawstr("  |  Engine: "); gfx_drawstr(speed_str); gfx_drawstr("  |  Out: "); gfx_drawstr(output_str);
 );
 
+ui_help_button(head_x + head_w - 222, head_y + 10, 26, 18, 3);
 ui_tab_button(26, 0, head_x + head_w - 190, head_y + 10, 54, 18, "FULL", 160, grp_out_r, grp_out_g, grp_out_b);
 ui_tab_button(26, 1, head_x + head_w - 132, head_y + 10, 54, 18, "MINI", 160, grp_out_r, grp_out_g, grp_out_b);
 ui_tab_button(26, 2, head_x + head_w - 74,  head_y + 10, 54, 18, "JSFX", 160, grp_out_r, grp_out_g, grp_out_b);
@@ -2149,49 +2216,63 @@ view_mode == 0 ? (
   show_simple ? ( gfx_r = 0.30; gfx_g = 0.35; gfx_b = 0.41; ) : ( gfx_r = 0.72; gfx_g = 0.72; gfx_b = 0.75; );
   gfx_x = 14; gfx_y = info_y + 7;
 
-  active_info_id == 101 ? gfx_drawstr("CROSSOVER: divide il contenuto per l'intervento armonico. SHIFT = precisione, doppio click = reset.") :
-  active_info_id == 102 ? gfx_drawstr("EVEN: armoniche pari. Valori negativi de-excite, valori positivi aggiungono calore.") :
-  active_info_id == 103 ? gfx_drawstr("ODD: armoniche dispari. Negativo addolcisce, positivo aumenta presenza e intelligibilita'.") :
-  active_info_id == 104 ? gfx_drawstr("OUTPUT TRIM: rifinisce il livello finale del plugin.") :
-  active_info_id == 105 ? gfx_drawstr("GAIN MATCH: compensa il livello percepito durante il processing.") :
-  active_info_id == 106 ? gfx_drawstr("DYNAMIC SENSITIVITY: reattivita' del motore rispetto alla dinamica in ingresso.") :
-  active_info_id == 107 ? gfx_drawstr("DYNAMIC DRIVE: in Voice Base abilita la saturazione guidata; in Trailer attiva o bypassa modulazione, duck VOG e gate AIR.") :
+  time_now < help_warn_until ? (
+    gfx_r = 0.95; gfx_g = 0.65; gfx_b = 0.20;
+    ui_lang == 1 ?
+      gfx_drawstr("Guide: open ZP Help > Spoken Finish (start Cue Navigator from 33 Welcome to open it from here)") :
+      gfx_drawstr("Guida: apri Help ZP > Spoken Finish (avvia il Cue Navigator dal 33 Benvenuto per aprirla da qui)");
+  ) :
+  active_info_id == 99 ? (
+    ui_lang == 1 ? gfx_drawstr("GUIDE: click to open the dedicated HTML guide section in browser.") :
+                   gfx_drawstr("GUIDA: clic per aprire la sezione dedicata della guida HTML nel browser.");
+  ) :
+  active_info_id == 101 ? (ui_lang == 1 ? gfx_drawstr("CROSSOVER: splits content for harmonic processing. SHIFT = precision, double click = reset.") : gfx_drawstr("CROSSOVER: divide il contenuto per l'intervento armonico. SHIFT = precisione, doppio click = reset.")) :
+  active_info_id == 102 ? (ui_lang == 1 ? gfx_drawstr("EVEN: even harmonics. Negative values de-excite, positive values add warmth.") : gfx_drawstr("EVEN: armoniche pari. Valori negativi de-excite, valori positivi aggiungono calore.")) :
+  active_info_id == 103 ? (ui_lang == 1 ? gfx_drawstr("ODD: odd harmonics. Negative softens, positive increases presence and intelligibility.") : gfx_drawstr("ODD: armoniche dispari. Negativo addolcisce, positivo aumenta presenza e intelligibilita'.")) :
+  active_info_id == 104 ? (ui_lang == 1 ? gfx_drawstr("OUTPUT TRIM: trims plugin final output level.") : gfx_drawstr("OUTPUT TRIM: rifinisce il livello finale del plugin.")) :
+  active_info_id == 105 ? (ui_lang == 1 ? gfx_drawstr("GAIN MATCH: compensates perceived level during processing.") : gfx_drawstr("GAIN MATCH: compensa il livello percepito durante il processing.")) :
+  active_info_id == 106 ? (ui_lang == 1 ? gfx_drawstr("DYNAMIC SENSITIVITY: engine responsiveness to input dynamics.") : gfx_drawstr("DYNAMIC SENSITIVITY: reattivita' del motore rispetto alla dinamica in ingresso.")) :
+  active_info_id == 107 ? (ui_lang == 1 ? gfx_drawstr("DYNAMIC DRIVE: in Voice Base enables guided saturation; in Trailer toggles modulation, VOG duck and AIR gate.") : gfx_drawstr("DYNAMIC DRIVE: in Voice Base abilita la saturazione guidata; in Trailer attiva o bypassa modulazione, duck VOG e gate AIR.")) :
   active_info_id == 108 ? (
-    delta_mode && !ui_delta_audible ?
-      gfx_drawstr("DELTA: attivo ma neutro, il processing corrente genera differenza minima rispetto al dry.") :
-      gfx_drawstr("DELTA: ascolta solo l'intervento del plugin.");
+    delta_mode && !ui_delta_audible ? (
+      ui_lang == 1 ? gfx_drawstr("DELTA: active but neutral, current processing generates minimal difference from dry.") :
+                     gfx_drawstr("DELTA: attivo ma neutro, il processing corrente genera differenza minima rispetto al dry.");
+    ) : (
+      ui_lang == 1 ? gfx_drawstr("DELTA: audition processing difference only.") :
+                     gfx_drawstr("DELTA: ascolta solo l'intervento del plugin.");
+    );
   ) :
-  active_info_id == 109 ? gfx_drawstr("GAIN CORR: correzione manuale del gain match per monitor piu' preciso.") :
-  active_info_id == 111 ? gfx_drawstr("VOICE OF GOD: rinforzo low-end trailer, utile su promo e voice-over cinematici.") :
-  active_info_id == 112 ? gfx_drawstr("CINEMA AIR: estensione alta parallela per aria e apertura.") :
-  active_info_id == 113 ? gfx_drawstr("CHARACTER: blend tra Voice Base Safe e Controlled.") :
+  active_info_id == 109 ? (ui_lang == 1 ? gfx_drawstr("GAIN CORR: manual gain match trim for precise monitoring.") : gfx_drawstr("GAIN CORR: correzione manuale del gain match per monitor piu' preciso.")) :
+  active_info_id == 111 ? (ui_lang == 1 ? gfx_drawstr("VOICE OF GOD: trailer low-end reinforcement, great for promos and cinematic voice-over.") : gfx_drawstr("VOICE OF GOD: rinforzo low-end trailer, utile su promo e voice-over cinematici.")) :
+  active_info_id == 112 ? (ui_lang == 1 ? gfx_drawstr("CINEMA AIR: parallel high frequency extension for air and open top end.") : gfx_drawstr("CINEMA AIR: estensione alta parallela per aria e apertura.")) :
+  active_info_id == 113 ? (ui_lang == 1 ? gfx_drawstr("CHARACTER: blend between Voice Base Safe and Controlled.") : gfx_drawstr("CHARACTER: blend tra Voice Base Safe e Controlled.")) :
   active_info_id == 114 ? (
-    delta_mode ? gfx_drawstr("DRY/WET: LOCK quando Delta e' ON (forzato a 100% wet per ascolto intervento).") :
-                 gfx_drawstr("DRY/WET: mix interno del plugin. 100% = solo processing, 0% = solo dry.");
+    delta_mode ? (ui_lang == 1 ? gfx_drawstr("DRY/WET: LOCKED when Delta is ON (forced to 100% wet for difference monitoring).") : gfx_drawstr("DRY/WET: LOCK quando Delta e' ON (forzato a 100% wet per ascolto intervento).")) :
+                 (ui_lang == 1 ? gfx_drawstr("DRY/WET: internal blend. 100% = wet only, 0% = dry only.") : gfx_drawstr("DRY/WET: mix interno del plugin. 100% = solo processing, 0% = solo dry."));
   ) :
-  active_info_id == 140 ? gfx_drawstr("INTERFACE PROFILE: SIMPLE per workflow rapido, ADVANCED per controllo completo.") :
-  active_info_id == 141 ? gfx_drawstr("PROCESSING PROFILE: VOICE BASE per parlato naturale, TRAILER per impatto cinematografico.") :
-  active_info_id == 160 ? gfx_drawstr("VIEW MODE: FULL mostra tutta la GUI, MINI compatta il monitoraggio, JSFX prova a riattivare i controlli standard JSFX.") :
-  active_info_id == 170 ? gfx_drawstr("TRAILER AUDITION: FULL ascolta tutto, HARM isola le armoniche, VOG+AIR tiene solo il gruppo cinematico sopra al dry.") :
-  active_info_id == 131 ? gfx_drawstr("TRUE PEAK CEILING: limite massimo di picco con probe 4x e clamp finale sample-peak.") :
-  active_info_id == 132 ? gfx_drawstr("TP LIMITER: safety finale dopo Dry/Wet. OFF lascia passare l'uscita libera per uso creativo.") :
-  active_info_id == 171 ? gfx_drawstr("CLEAN 1200: sweet spot parlato, alleggerisce harsh con crossover a 1200 Hz.") :
-  active_info_id == 172 ? gfx_drawstr("CLEAN+PRES: pulizia piu' leggera con un filo di intelligibilita' in piu'.") :
-  active_info_id == 173 ? gfx_drawstr("STACK ST2: pensato per seconda istanza dopo una fase di clean.") :
-  active_info_id == 174 ? gfx_drawstr("NAT F: base naturale per voci femminili/alto, equilibrio morbido.") :
-  active_info_id == 175 ? gfx_drawstr("AIRY F/S: apre aria e presenza su registri medio-alti e soprano.") :
-  active_info_id == 176 ? gfx_drawstr("DE-HARSH: attenua durezza e sibilanza percepita in modo controllato.") :
-  active_info_id == 177 ? gfx_drawstr("DEEP IMP: impatto caldo su registri maschili profondi.") :
-  active_info_id == 178 ? gfx_drawstr("FOCUS IMP: impatto e fuoco su voci maschili centrali/tenore.") :
-  active_info_id == 179 ? gfx_drawstr("TENOR IMP: spinta presenza su tenore mantenendo corpo.") :
-  active_info_id == 180 ? gfx_drawstr("BC CLEAN: trailer broadcast pulito, leggibile e poco aggressivo.") :
-  active_info_id == 181 ? gfx_drawstr("BC IMPACT: bilanciamento trailer con punch e chiarezza.") :
-  active_info_id == 182 ? gfx_drawstr("BC DENSE: assetto denso ed energico per promo piu' spinti.") :
-  active_info_id == 183 ? gfx_drawstr("TR M-DEEP: variante trailer per basso/baritono, corpo e stabilita'.") :
-  active_info_id == 184 ? gfx_drawstr("TR M-FOCUS: variante trailer maschile con fuoco su intelligibilita'.") :
-  active_info_id == 185 ? gfx_drawstr("TR F-AIR: variante trailer femminile con aria e presenza controllata.") :
-  active_info_id == 150 ? gfx_drawstr("SC AMOUNT (Simple): Min/Med/Max richiama tre macro-calibrazioni del motore.") :
-  gfx_drawstr("SPOKEN FINISH v3.9.8 - circular TP ceiling meter | SHIFT precisione, doppio click reset.");
+  active_info_id == 140 ? (ui_lang == 1 ? gfx_drawstr("INTERFACE PROFILE: SIMPLE for quick workflow, ADVANCED for full control.") : gfx_drawstr("INTERFACE PROFILE: SIMPLE per workflow rapido, ADVANCED per controllo completo.")) :
+  active_info_id == 141 ? (ui_lang == 1 ? gfx_drawstr("PROCESSING PROFILE: VOICE BASE for natural speech, TRAILER for cinematic impact.") : gfx_drawstr("PROCESSING PROFILE: VOICE BASE per parlato naturale, TRAILER per impatto cinematografico.")) :
+  active_info_id == 160 ? (ui_lang == 1 ? gfx_drawstr("VIEW MODE: FULL shows complete GUI, MINI compacts meters, JSFX reactivates standard sliders.") : gfx_drawstr("VIEW MODE: FULL mostra tutta la GUI, MINI compatta il monitoraggio, JSFX prova a riattivare i controlli standard JSFX.")) :
+  active_info_id == 170 ? (ui_lang == 1 ? gfx_drawstr("TRAILER AUDITION: FULL listens to all, HARM isolates harmonics, VOG+AIR plays cinematic layer over dry.") : gfx_drawstr("TRAILER AUDITION: FULL ascolta tutto, HARM isola le armoniche, VOG+AIR tiene solo il gruppo cinematico sopra al dry.")) :
+  active_info_id == 131 ? (ui_lang == 1 ? gfx_drawstr("TRUE PEAK CEILING: maximum peak ceiling with 4x probe and final sample-peak clamp.") : gfx_drawstr("TRUE PEAK CEILING: limite massimo di picco con probe 4x e clamp finale sample-peak.")) :
+  active_info_id == 132 ? (ui_lang == 1 ? gfx_drawstr("TP LIMITER: safety limiter after Dry/Wet. OFF leaves raw output for creative workflows.") : gfx_drawstr("TP LIMITER: safety finale dopo Dry/Wet. OFF lascia passare l'uscita libera per uso creativo.")) :
+  active_info_id == 171 ? (ui_lang == 1 ? gfx_drawstr("CLEAN 1200: spoken word sweet spot, eases harshness with 1200 Hz crossover.") : gfx_drawstr("CLEAN 1200: sweet spot parlato, alleggerisce harsh con crossover a 1200 Hz.")) :
+  active_info_id == 172 ? (ui_lang == 1 ? gfx_drawstr("CLEAN+PRES: gentler cleaning with a touch of extra intelligibility.") : gfx_drawstr("CLEAN+PRES: pulizia piu' leggera con un filo di intelligibilita' in piu'.")) :
+  active_info_id == 173 ? (ui_lang == 1 ? gfx_drawstr("STACK ST2: designed for a second instance after clean stage.") : gfx_drawstr("STACK ST2: pensato per seconda istanza dopo una fase di clean.")) :
+  active_info_id == 174 ? (ui_lang == 1 ? gfx_drawstr("NAT F: natural foundation for female / alto voices, smooth balance.") : gfx_drawstr("NAT F: base naturale per voci femminili/alto, equilibrio morbido.")) :
+  active_info_id == 175 ? (ui_lang == 1 ? gfx_drawstr("AIRY F/S: opens air and presence on upper-mid and soprano ranges.") : gfx_drawstr("AIRY F/S: apre aria e presenza su registri medio-alti e soprano.")) :
+  active_info_id == 176 ? (ui_lang == 1 ? gfx_drawstr("DE-HARSH: tames perceived harshness and sibilance in a controlled way.") : gfx_drawstr("DE-HARSH: attenua durezza e sibilanza percepita in modo controllato.")) :
+  active_info_id == 177 ? (ui_lang == 1 ? gfx_drawstr("DEEP IMP: warm impact on deep male ranges.") : gfx_drawstr("DEEP IMP: impatto caldo su registri maschili profondi.")) :
+  active_info_id == 178 ? (ui_lang == 1 ? gfx_drawstr("FOCUS IMP: impact and focus on central male / tenor voices.") : gfx_drawstr("FOCUS IMP: impatto e fuoco su voci maschili centrali/tenore.")) :
+  active_info_id == 179 ? (ui_lang == 1 ? gfx_drawstr("TENOR IMP: boosts presence on tenor while keeping body.") : gfx_drawstr("TENOR IMP: spinta presenza su tenore mantenendo corpo.")) :
+  active_info_id == 180 ? (ui_lang == 1 ? gfx_drawstr("BC CLEAN: clean broadcast trailer, legible and non-aggressive.") : gfx_drawstr("BC CLEAN: trailer broadcast pulito, leggibile e poco aggressivo.")) :
+  active_info_id == 181 ? (ui_lang == 1 ? gfx_drawstr("BC IMPACT: trailer balance with punch and clarity.") : gfx_drawstr("BC IMPACT: bilanciamento trailer con punch e chiarezza.")) :
+  active_info_id == 182 ? (ui_lang == 1 ? gfx_drawstr("BC DENSE: dense energetic setting for driving promos.") : gfx_drawstr("BC DENSE: assetto denso ed energico per promo piu' spinti.")) :
+  active_info_id == 183 ? (ui_lang == 1 ? gfx_drawstr("TR M-DEEP: trailer variant for bass/baritone, body and stability.") : gfx_drawstr("TR M-DEEP: variante trailer per basso/baritono, corpo e stabilita'.")) :
+  active_info_id == 184 ? (ui_lang == 1 ? gfx_drawstr("TR M-FOCUS: male trailer variant focused on intelligibility.") : gfx_drawstr("TR M-FOCUS: variante trailer maschile con fuoco su intelligibilita'.")) :
+  active_info_id == 185 ? (ui_lang == 1 ? gfx_drawstr("TR F-AIR: female trailer variant with controlled air and presence.") : gfx_drawstr("TR F-AIR: variante trailer femminile con aria e presenza controllata.")) :
+  active_info_id == 150 ? (ui_lang == 1 ? gfx_drawstr("SC AMOUNT (Simple): Min/Med/Max loads three macro-calibrations of the engine.") : gfx_drawstr("SC AMOUNT (Simple): Min/Med/Max richiama tre macro-calibrazioni del motore.")) :
+  (ui_lang == 1 ? gfx_drawstr("SPOKEN FINISH v3.9.8 - circular TP ceiling meter | SHIFT precision, double click reset.") : gfx_drawstr("SPOKEN FINISH v3.9.8 - circular TP ceiling meter | SHIFT precisione, doppio click reset."));
 );
 
 last_mouse_cap = mouse_cap;

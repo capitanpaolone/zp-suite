@@ -49,13 +49,21 @@ def _parser() -> argparse.ArgumentParser:
     translate.add_argument("source", type=Path)
     translate.add_argument("--to", required=True, dest="target")
     translate.add_argument("--from", default="auto", dest="source_lang")
-    translate.add_argument("--engine", default="codex")
+    translate.add_argument("--engine", default="auto")
     translate.add_argument("--model")
     translate.add_argument("--timeout", type=float, default=600)
     translate.add_argument("--block", type=int, default=60)
     translate.add_argument("--output", type=Path)
     translate.add_argument("--overwrite", action="store_true")
     commands.add_parser("translators", help="list the translation engines available here")
+    explain = commands.add_parser(
+        "explain-keys", help="explain a REAPER shortcut list with a logged-in AI agent")
+    explain.add_argument("source", type=Path, help="text file, one 'key -> action' per line")
+    explain.add_argument("--output", type=Path, required=True)
+    explain.add_argument("--engine", default="auto")
+    explain.add_argument("--model")
+    explain.add_argument("--lang", default="it")
+    explain.add_argument("--timeout", type=float, default=300)
     transcribe = commands.add_parser("transcribe", help="transcribe a local audio file")
     transcribe.add_argument("source", type=Path)
     transcribe.add_argument("--engine", choices=["macwhisper"], default="macwhisper")
@@ -125,6 +133,20 @@ def main(
         return 0
     if args.command == "translate":
         return _translate(args)
+    if args.command == "explain-keys":
+        from zp_speech.explain import explain_keys
+        from zp_speech.translate import TranslationError
+
+        try:
+            listing = args.source.expanduser().read_text(encoding="utf-8")
+            text = explain_keys(listing, engine=args.engine, model=args.model,
+                                lang=args.lang, timeout=args.timeout)
+            args.output.expanduser().write_text(text + "\n", encoding="utf-8")
+        except (TranslationError, OSError, UnicodeDecodeError) as error:
+            sys.stderr.write(f"zp-speech explain-keys: {error}\n")
+            return 2
+        sys.stdout.write(str(args.output) + "\n")
+        return 0
     if args.command == "request":
         try:
             payload = request_transcription(
