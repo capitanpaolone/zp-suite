@@ -1,8 +1,10 @@
 // @description ZP Harmonic Space Carver
-// @version 2.6.6
+// @version 2.6.7
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   L'avviso rosso CUE FUORI POSTO in alto e' un pulsante: un clic riporta tutti i cue rossi sulla
+//     loro voce (come il tasto ZP HSC Cue - Riallinea); Ctrl+Z annulla.
 //   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
 //     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
 //   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
@@ -1327,15 +1329,23 @@ quick_mask_addr >= 0 && sc_route_fresh ? (
 quick_sel_lost = quick_sel >= 0 && cue_lost(quick_sel);
 
 // Avviso cue fuori posto (lampeggia, non blocca): scattano nel punto sbagliato finche' non li riallinei.
-function draw_lost_banner(x, y, w, h) local(sy, blink, tw, th) (
+function draw_lost_banner(x, y, w, h) local(sy, blink, tw, th, hover) (
   quick_lost_n > 0 ? (
     sy = ui_sy(y);
-    blink = 0.65 + 0.35 * sin(quick_now * 6.0 + 1.5);
+    hover = ui_hit(x, y, w, h);
+    blink = hover ? 1 : 0.65 + 0.35 * sin(quick_now * 6.0 + 1.5);
     gfx_r=0.86; gfx_g=0.20; gfx_b=0.18; gfx_a=blink; gfx_rect(x, sy, w, h); gfx_a = 1;
-    sprintf(#lost_banner_txt, "CUE FUORI POSTO: %d", quick_lost_n);
+    hover ? ( gfx_r=1; gfx_g=0.85; gfx_b=0.82; gfx_rect(x, sy, w, 1); gfx_rect(x, sy + h - 1, w, 1); gfx_rect(x, sy, 1, h); gfx_rect(x + w - 1, sy, 1, h); );
+    // passando sopra dice cosa fa il clic
+    hover ? strcpy(#lost_banner_txt, ui_lang == 1 ? "REALIGN ALL" : "RIALLINEA TUTTI") :
+            sprintf(#lost_banner_txt, ui_lang == 1 ? "CUES DISPLACED: %d" : "CUE FUORI POSTO: %d", quick_lost_n);
     gfx_setfont(5); gfx_measurestr(#lost_banner_txt, tw, th);
     gfx_r=1; gfx_g=0.95; gfx_b=0.93; gfx_x = x + (w - tw) / 2; gfx_y = sy + (h - th) / 2; gfx_drawstr(#lost_banner_txt);
-    ui_hit(x, y, w, h) ? active_info_id = 73;
+    hover ? (
+      active_info_id = 78;
+      // clic: l'helper riporta tutti i cue rossi sulla loro voce (comando 8, annullabile con Ctrl+Z)
+      mouse_click && quick_gmem_base >= 0 && sc_route_fresh ? ( gmem[quick_gmem_base] = 8; gmem[quick_gmem_base+1] += 1; );
+    );
   );
 );
 
@@ -1859,6 +1869,9 @@ view_mode == 0 ? (
   active_info_id == 75 ? (ui_lang == 1 ? gfx_drawstr("HELPER STOPPED: jumps, #HSC markers, and cue realignment disabled. Start ZP Harmonic Space Carver Cue Navigator.") : gfx_drawstr("HELPER SPENTO: salti, marker #HSC, tracce voce e cue rossi non funzionano. Avvia l'azione ZP Harmonic Space Carver Cue Navigator.")) :
   active_info_id == 76 ? (ui_lang == 1 ? gfx_drawstr("MIN = MAX: music always ducks to Max Duck with voice; Ceiling/Prio inactive. Raise Min Duck (e.g. -3 dB).") : gfx_drawstr("MIN = MAX: con la voce la musica scende sempre di Max Duck; Ceiling e Prio non lavorano. Alza Min Duck (es. -3 dB).")) :
   active_info_id == 73 ? (ui_lang == 1 ? gfx_drawstr("DISPLACED: voice beneath cue has moved; cue triggers at wrong point. REALIGN snaps to voice.") : gfx_drawstr("FUORI POSTO: la voce sotto il cue si e' spostata; il cue scatta nel punto sbagliato. RIALLINEA lo porta sulla sua voce.")) :
+  active_info_id == 78 ? (sc_route_fresh ?
+    (ui_lang == 1 ? gfx_drawstr("CUES DISPLACED: click to move every red cue back onto its voice (like the Realign key). Ctrl+Z undoes it.") : gfx_drawstr("CUE FUORI POSTO: clic = riporta tutti i cue rossi sulla loro voce (come il tasto Riallinea). Ctrl+Z annulla.")) :
+    (ui_lang == 1 ? gfx_drawstr("CUES DISPLACED: start the Cue Navigator helper to realign them.") : gfx_drawstr("CUE FUORI POSTO: per riallinearli avvia l'helper Cue Navigator."))) :
   active_info_id == 74 ? (ui_lang == 1 ? gfx_drawstr("KEEP HERE: cue stays at current position and locks to current voice below.") : gfx_drawstr("TIENI QUI: il cue resta dov'e' e prende come riferimento la voce che ha sotto adesso.")) :
   active_info_id == 64 ? (ui_lang == 1 ? gfx_drawstr("KNEE: Carver threshold knee softness (0 = hard).") : gfx_drawstr("KNEE: morbidezza dell'ingresso in soglia del Carver (0 = netto).")) :
   active_info_id == 70 ? (ui_lang == 1 ? gfx_drawstr("STARTING POINT: sets Depth, Intens, Spread, Prio, Min/Max Duck. SCORE cinema, FLAT balanced, VOCAL podcast.") : gfx_drawstr("PARTENZA: imposta Depth, Intens, Spread, Prio, Min e Max Duck. SCORE cinema, FLAT equilibrio, VOCAL podcast.")) :

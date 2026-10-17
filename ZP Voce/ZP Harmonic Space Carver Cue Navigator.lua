@@ -1,9 +1,11 @@
 -- @description ZP Harmonic Space Carver Cue Navigator (background helper)
--- @version 1.11
+-- @version 1.12
 -- @author Paolo Balestri / Codex
 -- @about Collega i Carver a REAPER: salti tra i cue, punto del cursore a trasporto fermo,
 --   verifica del routing sidechain e cue come marker #HSC sul righello (seguono l'editing).
 -- @changelog
+--   1.12: dal Carver, un clic sull'avviso CUE FUORI POSTO riporta tutti i cue rossi sulla loro voce
+--        e dice quanti ne ha riallineati (Ctrl+Z annulla).
 --   1.11: quando premi ? in un plugin ZP apre la sua sezione nella guida della Suite (italiano o inglese),
 --        e passa ai plugin la lingua scelta nella Suite. Tutto quello che faceva prima resta uguale.
 -- ================================================================
@@ -417,12 +419,23 @@ local function seek(time)
 end
 
 local anchor_command               -- definita piu' sotto (ancore dei cue)
+local hsc_notify                   -- definita piu' sotto (messaggio non bloccante)
 local function handle(base)
   if reaper.gmem_read(base + 69) ~= MAGIC then return end
   local seq = math.floor(reaper.gmem_read(base + 1) + 0.5)
   local ack = math.floor(reaper.gmem_read(base + 3) + 0.5)
   if seq == ack or seq == last_seq[base] then return end
   local cmd = math.floor(reaper.gmem_read(base) + 0.5)
+  if cmd == 8 then
+    -- clic sull'avviso CUE FUORI POSTO: riallinea tutti i cue rossi
+    local n = anchor_command and anchor_command("realign", nil) or 0
+    if hsc_notify then
+      hsc_notify(n == 0 and "Nessun cue fuori posto" or (n == 1 and "1 cue riallineato" or (n .. " cue riallineati")))
+    end
+    reaper.gmem_write(base + 3, seq)
+    last_seq[base] = seq
+    return
+  end
   if cmd == 6 or cmd == 7 then
     -- RIALLINEA (6) / TIENI QUI (7) sul cue selezionato nel Carver
     if anchor_command then anchor_command(cmd == 6 and "realign" or "keep", math.floor(reaper.gmem_read(base + 2) + 0.5)) end
@@ -629,6 +642,7 @@ local function notify(msg)
   reaper.TrackCtl_SetToolTip(msg, x + 14, y + 14, true)
   tip_until = reaper.time_precise() + 3
 end
+hsc_notify = notify
 
 -- ================================================================
 -- Marker #HSC: lettura, creazione (in lane 4), cancellazione
