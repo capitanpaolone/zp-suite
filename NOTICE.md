@@ -4,6 +4,8 @@ ZP Suite è distribuita nel suo insieme sotto **GNU GPL versione 3 o successiva*
 (testo completo in `LICENSE`). Due effetti e una libreria di terzi restano sotto
 **LGPL 2.1**, la licenza con cui sono stati ricevuti: il testo integrale è in
 `LICENSE-LGPL-2.1.txt`.
+La libreria SheetJS, incorporata in 26 SRT Tools, resta sotto **Apache-2.0**: testo integrale in
+`LICENSE-Apache-2.0.txt`.
 
 Alcuni effetti incorporano o derivano da DSP di terzi. Questo file elenca la catena
 di provenienza di ciascuno, come dichiarata nell'intestazione dei sorgenti.
@@ -63,7 +65,8 @@ DLL resta alle condizioni con cui è stato ricevuto.
 ## 26 SRT Tools — lettura dei file Excel
 
 - **SheetJS LLC** — *SheetJS Community Edition* 0.20.3 (lettura di XLS e XLSX) — licenza **Apache-2.0**
-  (https://www.apache.org/licenses/LICENSE-2.0, progetto https://sheetjs.com)
+  (testo integrale in `LICENSE-Apache-2.0.txt`, distribuito con ReaPack anche come
+  `ZP Studio Suite/tools/LICENSE-SheetJS-Apache-2.0.txt`; progetto https://sheetjs.com)
 
 La libreria e' incorporata, non modificata, dentro `ZP Studio Suite/tools/srt_tools.html`, cosi' la
 pagina funziona senza internet. Resta sotto la sua licenza Apache-2.0.

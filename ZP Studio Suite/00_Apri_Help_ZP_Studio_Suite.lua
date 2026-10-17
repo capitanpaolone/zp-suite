@@ -117,6 +117,7 @@
 --   presets/js-ZP Suite_ZP Voce_ZP BUS Chain_jsfx.ini
 --   presets/js-ZP Suite_ZP Master_ZP Master Pro_jsfx.ini
 --   tools/srt_tools.html
+--   tools/LICENSE-SheetJS-Apache-2.0.txt
 --   toolbar/ZP_StudioSuite.ReaperMenu
 --   ZP_NVDA_Speech.py
 --   nvdaControllerClient64.dll
