@@ -106,8 +106,8 @@
     <li>Select <code>VO Smart</code>.</li>
     <li>Click <code>ANALYZE</code>.</li>
     <li>Check segments, speech duration, and <code>Audio OK</code> status.</li>
-    <li>Use <code>PREVIEW</code> to create temporary regions and verify splits.</li>
-    <li>Click <code>APPLY</code> only when the result looks right.</li>
+    <li>In the <strong>Revisione manuale</strong> (manual review) panel, listen to each segment (<code>Play</code>, <code>Stop</code>, <code>◀</code> <code>▶</code>, <code>Zoom</code>) and decide: <code>Approva segmento</code> keeps it, <code>Scarta segmento</code> excludes it; <code>Approva tutti</code> approves them all. <code>ASCOLTA</code> (listen) plays the selected segment with a little context before and after.</li>
+    <li>Click <code>APPLY</code> when every segment is decided: only approved segments are used.</li>
   </ol>
 
   <div class="note">
@@ -162,6 +162,9 @@
     <li>Mouse wheel adjusts the value when hovering over a knob.</li>
   </ul>
 
+  <h2>Calibration memory</h2>
+  <p><code>Salva memoria</code> (save memory) stores the current threshold, timing, margin and refinement values (plus mode, position and fade) under a name, on this Mac. <code>Usa memoria</code> (use memory) loads them again in later sessions and refreshes the analysis. The memory is separate from the factory presets and changes only when you save it.</p>
+
   <h2>Practical Examples</h2>
   <h3>Long file with many separate lines</h3>
   <p>Use <code>VO Smart</code> and <code>Split Internal Silences</code>. If lines are broken into fragments, raise <code>Gate hold</code>; if needed, open Advanced and test <code>Merge gap</code>.</p>
@@ -180,9 +183,9 @@
 
   <h2>Safety Guarantees</h2>
   <ul>
-    <li><code>PREVIEW</code> creates temporary red regions <code>ZPSS22_PREVIEW</code> on the timeline.</li>
-    <li><code>PREVIEW</code> is available only with <code>Original position</code>. In <code>Sequence spacing</code>, placement is computed upon Apply.</li>
-    <li><code>CLEAR PREVIEW</code> removes only these temporary preview regions.</li>
+    <li>Every decided segment is marked on the timeline with a temporary <code>ZPSS22_REVIEW_</code> marker: green <code>MANTIENI</code> (keep), red <code>ESCLUDI</code> (exclude).</li>
+    <li><code>PULISCI MARKER</code> (clear markers) removes those temporary markers (and <code>ZPSS22_PREVIEW</code> regions from older versions); <code>APPLY</code> and <code>CANCELLA</code> (cancel) remove them automatically.</li>
+    <li><code>APPLY</code> stops if a segment is still pending or if no segment is approved.</li>
     <li><code>APPLY</code> operates within a REAPER Undo block.</li>
     <li>Without valid segments, the tool neither alters nor removes items.</li>
     <li>A single Undo step reverts the entire operation.</li>

@@ -106,8 +106,8 @@
     <li>Scegli <code>VO Smart</code>.</li>
     <li>Premi <code>ANALIZZA</code>.</li>
     <li>Controlla segmenti, durata parlato e stato <code>Audio OK</code>.</li>
-    <li>Usa <code>PREVIEW</code> per creare regioni temporanee e controllare i tagli.</li>
-    <li>Premi <code>APPLICA</code> solo quando il risultato e corretto.</li>
+    <li>Nel pannello <strong>Revisione manuale</strong> ascolta ogni segmento (<code>Play</code>, <code>Stop</code>, <code>◀</code> <code>▶</code>, <code>Zoom</code>) e decidi: <code>Approva segmento</code> lo mantiene, <code>Scarta segmento</code> lo esclude; <code>Approva tutti</code> li approva in un colpo. <code>ASCOLTA</code> riproduce il segmento selezionato con un po' di contesto prima e dopo.</li>
+    <li>Premi <code>APPLICA</code> quando hai deciso tutti i segmenti: usa solo quelli approvati.</li>
   </ol>
 
   <div class="note">
@@ -162,6 +162,9 @@
     <li>La rotella del mouse cambia il valore quando il puntatore e sul knob.</li>
   </ul>
 
+  <h2>Memoria della calibrazione</h2>
+  <p><code>Salva memoria</code> conserva con un nome i valori attuali di soglia, tempi, margini e rifinitura (piu' modo, posizione e fade), su questo Mac. <code>Usa memoria</code> li ricarica anche nelle sessioni successive e aggiorna l'analisi. La memoria e' separata dai preset di fabbrica e cambia solo quando la salvi.</p>
+
   <h2>Esempi Pratici</h2>
   <h3>File lungo con molte frasi separate</h3>
   <p>Usa <code>VO Smart</code> e <code>Split silenzi interni</code>. Se vedi frasi spezzate, aumenta <code>Gate hold</code>; se serve apri Advanced e prova <code>Merge gap</code>.</p>
@@ -180,9 +183,9 @@
 
   <h2>Sicurezza</h2>
   <ul>
-    <li><code>PREVIEW</code> crea regioni rosse temporanee <code>ZPSS22_PREVIEW</code> sulla timeline originale.</li>
-    <li><code>PREVIEW</code> e disponibile solo con <code>Posizione originale</code>. Con <code>Separa in sequenza</code> il risultato viene riposizionato dopo Applica.</li>
-    <li><code>PULISCI PREVIEW</code> rimuove solo quelle regioni temporanee.</li>
+    <li>Ogni segmento deciso viene segnato sulla timeline con un marker temporaneo <code>ZPSS22_REVIEW_</code>: verde <code>MANTIENI</code>, rosso <code>ESCLUDI</code>.</li>
+    <li><code>PULISCI MARKER</code> toglie quei marker temporanei (e le regioni <code>ZPSS22_PREVIEW</code> delle versioni precedenti); <code>APPLICA</code> e <code>CANCELLA</code> li tolgono da soli.</li>
+    <li><code>APPLICA</code> si ferma se resta un segmento in attesa o se nessun segmento e' approvato.</li>
     <li><code>APPLICA</code> lavora dentro un blocco Undo di REAPER.</li>
     <li>Se non ci sono segmenti validi, il tool non modifica e non cancella item.</li>
     <li>Un solo Undo deve riportare indietro l'operazione applicata.</li>

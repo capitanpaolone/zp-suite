@@ -370,6 +370,7 @@
     <li>Quick format settings (WAV/MP3, mono/stereo, sample rate). <strong>Render</strong> configures output path, <code>$region</code> wildcard, and opens REAPER Render dialog. <strong>+ Queue</strong> queues batch jobs.</li>
     <li><strong>Log</strong>: writes history to <code>Mixdown/Mixdown_History.csv</code>. <strong>Index</strong>: creates <code>Mixdown_Index.csv</code> in section folders verifying rendered files.</li>
   </ul>
+  <p>A bar at the bottom of the window explains the button under the mouse pointer, also in Mixdown Settings and in the quick guide.</p>
 
   <!-- ================================================================== -->
   <h2 id="zp-project-viewer">Project Viewer</h2>
@@ -418,13 +419,17 @@
       <h3>ZP BUS Chain</h3>
       <p><strong>Purpose:</strong> Primary voice bus processor (dialogue, voiceover, dubbing). Combines Expander/Gate, De-Esser/Air, 1175, LA-2A, and Major Tom compressors, analog Brown stage, and safety Limiter.</p>
       <p><strong>Where to place:</strong> On Voice Bus (voice folder or master dialogue bus).</p>
-      <p><strong>Key controls:</strong> Expander Thresh/Range, compressor RED/MAKEUP, Brown Drive/Mix, High Air, Limiter Ceiling/Release, module toggles. Broadcasts full telemetry to Shared Bus.</p>
+      <p><strong>Key controls:</strong> Expander Thresh/Range, compressor RED/MAKEUP, Brown Drive/Mix, High Air, Limiter Ceiling/Release, module toggles. Broadcasts full telemetry to Shared Bus. The Brown Guard page has two separate switches: <strong>DYN</strong> (the dynamic correction that follows the Slope target) and <strong>EQ</strong> (the four manual EQ points); they work independently of the main Brown switch.</p>
     </div>
     <div class="card" id="plugin-carver">
       <h3>ZP Harmonic Space Carver</h3>
       <p><strong>Purpose:</strong> Mix/music bed ducking assistant. Dynamically creates spectral and volume room under dialogue using voice-guided multibanda carving and VCA ducking, synchronized via timeline cues (#HSC).</p>
       <p><strong>Where to place:</strong> On Music Bus. Chain Builder places it here for Podcast and Commercial Spot profiles.</p>
-      <p><strong>Key controls:</strong> VOICE sidechain inputs (3/4, 5/6, 7/8), Min Duck & Max Duck, VCA Ceiling, Glue, Carver bands (B1-B4), and Cue bar (#HSC) with automatic audio anchor tracking. When the Carver shows the red <strong>CUES DISPLACED</strong> warning at the top, one click on it moves every red cue back onto its voice (like the <em>ZP HSC Cue - Riallinea</em> key); Ctrl+Z undoes it.</p>
+      <p><strong>Key controls:</strong> <strong>VOICE</strong>: up to three sidechain sources (3/4, 5/6, 7/8), shown only when the track has those channels, each with ON, gain and a routing light; voice Thresh, RMS Stab, Hold, Lookahead (Anticipo). <strong>CARVER</strong>: Thresh, Intens, Low, Mid and High bands, Spread, Knee, Attack, Release; drag the crossovers on the BANDS map. <strong>VCA</strong>: Ceiling, Prio, Min Duck, Max Duck, Attack, Release, STD or GRADUAL return. <strong>OUTPUT</strong>: Mix, Glue, Out, In, Voice Ret. <strong>PARTENZA</strong> SCORE / FLAT / VOCAL sets the knobs as a starting point. <strong>SIMPLE</strong> shows the five main controls of the same engine; <strong>DOCK</strong> is a strip with status and cues to keep open while editing.</p>
+      <p><strong>Quick return cues:</strong> ADD / REMOVE places a cue at the playhead (playing) or at the edit cursor (stopped): there the music comes back at once, with the Ramp, and stays open for the Opening time. DELETE removes the selected cues (Cmd/Ctrl+click or Shift+click for several), UNDO and CLEAR ALL manage the list. With the <em>ZP Harmonic Space Carver Cue Navigator</em> helper started when REAPER opens, every cue is also a <code>#HSC</code> marker in lane 4: move it by hand or with ripple and the Carver follows; new cues and deletions go through the Carver only (a <code>#HSC</code> deleted by hand comes back). Without the helper the cue bar shows HELPER OFF.</p>
+      <p><strong>Displaced cues:</strong> every cue remembers the voice beneath it. If that voice moves and the cue does not, the cue turns red and <strong>CUES DISPLACED</strong> appears at the top: one click on it (or the <em>ZP HSC Cue - Riallinea</em> key) moves every red cue back onto its voice. A single red cue offers <strong>REALIGN</strong> and <strong>KEEP HERE</strong>. Ctrl+Z undoes it.</p>
+      <p><strong>Keyboard actions:</strong> ZP HSC Cue - Aggiungi o togli (add/remove), Successivo (next), Precedente (previous), Annulla (undo), Riallinea (realign). <em>ZP HSC - Mostra tracce voce</em> selects the tracks the Carver treats as voice: those that reach its sidechain.</p>
+      <p><strong>Warnings:</strong> <strong>listen</strong> (CARV, VCA, ALL play only what is removed) blinks at the top and returns to OFF when the project is reopened; the meters always measure the real output. <strong>Min = Max</strong> means that with voice the music always drops by Max Duck and Ceiling and Prio do nothing: raise Min Duck.</p>
     </div>
     <div class="card" id="plugin-spoken-finish">
       <h3>ZP Spoken Finish</h3>
