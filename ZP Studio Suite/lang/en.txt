@@ -759,3 +759,86 @@ whisper crea l'SRT accanto al file audio	whisper creates SRT next to audio file
 ● REC ripreso — %s	● REC resumed — %s
 ● REC — %s	● REC — %s
 ❚❚ REC in pausa — %s	❚❚ REC paused — %s
+# 36 ZP Montaggio Parlato (prova)
+Seleziona gli item (o una traccia), carica il copione se c'e', poi ANALIZZA.	Select the items (or a track), load the script if you have one, then ANALYZE.
+copione	script
+Il copione e' vuoto: niente caricato.	The script is empty: nothing loaded.
+Copione caricato: %s, %d parole, %d frasi. Ora ANALIZZA.	Script loaded: %s, %d words, %d sentences. Now ANALYZE.
+(serve rifare l'analisi)	(run the analysis again)
+Per i PDF serve pdftotext (brew install poppler). Intanto: apri il PDF, copia il testo e usa Incolla.	PDFs need pdftotext (brew install poppler). Meanwhile: open the PDF, copy the text and use Paste.
+Non riesco a leggere il file.	Cannot read the file.
+Dal file non esce testo (forse e' un'immagine scansionata).	No text comes out of the file (maybe it is a scanned image).
+Copione (doc, docx, pdf, rtf, odt, txt)	Script (doc, docx, pdf, rtf, odt, txt)
+Incolla richiede SWS: usa Carica file.	Paste needs SWS: use Load file.
+testo incollato	pasted text
+Seleziona una traccia.	Select a track.
+Nessun item audio: seleziona gli item o una traccia.	No audio items: select items or a track.
+ZP Speech non e' installato: nel repo zp-suite lancia speech-engine/install_macos.sh.	ZP Speech is not installed: in the zp-suite repo run speech-engine/install_macos.sh.
+non e' un WAV	not a WAV
+Trascrivo %d di %d: %s (la prima volta; poi resta in cache)	Transcribing %d of %d: %s (first time only; then it stays cached)
+trascrizione non riuscita	transcription failed
+trascrizione illeggibile	transcription unreadable
+Ascolto il file %d di %d: %d%%	Listening to file %d of %d: %d%%
+Whisper ha saltato della voce: ritrascrivo il pezzo %d di %d (%s)	Whisper skipped some speech: re-transcribing piece %d of %d (%s)
+Analisi fatta: %d item, %d interventi, %d da controllare.	Analysis done: %d items, %d edits, %d to check.
+%d item saltati (vedi la pagina).	%d items skipped (see the page).
+Senza copione: trovo solo rifacimenti e comandi.	Without a script: only retakes and commands are found.
+Rifacimento (click)	Retake (click)
+Rifacimento (parola)	Retake (word)
+Lettura precedente	Earlier reading
+Fuori testo	Off script
+Comando	Command
+Alternativa	Alternative
+Non letta	Not read
+Click senza ripresa	Click without retake
+Rifacimento: tolti %s s. Ascolta la cucitura.	Retake: %s s removed. Listen to the join.
+Controllare: click senza ripresa riconosciuta.	Check: click without a recognized retake.
+ALT nella corsia sotto	ALT in the lane below
+ALT nella traccia ALT (mutata)	ALT in the ALT track (muted)
+Non letta: «%s»	Not read: “%s”
+Applicato su %d item. Un solo Undo per tornare indietro. Il fino si fa in Timeline.	Applied to %d items. A single Undo goes back. Fine editing happens in the Timeline.
+Timeline ricompattata di %s s.	Timeline tightened by %s s.
+Saltato: 	Skipped: 
+NON LETTA: 	NOT READ: 
+Qui	Here
+Clicca una parola segnata nella pagina, o usa le frecce per scorrere gli interventi.	Click a marked word on the page, or use the arrows to step through the edits.
+CONTROLLARE	CHECK
+Ascolta	Listen
+In corsia	In the lane
+Non metterla	Leave it out
+Tieni	Keep
+Legenda	Legend
+barrato rosso: si toglie	red strikethrough: removed
+barrato grigio: lettura superata	grey strikethrough: superseded reading
+azzurro: comando detto	light blue: spoken command
+viola: alternativa, corsia sotto	violet: alternative, lane below
+CLICK: segnale di rifacimento	CLICK: retake signal
+arancio: frase non letta	orange: sentence not read
+Analisi in corso: la pagina compare alla fine.	Analysis running: the page appears at the end.
+Qui comparira' il parlato come un copione segnato: barrato quello che si toglie, i comandi in azzurro, le alternative in viola. Clicca una parola per vederla a destra e ascoltarla.	The speech will appear here as a marked-up script: struck through what gets removed, commands in light blue, alternatives in violet. Click a word to see it on the right and listen to it.
+Cosa	What
+Item selezionati	Selected items
+Traccia selezionata	Selected track
+Modo	Mode
+Slide separate	Separate slides
+Segnale	Signal
+Click	Click
+Parole	Words
+Entrambi	Both
+Segnale cambiato: rifai ANALIZZA (le trascrizioni sono in cache, e' veloce).	Signal changed: ANALYZE again (transcriptions are cached, it is quick).
+Copione	Script
+Carica file…	Load file…
+Incolla	Paste
+Copione tolto: l'analisi trovera' solo rifacimenti e comandi.	Script removed: the analysis will find only retakes and commands.
+%d parole	%d words
+nessuno: solo rifacimenti e comandi	none: only retakes and commands
+ANALIZZO…	ANALYZING…
+ANALIZZA	ANALYZE
+Solo dubbi	Doubts only
+%d interventi · %d da controllare	%d edits · %d to check
+Note montaggio: visibili	Edit notes: visible
+Note montaggio: nascoste	Edit notes: hidden
+APPLICA ▸	APPLY ▸
+Errore nell'analisi: 	Analysis error:
+Nuova nota	New Note
+Vai →	Go →

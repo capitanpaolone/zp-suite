@@ -1,0 +1,2992 @@
+{
+  "prefs_REPLACEME_help": [
+    {
+      "key": "C0504B2988C86CC8",
+      "text": "text"
+    }
+  ],
+  "prefs_appear_help": [
+    {
+      "key": "D42E66A319AC11AE",
+      "text": "The length of the mouse hover delay before tooltips appear."
+    },
+    {
+      "key": "44E0D11CF67D6F39",
+      "text": "Enable tooltips on the UI elements."
+    },
+    {
+      "key": "A774979370C2945A",
+      "text": "Enable tooltips when editing items or envelopes."
+    },
+    {
+      "key": "FC697457A24188CD",
+      "text": "If tooltips are enabled for envelopes, show the tooltip when hovering the mouse over an envelope."
+    },
+    {
+      "key": "817322118B249C2C",
+      "text": "Enable peak value and loudness (if peaks settings are configured to calculate loudness) tooltip when hovering the mouse over a media item."
+    },
+    {
+      "key": "E329015731738BEA",
+      "text": "Use legacy drawing code for drawing text, may be faster but not recommended as it is of lower quality with some fonts."
+    },
+    {
+      "key": "AD36F1B35190B546",
+      "text": "Cache rendered font glyphs, which can improve drawing performance significantly vs FreeType. "
+    },
+    {
+      "key": "77B9B339AD44076D",
+      "text": "Draw smooth item fadein/fadeout curves and automation envelopes. No meaningful performance penalty."
+    },
+    {
+      "key": "A7B566458D7B1070",
+      "text": "Fill automation envelopes with color, for easier reading but a slight performance penalty. (Media item fade area curve fills use a theme setting.)"
+    },
+    {
+      "key": "4633445F44D0C872",
+      "text": "Fill automation envelopes with color when drawing envelopes over media, for easier reading but a slight performance penalty."
+    },
+    {
+      "key": "FEF64939D5DC280B",
+      "text": "Show horizontal grid lines in envelope lanes, height permitting."
+    },
+    {
+      "key": "55495C620A74CDAD",
+      "text": "Adjust size of all envelope points - 1.0 is the default, 1.5 might be easier to see."
+    },
+    {
+      "key": "6B47677457159E33",
+      "text": "Adjust size of unselected envelope points (relative to selected points)"
+    },
+    {
+      "key": "4C88837476F4697C",
+      "text": "Width of play cursor in pixels."
+    },
+    {
+      "key": "747A2B1FAA7D0BDB",
+      "text": "By default, the edit cursor will display a highlight over the last selected track, to indicate where pasted content will go."
+    },
+    {
+      "key": "E9CDE41FE0762A29",
+      "text": "Draw solid lines at the edges of the time selection. In the theme, set the time selection fill mode alpha to zero for a minor performance improvement."
+    },
+    {
+      "key": "AF1AF4B7EC29EB88",
+      "text": "Draw solid lines through the arrange view at the edges of the loop selection, for a slight performance penalty."
+    },
+    {
+      "key": "79E344CBB1C62E64",
+      "text": "Draw guide lines at the edges of media items and envelope points while moving them. Partially-checked checkbox draws guides but no item move horizontal guides."
+    },
+    {
+      "key": "E0C453368FB01B72",
+      "text": "Draw a vertical line to indicate the mouse position in the arrange view."
+    },
+    {
+      "key": "F02F80C9904C3AC3",
+      "text": "When changing the size of the toolbar or floating toolbar, don't allow buttons to be drawn smaller than the size of their underlying theme images."
+    },
+    {
+      "key": "BFE2B737382EA986",
+      "text": "When changing the size of the toolbar or floating toolbar, don't allow buttons to be drawn larger than the size of their underlying theme images."
+    },
+    {
+      "key": "DC0B1486D831FBC4",
+      "text": "Floating toolbars, and the Toolbar Docker, can be displayed without a window frame, for a smaller appearance."
+    },
+    {
+      "key": "4C28FA89C883A045",
+      "text": "Disable all toolbar animations. Animations can be configured per-button in the toolbar context menu, under 'Customize toolbar'."
+    },
+    {
+      "key": "D88056C7990BABDF",
+      "text": "Disable animations for armed toolbar buttons. Animations can be configured per-button in the toolbar context menu, under 'Customize toolbar'."
+    },
+    {
+      "key": "7558B3BF8F45FE51",
+      "text": "Vertical pixel spacing below media items, above the following track."
+    },
+    {
+      "key": "728D1A4B9524EAA4",
+      "text": "Pixel size of track spacer, applied to track control panels, mixer, and arrange view."
+    },
+    {
+      "key": "F25183653F5FF069",
+      "text": "When drawing vertical text in the theme (for example, track names or meter scale numbers), draw from bottom to top rather than top to bottom."
+    },
+    {
+      "key": "B77F1269F0A7F0E4",
+      "text": "Set the minimum size in pixels where a single tab will be displayed in a docker. Below this size, a minimal handle will be displayed."
+    },
+    {
+      "key": "A5C6535E860DC8F2",
+      "text": "Spacers in the TCP will shrink so that they are not larger than the following track panel's lane size."
+    },
+    {
+      "key": "59F5531AF53E9022",
+      "text": "Region edges and markers appear as vertical lines in the arrange view by default."
+    },
+    {
+      "key": "7AC58343A1F09128",
+      "text": "Time signature changes appear as vertical lines in the arrange view by default."
+    },
+    {
+      "key": "1FAA4ED76950431D",
+      "text": "Draw grid lines in a dotted style."
+    },
+    {
+      "key": "8EEF9597EC9347E6",
+      "text": "Use color theme odd/even track colors to divide the arrange view vertically."
+    },
+    {
+      "key": "33D8FA6AB4108E8D",
+      "text": "Grid label spacing and vertical shading can reset at the start of each region, or every X (zoom-dependent) measures."
+    },
+    {
+      "key": "5B8B752CABD1F1CF",
+      "text": "Controls whether grid lines are drawn in front, in between the background and peaks, or behind items."
+    },
+    {
+      "key": "FA473871F1720020",
+      "text": "Controls whether marker lines are drawn in front of, in between the background and peaks, or behind items."
+    },
+    {
+      "key": "7DCD9D53450D557C",
+      "text": "Adjust how sparsely ruler labels are drawn."
+    },
+    {
+      "key": "8A3735FBB128CB4B",
+      "text": "The ruler can be resized smaller or larger by dragging beneath the main toolbar."
+    },
+    {
+      "key": "02297AB7F1325713",
+      "text": "When adding or removing ruler lanes, the ruler height can adjust to ensure all lanes are visible, or not."
+    },
+    {
+      "key": "B1B3A72A449589E8",
+      "text": "When the ruler is too small to display all lanes, regions and markers can be displayed as if there are no lanes."
+    },
+    {
+      "key": "AB68B73D95276DFA",
+      "text": "When regions are named, the region number can be displayed or hidden."
+    },
+    {
+      "key": "F396B6521BCB7FAC",
+      "text": "When markers are named, the region number can be displayed or hidden."
+    },
+    {
+      "key": "A58ADA2A7764C721",
+      "text": "When the start of a region is offscreen left, the number and name can scroll offscreen as well, or stay onscreen."
+    },
+    {
+      "key": "D82746AB91159511",
+      "text": "Regions can be drawn with rounded or square edges in the ruler. Square edges are the default."
+    },
+    {
+      "key": "621C24022B97BE25",
+      "text": "Markers can be drawn with rounded or square edges in the ruler. Rounded edges are the default."
+    }
+  ],
+  "prefs_ara_help": [
+    {
+      "key": "0598BF5E8678F01D",
+      "text": "Enable or disable ARA globally for plugins that support it."
+    },
+    {
+      "key": "75EE03D544DC0795",
+      "text": "Edits can be automatically pooled (shared) between copies of the same source media."
+    }
+  ],
+  "prefs_audio_help": [
+    {
+      "key": "9864B7B74DAD01DC",
+      "text": "When enabled, REAPER will share audio devices with other applications by closing the audio hardware not active."
+    },
+    {
+      "key": "7BCD0ED018A7F991",
+      "text": "When unchecked and any tracks are record armed, then REAPER will not share audio devices."
+    },
+    {
+      "key": "56EF83DBB9B533D8",
+      "text": "When unchecked and any ReWire devices are in use, then REAPER will not share audio devices."
+    },
+    {
+      "key": "2C9DA92A74FFB037",
+      "text": "When checked, REAPER will close the audio devices whenever not playing back audio. "
+    },
+    {
+      "key": "68336ADEF74B10B4",
+      "text": "Warn about audio devices that could not be opened."
+    },
+    {
+      "key": "01AEB6565994D6E7",
+      "text": "Warn about MIDI devices that could not be opened."
+    },
+    {
+      "key": "1A40A74117924D4C",
+      "text": "Warn about MIDI devices that are enabled but could not be found."
+    },
+    {
+      "key": "DD6E028799A97980",
+      "text": "When auto-bypass is enabled in project settings or per-plug-in, this allows plug-ins to be auto-bypassed while the plug-in UI is open."
+    },
+    {
+      "key": "774525D47717F72D",
+      "text": "Automatically disable oversampling on tracks that are record armed or receive from armed tracks. Oversampling changes only on playback start/stop."
+    },
+    {
+      "key": "CDA1B340C7057066",
+      "text": "Enables audio input name aliasing, letting you rename your inputs for easier selection."
+    },
+    {
+      "key": "A28FB91F31A627A6",
+      "text": "Enables audio output name aliasing, letting you rename your outputs for easier selection."
+    },
+    {
+      "key": "1BCA4F5650495E9C",
+      "text": "When checked, allows you to treat odd pairs of inputs/outputs as stereo pairs, i.e. not just Channels 1/2, but 2/3 as well."
+    },
+    {
+      "key": "8266E618390457F0",
+      "text": "Sets default output for metronome when project does not override -- default is project master outputs"
+    },
+    {
+      "key": "1723A087387F0E61",
+      "text": "If checked, audio processing and output will be bypassed if a disk write error warning occurs (in order to draw attention to the issue)"
+    },
+    {
+      "key": "E73C41388ACB1337",
+      "text": "REAPER can support up to 128 virtual hardware loopback audio channels which can be used to route audio between projects."
+    },
+    {
+      "key": "7F0EE8E815998136",
+      "text": "When checked, plug-ins with more than this PDC amount will by auto-bypassed when record-armed, reducing monitoring latency/improving performance."
+    },
+    {
+      "key": "2964BAF9C1CD1D9F",
+      "text": "PDC auto-bypass only while recording, PDC FX will be active in stop/playback. This can result in glitches when punch-in recording."
+    }
+  ],
+  "prefs_audio_mutesolo_help": [
+    {
+      "key": "EAD933B5C67C808F",
+      "text": "Do not process tracks that are muted, allowing less CPU/disk usage for these tracks. Unmuting may not be instant with this checked."
+    },
+    {
+      "key": "FC8A1B1D210A7891",
+      "text": "Muted tracks that have their FX UIs visible will still be processed unless this option is checked."
+    },
+    {
+      "key": "4797CE7638526D69",
+      "text": "Makes soloing a track also solo the routing of that track, Toggle which behavior is used by holding alt while clicking a solo button."
+    },
+    {
+      "key": "83E222EF99379F77",
+      "text": "Enable to make pre-fader sends still be active when their track is muted."
+    },
+    {
+      "key": "F6E2FC594309A67B",
+      "text": "Enable to make pre-fader hardware outputs still be active when their track is muted or another track is soloed."
+    },
+    {
+      "key": "5E0E23A55E611073",
+      "text": "The master track, or any track, can be automatically muted (like a circuit breaker) when the volume exceeds a certain level, to protect speakers and ears."
+    },
+    {
+      "key": "7E353D6CD354F8A2",
+      "text": "Reset auto-muted tracks when starting playback"
+    },
+    {
+      "key": "5D15FFF28571BE0B",
+      "text": "If solo in front is enabled (via options menu or action), dim unsoloed tracks by this amount."
+    },
+    {
+      "key": "CC27879338523C6C",
+      "text": "Apply a small fade to mutes to avoid clicks, this controls how long that fade is. Must be no more than 100ms."
+    },
+    {
+      "key": "CAA81ECAF25104C8",
+      "text": "If a soloed-in-place track sends to a soloed track, this option makes the parent/hardware sends effectively unsoloed."
+    },
+    {
+      "key": "3B71E2695F31EE20",
+      "text": "If enabled, soloed tracks do not affect the master mix, instead solo is routed via a dedicated solo bus."
+    },
+    {
+      "key": "2495B14192EF188F",
+      "text": "If dedicated solo bus is enabled, controls whether the master fader affects the solo bus."
+    },
+    {
+      "key": "2AA2CDFFCD6DEAC7",
+      "text": "Show metering on tracks even if another track is soloed, when project is dedicated solo bus mode."
+    }
+  ],
+  "prefs_audiodev_asio_help": [
+    {
+      "key": "F723649F4D3E0D6E",
+      "text": "Select your desired ASIO driver here."
+    },
+    {
+      "key": "B2D72D05025E924C",
+      "text": "ASIO inputs are enabled by default. Clearing this check box will disable the inputs on your ASIO device, which can lower the load on your CPU."
+    },
+    {
+      "key": "B38FC80A6F50E7D6",
+      "text": "Select which input to use as the first of the input range."
+    },
+    {
+      "key": "5C77ACCCB4144AE6",
+      "text": "Select which input to use as the last of the input range."
+    },
+    {
+      "key": "67529A1EFFA68A87",
+      "text": "The Output range section operates in the same way as the input range section, allowing you to choose which ASIO outputs are accessible within REAPER."
+    },
+    {
+      "key": "D5ED4592D5E98A4C",
+      "text": "Select which output to use as the first of the output range."
+    },
+    {
+      "key": "2E0FB1BC821E09A2",
+      "text": "Select which output to use as the last of the output range."
+    },
+    {
+      "key": "0C7EAC6A09C9C0F0",
+      "text": "Click this button to open the Control Panel for your ASIO driver."
+    },
+    {
+      "key": "BC73016B9A446708",
+      "text": "Select this check box to request a specific sample rate for your audio device. If this option is not checked, then the soundcards current or default sample rate will be used."
+    },
+    {
+      "key": "B052BA4DBB7F2AAC",
+      "text": "This option will zero the output buffers of the hardware BEFORE rendering to them, which on some hardware can reduce \\\"stuck buffer sounds\\\" in certain instances."
+    },
+    {
+      "key": "903E6B2546019666",
+      "text": "Some buggy ASIO drivers might need this option for proper ASIO operation."
+    }
+  ],
+  "prefs_audiodev_help": [
+    {
+      "key": "40B4F9BE88EA7D62",
+      "text": "Select your desired input device here."
+    },
+    {
+      "key": "56AAF45D1DCD21D9",
+      "text": "Select your desired output device here."
+    },
+    {
+      "key": "74AAF51B9980FD6C",
+      "text": "Select the desired bit depth that will be used for recordings."
+    },
+    {
+      "key": "5F33CC4B6AACDD3B",
+      "text": "Enter a value into this field to set the number of input channels."
+    },
+    {
+      "key": "C473A0F8D76E0A80",
+      "text": "Enter a value into this field to set the number of output channels."
+    },
+    {
+      "key": "9008BDA500A4D1F3",
+      "text": "Enter a value into this field to set the sample rate that will be used for recordings."
+    },
+    {
+      "key": "368335EF82EE1C29",
+      "text": "This section allows you to alter the buffer settings for REAPER. A larger buffer will give more stable performance on some systems, at the expense of latency."
+    },
+    {
+      "key": "926200AF2A68E63C",
+      "text": "Choose your desired audio system here. By default, REAPER uses WaveOut for compatibility, but ASIO is recommended for best performance."
+    },
+    {
+      "key": "ECA43EEB5860A20C",
+      "text": "If checked, the audio device system will use the project sample rate."
+    },
+    {
+      "key": "902C17B6A11D60F8",
+      "text": "Choose the priority for the main audio thread. "
+    }
+  ],
+  "prefs_auto_help": [
+    {
+      "key": "540A61168A6B08AF",
+      "text": "When the track automation mode is touch, latch, or write, moving any track control or FX knob will create an automation envelope for it."
+    },
+    {
+      "key": "24A7B4635A17AF3A",
+      "text": "After recording an automation write pass, automation can automatically switch to a different mode (to avoid overwriting just-written automation)."
+    },
+    {
+      "key": "6A4D25A321A15123",
+      "text": "The time it takes for the envelope to return to its previous or default value after the end of recording an automation pass."
+    },
+    {
+      "key": "6776B9975D1EC19A",
+      "text": "The transition time applied when writing envelope ranges via actions."
+    },
+    {
+      "key": "5AA333947D3F9AE1",
+      "text": "If (default) enabled, hidden envelopes in read mode will update their relevant track controls."
+    },
+    {
+      "key": "6D3ADB97AE167B75",
+      "text": "If enabled, allows writing automation to armed but hidden envelopes (which is otherwise not supported)."
+    },
+    {
+      "key": "F53D738206169462",
+      "text": "If a track fader is at -X dB, the track volume envelopes can be created at -X dB or +0 dB. In both cases the track output will be automatically adjusted."
+    },
+    {
+      "key": "FFB1DBB0274A82DF",
+      "text": "If hiding an envelope and the envelope only has a single point, apply that value back to the trim/parameter and clear the envelope contents."
+    },
+    {
+      "key": "441FBC5ED51CF71F",
+      "text": "Automatically reduce (prune) redundant points when recording or drawing automation. To reduce points afterwards, use the envelope right-click menu."
+    },
+    {
+      "key": "7B05B46C0FCCED48",
+      "text": "When recording automation while playback is stopped, choose whether to add points before/after edit position."
+    },
+    {
+      "key": "505A498528715CCF",
+      "text": "When recording automation, choose whether to record at the processing position (the default, what you hear), or the playback position."
+    },
+    {
+      "key": "C4A6798BECA88A5E",
+      "text": "If enabled, latches will be reset on looped playback/recording."
+    },
+    {
+      "key": "0E6B6B4DD6DB06C6",
+      "text": "Causes all track envelope points to be deselected when clicking an empty area of the arrange view."
+    },
+    {
+      "key": "AC541C5957F50B6A",
+      "text": "Causes all take envelope points to be deselected when clicking an empty area of the arrange view."
+    },
+    {
+      "key": "30B4D7807888FF78",
+      "text": "Causes all take envelope points to be deselected for a given item when an area of that item is clicked."
+    },
+    {
+      "key": "EE8638C24542B2E3",
+      "text": "If recording automation and multiple matching envelopes are armed, control which envelope is modified."
+    },
+    {
+      "key": "F65F5CD0B2A90467",
+      "text": "If enabled, latches will not be automatically reset when in latch/write modes, and will need to be manually reset."
+    }
+  ],
+  "prefs_auto_items_help": [
+    {
+      "key": "9C3914B6F3A67C90",
+      "text": "Like media items, automation items can be looped or unlooped by default."
+    },
+    {
+      "key": "8A324097713011D9",
+      "text": "By default, each instance of a pooled automation item has a separate baseline and amplitude setting."
+    },
+    {
+      "key": "10F3F62DB9EC4107",
+      "text": "Create new automation items rather than recording directly to the envelopes."
+    },
+    {
+      "key": "95BC82B5341DD086",
+      "text": "Record to existing non-selected automation items rather than creating new items."
+    },
+    {
+      "key": "176CF83941C8803F",
+      "text": "By default, copy/pasting automation items will not create pooled copies."
+    },
+    {
+      "key": "26D15E78F377DF1F",
+      "text": "By default, when automation items are copied or split because of a track/media item/razor edit, pooled copies of the automation items will be created."
+    },
+    {
+      "key": "8F3B80CEA19A6F2D",
+      "text": "Editing automation item position or edges to overlap existing automation items can either play both items together, or trim content from the existing items."
+    },
+    {
+      "key": "15A2EB32586AEA44",
+      "text": "Automation items can transition at the start and end to avoid abrupt changes in envelope value."
+    },
+    {
+      "key": "DD36120EC558DEC1",
+      "text": "Automation items will be automatically assigned a user-editable label. The envelope name can be automatically appended to this label."
+    }
+  ],
+  "prefs_buf_help": [
+    {
+      "key": "429342ABE696E608",
+      "text": "Auto-detect the number of CPU cores in your system and use all of them."
+    },
+    {
+      "key": "DB46AD1EC81087FA",
+      "text": "The number of audio processing threads to create. This is usually set to the number of CPUs in your system."
+    },
+    {
+      "key": "88ED4AE8DA0B9791",
+      "text": "The relative thread priority to use for audio processing. This is an advanced performance tweak and should probably be left on the default."
+    },
+    {
+      "key": "CBDC58413A534831",
+      "text": "How aggressive audio processing threads are. A more relaxed setting will use less CPU but will be less stable at low latencies."
+    },
+    {
+      "key": "CD7C691E80E72934",
+      "text": "Media buffering uses RAM and CPU to avoid having to wait for disk IO. For systems with slower disks this should be set higher. Zero disables buffering."
+    },
+    {
+      "key": "41E5ED5B864C805A",
+      "text": "Disable buffering on tracks with MIDI editors open, which allows faster playback response to MIDI edits (recommended)."
+    },
+    {
+      "key": "3F29804EB743FBAD",
+      "text": "How full source media buffers should be before starting playback. Lower numbers will give faster response time."
+    },
+    {
+      "key": "E565AD880D79DFEF",
+      "text": "When per-take FX are showing, use a lower media buffer size to minimize lag between audio playback and the visual response of the plugin."
+    },
+    {
+      "key": "F2A0039FE6DFC2E5",
+      "text": "Live FX multiprocessing allows live monitoring to be multiprocessed in addition to media/FX, but isn't ideal for low latency performance."
+    },
+    {
+      "key": "7A0294314A050740",
+      "text": "How many threads to use for Live FX multiprocessing."
+    },
+    {
+      "key": "8675235AE1C1D1F9",
+      "text": "Use spare CPU to render FX ahead of time. This is beneficial regardless of CPU count, but may need to be disabled for use with some plug-ins (UAD)."
+    },
+    {
+      "key": "008F35D03C09AE19",
+      "text": "Higher render-ahead times will use multiple processors more efficiently.  Lower render-ahead times will lower response time for FX tweaks."
+    },
+    {
+      "key": "85CC0E1AA9B38417",
+      "text": "Use anticipative (render-ahead) processing on all tracks (even tracks without FX). This can help performance at the lowest latencies but uses more CPU."
+    },
+    {
+      "key": "61655478AEFF607A",
+      "text": "Use anticipative (render-ahead) FX processing on tracks with open MIDI editors. Disable this for lower preview latency while editing."
+    },
+    {
+      "key": "39F15FCC5D777A4B",
+      "text": "Use render-ahead on tracks that have automation write enabled. Disable this to improve the timing of recorded automation."
+    },
+    {
+      "key": "8079420B13150577",
+      "text": "Advanced disk buffering options, only recommended for expert use."
+    },
+    {
+      "key": "5522B2898DF46E8F",
+      "text": "Disable buffering on selected tracks, which allows faster audio playback response to edits."
+    }
+  ],
+  "prefs_comping_help": [
+    {
+      "key": "89867D0941051E40",
+      "text": "Editing item edges in the comping lane can force the corresponding source lane items to expand, to ensure the comp area stays in sync."
+    },
+    {
+      "key": "23E46D695706E38E",
+      "text": "Clicking empty track space in source lanes can either create an empty comp area, or do nothing."
+    },
+    {
+      "key": "F6F41F34E52AFE1F",
+      "text": "Comp area edge edits in source lanes can be constrained to the edges of media items, to prevent comping empty space."
+    },
+    {
+      "key": "30685F754D0829AF",
+      "text": "Changing the source lane for a comp area using an action like \\\"Fixed lane comp area: Move up\\\" can skip empty lanes, or not."
+    },
+    {
+      "key": "29B2AF5D4BBEC288",
+      "text": "Comping MIDI items can create pooled copies, so that edits to the MIDI notes/data in the source media items affect the comping lane."
+    }
+  ],
+  "prefs_dx_help": [
+    {
+      "key": "D305F8049C9BA679",
+      "text": "Show any already-opened ReWire-aware applications/devices as available FX in the add-FX window."
+    },
+    {
+      "key": "EE70845A964B23C2",
+      "text": "When adding ReWired applications/devices, automatically open the device control panel."
+    },
+    {
+      "key": "1A45569F48452198",
+      "text": "Process all track FX even when playback is stopped, when any ReWire device is active."
+    },
+    {
+      "key": "C9AC0DB2F5B34401",
+      "text": "If an application/device is already open that can act as ReWire master, automatically place Reaper in ReWire client mode."
+    },
+    {
+      "key": "8346581680C08CF4",
+      "text": "When running in ReWire client mode, use a separate preferences configuration file so separate preferences and settings can be preserved for this mode only."
+    },
+    {
+      "key": "71F60207B82360FC",
+      "text": "Change ReWire client settings for the current project. To save this project's settings as default, go to File/Project Settings."
+    }
+  ],
+  "prefs_edit_help": [
+    {
+      "key": "3994D33CE89A8920",
+      "text": "Various options for moving the edit cursor (where playback will begin) after performing certain edits."
+    },
+    {
+      "key": "77A15B21FD40224C",
+      "text": "The edit cursor (where playback will begin) moves to the start of the time selection when you change the time selection."
+    },
+    {
+      "key": "4A035DD30180D387",
+      "text": "The edit cursor (where playback will begin) moves to the start of the razor edit when you create the razor edit or move it without contents."
+    },
+    {
+      "key": "5B198AA7AD34F2ED",
+      "text": "The edit cursor (where playback will begin) moves to the mouse when pasting or inserting media items."
+    },
+    {
+      "key": "CCB832D6EAB45692",
+      "text": "The edit cursor (where playback will begin) moves to start of the fixed lane comp area when you click the area."
+    },
+    {
+      "key": "30EE84DA88B23845",
+      "text": "The edit cursor (where playback will begin) moves to the end of newly recorded items when recording stops."
+    },
+    {
+      "key": "6E59EB77685A4FFE",
+      "text": "Set the sensitivity of tab-to-transient and dynamic split. Lower sensitivity causes only the sharpest transients to be detected."
+    },
+    {
+      "key": "E5BCA3801A3DA8DD",
+      "text": "Tab-to-transient can ignore MIDI items, or consider MIDI notes as transients."
+    },
+    {
+      "key": "93AB148AC6B4D9B1",
+      "text": "Tab-to-transient can tab past media item edges, or consider media item edges as transients."
+    },
+    {
+      "key": "9C5B31435FB60A12",
+      "text": "Media item edges between adjacent items can trim both items at once. This behavior can be restricted so both items are edited only if both are selected."
+    },
+    {
+      "key": "8281ED00279B9505",
+      "text": "When creating a razor edit area, existing media item and envelope selection can be cleared, or preserved."
+    },
+    {
+      "key": "8F9F748B3E3AFB8D",
+      "text": "When auto-crossfades (toolbar button) are disabled, normally editing a crossfade will cause the fade-in and fade-out to separate."
+    },
+    {
+      "key": "F6925686D620F5BE",
+      "text": "Tracks that are automatically created when dragging media into empty space below the last track can be automatically deleted if not used."
+    },
+    {
+      "key": "6992EC73E27AECEF",
+      "text": "When using mouse modifiers like \\\"Move item contents\\\", the edit can be applied to only the take being edited, or to all takes in the same media item."
+    },
+    {
+      "key": "6BA03398DCFC6AA9",
+      "text": "Actions to split, trim, or delete media items can affect all media items that intersect the edit cursor, if no media items are selected."
+    },
+    {
+      "key": "A517977E3C29D1AD",
+      "text": "Time selection and loop points can be linked, or unlinked so that they can be set or cleared independently."
+    },
+    {
+      "key": "0742C3EFC8EC2536",
+      "text": "Loop points are cleared using the escape key, or optionally by single-clicking in the ruler/timeline area."
+    },
+    {
+      "key": "6D66B24C4A76886C",
+      "text": "The time selection is cleared using the escape key, or optionally whenever a mouse click in the arrange view moves the edit cursor."
+    },
+    {
+      "key": "E614E9D196A9F7D5",
+      "text": "When stretching a razor edit area edge that falls within an audio media item, either stretch markers can be added, or the item can be split."
+    },
+    {
+      "key": "33BF0E5D92D6151B",
+      "text": "Actions to normalize media items affect only the active take by default, but can affect all takes within the media item."
+    },
+    {
+      "key": "660904F6EC3E2D06",
+      "text": "Actions like \\\"Sample edits: Set sample values to zero\\\" can automatically zoom in, to enable sample editing with the mouse if needed."
+    },
+    {
+      "key": "2CD6C1707B12D93C",
+      "text": "Actions like \\\"Go to next marker\\\" or jumping via Jump To Time dialog can automatically select the region/marker that is navigated to."
+    },
+    {
+      "key": "9130B852E29BD8E0",
+      "text": "Take markers can be up-ranked or down-ranked. The maximum number of ranking levels is set here."
+    },
+    {
+      "key": "8574B15AB5D55AA0",
+      "text": "Actions to up-rank, down-rank, or cycle through rankings can either include or skip setting the take to have no ranking."
+    },
+    {
+      "key": "8953739572224F97",
+      "text": "Constrain the mouse-edited time selection, loop, and razor edit length to a minimum pixel size."
+    }
+  ],
+  "prefs_env_help": [
+    {
+      "key": "60E75E1C06143DD2",
+      "text": "Display newly created automation envelopes in separate lanes, as opposed to drawing the envelope over the media lane."
+    },
+    {
+      "key": "8BE1457A66ECF551",
+      "text": "Envelopes are not normally drawn overlaid over one another. When drawing envelopes over media, overlay them if they would otherwise be too small."
+    },
+    {
+      "key": "7EACC9195B6EAA97",
+      "text": "When activating an envelope in the track envelopes dialog or via menu selection, select the envelope after activation."
+    },
+    {
+      "key": "CD28D7EE423403C2",
+      "text": "Selecting a different envelope via the envelope lane control panel menu will either hide the old envelope or move it to the media lane."
+    },
+    {
+      "key": "F8C8FB0CC40DE7CB",
+      "text": "Decibel range of volume envelopes, from the bottom to the top of the envelope."
+    },
+    {
+      "key": "683A32281D7FDA63",
+      "text": "The default display range of per-take pitch envelopes. A value of 3 means the envelope range is -3 to +3 semitones. This can be overridden per-project."
+    },
+    {
+      "key": "C981C912EB56CE08",
+      "text": "Per-take pitch envelope points can be snapped to semitones, or fractional semitones."
+    },
+    {
+      "key": "B3FAF44B3E38F204",
+      "text": "Transition time between envelope points that are automatically added when moving the lane slider with a time selection, moving media items, etc."
+    },
+    {
+      "key": "6115B93DB8CE3A5A",
+      "text": "When mouse modifier preferences are set to insert an envelope point, clicking an inactive envelope can just select the envelope, or insert a point."
+    },
+    {
+      "key": "FE8EE594477C7178",
+      "text": "When editing a single envelope point with the mouse, the edit can be constrained to the the space between adjacent envelope points."
+    },
+    {
+      "key": "0F8D0ED7C3445C45",
+      "text": "When moving media items across tracks, make sure all envelopes that are modified are made visible so that you are aware of the changes being made."
+    },
+    {
+      "key": "86A807A735044B6D",
+      "text": "Envelope point selection can follow time selection for the currently active envelope."
+    },
+    {
+      "key": "CE6D0EE9AF534919",
+      "text": "Moving or copying items can automatically create edge points for envelopes, preserving the existing envelope shape around the edits."
+    },
+    {
+      "key": "6110AA5E7762FC3E",
+      "text": "Moving or copying multiple envelope points can automatically create edge points, to preserve the existing envelope shape around the edits."
+    },
+    {
+      "key": "2FEA27A4E351D863",
+      "text": "Ripple editing or inserting time can automatically create edge points, to preserve the existing envelope shape."
+    },
+    {
+      "key": "7E33B589D921ECFB",
+      "text": "The default display range for the tempo map envelope. This can be overridden per-project."
+    },
+    {
+      "key": "FF33764F51A8356A",
+      "text": "The tempo map envelope points can be snapped to whole beats per minute, or fractional beats per minute."
+    },
+    {
+      "key": "99590307CA2801DD",
+      "text": "Relative mouse edits provide more Y-axis resolution at the expense of envelope points not following the mouse pointer."
+    },
+    {
+      "key": "58F5A7A879125045",
+      "text": "When editing fader-scaled volume envelopes, one vertical pixel of mouse movement translates to 0.2dB of gain (or 1dB when below -60dB)."
+    },
+    {
+      "key": "1CFA79E2A57A99DA",
+      "text": "When editing envelopes that are not fader-scaled volume envelopes, one vertical pixel of mouse movement translates to 0.5% of value adjustment."
+    }
+  ],
+  "prefs_envcolor_help": [
+    {
+      "key": "F41DA599564771B2",
+      "text": "Override colors for envelopes based on their name. The matching logic is similar to search/filter in REAPER, and the first match found will be used."
+    },
+    {
+      "key": "58027CE20FB83C82",
+      "text": "Adds a new rule for envelope color selection."
+    },
+    {
+      "key": "FF367B77C5A4470A",
+      "text": "Removes any selected rules."
+    },
+    {
+      "key": "88C8DEB73FAA0BE2",
+      "text": "Exports all envelope color overrides to a .ReaperEnvColorList file."
+    },
+    {
+      "key": "C6E9C476CC7775A9",
+      "text": "Adds envelope color overrides from a .ReaperEnvColorList file."
+    }
+  ],
+  "prefs_gen_help": [
+    {
+      "key": "BE277A4C9361B05F",
+      "text": "The number of projects displayed in the \\\"Recent Projects\\\" menu and prompt can be limited."
+    },
+    {
+      "key": "C7DD0A13BFBECFC2",
+      "text": "The way files are listed in the \\\"Recent Projects\\\" menu and prompt can be customized, and the list can be reset."
+    },
+    {
+      "key": "EA5F7AD43FCA1313",
+      "text": "Select the project(s) to open on startup. Override this option by holding Shift (new project, default template) or Cmd+Shift (empty project) while starting up."
+    },
+    {
+      "key": "1C3E78623C84B176",
+      "text": "Select the project(s) to open on startup. Override this option by holding Shift (new project, default template) or Ctrl+Shift (empty project) while starting up."
+    },
+    {
+      "key": "D3EC3DE74B41ED98",
+      "text": "Deselect this option to prevent REAPER checking for new program updates once per day via the internet."
+    },
+    {
+      "key": "9FEC5400CEEB0FE8",
+      "text": "When opening a REAPER project directly from the system file explorer/finder, the current project can be replaced, or a new project tab created."
+    },
+    {
+      "key": "72F5A47F6DEDE757",
+      "text": "Displays the splash screen and REAPER logo when the application starts."
+    },
+    {
+      "key": "979EB3424CDC2D3D",
+      "text": "Skips the REAPER logo animation and potentially slightly reduces startup time."
+    },
+    {
+      "key": "ED4A58E5B093F67C",
+      "text": "More advanced user interface and system settings. These should be used with caution."
+    },
+    {
+      "key": "DE2D329EDB565919",
+      "text": "Warn when REAPER's memory use exceeds the amount listed. Recommended values are 1800 for 32-bit, 0 (disabled) for 64-bit."
+    },
+    {
+      "key": "458C2E2A4FBDC205",
+      "text": "If enabled, projects will be unloaded in background on exit. REAPER may continue to use CPU and memory during this time."
+    },
+    {
+      "key": "36858EBF40C25500",
+      "text": "Choose language from installed languages (you must quit and restart REAPER for language changes to take effect."
+    },
+    {
+      "key": "CFA42778AA6C4A0D",
+      "text": "Opens an options menu related to localization."
+    },
+    {
+      "key": "9D8E117ADEB63307",
+      "text": "When rendering or converting files, filename collisions may be resolved by adding a suffix to the filename."
+    },
+    {
+      "key": "BD6607EEFFBD740C",
+      "text": "If myfile_001 and myfile_003 already exist, enable this setting to auto-increment myfile as myfile_004 instead of myfile_002."
+    },
+    {
+      "key": "DF593B9C849F91B2",
+      "text": "If the auto-increment suffix is _001, enable this setting to auto-increment myfile-001 as myfile_002 instead of myfile-001_001."
+    },
+    {
+      "key": "546F1CC8CAE02303",
+      "text": "If enabled, REAPER will request that the OS not blank the screen or show any screensaver when REAPER is using an audio device, or when rendering."
+    },
+    {
+      "key": "E9C54E0B935698EF",
+      "text": "Maximum undo memory (default: 256 MB). Enter 0 to disable the Undo function as well as the prompt to save modified projects on close."
+    },
+    {
+      "key": "3720BCE6F3CC7015",
+      "text": "This option, enabled by default, will create a new undo point each time you select an item."
+    },
+    {
+      "key": "1356F83DEBF96BE4",
+      "text": "This option, disabled by default, will create a new undo point each time you select a track."
+    },
+    {
+      "key": "DEE3ED3A2E0FC939",
+      "text": "This option, disabled by default, will create a new undo point each time you select an envelope point."
+    },
+    {
+      "key": "0B8AC344D19D6CE7",
+      "text": "This option, enabled by default, will create a new undo point each time you create a time selection."
+    },
+    {
+      "key": "97C5B77DF11ACCB8",
+      "text": "This option, disabled by default, will create a new undo point each time you move the edit cursor."
+    },
+    {
+      "key": "043EE3CAB9A661ED",
+      "text": "This option, enabled by default, creates a new undo point each time you change MIDI event selection in the MIDI editor."
+    },
+    {
+      "key": "E895C38B31230E48",
+      "text": "If this option is enabled, REAPER will discard the oldest undo points first. If this option is disabled, undo points from in between are removed."
+    },
+    {
+      "key": "6F1EBE23459989FC",
+      "text": "Saves undo history in a file with your projects, so you can preserve the history across sessions. Slows down project saves and uses more disk space."
+    },
+    {
+      "key": "BC368814B9358E4E",
+      "text": "Loads the undo history from disk when opening a project."
+    },
+    {
+      "key": "8A7AAD2D1D9C1555",
+      "text": "Gives you more options when working your way back through the undo history; useful but does use a lot of memory."
+    },
+    {
+      "key": "47F0C552E663C86F",
+      "text": "Show the last user action in REAPER's title bar."
+    },
+    {
+      "key": "79DF6C21E88B8F28",
+      "text": "Show the last user action in REAPER's menu bar. Clicking the action will open the undo window."
+    }
+  ],
+  "prefs_import_help": [
+    {
+      "key": "B8209A80E5196B5F",
+      "text": "If you expect to continue to modify the project tempo, import as beat slices. If you want to immediately loop the file, import as a single item."
+    },
+    {
+      "key": "D6B3258358646B98",
+      "text": "Each slice may contain tail audio that can play underneath later slices. These tails can be played, or chopped off on import."
+    },
+    {
+      "key": "BE09E0A66690DF1D",
+      "text": "Media containing embedded tempo information can be automatically tempo-matched. Media explorer tempo-match settings will override."
+    },
+    {
+      "key": "7701D3DDEF581A62",
+      "text": "Media tempo for tempo-matching may be suggested in the filename or metadata, or estimated based on the file length."
+    },
+    {
+      "key": "1DD197CA28C32C5B",
+      "text": "When importing media with embedded or suggested tempo information into an empty project, the project tempo can be set from the media."
+    },
+    {
+      "key": "F8E3EF53B1BDD6A3",
+      "text": "Media containing embedded tempo information can be set to automatically stretch when the media item crosses a project tempo change marker."
+    },
+    {
+      "key": "5C706D7979AC5D7E",
+      "text": "Raw PCM files may be imported with best-guess audio parameters (sample rate, etc). When importing, explain how to fix incorrect parameters."
+    },
+    {
+      "key": "513753DA28E8479B",
+      "text": "When inserting multiple media items via action or drag and drop, the items can be added on separate tracks, or sequentially on a single track."
+    },
+    {
+      "key": "92D5E01C56885AA9",
+      "text": "When dragging media items into REAPER, allow dragging to the top part of a track to insert a new track to receive the media."
+    },
+    {
+      "key": "456F8CD51EEACA03",
+      "text": "When importing directories into REAPER, create new folder tracks for each imported directory."
+    },
+    {
+      "key": "FA4D4FB6879A15F7",
+      "text": "When importing files from directories, also recursively scan for files in subdirectories."
+    },
+    {
+      "key": "036DF5F537540781",
+      "text": "If configured to copy imported media, also copy media when pasting items from project to project."
+    },
+    {
+      "key": "27F1F8C651D28679",
+      "text": "If checked, copy imported media items to the project media path (if they are not already in the project path)."
+    },
+    {
+      "key": "65B453D4A84F260D",
+      "text": "If checked, name unnamed tracks after the media on media import."
+    },
+    {
+      "key": "43427878B9F37531",
+      "text": "If auto-naming tracks on import, remove trailing numbers from track names."
+    },
+    {
+      "key": "7883930B83ED8CF5",
+      "text": "When importing or pasting media with ripple editing enabled, existing media items that start earlier can be split, or unaffected."
+    }
+  ],
+  "prefs_itemdefs_help": [
+    {
+      "key": "3FDEB555C3141CBB",
+      "text": "The default fade-in/fade-out length."
+    },
+    {
+      "key": "522E51EB800F103F",
+      "text": "The default crossfade length."
+    },
+    {
+      "key": "69AB5F97485C6D4A",
+      "text": "The default fade-in/fade-out shape."
+    },
+    {
+      "key": "3E84ECB8FD37A9C6",
+      "text": "The default crossfade shape."
+    },
+    {
+      "key": "F383FBD062B1EB06",
+      "text": "Automatically fade-in/fade-out imported media items."
+    },
+    {
+      "key": "9DAEC2B33602C917",
+      "text": "Automatically fade-in/fade-out newly recorded media items."
+    },
+    {
+      "key": "62C9653947B05BDE",
+      "text": "Overlap and crossfade when a new recording overlaps existing media items."
+    },
+    {
+      "key": "AE93674E0F24592D",
+      "text": "Automatically fade-in/fade-out when an edit creates a new media item edge."
+    },
+    {
+      "key": "457BC6DAD146D06F",
+      "text": "Overlap and crossfade when splitting media items."
+    },
+    {
+      "key": "723E2B2A61B36F76",
+      "text": "Crossfade to the left, right, or center when splitting media items."
+    },
+    {
+      "key": "940D04DD4563F26B",
+      "text": "Automatically fade-in/fade-out/crossfade comp areas when comping in fixed lanes."
+    },
+    {
+      "key": "F72E8FEF4EA5D1B9",
+      "text": "Overlap and crossfade when editing with 'trim content behind media items' enabled."
+    },
+    {
+      "key": "2F0A58F81F74D314",
+      "text": "Overlap and crossfade when editing with 'trim content behind razor edits' enabled."
+    },
+    {
+      "key": "DD7A205123606BB6",
+      "text": "When splits create fades/crossfades, limit the fade length in pixels. Otherwise, the fade length is limited to a percentage of the visible arrange view area."
+    },
+    {
+      "key": "2AEBE5D315BB89F4",
+      "text": "Right-click a fade or crossfade to change the fade shape. For a crossfade, right-click can change the shape of both sides, or one side only."
+    },
+    {
+      "key": "54037E08CE9E15F1",
+      "text": "Apply the above fade/crossfade settings, and the project auto-crossfade setting, to MIDI items. Fades on MIDI items affect note velocities, not MIDI volume."
+    },
+    {
+      "key": "B022A03F9E5D5602",
+      "text": "Default stretch marker crossfade size for new items. Change existing items via media item properties."
+    }
+  ],
+  "prefs_itemloopdefs_help": [
+    {
+      "key": "93AA6182EC7E79F1",
+      "text": "Enable the \\\"loop source\\\" attribute for imported media items. Dragging the right edge of the item will automatically loop the media."
+    },
+    {
+      "key": "59E8ABDFE0F36FAA",
+      "text": "Enable the \\\"loop source\\\" attribute for new MIDI items. Dragging the right edge of the item will automatically loop the media."
+    },
+    {
+      "key": "8BC802EEEFEBEB1F",
+      "text": "Enable the \\\"loop source\\\" attribute for recorded audio items. Dragging the right edge of the item will automatically loop the media."
+    },
+    {
+      "key": "2150029D694E5000",
+      "text": "Enable the \\\"loop source\\\" attribute for glued items. Dragging the right edge of the item will automatically loop the media."
+    },
+    {
+      "key": "2DD1E32D6EFAB55E",
+      "text": "When auto-punch recording into a time selection, loop the time selection's content when extending the edges of the resulting item."
+    }
+  ],
+  "prefs_kbd_help": [
+    {
+      "key": "F22AA82C438102B7",
+      "text": "You can maintain a separate set of keyboard shortcuts for use only when recording."
+    },
+    {
+      "key": "09FBC55225607971",
+      "text": "Prevent pressing/holding the ALT key in the main view from focusing the main menu (suppress the default Windows behavior)."
+    },
+    {
+      "key": "6F4B9E67C8A5B45C",
+      "text": "Allows the space key to be used for checkboxes/etc in various windows including the media item properties."
+    },
+    {
+      "key": "299E361BD0DD5ECA",
+      "text": "When typing new values in some edit fields, the new value can be committed after 1 second, or only after pressing enter."
+    },
+    {
+      "key": "7B8167305A9D86C2",
+      "text": "Allows the space key to be used to start/stop transport (via default binding) when editing plug-in text fields. If enabled, insert a space character using shift+space."
+    },
+    {
+      "key": "AE8C4322F1210768",
+      "text": "Assign any keyboard shortcut to a REAPER action, using the Actions dialog."
+    },
+    {
+      "key": "E6DF7FAFBD4D5EF7",
+      "text": "View a list of all existing keyboard shortcuts as a web page in an external browser."
+    },
+    {
+      "key": "A644F5A7E023DF4F",
+      "text": "Enable the multitouch swipe action: two fingers moved together horizontally or vertically."
+    },
+    {
+      "key": "683B9D0EF44270F1",
+      "text": "Enable the multitouch zoom action: two fingers moved closer together (pinch) or farther apart."
+    },
+    {
+      "key": "9AC5CDA7F3DEE099",
+      "text": "Enable the multitouch rotate action: rotate one finger around another stationary finger."
+    },
+    {
+      "key": "15404EE74C8C7AC5",
+      "text": "Reverse the direction of this gesture."
+    },
+    {
+      "key": "9AEECDA0C63BAD39",
+      "text": "Suppress inertia, so that each gesture triggers only one action, rather than a series of actions."
+    },
+    {
+      "key": "9019EA02A23CB19C",
+      "text": "Scale the magnitude of this gesture."
+    },
+    {
+      "key": "8C7C943B86A10E08",
+      "text": "Reverse the direction of the vertical scroll (standard mousewheel)."
+    },
+    {
+      "key": "DE335332D548C6CD",
+      "text": "Reverse the direction of the horizontal scroll (horizontal mousewheel)."
+    },
+    {
+      "key": "23A6362D948C5CA1",
+      "text": "Ignore mousewheel messages for a short time after a multitouch gesture is seen."
+    },
+    {
+      "key": "C41402DEBD47E168",
+      "text": "Ignore multitouch gestures of a different type for a short time after a multitouch gesture is seen."
+    },
+    {
+      "key": "8462F0CD2F2F64D9",
+      "text": "Assign any enabled multitouch gesture to a REAPER action, using the Actions dialog."
+    },
+    {
+      "key": "3BA91086C3BA24B7",
+      "text": "When using actions that override keyboard sections momentarily, return to the active keyboard section if no key pressed within this time (default 1000ms)"
+    }
+  ],
+  "prefs_locking_help": [
+    {
+      "key": "71A87FE0BD9A1066",
+      "text": "By default, \\\"Item properties:\\\" actions and user edits in Media Item Properties dialog are applied to locked media items."
+    },
+    {
+      "key": "895264163FCAD5AA",
+      "text": "By default, locked media items can be copied during mouse edits or when running actions."
+    },
+    {
+      "key": "C402B73E10704BB6",
+      "text": "By default, locked media items are affected by region editing and inserting/removing project time."
+    },
+    {
+      "key": "4EBA36F5A4F9E89C",
+      "text": "How locked items behave in \\\"ripple edit all tracks\\\" and \\\"ripple edit per-track\\\" modes."
+    }
+  ],
+  "prefs_lv2_help": [
+    {
+      "key": "A6CBD43BD3F0B64A",
+      "text": "Directories to scan for CLAP plug-ins. Subdirectories are automatically scanned."
+    },
+    {
+      "key": "4E786A22BEBDBFD6",
+      "text": "Re-scan CLAP paths for added/updated plug-ins."
+    },
+    {
+      "key": "427F7F4702BD2725",
+      "text": "Status of how many CLAP plug-ins scanned/failed, click the Re-scan button to rescan the paths and/or view which plug-ins failed."
+    },
+    {
+      "key": "2AFD6053570E4DD5",
+      "text": "Directories to scan for LV2 plug-ins. Subdirectories will not be scanned and must be added manually."
+    },
+    {
+      "key": "92D10A535096E868",
+      "text": "Scan all LV2 directories for any added or updated plug-ins."
+    },
+    {
+      "key": "00B5D436FE324A6E",
+      "text": "If a LV2 plug-in only outputs a single channel, append (Mono) to the name."
+    },
+    {
+      "key": "D255299518AD792A",
+      "text": "If a LV2 plug-in outputs more than stereo, append (X channel) to the name."
+    },
+    {
+      "key": "4A2C53207D9958CA",
+      "text": "If a LV2 plug-in is MIDI-only, append (MIDI) to the name."
+    },
+    {
+      "key": "57C6EE91EC75541E",
+      "text": "Append the LV2 plug-in developer/maintainer name, if available."
+    },
+    {
+      "key": "2AE645FD2827D1D1",
+      "text": "Status of how many LV2 plug-ins scanned/failed, click the Re-scan button to rescan the paths and/or view which plug-ins failed."
+    }
+  ],
+  "prefs_media_help": [
+    {
+      "key": "8A58AA14648ACB16",
+      "text": "Sets project media inactive when REAPER is inactive, so that other programs can access/modify the media."
+    },
+    {
+      "key": "46F53BC8A3B4487C",
+      "text": "Allows video items (and certain audio items decoded by VLC/FFmpeg, and still images) to be set offline, which can be slow to bring back online."
+    },
+    {
+      "key": "AA2E20F87ABF9B32",
+      "text": "Allow choosing the filename used when using \\\"open copy\\\" action. If unchecked, the default filename will be used."
+    },
+    {
+      "key": "4297662DF2453C55",
+      "text": "When using apply FX action, allow this much extra time at the end for reverb tails, delay lines, etc."
+    },
+    {
+      "key": "2C84440E536E33F9",
+      "text": "When using the batch converter or various render/apply FX actions with per-item/take FX, add this much time past the item end for tails."
+    },
+    {
+      "key": "3E30281017B53D27",
+      "text": "When using take FX, duplicate take FX when splitting (so that new split items get copies of the FX). Caution, this can use a lot of RAM if you aren't careful."
+    },
+    {
+      "key": "837ADBF34235C0DC",
+      "text": "If project media is set inactive when REAPER is inactive, having this checked will cause peaks to be rebuilt on demand if necessary."
+    },
+    {
+      "key": "D6E7E19AE630BE59",
+      "text": "Generate item peak cache files on file import (recommended)."
+    },
+    {
+      "key": "42DDE07A50449669",
+      "text": "Generate item peak cache files on project load (recommended)."
+    },
+    {
+      "key": "36ADEFB9BD4953A4",
+      "text": "Display a status window when generating peaks."
+    },
+    {
+      "key": "FA14F6695C42A6BE",
+      "text": "The highest resolution peaks generated in peak cache files. 300 is recommended. Higher or lower can result in diminished performance in different scenarios."
+    },
+    {
+      "key": "0AFC077605BAFB72",
+      "text": "If unable to write to the media directory, use the alternate path (set in Preferences/General/Path) to store peak cache files."
+    },
+    {
+      "key": "22D88B25908D6899",
+      "text": "Prefers to store newly created peak cache files in a directory named \\\"peaks\\\" relative to the media file."
+    },
+    {
+      "key": "043619EDCBE68DF9",
+      "text": "Enabled by default, prevents generating enhanced peaks when in plain peaks mode, which is faster and produces smaller peak files."
+    },
+    {
+      "key": "09965E343B9831BD",
+      "text": "If enabled, do not generate spectral peak information unless actually in spectral peak mode (potentially requiring a peaks rebuild)."
+    },
+    {
+      "key": "07D2B832D6559905",
+      "text": "Enabled by default, do not generate spectrogram information unless actually viewing spectrogram."
+    },
+    {
+      "key": "4DAEA017C22522FE",
+      "text": "Automatically re-generate peaks files if needed when enabling different display modes. If disabled, peaks files will need to be be explicitly re-generated."
+    },
+    {
+      "key": "8BD14C32B4F4518F",
+      "text": "Allow REAPER to generate peaks for multiple files at once, which is faster but uses more CPU cores."
+    },
+    {
+      "key": "5154EB1DFF362488",
+      "text": "Chooses which item peaks are built first. The default is to calculate the longest items first, which will minimize the total time when used with parallel building."
+    },
+    {
+      "key": "BC81D223CB4DF6A8",
+      "text": "Require manual rebuild of peaks when media file timestamps change, this can fix issues with cloud-synchronized disks/folders."
+    }
+  ],
+  "prefs_mediabuttons_help": [
+    {
+      "key": "4AC506B0D49DB849",
+      "text": "Display a lock button when items are locked."
+    },
+    {
+      "key": "6E7AA7132E2E5F5E",
+      "text": "Display an unlit lock button when items are not locked."
+    },
+    {
+      "key": "593901630EC11553",
+      "text": "Display an FX button when items have per-take FX."
+    },
+    {
+      "key": "C7A0771EAD80FCC6",
+      "text": "Display an unlit FX button when items have no per-take FX."
+    },
+    {
+      "key": "04DDF51C71648494",
+      "text": "Display an envelopes button when items have per-take automation envelopes."
+    },
+    {
+      "key": "4E4341B38668BFED",
+      "text": "Display an unlit envelopes button when items have no active per-take automation envelopes."
+    },
+    {
+      "key": "5A1CD57A70D9E572",
+      "text": "Display a mute button when items are muted."
+    },
+    {
+      "key": "6A1055D91ED35ECB",
+      "text": "Display an unlit mute button when items are not muted."
+    },
+    {
+      "key": "27EA865A784AF76D",
+      "text": "Display a notes button when an item has text or image notes attached."
+    },
+    {
+      "key": "13FB275D06AE557A",
+      "text": "Display an unlit notes button when an item has no text or image notes attached."
+    },
+    {
+      "key": "B92E810D41B634FC",
+      "text": "Display a properties button (which opens the Item Properties dialog) for all media items. The button will light if the item is resampled."
+    },
+    {
+      "key": "0E66C9C0B4D18DBB",
+      "text": "Display a properties button (which opens the Item Properties dialog) for resampled media items only."
+    },
+    {
+      "key": "477EDDBDDF63C11E",
+      "text": "Display a properties button (which opens the Item Properties dialog) for phase inverted media items only."
+    },
+    {
+      "key": "43FC2841C450D1C7",
+      "text": "Display a group button when an item is grouped with other items (the button will light when an item in the group is selected)."
+    },
+    {
+      "key": "C4374BAFE6B178BE",
+      "text": "Display a pool button when an item's active take shares pooled MIDI source data with other media items."
+    },
+    {
+      "key": "F696963E9E400062",
+      "text": "Display a button to indicate the effective media item timebase. Timebase can be set in project settings, per-track, or in media item properties."
+    },
+    {
+      "key": "F486A9DA400E2436",
+      "text": "Media items can have a volume handle with with +0dB being the top or the center of the item, or a volume knob, or both."
+    },
+    {
+      "key": "DFF7B5859424545D",
+      "text": "When labels are drawn within the media item rather than above, hide media item buttons (except lock button) when the media item is too small."
+    }
+  ],
+  "prefs_mediafades_help": [
+    {
+      "key": "80EBC8369EB04EC0",
+      "text": "Edit the media item fade-in/out by grabbing a triangle in the corner of the media item."
+    },
+    {
+      "key": "7248C9668CE010CF",
+      "text": "Edit overlapping media item fades (crossfades) by grabbing a diamond at the intersection of the fade curves."
+    },
+    {
+      "key": "AE047CAA93DB74DC",
+      "text": "Edit media item fade curvature by grabbing a diamond displayed on the upper half of the fade curve."
+    },
+    {
+      "key": "CFA6AB301BF011DF",
+      "text": "Edit media item fade S-curvature by grabbing a diamond displayed on the bottom half of the fade curve."
+    },
+    {
+      "key": "9BC340D1C2283315",
+      "text": "Hide fade curve handles when the fade (not the item) is small to prevent accidentally grabbing them with the mouse."
+    },
+    {
+      "key": "7499317A45AD899D",
+      "text": "Prevent accidentally editing media item fade-in/out when the media item is small."
+    },
+    {
+      "key": "028F1F8A53001AC3",
+      "text": "Allow the mouse to target the fade curve itself. The top edge of the fade start/end line (where the fade handle is drawn) can always be targeted."
+    },
+    {
+      "key": "D15E84F1951DF3C9",
+      "text": "Allow the mouse to target the fade start/end line. The top edge of the fade start/end line (where the fade handle is drawn) can always be targeted."
+    },
+    {
+      "key": "F299A53A5FE469F1",
+      "text": "Allow the mouse to target the bottom half of the fade curve to edit S-curvature for all fade shapes, when mouse modifier set to \\\"adjust fade curve\\\"."
+    },
+    {
+      "key": "49CE054364B5D458",
+      "text": "Crossfades are drawn with custom theme colors when using the crossfade editor. These colors can be used when editing crossfades with the mouse."
+    },
+    {
+      "key": "5B709E2FAD7AD249",
+      "text": "When using the crossfade editor, display the item in the arrange view using custom theme colors for the entire item, or just the crossfaded area."
+    }
+  ],
+  "prefs_medialanes_help": [
+    {
+      "key": "1A0A22AB7CF63BCB",
+      "text": "When offsetting overlapping media items vertically, offset by this amount. Can be greater than 100."
+    },
+    {
+      "key": "8C67958C5C88EBF6",
+      "text": "When offsetting overlapping media items vertically, draw overlapping items as opaque."
+    },
+    {
+      "key": "2EA28E1784DDE35B",
+      "text": "When offsetting overlapping media items vertically, display earlier-created items above later-created items."
+    },
+    {
+      "key": "6CB151FAA58C5678",
+      "text": "Where to center when zooming vertically."
+    },
+    {
+      "key": "70E777E192BCDAD8",
+      "text": "Maximum vertical zoom. If greater than 100%, tracks may be taller than the visible arrange view height."
+    },
+    {
+      "key": "2FBBF74AE587EFB4",
+      "text": "When zooming vertically, envelope lane height is set to a percentage of the track height. 0% means vertical zoom does not affect envelope lanes."
+    },
+    {
+      "key": "038AFB8F3F866ADE",
+      "text": "Where to center when zooming horizontally."
+    },
+    {
+      "key": "A78771138F8C5DC0",
+      "text": "By default, horizontal zoom/scroll is limited to the start of the project, preventing the display of negative dead space."
+    },
+    {
+      "key": "C7C7EC8847B7C710",
+      "text": "When scrolling or auto-scrolling vertically, the maximum step size can be customized for a slower or faster scroll."
+    },
+    {
+      "key": "9B0BB0CD13D36EB3",
+      "text": "Enable or disable vertical zoom for tracks that are pinned in the arrange view."
+    }
+  ],
+  "prefs_mediapeaks_help": [
+    {
+      "key": "4338745DB962DDE6",
+      "text": "Draw peaks (graphical representation of audio loudness and MIDI notes) for media items."
+    },
+    {
+      "key": "B70526D162EC1270",
+      "text": "Draw approximate peaks for media items that are currently being recorded."
+    },
+    {
+      "key": "A94567A489A953BF",
+      "text": "Only draw peaks for selected media items."
+    },
+    {
+      "key": "3D701AAA1834E027",
+      "text": "Only draw peaks for tracks and items that are soloed or not muted (only for audio and MIDI that will be heard during playback)."
+    },
+    {
+      "key": "99A0D663C126477E",
+      "text": "Draw faint audio peaks/waveforms and MIDI notes in folder tracks, to represent the contents of the child tracks."
+    },
+    {
+      "key": "34D742359017D89C",
+      "text": "Draw faint audio peaks/waveforms and MIDI notes in envelope lanes, for easier timing adjustment."
+    },
+    {
+      "key": "CBC6063FBCA3E4F5",
+      "text": "Draw a colored edge (defined in the color theme) around media item peaks. Color theme may override this preference."
+    },
+    {
+      "key": "3C548054A1EEE90D",
+      "text": "Draw a colored edge (defined in the color theme) around media item waveforms. Color theme may override this preference."
+    },
+    {
+      "key": "6B5AB7081B65AB32",
+      "text": "Draw smooth audio peaks and waveforms. Color theme may override this preference."
+    },
+    {
+      "key": "0C6865DF13D366CA",
+      "text": "The method used to draw the most zoomed-in audio view (when the exact location of each sample is drawn)."
+    },
+    {
+      "key": "1B84D6F64C4459BF",
+      "text": "Draw the zero line overlaid on the audio peaks (otherwise the zero line is hidden behind the audio)."
+    },
+    {
+      "key": "2C182183F1219626",
+      "text": "Adjust audio peak drawing to reflect any track or take envelope that will affect the audio item before FX are applied."
+    },
+    {
+      "key": "EC1D5A533AA78E29",
+      "text": "Draw a colored edge (defined in the color theme) around MIDI notes in media items. Color theme may override this preference."
+    },
+    {
+      "key": "6C4196A4EDB46151",
+      "text": "Choose how many of the CC/channel pressure/pitch lanes that are visible in the MIDI editor to display in the arrange view."
+    },
+    {
+      "key": "67C8378720291149",
+      "text": "Choose whether media item waveform peaks are tinted by custom track, item, or take colors."
+    },
+    {
+      "key": "C58E75B0A0A49547",
+      "text": "Choose whether media item backgrounds are tinted by custom track, item, or take colors."
+    },
+    {
+      "key": "CA38A8384880B5B4",
+      "text": "Tint media item waveform peaks by the custom track color, if any. Color theme may override this preference."
+    },
+    {
+      "key": "38857D1D794761AF",
+      "text": "Tint media item waveform peaks by the custom item color, if any. This overrides a custom track color. Color theme may override this preference."
+    },
+    {
+      "key": "EED1F497ED3E476B",
+      "text": "Tint media item waveform peaks by the custom take color, if any. This overrides a custom track or item color. Color theme may override this preference."
+    },
+    {
+      "key": "5B0FE53A17FA6F4C",
+      "text": "Tint media item backgrounds by the custom track color, if any. Color theme may override this preference."
+    },
+    {
+      "key": "263D195AB1E611C7",
+      "text": "Tint media item backgrounds by the custom item color, if any. This overrides a custom track color. Color theme may override this preference."
+    },
+    {
+      "key": "2204AF90A2FC2963",
+      "text": "Tint media item backgrounds by the custom take color, if any. This overrides a custom track or item color. Color theme may override this preference."
+    },
+    {
+      "key": "71162EFAC509EB79",
+      "text": "How much custom color to blend into the selected media item background. Zero means do not use the custom color. Color theme may override this preference."
+    },
+    {
+      "key": "060906D618DE3D74",
+      "text": "How much custom color to blend into the unselected media item background. Zero means do not use the custom color. Color theme may override this preference."
+    },
+    {
+      "key": "F36541511CD33299",
+      "text": "Custom take colors override custom item colors, which override custom track colors. You can also set colors from the track and item context menus."
+    },
+    {
+      "key": "11B985FAF0FE9C5B",
+      "text": "MIDI program names and text events can be displayed or hidden in the arrange view."
+    },
+    {
+      "key": "34467F096CACD608",
+      "text": "Hide media item peaks display when the media item height is less than this threshold."
+    },
+    {
+      "key": "75D54645FB39B3AE",
+      "text": "Enable high-resolution spectrogram view when in spectrogram mode, if the item is sufficiently zoomed-in."
+    },
+    {
+      "key": "70B81AC19EA0B35D",
+      "text": "Maximum arrange view width (in seconds) where high-resolution spectrogram will be used. When zoomed out to viewing more than about 20 seconds, calculating high-resolution spectrogram can be very slow."
+    },
+    {
+      "key": "7C5934E718613E19",
+      "text": "Minimum item height, as a percentage of the total arrange view height, where high-resolution spectrogram will be used, if enabled."
+    }
+  ],
+  "prefs_mediavu_help": [
+    {
+      "key": "36DB054027DB0B9B",
+      "text": "Write the name of each media item at the top of the item."
+    },
+    {
+      "key": "1ACE8714E21A5374",
+      "text": "If a media item has any pitch or playrate adjustment, write the adjustment on the item."
+    },
+    {
+      "key": "5AC6AAC0E338C731",
+      "text": "If a media item has per-item or per-take gain adjustment, write the adjustment on the item."
+    },
+    {
+      "key": "16CC5DF83FC0DCDB",
+      "text": "Draw media item labels above the top of media items (for an info-strip appearance) rather than within the item."
+    },
+    {
+      "key": "9E826CCF427BC5EE",
+      "text": "Make sure media item labels are visible even if the start of the item (where the label would normally be shown) is offscreen."
+    },
+    {
+      "key": "30D93A391308F9FD",
+      "text": "Draw a solid colored background behind the media item label text, so it can be easily read."
+    },
+    {
+      "key": "E88E99432FC4B34F",
+      "text": "Do not draw media item text labels when the height of the media item, or the specific take, is too small."
+    },
+    {
+      "key": "DDC7D8ED91A4A91D",
+      "text": "Draw full text labels for item pitch and playrate adjustments (when enabled)."
+    },
+    {
+      "key": "56B8C2C2928D30F1",
+      "text": "Draw abbreviated text labels for item pitch and playrate adjustments (when enabled)."
+    },
+    {
+      "key": "B929A0E4AA3BB893",
+      "text": "Draw no text labels, just numbers, for item pitch and playrate adjustments (when enabled)."
+    },
+    {
+      "key": "B45F93245C658C48",
+      "text": "Draw a themed indicator on selected media items. The default indicator is a small dot."
+    },
+    {
+      "key": "1E8D325940E50344",
+      "text": "Limit take/transient handle width to a minimum of a DPI-adjusted pixel size (6 default), or a percentage of take height (12% default)."
+    },
+    {
+      "key": "FD896E99F6C8EEBA",
+      "text": "When recording, automatically apply the same random color to all takes created in the same recording pass, or all media items in the same fixed lane."
+    },
+    {
+      "key": "4CE16F0C2B72EF32",
+      "text": "Automatically apply the same random color to all MIDI media items that share the same pooled MIDI source data, as they are created."
+    },
+    {
+      "key": "AA5B8A5867B2CE3E",
+      "text": "Draw item backgrounds less precisely when updating the arrange view, can improve performance significantly with some themes."
+    },
+    {
+      "key": "C737C438D548D7A2",
+      "text": "Disable macOS retina for arrange view, which can speed up drawing on larger retina displays."
+    }
+  ],
+  "prefs_meter_help": [
+    {
+      "key": "C497A4E2AD4CC7CA",
+      "text": "The refresh rate of the meters. The higher the rate, the faster the meters will redraw."
+    },
+    {
+      "key": "80F496666F2204B3",
+      "text": "The decay rate of the meters. The higher the value, the faster the meters will decay and fall back to -inf."
+    },
+    {
+      "key": "8D213B5D950CD2E2",
+      "text": "The minimum value of the meters in dB."
+    },
+    {
+      "key": "436A47D2045D4D74",
+      "text": "The maximum value of the meters in dB."
+    },
+    {
+      "key": "46A7CAB2C3A9A6BE",
+      "text": "Make the clip indicator stay on when clipping occurs (enabled by default). Click the red clipping indicator to clear it."
+    },
+    {
+      "key": "3BDEC61BE55E575C",
+      "text": "Automatically clear the VU meter peak indicators each time the transport is put into play, or playback is seeked to a new location."
+    },
+    {
+      "key": "E124DEFBFE6BE9CB",
+      "text": "Show the name of the active recording source on the track VU meters when the track is record-armed."
+    },
+    {
+      "key": "6D5D3EB7EE5D52D5",
+      "text": "Draw a dropdown box graphic around the recording source name (when shown on track VU meters) to make it clear that the source can be changed there."
+    },
+    {
+      "key": "79CC0AB1ACB6C98D",
+      "text": "Display pre-fader levels on track VU meters (normally post-fader levels are displayed on track meters)"
+    },
+    {
+      "key": "D28BB6C1222998B7",
+      "text": "When a track has MIDI input, show the MIDI note velocity as a thin line at the bottom of the track VU meters."
+    },
+    {
+      "key": "3953D4D2C3B786F0",
+      "text": "When a track has MIDI output, show the activity on the track VU meters, as a thin line for note velocity and a small square for other activity."
+    },
+    {
+      "key": "AF0E3E08CC0A383D",
+      "text": "Right-click the track meter to enable displaying total gain reduction for any plugins that support reporting this value to the host."
+    }
+  ],
+  "prefs_midi_help": [
+    {
+      "key": "0AC04A1CB92456D8",
+      "text": "By default, middle C (MIDI note 60) is labeled C4, A=440Hz (MIDI note 69) is A4. A display offset of -1 causes these notes to be labeled C3/A3, etc."
+    },
+    {
+      "key": "45FFCEE84990492C",
+      "text": "Pooled (ghosted) MIDI source data can be converted to a separate editable media item (unpooled) by gluing the media item."
+    },
+    {
+      "key": "5BBF579F8E4BF588",
+      "text": "The default format for storing new MIDI items. In-project items allow more flexible editing, and can be exported as .MID files at any time."
+    },
+    {
+      "key": "295E0DAF4479EFCF",
+      "text": "New MIDI items will be stored as native REAPER data inside the project file (.RPP), which allows more flexible editing and preserves note selections."
+    },
+    {
+      "key": "31B5B66F8646D354",
+      "text": "New MIDI items will be stored as .MID files on disk, which is less flexible for editing but more portable."
+    },
+    {
+      "key": "43EFCC9F983AEC6C",
+      "text": "Prompt for a filename when creating new items as .MID files (otherwise a unique but not very meaningful name will be used)."
+    },
+    {
+      "key": "AAEF9CB36FAF4F81",
+      "text": "Imported MIDI files can be automatically converted to in-project items."
+    },
+    {
+      "key": "84F3452F4178760F",
+      "text": "Automatically convert imported MIDI files to in-project items, so that edits will not affect the source .MID file."
+    },
+    {
+      "key": "88189D7414CB8B51",
+      "text": "Import MIDI files as references to the source .MID file, so that edits will alter the source file on disk."
+    },
+    {
+      "key": "215AD4578BB1650E",
+      "text": "Multichannel MIDI files can be imported to a single track, or to separate tracks per channel."
+    },
+    {
+      "key": "1337B5AA5353A527",
+      "text": "Data resolution for new MIDI items. 960ppq is two ticks per millisecond at 120bpm, which is suitable for almost all purposes."
+    },
+    {
+      "key": "890FBBAB821840D6",
+      "text": "When splitting a MIDI item, split the underlying MIDI data source if possible (inserting new note-ons/offs, and optionally CC/PC)."
+    },
+    {
+      "key": "7D4F1586BB4D4102",
+      "text": "When splitting a MIDI data source, chase CC/PC values for the new items."
+    },
+    {
+      "key": "42FC32E49ABBB4BB",
+      "text": "When importing a MIDI file, time signature change events can be snapped to whole measures (recommended)."
+    },
+    {
+      "key": "B01789C70C7FD7D9",
+      "text": "When importing a MIDI file, tempo change events can be snapped to whole beats."
+    },
+    {
+      "key": "7AEE7B4EFEC34AB8",
+      "text": "Export MIDI text events as Latin-1 (some international characters, maximum compatibility), UTF-8 (full character support), or 7-bit ASCII."
+    },
+    {
+      "key": "59D5C1D4A8F24931",
+      "text": "Prompt to import tempo map when importing MIDI files with simple tempo information (hold control when importing to temporarily toggle)."
+    },
+    {
+      "key": "B06D01F81E40F4EF",
+      "text": "When importing a single-channel MIDI file that contains lyrics or other meta-events, obey the user preference for importing multichannel MIDI."
+    },
+    {
+      "key": "D76E00820D574366",
+      "text": "Timeout touch-replace recording when a CC/pitch message hasn't been sent in this many millseconds"
+    },
+    {
+      "key": "518F0FD676C6EAC9",
+      "text": "Default PPQ for non-square CC segment interpolation -- this is configurable per-MIDI item; new items are created with this value."
+    }
+  ],
+  "prefs_mididev_help": [
+    {
+      "key": "7D7C7A462897B852",
+      "text": "MIDI input devices may be enabled for track inputs or for control messages (which can be assigned in the actions list), or both."
+    },
+    {
+      "key": "F334C433C938F542",
+      "text": "Closes and reopens all MIDI devices, and rescans for new devices if possible."
+    },
+    {
+      "key": "66215CF8EEA7719C",
+      "text": "Allows creating a new virtual MIDI device (e.g. loopback or joystick)."
+    },
+    {
+      "key": "7F4A8D184035277E",
+      "text": "Filter visible list of MIDI input devices - can use device name and/or <avail> <enabled> <all> <control> <ignored>"
+    },
+    {
+      "key": "A49B9B12A7B92C25",
+      "text": "MIDI output devices may be enabled as track outputs, optionally with MIDI clock and SPP sending. Reset messages can also be disabled."
+    },
+    {
+      "key": "5B312BE7F408E7AB",
+      "text": "This will send MIDI all-notes-off and all-sound-off messages to reset."
+    },
+    {
+      "key": "A12784088927EE75",
+      "text": "This will send MIDI Pitch and Sustain (CC#64) reset messages to reset."
+    },
+    {
+      "key": "744D44D8300A6F70",
+      "text": "Enable this to drive all MIDI hardware from a single thread, which isn't ideal for performance but may be more compatible with some hardware."
+    },
+    {
+      "key": "DF43844308F546F1",
+      "text": "Send reset messages (according to by-preference) on playback start or when seeking playback."
+    },
+    {
+      "key": "7032E80387B1028D",
+      "text": "Send reset messages (according to by-preference) on stop or when seeking while stopped."
+    },
+    {
+      "key": "C092B59429C8480F",
+      "text": "Filter visible list of MIDI output devices - can use device name and/or <avail> <enabled> <ll> <noreset> <clock> <nospp> <ignored>"
+    }
+  ],
+  "prefs_midiedit_help": [
+    {
+      "key": "B903973979C81B00",
+      "text": "Show a brief color flash on the MIDI editor keyboard when the track receives MIDI note-on input."
+    },
+    {
+      "key": "C0B9362E91BD0449",
+      "text": "Show horizontal grid lines in CC lanes in the MIDI editor, height permitting."
+    },
+    {
+      "key": "A14BF0025A865D5D",
+      "text": "Set the MIDI event density when drawing in CC lanes with the mouse."
+    },
+    {
+      "key": "1A7A22B9337D0931",
+      "text": "CC event drawing density will be greater when the view is zoomed in, and lower when zoomed out."
+    },
+    {
+      "key": "31F3B127D48B0A67",
+      "text": "When adding a new segment to a CC lane, use this segment shape."
+    },
+    {
+      "key": "D4F1B563F45942D0",
+      "text": "Automatically reduce events when drawing, if the segment shape is square or linear."
+    },
+    {
+      "key": "ABD0360EB8DF7DE1",
+      "text": "Add some empty space at the top and bottom of CC lanes, to make it easier to edit values close to the minimum/maximum."
+    },
+    {
+      "key": "B1658FB398E5FA9C",
+      "text": "When editing a single CC event with the mouse, the edit can be constrained to the the space between adjacent CC events."
+    },
+    {
+      "key": "762391302F04E128",
+      "text": "Set the default behavior when double-clicking a MIDI media item."
+    },
+    {
+      "key": "39594949515BA496",
+      "text": "The active MIDI item in the MIDI editor can follow the media item or track selection in the arrange view, or neither."
+    },
+    {
+      "key": "8A0CCA6F04960F40",
+      "text": "Media item selection in the arrange view can determine whether a MIDI item is visible in the MIDI editor."
+    },
+    {
+      "key": "BD77360516B83B36",
+      "text": "Media item selection in the arrange view can determine whether a MIDI item is editable in the MIDI editor."
+    },
+    {
+      "key": "38748BD61880FF8A",
+      "text": "By default all displayed MIDI items can be editable, or only those on the same track."
+    },
+    {
+      "key": "16DA35635F006774",
+      "text": "By default MIDI items on non-playing track fixed lanes can be visible, or only those on lanes that are playing back."
+    },
+    {
+      "key": "0BC0E872C17D4C55",
+      "text": "When displaying multiple MIDI media items in a single editor, the editor can be set to remain open if the active media item is deleted."
+    },
+    {
+      "key": "8BC16DD5EBF937E4",
+      "text": "More information about displaying multiple MIDI media items within a single MIDI editor."
+    },
+    {
+      "key": "DE1875B6CABFB266",
+      "text": "When displaying multiple MIDI media items at once, choose how to switch the active media item within the MIDI editor."
+    },
+    {
+      "key": "8739AF909247F49A",
+      "text": "MIDI notes/CC in inactive media items can be drawn more or less faintly (0-1, default is 0.25)."
+    },
+    {
+      "key": "3E78119D359BD938",
+      "text": "MIDI notes/CC in secondary editable media items can be drawn more or less faintly (0-1, default is 0.75)."
+    },
+    {
+      "key": "C486CCEB98553CDB",
+      "text": "Colormap image to use for drawing notes in the MIDI editor. If no colormap is specified here, the colormap in the current color theme will be used."
+    },
+    {
+      "key": "644B168704079A8D",
+      "text": "Browse for a colormap image to use as the default for drawing notes in the MIDI editor."
+    }
+  ],
+  "prefs_mouse_help": [
+    {
+      "key": "3F6E70FBF8D2074D",
+      "text": "By default, a mouse click anywhere in the fader area will move the fader handle directly to the mouse position."
+    },
+    {
+      "key": "F67975F4767A253F",
+      "text": "Mousewheel messages are passed to the window under the mouse cursor (default), or the currently focused/active window."
+    },
+    {
+      "key": "9DBC03A341AD60E5",
+      "text": "Check to prevent the mousewheel from moving any fader. If not checked, mouse modifiers can be customized for faders."
+    },
+    {
+      "key": "D0E4B00A5530FD46",
+      "text": "Check to prevent the mousewheel from affecting TCP send controls, embedded FX, volume/pan faders, etc."
+    },
+    {
+      "key": "0C8C2D8F2CF852F7",
+      "text": "Disable mousewheel editing of project playrate, project tempo, and time selection start/end/length fields in the transport area."
+    },
+    {
+      "key": "51DD672ACD88C4D7",
+      "text": "Mousewheel editing of the time selection fields in the transport can change the time selection by a small amount, or by the project beat grid."
+    },
+    {
+      "key": "3D42B29B6D5A6AC7",
+      "text": "Some trackpads can send scroll messages. Reaper can try to convert these to mousewheel messages."
+    },
+    {
+      "key": "FD09284BF613862E",
+      "text": "Clicking faders and controls can select the track, otherwise only clicking empty track control panel space or lane buttons will select."
+    },
+    {
+      "key": "133E0703BF6E5D18",
+      "text": "Enable editing track names with a single mouse click (default requires double click)."
+    },
+    {
+      "key": "D380976C635C7C74",
+      "text": "Clicking in the arrange view can select that track, otherwise tracks can only be selected by clicking the track control panel."
+    },
+    {
+      "key": "52C8EEFEFCA4A0F5",
+      "text": "Allow editing the time selection where the selection edge passes through a media item, otherwise dragging will move the media item."
+    },
+    {
+      "key": "14313D92982F828A",
+      "text": "Allow resizing the ruler height by dragging the bottom of the ruler. Otherwise the ruler can be resized by dragging below the toolbar."
+    },
+    {
+      "key": "0EA7AD786346117F",
+      "text": "Control+click can be used for one-button mice to emulate right-click behavior, but then the control key will not be available as a mouse modifier."
+    },
+    {
+      "key": "9536EFBC51B5B368",
+      "text": "If you use a pen or tablet or other absolute pointing device as a mouse, this will improve behavior when adjusting REAPER's knobs"
+    },
+    {
+      "key": "0B24731F7FD6095C",
+      "text": "When drag/dropping track panels, controls when destination track is converted to a folder to contain the source track."
+    }
+  ],
+  "prefs_path_help": [
+    {
+      "key": "213084A633ECA694",
+      "text": "Set the default directory for rendered files. If blank, the current project directory will be used."
+    },
+    {
+      "key": "DC2462818769728A",
+      "text": "Fallback recording path for all new files, if the project has not previously been saved, and no path is set in file/project settings."
+    },
+    {
+      "key": "96F6407D44067B64",
+      "text": "Alternate path for REAPER peak cache files (.reapeaks). The alternate path may also be used even if not enabled here, see Preferences/Media."
+    },
+    {
+      "key": "02DF1D8AB8130F68",
+      "text": "List of paths that will always have their peak cache files placed in the alternate path rather than with the media. Useful for sample libraries etc."
+    },
+    {
+      "key": "50A0CCCDC8CC3250",
+      "text": "Set the default directory to browse when no project is loaded and you wish to load or save a project file."
+    },
+    {
+      "key": "FE9E322410443D3C",
+      "text": "List of paths that will not have media copied or moved from (on import if configured, or save-as with copy). Useful for sample libraries etc."
+    }
+  ],
+  "prefs_playback_help": [
+    {
+      "key": "3CCEB93DC24D10C2",
+      "text": "Makes playback stop and/or loop at the end of the project."
+    },
+    {
+      "key": "76BA36072A8D76E8",
+      "text": "Stop the playback at the end of the time selection if loop is disabled."
+    },
+    {
+      "key": "B154D26ACBF00387",
+      "text": "Clears the FX buffers at the end of a loop. This is not recommended for VSTi plug-ins, but may provide better performance for plug-ins like AutoTune."
+    },
+    {
+      "key": "475CB867B90AD005",
+      "text": "When track media playback offset is negative, a max play speed higher than 1 will ensure that all MIDI notes are played."
+    },
+    {
+      "key": "50184C276F7C5861",
+      "text": "Select this option to make the view scroll to the edit cursor on stop."
+    },
+    {
+      "key": "CD5267F3C2429B0D",
+      "text": "Allows you to preview sounds from your instrument plug-ins when stopped."
+    },
+    {
+      "key": "EF96DA6B35BD12C3",
+      "text": "Clears the FX buffers when stopping playback, preventing reverb tails etc."
+    },
+    {
+      "key": "E5C1DA8A8404A955",
+      "text": "If \\\"Run FX when stopped\\\" is unchecked, you can define the amount of time a FX will run after playback is stopped."
+    },
+    {
+      "key": "9092B7B301B6B847",
+      "text": "Apply a buffer block length fade-out to the monitor signal only, when stopping playback. N/A if FX configured to play back unflushed when stopped."
+    },
+    {
+      "key": "78BA8E43A417BFAA",
+      "text": "Apply a buffer block length fade-in to the monitor signal only, when starting playback."
+    },
+    {
+      "key": "BAA1D296D8A5EB78",
+      "text": "Reduce CPU use on silent tracks by detecting silence during playback and avoiding additional processing (raises CPU use of non-silent tracks)."
+    },
+    {
+      "key": "43024C3CA6CCED10",
+      "text": "Send note-offs to all track destinations when disabling record-arm (to prevent hanging notes)."
+    },
+    {
+      "key": "75762F781D42A0EB",
+      "text": "Reset MIDI CC/Pitch to neutral on playback start and/or stop."
+    },
+    {
+      "key": "3CAF75B331A4FB37",
+      "text": "Reset MIDI CC/Pitch to neutral when looping playback."
+    },
+    {
+      "key": "CB9610EB68F3035B",
+      "text": "Override CC resets for various CCs here. Syntax is 'cc7=127 cc39=127' to set maximum volume, for example. -1 prevents reset, cc0-120= sets all"
+    }
+  ],
+  "prefs_plugin_help": [
+    {
+      "key": "0BEDB2BC64864B6F",
+      "text": "When showing a plugin in the FX chain window, the window can be automatically resized to fit the plugin GUI."
+    },
+    {
+      "key": "152A4B9C7166DDB6",
+      "text": "When showing a plugin that is too big to fit in the FX chain window, automatically make the window bigger."
+    },
+    {
+      "key": "61792825377BB1E6",
+      "text": "When showing a plugin that is smaller than the FX chain window, automatically make the window smaller."
+    },
+    {
+      "key": "E0C54DAEF41FAE6D",
+      "text": "When selecting FX in the FX chain that has a floating FX window, focus that floating FX window."
+    },
+    {
+      "key": "DC57D1A282475905",
+      "text": "Automatically float FX UI windows when creating FX via the FX browser."
+    },
+    {
+      "key": "2C636445174B1145",
+      "text": "Where to position newly-created FX chain windows (default is to cascade). Modal default is configured in Preferences/General: Advanced."
+    },
+    {
+      "key": "48EBAD85044DF018",
+      "text": "Where to position newly-created floating FX windows (default is to cascade). Modal default is configured in Preferences/General: Advanced."
+    },
+    {
+      "key": "FDC62AE8AF408759",
+      "text": "Automatically open the FX GUI when adding an FX using a right-click menu (e.g. track FX button)."
+    },
+    {
+      "key": "DA5FF5DF9BD66D8A",
+      "text": "Automatically dock newly created FX chain windows."
+    },
+    {
+      "key": "7E54F7CB9D6762E5",
+      "text": "List the current track FX in the FX button right-click menu. Clicking an FX name in the list will float/unfloat that FX window."
+    },
+    {
+      "key": "AE8901411E35BA58",
+      "text": "Maximum number of plugins to keep in the \\\"Recently used\\\" list in the add-FX window."
+    },
+    {
+      "key": "0CBD90874DE5C55B",
+      "text": "When opening an empty FX chain, automatically show the add-FX window."
+    },
+    {
+      "key": "A390BC86997627E3",
+      "text": "Do not show the empty FX chain when showing the add-FX window."
+    },
+    {
+      "key": "717273B44C5887FD",
+      "text": "When opening an FX chain window for a track or media item, close any other open FX chain window."
+    },
+    {
+      "key": "278B91B6483322C7",
+      "text": "When changing track selection, automatically open the newly selected track's FX chain window."
+    },
+    {
+      "key": "11E4CCF10DE5ADCC",
+      "text": "When changing track selection, if there is already an FX chain window open, automatically open the newly selected track's FX chain."
+    },
+    {
+      "key": "BB613AF1318E2B21",
+      "text": "Specify filter strings here to allow removing specific plug-ins from the FX browser, e.g.: 'NOT ( Cockos VSTi: )' to remove Cockos softsynths."
+    },
+    {
+      "key": "8F4BB2066432617E",
+      "text": "When inserting instruments that have more than 2 outputs, prompt to create new tracks with routing for these outputs."
+    },
+    {
+      "key": "6F292E7A43393777",
+      "text": "Show list of FX (and other UI elements) in the FX chain window on the right side of the window rather than the left."
+    },
+    {
+      "key": "7B1273C4F41EF16F",
+      "text": "Show FX chain window add/remove buttons above FX list."
+    },
+    {
+      "key": "A27232CED0378863",
+      "text": "Show FX comment field above FX UIs in the chain view (the user may edit comments as desired)."
+    },
+    {
+      "key": "0BE08FFBC9CFE501",
+      "text": "Undo points may be added when closing FX windows to catch changes in plug-in state that may not have been reported by the plug-in."
+    },
+    {
+      "key": "DAA6C01C423886BA",
+      "text": "Include descriptive text in FX names for parallel/offline/bypassed FX, for improved usability screen readers."
+    },
+    {
+      "key": "BC02C62B6866C230",
+      "text": "If checked, prevent user interaction with FX plug-ins during render (which can cause rendering errors depending on the plug-in)"
+    },
+    {
+      "key": "8728486A56EEB734",
+      "text": "Prevents pin mappings from being changed by loading (REAPER-native) presets, or default presets, for plug-ins."
+    },
+    {
+      "key": "39DFB5AF46842B35",
+      "text": "Opens the destination FX chain UI when duplicating entire FX chain by dragging track/item FX button."
+    },
+    {
+      "key": "97628991EA730F75",
+      "text": "When enabled, closes any existing floating FX windows before opening a new window."
+    },
+    {
+      "key": "61B7B1D23C8131BB",
+      "text": "Exclude monitoring FX from single-floating-FX mode, allowing monitoring FX windows to remain open."
+    },
+    {
+      "key": "C9C10CCA131AAA5C",
+      "text": "Exclude master track FX from single-floating-FX mode, allowing master FX windows to remain open."
+    },
+    {
+      "key": "B3CD7F2D69EC348F",
+      "text": "Allow multiple floating FX, but only one per track/context."
+    }
+  ],
+  "prefs_plugincompat_help": [
+    {
+      "key": "811F90A56BF55F69",
+      "text": "Test all plug-in input and output for denormalized sample values (meaninglessly small values that can cause very high CPU use)."
+    },
+    {
+      "key": "749C7A00C3C0114E",
+      "text": "Clear plug-in output buffers before passing them to the plug-in. Some plug-ins can output occasional uninitialized buffers, which makes bad loud noises."
+    },
+    {
+      "key": "054AFFC8FC04D334",
+      "text": "Save the plug-in's entire internal state, not just the position of the knobs. Recommended because many plug-ins store additional settings."
+    },
+    {
+      "key": "EAB0A76C4CBF62FF",
+      "text": "Optionally send automation messages more frequently than once per buffer block when interpolating between non-square-shaped envelope points."
+    },
+    {
+      "key": "91B420B42CE40B7E",
+      "text": "If a buggy or malicious plugin corrupts memory, REAPER can quit immediately, or try to continue with a high risk of crashing or other errors later."
+    },
+    {
+      "key": "D05E96383C39FA84",
+      "text": "Additional settings, such as buggy plugin compatibility mode and save/undo options, can be set by right-clicking the plug-in name in the FX browser."
+    }
+  ],
+  "prefs_project_help": [
+    {
+      "key": "0A5F0E84A3869846",
+      "text": "Using this feature you can create new projects that are automatically setup with your choice of basic tracks and project settings (bit depth, sample rate, etc)."
+    },
+    {
+      "key": "CD8E703057AE56BF",
+      "text": "Makes REAPER open the save project window each time you create a new project, getting you to save before you start recording."
+    },
+    {
+      "key": "E95AA15A86B228FF",
+      "text": "Select this option to make REAPER open the project settings window each time a new project is created."
+    },
+    {
+      "key": "45C61D88D5DA8765",
+      "text": "Makes REAPER look for project media items in the project media path(s) before checking fully qualified paths."
+    },
+    {
+      "key": "B3DC8B336571C072",
+      "text": "This option, selected by default, makes REAPER prompt you for the location of missing files when a Project is opened."
+    },
+    {
+      "key": "D8F1451C7A2CE954",
+      "text": "Displays the splash screen and status indicator when projects are loading."
+    },
+    {
+      "key": "C979FAB9308F4B25",
+      "text": "Saves the pathname of files in projects as relative. Files that are in a different drive or higher directories are saved with the full pathnames."
+    },
+    {
+      "key": "1D3C3611BA1660F1",
+      "text": "Settings that affect only the current project are in the Project Settings dialog. Global settings that affect all projects are in this dialog."
+    },
+    {
+      "key": "D49D311A497F324A",
+      "text": "Define a wildcard pattern to use as the default prompt when running \\\"File: Save project as...\\\""
+    },
+    {
+      "key": "25E3992F168781F3",
+      "text": "When using the action 'save new version of project', the new project name is generated by adding a suffix."
+    },
+    {
+      "key": "AB4AD5F6A34E0505",
+      "text": "Saves a backup of your old Project file with the extension \\\".rpp-bak\\\" each time a save is performed."
+    },
+    {
+      "key": "CE44F1A49427FC35",
+      "text": "Saves a copy of all previous saved versions of the project in one (potentially very large!) .rpp-bak file."
+    },
+    {
+      "key": "2D986AE8D913BA41",
+      "text": "Saves backup copies with timestamped names (letting you keep a history of saved projects, one per file)."
+    },
+    {
+      "key": "EE0626B6E20CF3AE",
+      "text": "Enter the interval in minutes for the automatic saves."
+    },
+    {
+      "key": "DD6EAB00451E5360",
+      "text": "This option enables automatic saving of your project to the main project file."
+    },
+    {
+      "key": "3D597C7EFBD36441",
+      "text": "This option enables automatic saving of your project to an extra timestamped file."
+    },
+    {
+      "key": "3C3F2F410674AB6C",
+      "text": "This option enables automatic saving of your project to an extra timestamped file in the specified directory."
+    },
+    {
+      "key": "58EE0FB007A1AE0E",
+      "text": "REAPER can automatically save timestamped project files to this folder."
+    },
+    {
+      "key": "BFAD5440C8332A44",
+      "text": "Limit timestamped backup files to a maximum number of copies or unique days for a given project."
+    },
+    {
+      "key": "AAE1AE51EBED746D",
+      "text": "Limit timestamped auto-save backup files to a maximum number of copies or unique days for a given project."
+    },
+    {
+      "key": "92487FF57639B090",
+      "text": "Limit timestamped backup files in an alternate path to a maximum number of copies or unique days, for either a given project or for all backups."
+    },
+    {
+      "key": "F96C4B27E4CC91CE",
+      "text": "Controls whether timestamped backup files are saved alongside the project or in the Backups subdirectory."
+    },
+    {
+      "key": "783C7A47533017E9",
+      "text": "Controls whether timestamped auto-saved files are saved alongside the project or in the AutoSaves subdirectory."
+    },
+    {
+      "key": "446734D294601E70",
+      "text": "If enabled, unsaved projects will be saved automatically to temporary files to be possibly re-loaded on relaunch (if configured to load last project)."
+    }
+  ],
+  "prefs_reascript_help": [
+    {
+      "key": "EEB15F6BCEE436B2",
+      "text": "View ReaScript overview online, at http://www.reaper.fm/sdk/reascript/reascript.php."
+    },
+    {
+      "key": "54CB46A2699C9EA0",
+      "text": "View ReaScript documentation, including a full function reference for the REAPER API."
+    },
+    {
+      "key": "DF5737A537307FE7",
+      "text": "The ReaScript console can also be cleared with ClearConsole()."
+    },
+    {
+      "key": "8B83BF71FF0FC189",
+      "text": "Lua ReaScripts can be automatically halted if they run for too long, to avoid scripts crashing REAPER. (The timeout limit is not foolproof.)"
+    },
+    {
+      "key": "3B00DC76AD82F733",
+      "text": "Update the ReaScript IDE watch window for deferred-running scripts at this interval (default 0.5 seconds)"
+    },
+    {
+      "key": "D242C2C87F79C121",
+      "text": "ReaScript for EEL2 and Lua will always work. Python must be enabled here."
+    },
+    {
+      "key": "0DFF4E313817B7E3",
+      "text": "Python is available as a free download. Please see ReaScript documentation for more information."
+    },
+    {
+      "key": "35786BA800FBE7EC",
+      "text": "After you install Python, REAPER should find the Python dynamic library automatically."
+    },
+    {
+      "key": "52118B0F364271BE",
+      "text": "If REAPER finds a compatible version of Python on this machine, view the path to the Python dynamic library."
+    },
+    {
+      "key": "8D0DE2F7EBEE6514",
+      "text": "If REAPER cannot find Python automatically, enter the path here. See the Python installer readme for more information."
+    },
+    {
+      "key": "AD1401A586D43E2D",
+      "text": "If you have multiple versions of Python installed, you can force REAPER to use a specific dynamic library if needed."
+    },
+    {
+      "key": "4B36F58C7AA1704F",
+      "text": "Only show an autocomplete suggestion list of this many entries (you can still navigate the longer list with arrow keys). 0 to disable suggestions."
+    },
+    {
+      "key": "E904999114534048",
+      "text": "By default, ReaScript compile-time error messages are displayed at the bottom of the IDE. The message can be output to the console as well."
+    },
+    {
+      "key": "E1E6D4AA1AB7CD91",
+      "text": "Click to change the color theme for the ReaScript/JSFX/Video Processor IDEs."
+    },
+    {
+      "key": "25E97C9BD85948DE",
+      "text": "If enabled, doubleclicking a user-defined function name will jump to that functions implementation."
+    },
+    {
+      "key": "1664DB1A20081AA9",
+      "text": "Prevent scripts/plug-ins from displaying the ReaScript console. In this case, a [MSG] or [ERR] appearsin the main menu bar, and you can click to open the console."
+    }
+  ],
+  "prefs_record_help": [
+    {
+      "key": "F1E406C6866C1FE5",
+      "text": "While recording, respect the options menu setting to automatically scroll the arrange view when the record cursor moves offscreen."
+    },
+    {
+      "key": "3ED0EE7DECD1ABC5",
+      "text": "Display a medium-resolution peak/waveform preview of audio items while recording. Regardless, a high-resolution display will be shown afterwards."
+    },
+    {
+      "key": "364EC3F8B830CEF5",
+      "text": "Update speed of peak/waveform preview for recording items, in frames per second (lower values leave more resources free for the actual recording)."
+    },
+    {
+      "key": "DF053C93A346E434",
+      "text": "Peak/waveform display data files are created for every audio item."
+    },
+    {
+      "key": "7E1E093FC1CA1EF1",
+      "text": "Create audio peak/waveform display data files while recording audio (recommended)"
+    },
+    {
+      "key": "BC44FACEABC6616F",
+      "text": "Create audio peak/waveform display data files only after recording stops."
+    },
+    {
+      "key": "EFA651F088ADA17C",
+      "text": "Create audio peak/waveform display data files only when manually selecting the menu item item/peaks/build peaks."
+    },
+    {
+      "key": "C0E929B7ED6219F8",
+      "text": "New recorded files can be automatically saved, or selectively deleted."
+    },
+    {
+      "key": "182508B411978611",
+      "text": "Prompt to selectively save or delete new recorded files after recording stops."
+    },
+    {
+      "key": "AB6F99DD766BD82B",
+      "text": "Prompt to selectively save or delete new recorded files when punching out of recording (by pressing the play button)."
+    },
+    {
+      "key": "53CD657F5A0080B3",
+      "text": "Record-armed tracks can automatically expand to show the recording source and input level meters."
+    },
+    {
+      "key": "677DA212DC60E11B",
+      "text": "When recording a single, very long uninterrupted take, create new files (gaplessly) to avoid file-format size limitations."
+    },
+    {
+      "key": "736BBCAB623EB2FD",
+      "text": "During lengthy recording, switching files creates a momentary CPU load, which can be lessened by offsetting file switches when recording multiple tracks."
+    },
+    {
+      "key": "346A6474363C5A9F",
+      "text": "Abort recording if no tracks are record-armed. Tracks can always be record-armed and unarmed after recording has started."
+    },
+    {
+      "key": "6470DCD830DD71D7",
+      "text": "Customize the filename that is automatically created for new recordings."
+    },
+    {
+      "key": "3C47CFC3EEC43EC0",
+      "text": "Customize the name that is automatically applied to new in-project MIDI media items."
+    },
+    {
+      "key": "50EEB2322C8B4CDE",
+      "text": "Check the available disk space for recording when recording starts, and warn if the available recording space falls below a threshold."
+    },
+    {
+      "key": "CD73680957ADE0BD",
+      "text": "Always display the available disk space in the menu bar."
+    },
+    {
+      "key": "9A79F771DF7E9ECF",
+      "text": "Display the project recording path (primary, if multiple) in the menu bar."
+    },
+    {
+      "key": "17BC2D2524ADB80F",
+      "text": "Automatically adjust recorded media positioning to compensate for the audio driver's reported latency."
+    },
+    {
+      "key": "52979CD2C4ADCEA4",
+      "text": "Record audio during pre-roll (if enabled in metronome settings). Allows access to parts played early, etc."
+    },
+    {
+      "key": "5D1DBABB03A644E0",
+      "text": "Set or adjust the recording latency compensation. If auto adjust is enabled, these values are added to the automatic offset. Offsets can be negative."
+    }
+  ],
+  "prefs_record_loop_help": [
+    {
+      "key": "EA84923E715129D3",
+      "text": "Incomplete takes can be automatically discarded, as long as at least one complete pass through the loop selection was recorded."
+    },
+    {
+      "key": "EBB29F1E5EC1F1A6",
+      "text": "Threshold of length that a take has to exceed to be considered complete. The default is 90%, but 50% or 100% are also sensible values."
+    },
+    {
+      "key": "F8F41216D26DE4BD",
+      "text": "By default, MIDI recording that starts within a time selection will create a media item that starts when MIDI input begins."
+    },
+    {
+      "key": "B2AA56B82FB82DE0",
+      "text": "Loop recording can create one or more audio files, which can be added to the project after each loop, or only when recording stops."
+    },
+    {
+      "key": "33AC466648B3C9CA",
+      "text": "Add recorded media to project after each loop, which can be used to build up layered recordings."
+    },
+    {
+      "key": "D2E172FC0C79F1D4",
+      "text": "Add recorded media to project only when recording stops (default)."
+    },
+    {
+      "key": "4570CCEE54B6D772",
+      "text": "Create a separate file on disk for each loop (default is to record to a single, continuous file)."
+    },
+    {
+      "key": "11D7872C3D011569",
+      "text": "Reuse existing lanes for new recording if space permits and doing so would not change the playback state significantly."
+    },
+    {
+      "key": "374922345FF8E784",
+      "text": "When recording into a fixed lane track, the normal behavior of trimming the recording to the auto-punch area can be overridden."
+    }
+  ],
+  "prefs_render_help": [
+    {
+      "key": "450CD9BA5AC8A6CD",
+      "text": "Sets the audio block size used when rendering. If blank, rendering will use the audio device block size (recommended for consistent FX playback)."
+    },
+    {
+      "key": "B8630E9E7BA232E0",
+      "text": "When checked, configured multiprocessing settings will be used for rendering. If unchecked, rendering will be slower but can be more reliable with some plug-ins."
+    },
+    {
+      "key": "EB16C6EA76EEC12B",
+      "text": "When checked, limit apply FX/render stems actions to realtime. This is good for certain plug-ins that fail when running faster than realtime."
+    },
+    {
+      "key": "3694C4CB232416C4",
+      "text": "Rendering the project or stems, or freezing tracks, can run beyond the last media item in the project, to be sure to record any FX tails (like reverb)."
+    },
+    {
+      "key": "ABF1A1194368E588",
+      "text": "When rendering stems for the entire project, apply the tail length setting. This also affects the default tail settings in the render window."
+    },
+    {
+      "key": "5182449DA30570C3",
+      "text": "When rendering stems for a time selection, apply the tail length setting. This also affects the default tail settings in the render window."
+    },
+    {
+      "key": "C3F651989CF94DE1",
+      "text": "By default, only media items will be rendered when freezing. If there are FX on the track, the entire track can be rendered, which may be slower."
+    },
+    {
+      "key": "4880D33AC87DEEDF",
+      "text": "When freezing an entire track, apply the tail length setting."
+    },
+    {
+      "key": "B03921951DE23CBD",
+      "text": "After canceling a render, the incompletely rendered files can automatically be saved or deleted, or REAPER can prompt every time."
+    },
+    {
+      "key": "DDD062A1CBBCF307",
+      "text": "After rendering, the render output/statistics window can remain open, or the render setup window can remain open, or both windows can close."
+    },
+    {
+      "key": "D63A4C5E2504D8E6",
+      "text": "Various statistics can be calculated and displayed when rendering."
+    },
+    {
+      "key": "C0879623E749667F",
+      "text": "If freezing a track with muted items, generate silent items so that the presence of muted items is known."
+    },
+    {
+      "key": "8A5F82807AA87897",
+      "text": "Prevents auto-bypass project/FX setting from being used during offline renders, apply FX, stem renders, etc."
+    },
+    {
+      "key": "BB61383397CF6480",
+      "text": "After rendering, the render output/statistics window can prevent focus from returning to the project, or reopen modelessly to allow focus to change."
+    }
+  ],
+  "prefs_scrub_help": [
+    {
+      "key": "C6CEC38A2A4BE6CD",
+      "text": "Either the master mix, or only the selected tracks, may be scrubbed/jogged."
+    },
+    {
+      "key": "88B1C77A43F5B114",
+      "text": "When scrubbing, the playback rate can be limited to 1.0 or slower."
+    },
+    {
+      "key": "A049502F1658FA6F",
+      "text": "When jogging, choose whether to limit the playback rate to 1x/2x/4x/8x"
+    },
+    {
+      "key": "2DEF886977AFB2B4",
+      "text": "Jog can respond more immediately to mouse/edit cursor moves."
+    },
+    {
+      "key": "EDE7F5117FE5F615",
+      "text": "The jog rate can be limited to 1.0 or slower only when jogging near the playback cursor."
+    },
+    {
+      "key": "D6DD3DBDD1510B7D",
+      "text": "Scrub/jog can be disabled while playing back, or enabled, in which case normal playback will stop when scrub/jog is engaged."
+    },
+    {
+      "key": "77E789F14751404C",
+      "text": "When enabled, plays a one-shot segment when adjusting item and time selection edges (via mouse or action), to either begin or end at the edited edge."
+    },
+    {
+      "key": "7205DD67A21ED82B",
+      "text": "Set the bounds of the looped section, when scrubbing or jogging in looped-segment mode."
+    },
+    {
+      "key": "120BE0621EFD6E26",
+      "text": "Adjust the sensitivity and responsiveness when scrubbing via a controller."
+    },
+    {
+      "key": "C18E64EC60167518",
+      "text": "Moving the edit cursor via an action or when using a control surface can jog/scrub audio, or simply move the cursor."
+    },
+    {
+      "key": "F884A0D8A9534F68",
+      "text": "When checked, scrubbing by moving the edit cursor will use a one-shot segment playback rather than a tape-scrub. There is an action to toggle this."
+    },
+    {
+      "key": "38F660F8084D144A",
+      "text": "The settings on this page control how jog/scrub works. See Editing Behavior/Mouse Modifiers to control when jog/scrub happens."
+    },
+    {
+      "key": "4EF0DE97F00D07C9",
+      "text": "Adjust the volume of scrub/jog by this amount."
+    }
+  ],
+  "prefs_seek_help": [
+    {
+      "key": "4F2087FAE26C18FC",
+      "text": "Define which areas of the REAPER window will trigger playback seek when clicked with the mouse."
+    },
+    {
+      "key": "30CE3D2874721D6D",
+      "text": "Seek playback when clicking on media items, but only if the mouse modifier moves the edit cursor."
+    },
+    {
+      "key": "81AFE5EA775827BD",
+      "text": "By default, playback will seek to the loop start or end point when you edit that point, and repeat is enabled."
+    },
+    {
+      "key": "02D537546704E4C2",
+      "text": "How far before the loop start or end playback should begin, when seeking is triggered by a loop point edit."
+    },
+    {
+      "key": "A679F6E2ECA9D19D",
+      "text": "By default, playback will not seek to a media item when you edit that item's position, length, or fade-in/fade-out."
+    },
+    {
+      "key": "885F90320DF7472D",
+      "text": "How far before the media item end playback should begin, when seeking is triggered by a media item edit."
+    },
+    {
+      "key": "67B3D55ACD31588D",
+      "text": "By default, if the project timebase is in beats, adjusting tempo (including tapping tempo) will preserve the beat-based playback position."
+    },
+    {
+      "key": "F2E47DB3ECD725D3",
+      "text": "Smooth seek enables a more natural-sounding transition. This setting can also be toggled via the Actions list."
+    },
+    {
+      "key": "79A89EFDC71E002C",
+      "text": "Wait until the current measure ends before changing the playback position, for a smoother sounding transition."
+    },
+    {
+      "key": "44DB7EC0EF2A942C",
+      "text": "This setting can be used to enable sequencing of audio blocks for live playback. Also search the Actions list for \\\"seek\\\"."
+    }
+  ],
+  "prefs_spectral_edits_help": [
+    {
+      "key": "1833EAF5DB413E35",
+      "text": "Default fade-in for new spectral edits, 100% is the first half of the edit region. The default is 0, no fade."
+    },
+    {
+      "key": "997EE52C84518E82",
+      "text": "Default fade-out for new spectral edits, 100% is the second half of the edit region. The default is 0, no fade."
+    },
+    {
+      "key": "5E21776AA29A3734",
+      "text": "Default low-frequency fade for new spectral edits, 100% is lowest half of the frequency range. The default is 0, no fade."
+    },
+    {
+      "key": "FAB7120181F3967E",
+      "text": "Default high-frequency fade for new spectral edits, 100% is highest half of the frequency range. The default is 0, no fade."
+    },
+    {
+      "key": "679B1F61F3F0E310",
+      "text": "Default gain for new spectral edits. The default is +0 dB (which does nothing)."
+    },
+    {
+      "key": "805AC7C6C36576C6",
+      "text": "Default compression threshold for new spectral edits. If the compression ratio is set to 1:1, this threshold will have no effect."
+    },
+    {
+      "key": "59D5B989EB5674AE",
+      "text": "Default compression ratio for new spectral edits. The default is 1:1, which disables the per-band compressor."
+    },
+    {
+      "key": "B2BB07BA21B3A339",
+      "text": "Default gate threshold for new spectral edits. The default is -inf, which disables the per-band gate."
+    },
+    {
+      "key": "36423C51325CCA6C",
+      "text": "Default gate floor for new spectral edits. This allows an attenuated signal through when the gate is closed. The default is -inf."
+    },
+    {
+      "key": "F09622AD86C0FDFC",
+      "text": "If checked, new spectral edits will be soloed by default (which is often used to audition the area you have selected)"
+    },
+    {
+      "key": "5D322176ABDD6A69",
+      "text": "Sets the default FFT size for take spectral processors. The default is 1024, which offers a balance between temporal and frequency precision."
+    }
+  ],
+  "prefs_tcp_help": [
+    {
+      "key": "C13265BE35DAEB85",
+      "text": "If a track has a custom color set, set the background color of the track label field to be the track color. Color theme may override this preference."
+    },
+    {
+      "key": "18081BA4EB998B85",
+      "text": "If a track has a custom color set, tint the track's panel backgrounds to the custom color. Color theme may override this preference."
+    },
+    {
+      "key": "F39C216A8B1D621C",
+      "text": "When using track icons or fixed item lanes, align track controls on all tracks, which uses extra space but provides a cleaner appearance."
+    },
+    {
+      "key": "35FB7D629FCA718C",
+      "text": "Tracks in a folder can be normal-sized, small, or collapsed. Collapsed tracks can be displayed as tiny, or not displayed at all."
+    },
+    {
+      "key": "0B9EE087A4495802",
+      "text": "The lane display button on fixed lane tracks controls whether lanes are big or small, and whether all lanes are displayed or only one lane at a time."
+    },
+    {
+      "key": "31B75936A0903B71",
+      "text": "When track controls are grouped (View -> Track Grouping Matrix), draw a matching colored ribbon across the corner of all grouped controls."
+    },
+    {
+      "key": "F41112A329719F94",
+      "text": "When track controls are grouped (View -> Track Grouping Matrix), draw a matching colored line at the bottom edge of all grouped controls."
+    },
+    {
+      "key": "451D8AF86150F67E",
+      "text": "When track controls are grouped (View -> Track Grouping Matrix), don't draw any indication of which controls are grouped."
+    },
+    {
+      "key": "65A1B85237A2606E",
+      "text": "Decibels of attenuation applied when the volume fader is at the left/bottom."
+    },
+    {
+      "key": "E739160C3E3C37E3",
+      "text": "Decibels of gain (attenuation if negative) applied when the volume fader is at the right/top."
+    },
+    {
+      "key": "38EE60F635F42949",
+      "text": "Sensitivity of volume faders at the bottom and top. 1 is linear, lower gives more sensitivity at the bottom, higher gives more sensitivity at the top."
+    },
+    {
+      "key": "75C52AD4CFC58227",
+      "text": "Display pan values in percentage or decibels."
+    }
+  ],
+  "prefs_trackdefs_help": [
+    {
+      "key": "4EE204156D89D4D5",
+      "text": "Volume envelopes can be scaled by amplitude (half as high is half as loud), or by the track fader scale (envelope height corresponds to the track fader)."
+    },
+    {
+      "key": "058F8E251BC33C9E",
+      "text": "Changing scaling for an existing envelope may change the sound, because changes on the track fader are not linearly equivalent to changes in amplitude."
+    },
+    {
+      "key": "0614CE6C05F547EB",
+      "text": "The default fader gain for newly created tracks. The factory default is +0dB"
+    },
+    {
+      "key": "583D434BE1F4936A",
+      "text": "When enabled, new tracks will be visible in the mixer."
+    },
+    {
+      "key": "A7D59AB48C99ED23",
+      "text": "When enabled, new tracks created within a folder will send audio and MIDI to the folder parent track."
+    },
+    {
+      "key": "8435D40B1A543A8E",
+      "text": "Certain track envelopes may be shown automatically for new tracks."
+    },
+    {
+      "key": "A06640FC98DC6287",
+      "text": "Automatically show volume envelopes for new tracks."
+    },
+    {
+      "key": "871B42A204ABD900",
+      "text": "Automatically show pan envelopes for new tracks."
+    },
+    {
+      "key": "9DB02CA9A1AAEE43",
+      "text": "Automatically show pre-FX volume envelopes for new tracks."
+    },
+    {
+      "key": "16F5F8078D3F839C",
+      "text": "Automatically show pre-FX pan envelopes for new tracks."
+    },
+    {
+      "key": "46293FD16449C446",
+      "text": "Default point shape for new track envelopes."
+    },
+    {
+      "key": "798A8BC8BB77A088",
+      "text": "The default automation mode for new tracks.  The factory default is Trim/Read Mode."
+    },
+    {
+      "key": "01966E3463989F62",
+      "text": "Default track height in new projects. This is also set via File/Project Settings/Save as default project settings."
+    },
+    {
+      "key": "7D71B6C52AB0A7DE",
+      "text": "When enabled, new track envelopes will be automatically armed for recording automation."
+    },
+    {
+      "key": "D2AC005A798FA430",
+      "text": "Automatically enable free item positioning for new tracks."
+    },
+    {
+      "key": "D213C2B8558C5882",
+      "text": "Automatically enabled fixed item lanes for new tracks."
+    },
+    {
+      "key": "DF668F650FA57939",
+      "text": "New fixed lane tracks can have small lanes (all lanes fit within a normal track height), or big lanes (each lane is the height of a track)."
+    },
+    {
+      "key": "98FA43DA61B338EE",
+      "text": "Automatically record-arm new tracks."
+    },
+    {
+      "key": "1E7C6F759324FBD1",
+      "text": "Default record settings for new tracks."
+    },
+    {
+      "key": "CBB4206A82B6C0A2",
+      "text": "Default gain for new track-to-track sends."
+    },
+    {
+      "key": "B3B008304E94DF56",
+      "text": "Default gain for new hardware outputs."
+    },
+    {
+      "key": "AA0925ABD83BC541",
+      "text": "Default send type for new sends and hardware outputs."
+    },
+    {
+      "key": "5B0472B23A6FDB71",
+      "text": "When enabled, new sends will send MIDI from the source track."
+    },
+    {
+      "key": "4EB8C05F0CB68BBA",
+      "text": "When enabled, new sends will send audio from the source track."
+    },
+    {
+      "key": "710294D0227188C6",
+      "text": "Track meter defaults for newly created tracks. Existing tracks in existing projects will not be affected."
+    }
+  ],
+  "prefs_video_help": [
+    {
+      "key": "3CCC269D4FA578D4",
+      "text": "Choose the priority of available video decoders. See \\\"Show decoder information\\\" for more detail."
+    },
+    {
+      "key": "A0C1D94D92A5F2D6",
+      "text": "The video window will sync to the specified seek point when moving/resizing audio items."
+    },
+    {
+      "key": "7A54CBC7ACF5D1E6",
+      "text": "OpenGL output is preferred, but DirectShow modes are also available, as is BitBlt for the most compatible/slowest. Force format to reduce flicker when changing colorspaces/output size."
+    },
+    {
+      "key": "49611EABB6215B55",
+      "text": "Automatic output uses colorspace of project/media, otherwise you can override the output colorspace here."
+    },
+    {
+      "key": "DA7BBD7463F2E92B",
+      "text": "OpenGL output is preferred, very slow but more-compatible output modes are also available."
+    },
+    {
+      "key": "B83BE410EE669BDB",
+      "text": "Low-res peaks (less detail when zoomed in) can improve responsiveness. You can set peaks resolution per-item in video source properties."
+    },
+    {
+      "key": "7344EE7BCC876172",
+      "text": "Delay video output during playback by a small (and possibly negative) amount to allow best possible sychronization."
+    },
+    {
+      "key": "56646DDB3DDF88EA",
+      "text": "Length of newly imported image files, in milliseconds. Negative values set length in frames."
+    },
+    {
+      "key": "4D7028B4BE4E586B",
+      "text": "Thumbnail display mode for image files imported as items."
+    },
+    {
+      "key": "A30656058C1C4513",
+      "text": "Uses a standard OS editing control for the video code editor, useful for accessibility but otherwise lacks many useful editing features"
+    }
+  ],
+  "prefs_vst_help": [
+    {
+      "key": "EDB8FF5E08C92FF2",
+      "text": "Directories to scan for VST plug-ins. Subdirectories will also be scanned."
+    },
+    {
+      "key": "AB0179D030C28898",
+      "text": "Displays a menu with options to re-scan plug-ins, and view a list of plug-ins that failed to scan."
+    },
+    {
+      "key": "A33160A83CBD4DE3",
+      "text": "Use the generic slider view instead of the VST's custom GUI. You can switch views at any time using the UI button on the plug-in window."
+    },
+    {
+      "key": "24C425763A91B75D",
+      "text": "Set the default VST knob behavior. Almost no plug-ins support this setting."
+    },
+    {
+      "key": "062E0C5C05471D20",
+      "text": "Set how automation notifications are handled from VST plug-ins. You can also override this per-plugin, most people will want to leave this on the default."
+    },
+    {
+      "key": "2EAA3B50A18F889D",
+      "text": "Don't inform VSTis that playback has stopped. Most synths (especially arpeggiators) want to know playback has stopped to avoid hanging notes."
+    },
+    {
+      "key": "5709C6930F8F1BE9",
+      "text": "Preserve held notes and current pitch when resetting VSTis. This is probably needed when disabling Preferences/Audio/Playback/Reset MIDI CC/Pitch."
+    },
+    {
+      "key": "1DE74C0937316C7F",
+      "text": "Some VSTs behave differently when rendering offline (not in realtime).  When deselected,  plugins always think they are online."
+    },
+    {
+      "key": "FAC0CB28431DC2EC",
+      "text": "Some buggy plug-ins crash when the GUI is opened while a different thread is processing audio. This avoids the crash by interrupting audio."
+    },
+    {
+      "key": "A91F48CD20B8FDCE",
+      "text": "Allow unloading of VST DLLs, which gets them completely out of memory, but also may cause compatibility issues."
+    },
+    {
+      "key": "DB1AD925D830A08C",
+      "text": "Special mode, applied to UAD plugins only, that reduces parallel processing benefits to avoid UAD-1 crashes."
+    },
+    {
+      "key": "63294B8DD7109B3F",
+      "text": "Scan for new/updated VST plug-ins on startup (recommended). If disabled you can manually re-scan or choose the plug-ins to scan here."
+    }
+  ]
+}
