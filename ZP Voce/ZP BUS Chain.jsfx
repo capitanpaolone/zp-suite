@@ -1,5 +1,5 @@
 // @description ZP BUS Chain
-// @version 1.3.0
+// @version 1.3.1
 // @author Paolo Balestri
 // @about
 //   Catena di dinamica e colore per voce parlata, podcast e doppiaggio.
@@ -20,6 +20,8 @@
 //   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
 //     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
 //   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
+//   Brown Guard: separati gli interruttori DYN (correzione che insegue il target Slope)
+//     ed EQ (quattro punti manuali); entrambi restano indipendenti dal master Brown On.
 desc:ZP BUS Chain - Voice/Music Processor - Paolo Balestri
 options:gmem=ZPVoiceoverSharedBus
 tags: bus compression dynamics multiband voice podcast music paolo balestri zio paolo
@@ -499,6 +501,8 @@ slider74:par_return_db=-6<-18,6,0.5>-Parallel Return
 slider75:la2_par_send=0<0,1,1{OFF,ON}>-LA2 To LIM
 slider76:mt_par_send=0<0,1,1{OFF,ON}>-MT To LIM
 slider77:brn_par_send=0<0,1,1{OFF,ON}>-Brown To LIM
+slider78:brn_slope_on=1<0,1,1{Off,On}>-Brown Slope Dynamics
+slider79:brn_eq_on=1<0,1,1{Off,On}>-Brown Manual EQ
 
 @init
 // ─── SEMANTIC FUNCTIONAL COLORS ───────────────────────────────────────
@@ -898,6 +902,8 @@ local(i, page)
     slider_show(slider75, 0);
     slider_show(slider76, 0);
     slider_show(slider77, 0);
+    slider_show(slider78, 0);
+    slider_show(slider79, 0);
     slider_show(slider74, 0);
 
     show_host ? (
@@ -919,7 +925,7 @@ local(i, page)
       page == 3 ? ( show_slider_range(13, 19); slider_show(slider_mask(46), 1); ) :
       page == 4 ? ( show_slider_range(20, 24); slider_show(slider_mask(48), 1); ) :
       page == 5 ? ( show_slider_range(25, 33); slider_show(slider_mask(51), 1); ) :
-      page == 6 ? show_slider_range(57, 63) :
+      page == 6 ? ( show_slider_range(57, 63); slider_show(slider78, 1); slider_show(slider79, 1); ) :
       page == 7 ? ( 0; ) :
       page == 8 ? ( show_slider_range(34, 39); );
 
@@ -1253,10 +1259,10 @@ function compute_dsp_params()
   brn_focus2 = clamp(brn_fc2 * (2 ^ (brn_xmove2 * 1.35)), 20, min(20000, srate * 0.45));
   brn_focus3 = clamp(brn_fc3 * (2 ^ (brn_xmove3 * 1.35)), 20, min(20000, srate * 0.45));
   brn_focus4 = clamp(brn_fc4 * (2 ^ (brn_xmove4 * 1.60)), 20, min(20000, srate * 0.45));
-  brn_user1_eff = clamp(brn_user1 * brn_user_amount_w, -6, 6);
-  brn_user2_eff = clamp(brn_user2 * brn_user_amount_w, -6, 6);
-  brn_user3_eff = clamp(brn_user3 * brn_user_amount_w, -6, 6);
-  brn_user4_eff = clamp(brn_user4 * brn_user_amount_w, -6, 6);
+  brn_user1_eff = brn_eq_on >= 0.5 ? clamp(brn_user1 * brn_user_amount_w, -6, 6) : 0;
+  brn_user2_eff = brn_eq_on >= 0.5 ? clamp(brn_user2 * brn_user_amount_w, -6, 6) : 0;
+  brn_user3_eff = brn_eq_on >= 0.5 ? clamp(brn_user3 * brn_user_amount_w, -6, 6) : 0;
+  brn_user4_eff = brn_eq_on >= 0.5 ? clamp(brn_user4 * brn_user_amount_w, -6, 6) : 0;
   brn_pk1L.biquad_set_peak(brn_focus1, brn_focus_q, brn_user1_eff);
   brn_pk1R.biquad_set_peak(brn_focus1, brn_focus_q, brn_user1_eff);
   brn_pk2L.biquad_set_peak(brn_focus2, brn_focus_q, brn_user2_eff);
@@ -2075,7 +2081,7 @@ function process_brown()
   dbg_brown_in_env = brn_in_sig + dbg_meter_c*(dbg_brown_in_env - brn_in_sig);
   dbg_brown_in_db = gain2db(sqrt(max(dbg_brown_in_env,0.000000000001)));
 
-  brn_on && (floor(brn_preset + 0.5) != 0 || brn_manual_armed >= 0.5) ? (
+  brn_on && (brn_slope_on >= 0.5 || brn_eq_on >= 0.5 || brn_amu_on >= 0.5) ? (
     brn_dry_l = route_in_l; brn_dry_r = route_in_r; brn_in_l = brn_dry_l * brn_in_g; brn_in_r = brn_dry_r * brn_in_g;
     brn_hpf_slope_i >= 1 ? ( brn_hp1_l += brn_hp_c*(brn_in_l-brn_hp1_l); brn_in_l -= brn_hp1_l; brn_hp1_r += brn_hp_c*(brn_in_r-brn_hp1_r); brn_in_r -= brn_hp1_r; );
     brn_hpf_slope_i >= 2 ? ( brn_hp2_l += brn_hp_c*(brn_in_l-brn_hp2_l); brn_in_l -= brn_hp2_l; brn_hp2_r += brn_hp_c*(brn_in_r-brn_hp2_r); brn_in_r -= brn_hp2_r; );
@@ -2109,20 +2115,25 @@ function process_brown()
       brn_r1 = brn_a1 - brn_offset; brn_r2 = brn_a2 - brn_offset;
       brn_r3 = brn_a3 - brn_offset; brn_r4 = brn_a4 - brn_offset;
       brn_err1 = brn_r1 - brn_t1; brn_err2 = brn_r2 - brn_t2; brn_err3 = brn_r3 - brn_t3; brn_err4 = brn_r4 - brn_t4;
-      brn_cut_cap1 = min(brn_max_cut, brn_cut1) * brn_amount_cap_w; brn_cut_cap2 = min(brn_max_cut, brn_cut2) * brn_amount_cap_w;
-      brn_cut_cap3 = min(brn_max_cut, brn_cut3) * brn_amount_cap_w; brn_cut_cap4 = min(brn_max_cut, brn_cut4) * brn_amount_cap_w;
-      brn_boost_cap1 = min(brn_max_boost, brn_boost1) * brn_amount_cap_w; brn_boost_cap2 = min(brn_max_boost, brn_boost2) * brn_amount_cap_w;
-      brn_boost_cap3 = min(brn_max_boost, brn_boost3) * brn_amount_cap_w; brn_boost_cap4 = min(brn_max_boost, brn_boost4) * brn_amount_cap_w;
-      brn_dead_db = 0.6; brn_knee_db = 2.5; brn_amt_mus = pow(abs(brn_amount_w), 1.35) * 0.70;
-      brn_eff1 = max(0, abs(brn_err1) - brn_dead_db); brn_mag1 = brn_eff1 * (brn_eff1 / (brn_eff1 + brn_knee_db)) * brn_amt_mus; brn_gd1 = brn_err1 > 0 ? -brn_mag1 : brn_mag1;
-      brn_gd1 = clamp(brn_gd1, -brn_cut_cap1 * (1 - brn_low_protect_w), brn_boost_cap1);
-      brn_eff2 = max(0, abs(brn_err2) - brn_dead_db); brn_mag2 = brn_eff2 * (brn_eff2 / (brn_eff2 + brn_knee_db)) * brn_amt_mus; brn_gd2 = brn_err2 > 0 ? -brn_mag2 : brn_mag2;
-      brn_gd2 = clamp(brn_gd2, -brn_cut_cap2, brn_boost_cap2);
-      brn_eff3 = max(0, abs(brn_err3) - brn_dead_db); brn_mag3 = brn_eff3 * (brn_eff3 / (brn_eff3 + brn_knee_db)) * brn_amt_mus; brn_gd3 = brn_err3 > 0 ? -brn_mag3 : brn_mag3;
-      brn_gd3 = clamp(brn_gd3, -brn_cut_cap3, brn_boost_cap3);
-      brn_eff4 = max(0, abs(brn_err4) - brn_dead_db); brn_mag4 = brn_eff4 * (brn_eff4 / (brn_eff4 + brn_knee_db)) * brn_amt_mus; brn_gd4 = brn_err4 > 0 ? -brn_mag4 : brn_mag4;
-      brn_gd4 = clamp(brn_gd4, -brn_cut_cap4, brn_boost_cap4);
-      brn_tg1 = db2gain(brn_gd1); brn_tg2 = db2gain(brn_gd2); brn_tg3 = db2gain(brn_gd3); brn_tg4 = db2gain(brn_gd4);
+      brn_slope_on >= 0.5 ? (
+        brn_cut_cap1 = min(brn_max_cut, brn_cut1) * brn_amount_cap_w; brn_cut_cap2 = min(brn_max_cut, brn_cut2) * brn_amount_cap_w;
+        brn_cut_cap3 = min(brn_max_cut, brn_cut3) * brn_amount_cap_w; brn_cut_cap4 = min(brn_max_cut, brn_cut4) * brn_amount_cap_w;
+        brn_boost_cap1 = min(brn_max_boost, brn_boost1) * brn_amount_cap_w; brn_boost_cap2 = min(brn_max_boost, brn_boost2) * brn_amount_cap_w;
+        brn_boost_cap3 = min(brn_max_boost, brn_boost3) * brn_amount_cap_w; brn_boost_cap4 = min(brn_max_boost, brn_boost4) * brn_amount_cap_w;
+        brn_dead_db = 0.6; brn_knee_db = 2.5; brn_amt_mus = pow(abs(brn_amount_w), 1.35) * 0.70;
+        brn_eff1 = max(0, abs(brn_err1) - brn_dead_db); brn_mag1 = brn_eff1 * (brn_eff1 / (brn_eff1 + brn_knee_db)) * brn_amt_mus; brn_gd1 = brn_err1 > 0 ? -brn_mag1 : brn_mag1;
+        brn_gd1 = clamp(brn_gd1, -brn_cut_cap1 * (1 - brn_low_protect_w), brn_boost_cap1);
+        brn_eff2 = max(0, abs(brn_err2) - brn_dead_db); brn_mag2 = brn_eff2 * (brn_eff2 / (brn_eff2 + brn_knee_db)) * brn_amt_mus; brn_gd2 = brn_err2 > 0 ? -brn_mag2 : brn_mag2;
+        brn_gd2 = clamp(brn_gd2, -brn_cut_cap2, brn_boost_cap2);
+        brn_eff3 = max(0, abs(brn_err3) - brn_dead_db); brn_mag3 = brn_eff3 * (brn_eff3 / (brn_eff3 + brn_knee_db)) * brn_amt_mus; brn_gd3 = brn_err3 > 0 ? -brn_mag3 : brn_mag3;
+        brn_gd3 = clamp(brn_gd3, -brn_cut_cap3, brn_boost_cap3);
+        brn_eff4 = max(0, abs(brn_err4) - brn_dead_db); brn_mag4 = brn_eff4 * (brn_eff4 / (brn_eff4 + brn_knee_db)) * brn_amt_mus; brn_gd4 = brn_err4 > 0 ? -brn_mag4 : brn_mag4;
+        brn_gd4 = clamp(brn_gd4, -brn_cut_cap4, brn_boost_cap4);
+        brn_tg1 = db2gain(brn_gd1); brn_tg2 = db2gain(brn_gd2); brn_tg3 = db2gain(brn_gd3); brn_tg4 = db2gain(brn_gd4);
+      ) : (
+        brn_gd1 = brn_gd2 = brn_gd3 = brn_gd4 = 0;
+        brn_tg1 = brn_tg2 = brn_tg3 = brn_tg4 = 1;
+      );
       brn_just_primed ? (brn_g1 = brn_tg1; brn_g2 = brn_tg2; brn_g3 = brn_tg3; brn_g4 = brn_tg4; brn_just_primed = 0;);
       brn_silent = brn_p1 + brn_p2 + brn_p3 + brn_p4 < 0.000000000001;
       brn_silent ? (
@@ -2715,6 +2726,12 @@ function set_ui_slider(sl_idx, new_val) local(mask)(
   ) : sl_idx == 71 ? (
     sliderchange(slider71);
     slider_automate(slider71);
+  ) : sl_idx == 78 ? (
+    sliderchange(slider78);
+    slider_automate(slider78);
+  ) : sl_idx == 79 ? (
+    sliderchange(slider79);
+    slider_automate(slider79);
   );
   // ANA: la GUI custom modifica slider nascosti; aggiorna subito i coefficienti DSP
   // senza aspettare altri eventi host, altrimenti Drive/Gain/Mix possono sembrare inattivi.
@@ -3156,6 +3173,26 @@ local(hover, state, _tw, _th)
     brn_points_dyn = 1 - state;
     state = 1 - state;
     dsp_needs_update = 1;
+  );
+  state ? gfx_set(0.10,0.42,0.34,1) : gfx_set(0.12,0.16,0.22,1);
+  gfx_rect(x,y,w,h);
+  state ? gfx_set(0.38,0.96,0.78,1) : gfx_set(0.32,0.28,0.18,1);
+  gfx_rect(x,y,w,2); gfx_rect(x,y+h-2,w,2);
+  state ? gfx_set(0.76,1.00,0.92,1) : gfx_set(0.72,0.76,0.80,1);
+  gfx_setfont(1,"Arial",10);
+  gfx_measurestr(label,_tw,_th);
+  gfx_x=x+floor((w-_tw)*0.5); gfx_y=y+floor((h-_th)*0.5); gfx_drawstr(label);
+);
+
+function ui_brown_feature_button(sl_idx, x, y, w, h, label, hover_id)
+local(hover, state, _tw, _th)
+(
+  state = floor(slider(sl_idx) + 0.5);
+  hover = hit(x,y,w,h);
+  hover ? ui_set_hover(hover_id);
+  !ui_render_only && hover && mouse_click ? (
+    set_ui_slider(sl_idx, 1-state);
+    state = 1-state;
   );
   state ? gfx_set(0.10,0.42,0.34,1) : gfx_set(0.12,0.16,0.22,1);
   gfx_rect(x,y,w,h);
@@ -3810,7 +3847,8 @@ local(i, scope_x, scope_w, scope_y, scope_h, actual, target, corr, user, user_ef
   gfx_setfont(1,"Arial",11,'b'); gfx_set(0.36,0.82,0.76,0.96);
   gfx_x=x+6; gfx_y=y+5; gfx_drawstr("BROWN SLOPE MAP");
   gfx_setfont(1,"Arial",8); gfx_set(0.36,0.52,0.50,0.80);
-  gfx_x=x+w-122; gfx_y=y+6; gfx_drawstr("FREQ POINTS");
+  sprintf(#_brn_modes,"DYN %s  EQ %s",brn_slope_on >= 0.5 ? "ON" : "OFF",brn_eq_on >= 0.5 ? "ON" : "OFF");
+  gfx_x=x+w-154; gfx_y=y+6; gfx_drawstr(#_brn_modes);
   rstw = 38; rsth = 16; rstx = x+w-rstw-6; rsty = y+3;
   hit(rstx,rsty,rstw,rsth) ? (ui_set_hover(8129); gfx_set(0.34,0.16,0.14,1)) : gfx_set(0.20,0.10,0.09,1);
   gfx_rect(rstx,rsty,rstw,rsth);
@@ -3890,7 +3928,7 @@ local(i, scope_x, scope_w, scope_y, scope_h, actual, target, corr, user, user_ef
     i == 3 ? (cr=0.80; cg=0.62; cb=1.00;);
 
     i > 0 ? (
-      gfx_set(0.18,0.62,0.58,0.55);
+      brn_slope_on >= 0.5 ? gfx_set(0.18,0.62,0.58,0.55) : gfx_set(0.14,0.20,0.20,0.28);
       gfx_line(ptx, pty, tx, ty, 0);
       gfx_set(0.86,0.96,0.92,0.92);
       gfx_line(px, py, sx, sy, 0);
@@ -3898,7 +3936,7 @@ local(i, scope_x, scope_w, scope_y, scope_h, actual, target, corr, user, user_ef
       // Draw from 20Hz edge to the first point
       brn_tx0 = scope_x; brn_ty0 = brn_scope_y(-brn_slope * brn_oct_from_1k(20), scope_y, scope_h);
       brn_sx0 = scope_x; brn_sy0 = brn_scope_y(brn_actual1, scope_y, scope_h); // Approximate start for spectrum
-      gfx_set(0.18,0.62,0.58,0.55); gfx_line(brn_tx0, brn_ty0, tx, ty, 0);
+      brn_slope_on >= 0.5 ? gfx_set(0.18,0.62,0.58,0.55) : gfx_set(0.14,0.20,0.20,0.28); gfx_line(brn_tx0, brn_ty0, tx, ty, 0);
       gfx_set(0.86,0.96,0.92,0.92); gfx_line(brn_sx0, brn_sy0, sx, sy, 0);
     );
     
@@ -3906,7 +3944,7 @@ local(i, scope_x, scope_w, scope_y, scope_h, actual, target, corr, user, user_ef
       // Draw from the last point to 20kHz edge
       brn_tx5 = scope_x + scope_w; brn_ty5 = brn_scope_y(-brn_slope * brn_oct_from_1k(20000), scope_y, scope_h);
       brn_sx5 = scope_x + scope_w; brn_sy5 = brn_scope_y(brn_actual4, scope_y, scope_h);
-      gfx_set(0.18,0.62,0.58,0.55); gfx_line(tx, ty, brn_tx5, brn_ty5, 0);
+      brn_slope_on >= 0.5 ? gfx_set(0.18,0.62,0.58,0.55) : gfx_set(0.14,0.20,0.20,0.28); gfx_line(tx, ty, brn_tx5, brn_ty5, 0);
       gfx_set(0.86,0.96,0.92,0.92); gfx_line(sx, sy, brn_sx5, brn_sy5, 0);
     );
 
@@ -4550,6 +4588,8 @@ function draw_panel_brown(px,py,pw)  local(ky1,ky2,ks,ki,m,bx,by,bw,bh,stripx,st
   ui_brown_preset_button(4,bx,by+78,   bw,bh,"BRT",8114);
   ui_brown_amu_button(      bx,   by+104, 24,bh,"AMU",8115);
   ui_brown_din_button(      bx+26,by+104, 24,bh,"DIN",8116);
+  ui_brown_feature_button(78,bx,   by+126,24,18,"DYN",8118);
+  ui_brown_feature_button(79,bx+26,by+126,24,18,"EQ", 8119);
   stripx=px+210; stripy=py+12; stripw=max(262,m-stripx-14); striph=BROWN_H-24;
   draw_brown_band_strip(stripx, stripy, stripw, striph);
   conn_x = bx + bw + 3; conn_y = by; conn_h = 124;
@@ -5256,7 +5296,7 @@ local(tip_y)
   ui_hover_id==8003 ? strcpy(#_tip_msg,"Rel: rilascio limiter in millisecondi") :
   ui_hover_id==8004 ? strcpy(#_tip_msg,"PreG: pre-gain prima del limiter, utile per saturare dolcemente") :
   ui_hover_id==8005 ? strcpy(#_tip_msg,"SAT: saturazione soft, aggiunge armoniche calde al controllo picchi della voce") :
-  ui_hover_id==8101 ? strcpy(#_tip_msg,"Slope: bilanciere tonale -3..8 dB/oct; sotto zero bright estremo, sopra 1 scurisce con medie protette") :
+  ui_hover_id==8101 ? strcpy(#_tip_msg,"Slope: target tonale manuale -3..8 dB/oct, anche senza preset; il pulsante DYN abilita la correzione che lo insegue") :
   ui_hover_id==8102 ? strcpy(#_tip_msg,"AMT: scala il Brown dinamico; con DIN acceso scala anche i punti Slope Map") :
   ui_hover_id==8103 ? strcpy(#_tip_msg,"Atk: attacco/reazione del Brown Guard in millisecondi") :
   ui_hover_id==8104 ? strcpy(#_tip_msg,"Rel: rilascio/recovery del Brown Guard in millisecondi") :
@@ -5266,6 +5306,8 @@ local(tip_y)
   ui_hover_id==8114 ? strcpy(#_tip_msg,"BRT: preset Brown piu' chiaro full-range; riclic = Manual Flat, con Slope libero") :
   ui_hover_id==8115 ? strcpy(#_tip_msg,"AMU Brown: compensa lentamente la perdita di livello dopo il Brown Guard, max +6 dB, senza cambiare la curva tonale") :
   ui_hover_id==8116 ? strcpy(#_tip_msg,"DIN Brown: OFF punti EQ fissi; ON punti Slope Map scalati da AMT insieme al Brown dinamico") :
+  ui_hover_id==8118 ? strcpy(#_tip_msg,"DYN: abilita la correzione dinamica delle quattro bande verso il target Slope; e' indipendente dall'EQ manuale") :
+  ui_hover_id==8119 ? strcpy(#_tip_msg,"EQ: abilita i quattro punti EQ manuali della mappa; e' indipendente dalla correzione dinamica Slope") :
   ui_hover_id==8129 ? strcpy(#_tip_msg,"RST BrownSlope: azzera slope, punti manuali e spostamenti frequenza; non spegne il Brown.") :
   ui_hover_id==8120 ? strcpy(#_tip_msg,"LOW: numero=freq+EQ punto; barra DYN=correzione dinamica (+ verde / - rosso); DIN ON scala il punto con AMT") :
   ui_hover_id==8121 ? strcpy(#_tip_msg,"L-M: numero=freq+EQ punto; barra DYN=correzione dinamica (+ verde / - rosso); DIN ON scala il punto con AMT") :
@@ -5874,7 +5916,8 @@ local(ov_w, ov_h, ov_x, ov_y, pad, lh, tab_y, tab_w, i, txt_h, btn_w, btn_x, btn
     ui_help_page == 3 ? (
       gfx_drawstr("BROWN GUARD:"); gfx_y += lh*1.5;
       gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "Brown Guard is a dynamic tone equalizer working full-range 20 Hz - 20 kHz." : "Brown Guard e' un correttore tonale dinamico che lavora full-range 20 Hz - 20 kHz."); gfx_y += lh*1.5;
-      gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("SLOPE"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(ui_lang == 1 ? " sets tonal tilt direction (e.g. dark or bright)." : " definisce la direzione tonale (es. scuro o brillante)."); gfx_y += lh;
+      gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("SLOPE / DYN"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(ui_lang == 1 ? " is a manual target, even without a preset; DYN enables correction toward it." : " e' un target manuale anche senza preset; DYN attiva la correzione verso il target."); gfx_y += lh;
+      gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("EQ"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(ui_lang == 1 ? " independently enables the four manual EQ points." : " attiva separatamente i quattro punti EQ manuali."); gfx_y += lh;
       gfx_x = ov_x + pad; gfx_set(1,1,1,1); gfx_drawstr("AMT"); gfx_set(0.8,0.85,0.9,1); gfx_drawstr(ui_lang == 1 ? " controls how strongly correction follows the curve." : " decide quanto la correzione accompagna il segnale verso la curva."); gfx_y += lh*1.5;
       gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "Not a stiff match EQ: uses musical soft-knee dynamic shaping." : "Non e' un match EQ rigido: usa una correzione musicale soft-knee."); gfx_y += lh;
       gfx_x = ov_x + pad; gfx_drawstr(ui_lang == 1 ? "Inner map points are pivot/reading zones, not steep crossover bands." : "I punti interni della mappa sono fulcri/zone di lettura, non limiti di banda."); gfx_y += lh*1.5;
