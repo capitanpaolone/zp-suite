@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Montaggio Parlato mockup</title>
+<style>
+:root{--bg:#0e0f13;--win:#15161b;--pan:#1e2028;--pan2:#262935;--line:#3a3e4c;--tx:#f3f2ee;--mu:#c3c7d2;--ti:#ffd27a;
+--ok:#3ccf7a;--ye:#ffd23f;--or:#ff9a3c;--rd:#ff5f5f;--bl:#4da3ff;--wh:#9aa1b4;--vi:#b48cff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 Arial,Helvetica,sans-serif;padding:16px}
+.win{width:1120px;background:var(--win);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.top{display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--pan);border-bottom:1px solid var(--line)}
+.top h1{font-size:21px;margin:0;color:var(--ti);font-weight:700}
+.top .sp{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid var(--line);border-radius:4px;background:var(--pan2);font-size:15px;white-space:nowrap}
+.chip.on{background:#1d4f86;border-color:var(--bl)}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:8px 16px;border-radius:4px;border:1px solid var(--line);background:var(--pan2);font-size:16px;font-weight:700;white-space:nowrap}
+.btn.go{background:#17663d;border-color:var(--ok)}.btn.warn{background:#7a5410;border-color:#e2a43a}.btn.no{background:#6e1f1f;border-color:var(--rd)}
+.btn.ai{background:#3b2a66;border-color:var(--vi)}
+.bar{display:flex;gap:10px;align-items:center;padding:10px 16px;border-top:1px solid var(--line);background:var(--pan)}
+.mu{color:var(--mu)}.sm{font-size:14px}
+.b{display:inline-block;padding:2px 8px;border-radius:3px;font-size:14px;font-weight:700;color:#111}
+.b.ok{background:var(--ok)}.b.ye{background:var(--ye)}.b.or{background:var(--or)}.b.rd{background:var(--rd)}.b.wh{background:var(--wh)}.b.bl{background:var(--bl)}.b.vi{background:var(--vi)}
+.wave{position:relative;height:120px;background:#0b0c10;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.wave canvas{position:absolute;inset:0}
+.zone{position:absolute;top:0;bottom:0;opacity:.28}
+.lbl{position:absolute;top:4px;font-size:13px;font-weight:700;padding:1px 5px;border-radius:3px;color:#111}
+.words{position:absolute;bottom:4px;left:0;right:0;height:22px}
+.words span{position:absolute;font-size:13px;color:#e8e8e8;white-space:nowrap}
+.cmp{display:grid;grid-template-columns:110px 1fr;gap:6px 12px;font-size:17px}
+.cmp .k{color:var(--mu);font-size:15px;padding-top:2px}
+mark{background:none;color:inherit;border-bottom:3px solid var(--ye);padding:0 1px}
+.cut{text-decoration:line-through;text-decoration-color:var(--rd);text-decoration-thickness:3px;color:#ff9c9c}
+.stat{display:flex;gap:16px;font-size:15px}
+.stat b{font-size:18px}
+h2{font-size:17px;margin:0 0 8px;color:var(--ti)}
+.v{display:none}
+body[data-v="A"] #A,body[data-v="B"] #B,body[data-v="C"] #C,body:not([data-v]) .v{display:block}
+body:not([data-v]) .v{margin-bottom:28px}
+.cap{font-size:20px;font-weight:700;color:var(--ti);margin:0 0 8px}
+/* A */
+.steps{width:250px;background:var(--pan);border-right:1px solid var(--line);padding:12px}
+.st{display:flex;gap:10px;padding:10px;border-radius:5px;margin-bottom:6px;border:1px solid transparent}
+.st .n{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;background:var(--pan2);border:2px solid var(--line);flex:none}
+.st.done .n{background:#17663d;border-color:var(--ok)}
+.st.cur{background:#1d2c44;border-color:var(--bl)}.st.cur .n{background:#1d4f86;border-color:var(--bl)}
+.st b{display:block;font-size:17px}.st span{font-size:14px;color:var(--mu)}
+/* B */
+table{border-collapse:collapse;width:100%;font-size:15px}
+td{padding:7px 8px;border-bottom:1px solid #2b2e3a;vertical-align:top}
+tr.sel td{background:#1d2c44}
+tr.sel td:first-child{box-shadow:inset 4px 0 var(--bl)}
+th{font-size:13px;color:var(--mu);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);font-weight:400}
+/* C */
+.doc{font-size:19px;line-height:2.05;padding:18px 22px;background:#f4f1e8;color:#16171b;border-radius:4px;height:430px;overflow:hidden}
+.doc .cut{color:#b3261e;text-decoration-color:#d22}
+.doc mark{border-bottom-color:#d79a00;background:#fff3b0}
+.doc .om{background:#ffd9b8;border-bottom:3px solid #e07000}
+.doc .alt{background:#e4d9ff;border-bottom:3px solid #7a4fe0}
+.doc .sil{display:inline-block;background:#d7ecff;border:1px solid #3a7bd5;border-radius:3px;font-size:14px;padding:0 6px;line-height:1.6;font-weight:700;color:#0e3d78}
+.doc .fl{display:inline-block;background:#d22;color:#fff;border-radius:3px;font-size:14px;padding:0 6px;line-height:1.6;font-weight:700}
+.doc .wh{border-bottom:2px dotted #888;color:#555}
+.doc .slide{display:block;font-size:14px;font-weight:700;color:#0e3d78;border-top:2px solid #3a7bd5;margin:6px 0 0;line-height:1.8}
+.doc .cur{outline:3px solid #1d6fe0;outline-offset:2px;border-radius:2px}
+.doc .pa{display:inline-block;width:18px;height:12px;border-bottom:3px solid #1a9c55;margin:0 2px}
+</style></head>
+<body>
+<script>const v=new URLSearchParams(location.search).get('v');if(v)document.body.dataset.v=v;</script>
+
+<!-- ============ A: la strada (come la 29) ============ -->
+<section class="v" id="A"><p class="cap">A · La strada a tappe (come ZP Trascrizione)</p>
+<div class="win">
+ <div class="top"><h1>ZP Montaggio Parlato</h1><span class="chip">Traccia: <b>Voce Paolo</b></span><span class="chip on">Slide separate</span><span class="chip">Timeline</span><span class="sp"></span><span class="chip">Note montaggio: <b>visibili</b></span><span class="btn">?</span></div>
+ <div style="display:flex;height:560px">
+  <div class="steps">
+   <div class="st done"><div class="n">✓</div><div><b>1 · Cosa</b><span>12 item · 41 min</span></div></div>
+   <div class="st done"><div class="n">✓</div><div><b>2 · Copione</b><span>Modulo3.docx · 4.812 parole</span></div></div>
+   <div class="st done"><div class="n">✓</div><div><b>3 · Trascrivi</b><span>12/12 in cache</span></div></div>
+   <div class="st done"><div class="n">✓</div><div><b>4 · Analizza</b><span>214 interventi</span></div></div>
+   <div class="st cur"><div class="n">5</div><div><b>5 · Rivedi i dubbi</b><span>18 da vedere · 4 rossi</span></div></div>
+   <div class="st"><div class="n">6</div><div><b>6 · Applica</b><span>sulla traccia, un Undo</span></div></div>
+   <div style="margin-top:18px;padding:10px;border:1px solid var(--line);border-radius:5px" class="sm">
+    <div style="margin-bottom:6px"><b>Respiro</b></div>
+    <div>Pausa tra frasi <b>0,60 s</b></div><div>Minima garantita <b>0,45 s</b></div><div>Inspirazione <b>intera</b></div>
+   </div>
+  </div>
+  <div style="flex:1;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+   <div style="display:flex;align-items:center;gap:10px"><h2 style="margin:0">Dubbio 3 di 18</h2><span class="b rd">CONTROLLARE</span><span class="b bl">ripresa dopo schiocco</span><span class="sp" style="flex:1"></span><span class="mu sm">Slide 4 · 02:18.4</span></div>
+   <div class="wave" id="wA"></div>
+   <div class="cmp">
+    <div class="k">Copione</div><div>…prima di tutto controlliamo il rumore di fondo della stanza…</div>
+    <div class="k">Detto</div><div>…prima di tutto <span class="cut">controlliamo il ru</span> <span class="b bl">schiocco</span> controlliamo il rumore di fondo della stanza…</div>
+    <div class="k">Perché</div><div class="mu">“ru” e la ripresa sono legati: nessuna pausa pulita per cucire. Decidi a orecchio.</div>
+   </div>
+   <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <span class="btn">◀</span><span class="btn">▶</span><span class="btn go">▶ Ascolta</span><span class="btn">Ascolta come sarà</span>
+    <span class="sp" style="flex:1"></span><span class="btn go">Taglia e cuci</span><span class="btn">Lascia</span><span class="btn no">Solo nota</span>
+   </div>
+   <div style="margin-top:auto" class="stat"><span><b style="color:var(--ok)">196</b> sicuri, già approvati</span><span><b style="color:var(--ye)">14</b> dubbi</span><span><b style="color:var(--rd)">4</b> da controllare</span></div>
+  </div>
+ </div>
+ <div class="bar"><span class="btn ai">Chiedi all'agente (18 dubbi)…</span><span class="mu sm">solo testo, dice dove va</span><span style="flex:1"></span><span class="btn">Rapporto</span><span class="btn go">APPLICA ▸</span></div>
+</div></section>
+
+<!-- ============ B: lista + dettaglio ============ -->
+<section class="v" id="B"><p class="cap">B · Lista interventi + dettaglio</p>
+<div class="win">
+ <div class="top"><h1>ZP Montaggio Parlato</h1><span class="chip">Traccia: <b>Voce Paolo</b></span><span class="chip">Slide separate</span><span class="chip on">Timeline da 00:00</span><span class="chip">Copione: <b>Modulo3.docx</b></span><span class="sp"></span><span class="btn warn">ANALIZZA</span></div>
+ <div style="display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:15px;align-items:center">
+  <span class="mu">Mostra:</span><span class="chip on">Dubbi e rossi (18)</span><span class="chip">Tutti (214)</span><span class="chip">Errori di lettura (6)</span><span class="chip">Comandi (9)</span><span class="sp" style="flex:1"></span><span class="chip">Note montaggio: <b>visibili</b></span>
+ </div>
+ <div style="display:flex;height:520px">
+  <div style="width:560px;border-right:1px solid var(--line);overflow:hidden">
+   <table><tr><th></th><th>Tempo</th><th>Cosa</th><th>Proposta</th></tr>
+    <tr><td><span class="b rd">!</span></td><td>02:18.4</td><td>Ripresa dopo schiocco<br><span class="mu sm">«controlliamo il ru—»</span></td><td>controllare</td></tr>
+    <tr class="sel"><td><span class="b ye">?</span></td><td>02:33.1</td><td>Detto «nel», copione «del»</td><td>ascolta</td></tr>
+    <tr><td><span class="b vi">ALT</span></td><td>02:41.0</td><td>Alternativa «poi la distanza…»</td><td>corsia sotto</td></tr>
+    <tr><td><span class="b bl">S</span></td><td>02:52.3</td><td>«silenzio di cinque secondi»</td><td>5 s di ambiente</td></tr>
+    <tr><td><span class="b or">−</span></td><td>03:31.0</td><td>Omesso «in modo uniforme»</td><td>nota</td></tr>
+    <tr><td><span class="b ye">?</span></td><td>03:47.6</td><td>Rifaccio a metà frase</td><td>taglia e cuci</td></tr>
+    <tr><td><span class="b wh">W</span></td><td>04:02.2</td><td>«Lip motor» = «Leapmotor»</td><td>Whisper, ignora</td></tr>
+    <tr><td><span class="b rd">!</span></td><td>05:10.9</td><td>Voce senza parole (0,9 s)</td><td>controllare</td></tr>
+    <tr><td><span class="b bl">#</span></td><td>05:44.0</td><td>«slide numero tre»</td><td>nuovo item Slide 3</td></tr>
+   </table>
+  </div>
+  <div style="flex:1;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+   <div style="display:flex;gap:10px;align-items:center"><h2 style="margin:0">Possibile errore di lettura</h2><span class="b ye">DUBBIO</span></div>
+   <div class="wave" id="wB" style="height:110px"></div>
+   <div class="cmp">
+    <div class="k">Copione</div><div>la distanza <b>del</b> microfono dalla bocca</div>
+    <div class="k">Detto</div><div>la distanza <mark>nel</mark> microfono dalla bocca</div>
+    <div class="k">Seconda prova</div><div class="mu">ritrascritto solo il frammento: ancora «nel»</div>
+   </div>
+   <div style="display:flex;gap:10px;flex-wrap:wrap"><span class="btn go">▶ Ascolta 2 s</span><span class="btn">Ritrascrivi frammento</span></div>
+   <div style="display:flex;gap:10px;flex-wrap:wrap"><span class="btn no">Errore: nota rossa</span><span class="btn">Era Whisper</span><span class="btn">Va bene così</span></div>
+   <div style="margin-top:auto" class="stat"><span><b style="color:var(--ok)">196</b> sicuri</span><span><b style="color:var(--ye)">14</b> dubbi</span><span><b style="color:var(--rd)">4</b> rossi</span></div>
+  </div>
+ </div>
+ <div class="bar"><span class="btn ai">Chiedi all'agente…</span><span style="flex:1"></span><span class="mu sm">Pausa 0,60 s · minima 0,45 s</span><span class="btn">Rapporto</span><span class="btn go">APPLICA ▸</span></div>
+</div></section>
+
+<!-- ============ C: il copione come pagina ============ -->
+<section class="v" id="C"><p class="cap">C · Il copione come pagina (stile Gobbo)</p>
+<div class="win">
+ <div class="top"><h1>ZP Montaggio Parlato</h1><span class="chip">Traccia: <b>Voce Paolo</b></span><span class="chip on">Timeline</span><span class="chip">Copione: <b>Modulo3.docx</b></span><span class="sp"></span><span class="chip">Note montaggio: <b>visibili</b></span><span class="btn warn">ANALIZZA</span></div>
+ <div style="display:flex;height:560px">
+  <div style="flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+   <div class="doc">
+    <span class="slide">SLIDE 2</span>
+    Nel terzo modulo vediamo come si prepara la sala. <span class="pa"></span> Prima di tutto
+    <span class="cut">controlliamo il ru</span> <span class="fl">! schiocco</span>
+    <span class="cur">controlliamo il rumore di fondo</span> della stanza. <span class="pa"></span>
+    Poi regoliamo la distanza <mark>del</mark> microfono dalla bocca.
+    <span class="alt">ALT · Poi sistemiamo la distanza dal microfono.</span>
+    <span class="sil">SILENZIO 5 s</span>
+    Ogni stanza ha un suono suo: per questo la trattiamo <span class="om">in modo uniforme</span>, senza
+    <span class="cut">senza</span> esagerare con i pannelli. Anche il <span class="wh">Leapmotor</span> in cortile si sente.
+    <span class="slide">SLIDE 3</span>
+    Adesso registriamo la prima frase di prova…
+   </div>
+   <div class="wave" id="wC" style="height:96px"></div>
+  </div>
+  <div style="width:300px;border-left:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--pan)">
+   <h2>Qui: ripresa</h2>
+   <div><span class="b rd">CONTROLLARE</span></div>
+   <div class="sm mu">Schiocco dopo «controlliamo il ru». Le parole sono legate: nessun punto pulito per cucire.</div>
+   <span class="btn go">▶ Ascolta</span><span class="btn">Ascolta come sarà</span>
+   <span class="btn go">Taglia e cuci</span><span class="btn">Lascia</span>
+   <div style="margin-top:auto;font-size:14px;line-height:1.9">
+    <div><span class="cut" style="color:var(--tx)">barrato</span> si toglie</div>
+    <div><mark>giallo</mark> possibile errore</div>
+    <div><span style="background:#ffd9b8;color:#111;padding:0 4px">arancio</span> non letto</div>
+    <div><span style="background:#e4d9ff;color:#111;padding:0 4px">viola</span> alternativa</div>
+    <div><span style="border-bottom:2px dotted #aaa">puntinato</span> Whisper, ignorato</div>
+    <div><span style="display:inline-block;width:18px;border-bottom:3px solid var(--ok)"></span> pausa accorciata</div>
+   </div>
+  </div>
+ </div>
+ <div class="bar"><span class="btn">◀ dubbio</span><span class="btn">dubbio ▶</span><span class="mu sm">3 di 18 · 4 rossi</span><span style="flex:1"></span><span class="btn ai">Chiedi all'agente…</span><span class="btn">Rapporto</span><span class="btn go">APPLICA ▸</span></div>
+</div></section>
+
+<script>
+function rnd(s){return()=>{s=(s*16807)%2147483647;return s/2147483647}}
+function wave(id,zones,words){
+ const el=document.getElementById(id);if(!el)return;const w=el.clientWidth,h=el.clientHeight;
+ zones.forEach(z=>{const d=document.createElement('div');d.className='zone';d.style.left=z[0]+'%';d.style.width=z[1]+'%';d.style.background=z[2];el.appendChild(d);
+  if(z[3]){const l=document.createElement('div');l.className='lbl';l.style.left=z[0]+'%';l.style.background=z[2];l.textContent=z[3];el.appendChild(l)}});
+ const c=document.createElement('canvas');c.width=w;c.height=h;el.appendChild(c);const g=c.getContext('2d');const r=rnd(7);
+ const quiet=[[30,36],[52,55],[78,84]];g.fillStyle='#7fb2ff';
+ for(let x=0;x<w;x+=2){const p=x/w*100;let a=.15+.75*r();if(quiet.some(q=>p>q[0]&&p<q[1]))a=.03+.03*r();
+  if(p>43&&p<44)a=1;const hh=a*(h/2-14);g.fillRect(x,h/2-hh,1.5,hh*2)}
+ const wd=document.createElement('div');wd.className='words';words.forEach(t=>{const s=document.createElement('span');s.style.left=t[0]+'%';s.textContent=t[1];wd.appendChild(s)});el.appendChild(wd);
+}
+wave('wA',[[18,25,'#ff5f5f','taglio?'],[42,3,'#4da3ff','schiocco']],[[3,'prima di tutto'],[19,'controlliamo il ru—'],[47,'controlliamo il rumore'],[86,'di fondo']]);
+wave('wB',[[46,8,'#ffd23f','nel']],[[4,'la distanza'],[47,'nel'],[58,'microfono'],[80,'dalla bocca']]);
+wave('wC',[[18,25,'#ff5f5f','taglio?'],[42,3,'#4da3ff',''],[30,6,'#3ccf7a','']],[[3,'prima di tutto'],[19,'controlliamo il ru—'],[47,'controlliamo il rumore'],[86,'di fondo']]);
+</script>
+</body></html>

@@ -9,7 +9,7 @@ fail=0
 for s in 02_Gobbo_Verticale 03_Gobbo_Orizzontale 04_Crea_Marker_Item 07_Note_Personaggio 13_Info_Item_SRT \
   17_Crea_Regioni_Export_da_Item_Nominati 18_Project_Viewer 19_Report_Minuti_Voce 20_Importa_Cartelle_Video_Mixdown \
   22_Pulisci_Code_Silenzi_e_Separa_Item 23_ZP_Chain_Builder 24_ZP_Probe_Guard 25_ZP_SOLO_Recorder 29_ZP_Trascrizione \
-  30_ZP_SRT 31_SRT_da_Marker_Audio 33_Benvenuto_Controllo_Installazione 34_ZP_Set_Comandi 35_ZP_Colori; do
+  30_ZP_SRT 31_SRT_da_Marker_Audio 33_Benvenuto_Controllo_Installazione 34_ZP_Set_Comandi 35_ZP_Colori 36_ZP_Montaggio_Parlato; do
   for l in it en; do
     out=$(perl -e 'alarm 30; exec @ARGV' lua ../gobbo_ricerca_battuta/test/fumo_finestre.lua "$l" "$s.lua" 120 2>/dev/null)
     rc=$?
