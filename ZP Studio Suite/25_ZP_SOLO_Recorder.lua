@@ -374,11 +374,12 @@ local AIUTI = {
 
 local DETTAGLI = {
   ["REC"] = "Registra sulla traccia di destinazione (zona 4). Prima controlla che sia l'unica armata. Con il pre-roll acceso (PRE sul bordo del REC) REAPER riparte qualche secondo prima e registra dal cursore. In Telecomando, se non c'e' nessuna traccia armata, ti chiede quale armare.",
+  ["Solo"] = "Pulsante S in basso a sinistra sul REC: mette in solo la traccia di destinazione (in Telecomando, la prima armata). Giallo vuol dire acceso; si spegne dallo stesso pulsante o dalla traccia in REAPER.",
   ["Lock"] = "Il lucchetto sul REC protegge la registrazione. Parte spento. Acceso (giallo, chiuso): durante il REC la barra spaziatrice non ferma niente, solo il pulsante STOP. Spento (grigio, aperto): la barra ferma anche il REC, come in REAPER. Vale quando la finestra del SOLO e' in primo piano.",
   ["STOP"] = "Ferma la registrazione o la riproduzione. Dopo un REC numera il take e, se Regioni take e' acceso, crea la sua regione.",
   ["Ritorno"] = "Volume della traccia selezionata in REAPER: di solito la reference o l'audio del video. Trascina in su o in giu' (con Shift e' piu' fine), oppure usa la rotella; doppio clic = 0 dB. E' un cambio di mix vero: resta nel progetto.",
   ["Pre-roll"] = "Il pre-roll e' quello di REAPER (Options > Metronome/pre-roll, 'Pre-roll before recording'): premuto REC, la riproduzione parte qualche secondo prima del cursore, cosi' senti l'attacco, e la registrazione comincia dal cursore. PRE sul bordo sinistro del REC lo accende (giallo) e lo spegne. I secondi, da 1 a 5, si regolano nella toolbar in basso (pulsante Toolbar in testata). REAPER lo misura in battute: il SOLO converte i secondi al tempo del progetto a ogni REC. Serve SWS. E' un'impostazione di REAPER: vale anche fuori dal SOLO.",
-  ["IN"] = "Il livello vero dell'ingresso della scheda audio da cui registra la traccia, prima di effetti, fader e monitor: e' quello che finisce nel file. Scala in dB da -60 a 0, tacche a -18 e -6: verde fino a -18, giallo fino a -6, poi arancio e rosso sopra -1. La riga chiara e' il picco, che resta fermo un secondo e mezzo; a destra il suo valore. Per MIDI o ReaRoute mostra il meter della traccia.",
+  ["IN"] = "Il livello vero dell'ingresso della scheda audio da cui registra la traccia, prima di effetti, fader e monitor: e' quello che finisce nel file. Scala in dB da -60 a 0, tacche a -18 e -6: verde fino a -18, giallo fino a -6, poi arancio e rosso sopra -1. La barretta azzurra e' il picco, che resta fermo un secondo e mezzo, disegnata dietro ai numeri bianchi. Per MIDI o ReaRoute mostra il meter della traccia.",
   ["Nome marker"] = "Clic nella casella e scrivi il nome: mentre scrivi i tasti vanno li' (anche la barra spaziatrice). Invio, o il pulsante marker, mette il marker nel punto in cui sei con quel nome; Esc lascia perdere. Casella vuota: il marker e' di servizio e numerato (SOLO_MARK_001...). Un marker col nome tuo e' un marker normale: se vuoi che resti di servizio, comincialo con #.",
   ["Ingresso"] = "L'ingresso della scheda audio da cui registra la traccia di destinazione: In 1, In 1/2 per lo stereo, e cosi' via. Clic: scegli da un elenco. In Telecomando il pulsante mostra anche la traccia armata, e il menu si apre con 'Traccia da registrare': l'elenco delle tracce del progetto con il loro ingresso, le armate spuntate; un clic arma o disarma (le altre restano come sono). Senza tracce armate il pulsante dice 'Arma traccia'.",
   ["Monitor"] = "Ascolto in cuffia dell'ingresso sulla traccia attiva. Auto vuol dire che REAPER lo accende da solo quando la traccia e' armata.",
@@ -396,7 +397,7 @@ local DETTAGLI = {
 -- Le zone, come le numera la guida.
 local ZONE_AIUTO = {
   testata = "C'e' in ogni vista: una riga di icone a gruppi. A sinistra il progetto (salva, annulla, ripeti), la modalita' (cartella = Sessione SOLO, telecomando = Telecomando) e la sessione (regioni, effetti, video); a destra le tre viste, toolbar e REAPER, la guida e la puntina. Azzurro = acceso o in uso; attenuato = non disponibile. Sotto: stato del trasporto con la modalita', timecode, traccia, regione, take e pre-roll.",
-  trasporto = "I comandi di ogni secondo. REC e' il piu' grande; sul suo bordo PRE accende il pre-roll di REAPER e il lucchetto decide se la barra spaziatrice puo' fermarlo.",
+  trasporto = "I comandi di ogni secondo. REC e' il piu' grande; sul bordo PRE accende il pre-roll, il lucchetto protegge la registrazione e il piccolo S in basso a sinistra mette in solo la traccia di registrazione.",
   ingresso = "Cosa entra e cosa senti: meter dell'ingresso e del ritorno, da dove pesca la traccia, monitor. Il pomello regola il ritorno.",
   traccia = "Solo nella sessione SOLO: su quale delle sue tracce registri (MAIN, INSERTS, RETAKES, ALT), con il loro ingresso. In Telecomando la traccia si arma dal menu dell'ingresso.",
   vai = "Muoversi tra regioni o item, e mettere marker: il pulsante col simbolo marker, e accanto la casella per dargli un nome.",
@@ -812,6 +813,20 @@ end
 local function target_name()
   local _, name = active_track()
   return name or "?"
+end
+
+local function toggle_active_track_solo()
+  local tr, name = active_track()
+  if not tr then
+    state.status = "Solo non disponibile: manca una traccia di registrazione attiva."
+    return
+  end
+  local was_solo = (tonumber(reaper.GetMediaTrackInfo_Value(tr, "I_SOLO")) or 0) > 0
+  reaper.Undo_BeginBlock()
+  reaper.SetMediaTrackInfo_Value(tr, "I_SOLO", was_solo and 0 or 1)
+  reaper.Undo_EndBlock("ZP SOLO Recorder: Solo traccia di registrazione", -1)
+  reaper.UpdateArrange()
+  state.status = (was_solo and "Solo spento: " or "Solo acceso: ") .. (name or track_name(tr))
 end
 
 local function set_target(mode)
@@ -1969,7 +1984,8 @@ local function draw_meter(x, y, w, h, m)
     gfx.rect(math.floor(meter_x(t, ix, iw)), iy, 1, ih, true)
   end
   if m.hold > METER_FLOOR_DB then
-    if m.hold > -1 then gfx.set(1, 0.25, 0.2, 1) else gfx.set(0.95, 0.95, 0.97, 0.9) end
+    -- Indicatore peak azzurro, distinto dal testo bianco; i numeri vengono disegnati dopo.
+    if m.hold > -1 then gfx.set(1, 0.25, 0.2, 1) else gfx.set(0.18, 0.72, 1.0, 0.95) end
     gfx.rect(math.floor(meter_x(m.hold, ix, iw)) - 1, iy, 2, ih, true)
   end
   set_color(colors.border)
@@ -2170,13 +2186,15 @@ function Z.trasporto.draw(c, clicked)
   -- il pre-roll sta sull'altro bordo del REC, simmetrico al lucchetto
   local px = rec_cx - 22
   local on_pre = (gfx.mouse_x - px) ^ 2 + (gfx.mouse_y - ly) ^ 2 <= (lr + 1) ^ 2
+  local sx, sy, sr = rec_cx - 22, cy + 20, 10
+  local on_solo = (gfx.mouse_x - sx) ^ 2 + (gfx.mouse_y - sy) ^ 2 <= (sr + 1) ^ 2
   for _, t in ipairs(tasti) do
     local kind, d = t[1], t[2]
     local r = {x=x, y=cy - d // 2, w=d, h=d}
     note(r, t[4])
     local paused = reaper.GetPlayState() & 2 == 2
     local active = (kind == "rec" and ts == "REC") or (kind == "play" and ts == "PLAY") or (kind == "pause" and paused)
-    if ZP_UI.draw_round_button(r, kind, active, true, clicked and not on_lock and not on_pre) then
+    if ZP_UI.draw_round_button(r, kind, active, true, clicked and not on_lock and not on_pre and not on_solo) then
       if kind == "rec" then record_on_track(state.active_track_key, "REC")
       elseif kind == "stop" then stop_transport()
       elseif kind == "play" then play_transport()
@@ -2209,9 +2227,25 @@ function Z.trasporto.draw(c, clicked)
   if pre then gfx.set(0.14, 0.09, 0.02, 1) else gfx.set(0.86, 0.88, 0.93, 1) end
   gfx.setfont(1, "Arial", 9, "b")
   local tw, th = gfx.measurestr("PRE")
-  gfx.x, gfx.y = px - tw / 2, ly - th / 2
+  gfx.x, gfx.y = math.floor(px - tw / 2 + 0.5), math.floor(ly - th / 2 + 1.5)
   gfx.drawstr("PRE")
   if clicked and on_pre then toggle_preroll() end
+
+  local solo_tr = active_track()
+  local solo_on = solo_tr and (tonumber(reaper.GetMediaTrackInfo_Value(solo_tr, "I_SOLO")) or 0) > 0 or false
+  local solo_r = {x=sx - sr, y=sy - sr, w=sr * 2, h=sr * 2}
+  note(solo_r, "Solo", solo_tr and ("Solo " .. track_name(solo_tr) .. (solo_on and ": acceso." or ": spento.")) or "Arma o scegli una traccia per usare Solo.")
+  if solo_on then gfx.set(0.98, on_solo and 0.88 or 0.76, 0.24, 1)
+  else gfx.set(on_solo and 0.42 or 0.28, on_solo and 0.44 or 0.30, on_solo and 0.50 or 0.36, 1) end
+  gfx.circle(sx, sy, sr, true, true)
+  gfx.set(0.05, 0.05, 0.06, 1)
+  gfx.circle(sx, sy, sr, false, true)
+  if solo_on then gfx.set(0.14, 0.09, 0.02, 1) else gfx.set(0.86, 0.88, 0.93, 1) end
+  gfx.setfont(1, "Arial", 11, "b")
+  local sw, sh = gfx.measurestr("S")
+  gfx.x, gfx.y = math.floor(sx - sw / 2 + 0.5), math.floor(sy - sh / 2 + 0.5)
+  gfx.drawstr("S")
+  if clicked and on_solo and solo_tr then toggle_active_track_solo() end
 end
 
 -- 3 INGRESSO E ASCOLTO ----------------------------------------------------

@@ -729,3 +729,12 @@ Fuori ambito finché non viene aperta una fase dedicata:
 - Archivio pre/final e manifest SHA-256:
   `/Volumes/DISCO LACIE/Archivio_Storico_ZP/ZP Suite/Private Regions/2026-09-09_persistent_roles`.
 - Nessuna installazione REAPER, commit, push o modifica dell'indice ReaPack.
+
+
+## Solo Recorder — Solo traccia e peak meter, 2026-10-16
+
+- Aggiunto il pulsante `S` sul bordo basso-sinistro del REC: commuta `I_SOLO` della traccia di destinazione; in Telecomando agisce sulla prima armata.
+- Rifinitura grafica: S e PRE centrati; S usa il riempimento neutro del lucchetto/PRE da spento e il giallo da acceso.
+- Il peak hold del meter è azzurro, mentre il valore resta bianco e viene disegnato sopra l’indicatore.
+- Guide IT/EN aggiornate; script e guide installati nel REAPER principale.
+- Backup pre-change e hash in `REAPER/ZP_StudioSuite_Backups/solo_recorder_solo_peak_20261016/` e nell’Archivio Storico ZP; report `docs/AVANZAMENTO_solo_recorder_solo_peak_2026-10-16.md`.
