@@ -65,6 +65,11 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 ## Installazione su questo Mac
 - Prima di sovrascrivere una copia in `REAPER/Scripts/ZP Suite/...`, verifica che sia uguale
   a `git show HEAD:<file>`; se e' diversa, fermati e chiedi. La 00 installata e' quella pubblicata.
+- Mai modificare direttamente le copie installate in REAPER: si lavora nel repo e si installa. Prima di
+  installare o pubblicare, confronto a tre (installato / HEAD / working tree) di tutti i file distribuiti:
+  il 2026-10-17 `tools/srt_tools.html` installato aveva l'importazione Excel (SheetJS) che nel repo non
+  c'era; reinstallare l'avrebbe cancellata. Se l'installato e' diverso da tutto, si riporta nel repo.
+- Librerie di terzi incorporate (es. SheetJS in srt_tools.html): attribuzione e licenza in NOTICE.md.
 - Mai toccare `reaper-kb.ini` / `reaper.ini` con REAPER aperto (`pgrep -x REAPER`), sempre con backup.
 - `reaper-menu.ini`: unica eccezione decisa da Paolo (2026-10-06, "mai dire mai") e' il 32, che scrive SOLO la
   sezione della toolbar "ZP Studio Suite" (backup accanto) e chiede di riavviare. REAPER riscrive il file solo

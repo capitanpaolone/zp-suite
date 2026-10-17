@@ -424,7 +424,7 @@
       <h3>ZP Harmonic Space Carver</h3>
       <p><strong>Purpose:</strong> Mix/music bed ducking assistant. Dynamically creates spectral and volume room under dialogue using voice-guided multibanda carving and VCA ducking, synchronized via timeline cues (#HSC).</p>
       <p><strong>Where to place:</strong> On Music Bus. Chain Builder places it here for Podcast and Commercial Spot profiles.</p>
-      <p><strong>Key controls:</strong> VOICE sidechain inputs (3/4, 5/6, 7/8), Min Duck & Max Duck, VCA Ceiling, Glue, Carver bands (B1-B4), and Cue bar (#HSC) with automatic audio anchor tracking.</p>
+      <p><strong>Key controls:</strong> VOICE sidechain inputs (3/4, 5/6, 7/8), Min Duck & Max Duck, VCA Ceiling, Glue, Carver bands (B1-B4), and Cue bar (#HSC) with automatic audio anchor tracking. When the Carver shows the red <strong>CUES DISPLACED</strong> warning at the top, one click on it moves every red cue back onto its voice (like the <em>ZP HSC Cue - Riallinea</em> key); Ctrl+Z undoes it.</p>
     </div>
     <div class="card" id="plugin-spoken-finish">
       <h3>ZP Spoken Finish</h3>
@@ -499,7 +499,7 @@
   <p>Read-only inspector window that updates automatically when clicking different timeline items. Displays cue origin, binding status, and full text.</p>
 
   <h3 id="tool-srt-tools"><span id="tool-26"></span>26 &middot; SRT Tools (from text or translation)</h3>
-  <p>Local browser utility to convert plain text scripts containing timecode into clean SRT files, with offset calibration.</p>
+  <p>Local browser utility to convert plain text scripts containing timecode into clean SRT files, with offset calibration. It also reads <strong>XLS and XLSX</strong> Excel files: pick the sheet and the columns (start, end, text, character, reaction) and whether to include characters and reactions; without an end column, durations are estimated up to the next line.</p>
 
   <h3 id="tool-31">31 &middot; SRT from Audio</h3>
   <p>Exports SRT files from take markers embedded inside selected audio items, capturing manual adjustments made in REAPER.</p>

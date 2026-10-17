@@ -60,6 +60,14 @@ Fornisce parlato e braille agli script della Suite attraverso NVDA. Gli script
 Lua della Suite sono distribuiti sotto GPLv3 come il resto del repository; il
 DLL resta alle condizioni con cui è stato ricevuto.
 
+## 26 SRT Tools — lettura dei file Excel
+
+- **SheetJS LLC** — *SheetJS Community Edition* 0.20.3 (lettura di XLS e XLSX) — licenza **Apache-2.0**
+  (https://www.apache.org/licenses/LICENSE-2.0, progetto https://sheetjs.com)
+
+La libreria e' incorporata, non modificata, dentro `ZP Studio Suite/tools/srt_tools.html`, cosi' la
+pagina funziona senza internet. Resta sotto la sua licenza Apache-2.0.
+
 ---
 
 ## Materiale di terze parti NON incluso nella Suite
