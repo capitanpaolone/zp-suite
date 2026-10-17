@@ -178,6 +178,8 @@ local panel_anim  = 0.0
 local PANEL_H = 96
 local panel_anim_speed = 0.18
 local mouse_was_down = false
+local note_context_was_down = false
+local note_empty_click_time = 0
 local last_edit_click_time = 0
 local last_edit_click_item = nil
 local inline_edit = nil
@@ -1745,7 +1747,7 @@ function ToggleNoteDone(note)
     UpdateItems()
 end
 
--- Pannello NOTE: elenco di TUTTE le note in ordine di tempo, scorrevole con la rotella.
+-- Pannello NOTE: prima le note ancora da concludere, poi quelle OK; entrambe in ordine di tempo.
 -- Segue da solo la nota corrente (attiva o la prossima) finche' non scorri a mano (5 s di pausa).
 -- Clic = porta la timeline alla nota; doppio clic = modifica; bollino OK = fatta / riaperta.
 -- Stato tra un giro e l'altro in globali (NotesScroll, NotesUserScrollTime): niente local nuovi.
@@ -1766,7 +1768,13 @@ function DrawNotesPanel(h, play_pos, reading_y)
 
     -- misure e nota corrente
     local entries, total_h, current_i, done_n = {}, 0, nil, 0
-    for i, note in ipairs(cached_notes) do
+    local display_notes = {}
+    for i, note in ipairs(cached_notes) do display_notes[i] = note end
+    table.sort(display_notes, function(a, b)
+        if a.done ~= b.done then return not a.done end
+        return a.pos < b.pos
+    end)
+    for i, note in ipairs(display_notes) do
         local card_h = MeasureWrappedNoteText(note.text, max_w) + 38
         entries[i] = { note = note, top = total_h, card_h = card_h }
         total_h = total_h + card_h + 8
@@ -1778,6 +1786,15 @@ function DrawNotesPanel(h, play_pos, reading_y)
 
     -- rotella sopra il pannello: scorrimento a mano (NotesWheel la mette il ciclo principale)
     local over_panel = gfx.mouse_x >= x and gfx.mouse_x < panel_w and gfx.mouse_y >= clip_top and gfx.mouse_y <= clip_bottom
+    local right_down = (gfx.mouse_cap & 2) == 2
+    if right_down and not note_context_was_down and over_panel and not inline_edit
+        and not (search_panel_open and SearchPanelBottom and gfx.mouse_y <= SearchPanelBottom) then
+        -- gfx.showmenu usa gfx.x/gfx.y come ancora: posizionalo dove si trova il puntatore.
+        gfx.x = math.max(0, math.min(gfx.mouse_x, gfx.w - 1))
+        gfx.y = math.max(0, math.min(gfx.mouse_y, gfx.h - 1))
+        if gfx.showmenu(T("Nuova nota")) == 1 then InsertNoteAtCurrentPosition() end
+    end
+    note_context_was_down = right_down
     if over_panel and (NotesWheel or 0) ~= 0 then
         NotesScroll = (NotesScroll or 0) + (NotesWheel > 0 and -60 or 60)
         NotesUserScrollTime = now
@@ -1792,6 +1809,7 @@ function DrawNotesPanel(h, play_pos, reading_y)
     local mouse_pressed = (gfx.mouse_cap & 1) == 1 and not mouse_was_down
     local clicks_ok = mouse_pressed and over_panel and not inline_edit
         and not (search_panel_open and SearchPanelBottom and gfx.mouse_y <= SearchPanelBottom)
+    local clicked_note_card = false
 
     for i, entry in ipairs(entries) do
         local note = entry.note
@@ -1849,6 +1867,7 @@ function DrawNotesPanel(h, play_pos, reading_y)
             DrawWrappedNoteText(note.text, x + pad, y + 21, max_w, alpha)
 
             if clicks_ok and gfx.mouse_y >= math.max(clip_top, y - 4) and gfx.mouse_y <= y - 4 + card_h then
+                clicked_note_card = true
                 local mx, my = gfx.mouse_x, gfx.mouse_y
                 if mx >= ok_x and mx <= ok_x + ok_w and my >= ok_y and my <= ok_y + ok_h then
                     ToggleNoteDone(note)
@@ -1865,6 +1884,17 @@ function DrawNotesPanel(h, play_pos, reading_y)
                 end
                 clicks_ok = false
             end
+        end
+    end
+
+    -- Doppio clic nello spazio libero del pannello = nuova nota al cursore/playhead.
+    if clicks_ok and not clicked_note_card and gfx.mouse_x < panel_w - bar_w
+        and gfx.mouse_y >= clip_top and gfx.mouse_y <= clip_bottom then
+        if now - note_empty_click_time < 0.35 then
+            note_empty_click_time = 0
+            InsertNoteAtCurrentPosition()
+        else
+            note_empty_click_time = now
         end
     end
 
@@ -3159,11 +3189,17 @@ function DrawSearchPanel(w, h)
                 local ry=list_y+(row-1)*row_h
                 if i==search_results_current then gfx.set(0.19,0.25,0.34,0.95) else gfx.set(0.12,0.12,0.13,0.9) end
                 gfx.rect(list_x,ry,list_w,row_h-2,1)
+                local jump_w = 54
+                local jump_x, jump_y = list_x + list_w - jump_w - 4, ry + 3
+                gfx.set(0.26, 0.22, 0.14, 0.95); gfx.rect(jump_x, jump_y, jump_w, 19, 1)
+                gfx.set(0.88, 0.68, 0.28, 0.95); gfx.rect(jump_x, jump_y, jump_w, 19, 0)
+                gfx.setfont(3, "Arial", 11, 'b'); gfx.set(0.98, 0.86, 0.58, 1)
+                gfx.x, gfx.y = jump_x + 4, jump_y + 3; gfx.drawstr(T("Vai →"))
                 local label=FormatVideoTimecode(SearchResultPosition(result))
                 -- il file audio da cui viene la battuta (per il montaggio); se non c'e', la traccia in "Tutti"
                 if result.item.source_file then label=label.." · "..result.item.source_file
                 elseif selected_text_track_guid==READ_ALL then label=label.." · "..tostring(result.item.track_name or "") end
-                gfx.setfont(3,"Arial",14,'b'); gfx.set(0.98, 0.82, 0.45, 1); gfx.x=list_x+6; gfx.y=ry+4; gfx.drawstr(label,0,list_x+list_w-6,ry+21)
+                gfx.setfont(3,"Arial",14,'b'); gfx.set(0.98, 0.82, 0.45, 1); gfx.x=list_x+6; gfx.y=ry+4; gfx.drawstr(label,0,jump_x-4,ry+21)
                 local snippet=result.snippet or ""; local sa=result.snip_a or 1; local sb=result.snip_b or sa
                 local left=snippet:sub(1,sa-1); local hit=snippet:sub(sa,sb); local right=snippet:sub(sb+1)
                 gfx.setfont(3,"Arial",17); local tx=list_x+6; local ty=ry+24

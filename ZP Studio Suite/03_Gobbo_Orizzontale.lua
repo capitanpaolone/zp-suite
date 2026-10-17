@@ -1289,11 +1289,17 @@ function DrawSearchPanel(w, h)
                 local ry=list_y+(row-1)*row_h
                 if i==search_results_current then gfx.set(0.19,0.25,0.34,0.95) else gfx.set(0.12,0.12,0.13,0.9) end
                 gfx.rect(list_x,ry,list_w,row_h-2,1)
+                local jump_w = 54
+                local jump_x, jump_y = list_x + list_w - jump_w - 4, ry + 3
+                gfx.set(0.26, 0.22, 0.14, 0.95); gfx.rect(jump_x, jump_y, jump_w, 19, 1)
+                gfx.set(0.88, 0.68, 0.28, 0.95); gfx.rect(jump_x, jump_y, jump_w, 19, 0)
+                gfx.setfont(3, "Arial", 11, 'b'); gfx.set(0.98, 0.86, 0.58, 1)
+                gfx.x, gfx.y = jump_x + 4, jump_y + 3; gfx.drawstr(T("Vai →"))
                 local label=FormatVideoTimecode(SearchResultPosition(result))
                 -- il file audio da cui viene la battuta (per il montaggio); se non c'e', la traccia in "Tutti"
                 if result.item.source_file then label=label.." · "..result.item.source_file
                 elseif selected_text_track_guid==READ_ALL then label=label.." · "..tostring(result.item.track_name or "") end
-                gfx.setfont(3,"Arial",14,'b'); gfx.set(0.98, 0.82, 0.45, 1); gfx.x,gfx.y=list_x+6,ry+4; gfx.drawstr(label,0,list_x+list_w-6,ry+21)
+                gfx.setfont(3,"Arial",14,'b'); gfx.set(0.98, 0.82, 0.45, 1); gfx.x,gfx.y=list_x+6,ry+4; gfx.drawstr(label,0,jump_x-4,ry+21)
                 local snip=result.snippet or ""; local a,b=result.snip_a or 1,result.snip_b or 1
                 local left,hit,right=snip:sub(1,a-1),snip:sub(a,b),snip:sub(b+1)
                 local tx,ty=list_x+6,ry+24; gfx.setfont(3,"Arial",17);

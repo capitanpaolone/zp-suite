@@ -509,8 +509,21 @@ local function lane_number_at_enum_index(enum_index)
   return math.floor(lane + 0.5)
 end
 
-local function is_lane1_enum_index(enum_index)
-  return lane_number_at_enum_index(enum_index) == 1
+local function is_renderable_lane_enum_index(enum_index)
+  local lane = lane_number_at_enum_index(enum_index)
+  return lane == 1 or lane == 2
+end
+
+local function region_is_visible_at_enum_index(enum_index)
+  if not (reaper.GetRegionOrMarker and reaper.GetRegionOrMarkerInfo_Value) then return true end
+  local entry = reaper.GetRegionOrMarker(0, enum_index, "")
+  if not entry then return true end
+  local visible = tonumber(reaper.GetRegionOrMarkerInfo_Value(0, entry, "B_VISIBLE"))
+  return visible == nil or visible > 0.5
+end
+
+local function region_is_renderable(group)
+  return group and group.renderable ~= false
 end
 
 local function collect_existing_regions(items)
@@ -529,11 +542,13 @@ local function collect_existing_regions(items)
   local total = marker_count + region_count
   for i = 0, total - 1 do
     local ok, is_region, pos, rgn_end, name, idx, color = reaper.EnumProjectMarkers3(0, i)
-    if ok and is_region and is_lane1_enum_index(i) and not (trim(name or "") == WARMUP_REGION_NAME or color == WARMUP_COLOR) and ranges_overlap(pos, rgn_end, range_start, range_end) then
+    if ok and is_region and not (trim(name or "") == WARMUP_REGION_NAME or color == WARMUP_COLOR) and ranges_overlap(pos, rgn_end, range_start, range_end) then
       local count = 0
       for _, item in ipairs(items) do
         if ranges_overlap(item.pos, item.end_pos, pos, rgn_end) then count = count + 1 end
       end
+      local lane = lane_number_at_enum_index(i)
+      local visible = region_is_visible_at_enum_index(i)
       table.insert(regions, {
         region_start = pos,
         region_end = rgn_end,
@@ -543,6 +558,9 @@ local function collect_existing_regions(items)
         existing_region = true,
         existing_idx = idx,
         existing_color = color,
+        region_lane = lane,
+        region_visible = visible,
+        renderable = (lane == 1 or lane == 2) and visible,
         name = trim(name or "")
       })
     end
@@ -676,6 +694,14 @@ local function count_region_rows(groups)
   return count
 end
 
+local function count_renderable_region_rows(groups)
+  local count = 0
+  for _, group in ipairs(groups or {}) do
+    if is_region_row(group) and region_is_renderable(group) then count = count + 1 end
+  end
+  return count
+end
+
 local function first_non_empty_name_row(names)
   for i, name in ipairs(names or {}) do
     if trim(name or "") ~= "" then return i end
@@ -719,7 +745,7 @@ local function count_own_regions()
   local count = 0
   for i = 0, total - 1 do
     local ok, is_region, _, _, _, _, color = reaper.EnumProjectMarkers3(0, i)
-    if ok and is_region and is_lane1_enum_index(i) and color == REGION_COLOR then count = count + 1 end
+		if ok and is_region and is_renderable_lane_enum_index(i) and region_is_visible_at_enum_index(i) and color == REGION_COLOR then count = count + 1 end
   end
   return count
 end
@@ -730,7 +756,7 @@ local function delete_own_regions()
   local ids = {}
   for i = 0, total - 1 do
     local ok, is_region, _, _, _, idx, color = reaper.EnumProjectMarkers3(0, i)
-    if ok and is_region and is_lane1_enum_index(i) and color == REGION_COLOR then table.insert(ids, idx) end
+		if ok and is_region and is_renderable_lane_enum_index(i) and region_is_visible_at_enum_index(i) and color == REGION_COLOR then table.insert(ids, idx) end
   end
   for _, idx in ipairs(ids) do
     reaper.DeleteProjectMarker(0, idx, true)
@@ -1049,16 +1075,18 @@ local function create_regions(groups, names, state)
     local region_number = string.format("%02d", region_number_index)
     local name = base_name ~= "" and base_name or region_number
     if state.number_names and base_name ~= "" then name = region_number .. " " .. base_name end
-    if group.existing_region and group.existing_idx and (not state.delete_old or group.existing_color ~= REGION_COLOR) then
+    local region_color = group.renderable == false and group.existing_color or REGION_COLOR
+    if group.existing_region and group.existing_idx and
+      (not state.delete_old or group.existing_color ~= REGION_COLOR or (group.region_lane or 1) > 2 or not region_is_renderable(group)) then
       if reaper.SetProjectMarker3 then
-        reaper.SetProjectMarker3(0, group.existing_idx, true, group.region_start, group.region_end, name, REGION_COLOR)
+        reaper.SetProjectMarker3(0, group.existing_idx, true, group.region_start, group.region_end, name, region_color)
       else
         reaper.DeleteProjectMarker(0, group.existing_idx, true)
-        reaper.AddProjectMarker2(0, true, group.region_start, group.region_end, name, -1, REGION_COLOR)
+        reaper.AddProjectMarker2(0, true, group.region_start, group.region_end, name, -1, region_color)
       end
       updated_count = updated_count + 1
     else
-      reaper.AddProjectMarker2(0, true, group.region_start, group.region_end, name, -1, REGION_COLOR)
+      reaper.AddProjectMarker2(0, true, group.region_start, group.region_end, name, -1, region_color)
       created_count = created_count + 1
     end
     if state.make_markers then
@@ -1158,7 +1186,7 @@ end
 local function region_rows_for_render(groups)
   local rows = {}
   for _, group in ipairs(groups or {}) do
-    if is_region_row(group) and not is_warmup_region(group) then rows[#rows + 1] = group end
+    if is_region_row(group) and region_is_renderable(group) and not is_warmup_region(group) then rows[#rows + 1] = group end
   end
   return rows
 end
@@ -1210,7 +1238,7 @@ local function region_groups_for_marker_section(marker_row)
   local total = marker_count + region_count
   for i = 0, total - 1 do
     local ok, is_region, pos, rgn_end, name, idx, color = reaper.EnumProjectMarkers3(0, i)
-    if ok and is_region and is_lane1_enum_index(i) and not (trim(name or "") == WARMUP_REGION_NAME or color == WARMUP_COLOR) and pos >= section_start - EPS and (not section_end or pos < section_end - EPS) then
+    if ok and is_region and is_renderable_lane_enum_index(i) and region_is_visible_at_enum_index(i) and not (trim(name or "") == WARMUP_REGION_NAME or color == WARMUP_COLOR) and pos >= section_start - EPS and (not section_end or pos < section_end - EPS) then
       groups[#groups + 1] = {
         region_start = pos,
         region_end = rgn_end,
@@ -1222,7 +1250,10 @@ local function region_groups_for_marker_section(marker_row)
         existing_color = color,
         name = trim(name or ""),
         edited_name = trim(name or ""),
-        region_order = #groups + 1
+        region_order = #groups + 1,
+        region_lane = lane_number_at_enum_index(i),
+        region_visible = true,
+        renderable = true
       }
     end
   end
@@ -1240,7 +1271,7 @@ local function matching_export_regions(groups)
   local total = marker_count + region_count
   for i = 0, total - 1 do
     local ok, is_region, pos, rgn_end, name, idx, color = reaper.EnumProjectMarkers3(0, i)
-    if ok and is_region and is_lane1_enum_index(i) and not (trim(name or "") == WARMUP_REGION_NAME or color == WARMUP_COLOR) then
+    if ok and is_region and is_renderable_lane_enum_index(i) and region_is_visible_at_enum_index(i) and not (trim(name or "") == WARMUP_REGION_NAME or color == WARMUP_COLOR) then
       for _, group in ipairs(targets) do
         local gs = group.region_start or group.start_pos or 0
         local ge = group.region_end or group.end_pos or 0
@@ -2113,7 +2144,62 @@ local function format_time(seconds)
   return string.format("%02d:%06.3f", m, s)
 end
 
-local function draw_button(rect, label, active, enabled, clicked, style)
+local hovered_button_help = nil
+
+local BUTTON_HELP = {
+  ["?"] = "Apre la guida del Gestore Progetto.",
+  ["Selezione"] = "Sceglie la sezione o le regioni da preparare per il mixdown.",
+  ["Crea Regioni"] = "Crea le regioni a partire dagli item raccolti e dai nomi inseriti.",
+  ["Crea Selez."] = "Crea le regioni solo per le righe selezionate nell'anteprima.",
+  ["Index"] = "Attiva o disattiva l'aggiornamento del Mixdown Index CSV.",
+  ["Render"] = "Prepara il mixdown selezionato e apre la finestra Render to File.",
+  ["+ Queue"] = "Aggiunge alla Render Queue un job per ciascuna sezione selezionata.",
+  ["Set"] = "Apre le impostazioni di formato, qualità, frequenza e canali del mixdown.",
+  ["Que"] = "Apre la Render Queue di REAPER.",
+  ["Incolla lista"] = "Incolla i nomi dagli appunti, a partire dalla riga scelta.",
+  ["Svuota lista"] = "Rimuove tutti i nomi inseriti nella lista.",
+  ["Item"] = "Usa gli item selezionati come sorgente.",
+  ["Tracce"] = "Usa gli item delle tracce selezionate come sorgente.",
+  ["Folder+"] = "Usa le tracce selezionate e le relative sottotracce folder.",
+  ["Tutte"] = "Usa tutti gli item del progetto come sorgente.",
+  ["Video"] = "Include o esclude i file video dalla raccolta.",
+  ["No muti"] = "Include o esclude gli item sulle tracce mute.",
+  ["Rimuovi export"] = "Attiva la rimozione delle vecchie regioni export create da questo script.",
+  ["Marker"] = "Attiva o disattiva la creazione di un marker all'inizio di ogni regione.",
+  ["N. + nome"] = "Aggiunge il numero della regione al nome durante la creazione.",
+  ["Sel"] = "Attiva la riproduzione automatica quando selezioni una regione.",
+  ["Play"] = "Riproduce la regione selezionata.",
+  ["Salva"] = "Salva le impostazioni o il progetto, secondo la finestra aperta.",
+  ["OK"] = "Conferma il salvataggio appena completato.",
+  ["Log"] = "Attiva o disattiva il registro Mixdown History.",
+  ["Annulla"] = "Chiude la finestra o annulla le modifiche correnti.",
+  ["Chiudi"] = "Chiude la guida rapida.",
+  ["WAV"] = "Seleziona il formato WAV per il mixdown.",
+  ["MP3"] = "Seleziona il formato MP3 per il mixdown.",
+  ["Progetto"] = "Usa la frequenza di campionamento del progetto.",
+  ["44.1"] = "Imposta la frequenza di campionamento a 44,1 kHz.",
+  ["48"] = "Imposta la frequenza di campionamento a 48 kHz.",
+  ["96"] = "Imposta la frequenza di campionamento a 96 kHz.",
+  ["Mono"] = "Esporta il mixdown in mono.",
+  ["Stereo"] = "Esporta il mixdown in stereo.",
+  ["16 bit"] = "Imposta la profondità WAV a 16 bit.",
+  ["24 bit"] = "Imposta la profondità WAV a 24 bit.",
+  ["32 bit"] = "Imposta la profondità WAV a 32 bit.",
+}
+
+local function draw_button(rect, label, active, enabled, clicked, style, help_text)
+  local text = tostring(label or "")
+  local help = help_text or BUTTON_HELP[text]
+  if not help and text:match("^%d+$") then help = "Imposta il bitrate MP3 a " .. text .. " kbps." end
+  if not help then
+    local start_row = text:match("^Incolla da (%d+)$")
+    if start_row then help = "Incolla i nomi dagli appunti a partire dalla riga " .. start_row .. "." end
+  end
+  if not help and (text == "" and style == "stop") then help = "Ferma la riproduzione della regione." end
+  if not help then help = "Applica l'opzione “" .. text .. "” al mixdown." end
+  if rect and gfx.mouse_x >= rect.x and gfx.mouse_x <= rect.x + rect.w and gfx.mouse_y >= rect.y and gfx.mouse_y <= rect.y + rect.h then
+    hovered_button_help = help
+  end
   return ZP_UI.draw_button(rect, label, active, enabled, clicked, style)
 end
 
@@ -2430,7 +2516,8 @@ local function draw_help_overlay(clicked)
     "Index OFF: aggiorna solo Mixdown/Mixdown_Report.csv.",
     "",
     "Directory: Lane 1 = Mixdown/<marker>/; Lane 2 = Mixdown/<Lane1>/<Lane2>/.",
-    "Le regioni fuori Lane 1 sono ignorate da anteprima, selezione e render. Pattern file: $region.",
+	"L'anteprima legge le regioni di tutte le lane: Lane 1 e 2 visibili in azzurro, le altre grigie.",
+	"Render e Queue usano le regioni visibili in Lane 1 e 2; Lane 3+ sono escluse. Pattern file: $region.",
     "I nomi regione non vengono modificati.",
     "Il CSV con LUFS/Peak/RMS va generato dopo render o dry run con statistiche REAPER."
   }
@@ -3526,6 +3613,7 @@ local function open_window()
     items, groups, names, source = rebuild()
     for group_index, group in ipairs(groups) do group.__row_index = group_index end
     local region_count = count_region_rows(groups)
+    local renderable_region_count = count_renderable_region_rows(groups)
     if selected_preview > #groups then selected_preview = math.max(1, #groups) end
     for index in pairs(selected_rows) do
       if index > #groups then selected_rows[index] = nil end
@@ -3556,6 +3644,7 @@ local function open_window()
       )
     end
 
+    hovered_button_help = nil
     ZP_UI.fill_background()
     ZP_UI.draw_header({
       fallback_icon = draw_export_icon,
@@ -3604,6 +3693,7 @@ local function open_window()
       create_selected_regions_from_preview(groups, names, state)
       items, groups, names, source = rebuild()
       region_count = count_region_rows(groups)
+      renderable_region_count = count_renderable_region_rows(groups)
     end
     state.preroll_warmup = false -- Forza la disattivazione del ghost in background
     if draw_button(index_btn, "Index", state.mixdown_index_enabled, true, clicked, state.mixdown_index_enabled and "save" or "tab") then
@@ -3615,7 +3705,7 @@ local function open_window()
         notify_status("Mixdown Index disattivato: aggiorno solo Mixdown Report CSV.")
       end
     end
-    local render_button_ready = region_count > 0 and reaper.time_precise() >= render_dialog_lock_until and not pending_mixdown_report
+    local render_button_ready = renderable_region_count > 0 and reaper.time_precise() >= render_dialog_lock_until and not pending_mixdown_report
     if draw_button(prepare_btn, "Render", false, render_button_ready, clicked, "save") then
       render_dialog_lock_until = reaper.time_precise() + 300.0
       render_debug_log("render_button | click Render lock_until=" .. tostring(render_dialog_lock_until))
@@ -3655,7 +3745,7 @@ local function open_window()
       end
       ::skip_prepare_mixdown::
     end
-    if draw_button(queue_btn, "+ Queue", false, region_count > 0, clicked, "tab") then
+    if draw_button(queue_btn, "+ Queue", false, renderable_region_count > 0, clicked, "tab") then
       if edit_name_index and active_field == "inline_name" then commit_name_edit(groups) end
       save_draft_state()
       local sections = queue_sections_from_current_selection(groups, chosen_mixdown_groups, chosen_mixdown_info)
@@ -3858,7 +3948,20 @@ local function open_window()
     end
     if state.number_names then status = status .. " Numero + nome attivo." end
     local selected_count = selected_row_count(groups)
-    if selected_count > 0 then status = status .. string.format(" Creerai solo %d righe selezionate.", selected_count) end
+    local selected_renderable_count = 0
+    for i, group in ipairs(groups) do
+      if selected_rows[i] and is_region_row(group) and region_is_renderable(group) then
+        selected_renderable_count = selected_renderable_count + 1
+      end
+    end
+    if selected_count > 0 then
+      status = status .. string.format(" Selezionate %d righe (%d renderizzabili).", selected_count, selected_renderable_count)
+    end
+    local excluded_region_count = region_count - renderable_region_count
+    if excluded_region_count > 0 then
+		status = status .. string.format(" %d escluse (Lane 3+ o nascoste), in grigio.", excluded_region_count)
+    end
+    status = status .. string.format(" Renderizzabili: %d/%d.", renderable_region_count, region_count)
     if old_count > 0 then
       status = status .. string.format(" Regioni export gia' presenti: %d.", old_count)
     end
@@ -3871,7 +3974,7 @@ local function open_window()
     local box_y = status_y + 54
     local box_gap = 28
     local box_w = math.floor((FIXED_WINDOW_W - 44 - box_gap) * 0.5)
-    local box_h = math.max(150, gfx.h - box_y - 24)
+    local box_h = math.max(150, gfx.h - box_y - 58)
     local preview_box = { x = 22, y = box_y, w = box_w, h = box_h }
     local names_box = { x = preview_box.x + preview_box.w + box_gap, y = box_y, w = FIXED_WINDOW_W - (preview_box.x + preview_box.w + box_gap) - 22, h = box_h }
     local preview_row_h = 24
@@ -4027,6 +4130,13 @@ local function open_window()
       end
       local label = group.edited_name or group.name or "(senza nome)"
       if label == "" then label = "(senza nome)" end
+      if group.existing_region and not region_is_renderable(group) then
+        if group.region_visible == false then
+          label = label .. "  [nascosta · esclusa dal render]"
+        else
+          label = string.format("%s  [Lane %d · esclusa dal render]", label, group.region_lane or 2)
+        end
+      end
       if edit_name_source == "preview" and edit_name_index == idx then
         gfx.set(0.13, 0.17, 0.24, 1)
         gfx.rect(row_rect.x + 4, row_rect.y + 1, row_rect.w - 8, row_rect.h - 2, true)
@@ -4047,7 +4157,14 @@ local function open_window()
           gfx.x = preview_box.x + 10
           gfx.y = y
         end
-        gfx.set(0.88, 0.88, 0.91, 1)
+        local active_existing_region = group.existing_region and region_is_renderable(group)
+        if active_existing_region then
+          gfx.set(0.38, 0.86, 1.0, 1)
+        elseif group.existing_region then
+          gfx.set(0.52, 0.54, 0.58, 1)
+        else
+          gfx.set(0.88, 0.88, 0.91, 1)
+        end
         gfx.x = preview_box.x + 10 + gfx.measurestr(prefix)
         gfx.y = y
         local edit_label = edit_name_text ~= "" and edit_name_text or "(nome regione)"
@@ -4060,7 +4177,13 @@ local function open_window()
 	      else
 	        local row_number = group.region_order or idx
 	        local text = string.format("  %02d  %s", row_number, label)
-	        gfx.set(0.88, 0.88, 0.91, 1)
+	        if group.existing_region and region_is_renderable(group) then
+	          gfx.set(0.38, 0.86, 1.0, 1)
+	        elseif group.existing_region then
+	          gfx.set(0.52, 0.54, 0.58, 1)
+	        else
+	          gfx.set(0.88, 0.88, 0.91, 1)
+	        end
 	        gfx.x = preview_box.x + 10
 	        gfx.y = y
 	        gfx.drawstr(fit_text(text, preview_box.w - 20))
@@ -4181,10 +4304,26 @@ local function open_window()
     draw_v_scroll(names_box, #names, names_rows, names_scroll)
 
     if show_mixdown_settings then
+      hovered_button_help = nil
       draw_mixdown_settings_overlay(overlay_clicked)
     elseif show_help then
+      hovered_button_help = nil
       if draw_help_overlay(clicked) then show_help = false end
     end
+
+    local help_y = gfx.h - 34
+    gfx.set(0.09, 0.10, 0.14, 0.98)
+    gfx.rect(22, help_y, FIXED_WINDOW_W - 44, 26, true)
+    gfx.set(0.34, 0.36, 0.42, 1)
+    gfx.rect(22, help_y, FIXED_WINDOW_W - 44, 26, false)
+    gfx.set(0.95, 0.72, 0.27, 1)
+    gfx.x = 32
+    gfx.y = help_y + 6
+    gfx.drawstr("PULSANTE")
+    gfx.set(0.84, 0.86, 0.90, 1)
+    gfx.x = 112
+    gfx.y = help_y + 6
+    gfx.drawstr(fit_text(hovered_button_help or "Passa il puntatore su un pulsante per leggerne la funzione.", FIXED_WINDOW_W - 156))
 
     gfx.update()
     reaper.defer(loop)
@@ -4298,6 +4437,14 @@ local function run_osara_mode()
       return
     end
     speak(string.format("Tutto il materiale: %d righe operative da %s.", #target_groups, source_label or "progetto"))
+  end
+
+  local excluded_region_count = 0
+  for _, group in ipairs(target_groups or {}) do
+    if not region_is_renderable(group) then excluded_region_count = excluded_region_count + 1 end
+  end
+  if excluded_region_count > 0 then
+		speak(string.format("Attenzione: %d regioni grigie, nascoste o in Lane 3 e successive; restano in anteprima ma non entrano in Render o Queue.", excluded_region_count))
   end
 
   if action == 1 then

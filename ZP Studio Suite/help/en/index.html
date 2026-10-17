@@ -278,11 +278,11 @@
   </ul>
   <h3>Editing and Notes</h3>
   <ul>
-    <li><strong>Search</strong> (Ctrl/⌘+F): prefix and keyword search (e.g. <code>hijac</code> finds <em>hijacking</em>). Case and accent insensitive. Quote phrases for exact matching. Result list displays timecode, text, and track in <em>All</em> mode; click or use ↑/↓, <code>&lt;</code>, <code>&gt;</code> to jump.
+    <li><strong>Search</strong> (Ctrl/⌘+F): prefix and keyword search (e.g. <code>hijac</code> finds <em>hijacking</em>). Case and accent insensitive. Quote phrases for exact matching. Result list displays timecode, text, and track in <em>All</em> mode; click a result or its <strong>Go →</strong> button to jump to the word and highlight it in the Teleprompter, or use ↑/↓, <code>&lt;</code>, <code>&gt;</code> to jump.
       <br><strong>Replace</strong>: expands replace field (Tab jumps between inputs). Replace matches <strong>whole words</strong> only and respects exact accents. Click <strong>Replace</strong> to step through occurrences; <strong>All</strong> replaces across the project with a single Undo step. Only teleprompter item notes are altered: take markers and source SRT files remain untouched.</li>
     <li><strong>Double click</strong> on any cue opens inline editor. Enter saves, Shift+Enter inserts newline, Esc cancels.</li>
     <li><strong>Studio/Edit Mode</strong>: stops playback and unlocks free text navigation; <strong>Moves timeline</strong> controls whether scrubbing text also moves the REAPER edit cursor.</li>
-    <li><strong>+ Note</strong>: adds a director's note at edit cursor. <strong>Notes Panel</strong> displays chronological list of notes, following playback automatically. Clicking jumps to note position, double click edits; <strong>OK</strong> marks note completed (green badge); <strong>×</strong> deletes note after confirmation. Undoable via Ctrl/⌘+Z.</li>
+    <li><strong>+ Note</strong>: adds a director's note at edit cursor. <strong>Notes Panel</strong> shows unfinished notes first, then completed notes; each group is chronological. Scroll with the wheel; the panel follows the current note automatically until you scroll by hand. Clicking jumps to note position, double click edits; double click empty space in the panel to add a note at the current edit cursor, or right click and choose <strong>New Note</strong> beside the pointer. <strong>OK</strong> marks note completed (green badge); <strong>×</strong> deletes note after confirmation. Undoable via Ctrl/⌘+Z.</li>
     <li><strong>Follow cuts</strong>: toggles automatic realigning.</li>
     <li><strong>Notes visible / Prompter tracks visible</strong>: toggles arrangement visibility of notes and text tracks. <strong>+ Line</strong> adds a new cue item at current position.</li>
   </ul>
@@ -366,7 +366,7 @@
   <h3>Prepare Mixdown</h3>
   <ul>
     <li><strong>Section Selection</strong>: chooses marker section; encompasses regions up to the next marker.</li>
-    <li><strong>Marker Lanes</strong>: Lane 1 = <code>Mixdown/&lt;marker&gt;/</code>; Lane 2 = subfolder; Lane 3+ = standard markers. Regions outside Lane 1 are excluded.</li>
+    <li><strong>Marker Lanes</strong>: Lane 1 = <code>Mixdown/&lt;marker&gt;/</code>; Lane 2 = subfolder; Lane 3+ = standard markers. Visible regions in Lanes 1 and 2 are included in render; regions in Lane 3+ or hidden regions are excluded.</li>
     <li>Quick format settings (WAV/MP3, mono/stereo, sample rate). <strong>Render</strong> configures output path, <code>$region</code> wildcard, and opens REAPER Render dialog. <strong>+ Queue</strong> queues batch jobs.</li>
     <li><strong>Log</strong>: writes history to <code>Mixdown/Mixdown_History.csv</code>. <strong>Index</strong>: creates <code>Mixdown_Index.csv</code> in section folders verifying rendered files.</li>
   </ul>
