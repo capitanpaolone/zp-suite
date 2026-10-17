@@ -8,6 +8,9 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
   di un pacchetto. Senza, il controllo GitHub "check" (`reapack-index --check`) fallisce
   (successo il 2026-10-04: 28_Collega_Marker e le bozze). Gli helper hanno `@noindex`.
 - `gobbo_ricerca_battuta`, `ZP Lab`, `speech-engine` sono esclusi in `.reapack-index.conf`: non toglierli.
+- reapack-index tratta come pacchetto anche un `.txt` nelle cartelle dei pacchetti: un file di dati o di
+  licenza distribuito con il @provides del 00 va escluso con `--ignore` in `.reapack-index.conf` (come
+  README.txt). Successo il 2026-10-17 con tools/LICENSE-SheetJS-Apache-2.0.txt ("missing tag 'version'").
 - Ogni file nuovo che NON e' uno script/effetto (cataloghi .txt, .ReaperLangPack, dati) va in `--ignore` nel
   `.reapack-index.conf`, anche se sta nel @provides della 00: altrimenti il check lo prende per un pacchetto senza
   versione (lang/en.txt e REAPER_Italiano, 2026-10-10). Esclusi anche: REAPER_Italiano.
