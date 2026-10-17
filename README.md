@@ -1,68 +1,41 @@
 # ZP Suite
 
-Effetti JSFX per REAPER dedicati a voiceover, doppiaggio, podcast e broadcast.
-Sviluppati da **Paolo Balestri** — [latocardioide.it](https://latocardioide.it) ·
-social@paolobalestri.com
+A free, open-source toolkit for voiceover, dubbing, podcasts, e-learning and broadcast workflows in REAPER. It brings script reading, subtitle handling, project preparation, accessible controls and ZP audio tools into one REAPER setup.
 
-Ogni plugin ha una doppia vista: **GUI** grafica e **JSFX** a lista parametri.
-La vista JSFX è il canale con cui OSARA legge i controlli, e diversi effetti espongono
-grandezze di sola lettura (`[Read]`) proprio perché un lettore di schermo possa
-annunciarle. L'accessibilità è un requisito di progetto, non un'aggiunta.
+**Prefer Italian?** See [README in Italian](README.it.md). The Suite itself is available in Italian and English.
 
-## Installazione
+## Choose your language
 
-*(disponibile dalla Fase 3 — ReaPack)*
+After installing or updating, open **33 Welcome** from REAPER's Action List. Under **Suite language**, choose **English** or **Italiano**. This preference is saved and is independent of REAPER's own language. The `?` help buttons open the guide in the selected Suite language.
 
-In REAPER: **Extensions → ReaPack → Import repositories**, e incolla:
+## Install with ReaPack
 
-```
-https://github.com/capitanpaolone/zp-suite/raw/master/index.xml
-```
+1. In REAPER, choose **Extensions → ReaPack → Import repositories**.
+2. Add this repository URL:
 
-Poi **Extensions → ReaPack → Browse packages**, cerca `ZP` e installa quello che serve.
-Gli aggiornamenti arrivano da lì, con changelog e possibilità di tornare indietro.
+   `https://github.com/capitanpaolone/zp-suite/raw/master/index.xml`
 
-## Cosa c'è dentro
+3. Choose **Extensions → ReaPack → Browse packages**, search for **ZP**, and install **ZP Studio Suite** and any ZP effects you need.
+4. Synchronize packages to receive updates.
 
-### ZP Voce
+The Suite works in a clean REAPER install. SWS, js_ReaScriptAPI and OSARA are optional; they add features where available.
 
-| Effetto | Cosa fa |
-|---|---|
-| **ZP Voiceover Unified Chain** | Catena completa per la voce: Input Smart → Gate/Expander → 1175 → LA2 → MajorTom → Brown Guard → Limiter/Clipper → Output auto-trim → Safety Limiter. Sei profili di partenza, moduli accendibili singolarmente. |
-| **ZP BUS Chain** | La stessa catena sul bus, più il motore ANA di colorazione console (CALDO / CORPO / APERTO). |
-| **ZP Spoken Finish** | Exciter e de-exciter armonico: pari e dispari da −100 a +100 %. Profili Voice Base e Extreme Trailer (Voice of God, Cinema Air). Limiter true-peak. |
-| **ZP Harmonic Space Carver** | Spazio fra voce e musica: carving dinamico multibanda, ducker VCA e Speech State Engine che riconosce pause e respiri. |
-| **ZP Stagekeeper Dialogue Director** | Automixer per dialogo a due canali, gate con trigger assoluto o delta sul rumore di fondo, tilt EQ e solo per lato. |
-| **ZP Subliminal Presence Layer** | Layer di presenza calibrato su cosa sopravvive alla codifica lossy. Tre controlli. |
+## What is included
 
-### ZP Master
+- **ZP Studio Suite** — teleprompters, SRT import/export and references, project tools, mixdown preparation, voice-minute reports, Voice Cleaner and accessible workflows.
+- **ZP Voce** — voice chains, dialogue tools and voice/music processing.
+- **ZP Master** — mastering and reference-tone tools.
+- **ZP Misura** — loudness meters, oscilloscope and passive signal probes.
 
-| Effetto | Cosa fa |
-|---|---|
-| **ZP Master Pro** | Processore di master: Tape Glue → Glue Matrix Compressor → Tone Guard → Lookahead Limiter, più metering LUFS/LRA/RMS/TP, auto-trim e Target Engine con sette profili di consegna. |
-| **ZP Reference Tone Mirror EQ Pro** | EQ di matching su un segnale di riferimento, con stadio armonico, AGC e strumenti diagnostici (Delta EQ, Delta Harm, Null Hunter). |
+## Guides and source
 
-### ZP Misura
+- [English Suite guide](ZP%20Studio%20Suite/help/en/index.html)
+- [Guida italiana della Suite](ZP%20Studio%20Suite/help/index.html)
+- [Website: Lato Cardioide — Tools](https://latocardioide.it/strumenti/)
+- [ReaPack repository index](https://github.com/capitanpaolone/zp-suite/raw/master/index.xml)
 
-| Effetto | Cosa fa |
-|---|---|
-| **ZP Loudness Meter Multichannel** | LUFS-I/S/M secondo ITU-R BS.1770, LRA, True Peak con oversampling, RMS-M, fino a 64 canali. |
-| **ZP Oscilloscope 16ch** | Oscilloscopio a 16 canali con nomi di traccia editabili e quattro modalità canale. |
-| **ZP Voice-Music Probe** | Telemetria passiva: misura RMS, peak, crest, densità, brillantezza e attività di parlato senza toccare il segnale. Va messo come ultimo FX del bus. |
+The ReaPack package description and release notes are provided in both English and Italian. The GitHub README is English-first; Italian readers can choose the Italian README and set the Suite language in **33 Welcome**.
 
-## ZP Shared Bus
+## License
 
-Gli effetti si riconoscono fra loro attraverso una memoria condivisa
-(`gmem=ZPVoiceoverSharedBus`). Ogni plugin pubblica un battito con la propria identità;
-Master Pro li legge tutti e mostra lo stato della catena. Il Probe pubblica le metriche
-che il Target Engine confronta con il profilo di consegna scelto.
-
-È diagnostica: nessun plugin modifica i parametri di un altro.
-
-Slot: `10` catena · `20` Space Carver · `30` Spoken Finish · `40` Master Pro ·
-`50` Probe voce · `60` Probe musica.
-
-## Licenza
-
-GPLv3 o successiva — vedi [`LICENSE`](LICENSE).
-Le attribuzioni del DSP di terzi sono in [`NOTICE.md`](NOTICE.md).
+GPL-3.0-or-later for most components; some REAPER-derived meters are LGPL-2.1-or-later. See [LICENSE](LICENSE), [LICENSE-LGPL-2.1.txt](LICENSE-LGPL-2.1.txt) and [NOTICE.md](NOTICE.md).

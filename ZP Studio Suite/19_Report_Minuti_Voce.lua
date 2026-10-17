@@ -46,6 +46,24 @@ local function fit_text(text, max_w)
   return (out ~= "" and out:gsub("%s+$", "") or "") .. suffix
 end
 
+local function wrap_text(text, max_w)
+  local lines = {}
+  for paragraph in (tostring(text or "") .. "\n"):gmatch("(.-)\n") do
+    local line = ""
+    for word in paragraph:gmatch("%S+") do
+      local candidate = line == "" and word or (line .. " " .. word)
+      if line ~= "" and gfx.measurestr(candidate) > max_w then
+        lines[#lines + 1] = line
+        line = word
+      else
+        line = candidate
+      end
+    end
+    if line ~= "" then lines[#lines + 1] = line end
+  end
+  return lines
+end
+
 local function file_exists(path)
   local f = io.open(path, "rb")
   if f then f:close() return true end
@@ -1139,11 +1157,19 @@ local function open_window()
     gfx.y = footer_y + 28
     gfx.drawstr(string.format("Parole stimate: %d/min %d   |   %d/min %d", WORD_RATE_LOW, estimated_words(total_seconds, WORD_RATE_LOW), WORD_RATE_HIGH, estimated_words(total_seconds, WORD_RATE_HIGH)))
 
-    if copied_message ~= "" and reaper.time_precise() - copied_time < 2.0 then
-      gfx.set(0.54, 0.90, 0.62, 1)
-      gfx.x = 22
-      gfx.y = footer_y + 52
-      gfx.drawstr(copied_message)
+    if copied_message ~= "" then
+      gfx.set(0.08, 0.15, 0.12, 1)
+      gfx.rect(18, footer_y + 47, gfx.w - 36, FOOTER_H - 51, true)
+      gfx.set(0.23, 0.43, 0.32, 1)
+      gfx.rect(18, footer_y + 47, gfx.w - 36, FOOTER_H - 51, false)
+      gfx.setfont(1, "Arial", 13)
+      gfx.set(0.74, 0.94, 0.80, 1)
+      local status_lines = wrap_text(copied_message, gfx.w - 58)
+      for i = 1, math.min(#status_lines, 4) do
+        gfx.x = 28
+        gfx.y = footer_y + 51 + (i - 1) * 15
+        gfx.drawstr(status_lines[i])
+      end
     end
 
     if pending_report_text then
@@ -1208,10 +1234,10 @@ local function open_window()
       if ZP_UI.draw_button({ x = mx + modal_w - 478, y = my + modal_h - 58, w = 170, h = 36 }, "Aggiungi allo storico", false, true, clicked, "save") then
         set_clipboard(pending_report_text)
         local html_path, added, skipped = save_report_file(pending_detail_rows)
-        copied_message = html_path and ("Report HTML aggiornato: +" .. tostring(added or 0) .. " nuove righe") or ("Report copiato. File non salvato: " .. tostring(added or "errore"))
         if html_path then
-          reaper.ShowMessageBox("Report conteggi aggiornato in:\n\n" .. html_path .. "\n\nNuove righe: " .. tostring(added or 0) .. "\nGià presenti: " .. tostring(skipped or 0), "ZP Studio Suite", 0)
+          copied_message = "Report salvato nello storico. Nuove righe: " .. tostring(added or 0) .. " · Già presenti: " .. tostring(skipped or 0) .. "\nFile HTML: " .. html_path
         else
+          copied_message = "Report copiato negli appunti. File non salvato: " .. tostring(added or "errore")
           reaper.ShowMessageBox("Non sono riuscito a salvare il file:\n\n" .. tostring(added or "errore"), "ZP Studio Suite", 0)
         end
         copied_time = reaper.time_precise()
@@ -1224,10 +1250,10 @@ local function open_window()
         set_clipboard(pending_report_text)
         local session_label = trim(pending_report_suffix) ~= "" and pending_report_suffix or pending_report_label
         local html_path, saved_or_err = save_session_report_file(pending_detail_rows, session_label)
-        copied_message = html_path and ("Report sessione salvato: " .. tostring(saved_or_err or 0) .. " righe") or ("Report copiato. File non salvato: " .. tostring(saved_or_err or "errore"))
         if html_path then
-          reaper.ShowMessageBox("Report della sola sessione salvato in:\n\n" .. html_path .. "\n\nRighe: " .. tostring(saved_or_err or 0) .. "\nLo storico generale non è stato modificato.", "ZP Studio Suite", 0)
+          copied_message = "Report della sola sessione salvato. Righe: " .. tostring(saved_or_err or 0) .. " · Lo storico generale non è stato modificato.\nFile HTML: " .. html_path
         else
+          copied_message = "Report copiato negli appunti. File non salvato: " .. tostring(saved_or_err or "errore")
           reaper.ShowMessageBox("Non sono riuscito a salvare il file:\n\n" .. tostring(saved_or_err or "errore"), "ZP Studio Suite", 0)
         end
         copied_time = reaper.time_precise()

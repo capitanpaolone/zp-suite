@@ -4,6 +4,25 @@ Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
 ciascun file e nel gestore pacchetti. Questo file registra la storia della Suite
 nel suo insieme.
 
+## ZP Studio Suite 2.6.0 — 2026-10-17
+
+- **Guide nella lingua della Suite**: anche *00 Apri Help* apre la guida italiana o inglese scelta nel
+  33 Benvenuto. README su GitHub in inglese (`README.md`) e in italiano (`README.it.md`).
+- **SOLO Recorder**: il pulsantino **S** sul REC mette in solo la traccia di registrazione (in Telecomando
+  la prima traccia armata); il picco del meter IN è una barretta azzurra.
+- **Gobbi**: il pannello note mostra prima le note aperte, poi quelle concluse; doppio clic nello spazio
+  libero o tasto destro aggiunge una nota; ogni risultato di *Cerca* ha il pulsante **Vai →**.
+- **Gestore Progetto (17)**: una barra in fondo alla finestra spiega il pulsante su cui passi con il mouse.
+- **Voice Cleaner (22)**: pannello *Revisione manuale* per ascoltare e decidere ogni segmento (Play, zoom,
+  Approva o Scarta segmento, Approva tutti); **ASCOLTA**, **PULISCI MARKER** e una memoria della
+  calibrazione con nome. APPLICA usa solo i segmenti approvati.
+- **Report minuti voce (19)** e **Chain Builder (23)**: gli esiti restano nella loro finestra.
+- **SRT Tools (26)**: legge i file Excel XLS e XLSX, con scelta di foglio e colonne (inizio, fine, testo,
+  personaggio, reazione). Include SheetJS (Apache-2.0, testo della licenza accanto alla pagina).
+- **Plugin**: Harmonic Space Carver 2.6.7 con Cue Navigator 1.12 (un clic sull'avviso rosso
+  *CUE FUORI POSTO* riporta tutti i cue sulla loro voce) e ZP BUS Chain 1.3.1 (interruttori Brown Guard
+  DYN ed EQ separati). Guide aggiornate per Carver, Voice Cleaner, BUS Chain e Gestore Progetto.
+
 ## ZP Studio Suite 2.5.0 — 2026-10-10
 
 - **ZP Colori (35)**: finestrella *clicca e colora*. Scegli il modo (**Item**, **Traccia** o **Tutto**),

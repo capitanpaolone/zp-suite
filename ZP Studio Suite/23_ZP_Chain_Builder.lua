@@ -724,7 +724,6 @@ local function run_ui()
 
     if ZP_UI.draw_button({ x = 22, y = 570, w = 230, h = 40 }, "Trasforma progetto", false, true, clicked, "save") then
       report_text = apply_profile(PROFILES[profile_index])
-      reaper.ShowMessageBox(report_text, TITLE .. " - Report finale", 0)
     end
 
     if ZP_UI.draw_button({ x = 262, y = 570, w = 230, h = 40 }, "Check / Repair", false, true, clicked, "tab") then
@@ -737,7 +736,6 @@ local function run_ui()
       )
       if answer == 6 then
         report_text = apply_profile(profile)
-        reaper.ShowMessageBox(report_text, TITLE .. " - Report finale", 0)
       end
     end
 

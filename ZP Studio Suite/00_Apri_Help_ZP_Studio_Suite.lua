@@ -1,35 +1,50 @@
 -- @description ZP Studio Suite
--- @version 2.5.0
+-- @version 2.6.0
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
 --   Lato Cardioide https://latocardioide.it/strumenti/
 -- @about
---   Suite di script per REAPER per voiceover e doppiaggio: gobbo e copione,
---   gestione SRT, lettura accessibile con OSARA, preparazione del mixdown e
---   costruzione della catena audio ZP. Include il supporto screen reader su
---   Windows tramite la libreria NVDA Controller Client (LGPL 2.1, di NV Access).
+--   EN — A REAPER toolkit for voiceover and dubbing: teleprompters, SRT handling,
+--   accessible reading, project and mixdown preparation, and ZP audio tools. Works
+--   with a clean REAPER install; SWS, js_ReaScriptAPI and OSARA are optional.
+--   Open 33 Welcome and choose English or Italiano under Suite language. The
+--   preference is saved independently from REAPER's language. Guides are included
+--   in both languages. Windows screen-reader support uses NVDA Controller Client
+--   (LGPL 2.1, NV Access). See README.md for installation and component details.
 --
---   Funziona su un REAPER pulito, senza estensioni. SWS, js_ReaScriptAPI e
---   OSARA non sono richiesti: aggiungono funzioni, e quando mancano la suite
---   usa da sola una strada alternativa. Il dettaglio e' in README.txt.
---
---   Dopo l'installazione apri dall'Action List "33 Benvenuto" (si apre anche da
---   solo la prima volta che usi uno strumento ZP): controlla toolbar ed effetti,
---   Cue Navigator del Carver, ZP Speech, SWS, js_ReaScriptAPI, OSARA, marker degli
---   item e interfaccia web, e per ognuno ha il pulsante che lo mette a posto.
+--   IT — Strumenti REAPER per voiceover e doppiaggio: gobbi, gestione SRT,
+--   lettura accessibile, preparazione del progetto e del mixdown, strumenti audio ZP.
+--   Funziona anche su un REAPER pulito; SWS, js_ReaScriptAPI e OSARA sono facoltativi.
+--   Apri 33 Benvenuto e scegli Italiano o English alla voce Lingua della Suite.
+--   La preferenza viene salvata ed è indipendente dalla lingua di REAPER. Le guide
+--   sono disponibili in entrambe le lingue. Il supporto screen reader Windows usa
+--   NVDA Controller Client (LGPL 2.1, NV Access). Dettagli in README.it.md.
 -- @changelog
---   ZP Colori (35): finestrella clicca e colora con modo Item / Traccia / Tutto, 20 colori e Togli colore;
---     la toolbar ZP Colori, facoltativa, si installa dal 33 Benvenuto.
---   ZP Set Comandi (34): set di scorciatoie da tastiera (video, Pro Tools, Logic, i tuoi) con la pagina di
---     ogni set, Salva, Importa, Rinomina, Archivia e backup automatico; cambia solo i tasti, dal riavvio.
---     Spiega con l'AI, a richiesta, descrive un set in poche righe.
---   Suite in inglese: nel 33 Benvenuto scegli la lingua della Suite e, a parte, quella di REAPER.
---     Guide in inglese; la pagina web del SOLO ha IT / EN.
---   Funzioni AI (Traduci, Spiega con l'AI) con l'agente che hai sul Mac: Codex, Claude, Qwen, OpenCode
---     o Ollama in locale; prima di partire dicono dove va il testo. Richiedono ZP Speech aggiornato.
---   Firma Lato Cardioide nelle finestre e nelle guide; toolbar ZP con i pulsanti ZP Colori e Set Comandi;
---     il Benvenuto scorre quando la finestra e' bassa.
+--   EN
+--   Guides open in the Suite language (Italian or English), also from 00 Open Help.
+--   SOLO Recorder: the small S button on REC solos the recording track; cyan peak bar on the IN meter.
+--   Teleprompters: the notes panel lists open notes first; double click or right click adds a note;
+--     every search result has a Go button.
+--   Project Manager (17): a bar at the bottom explains the button under the mouse.
+--   Voice Cleaner (22): manual review panel (Play, zoom, Approve or Discard segment, Approve all),
+--     LISTEN, CLEAR MARKERS and a named calibration memory; APPLY uses the approved segments only.
+--   Voice Minutes Report (19) and Chain Builder (23) show their results inside their own window.
+--   SRT Tools (26) reads Excel XLS and XLSX files: choose sheet and columns, characters and reactions
+--     (includes SheetJS, Apache-2.0).
+--   Updated guides for Harmonic Space Carver, Voice Cleaner, BUS Chain and Project Manager.
+--   IT
+--   Le guide si aprono nella lingua della Suite (italiano o inglese), anche da 00 Apri Help.
+--   SOLO Recorder: il pulsantino S sul REC mette in solo la traccia di registrazione; picco azzurro sul meter IN.
+--   Gobbi: il pannello note mostra prima le note aperte; doppio clic o tasto destro aggiunge una nota;
+--     ogni risultato di Cerca ha il pulsante Vai.
+--   Gestore Progetto (17): una barra in fondo spiega il pulsante sotto il mouse.
+--   Voice Cleaner (22): pannello Revisione manuale (Play, zoom, Approva o Scarta segmento, Approva tutti),
+--     ASCOLTA, PULISCI MARKER e una memoria della calibrazione con nome; APPLICA usa solo i segmenti approvati.
+--   Report minuti voce (19) e Chain Builder (23) mostrano gli esiti nella loro finestra.
+--   SRT Tools (26) legge i file Excel XLS e XLSX: scegli foglio e colonne, personaggi e reazioni
+--     (include SheetJS, Apache-2.0).
+--   Guide aggiornate per Harmonic Space Carver, Voice Cleaner, BUS Chain e Gestore Progetto.
 -- @provides
 --   [main] 01_Importa_Video_SRT.lua
 --   [main] 02_Gobbo_Verticale.lua
@@ -258,6 +273,24 @@ end
 -- in Scripts/ZP_Studio_Suite: chiederlo al file stesso funziona sempre.
 local script_dir = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\][^/\\]+$") or ".")
 local help_path = join(join(script_dir, "help"), "index.html")
+
+-- Rispetta la lingua persistente della Suite anche quando si apre l'azione 00
+-- direttamente dalla Action List, senza passare dai pulsanti ? di ZP_UI.
+local lang = "it"
+local lingua_file = join(script_dir, "ZP_Lingua.lua")
+local lingua_ok, lingua = pcall(dofile, lingua_file)
+if lingua_ok and type(lingua) == "table" and type(lingua.get_lingua) == "function" then
+  local lang_ok, saved_lang = pcall(lingua.get_lingua)
+  if lang_ok and saved_lang == "en" then lang = "en" end
+end
+if lang ~= "it" then
+  local localized_path = join(join(join(script_dir, "help"), lang), "index.html")
+  local localized_file = io.open(localized_path, "r")
+  if localized_file then
+    localized_file:close()
+    help_path = localized_path
+  end
+end
 
 local f = io.open(help_path, "r")
 if not f then
