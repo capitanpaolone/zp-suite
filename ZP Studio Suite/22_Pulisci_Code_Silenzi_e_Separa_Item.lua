@@ -2,14 +2,15 @@
 
 --[[
 ZP Studio Suite - Split Silenzi / Voice Cleaner
-Versione: v1.0.5
+Versione: v1.1.0
 
 Analizza gli item audio selezionati, rileva porzioni parlate con un gate RMS
 smart e permette preview/applicazione non distruttiva fino al comando APPLICA.
 ]]
 
 local SCRIPT_NAME = "ZP Studio Suite - Split Silenzi / Voice Cleaner"
-local PREVIEW_PREFIX = "ZPSS22_PREVIEW"
+local MEMORY_SECTION = "ZPSS22_VOICE_CLEANER"
+local PREVIEW_PREFIX = "ZPSS22_PREVIEW" -- compatibilita': ripulisce eventuali preview legacy, non ne crea di nuove.
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
 
 local function msg(text) reaper.MB(tostring(text or ""), SCRIPT_NAME, 0) end
@@ -81,6 +82,12 @@ state = {
   gap = 0.50,
   advanced = false,
   analysis = nil,
+  review_index = 1,
+  review_zoom = 1,
+  review_decisions = {},
+  review_play_stop_at = nil,
+  analysis_dirty = false,
+  analysis_due = nil,
   last_operation = nil,
   status = "Seleziona item audio e premi ANALIZZA.",
   help_title = "",
@@ -110,6 +117,8 @@ local CONTROL_HELP = {
   preset_gentle = {"Gentle", "Piu conservativo. Lascia piu respiro e riduce il rischio di tagli troppo stretti."},
   preset_tight = {"Tight", "Piu aggressivo. Utile quando vuoi tagli rapidi e pause piu corte."},
   preset_manual = {"Manual", "Parte da valori manuali e lascia pieno controllo alla soglia."},
+  save_memory = {"Salva memoria", "Salva i valori correnti di soglia, tempi, margini e rifinitura come calibrazione nominata, disponibile anche nelle prossime sessioni."},
+  load_memory = {"Usa memoria", "Carica la calibrazione nominata salvata su questo Mac e aggiorna l'analisi."},
   threshold_auto = {"Auto", "Stima automaticamente la soglia partendo dal rumore di fondo rilevato nell'item."},
   threshold_manual = {"Manuale", "Usa il valore del knob Soglia invece della stima automatica."},
   threshold = {"Soglia", "Livello oltre il quale il segnale viene considerato parlato. Piu bassa rileva piu audio; piu alta rileva meno audio."},
@@ -124,9 +133,9 @@ local CONTROL_HELP = {
   merge_gap = {"Merge gap", "Opzione Advanced. OFF non fonde segmenti vicini; aumentando il valore unisce pause piu corte del valore scelto."},
   gap = {"Distanza tra file", "Opzione Advanced. Spazio tra i take creati con Separa in sequenza; non agisce con Posizione originale o Advanced chiuso."},
   analyze = {"Analizza", "Legge l'audio e calcola i segmenti senza modificare il progetto."},
-  preview = {"Preview", "Crea regioni rosse temporanee nella timeline originale. Disponibile solo con Posizione originale."},
+  preview = {"Ascolta", "Riproduce il segmento selezionato con un breve contesto prima e dopo. Si ferma alla fine del segmento."},
   apply = {"Applica", "Esegue davvero trim/split. L'operazione e annullabile con un solo Undo."},
-  clean_preview = {"Pulisci preview", "Rimuove le regioni temporanee create dalla preview."},
+  clean_preview = {"Pulisci marker", "Rimuove i marker temporanei degli interventi revisionati e le eventuali regioni preview delle versioni precedenti."},
   help = {"Help", "Apre la guida del Voice Cleaner."},
   cancel = {"Cancella", "Chiude la finestra e rimuove eventuali regioni preview temporanee."},
   debug = {"Debug", "Mostra in console i dati tecnici della lettura audio. Da lasciare spento nell'uso normale."},
@@ -140,6 +149,57 @@ local function copy_preset(idx)
   end
 end
 copy_preset(1)
+
+-- Una memoria nominata conserva la calibrazione personale tra sessioni REAPER.
+-- E' distinta dai preset di fabbrica e si aggiorna solo quando l'utente la salva.
+local MEMORY_KEYS = {
+  "threshold_mode", "threshold_db", "min_silence", "gate_open", "gate_hold",
+  "pre_pad", "post_pad", "fade", "ignore_click", "min_segment", "merge_gap"
+}
+local schedule_analysis
+
+local function save_calibration_memory()
+  local previous = reaper.GetExtState(MEMORY_SECTION, "name")
+  local ok, name = reaper.GetUserInputs(SCRIPT_NAME .. " - Salva calibrazione", 1,
+    "Nome memoria:,extrawidth=180", previous ~= "" and previous or "La mia calibrazione")
+  if not ok or not name or name:match("^%s*$") then return end
+  name = name:gsub("[\r\n]", " "):sub(1, 48)
+  reaper.SetExtState(MEMORY_SECTION, "name", name, true)
+  for _, key in ipairs(MEMORY_KEYS) do
+    local value = state.settings[key]
+    if value ~= nil then reaper.SetExtState(MEMORY_SECTION, key, tostring(value), true) end
+  end
+  reaper.SetExtState(MEMORY_SECTION, "advanced", state.advanced and "1" or "0", true)
+  reaper.SetExtState(MEMORY_SECTION, "mode", tostring(state.mode), true)
+  reaper.SetExtState(MEMORY_SECTION, "keep_positions", state.keep_positions and "1" or "0", true)
+  reaper.SetExtState(MEMORY_SECTION, "apply_fade", state.apply_fade and "1" or "0", true)
+  state.status = "Memoria di calibrazione salvata: " .. name
+end
+
+local function load_calibration_memory()
+  local name = reaper.GetExtState(MEMORY_SECTION, "name")
+  if name == "" then
+    state.status = "Nessuna memoria salvata: regola i parametri e premi Salva memoria."
+    return
+  end
+  for _, key in ipairs(MEMORY_KEYS) do
+    local value = reaper.GetExtState(MEMORY_SECTION, key)
+    if key == "threshold_mode" then
+      if value == "auto" or value == "manual" then state.settings[key] = value end
+    else
+      local number = tonumber(value)
+      if number then state.settings[key] = number end
+    end
+  end
+  state.advanced = reaper.GetExtState(MEMORY_SECTION, "advanced") == "1"
+  state.mode = tonumber(reaper.GetExtState(MEMORY_SECTION, "mode")) or state.mode
+  state.keep_positions = reaper.GetExtState(MEMORY_SECTION, "keep_positions") ~= "0"
+  state.apply_fade = reaper.GetExtState(MEMORY_SECTION, "apply_fade") ~= "0"
+  state.preset = 4 -- manual: i valori personalizzati restano quelli caricati dalla memoria
+  state.last_operation = nil
+  schedule_analysis()
+  state.status = "Calibrazione caricata: " .. name .. ". Analisi aggiornata con questi parametri."
+end
 
 local function effective_settings()
   local s = {}
@@ -552,6 +612,17 @@ local function detect_segments(item, settings)
   local segments = normalize_segments(raw, item_start, item_end, settings)
   local speech = 0
   for _, seg in ipairs(segments) do speech = speech + (seg.stop - seg.start) end
+  -- Riusa i picchi gia' letti dall'AudioAccessor: la revisione non deve fare
+  -- una seconda lettura separata (e non dipende dai peak cache di REAPER).
+  local waveform = {}
+  local waveform_bins = 400
+  local peak_scale = math.max(audio_diag.max_peak or 0, AUDIO_MIN_PEAK)
+  for i = 1, waveform_bins do waveform[i] = 0 end
+  for _, win in ipairs(windows) do
+    local rel = clamp((win.t - item_start) / math.max(item_len, 0.001), 0, 0.999999)
+    local bin = clamp(math.floor(rel * waveform_bins) + 1, 1, waveform_bins)
+    waveform[bin] = math.max(waveform[bin], clamp((win.peak or 0) / peak_scale, 0, 1))
+  end
   return segments, {
     threshold_db = threshold_db,
     noise_db = noise_db,
@@ -560,6 +631,7 @@ local function detect_segments(item, settings)
     raw_count = #raw,
     speech = speech,
     item_len = item_len,
+    waveform = waveform,
     warning = (#segments == 0 and "Nessun parlato rilevato") or nil
   }
 end
@@ -617,7 +689,44 @@ local function select_only(items)
   end
 end
 
+local REVIEW_MARKER_PREFIX = "ZPSS22_REVIEW_"
+
+local function cleanup_review_markers(candidate_id)
+  local needle = candidate_id and (REVIEW_MARKER_PREFIX .. string.format("%04d", candidate_id)) or REVIEW_MARKER_PREFIX
+  local _, markers, regions = reaper.CountProjectMarkers(0)
+  for i = markers + regions - 1, 0, -1 do
+    local ok, isrgn, _, _, name, idx = reaper.EnumProjectMarkers(i)
+    if ok and not isrgn and tostring(name or ""):find(needle, 1, true) == 1 then
+      reaper.DeleteProjectMarker(0, idx, false)
+    end
+  end
+end
+
+local function update_review_marker(candidate, decision)
+  cleanup_review_markers(state.review_index)
+  if not candidate or decision == "pending" then reaper.UpdateArrange(); return end
+  local label = string.format("%s%04d %s %s", REVIEW_MARKER_PREFIX, state.review_index,
+    decision == "approved" and "MANTIENI" or "ESCLUDI", candidate.res.name)
+  local color = reaper.ColorToNative(decision == "approved" and 80 or 220, decision == "approved" and 190 or 90, 70) + 0x1000000
+  reaper.Undo_BeginBlock()
+  reaper.AddProjectMarker2(0, false, candidate.seg.start, 0, label .. " INIZIO", -1, color)
+  reaper.AddProjectMarker2(0, false, candidate.seg.stop, 0, label .. " FINE", -1, color)
+  reaper.Undo_EndBlock("ZP Voice Cleaner: marca segmento revisionato", -1)
+  reaper.UpdateArrange()
+end
+
+schedule_analysis = function()
+  state.analysis = nil
+  state.last_operation = nil
+  state.analysis_dirty = true
+  state.analysis_due = (reaper.time_precise and reaper.time_precise() or os.clock()) + 0.45
+  state.status = "Parametri cambiati: aggiorno l'analisi appena finisci di regolare i controlli."
+end
+
 local function analyze()
+  state.analysis_dirty = false
+  state.analysis_due = nil
+  cleanup_review_markers()
   local items = selected_audio_items()
   if #items == 0 then state.status = "Nessun item audio selezionato."; state.analysis = nil; return end
   local settings = effective_settings()
@@ -638,7 +747,8 @@ local function analyze()
     results.max_rms = math.max(results.max_rms, diag.max_rms or 0)
     results.segment_count = results.segment_count + #segments
     results.silence_count = results.silence_count + math.max(0, #segments - 1)
-    results.items[#results.items + 1] = {item = item, name = item_name(item), pos = item_pos, len = item_len, segments = segments, info = info}
+    local waveform = info.waveform or {}
+    results.items[#results.items + 1] = {item = item, name = item_name(item), pos = item_pos, len = item_len, segments = segments, info = info, waveform = waveform}
   end
   results.audio_ok = results.audio_failures == 0 and results.audio_windows > 0 and results.max_peak > AUDIO_MIN_PEAK
   local first_diag = results.items[1] and results.items[1].info and results.items[1].info.audio_diag or {}
@@ -651,7 +761,7 @@ local function analyze()
   for _, v in ipairs(results.noise_floors) do avg = avg + v end
   if #results.noise_floors > 0 then results.noise_avg = avg / #results.noise_floors end
   if results.audio_ok then
-    results.audio_line = string.format("Audio OK - %s - peak %s", mode_label, fmt_db(amp_to_db(results.max_peak)))
+    results.audio_line = string.format("Audio OK - AudioAccessor %s - %d finestre lette - peak %s", mode_label, results.audio_windows, fmt_db(amp_to_db(results.max_peak)))
   elseif results.audio_windows > 0 and results.max_peak <= AUDIO_MIN_PEAK then
     results.audio_line = string.format("Audio FAIL/ZERO - %s - peak %s", mode_label, fmt_db(amp_to_db(results.max_peak)))
   else
@@ -716,6 +826,13 @@ local function analyze()
     end
   end
   state.analysis = results
+  state.review_index = 1
+  state.review_decisions = {}
+  for _, res in ipairs(results.items) do
+    for _, seg in ipairs(res.segments) do
+      state.review_decisions[seg] = "pending"
+    end
+  end
   state.last_operation = nil
   state.status = string.format("Analisi completata: %d segmenti su %d item.", results.segment_count, #results.items)
 end
@@ -738,48 +855,52 @@ local function count_preview_regions()
   return count
 end
 
+local review_candidates, play_review_candidate
+
 local function preview()
   if not state.analysis then analyze() end
-  if not state.analysis or not state.analysis.audio_ok or state.analysis.segment_count == 0 then state.status = "Preview non disponibile: audio non letto o nessun segmento valido."; return end
-  if not effective_keep_positions() then state.status = "Preview disponibile solo con Posizione originale."; return end
-  reaper.Undo_BeginBlock()
-  cleanup_preview()
-  local preview_color = reaper.ColorToNative(255, 0, 0) + 0x1000000
-  local n = 0
-  for _, res in ipairs(state.analysis.items) do
-    for i, seg in ipairs(res.segments) do
-      n = n + 1
-      reaper.AddProjectMarker2(0, true, seg.start, seg.stop, string.format("%s %03d %s", PREVIEW_PREFIX, i, res.name), -1, preview_color)
-    end
-  end
-  reaper.Undo_EndBlock("ZP Studio Suite preview split silenzi", -1)
-  reaper.UpdateArrange()
-  state.status = "Preview creata con regioni temporanee ZPSS22_PREVIEW."
+  if not state.analysis or not state.analysis.audio_ok or state.analysis.segment_count == 0 then state.status = "Ascolto non disponibile: audio non letto o nessun segmento valido."; return end
+  local candidate = review_candidates()[state.review_index]
+  play_review_candidate(candidate)
 end
 
 local function apply()
   if not state.analysis then analyze() end
   if not state.analysis or not state.analysis.audio_ok or state.analysis.segment_count == 0 then state.status = "APPLICA bloccato: audio non letto o nessun segmento valido."; return end
   local analysis = state.analysis
+  local approved_count, pending_count = 0, 0
+  for _, res in ipairs(analysis.items) do
+    for _, seg in ipairs(res.segments) do
+      if state.review_decisions[seg] == "approved" then approved_count = approved_count + 1 end
+      if state.review_decisions[seg] == "pending" then pending_count = pending_count + 1 end
+    end
+  end
+  if pending_count > 0 then state.status = string.format("Rivedi tutti i segmenti: ne restano %d in attesa.", pending_count); return end
+  if approved_count == 0 then state.status = "Approva almeno un intervento prima di applicare."; return end
   local keep_positions = effective_keep_positions()
   local gap = effective_gap()
 
   reaper.Undo_BeginBlock()
   reaper.PreventUIRefresh(1)
   cleanup_preview()
+  cleanup_review_markers()
 
   local created_items = {}
   for _, res in ipairs(analysis.items) do
     if res.item and reaper.ValidatePtr(res.item, "MediaItem*") then
+      local approved = {}
+      for _, seg in ipairs(res.segments) do
+        if state.review_decisions[seg] == "approved" then approved[#approved + 1] = seg end
+      end
       if state.mode == 1 then
-        local first, last = res.segments[1], res.segments[#res.segments]
+        local first, last = approved[1], approved[#approved]
         if first and last and trim_item_to_time(res.item, first.start, last.stop) then
           apply_fade(res.item)
           created_items[#created_items + 1] = res.item
         end
       else
         local per_item = {}
-        for i, seg in ipairs(res.segments) do
+        for i, seg in ipairs(approved) do
           local new_item = duplicate_item(res.item)
           if new_item and trim_item_to_time(new_item, seg.start, seg.stop) then
             apply_fade(new_item)
@@ -827,7 +948,43 @@ local function apply()
     mode = state.mode
   }
   state.analysis = nil
-  state.status = string.format("Applicato: %d item finali creati/selezionati.", #created_items)
+  state.status = string.format("Applicati %d interventi approvati: %d item finali.", approved_count, #created_items)
+end
+
+review_candidates = function()
+  local out = {}
+  if state.analysis then
+    for ri, res in ipairs(state.analysis.items) do
+      for si, seg in ipairs(res.segments) do out[#out + 1] = {res = res, seg = seg, ri = ri, si = si} end
+    end
+  end
+  return out
+end
+
+local function set_review_decision(candidate, decision)
+  if not candidate then return end
+  state.review_decisions[candidate.seg] = decision
+  update_review_marker(candidate, decision)
+  if reaper.ValidatePtr(candidate.res.item, "MediaItem*") then
+    reaper.Main_OnCommand(40289, 0)
+    reaper.SetMediaItemSelected(candidate.res.item, true)
+    reaper.SetEditCurPos(candidate.seg.start, true, false)
+  end
+  local label = decision == "approved" and "approvato" or decision == "rejected" and "scartato" or "in attesa"
+  state.status = string.format("Intervallo %s: %s. Marker in timeline; Applica esegue il taglio.", candidate.res.name, label)
+end
+
+play_review_candidate = function(candidate)
+  if not candidate or not reaper.ValidatePtr(candidate.res.item, "MediaItem*") then return end
+  if (reaper.GetPlayState() & 1) == 1 then reaper.Main_OnCommand(1016, 0) end
+  reaper.Main_OnCommand(40289, 0)
+  reaper.SetMediaItemSelected(candidate.res.item, true)
+  local context = 0.20
+  local start_at = math.max(candidate.res.pos, candidate.seg.start - context)
+  state.review_play_stop_at = math.min(candidate.res.pos + candidate.res.len, candidate.seg.stop + context)
+  reaper.SetEditCurPos(start_at, true, false)
+  reaper.Main_OnCommand(1007, 0)
+  state.status = string.format("Ascolto intervento %d: %s.", state.review_index, candidate.res.name)
 end
 
 local function rect(x, y, w, h, color) setc(color); gfx.rect(x, y, w, h, 1); setc(COLORS.line); gfx.rect(x, y, w, h, 0) end
@@ -896,8 +1053,7 @@ local function set_value(key, value, minv, maxv, step)
   value = clamp(value, minv, maxv)
   if step and step > 0 then value = math.floor((value / step) + 0.5) * step end
   if key == "gap" then state.gap = value else state.settings[key] = value end
-  state.analysis = nil
-  state.last_operation = nil
+  if key == "gap" or key == "fade" then state.last_operation = nil else schedule_analysis() end
 end
 
 local function knob(x, y, r, text, key, minv, maxv, step, default, formatter, color, enabled, disabled_reason, help_key)
@@ -969,7 +1125,16 @@ end
 
 local function draw_gui()
   local char = gfx.getchar()
-  if char == -1 then cleanup_preview(); return end
+  if char == -1 then cleanup_preview(); cleanup_review_markers(); return end
+  if state.analysis_dirty and not state.drag_key then
+    local now = reaper.time_precise and reaper.time_precise() or os.clock()
+    if now >= (state.analysis_due or 0) then analyze() end
+  end
+  if state.review_play_stop_at and (reaper.GetPlayState() & 1) == 1 and reaper.GetPlayPosition() >= state.review_play_stop_at then
+    reaper.Main_OnCommand(1016, 0)
+    state.review_play_stop_at = nil
+    state.status = "Fine ascolto segmento."
+  end
   state.help_title = ""
   state.help_text = ""
   state.knob_hover = false
@@ -993,8 +1158,8 @@ local function draw_gui()
   local content_top = content_y + 8
   y = content_top
   panel(x, y, 996, 88, "Modalita - cosa deve produrre Applica", "")
-  if button(x + 16, y + 46, 240, 30, "Trim testa/coda", state.mode == 1, nil, true, nil, "mode_trim") then state.mode = 1; state.analysis = nil; state.last_operation = nil end
-  if button(x + 270, y + 46, 270, 30, "Split silenzi interni", state.mode == 2, nil, true, nil, "mode_split") then state.mode = 2; state.analysis = nil; state.last_operation = nil end
+  if button(x + 16, y + 46, 240, 30, "Trim testa/coda", state.mode == 1, nil, true, nil, "mode_trim") then state.mode = 1; state.last_operation = nil end
+  if button(x + 270, y + 46, 270, 30, "Split silenzi interni", state.mode == 2, nil, true, nil, "mode_split") then state.mode = 2; state.last_operation = nil end
   if button(x + 804, y + 46, 86, 30, state.rename_parts and "Rinomina" or "No nome", state.rename_parts, nil, true, nil, "rename") then state.rename_parts = not state.rename_parts end
   if button(x + 902, y + 46, 78, 30, state.apply_fade and "Fade" or "No fade", state.apply_fade, nil, true, nil, "fade_toggle") then state.apply_fade = not state.apply_fade end
 
@@ -1002,11 +1167,14 @@ local function draw_gui()
   panel(x, y, 996, 76, "Preset - scegli punto di partenza", "")
   for i, p in ipairs(PRESETS) do
     local helps = {"preset_vo", "preset_gentle", "preset_tight", "preset_manual"}
-    if button(x + 16 + ((i - 1) * 118), y + 38, 108, 30, p.name, state.preset == i, nil, true, nil, helps[i]) then state.preset = i; copy_preset(i); state.analysis = nil; state.last_operation = nil end
+    if button(x + 16 + ((i - 1) * 118), y + 38, 108, 30, p.name, state.preset == i, nil, true, nil, helps[i]) then state.preset = i; copy_preset(i); schedule_analysis() end
   end
-  if button(x + 520, y + 38, 94, 30, "Auto", state.settings.threshold_mode == "auto", nil, true, nil, "threshold_auto") then state.settings.threshold_mode = "auto"; state.analysis = nil; state.last_operation = nil end
-  if button(x + 624, y + 38, 104, 30, "Manuale", state.settings.threshold_mode == "manual", nil, true, nil, "threshold_manual") then state.settings.threshold_mode = "manual"; state.analysis = nil; state.last_operation = nil end
-  if button(x + 852, y + 38, 136, 30, state.debug and "Debug ON" or "Debug OFF", state.debug, state.debug and "warn" or nil, true, nil, "debug") then state.debug = not state.debug end
+  if button(x + 520, y + 38, 94, 30, "Auto", state.settings.threshold_mode == "auto", nil, true, nil, "threshold_auto") then state.settings.threshold_mode = "auto"; schedule_analysis() end
+  if button(x + 624, y + 38, 104, 30, "Manuale", state.settings.threshold_mode == "manual", nil, true, nil, "threshold_manual") then state.settings.threshold_mode = "manual"; schedule_analysis() end
+  if button(x + 738, y + 38, 92, 30, "Salva memoria", false, nil, true, nil, "save_memory") then save_calibration_memory() end
+  local memory_name = reaper.GetExtState(MEMORY_SECTION, "name")
+  if button(x + 836, y + 38, 86, 30, "Usa memoria", false, nil, memory_name ~= "", "Salva prima una memoria di calibrazione.", "load_memory") then load_calibration_memory() end
+  if button(x + 928, y + 38, 60, 30, state.debug and "Debug ON" or "Debug", state.debug, state.debug and "warn" or nil, true, nil, "debug") then state.debug = not state.debug end
 
   y = y + 90
   panel(x, y, 486, 188, "Detection", "Soglia e tempi che decidono quando una frase e' parlato.")
@@ -1026,9 +1194,7 @@ local function draw_gui()
   panel(x, y, 996, state.advanced and 212 or 72, "Opzioni avanzate / Output", advanced_summary)
   if button(x + 880, y + 18, 100, 30, state.advanced and "Chiudi" or "Apri", state.advanced, nil, true, nil, "advanced") then
     state.advanced = not state.advanced
-    state.analysis = nil
-    state.last_operation = nil
-    state.status = "Opzioni avanzate cambiate: premi ANALIZZA per aggiornare."
+    schedule_analysis()
   end
   if state.advanced then
     local out_x, out_y = x + 500, y + 26
@@ -1070,7 +1236,72 @@ local function draw_gui()
     label("Premi ANALIZZA per calcolare soglia, silenzi e segmenti senza modificare il progetto.", x + 16, y + 62, 15, COLORS.muted)
   end
 
-  state.content_h = (y + 146) - content_top
+  y = y + 146
+  local candidates = review_candidates()
+  local selected = candidates[state.review_index]
+  local review_help = state.mode == 2
+    and "Intervalli parlati rilevati dall'audio. Approva = mantieni; Scarta = escludi. APPLICA sostituisce l'item con gli approvati; Undo ripristina."
+    or "Sono intervalli parlati rilevati dall'audio. Trim cambia solo testa/coda; non rimuove pause interne."
+  panel(x, y, 996, 250, "Revisione manuale", review_help)
+  if selected then
+    local decision = state.review_decisions[selected.seg] or "pending"
+    local n_approved, n_pending = 0, 0
+    for _, c in ipairs(candidates) do
+      if state.review_decisions[c.seg] == "approved" then n_approved = n_approved + 1 end
+      if state.review_decisions[c.seg] == "pending" then n_pending = n_pending + 1 end
+    end
+    label(string.format("%d/%d  %s  |  %.2f - %.2f s  |  %s", state.review_index, #candidates, selected.res.name, selected.seg.start, selected.seg.stop,
+      decision == "approved" and "APPROVATO" or decision == "rejected" and "SCARTATO" or "IN ATTESA"), x + 16, y + 52, 15,
+      decision == "approved" and COLORS.green or decision == "rejected" and COLORS.red or COLORS.orange, true)
+    local info = selected.res.info or {}
+    local active = effective_settings()
+    label(string.format("AudioAccessor: finestre 15 ms; RMS/peak %s; apre %s, chiude dopo max(%s, %s); margini %s / %s. Non interpreta testo o respiri.",
+      fmt_db(info.threshold_db), fmt_ms(active.gate_open), fmt_ms(active.min_silence), fmt_ms(active.gate_hold),
+      fmt_ms(active.pre_pad), fmt_ms(active.post_pad)), x + 16, y + 68, 13, COLORS.muted)
+    local wx, wy, ww, wh = x + 16, y + 92, 650, 98
+    rect(wx, wy, ww, wh, COLORS.knob_bg)
+    local mid = wy + wh * 0.5
+    setc(COLORS.line); gfx.line(wx + 1, mid, wx + ww - 1, mid)
+    local len = math.max(0.001, selected.res.len)
+    local center = (selected.seg.start + selected.seg.stop) * 0.5
+    local window = math.min(len, math.max(0.06, len / (4 * math.max(1, state.review_zoom))))
+    local view_start = clamp(center - window * 0.5, selected.res.pos, selected.res.pos + len - window)
+    local wave = selected.res.waveform or {}
+    if #wave > 1 then
+      for px = 1, ww - 2 do
+        local t = view_start + ((px - 1) / math.max(1, ww - 3)) * window
+        local idx = clamp(math.floor(((t - selected.res.pos) / len) * #wave) + 1, 1, #wave)
+        local amp = clamp(wave[idx] or 0, 0, 1)
+        local h = math.max(1, amp * (wh * 0.42))
+        local inside = t >= selected.seg.start and t <= selected.seg.stop
+        setc(inside and COLORS.cyan or COLORS.muted, inside and 0.95 or 0.42)
+        gfx.line(wx + px, mid - h, wx + px, mid + h)
+      end
+    else
+      label("Forma d'onda non disponibile per questo take.", wx + 12, wy + 42, 14, COLORS.muted)
+    end
+    local sx = wx + clamp((selected.seg.start - view_start) / window, 0, 1) * ww
+    local ex = wx + clamp((selected.seg.stop - view_start) / window, 0, 1) * ww
+    setc(COLORS.title); gfx.line(sx, wy + 2, sx, wy + wh - 2, 2); gfx.line(ex, wy + 2, ex, wy + wh - 2, 2)
+    local bx = x + 684
+    if button(bx, y + 82, 90, 30, "◀", false, nil, state.review_index > 1, "Primo segmento.") then state.review_index = state.review_index - 1 end
+    if button(bx + 98, y + 82, 90, 30, "▶", false, nil, state.review_index < #candidates, "Ultimo segmento.") then state.review_index = state.review_index + 1 end
+    if button(bx, y + 120, 90, 30, "Play", false, "go", true, nil) then play_review_candidate(selected) end
+    if button(bx + 98, y + 120, 90, 30, "Stop", false, "danger", true, nil) then reaper.Main_OnCommand(1016, 0); state.review_play_stop_at = nil; state.status = "Riproduzione fermata." end
+    if button(bx, y + 158, 90, 30, "Zoom −", false, nil, true, nil) then state.review_zoom = clamp(state.review_zoom / 1.5, 1, 32) end
+    if button(bx + 98, y + 158, 90, 30, "Zoom +", false, nil, true, nil) then state.review_zoom = clamp(state.review_zoom * 1.5, 1, 32) end
+    if button(x + 16, y + 202, 174, 30, "Approva segmento", decision == "approved", "go", true, nil) then set_review_decision(selected, "approved") end
+    if button(x + 202, y + 202, 174, 30, "Scarta segmento", decision == "rejected", "danger", true, nil) then set_review_decision(selected, "rejected") end
+    if button(x + 388, y + 202, 170, 30, "Approva tutti", false, nil, #candidates > 0, "Nessun segmento da approvare.") then
+      for _, c in ipairs(candidates) do state.review_decisions[c.seg] = "approved" end
+      state.status = string.format("Approvati tutti i %d segmenti.", #candidates)
+    end
+    label(string.format("Approvati %d  |  in attesa %d", n_approved, n_pending), x + 590, y + 210, 14, COLORS.muted)
+  else
+    label("Analizza un item audio per rivedere e approvare i segmenti rilevati.", x + 16, y + 72, 15, COLORS.muted)
+  end
+
+  state.content_h = (y + 264) - content_top
   local max_scroll = math.max(0, state.content_h - visible_h)
   state.scroll_y = clamp(state.scroll_y, 0, max_scroll)
 
@@ -1087,19 +1318,31 @@ local function draw_gui()
   y = footer_y + 72
   local has_audio_items = #selected_audio_items() > 0
   local valid_analysis = state.analysis and state.analysis.audio_ok and state.analysis.segment_count > 0
-  local keep_positions = effective_keep_positions()
-  local can_preview = valid_analysis and keep_positions
-  local can_apply = valid_analysis
+  local has_approved, review_complete = false, true
+  if state.analysis then
+    for _, res in ipairs(state.analysis.items) do
+      for _, seg in ipairs(res.segments) do
+        if state.review_decisions[seg] == "approved" then has_approved = true end
+        if state.review_decisions[seg] == "pending" then review_complete = false end
+      end
+    end
+  end
+  local can_preview = valid_analysis
+  local can_apply = valid_analysis and has_approved and review_complete
   local preview_count = count_preview_regions()
-  local preview_reason = "Fai prima ANALIZZA."
-  if state.analysis and state.analysis.segment_count == 0 then preview_reason = "Nessun segmento valido."
-  elseif valid_analysis and not keep_positions then preview_reason = "Preview disponibile solo con Posizione originale. Con Separa in sequenza il risultato viene riposizionato dopo Applica." end
+  local listen_reason = "Fai prima ANALIZZA."
+  if state.analysis and state.analysis.segment_count == 0 then listen_reason = "Nessun segmento valido." end
+  local apply_reason = "Fai prima ANALIZZA."
+  if valid_analysis and not review_complete then apply_reason = "Rivedi tutti i segmenti prima di applicare."
+  elseif valid_analysis and not has_approved then apply_reason = "Approva almeno un segmento per applicare." end
   if button(x, y, 150, 38, "ANALIZZA", false, "warn", has_audio_items, "Seleziona almeno un item audio.", "analyze") then analyze() end
-  if button(x + 164, y, 140, 38, "PREVIEW", false, nil, can_preview, preview_reason, "preview") then preview() end
-  if button(x + 318, y, 140, 38, "APPLICA", false, "go", can_apply, "Non ci sono segmenti validi da applicare.", "apply") then apply() end
-  if button(x + 472, y, 154, 38, "PULISCI PREVIEW", false, nil, preview_count > 0, "Nessuna regione preview da rimuovere.", "clean_preview") then cleanup_preview(); state.status = "Preview rimossa." end
+  if button(x + 164, y, 140, 38, "ASCOLTA", false, nil, can_preview, listen_reason, "preview") then preview() end
+  if button(x + 318, y, 140, 38, "APPLICA", false, "go", can_apply, apply_reason, "apply") then apply() end
+  if button(x + 472, y, 154, 38, "PULISCI MARKER", false, nil, preview_count > 0 or state.analysis ~= nil, "Nessun marker temporaneo da rimuovere.", "clean_preview") then
+    cleanup_preview(); cleanup_review_markers(); state.status = "Marker temporanei rimossi."
+  end
   if button(x + 692, y, 38, 38, "?", false, nil, true, nil, "help") then open_help() end
-  if button(x + 744, y, 120, 38, "CANCELLA", false, "danger", true, nil, "cancel") then cleanup_preview(); gfx.quit(); return end
+  if button(x + 744, y, 120, 38, "CANCELLA", false, "danger", true, nil, "cancel") then cleanup_preview(); cleanup_review_markers(); gfx.quit(); return end
 
   if state.help_title ~= "" then
     label(state.help_title, x + 14, footer_y + 10, 15, COLORS.title, true)
