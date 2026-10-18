@@ -26,7 +26,13 @@ done < <(git ls-files '*.lua' '*.jsfx' | grep -vE '^(gobbo_ricerca_battuta|speec
 
 say "== 2b. Ogni file elencato nel @provides della ZP Studio Suite esiste"
 ( cd "ZP Studio Suite" && awk '/@provides/{f=1;next} f&&/^-- @/{f=0} f&&/^--   /{print}' 00_Apri_Help_ZP_Studio_Suite.lua \
-  | sed -E 's/^--   (\[[a-z]+\] )?//; s/ > .*//' | while IFS= read -r p; do [ -e "$p" ] || echo "MANCA nel repo: $p"; done ) > /tmp/zp_provides_$$.txt
+  | sed -E 's/^--   (\[[a-z]+\] )?//; s/ > .*//' | while IFS= read -r p; do
+      case "$p" in
+        /*) test_path="../${p#/}" ;;
+        *) test_path="$p" ;;
+      esac
+      [ -e "$test_path" ] || echo "MANCA nel repo: $p"
+    done ) > /tmp/zp_provides_$$.txt
 if [ -s /tmp/zp_provides_$$.txt ]; then cat /tmp/zp_provides_$$.txt; fail=1; fi
 rm -f /tmp/zp_provides_$$.txt
 

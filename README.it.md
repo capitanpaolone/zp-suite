@@ -27,6 +27,10 @@ La Suite funziona anche con un’installazione pulita di REAPER. SWS, js_ReaScri
 - **ZP Master** — strumenti per mastering e confronto timbrico.
 - **ZP Misura** — loudness meter, oscilloscopio e sonde passive del segnale.
 
+## Non incluso in questa versione
+
+ZP Montaggio Parlato (prototipo), ZP BrownSlope Dynamic Guard, ZP BrownSlope Prism e ZP Speech Engine sono ancora in lavorazione e non fanno parte di questa versione ReaPack.
+
 ## Guide e sorgenti
 
 - [Guida italiana della Suite](ZP%20Studio%20Suite/help/index.html)

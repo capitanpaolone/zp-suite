@@ -2169,7 +2169,7 @@ local BUTTON_HELP = {
   ["N. + nome"] = "Aggiunge il numero della regione al nome durante la creazione.",
   ["Sel"] = "Attiva la riproduzione automatica quando selezioni una regione.",
   ["Play"] = "Riproduce la regione selezionata.",
-  ["Salva"] = "Salva le impostazioni o il progetto, secondo la finestra aperta.",
+  ["Salva"] = "Applica ai marker di regione i nomi in bozza, aggiorna il progetto e conserva le impostazioni.",
   ["OK"] = "Conferma il salvataggio appena completato.",
   ["Log"] = "Attiva o disattiva il registro Mixdown History.",
   ["Annulla"] = "Chiude la finestra o annulla le modifiche correnti.",
@@ -3304,6 +3304,85 @@ local function open_window()
     return true
   end
 
+  local function pending_name_rows(groups, names)
+    local pending = {}
+    local region_number = 0
+    for _, group in ipairs(groups or {}) do
+      if is_region_row(group) then
+        region_number = region_number + 1
+        local order = group.region_order or region_number
+        local intended = group.edited_name
+        if intended == nil and names and names[order] and trim(names[order]) ~= "" then
+          intended = names[order]
+        end
+        if intended ~= nil then
+          local base_name = trim(intended)
+          local target_name = base_name ~= "" and base_name or string.format("%02d", region_number)
+          if state.number_names and base_name ~= "" then
+            target_name = string.format("%02d %s", region_number, base_name)
+          end
+          local actual_name = group.existing_region and trim(group.name or "") or nil
+          if actual_name ~= target_name then
+            pending[#pending + 1] = { group = group, name = target_name }
+          end
+        end
+      end
+    end
+    return pending
+  end
+
+  local function apply_pending_names(groups, names)
+    local pending = pending_name_rows(groups, names)
+    if #pending == 0 then return 0, 0 end
+
+    local updated_count, created_count = 0, 0
+    reaper.PreventUIRefresh(1)
+    reaper.Undo_BeginBlock()
+    for _, row in ipairs(pending) do
+      local group = row.group
+      if group.existing_region and group.existing_idx then
+        local color = group.existing_color or REGION_COLOR
+        if reaper.SetProjectMarker3 then
+          reaper.SetProjectMarker3(0, group.existing_idx, true, group.region_start, group.region_end, row.name, color)
+        else
+          reaper.DeleteProjectMarker(0, group.existing_idx, true)
+          reaper.AddProjectMarker2(0, true, group.region_start, group.region_end, row.name, group.existing_idx, color)
+        end
+        updated_count = updated_count + 1
+      else
+        reaper.AddProjectMarker2(0, true, group.region_start, group.region_end, row.name, -1, REGION_COLOR)
+        created_count = created_count + 1
+      end
+    end
+    reaper.Undo_EndBlock("Salva nomi in bozza nelle regioni", -1)
+    reaper.PreventUIRefresh(-1)
+    reaper.UpdateArrange()
+    return updated_count, created_count
+  end
+
+  local function confirm_close_with_pending_names()
+    local _, groups, names = rebuild()
+    if edit_name_index and active_field == "inline_name" then
+      commit_name_edit(groups)
+      _, groups, names = rebuild()
+    end
+    save_draft_state()
+    local pending = #pending_name_rows(groups, names)
+    if pending == 0 then return true end
+    local noun = pending == 1 and "nome" or "nomi"
+    local message = string.format(
+      "%d %s sono ancora in bozza e non sono applicati alle regioni.\n\nSì: applica i nomi alle rispettive regioni e chiude.\nNo: torna al Gestore senza applicarli.",
+      pending,
+      noun
+    )
+    if reaper.ShowMessageBox(message, SCRIPT_TITLE, 4) ~= 6 then return false end
+    local updated, created = apply_pending_names(groups, names)
+    save_draft_state()
+    save_project_file()
+    notify_status(string.format("Nomi salvati nelle regioni: %d aggiornate, %d create.", updated, created))
+    return true
+  end
+
   local function start_preview_inline_name_input(groups, index, select_all)
     local group = groups and groups[index]
     if not group or group.marker_only then return false end
@@ -3438,7 +3517,13 @@ local function open_window()
     end
 
     local ch = gfx.getchar()
-    if ch < 0 then save_draft_state() gfx.quit() return end
+    if ch < 0 then
+      if confirm_close_with_pending_names() then
+        gfx.quit()
+        return
+      end
+      gfx.init(SCRIPT_TITLE, FIXED_WINDOW_W, math.max(gfx.h, MIN_WINDOW_H))
+    end
     if gfx.w ~= FIXED_WINDOW_W or gfx.h < MIN_WINDOW_H then
       gfx.init(SCRIPT_TITLE, FIXED_WINDOW_W, math.max(gfx.h, MIN_WINDOW_H))
     end
@@ -3489,7 +3574,12 @@ local function open_window()
       if show_mixdown_settings then show_mixdown_settings = false mixdown_draft = nil
       elseif show_help then show_help = false
       elseif edit_name_index then cancel_name_edit()
-      else save_draft_state() gfx.quit() return end
+      else
+        if confirm_close_with_pending_names() then
+          gfx.quit()
+          return
+        end
+      end
     end
 
     local items, groups, names, source = rebuild()
@@ -3904,8 +3994,14 @@ local function open_window()
     if draw_button({ x = transport_x + 250, y = transport_y, w = 88, h = 30 }, saved_recently and "OK" or "Salva", saved_recently, true, clicked, "save") then
       if edit_name_index and active_field == "inline_name" then commit_name_edit(groups) end
       save_draft_state()
+      local _, save_groups, save_names = rebuild()
+      local updated_names, created_names = apply_pending_names(save_groups, save_names)
       save_project_file()
-      notify_status("Stato Gestore Progetto e progetto REAPER salvati.")
+      if updated_names + created_names > 0 then
+        notify_status(string.format("Nomi salvati nelle regioni: %d aggiornate, %d create.", updated_names, created_names))
+      else
+        notify_status("Stato Gestore Progetto e progetto REAPER salvati.")
+      end
       mark_saved()
     end
     local log_enabled = bool_from_state(reaper.GetExtState(EXT_SECTION, "mixdown_log_enabled"), false)
@@ -3922,10 +4018,10 @@ local function open_window()
     local final_x = compact_actions and math.max(22, content_right - 92) or (content_right - 78)
     local final_y = compact_actions and transport_y or action_y
     if draw_button({ x = final_x, y = final_y, w = 72, h = 30 }, "Annulla", false, true, clicked) then
-      if edit_name_index and active_field == "inline_name" then commit_name_edit(groups) end
-      save_draft_state()
-      gfx.quit()
-      return
+      if confirm_close_with_pending_names() then
+        gfx.quit()
+        return
+      end
     end
 
     local status

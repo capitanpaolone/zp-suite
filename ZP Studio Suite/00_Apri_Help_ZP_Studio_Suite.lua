@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.6.1
+-- @version 2.6.2
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -22,15 +22,20 @@
 --   NVDA Controller Client (LGPL 2.1, NV Access). Dettagli in README.it.md.
 -- @changelog
 --   EN
---   Italian translation of REAPER included (language pack "Italiano (ZP)"): ReaPack installs it in
---     REAPER's LangPack folder; choose it in REAPER's language preferences. Menus, dialogs and the
---     Preferences help are translated; Actions stay in English.
+--   Fixed: the Italian REAPER language pack ("Italiano (ZP)") now installs directly in REAPER's
+--     LangPack folder, so it appears in the language list (2.6.1 put it in a subfolder where REAPER
+--     could not see it). After updating, pick it in 33 Welcome, under REAPER language.
+--   Project Manager (17): Save applies draft names to their matching regions, creates only missing
+--     regions for those names, and saves the project. On close, Yes applies and saves; No returns.
 --   IT
---   Traduzione italiana di REAPER inclusa (language pack "Italiano (ZP)"): ReaPack la installa nella
---     cartella LangPack di REAPER; scegli la lingua nelle preferenze di REAPER. Menu, finestre e aiuto
---     delle Preferenze sono tradotti; le Action restano in inglese.
+--   Corretto: il language pack italiano di REAPER ("Italiano (ZP)") ora si installa direttamente nella
+--     cartella LangPack di REAPER e compare nell'elenco delle lingue (con la 2.6.1 finiva in una
+--     sottocartella dove REAPER non lo vedeva). Dopo l'aggiornamento sceglilo nel 33 Benvenuto, alla
+--     voce Lingua di REAPER.
+--   Gestore Progetto (17): Salva applica i nomi in bozza alle rispettive regioni, crea solo quelle
+--     mancanti per quei nomi e salva il progetto. In chiusura, Sì applica e salva; No torna al Gestore.
 -- @provides
---   [langpack] /REAPER_Italiano/Italiano (ZP).ReaperLangPack
+--   [langpack] /REAPER_Italiano/Italiano (ZP).ReaperLangPack > Italiano (ZP).ReaperLangPack
 --   [main] 01_Importa_Video_SRT.lua
 --   [main] 02_Gobbo_Verticale.lua
 --   [main] 03_Gobbo_Orizzontale.lua

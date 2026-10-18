@@ -27,6 +27,10 @@ The Suite works in a clean REAPER install. SWS, js_ReaScriptAPI and OSARA are op
 - **ZP Master** — mastering and reference-tone tools.
 - **ZP Misura** — loudness meters, oscilloscope and passive signal probes.
 
+## Not included in this version
+
+ZP Montaggio Parlato (prototype), ZP BrownSlope Dynamic Guard, ZP BrownSlope Prism and ZP Speech Engine are still in development and are not part of this ReaPack release.
+
 ## Guides and source
 
 - [English Suite guide](ZP%20Studio%20Suite/help/en/index.html)

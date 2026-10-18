@@ -3,6 +3,35 @@
 Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/test/run_all.sh`
 (sintassi Lua, tag ReaPack, JSFX, test). Se una regola cambia, aggiornala qui e annotalo in MEMORIA.md.
 
+## Versioni, sincronizzazione e pubblicazione
+Regola di Paolo, 2026-10-18. Vale per tutti gli agenti (Codex, Claude, altri).
+1. **Tre copie, un solo contenuto.** GitHub (`master`), repo locale (`zp-suite`) e installazione in REAPER sono
+   identiche file per file dopo ogni pubblicazione. Si lavora nel repo e si installa da li': mai il contrario.
+2. **Se non si riesce a sincronizzare, si dice.** Casi: push rifiutato, conflitto, rete assente, check GitHub rosso,
+   file `-CONFLICT-`, repo locale su un branch diverso da `master` o indietro/avanti rispetto a `origin/master`,
+   hash diversi tra le copie. L'agente lo scrive nella PRIMA riga del messaggio finale e in MEMORIA.md, con file e
+   motivo. Non riprova in silenzio, non forza, non pubblica a meta'.
+3. **La pubblicazione scandisce le versioni.** Numero della Suite = `@version` del 00. Se l'ultima pubblicata e' N,
+   la prima modifica a un prodotto distribuito dopo la pubblicazione porta repo locale e installazione a N+1, un
+   solo passo, in tutti i punti (`@version`, intestazioni, help, README, CHANGELOG). Le modifiche successive restano
+   N+1 fino alla prossima pubblicazione. Pubblicata N+1, la prima modifica dopo porta a N+2, e cosi' via.
+   Esempio di Paolo: pubblico 2.6.1, stasera modifico -> 2.6.2 nel repo e in REAPER; pubblico 2.6.2; la modifica
+   dopo -> 2.6.3. Questo scatto e' autorizzato da questa regola. I pacchetti singoli (Carver, BUS Chain...)
+   scattano solo quando cambiano, come prevede reapack-index. Le modifiche ai soli prodotti in maturazione
+   (punto 5) NON fanno scattare la versione.
+4. **Pubblicare = via esplicito di Paolo.** Merge/push su `master`, tag e ReaPack partono solo dopo un suo
+   "pubblica" nella conversazione corrente. Prima si prepara e si collauda (`run_all.sh`, check).
+5. **Prodotti in maturazione (beta).** Quelli non conclusi stanno elencati in `docs/IN_MATURAZIONE.md`: nome, dove
+   vivono, perche' non sono nella release, cosa manca. Restano `@noindex` o `--ignore`, fuori dal `@provides`.
+   Prima di ogni pubblicazione l'elenco si rilegge e si aggiorna; README e note di rilascio riportano una sezione
+   **«Non incluso in questa versione»** con quell'elenco. Un prodotto esce dalla beta solo per decisione di Paolo.
+6. **Prima di pubblicare** si aggiornano allo stato reale: questo file, MEMORIA.md, gli help (it/en),
+   README (it/en) e CHANGELOG.
+7. **Come riferire (gli agenti sono troppo verbosi e le cose importanti sfuggono).** Il messaggio finale inizia con
+   UNA riga di esito: `SINCRONIZZATO` oppure `NON SINCRONIZZATO: <motivo>`, piu' la versione (repo / REAPER /
+   GitHub). Subito dopo, solo se ce ne sono, `DECISIONI PER PAOLO:` con elenco corto. Il resto (dettagli,
+   comandi, test) viene dopo e puo' essere lungo. Mai seppellire un errore o una divergenza nel racconto.
+
 ## Pubblicazione e GitHub
 - Ogni `.lua`/`.jsfx` nuovo nei pacchetti deve avere `@version`, `@noindex` o stare nel `@provides`
   di un pacchetto. Senza, il controllo GitHub "check" (`reapack-index --check`) fallisce
@@ -13,10 +42,17 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
   README.txt). Successo il 2026-10-17 con tools/LICENSE-SheetJS-Apache-2.0.txt ("missing tag 'version'").
 - Ogni file nuovo che NON e' uno script/effetto (cataloghi .txt, .ReaperLangPack, dati) va in `--ignore` nel
   `.reapack-index.conf`, anche se sta nel @provides della 00: altrimenti il check lo prende per un pacchetto senza
-  versione (lang/en.txt e REAPER_Italiano, 2026-10-10). Esclusi anche: REAPER_Italiano.
+  versione (lang/en.txt e REAPER_Italiano, 2026-10-10). Esclusi anche: catalogo, dati_traduzione e template di REAPER_Italiano (il language pack,
+  invece, e' nel @provides del 00 con @noindex).
+- Un file `[langpack]` nel `@provides` va scritto con target piatto: `[langpack] /REAPER_Italiano/X.ReaperLangPack > X.ReaperLangPack`.
+  ReaPack scarta i `..` e installa in `LangPack/<percorso del file>`: senza `>` il pacchetto finiva in
+  `LangPack/REAPER_Italiano/` e REAPER non lo mostrava nell'elenco delle lingue (2.6.1, 2026-10-18; corretto in 2.6.2).
+  Collaudo sul Mac dopo l'installazione: il file sta direttamente in `<risorse REAPER>/LangPack/` e compare in
+  33 Benvenuto > Lingua di REAPER.
 - Un file nuovo distribuito (fxchains, presets, help, icone) va aggiunto al `@provides` del 00
   e il percorso deve esistere (run_all lo controlla).
-- Mai push su master, tag, bump di versione o ReaPack senza richiesta esplicita di Paolo.
+- Mai push su master, tag o ReaPack senza il via esplicito di Paolo. Lo scatto di versione dopo una
+  pubblicazione e' invece automatico: vedi «Versioni, sincronizzazione e pubblicazione» in cima a questo file.
 - reapack-index crea una versione solo nel commit dove cambia @version: se dopo il bump aggiungi file o
   modifiche al pacchetto, rialza la versione prima di pubblicare (2.3.0 uscita senza icone, 2026-10-06).
 
@@ -66,6 +102,13 @@ Regole nate da errori veri. Prima di ogni commit: `bash gobbo_ricerca_battuta/te
 - Prima di pubblicare: cercare nelle guide E negli script (suggerimenti, guida ?, menu OSARA) i nomi vecchi.
 
 ## Installazione su questo Mac
+- **Collaudo come un utente.** Per tutto cio' che viaggia con ReaPack (percorsi, cartelle, @provides, language pack,
+  icone, fxchains) l'installazione sul Mac di Paolo si fa passando da ReaPack (Synchronize/Update dal repository
+  pubblicato) e si controlla il risultato: dove e' finito davvero il file. Mai copiare a mano un file nella cartella
+  di REAPER per far «funzionare» il collaudo: nasconde i bug di percorso. Caso: language pack 2.6.1 (2026-10-18),
+  copiato a mano in LangPack/ funzionava; via ReaPack finiva in LangPack/REAPER_Italiano/ e REAPER non lo vedeva.
+  Se serve provare prima di pubblicare, si simula il percorso che ReaPack calcolera' (attributo `file=` nell'indice)
+  e si dichiara che NON e' un'installazione reale.
 - Prima di sovrascrivere una copia in `REAPER/Scripts/ZP Suite/...`, verifica che sia uguale
   a `git show HEAD:<file>`; se e' diversa, fermati e chiedi. La 00 installata e' quella pubblicata.
 - Mai modificare direttamente le copie installate in REAPER: si lavora nel repo e si installa. Prima di

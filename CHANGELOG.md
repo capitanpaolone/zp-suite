@@ -4,6 +4,21 @@ Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
 ciascun file e nel gestore pacchetti. Questo file registra la storia della Suite
 nel suo insieme.
 
+## ZP Studio Suite 2.6.2 — 2026-10-18
+
+- **Traduzione italiana di REAPER, correzione**: con la 2.6.1 il language pack *Italiano (ZP)* veniva
+  installato in una sottocartella di LangPack e REAPER non lo vedeva nell'elenco delle lingue. Ora va
+  direttamente in LangPack. Dopo l'aggiornamento scegli *Italiano (ZP)* nel 33 Benvenuto, alla voce
+  *Lingua di REAPER*.
+- **Gestore Progetto (17)**: **Salva** applica alle rispettive regioni i nomi ancora in bozza, crea solo
+  le regioni mancanti per quei nomi e salva il progetto. Chiudendo con nomi in bozza, **Sì** li applica
+  e salva prima di uscire; **No** torna al Gestore.
+
+### Non incluso in questa versione
+
+36 ZP Montaggio Parlato (prototipo), ZP BrownSlope Dynamic Guard, ZP BrownSlope Prism e ZP Speech Engine.
+Sono in lavorazione e non fanno parte del pacchetto ReaPack.
+
 ## ZP Studio Suite 2.6.1 — 2026-10-18
 
 - **Traduzione italiana di REAPER**: il language pack *Italiano (ZP)* viene installato insieme alla Suite
