@@ -21,6 +21,21 @@ TEMPLATE_PATH = BASE_DIR / "REAPER_Italiano" / "template_reaper782.ReaperLangPac
 CATALOG_PATH = BASE_DIR / "REAPER_Italiano" / "catalogo_reaper_it.txt"
 OUTPUT_PATH = BASE_DIR / "REAPER_Italiano" / "Italiano (ZP).ReaperLangPack"
 
+# Intestazione ReaPack (letta da reapack-index). Alzare @version a ogni nuova uscita e aggiornare @changelog.
+# Deve finire con una riga vuota: e' lei a chiudere l'intestazione.
+REAPACK_HEADER = """; @description Italiano (ZP) — traduzione italiana di REAPER 7.82, con le spiegazioni delle preferenze
+; @noindex
+; @version 2.6.0
+; @author Paolo Balestri (Lato Cardioide)
+; @about
+;   Language pack italiano di REAPER, parte della ZP Studio Suite.
+;   Dopo l'installazione: REAPER > Options > Preferences > General > Language > Browse e scegli "Italiano (ZP)".
+;   Pensato per REAPER 7.82; le voci che una versione diversa non conosce restano in inglese.
+; @changelog
+;   Primo rilascio in ReaPack: traduzione completa dei menu e delle finestre, con le spiegazioni delle preferenze.
+
+"""
+
 ACTION_SECTIONS = {
     "actions", "midi_actions", "explorer_actions", "xfade_actions",
     "actions_fmt", "actions_sub", "customaction", "actionlist",
@@ -102,6 +117,7 @@ def generate_langpack():
             # Intestazione file
             if total_lines == 1 and line_str.startswith("#NAME:"):
                 f_out.write("#NAME:Italiano (ZP)\n")
+                f_out.write(REAPACK_HEADER)
                 continue
 
             # Riconoscimento sezione

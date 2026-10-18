@@ -25,6 +25,10 @@ def test():
         lines = f.readlines()
 
     assert lines[0].strip() == "#NAME:Italiano (ZP)", f"Header non valido: {lines[0]}"
+    header_lines = lines[1:16]
+    assert sum(l.strip().startswith("; @version ") for l in header_lines) == 1, "Il tag ReaPack @version deve comparire una volta sola!"
+    assert sum(l.strip().startswith("; @description ") for l in header_lines) == 1, "Il tag ReaPack @description deve comparire una volta sola!"
+    assert any(l.strip() == "; @noindex" for l in header_lines), "Il language pack è incluso nella Suite e non va indicizzato come pacchetto separato!"
 
     current_sec = None
     uncommented_in_actions = 0

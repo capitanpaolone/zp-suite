@@ -1,4 +1,15 @@
 #NAME:Italiano (ZP)
+; @description Italiano (ZP) — traduzione italiana di REAPER 7.82, con le spiegazioni delle preferenze
+; @noindex
+; @version 2.6.0
+; @author Paolo Balestri (Lato Cardioide)
+; @about
+;   Language pack italiano di REAPER, parte della ZP Studio Suite.
+;   Dopo l'installazione: REAPER > Options > Preferences > General > Language > Browse e scegli "Italiano (ZP)".
+;   Pensato per REAPER 7.82; le voci che una versione diversa non conosce restano in inglese.
+; @changelog
+;   Primo rilascio in ReaPack: traduzione completa dei menu e delle finestre, con le spiegazioni delle preferenze.
+
 ; NOTE: this is the best starting point for making a new langpack.
 ; As you translate a string, remove the ; from the beginning of the
 ; line. If the line begins with ;^, then it is an optional string,

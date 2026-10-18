@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.6.0
+-- @version 2.6.1
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -22,30 +22,15 @@
 --   NVDA Controller Client (LGPL 2.1, NV Access). Dettagli in README.it.md.
 -- @changelog
 --   EN
---   Guides open in the Suite language (Italian or English), also from 00 Open Help.
---   SOLO Recorder: the small S button on REC solos the recording track; cyan peak bar on the IN meter.
---   Teleprompters: the notes panel lists open notes first; double click or right click adds a note;
---     every search result has a Go button.
---   Project Manager (17): a bar at the bottom explains the button under the mouse.
---   Voice Cleaner (22): manual review panel (Play, zoom, Approve or Discard segment, Approve all),
---     LISTEN, CLEAR MARKERS and a named calibration memory; APPLY uses the approved segments only.
---   Voice Minutes Report (19) and Chain Builder (23) show their results inside their own window.
---   SRT Tools (26) reads Excel XLS and XLSX files: choose sheet and columns, characters and reactions
---     (includes SheetJS, Apache-2.0).
---   Updated guides for Harmonic Space Carver, Voice Cleaner, BUS Chain and Project Manager.
+--   Italian translation of REAPER included (language pack "Italiano (ZP)"): ReaPack installs it in
+--     REAPER's LangPack folder; choose it in REAPER's language preferences. Menus, dialogs and the
+--     Preferences help are translated; Actions stay in English.
 --   IT
---   Le guide si aprono nella lingua della Suite (italiano o inglese), anche da 00 Apri Help.
---   SOLO Recorder: il pulsantino S sul REC mette in solo la traccia di registrazione; picco azzurro sul meter IN.
---   Gobbi: il pannello note mostra prima le note aperte; doppio clic o tasto destro aggiunge una nota;
---     ogni risultato di Cerca ha il pulsante Vai.
---   Gestore Progetto (17): una barra in fondo spiega il pulsante sotto il mouse.
---   Voice Cleaner (22): pannello Revisione manuale (Play, zoom, Approva o Scarta segmento, Approva tutti),
---     ASCOLTA, PULISCI MARKER e una memoria della calibrazione con nome; APPLICA usa solo i segmenti approvati.
---   Report minuti voce (19) e Chain Builder (23) mostrano gli esiti nella loro finestra.
---   SRT Tools (26) legge i file Excel XLS e XLSX: scegli foglio e colonne, personaggi e reazioni
---     (include SheetJS, Apache-2.0).
---   Guide aggiornate per Harmonic Space Carver, Voice Cleaner, BUS Chain e Gestore Progetto.
+--   Traduzione italiana di REAPER inclusa (language pack "Italiano (ZP)"): ReaPack la installa nella
+--     cartella LangPack di REAPER; scegli la lingua nelle preferenze di REAPER. Menu, finestre e aiuto
+--     delle Preferenze sono tradotti; le Action restano in inglese.
 -- @provides
+--   [langpack] /REAPER_Italiano/Italiano (ZP).ReaperLangPack
 --   [main] 01_Importa_Video_SRT.lua
 --   [main] 02_Gobbo_Verticale.lua
 --   [main] 03_Gobbo_Orizzontale.lua

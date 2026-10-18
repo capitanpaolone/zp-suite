@@ -4,6 +4,12 @@ Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
 ciascun file e nel gestore pacchetti. Questo file registra la storia della Suite
 nel suo insieme.
 
+## ZP Studio Suite 2.6.1 — 2026-10-18
+
+- **Traduzione italiana di REAPER**: il language pack *Italiano (ZP)* viene installato insieme alla Suite
+  nella cartella LangPack di REAPER. Si sceglie dalle preferenze di REAPER, alla voce della lingua. Sono
+  tradotti menu, finestre di dialogo e aiuto delle Preferenze; le Action restano in inglese.
+
 ## ZP Studio Suite 2.6.0 — 2026-10-17
 
 - **Guide nella lingua della Suite**: anche *00 Apri Help* apre la guida italiana o inglese scelta nel
