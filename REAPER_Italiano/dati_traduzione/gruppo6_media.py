@@ -51,9 +51,9 @@ TRADUZIONI_G6 = {
     "Only draw peaks for selected media items.":
         "Disegna le forme d'onda dei picchi solo per gli item multimediali selezionati.",
     "Only draw peaks for tracks and items that are soloed or not muted (only for audio and MIDI that will be heard during playback).":
-        "Disegna i picchi solo per tracce e item in solo o non silenziati (mostrando solo l'audio e il MIDI udibili durante la riproduzione).",
+        "Disegna i picchi solo per track e item in solo o non silenziati (mostrando solo l'audio e il MIDI udibili durante la riproduzione).",
     "Draw faint audio peaks/waveforms and MIDI notes in folder tracks, to represent the contents of the child tracks.":
-        "Mostra forme d'onda e note MIDI attenuate nelle tracce cartella, per visualizzare il contenuto delle tracce figlie sottostanti.",
+        "Mostra forme d'onda e note MIDI attenuate nelle track cartella, per visualizzare il contenuto delle track figlie sottostanti.",
     "Draw faint audio peaks/waveforms and MIDI notes in envelope lanes, for easier timing adjustment.":
         "Mostra forme d'onda e note MIDI attenuate nelle corsie degli inviluppi, agevolando l'allineamento temporale dell'automazione.",
     "Draw a colored edge (defined in the color theme) around media item peaks. Color theme may override this preference.":
@@ -67,33 +67,33 @@ TRADUZIONI_G6 = {
     "Draw the zero line overlaid on the audio peaks (otherwise the zero line is hidden behind the audio).":
         "Disegna la linea dello zero sovrapposta alle forme d'onda audio (altrimenti rimane nascosta dietro la visualizzazione dell'onda).",
     "Adjust audio peak drawing to reflect any track or take envelope that will affect the audio item before FX are applied.":
-        "Aggiorna il disegno dei picchi riflettendo le variazioni degli inviluppi di traccia o di take che agiscono prima degli FX.",
+        "Aggiorna il disegno dei picchi riflettendo le variazioni degli inviluppi di track o di take che agiscono prima degli FX.",
     "Draw a colored edge (defined in the color theme) around MIDI notes in media items. Color theme may override this preference.":
         "Disegna un bordo colorato (definito dal tema) attorno alle note MIDI negli item (il tema visivo può prevalere su questa opzione).",
     "Choose how many of the CC/channel pressure/pitch lanes that are visible in the MIDI editor to display in the arrange view.":
         "Stabilisce quante corsie CC, Channel Pressure o Pitch visibili nell'editor MIDI mostrare all'interno della vista Arrange.",
     "Choose whether media item waveform peaks are tinted by custom track, item, or take colors.":
-        "Stabilisce se i picchi della forma d'onda degli item vengono colorati con le tinte personalizzate di traccia, item o take.",
+        "Stabilisce se i picchi della forma d'onda degli item vengono colorati con le tinte personalizzate di track, item o take.",
     "Choose whether media item backgrounds are tinted by custom track, item, or take colors.":
-        "Stabilisce se lo sfondo degli item multimediali viene colorato con le tinte personalizzate di traccia, item o take.",
+        "Stabilisce se lo sfondo degli item multimediali viene colorato con le tinte personalizzate di track, item o take.",
     "Tint media item waveform peaks by the custom track color, if any. Color theme may override this preference.":
-        "Colora i picchi della forma d'onda con il colore personalizzato della traccia (il tema visivo può prevalere su questa opzione).",
+        "Colora i picchi della forma d'onda con il colore personalizzato della track (il tema visivo può prevalere su questa opzione).",
     "Tint media item waveform peaks by the custom item color, if any. This overrides a custom track color. Color theme may override this preference.":
-        "Colora i picchi della forma d'onda con il colore personalizzato dell'item (prevale sul colore della traccia).",
+        "Colora i picchi della forma d'onda con il colore personalizzato dell'item (prevale sul colore della track).",
     "Tint media item waveform peaks by the custom take color, if any. This overrides a custom track or item color. Color theme may override this preference.":
-        "Colora i picchi della forma d'onda con il colore personalizzato del take (prevale sui colori di traccia e item).",
+        "Colora i picchi della forma d'onda con il colore personalizzato del take (prevale sui colori di track e item).",
     "Tint media item backgrounds by the custom track color, if any. Color theme may override this preference.":
-        "Colora lo sfondo degli item con il colore personalizzato della traccia (il tema visivo può prevalere su questa opzione).",
+        "Colora lo sfondo degli item con il colore personalizzato della track (il tema visivo può prevalere su questa opzione).",
     "Tint media item backgrounds by the custom item color, if any. This overrides a custom track color. Color theme may override this preference.":
-        "Colora lo sfondo degli item con il colore personalizzato dell'item (prevale sul colore della traccia).",
+        "Colora lo sfondo degli item con il colore personalizzato dell'item (prevale sul colore della track).",
     "Tint media item backgrounds by the custom take color, if any. This overrides a custom track or item color. Color theme may override this preference.":
-        "Colora lo sfondo degli item con il colore personalizzato del take (prevale sui colori di traccia e item).",
+        "Colora lo sfondo degli item con il colore personalizzato del take (prevale sui colori di track e item).",
     "How much custom color to blend into the selected media item background. Zero means do not use the custom color. Color theme may override this preference.":
         "Intensità di miscelazione del colore personalizzato sullo sfondo degli item selezionati (0 disabilita la colorazione personalizzata).",
     "How much custom color to blend into the unselected media item background. Zero means do not use the custom color. Color theme may override this preference.":
         "Intensità di miscelazione del colore personalizzato sullo sfondo degli item non selezionati (0 disabilita la colorazione personalizzata).",
     "Custom take colors override custom item colors, which override custom track colors. You can also set colors from the track and item context menus.":
-        "I colori personalizzati del take prevalgono su quelli dell'item, che a loro volta prevalgono su quelli di traccia (modificabili dal menu contestuale).",
+        "I colori personalizzati del take prevalgono su quelli dell'item, che a loro volta prevalgono su quelli di track (modificabili dal menu contestuale).",
     "MIDI program names and text events can be displayed or hidden in the arrange view.":
         "I nomi dei Program Change MIDI e gli eventi di testo possono essere mostrati o nascosti nella vista Arrange.",
     "Hide media item peaks display when the media item height is less than this threshold.":
@@ -139,9 +139,9 @@ TRADUZIONI_G6 = {
     "Where to center when zooming vertically.":
         "Punto di ancoraggio centrale per lo zoom verticale.",
     "Maximum vertical zoom. If greater than 100%, tracks may be taller than the visible arrange view height.":
-        "Livello massimo di zoom verticale. Se superiore al 100%, le singole tracce possono superare l'altezza visibile della vista Arrange.",
+        "Livello massimo di zoom verticale. Se superiore al 100%, le singole track possono superare l'altezza visibile della vista Arrange.",
     "When zooming vertically, envelope lane height is set to a percentage of the track height. 0% means vertical zoom does not affect envelope lanes.":
-        "Nello zoom verticale, l'altezza delle corsie inviluppo è proporzionale a quella della traccia (0% esclude le corsie inviluppo dallo zoom verticale).",
+        "Nello zoom verticale, l'altezza delle corsie inviluppo è proporzionale a quella della track (0% esclude le corsie inviluppo dallo zoom verticale).",
     "Where to center when zooming horizontally.":
         "Punto di ancoraggio centrale per lo zoom orizzontale.",
     "By default, horizontal zoom/scroll is limited to the start of the project, preventing the display of negative dead space.":
@@ -149,7 +149,7 @@ TRADUZIONI_G6 = {
     "When scrolling or auto-scrolling vertically, the maximum step size can be customized for a slower or faster scroll.":
         "Passo massimo per lo scorrimento o l'auto-scorrimento verticale, personalizzabile per uno scorrimento più fluido o più veloce.",
     "Enable or disable vertical zoom for tracks that are pinned in the arrange view.":
-        "Abilita o disabilita lo zoom verticale per le tracce bloccate (pinned) nella vista Arrange.",
+        "Abilita o disabilita lo zoom verticale per le track bloccate (pinned) nella vista Arrange.",
 
     # [prefs_mediabuttons_help]
     "Display a lock button when items are locked.":
@@ -179,11 +179,11 @@ TRADUZIONI_G6 = {
     "Display a properties button (which opens the Item Properties dialog) for phase inverted media items only.":
         "Mostra il pulsante delle proprietà solo per gli item multimediali con fase invertita.",
     "Display a group button when an item is grouped with other items (the button will light when an item in the group is selected).":
-        "Mostra il pulsante di gruppo quando l'item è raggruppato con altri (si illumina selezionando un elemento del gruppo).",
+        "Mostra il pulsante di gruppo quando l'item è raggruppato con altri (si illumina selezionando un item del gruppo).",
     "Display a pool button when an item's active take shares pooled MIDI source data with other media items.":
         "Mostra il pulsante pool quando il take attivo condivide dati sorgente MIDI collegati con altri item.",
     "Display a button to indicate the effective media item timebase. Timebase can be set in project settings, per-track, or in media item properties.":
-        "Mostra un pulsante per indicare il timebase effettivo dell'item (impostabile nel progetto, per traccia o nelle proprietà dell'item).",
+        "Mostra un pulsante per indicare il timebase effettivo dell'item (impostabile nel progetto, per track o nelle proprietà dell'item).",
     "Media items can have a volume handle with with +0dB being the top or the center of the item, or a volume knob, or both.":
         "Gli item possono includere una maniglia del volume (+0 dB in alto o al centro), una manopola del volume o entrambi.",
     "When labels are drawn within the media item rather than above, hide media item buttons (except lock button) when the media item is too small.":

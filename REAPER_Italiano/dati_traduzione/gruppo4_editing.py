@@ -27,7 +27,7 @@ TRADUZIONI_G4 = {
     "When auto-crossfades (toolbar button) are disabled, normally editing a crossfade will cause the fade-in and fade-out to separate.":
         "Quando la dissolvenza incrociata automatica (crossfade) è disattivata, la modifica manuale separa la dissolvenza in entrata da quella in uscita.",
     "Tracks that are automatically created when dragging media into empty space below the last track can be automatically deleted if not used.":
-        "Le tracce create automaticamente trascinando media nello spazio vuoto sotto l'ultima traccia possono essere rimosse se non utilizzate.",
+        "Le track create automaticamente trascinando media nello spazio vuoto sotto l'ultima track possono essere rimosse se non utilizzate.",
     "When using mouse modifiers like \\\"Move item contents\\\", the edit can be applied to only the take being edited, or to all takes in the same media item.":
         "Usando modificatori mouse come \"Sposta contenuto item\", la modifica può essere applicata solo al take modificato o a tutti i take dell'item.",
     "Actions to split, trim, or delete media items can affect all media items that intersect the edit cursor, if no media items are selected.":
@@ -47,7 +47,7 @@ TRADUZIONI_G4 = {
     "Actions like \\\"Go to next marker\\\" or jumping via Jump To Time dialog can automatically select the region/marker that is navigated to.":
         "Azioni come \"Vai al marcatore successivo\" o salti temporali possono selezionare automaticamente la regione o il marcatore raggiunto.",
     "Take markers can be up-ranked or down-ranked. The maximum number of ranking levels is set here.":
-        "I marcatori di take possono essere promossi o declassati di grado. Il numero massimo di livelli di classificazione si imposta qui.",
+        "I take marker possono essere promossi o declassati di grado. Il numero massimo di livelli di classificazione si imposta qui.",
     "Actions to up-rank, down-rank, or cycle through rankings can either include or skip setting the take to have no ranking.":
         "Le azioni per promuovere, declassare o scorrere i gradi dei take possono includere o saltare lo stato 'nessun grado'.",
     "Constrain the mouse-edited time selection, loop, and razor edit length to a minimum pixel size.":
@@ -57,7 +57,7 @@ TRADUZIONI_G4 = {
     "Editing item edges in the comping lane can force the corresponding source lane items to expand, to ensure the comp area stays in sync.":
         "La modifica dei bordi degli item nella corsia di comping può forzare l'espansione degli item nelle corsie sorgente, garantendo il sincronismo.",
     "Clicking empty track space in source lanes can either create an empty comp area, or do nothing.":
-        "Facendo clic sullo spazio vuoto di una traccia nelle corsie sorgente è possibile creare un'area di comping vuota oppure non fare nulla.",
+        "Facendo clic sullo spazio vuoto di una track nelle corsie sorgente è possibile creare un'area di comping vuota oppure non fare nulla.",
     "Comp area edge edits in source lanes can be constrained to the edges of media items, to prevent comping empty space.":
         "La modifica dei bordi dell'area di comping nelle corsie sorgente può essere vincolata ai bordi degli item per evitare di comporre silenzio.",
     "Changing the source lane for a comp area using an action like \\\"Fixed lane comp area: Move up\\\" can skip empty lanes, or not.":
@@ -71,15 +71,15 @@ TRADUZIONI_G4 = {
     "By default, locked media items can be copied during mouse edits or when running actions.":
         "Per impostazione predefinita, gli item multimediali bloccati possono essere duplicati tramite mouse o eseguendo azioni.",
     "By default, locked media items are affected by region editing and inserting/removing project time.":
-        "Per impostazione predefinita, gli item bloccati sono influenzati dalla modifica delle regioni e dall'inserimento o rimozione di tempo nel progetto.",
+        "Per impostazione predefinita, gli item bloccati sono influenzati dalla modifica delle region e dall'inserimento o rimozione di tempo nel progetto.",
     "How locked items behave in \\\"ripple edit all tracks\\\" and \\\"ripple edit per-track\\\" modes.":
-        "Stabilisce il comportamento degli item bloccati nelle modalità 'Ripple edit su tutte le tracce' e 'Ripple edit su traccia singola'.",
+        "Stabilisce il comportamento degli item bloccati nelle modalità 'Ripple edit su tutte le track' e 'Ripple edit su track singola'.",
 
     # [prefs_spectral_edits_help]
     "Default fade-in for new spectral edits, 100% is the first half of the edit region. The default is 0, no fade.":
-        "Dissolvenza in entrata predefinita per le modifiche spettrali (100% copre la prima metà della regione modificata; predefinita 0, nessuna dissolvenza).",
+        "Dissolvenza in entrata predefinita per le modifiche spettrali (100% copre la prima metà della region modificata; predefinita 0, nessuna dissolvenza).",
     "Default fade-out for new spectral edits, 100% is the second half of the edit region. The default is 0, no fade.":
-        "Dissolvenza in uscita predefinita per le modifiche spettrali (100% copre la seconda metà della regione modificata; predefinita 0, nessuna dissolvenza).",
+        "Dissolvenza in uscita predefinita per le modifiche spettrali (100% copre la seconda metà della region modificata; predefinita 0, nessuna dissolvenza).",
     "Default low-frequency fade for new spectral edits, 100% is lowest half of the frequency range. The default is 0, no fade.":
         "Dissolvenza alle basse frequenze per nuove modifiche spettrali (100% copre la metà inferiore dello spettro selezionato; predefinita 0).",
     "Default high-frequency fade for new spectral edits, 100% is highest half of the frequency range. The default is 0, no fade.":

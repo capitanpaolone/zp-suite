@@ -3,59 +3,59 @@
 TRADUZIONI_G5 = {
     # [prefs_trackdefs_help]
     "Volume envelopes can be scaled by amplitude (half as high is half as loud), or by the track fader scale (envelope height corresponds to the track fader).":
-        "Gli inviluppi di volume possono essere scalati per ampiezza (metà altezza corrisponde a metà volume) o secondo la scala del fader di traccia.",
+        "Gli inviluppi di volume possono essere scalati per ampiezza (metà altezza corrisponde a metà volume) o secondo la scala del fader di track.",
     "Changing scaling for an existing envelope may change the sound, because changes on the track fader are not linearly equivalent to changes in amplitude.":
         "Cambiare la scala di un inviluppo esistente può alterare il suono, poiché le variazioni del fader non sono linearmente equivalenti a quelle dell'ampiezza.",
     "The default fader gain for newly created tracks. The factory default is +0dB":
-        "Guadagno predefinito del fader per le nuove tracce (valore di fabbrica: +0 dB).",
+        "Guadagno predefinito del fader per le nuove track (valore di fabbrica: +0 dB).",
     "When enabled, new tracks will be visible in the mixer.":
-        "Quando abilitato, le nuove tracce saranno visibili nel mixer.",
+        "Quando abilitato, le nuove track saranno visibili nel mixer.",
     "When enabled, new tracks created within a folder will send audio and MIDI to the folder parent track.":
-        "Quando abilitato, le nuove tracce create dentro una cartella invieranno audio e MIDI alla traccia genitore della cartella.",
+        "Quando abilitato, le nuove track create dentro una cartella invieranno audio e MIDI alla track genitore della cartella.",
     "Certain track envelopes may be shown automatically for new tracks.":
-        "Determina quali inviluppi di traccia mostrare automaticamente alla creazione di nuove tracce.",
+        "Determina quali inviluppi di track mostrare automaticamente alla creazione di nuove track.",
     "Automatically show volume envelopes for new tracks.":
-        "Mostra automaticamente l'inviluppo di volume per le nuove tracce.",
+        "Mostra automaticamente l'inviluppo di volume per le nuove track.",
     "Automatically show pan envelopes for new tracks.":
-        "Mostra automaticamente l'inviluppo di panorama (pan) per le nuove tracce.",
+        "Mostra automaticamente l'inviluppo di panorama (pan) per le nuove track.",
     "Automatically show pre-FX volume envelopes for new tracks.":
-        "Mostra automaticamente l'inviluppo di volume pre-FX per le nuove tracce.",
+        "Mostra automaticamente l'inviluppo di volume pre-FX per le nuove track.",
     "Automatically show pre-FX pan envelopes for new tracks.":
-        "Mostra automaticamente l'inviluppo di pan pre-FX per le nuove tracce.",
+        "Mostra automaticamente l'inviluppo di pan pre-FX per le nuove track.",
     "Default point shape for new track envelopes.":
-        "Forma del punto predefinita per i nuovi inviluppi di traccia.",
+        "Forma del punto predefinita per i nuovi inviluppi di track.",
     "The default automation mode for new tracks.  The factory default is Trim/Read Mode.":
-        "Modalità di automazione predefinita per le nuove tracce (valore di fabbrica: Modalità Trim/Read).",
+        "Modalità di automazione predefinita per le nuove track (valore di fabbrica: Modalità Trim/Read).",
     "Default track height in new projects. This is also set via File/Project Settings/Save as default project settings.":
-        "Altezza predefinita delle tracce nei nuovi progetti (impostabile anche da File/Impostazioni progetto/Salva come impostazioni predefinite).",
+        "Altezza predefinita delle track nei nuovi progetti (impostabile anche da File/Impostazioni progetto/Salva come impostazioni predefinite).",
     "When enabled, new track envelopes will be automatically armed for recording automation.":
-        "Quando abilitato, i nuovi inviluppi di traccia vengono armati automaticamente per la registrazione dell'automazione.",
+        "Quando abilitato, i nuovi inviluppi di track vengono armati automaticamente per la registrazione dell'automazione.",
     "Automatically enable free item positioning for new tracks.":
-        "Abilita automaticamente il posizionamento libero degli item (Free Item Positioning) sulle nuove tracce.",
+        "Abilita automaticamente il posizionamento libero degli item (Free Item Positioning) sulle nuove track.",
     "Automatically enabled fixed item lanes for new tracks.":
-        "Abilita automaticamente le corsie fisse (Fixed Item Lanes) sulle nuove tracce.",
+        "Abilita automaticamente le corsie fisse (Fixed Item Lanes) sulle nuove track.",
     "New fixed lane tracks can have small lanes (all lanes fit within a normal track height), or big lanes (each lane is the height of a track).":
-        "Le tracce a corsie fisse possono avere corsie compatte (tutte raggruppate nell'altezza standard) o estese (ogni corsia ha l'altezza di una traccia).",
+        "Le track a corsie fisse possono avere corsie compatte (tutte raggruppate nell'altezza standard) o estese (ogni corsia ha l'altezza di una track).",
     "Automatically record-arm new tracks.":
-        "Arma automaticamente per la registrazione le nuove tracce.",
+        "Arma automaticamente per la registrazione le nuove track.",
     "Default record settings for new tracks.":
-        "Impostazioni di registrazione predefinite per le nuove tracce.",
+        "Impostazioni di registrazione predefinite per le nuove track.",
     "Default gain for new track-to-track sends.":
-        "Guadagno predefinito per le nuove mandate da traccia a traccia.",
+        "Guadagno predefinito per i nuovi send da track a track.",
     "Default gain for new hardware outputs.":
         "Guadagno predefinito per le nuove uscite hardware.",
     "Default send type for new sends and hardware outputs.":
-        "Tipo di mandata predefinito per nuove mandate e uscite hardware (Post-Fader, Pre-Fader, ecc.).",
+        "Tipo di send predefinito per nuovi send e uscite hardware (Post-Fader, Pre-Fader, ecc.).",
     "When enabled, new sends will send MIDI from the source track.":
-        "Quando abilitato, le nuove mandate trasmettono i dati MIDI dalla traccia sorgente.",
+        "Quando abilitato, i nuovi send trasmettono i dati MIDI dalla track sorgente.",
     "When enabled, new sends will send audio from the source track.":
-        "Quando abilitato, le nuove mandate trasmettono l'audio dalla traccia sorgente.",
+        "Quando abilitato, i nuovi send trasmettono l'audio dalla track sorgente.",
     "Track meter defaults for newly created tracks. Existing tracks in existing projects will not be affected.":
-        "Impostazioni predefinite dei meter per le nuove tracce (le tracce esistenti nei progetti attuali non verranno modificate).",
+        "Impostazioni predefinite dei meter per le nuove track (le track esistenti nei progetti attuali non verranno modificate).",
 
     # [prefs_auto_help]
     "When the track automation mode is touch, latch, or write, moving any track control or FX knob will create an automation envelope for it.":
-        "Nelle modalità Touch, Latch o Write, muovere qualsiasi controllo di traccia o manopola FX crea automaticamente il relativo inviluppo di automazione.",
+        "Nelle modalità Touch, Latch o Write, muovere qualsiasi controllo di track o manopola FX crea automaticamente il relativo inviluppo di automazione.",
     "After recording an automation write pass, automation can automatically switch to a different mode (to avoid overwriting just-written automation).":
         "Dopo una passata di scrittura automazione, il sistema può passare a un'altra modalità (per evitare di sovrascrivere i dati appena registrati).",
     "The time it takes for the envelope to return to its previous or default value after the end of recording an automation pass.":
@@ -63,7 +63,7 @@ TRADUZIONI_G5 = {
     "The transition time applied when writing envelope ranges via actions.":
         "Tempo di transizione applicato quando si scrivono intervalli di inviluppo tramite azioni.",
     "If (default) enabled, hidden envelopes in read mode will update their relevant track controls.":
-        "Se abilitato (predefinito), gli inviluppi nascosti in modalità Read aggiornano comunque i relativi controlli di traccia.",
+        "Se abilitato (predefinito), gli inviluppi nascosti in modalità Read aggiornano comunque i relativi controlli di track.",
     "If enabled, allows writing automation to armed but hidden envelopes (which is otherwise not supported).":
         "Se abilitato, consente di registrare automazione su inviluppi armati anche se nascosti alla vista (altrimenti non consentito).",
     "If a track fader is at -X dB, the track volume envelopes can be created at -X dB or +0 dB. In both cases the track output will be automatically adjusted.":
@@ -79,7 +79,7 @@ TRADUZIONI_G5 = {
     "If enabled, latches will be reset on looped playback/recording.":
         "Se abilitato, lo stato di aggancio (latch) viene reimpostato a ogni ciclo di loop in riproduzione o registrazione.",
     "Causes all track envelope points to be deselected when clicking an empty area of the arrange view.":
-        "Deseleziona tutti i punti degli inviluppi di traccia facendo clic su un'area vuota della vista Arrange.",
+        "Deseleziona tutti i punti degli inviluppi di track facendo clic su un'area vuota della vista Arrange.",
     "Causes all take envelope points to be deselected when clicking an empty area of the arrange view.":
         "Deseleziona tutti i punti degli inviluppi dei take facendo clic su un'area vuota della vista Arrange.",
     "Causes all take envelope points to be deselected for a given item when an area of that item is clicked.":
@@ -101,7 +101,7 @@ TRADUZIONI_G5 = {
     "By default, copy/pasting automation items will not create pooled copies.":
         "Per impostazione predefinita, copiare e incollare item di automazione non crea copie collegate (pool).",
     "By default, when automation items are copied or split because of a track/media item/razor edit, pooled copies of the automation items will be created.":
-        "Per impostazione predefinita, quando gli item di automazione vengono copiati o divisi da modifiche razor o di traccia, si creano copie collegate (pool).",
+        "Per impostazione predefinita, quando gli item di automazione vengono copiati o divisi da modifiche razor o di track, si creano copie collegate (pool).",
     "Editing automation item position or edges to overlap existing automation items can either play both items together, or trim content from the existing items.":
         "Far sovrapporre item di automazione può sommare entrambi gli item oppure rifilare il contenuto di quelli sottostanti.",
     "Automation items can transition at the start and end to avoid abrupt changes in envelope value.":
@@ -131,7 +131,7 @@ TRADUZIONI_G5 = {
     "When editing a single envelope point with the mouse, the edit can be constrained to the the space between adjacent envelope points.":
         "Durante la modifica di un punto di inviluppo con il mouse, il movimento può essere vincolato allo spazio compreso tra i punti adiacenti.",
     "When moving media items across tracks, make sure all envelopes that are modified are made visible so that you are aware of the changes being made.":
-        "Spostando item multimediali tra tracce diverse, rende visibili tutti gli inviluppi modificati per monitorare con chiarezza le variazioni.",
+        "Spostando item multimediali tra track diverse, rende visibili tutti gli inviluppi modificati per monitorare con chiarezza le variazioni.",
     "Envelope point selection can follow time selection for the currently active envelope.":
         "La selezione dei punti di inviluppo può seguire automaticamente la selezione temporale per l'inviluppo attivo.",
     "Moving or copying items can automatically create edge points for envelopes, preserving the existing envelope shape around the edits.":

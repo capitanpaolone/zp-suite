@@ -49,6 +49,18 @@ Regola di Paolo, 2026-10-18. Vale per tutti gli agenti (Codex, Claude, altri).
   `LangPack/REAPER_Italiano/` e REAPER non lo mostrava nell'elenco delle lingue (2.6.1, 2026-10-18; corretto in 2.6.2).
   Collaudo sul Mac dopo l'installazione: il file sta direttamente in `<risorse REAPER>/LangPack/` e compare in
   33 Benvenuto > Lingua di REAPER.
+- Lingua di REAPER dal 33 Benvenuto (2.6.3, 2026-10-19): `reaper.SNM_SetStringConfigVar("langpack", ...)` restituisce
+  `false` e non cambia niente (REAPER 7.80 + SWS 2.14): la 2.6.2 elencava i pack ma la scelta non partiva mai. Non usarlo
+  mai piu' per la lingua. REAPER scrive `langpack=<nome file con estensione>`; `<>` = inglese di serie («Load always» su
+  English), riga vuota = REAPER chiede la lingua a ogni avvio. La lingua si cambia scrivendo reaper.ini DOPO la chiusura
+  di REAPER (helper di riavvio `restart_sh` con `patch`). L'helper aspetta il PID dell'istanza che l'ha lanciato e riapre
+  l'app di quell'istanza (da `ps`), non «qualunque REAPER» ne' /Applications/REAPER.app: con una prova portatile aperta
+  insieme al REAPER di lavoro riapriva quello sbagliato (collaudo 2026-10-19).
+  Su macOS la sezione di reaper.ini e' `[reaper]` in MINUSCOLO: scrivere in fondo una seconda sezione `[REAPER]` fa
+  IGNORARE a REAPER la prima e azzera tutte le impostazioni (dispositivo audio, tema, finestre: successo nel collaudo).
+  L'helper riconosce la sezione senza badare alle maiuscole e rinuncia se il file risultante avrebbe meno righe; i test
+  (`test_benvenuto.lua`, «helper ini») eseguono la shell generata su un ini finto.
+  Un collaudo di «installa un pack» deve includere la scelta e il riavvio, non solo la presenza del file in LangPack.
 - Un file nuovo distribuito (fxchains, presets, help, icone) va aggiunto al `@provides` del 00
   e il percorso deve esistere (run_all lo controlla).
 - Mai push su master, tag o ReaPack senza il via esplicito di Paolo. Lo scatto di versione dopo una

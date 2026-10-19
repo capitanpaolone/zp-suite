@@ -8,6 +8,10 @@ Aggiornata: 2026-09-09
 - Non usare il vecchio percorso `Reaper26` salvo richiesta esplicita per installazioni legacy.
 - Per i file JSFX preservare ordine delle sezioni, indici degli slider pubblici e compatibilità con progetti REAPER esistenti.
 - Non eseguire commit o push senza richiesta esplicita.
+- **Versioni, sincronizzazione, pubblicazione e prodotti in beta:** regola di Paolo (2026-10-18) in
+  `gobbo_ricerca_battuta/ANTI_REGRESSIONE.md`, sezione «Versioni, sincronizzazione e pubblicazione». Leggerla prima di
+  toccare versioni o pubblicare. Elenco dei prodotti non conclusi: `docs/IN_MATURAZIONE.md`. Se non si riesce a
+  sincronizzare, dirlo nella prima riga del messaggio finale.
 - Archivio storico di sicurezza obbligatorio: `/Volumes/DISCO LACIE/Archivio_Storico_ZP`.
 - Dopo ogni fase significativa, prima di interventi rischiosi e prima di sostituire una baseline funzionante, conservare nell'archivio una copia identificabile tramite data/fase e SHA-256.
 - Preferire un report Markdown con stato consolidato, risultati, hash, percorsi e istruzioni di ricostruzione quando non serve duplicare il plugin.
@@ -738,3 +742,24 @@ Fuori ambito finché non viene aperta una fase dedicata:
 - Il peak hold del meter è azzurro, mentre il valore resta bianco e viene disegnato sopra l’indicatore.
 - Guide IT/EN aggiornate; script e guide installati nel REAPER principale.
 - Backup pre-change e hash in `REAPER/ZP_StudioSuite_Backups/solo_recorder_solo_peak_20261016/` e nell’Archivio Storico ZP; report `docs/AVANZAMENTO_solo_recorder_solo_peak_2026-10-16.md`.
+
+
+## REAPER Italiano (ZP) — Stato traduzione e memoria operativa, 2026-10-18
+
+- **Memoria dedicata**: `REAPER_Italiano/MEMORIA_TRADUZIONE_REAPER.md` (oltre al registro cronologico in `gobbo_ricerca_battuta/MEMORIA.md`).
+- **File principali**:
+  - `REAPER_Italiano/Italiano (ZP).ReaperLangPack` (SHA-256: `dd851a8d886382608ae23e7e537c02404e37743a68a7b570b1a7fbe2d5e38993`)
+  - `REAPER_Italiano/catalogo_reaper_it.txt` (**11.753** voci uniche tradotte)
+  - `gobbo_ricerca_battuta/strumenti/genera_langpack.py` (generatore con preservazione automatica dei tag ReaPack `; @version 1.0`, ecc.)
+  - `gobbo_ricerca_battuta/test/test_langpack.py` (test automatico di integrità)
+- **Vincoli obbligatori**:
+  - Le 10 sezioni `ACTION_SECTIONS` (`actions`, `midi_actions`, `explorer_actions`, `xfade_actions`, `actions_fmt`, `actions_sub`, `customaction`, `actionlist`, `actiondialog`, `actionlist_synonyms`) restano al **100% commentate (`;`) in inglese** (0/3.689 tradotte).
+  - I 16 termini tecnici DAW (`item`, `take`, `marker`, `take marker`, `region`, `track`, `render`, `ripple`, `trim`, `loop`, `edit`, `FX`, `bus`, `send`, `toolbar`, `SRT`) restano **sempre in inglese** (0 occorrenze residue di *traccia/tracce*, *marcatore/marcatori*, *regione/regioni*, *mandata/mandate*, *barra degli strumenti*).
+- **Copertura raggiunta su template REAPER 7.82**:
+  - `MENU_*` e `*_MENU_*`: **3.579 / 3.579 (100,0%)**
+  - `DLG_*` e `*_DLG_*`: **4.367 / 4.367 (100,0%)**
+  - `prefs_*_help`: **723 / 723 (100,0%)**
+  - `[common]`: **1.970 / 2.028 (97,1%)**
+  - Sezioni UI operative (`track`, `item*`, `env*`, `fx*`, `render*`, `routing`, `send*`, `midi*`, `explorer*`, `projbay`, `prefs*`, `toolbar`, `tooltip`, `transport*`, `ruler`, `marker`, `region`, `regmgr*`, `nudge`, `xfade`, `fade*`, `cpumeter`, `screenset`, `glue`, `import`, `saveas`, `missfile`, `projload`, `projsave`, `projsettings`, `recordmode`, `recmenu`, `trackmgr*`, `undohist`, `undoinfo`, `video*`, `wave*`, `vst`, `au`, `clap`, `lv2`, `jsfx*`, `about`, `splash`, `mbox`, `kb*`): **100% tradotte** (7.058 chiavi).
+  - Totale chiavi tradotte e scommentate: **17.697 / 22.026 (80,3%)** delle righe non-action.
+

@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.6.2
+-- @version 2.6.3
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -22,18 +22,25 @@
 --   NVDA Controller Client (LGPL 2.1, NV Access). Dettagli in README.it.md.
 -- @changelog
 --   EN
---   Fixed: the Italian REAPER language pack ("Italiano (ZP)") now installs directly in REAPER's
---     LangPack folder, so it appears in the language list (2.6.1 put it in a subfolder where REAPER
---     could not see it). After updating, pick it in 33 Welcome, under REAPER language.
---   Project Manager (17): Save applies draft names to their matching regions, creates only missing
---     regions for those names, and saves the project. On close, Yes applies and saves; No returns.
+--   Fixed: choosing a REAPER language in 33 Welcome had no effect (2.6.2 listed the language packs but
+--     the choice was never saved). The choice is now applied on restart: Restart now closes REAPER,
+--     writes the language and reopens it. The menu also has Import a language pack... (copies your own
+--     .ReaperLangPack into REAPER's LangPack folder) and Find more language packs in ReaPack... This
+--     menu is macOS only; on Windows and Linux the button opens REAPER's Preferences, where you pick
+--     the language.
+--   Italian REAPER language pack much more complete: about 17,700 strings (was about 7,500); all menus and
+--     dialogs are translated. Actions stay in English; technical terms (item, take, region, track, FX...)
+--     stay in English. Restart REAPER after updating.
 --   IT
---   Corretto: il language pack italiano di REAPER ("Italiano (ZP)") ora si installa direttamente nella
---     cartella LangPack di REAPER e compare nell'elenco delle lingue (con la 2.6.1 finiva in una
---     sottocartella dove REAPER non lo vedeva). Dopo l'aggiornamento sceglilo nel 33 Benvenuto, alla
---     voce Lingua di REAPER.
---   Gestore Progetto (17): Salva applica i nomi in bozza alle rispettive regioni, crea solo quelle
---     mancanti per quei nomi e salva il progetto. In chiusura, Sì applica e salva; No torna al Gestore.
+--   Corretto: scegliere la lingua di REAPER nel 33 Benvenuto non aveva effetto (la 2.6.2 elencava i
+--     language pack ma la scelta non veniva mai salvata). Ora la scelta si applica al riavvio: Riavvia ora
+--     chiude REAPER, scrive la lingua e lo riapre. Nel menu ci sono anche Importa un language pack... (copia
+--     il tuo .ReaperLangPack nella cartella LangPack di REAPER) e Cerca altri language pack in ReaPack...
+--     Il menu vale solo su macOS; su Windows e Linux il pulsante apre le Preferenze di REAPER, dove si
+--     sceglie la lingua.
+--   Language pack italiano di REAPER molto piu' completo: circa 17.700 voci (prima circa 7.500); tutti i menu e le
+--     finestre di dialogo sono tradotti. Le Action restano in inglese; i termini tecnici (item, take, region,
+--     track, FX...) restano in inglese. Riavvia REAPER dopo l'aggiornamento.
 -- @provides
 --   [langpack] /REAPER_Italiano/Italiano (ZP).ReaperLangPack > Italiano (ZP).ReaperLangPack
 --   [main] 01_Importa_Video_SRT.lua

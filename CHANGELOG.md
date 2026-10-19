@@ -4,6 +4,27 @@ Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
 ciascun file e nel gestore pacchetti. Questo file registra la storia della Suite
 nel suo insieme.
 
+## ZP Studio Suite 2.6.3 — 2026-10-19
+
+- **Lingua di REAPER, correzione**: nel 33 Benvenuto la scelta della lingua non aveva effetto. La 2.6.2
+  installava bene *Italiano (ZP)* e lo elencava, ma il comando usato per scrivere la scelta
+  (`SNM_SetStringConfigVar`) con REAPER aperto restituisce *falso*. Ora la scelta resta in attesa e
+  **Riavvia ora** chiude REAPER, scrive la riga `langpack=` in `reaper.ini` e lo riapre.
+- **Importa un language pack...**: dal menu della lingua copi nella cartella LangPack un tuo file
+  `.ReaperLangPack` (si controlla che sia un language pack) e lo selezioni subito.
+- **Cerca altri language pack in ReaPack...**: apre ReaPack sui language pack disponibili.
+- Il menu è per macOS; su Windows e Linux il pulsante apre le Preferenze di REAPER (Language).
+- **Traduzione italiana di REAPER, molto più completa**: *Italiano (ZP)* passa da circa 7.500 a circa
+  17.700 voci tradotte su REAPER 7.82. Menu principali e contestuali e finestre di dialogo sono tradotti
+  al 100%, come le spiegazioni delle Preferenze. Le Action restano in inglese, così la ricerca per nome
+  nella Action List continua a funzionare; i termini tecnici (item, take, marker, region, track, render,
+  FX, send, ...) restano in inglese. Per usare la nuova traduzione riavvia REAPER dopo l'aggiornamento.
+
+### Non incluso in questa versione
+
+36 ZP Montaggio Parlato (prototipo), ZP BrownSlope Dynamic Guard, ZP BrownSlope Prism e ZP Speech Engine.
+Sono in lavorazione e non fanno parte del pacchetto ReaPack.
+
 ## ZP Studio Suite 2.6.2 — 2026-10-18
 
 - **Traduzione italiana di REAPER, correzione**: con la 2.6.1 il language pack *Italiano (ZP)* veniva

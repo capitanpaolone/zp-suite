@@ -21,7 +21,7 @@ TRADUZIONI_G8 = {
     "Automatically dock newly created FX chain windows.":
         "Aggancia automaticamente nei docker le nuove finestre della catena FX.",
     "List the current track FX in the FX button right-click menu. Clicking an FX name in the list will float/unfloat that FX window.":
-        "Elenca gli FX della traccia nel menu del tasto destro sul pulsante FX (un clic apre o chiude la finestra mobile del plug-in).",
+        "Elenca gli FX della track nel menu del tasto destro sul pulsante FX (un clic apre o chiude la finestra mobile del plug-in).",
     "Maximum number of plugins to keep in the \\\"Recently used\\\" list in the add-FX window.":
         "Numero massimo di plug-in da mantenere nell'elenco \"Usati di recente\" della finestra Aggiungi FX.",
     "When opening an empty FX chain, automatically show the add-FX window.":
@@ -29,15 +29,15 @@ TRADUZIONI_G8 = {
     "Do not show the empty FX chain when showing the add-FX window.":
         "Non mostrare la finestra vuota della catena FX durante la visualizzazione della finestra Aggiungi FX.",
     "When opening an FX chain window for a track or media item, close any other open FX chain window.":
-        "All'apertura della catena FX di una traccia o di un item, chiude qualsiasi altra finestra di catena FX aperta.",
+        "All'apertura della catena FX di una track o di un item, chiude qualsiasi altra finestra di catena FX aperta.",
     "When changing track selection, automatically open the newly selected track's FX chain window.":
-        "Al cambio di selezione della traccia, apre automaticamente la finestra della catena FX della nuova traccia selezionata.",
+        "Al cambio di selezione della track, apre automaticamente la finestra della catena FX della nuova track selezionata.",
     "When changing track selection, if there is already an FX chain window open, automatically open the newly selected track's FX chain.":
-        "Al cambio di selezione della traccia, se è già aperta una catena FX, passa a mostrare la catena FX della nuova traccia selezionata.",
+        "Al cambio di selezione della track, se è già aperta una catena FX, passa a mostrare la catena FX della nuova track selezionata.",
     "Specify filter strings here to allow removing specific plug-ins from the FX browser, e.g.: 'NOT ( Cockos VSTi: )' to remove Cockos softsynths.":
         "Specifica stringhe di filtro per escludere determinati plug-in dal browser FX (es. 'NOT ( Cockos VSTi: )' per escludere i softsynth di Cockos).",
     "When inserting instruments that have more than 2 outputs, prompt to create new tracks with routing for these outputs.":
-        "All'inserimento di strumenti virtuali con più di 2 uscite, chiedi se creare automaticamente le tracce con il relativo instradamento audio.",
+        "All'inserimento di strumenti virtuali con più di 2 uscite, chiedi se creare automaticamente le track con il relativo instradamento audio.",
     "Show list of FX (and other UI elements) in the FX chain window on the right side of the window rather than the left.":
         "Mostra l'elenco degli FX nella finestra della catena FX sul lato destro anziché sul lato sinistro.",
     "Show FX chain window add/remove buttons above FX list.":
@@ -53,15 +53,15 @@ TRADUZIONI_G8 = {
     "Prevents pin mappings from being changed by loading (REAPER-native) presets, or default presets, for plug-ins.":
         "Impedisce che il caricamento di preset nativi o predefiniti sovrascriva la mappatura dei pin (routing I/O) del plug-in.",
     "Opens the destination FX chain UI when duplicating entire FX chain by dragging track/item FX button.":
-        "Apre l'interfaccia della catena FX di destinazione quando si duplica l'intera catena trascinando il pulsante FX di traccia o item.",
+        "Apre l'interfaccia della catena FX di destinazione quando si duplica l'intera catena trascinando il pulsante FX di track o item.",
     "When enabled, closes any existing floating FX windows before opening a new window.":
         "Chiude le finestre FX mobili esistenti prima di aprirne una nuova (modalità a finestra mobile singola).",
     "Exclude monitoring FX from single-floating-FX mode, allowing monitoring FX windows to remain open.":
         "Esclude gli FX di monitoraggio dalla modalità a finestra mobile singola, mantenendoli sempre visibili.",
     "Exclude master track FX from single-floating-FX mode, allowing master FX windows to remain open.":
-        "Esclude gli FX della traccia Master dalla modalità a finestra mobile singola, mantenendoli sempre aperti.",
+        "Esclude gli FX della track Master dalla modalità a finestra mobile singola, mantenendoli sempre aperti.",
     "Allow multiple floating FX, but only one per track/context.":
-        "Consente più finestre mobili contemporanee, ma con un limite di una sola finestra per ciascuna traccia o contesto.",
+        "Consente più finestre mobili contemporanee, ma con un limite di una sola finestra per ciascuna track o contesto.",
 
     # [prefs_plugincompat_help]
     "Test all plug-in input and output for denormalized sample values (meaninglessly small values that can cause very high CPU use).":
@@ -131,7 +131,7 @@ TRADUZIONI_G8 = {
     "When adding ReWired applications/devices, automatically open the device control panel.":
         "All'inserimento di dispositivi ReWire, apre automaticamente il relativo pannello di controllo dell'applicazione collegata.",
     "Process all track FX even when playback is stopped, when any ReWire device is active.":
-        "Elabora tutti gli FX di traccia anche a riproduzione ferma quando è attivo un dispositivo ReWire.",
+        "Elabora tutti gli FX di track anche a riproduzione ferma quando è attivo un dispositivo ReWire.",
     "If an application/device is already open that can act as ReWire master, automatically place Reaper in ReWire client mode.":
         "Se è già aperta un'applicazione configurata come ReWire Master, imposta automaticamente REAPER come ReWire Client (slave).",
     "When running in ReWire client mode, use a separate preferences configuration file so separate preferences and settings can be preserved for this mode only.":
@@ -249,7 +249,7 @@ TRADUZIONI_G8 = {
     "Check to prevent the mousewheel from moving any fader. If not checked, mouse modifiers can be customized for faders.":
         "Seleziona per impedire alla rotella del mouse di spostare i fader di volume; se deselezionato, è possibile personalizzare i modificatori del mouse.",
     "Check to prevent the mousewheel from affecting TCP send controls, embedded FX, volume/pan faders, etc.":
-        "Seleziona per impedire alla rotella del mouse di alterare mandate nel TCP, controlli FX integrati, fader e potenziometri di panorama.",
+        "Seleziona per impedire alla rotella del mouse di alterare send nel TCP, controlli FX integrati, fader e potenziometri di panorama.",
     "Disable mousewheel editing of project playrate, project tempo, and time selection start/end/length fields in the transport area.":
         "Disabilita la modifica con rotella del mouse per velocità di riproduzione, BPM e campi di selezione temporale nella barra di trasporto.",
     "Mousewheel editing of the time selection fields in the transport can change the time selection by a small amount, or by the project beat grid.":
@@ -257,21 +257,21 @@ TRADUZIONI_G8 = {
     "Some trackpads can send scroll messages. Reaper can try to convert these to mousewheel messages.":
         "Alcuni trackpad inviano messaggi di scroll: REAPER può provare a convertirli in eventi di rotella mouse per uniformare il controllo.",
     "Clicking faders and controls can select the track, otherwise only clicking empty track control panel space or lane buttons will select.":
-        "Fare clic su fader e controlli può selezionare la traccia; altrimenti la selezione avviene solo cliccando su aree vuote del pannello o sui pulsanti corsia.",
+        "Fare clic su fader e controlli può selezionare la track; altrimenti la selezione avviene solo cliccando su aree vuote del pannello o sui pulsanti corsia.",
     "Enable editing track names with a single mouse click (default requires double click).":
-        "Abilita la ridenominazione delle tracce con un singolo clic del mouse (l'impostazione predefinita richiede un doppio clic).",
+        "Abilita la ridenominazione delle track con un singolo clic del mouse (l'impostazione predefinita richiede un doppio clic).",
     "Clicking in the arrange view can select that track, otherwise tracks can only be selected by clicking the track control panel.":
-        "Fare clic nell'area della vista Arrange può selezionare la traccia (altrimenti la selezione richiede un clic sul pannello TCP).",
+        "Fare clic nell'area della vista Arrange può selezionare la track (altrimenti la selezione richiede un clic sul pannello TCP).",
     "Allow editing the time selection where the selection edge passes through a media item, otherwise dragging will move the media item.":
         "Consente di modificare il bordo della selezione temporale anche se cade sopra un item (altrimenti il trascinamento sposta l'item multimediale).",
     "Allow resizing the ruler height by dragging the bottom of the ruler. Otherwise the ruler can be resized by dragging below the toolbar.":
-        "Consente di ridimensionare l'altezza del righello trascinando il suo bordo inferiore (in alternativa trascinando sotto la barra strumenti).",
+        "Consente di ridimensionare l'altezza del righello trascinando il suo bordo inferiore (in alternativa trascinando sotto la toolbar).",
     "Control+click can be used for one-button mice to emulate right-click behavior, but then the control key will not be available as a mouse modifier.":
         "Control+Clic può emulare il tasto destro sui mouse a tasto singolo, ma rende il tasto Control non disponibile come modificatore del mouse.",
     "If you use a pen or tablet or other absolute pointing device as a mouse, this will improve behavior when adjusting REAPER's knobs":
         "Se utilizzi una penna, una tavoletta grafica o un dispositivo a coordinate assolute, migliora la fluidità di rotazione delle manopole.",
     "When drag/dropping track panels, controls when destination track is converted to a folder to contain the source track.":
-        "Durante il trascinamento dei pannelli traccia, stabilisce quando la traccia di destinazione viene convertita in cartella per contenere la traccia trascinata.",
+        "Durante il trascinamento dei pannelli track, stabilisce quando la track di destinazione viene convertita in cartella per contenere la track trascinata.",
 
     # [prefs_import_help]
     "If you expect to continue to modify the project tempo, import as beat slices. If you want to immediately loop the file, import as a single item.":
@@ -285,15 +285,15 @@ TRADUZIONI_G8 = {
     "When importing media with embedded or suggested tempo information into an empty project, the project tempo can be set from the media.":
         "All'importazione di file con metadati di tempo in un progetto vuoto, il tempo del progetto può essere impostato automaticamente su quello del file.",
     "Media containing embedded tempo information can be set to automatically stretch when the media item crosses a project tempo change marker.":
-        "I file con metadati di tempo possono adattarsi automaticamente (time-stretch) quando oltrepassano un marcatore di cambio tempo nel progetto.",
+        "I file con metadati di tempo possono adattarsi automaticamente (time-stretch) quando oltrepassano un marker di cambio tempo nel progetto.",
     "Raw PCM files may be imported with best-guess audio parameters (sample rate, etc). When importing, explain how to fix incorrect parameters.":
         "I file PCM raw vengono importati con parametri stimati (sample rate, ecc.): all'importazione mostra una guida su come correggere parametri errati.",
     "When inserting multiple media items via action or drag and drop, the items can be added on separate tracks, or sequentially on a single track.":
-        "All'inserimento di più file multimediali, stabilisce se disporli su tracce separate o in sequenza temporale su una singola traccia.",
+        "All'inserimento di più file multimediali, stabilisce se disporli su track separate o in sequenza temporale su una singola track.",
     "When dragging media items into REAPER, allow dragging to the top part of a track to insert a new track to receive the media.":
-        "Trascina un file multimediale nella parte superiore di una traccia per creare e inserire una nuova traccia destinata a ricevere il file.",
+        "Trascina un file multimediale nella parte superiore di una track per creare e inserire una nuova track destinata a ricevere il file.",
     "When importing directories into REAPER, create new folder tracks for each imported directory.":
-        "All'importazione di intere cartelle, crea automaticamente tracce cartella (folder track) per ciascuna directory importata.",
+        "All'importazione di intere cartelle, crea automaticamente track cartella (folder track) per ciascuna directory importata.",
     "When importing files from directories, also recursively scan for files in subdirectories.":
         "All'importazione di cartelle, scansiona ricorsivamente anche tutte le relative sottocartelle.",
     "If configured to copy imported media, also copy media when pasting items from project to project.":
@@ -301,9 +301,9 @@ TRADUZIONI_G8 = {
     "If checked, copy imported media items to the project media path (if they are not already in the project path).":
         "Se selezionato, copia i file multimediali importati nella cartella media del progetto (se non sono già presenti nel percorso di progetto).",
     "If checked, name unnamed tracks after the media on media import.":
-        "Se selezionato, assegna alle tracce prive di nome il nome del file multimediale importato.",
+        "Se selezionato, assegna alle track prive di nome il nome del file multimediale importato.",
     "If auto-naming tracks on import, remove trailing numbers from track names.":
-        "Durante l'assegnazione automatica del nome traccia, rimuove i numeri finali presenti nel nome del file.",
+        "Durante l'assegnazione automatica del nome track, rimuove i numeri finali presenti nel nome del file.",
     "When importing or pasting media with ripple editing enabled, existing media items that start earlier can be split, or unaffected.":
         "All'importazione o inserimento di media con Ripple Edit attivo, gli item esistenti con inizio antecedente possono essere divisi o lasciati intatti.",
 
@@ -315,15 +315,15 @@ TRADUZIONI_G8 = {
     "When checked, limit apply FX/render stems actions to realtime. This is good for certain plug-ins that fail when running faster than realtime.":
         "Limita le azioni Applica FX e Render Stem alla velocità reale 1x (utile per plug-in esterni o DSP hardware che non supportano il rendering offline veloce).",
     "Rendering the project or stems, or freezing tracks, can run beyond the last media item in the project, to be sure to record any FX tails (like reverb).":
-        "Nel rendering di progetti, stem o freeze delle tracce, prosegue oltre l'ultimo item per catturare per intero le code degli effetti (riverberi, delay).",
+        "Nel rendering di progetti, stem o freeze delle track, prosegue oltre l'ultimo item per catturare per intero le code degli effetti (riverberi, delay).",
     "When rendering stems for the entire project, apply the tail length setting. This also affects the default tail settings in the render window.":
         "Nel rendering degli stem dell'intero progetto, applica l'impostazione della lunghezza coda (influisce anche sul valore predefinito nella finestra Render).",
     "When rendering stems for a time selection, apply the tail length setting. This also affects the default tail settings in the render window.":
         "Nel rendering degli stem di una selezione temporale, applica l'impostazione della lunghezza coda.",
     "By default, only media items will be rendered when freezing. If there are FX on the track, the entire track can be rendered, which may be slower.":
-        "Durante il freeze vengono renderizzati solo gli item; se la traccia contiene FX, è possibile renderizzare l'intera traccia (operazione più lenta).",
+        "Durante il freeze vengono renderizzati solo gli item; se la track contiene FX, è possibile renderizzare l'intera track (operazione più lenta).",
     "When freezing an entire track, apply the tail length setting.":
-        "Applica l'impostazione della lunghezza coda sonora durante il freeze dell'intera traccia.",
+        "Applica l'impostazione della lunghezza coda sonora durante il freeze dell'intera track.",
     "After canceling a render, the incompletely rendered files can automatically be saved or deleted, or REAPER can prompt every time.":
         "All'annullamento manuale di un rendering, i file parziali incompleti possono essere conservati, eliminati automaticamente o confermati a richiesta.",
     "After rendering, the render output/statistics window can remain open, or the render setup window can remain open, or both windows can close.":
@@ -331,7 +331,7 @@ TRADUZIONI_G8 = {
     "Various statistics can be calculated and displayed when rendering.":
         "Consente di calcolare e visualizzare varie statistiche di livello (picco, RMS, LUFS) durante e dopo il rendering.",
     "If freezing a track with muted items, generate silent items so that the presence of muted items is known.":
-        "Nel freeze di una traccia contenente item silenziati, genera item vuoti di silenzio per segnalarne visivamente la presenza.",
+        "Nel freeze di una track contenente item silenziati, genera item vuoti di silenzio per segnalarne visivamente la presenza.",
     "Prevents auto-bypass project/FX setting from being used during offline renders, apply FX, stem renders, etc.":
         "Impedisce l'intervento dell'auto-bypass dei plug-in durante i rendering offline, l'applicazione di FX e il rendering di stem.",
     "After rendering, the render output/statistics window can prevent focus from returning to the project, or reopen modelessly to allow focus to change.":

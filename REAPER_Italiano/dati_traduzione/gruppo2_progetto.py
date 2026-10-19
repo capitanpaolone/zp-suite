@@ -41,7 +41,7 @@ TRADUZIONI_G2 = {
     "This option, enabled by default, will create a new undo point each time you select an item.":
         "Questa opzione, attiva per impostazione predefinita, crea un nuovo punto di annullamento (undo point) a ogni selezione di un item.",
     "This option, disabled by default, will create a new undo point each time you select a track.":
-        "Questa opzione, disattivata per impostazione predefinita, crea un nuovo punto di annullamento a ogni selezione di una traccia.",
+        "Questa opzione, disattivata per impostazione predefinita, crea un nuovo punto di annullamento a ogni selezione di una track.",
     "This option, disabled by default, will create a new undo point each time you select an envelope point.":
         "Questa opzione, disattivata per impostazione predefinita, crea un nuovo punto di annullamento a ogni selezione di un punto di inviluppo.",
     "This option, enabled by default, will create a new undo point each time you create a time selection.":
@@ -65,7 +65,7 @@ TRADUZIONI_G2 = {
 
     # [prefs_project_help]
     "Using this feature you can create new projects that are automatically setup with your choice of basic tracks and project settings (bit depth, sample rate, etc).":
-        "Consente di creare nuovi progetti preconfigurati con le tracce di base e le impostazioni desiderate (profondità di bit, sample rate, ecc.).",
+        "Consente di creare nuovi progetti preconfigurati con le track di base e le impostazioni desiderate (profondità di bit, sample rate, ecc.).",
     "Makes REAPER open the save project window each time you create a new project, getting you to save before you start recording.":
         "Apre la finestra di salvataggio ogni volta che crei un nuovo progetto, invitandoti a salvare prima di iniziare a registrare.",
     "Select this option to make REAPER open the project settings window each time a new project is created.":

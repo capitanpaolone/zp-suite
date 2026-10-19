@@ -23,13 +23,13 @@ TRADUZIONI_G3 = {
     "Prompt to selectively save or delete new recorded files when punching out of recording (by pressing the play button).":
         "Chiedi conferma per salvare o eliminare i file registrati quando si esce dalla registrazione (punch-out premendo Play).",
     "Record-armed tracks can automatically expand to show the recording source and input level meters.":
-        "Le tracce armate per la registrazione possono espandersi automaticamente per mostrare la sorgente di registrazione e i meter di ingresso.",
+        "Le track armate per la registrazione possono espandersi automaticamente per mostrare la sorgente di registrazione e i meter di ingresso.",
     "When recording a single, very long uninterrupted take, create new files (gaplessly) to avoid file-format size limitations.":
         "Durante la registrazione di un take ininterrotto molto lungo, crea nuovi file (senza interruzioni) per evitare i limiti di dimensione del formato file.",
     "During lengthy recording, switching files creates a momentary CPU load, which can be lessened by offsetting file switches when recording multiple tracks.":
         "Durante registrazioni prolungate, il cambio di file genera un carico momentaneo sulla CPU, attenuabile sfalsando i cambi file nella registrazione multitraccia.",
     "Abort recording if no tracks are record-armed. Tracks can always be record-armed and unarmed after recording has started.":
-        "Interrompi la registrazione se nessuna traccia è armata. Le tracce possono comunque essere armate e disarmate dopo l'avvio della registrazione.",
+        "Interrompi la registrazione se nessuna track è armata. Le track possono comunque essere armate e disarmate dopo l'avvio della registrazione.",
     "Customize the filename that is automatically created for new recordings.":
         "Personalizza il nome file assegnato automaticamente alle nuove registrazioni.",
     "Customize the name that is automatically applied to new in-project MIDI media items.":
@@ -65,7 +65,7 @@ TRADUZIONI_G3 = {
     "Reuse existing lanes for new recording if space permits and doing so would not change the playback state significantly.":
         "Riutilizza le corsie esistenti per le nuove registrazioni se lo spazio lo consente e se ciò non altera in modo significativo la riproduzione.",
     "When recording into a fixed lane track, the normal behavior of trimming the recording to the auto-punch area can be overridden.":
-        "Nella registrazione su tracce con corsie fisse, è possibile bypassare il comportamento normale che rifila la registrazione all'area di auto-punch.",
+        "Nella registrazione su track con corsie fisse, è possibile bypassare il comportamento normale che rifila la registrazione all'area di auto-punch.",
 
     # [prefs_playback_help]
     "Makes playback stop and/or loop at the end of the project.":
@@ -75,7 +75,7 @@ TRADUZIONI_G3 = {
     "Clears the FX buffers at the end of a loop. This is not recommended for VSTi plug-ins, but may provide better performance for plug-ins like AutoTune.":
         "Svuota i buffer degli FX alla fine di un loop. Sconsigliato per i VSTi, ma può migliorare le prestazioni di plug-in come AutoTune.",
     "When track media playback offset is negative, a max play speed higher than 1 will ensure that all MIDI notes are played.":
-        "Quando l'offset di riproduzione della traccia è negativo, una velocità massima superiore a 1 assicura che tutte le note MIDI vengano riprodotte.",
+        "Quando l'offset di riproduzione della track è negativo, una velocità massima superiore a 1 assicura che tutte le note MIDI vengano riprodotte.",
     "Select this option to make the view scroll to the edit cursor on stop.":
         "Seleziona questa opzione per far scorrere la vista sul cursore di modifica all'arresto della riproduzione.",
     "Allows you to preview sounds from your instrument plug-ins when stopped.":
@@ -89,9 +89,9 @@ TRADUZIONI_G3 = {
     "Apply a buffer block length fade-in to the monitor signal only, when starting playback.":
         "Applica una dissolvenza in entrata (pari al blocco buffer) solo al segnale di monitoraggio all'avvio della riproduzione.",
     "Reduce CPU use on silent tracks by detecting silence during playback and avoiding additional processing (raises CPU use of non-silent tracks).":
-        "Riduce il consumo di CPU sulle tracce silenziose rilevando il silenzio ed evitando elaborazioni superflue (aumenta lievemente l'uso CPU delle tracce attive).",
+        "Riduce il consumo di CPU sulle track silenziose rilevando il silenzio ed evitando elaborazioni superflue (aumenta lievemente l'uso CPU delle track attive).",
     "Send note-offs to all track destinations when disabling record-arm (to prevent hanging notes).":
-        "Invia comandi Note-Off a tutte le destinazioni della traccia quando si disarma la registrazione (per evitare note bloccate).",
+        "Invia comandi Note-Off a tutte le destinazioni della track quando si disarma la registrazione (per evitare note bloccate).",
     "Reset MIDI CC/Pitch to neutral on playback start and/or stop.":
         "Reimposta i controller MIDI CC e il Pitch Bend al valore neutro all'avvio e/o all'arresto della riproduzione.",
     "Reset MIDI CC/Pitch to neutral when looping playback.":
@@ -123,7 +123,7 @@ TRADUZIONI_G3 = {
 
     # [prefs_scrub_help]
     "Either the master mix, or only the selected tracks, may be scrubbed/jogged.":
-        "Lo scrub/jog può agire sul mix master complessivo oppure solo sulle tracce selezionate.",
+        "Lo scrub/jog può agire sul mix master complessivo oppure solo sulle track selezionate.",
     "When scrubbing, the playback rate can be limited to 1.0 or slower.":
         "Durante lo scrub, la velocità di riproduzione può essere limitata a 1.0x o inferiore.",
     "When jogging, choose whether to limit the playback rate to 1x/2x/4x/8x":

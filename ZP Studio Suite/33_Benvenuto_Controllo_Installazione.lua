@@ -156,9 +156,31 @@ end
 
 function M.langpack_display_name(filename, T_fn)
   local T = T_fn or function(s) return s end
-  local clean = M.langpack_clean_name(filename)
-  if not clean or clean == "" then return T("Originale (inglese)") end
-  return clean
+  if filename == nil then return T("Originale (inglese)") end
+  if filename == "" then return T("Chiedi all'avvio") end        -- riga vuota: REAPER chiede la lingua a ogni avvio
+  if filename == "<>" then return T("Originale (inglese)") end   -- "<>" e' l'inglese di serie (Load always su English)
+  return M.langpack_clean_name(filename) or filename
+end
+
+-- La lingua si scrive in reaper.ini DOPO la chiusura di REAPER (restart_sh, sezione "lingua").
+-- SNM_SetStringConfigVar("langpack") non funziona (restituisce false, verificato su REAPER 7.80 +
+-- SWS 2.14), e REAPER riscrive il file all'uscita. Valore: nome file con estensione
+-- ("Italiano (ZP).ReaperLangPack"), "<>" = inglese di serie, "" = chiedi all'avvio.
+
+-- Un language pack di REAPER comincia con "#NAME:" (controllo sull'inizio del file).
+function M.langpack_valid(head)
+  return type(head) == "string" and head:gsub("^\239\187\191", ""):match("^%s*#NAME:") ~= nil
+end
+
+-- Dall'output di `ps -p PID -o comm=`: l'app (".../REAPER test.app") di quell'istanza, o nil.
+function M.app_from_exe(exe)
+  exe = (exe or ""):gsub("^%s+", ""):gsub("%s+$", "")
+  return exe:match("^(.-%.app)/Contents/MacOS/")
+end
+
+-- Nome del file da un percorso (/ o \).
+function M.langpack_basename(path)
+  return ((path or ""):match("([^/\\]+)$"))
 end
 
 function M.filter_langpack_files(files)
@@ -179,17 +201,37 @@ function M.langpack_state(current_pack, initial_pack)
 end
 
 local function shq(s) return "'" .. tostring(s):gsub("'", "'\\''") .. "'" end
-function M.restart_sh(app, proc)
+-- patch (facoltativa): { ini = percorso di reaper.ini, langpack = valore } riscrive la riga langpack=
+-- appena REAPER e' chiuso (con copia di sicurezza reaper.ini.zp_bak), prima di riaprirlo.
+-- pid (facoltativo): attende la chiusura di QUELLA istanza di REAPER (kill -0) invece di qualunque
+-- processo chiamato REAPER: con piu' istanze aperte (prova + lavoro) l'attesa globale non finiva.
+function M.restart_sh(app, proc, patch, pid)
   local wait = {}
   for _, p in ipairs(proc or { "REAPER", "reaper" }) do wait[#wait + 1] = "pgrep -x " .. shq(p) .. " >/dev/null 2>&1" end
-  return table.concat({
+  local lines = {
     "#!/bin/sh",
     "# ZP Studio Suite: aspetta la chiusura di REAPER e poi lo riapre.",
-    "while " .. table.concat(wait, " || ") .. "; do sleep 1; done",
+    tonumber(pid) and ("while kill -0 " .. math.floor(tonumber(pid)) .. " 2>/dev/null; do sleep 1; done")
+      or ("while " .. table.concat(wait, " || ") .. "; do sleep 1; done"),
     "sleep 1",
-    app and ("open " .. shq(app)) or "",
-    "",
-  }, "\n")
+  }
+  if patch and patch.ini then
+    local ini = shq(patch.ini)
+    local tmp = shq(patch.ini .. ".zp_tmp")
+    lines[#lines + 1] = "# lingua di REAPER: la riga langpack= si scrive ora che REAPER non puo' piu' riscriverla."
+    lines[#lines + 1] = "# La sezione e' [reaper] (minuscolo) su macOS: il confronto ignora le maiuscole. Una seconda sezione"
+    lines[#lines + 1] = "# [REAPER] in fondo al file fa IGNORARE a REAPER la prima, e le impostazioni vanno perse."
+    lines[#lines + 1] = "if [ -f " .. ini .. " ]; then"
+    lines[#lines + 1] = "  cp " .. ini .. " " .. shq(patch.ini .. ".zp_bak")
+    lines[#lines + 1] = "  ZP_LP=" .. shq(patch.langpack or "") .. " awk 'BEGIN{d=0} /^langpack=/{next} {print} tolower($0) ~ /^\\[reaper\\][ \\t\\r]*$/ && !d {print \"langpack=\" ENVIRON[\"ZP_LP\"]; d=1} END{if(!d){print \"[reaper]\"; print \"langpack=\" ENVIRON[\"ZP_LP\"]}}' "
+      .. ini .. " > " .. tmp
+    lines[#lines + 1] = "  # rete di sicurezza: si sostituisce o si aggiunge UNA riga, mai meno righe dell'originale"
+    lines[#lines + 1] = "  if [ \"$(wc -l < " .. tmp .. ")\" -ge \"$(wc -l < " .. ini .. ")\" ]; then mv " .. tmp .. " " .. ini .. "; else rm -f " .. tmp .. "; fi"
+    lines[#lines + 1] = "fi"
+  end
+  lines[#lines + 1] = app and ("open " .. shq(app)) or ""
+  lines[#lines + 1] = ""
+  return table.concat(lines, "\n")
 end
 
 function M.restart_ps1(exe)
@@ -299,11 +341,6 @@ local function install_speech()
   return true
 end
 
-if _G.ZP_INITIAL_LANGPACK == nil then
-  local ok_lp, cur = reaper.get_config_var_string("langpack")
-  _G.ZP_INITIAL_LANGPACK = (ok_lp and cur) or ""
-end
-
 local function app_path()
   local exe = reaper.GetExePath() or ""
   local app = exe:match("^(.-%.app)")
@@ -313,15 +350,46 @@ local function app_path()
   return "/Applications/REAPER.app"
 end
 
+-- Lingua di REAPER scelta e non ancora applicata. Sta in un ExtState non persistente (vale finche'
+-- REAPER resta aperto): "" = nessuna scelta, altrimenti il valore da scrivere in reaper.ini
+-- ("<>" = inglese di serie, oppure il nome file del language pack).
+local LP_KEY = "langpack_in_attesa"
+local function lp_pending()
+  local v = reaper.GetExtState("ZP_STUDIO_SUITE", LP_KEY)
+  if v == "" then return nil end
+  return v
+end
+local function lp_set_pending(v)   -- v nil = annulla
+  reaper.SetExtState("ZP_STUDIO_SUITE", LP_KEY, v == nil and "" or v, false)
+end
+
+-- Istanza di REAPER che sta eseguendo questo script: pid ($PPID della shell lanciata da popen) e app
+-- (da `ps`). Serve a riaprire proprio quell'app (anche portatile o rinominata) e ad aspettare solo lei.
+local function reaper_instance()
+  local function sh(cmd)
+    local h = io.popen(cmd .. " 2>/dev/null")
+    if not h then return nil end
+    local o = h:read("a"); h:close()
+    return o
+  end
+  local pid = tonumber((sh("echo $PPID") or ""):match("%d+"))
+  if not pid then return nil, nil end
+  local app = M.app_from_exe(sh("ps -p " .. pid .. " -o comm="))
+  return pid, app
+end
+
 local function restart_reaper()
   local is_win = (reaper.GetOS() or ""):match("Win")
+  local lp = lp_pending()
   if is_win then
     local ps = resource .. sep .. "ZP_Restart.ps1"
     write(ps, M.restart_ps1(reaper.GetExePath() .. sep .. "reaper.exe"))
     os.execute('start "" /B powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "' .. ps .. '"')
   else
     local sh = resource .. sep .. "ZP_Restart.sh"
-    write(sh, M.restart_sh(app_path()))
+    local patch = lp ~= nil and { ini = reaper.get_ini_file(), langpack = lp } or nil
+    local pid, app = reaper_instance()
+    write(sh, M.restart_sh(app or app_path(), nil, patch, pid))
     os.execute("nohup /bin/sh " .. string.format("%q", sh) .. " >/dev/null 2>&1 &")
   end
   speak(T("Chiudo REAPER per applicare la nuova lingua..."))
@@ -349,42 +417,84 @@ local function check_all()
   -- 0b Lingua di REAPER: menu language pack
   local ok_cur, cur_pack = reaper.get_config_var_string("langpack")
   cur_pack = (ok_cur and cur_pack) or ""
-  local has_sws = reaper.SNM_SetStringConfigVar ~= nil
-  local lp_state = M.langpack_state(cur_pack, _G.ZP_INITIAL_LANGPACK)
-  local display_lp = M.langpack_display_name(cur_pack, T)
+  -- La scelta si applica al riavvio: lo script non puo' scrivere la lingua con REAPER aperto
+  -- (SNM_SetStringConfigVar("langpack") restituisce false), quindi la scrive il riavvio (restart_reaper).
+  -- Solo macOS: su Windows/Linux resta il rimando alle Preferenze, dove REAPER ha il suo menu.
+  local pending = lp_pending()
+  if pending == cur_pack then lp_set_pending(nil); pending = nil end
+  local target = pending ~= nil and pending or cur_pack
+  local lp_state = M.langpack_state(cur_pack, target)
+  local display_lp = M.langpack_display_name(target, T)
+  local lang_dir = P(resource, "LangPack")
+
+  local function import_langpack()
+    if not reaper.JS_Dialog_BrowseForOpenFiles then
+      reaper.RecursiveCreateDirectory(lang_dir, 0)
+      reaper.MB(T("Copia il file .ReaperLangPack nella cartella LangPack di REAPER (si apre ora), poi riapri il menu della lingua."), TITLE, 0)
+      os.execute("open " .. string.format("%q", lang_dir))
+      return
+    end
+    local ok, picked = reaper.JS_Dialog_BrowseForOpenFiles(T("Importa un language pack..."), "", "", "ReaperLangPack\0*.ReaperLangPack\0\0", false)
+    if ok ~= 1 or not picked or picked == "" then return end
+    local data = read(picked)
+    local name = M.langpack_basename(picked)
+    if not data or not name then speak(T("Non riesco a leggere il file scelto.")); return end
+    if not M.langpack_valid(data:sub(1, 400)) then
+      reaper.MB(T("Il file non sembra un language pack di REAPER (manca la riga #NAME)."), TITLE, 0)
+      return
+    end
+    local dest = P(lang_dir, name)
+    if exists(dest) and dest ~= picked then
+      if reaper.MB(T("Esiste gia' un language pack con questo nome. Sostituirlo?"), TITLE, 4) ~= 6 then return end
+    end
+    reaper.RecursiveCreateDirectory(lang_dir, 0)
+    if dest ~= picked and not write(dest, data) then speak(T("Non riesco a copiare il file in LangPack.")); return end
+    lp_set_pending(name)
+    speak(string.format(T("Importato: %s. Riavvia per usarlo."), M.langpack_clean_name(name) or name))
+    rows = check_all()
+  end
+
+  local function browse_reapack()
+    if reaper.ReaPack_BrowsePackages then
+      reaper.ReaPack_BrowsePackages("langpack")
+    else
+      reaper.MB(T("ReaPack non risponde: aprilo da Extensions > ReaPack > Browse packages e cerca \"langpack\"."), TITLE, 0)
+    end
+  end
 
   local r_buttons = {}
-  if not has_sws then
+  if not IS_MAC then
     r_buttons[#r_buttons + 1] = { T("Preferenze"), function() reaper.Main_OnCommand(40016, 0) end, w = 110 }
   else
-    local menu_btn_label = display_lp .. " ▾"
+    local menu_btn_label = display_lp .. " \226\150\190"
     r_buttons[#r_buttons + 1] = {
       menu_btn_label,
       function()
-        local pack_dir = P(resource, "LangPack")
         local raw_files = {}
         local idx = 0
         while true do
-          local f = reaper.EnumerateFiles(pack_dir, idx)
+          local f = reaper.EnumerateFiles(lang_dir, idx)
           if not f then break end
           raw_files[#raw_files + 1] = f
           idx = idx + 1
         end
         local packs = M.filter_langpack_files(raw_files)
         local menu_entries = {}
-        local is_orig = (cur_pack == "")
-        menu_entries[#menu_entries + 1] = (is_orig and "!" or "") .. T("Originale (inglese)")
+        menu_entries[#menu_entries + 1] = (target == "<>" and "!" or "") .. T("Originale (inglese)")
         for _, p in ipairs(packs) do
-          local is_sel = (cur_pack == p)
-          menu_entries[#menu_entries + 1] = (is_sel and "!" or "") .. M.langpack_clean_name(p)
+          menu_entries[#menu_entries + 1] = (target == p and "!" or "") .. M.langpack_clean_name(p)
         end
+        menu_entries[#menu_entries + 1] = T("Importa un language pack...")
+        menu_entries[#menu_entries + 1] = T("Cerca altri language pack in ReaPack...")
         local sel = gfx.showmenu(table.concat(menu_entries, "|"))
         if sel == 1 then
-          reaper.SNM_SetStringConfigVar("langpack", "")
-          rows = check_all()
-        elseif sel > 1 and packs[sel - 1] then
-          reaper.SNM_SetStringConfigVar("langpack", packs[sel - 1])
-          rows = check_all()
+          lp_set_pending("<>"); rows = check_all()
+        elseif sel > 1 and sel <= 1 + #packs then
+          lp_set_pending(packs[sel - 1]); rows = check_all()
+        elseif sel == #packs + 2 then
+          import_langpack()
+        elseif sel == #packs + 3 then
+          browse_reapack()
         end
       end,
       w = math.max(140, gfx.measurestr(menu_btn_label) + 24),
@@ -397,7 +507,7 @@ local function check_all()
   out[#out + 1] = {
     title = T("Lingua di REAPER"),
     state = lp_state,
-    line = not has_sws and T("Scegli il language pack in Preferences > General > Language pack.")
+    line = not IS_MAC and T("Scegli il language pack in Preferences > General > Language pack.")
       or lp_state == "passo" and string.format(T("REAPER passa a %s al riavvio."), display_lp)
       or T("Menu e finestre di REAPER. Originale = inglese, come le guide ufficiali."),
     buttons = r_buttons,

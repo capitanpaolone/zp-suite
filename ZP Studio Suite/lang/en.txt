@@ -842,3 +842,13 @@ APPLICA ▸	APPLY ▸
 Errore nell'analisi: 	Analysis error:
 Nuova nota	New Note
 Vai →	Go →
+Chiedi all'avvio	Ask at startup
+Importa un language pack...	Import a language pack...
+Cerca altri language pack in ReaPack...	Find more language packs in ReaPack...
+Copia il file .ReaperLangPack nella cartella LangPack di REAPER (si apre ora), poi riapri il menu della lingua.	Copy the .ReaperLangPack file into REAPER's LangPack folder (opening now), then reopen the language menu.
+Non riesco a leggere il file scelto.	Cannot read the chosen file.
+Il file non sembra un language pack di REAPER (manca la riga #NAME).	This file does not look like a REAPER language pack (the #NAME line is missing).
+Esiste gia' un language pack con questo nome. Sostituirlo?	A language pack with this name already exists. Replace it?
+Non riesco a copiare il file in LangPack.	Cannot copy the file into LangPack.
+Importato: %s. Riavvia per usarlo.	Imported: %s. Restart to use it.
+ReaPack non risponde: aprilo da Extensions > ReaPack > Browse packages e cerca "langpack".	ReaPack is not responding: open it from Extensions > ReaPack > Browse packages and search for "langpack".
