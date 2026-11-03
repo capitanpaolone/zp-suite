@@ -550,7 +550,7 @@ local function check_all()
   out[#out + 1] = {
     title = T("Toolbar ZP Colori (facoltativa)"),
     state = cslot and (pending and "passo" or "ok") or "manca",
-    line = cslot and string.format(T("Nella Floating toolbar %s: modo Item/Traccia/Tutto, 20 colori, Togli."), tostring(cslot))
+    line = cslot and string.format(T("Nella Floating toolbar %s: sei selettori, 20 colori e Togli. Scegli un modo, seleziona, poi clicca un colore."), tostring(cslot))
       or cwant and T("Chiesta: lancia Installa (32) e riavvia REAPER.")
       or T("Non serve per forza: i colori ci sono gia' nella finestrella ZP Colori (tavolozza nella toolbar ZP). Installala se vuoi i colori sempre a vista, per esempio accanto al trasporto."),
     buttons = cslot and {

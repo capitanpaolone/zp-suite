@@ -124,6 +124,11 @@ local function preroll_on()
   return preroll_api() and (math.floor(reaper.SNM_GetIntConfigVar("preroll", 0)) & 2) == 2 or false
 end
 
+local function refresh_preroll_toolbar()
+  -- La toolbar nativa usa l'azione 41819: aggiorna la sua spia dopo la scrittura SWS.
+  if reaper.RefreshToolbar2 then reaper.RefreshToolbar2(0, 41819) end
+end
+
 local function preroll_s()
   local v = tonumber(reaper.GetExtState(SOLO_SEC, "preroll_s")) or 3
   return math.max(PREROLL_MIN, math.min(PREROLL_MAX, v))
@@ -196,6 +201,7 @@ COMANDI.preroll = function()
   local on = (v & 2) == 0
   if on then apply_preroll() end
   reaper.SNM_SetIntConfigVar("preroll", on and (v | 2) or (v & ~2))
+  refresh_preroll_toolbar()
   say(on and ("Pre-roll acceso, " .. preroll_s() .. " s") or "Pre-roll spento")
 end
 COMANDI.preroll_s = function(arg)

@@ -2,7 +2,7 @@
 
 - ZP_tbC_01..20: un quadrato pieno del colore della palette (ZP_Colori.lua). Bordo scuro sottile,
   chiaro col mouse sopra.
-- ZP_tbC_Item / Traccia / Tutto / Togli: stile B come la toolbar ZP (riquadro scuro, disegno chiaro,
+- ZP_tbC_Item / Traccia / Tutto / Marker / Regione / Auto / Togli: stile B come la toolbar ZP (riquadro scuro, disegno chiaro,
   bordo verde acqua quando il modo e' acceso).
 Genera icons/ZP_tbC_*.png (90x30: normale, mouse sopra, acceso) e icons/200/ (180x60).
 Lancio dalla radice del repo:  python3 gobbo_ricerca_battuta/strumenti/genera_icone_colori.py
@@ -52,12 +52,33 @@ def g_tutto(d):                   # traccia + item: testata a sinistra, item con
     wave(d, 114, 172, 120, 40)
 
 
+def g_marker(d):                  # marker: bandierina sul righello
+    bar(d, 82, 66, 94, 176, 5)
+    d.polygon([(94, 70), (164, 84), (94, 106)], fill=INK)
+
+
+def g_regione(d):                 # regione: intervallo delimitato sul righello
+    bar(d, 58, 112, 182, 128, 6)
+    bar(d, 58, 76, 72, 164, 5)
+    bar(d, 168, 76, 182, 164, 5)
+
+
 def g_togli(d):                   # quadratino vuoto barrato
     d.rounded_rectangle([64, 64, 176, 176], radius=14, outline=INK, width=LW)
     d.line([(76, 164), (164, 76)], fill=INK, width=LW + 2)
 
 
-GLYPHS = {"ZP_tbC_Item": g_item, "ZP_tbC_Traccia": g_traccia, "ZP_tbC_Tutto": g_tutto, "ZP_tbC_Togli": g_togli}
+def g_auto(d):                    # scelta colore mantenuta per gli oggetti selezionati dopo
+    d.ellipse([60, 60, 180, 180], outline=INK, width=LW)
+    d.polygon([(145, 50), (194, 62), (163, 98)], fill=INK)
+    d.rounded_rectangle([91, 91, 149, 149], radius=8, outline=INK, width=LW)
+
+
+GLYPHS = {
+    "ZP_tbC_Item": g_item, "ZP_tbC_Traccia": g_traccia, "ZP_tbC_Tutto": g_tutto,
+    "ZP_tbC_Marker": g_marker, "ZP_tbC_Regione": g_regione, "ZP_tbC_Togli": g_togli,
+    "ZP_tbC_Auto": g_auto,
+}
 
 
 def swatch_strip(hexcol: str, cell: int) -> Image.Image:

@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.6.3
+-- @version 2.6.4
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -22,25 +22,17 @@
 --   NVDA Controller Client (LGPL 2.1, NV Access). Dettagli in README.it.md.
 -- @changelog
 --   EN
---   Fixed: choosing a REAPER language in 33 Welcome had no effect (2.6.2 listed the language packs but
---     the choice was never saved). The choice is now applied on restart: Restart now closes REAPER,
---     writes the language and reopens it. The menu also has Import a language pack... (copies your own
---     .ReaperLangPack into REAPER's LangPack folder) and Find more language packs in ReaPack... This
---     menu is macOS only; on Windows and Linux the button opens REAPER's Preferences, where you pick
---     the language.
---   Italian REAPER language pack much more complete: about 17,700 strings (was about 7,500); all menus and
---     dialogs are translated. Actions stay in English; technical terms (item, take, region, track, FX...)
---     stay in English. Restart REAPER after updating.
+--   Added direct synchronization of the native REAPER pre-roll toolbar indicator when toggled from ZP SOLO Recorder or its web remote.
+--   Gobbo speaker colors can be applied from selected voice items and their paired Character Notes items.
+--   Italian REAPER language pack keeps the top-level Help label for native macOS menu search.
+--   Added Render & Copy, the ZP Remote REAPER tools for Dubbertools, and a Dubbertools link in SOLO Web.
+--   Voice Minutes Report exports CSV, and ZP Colors supports items, tracks, markers and regions.
 --   IT
---   Corretto: scegliere la lingua di REAPER nel 33 Benvenuto non aveva effetto (la 2.6.2 elencava i
---     language pack ma la scelta non veniva mai salvata). Ora la scelta si applica al riavvio: Riavvia ora
---     chiude REAPER, scrive la lingua e lo riapre. Nel menu ci sono anche Importa un language pack... (copia
---     il tuo .ReaperLangPack nella cartella LangPack di REAPER) e Cerca altri language pack in ReaPack...
---     Il menu vale solo su macOS; su Windows e Linux il pulsante apre le Preferenze di REAPER, dove si
---     sceglie la lingua.
---   Language pack italiano di REAPER molto piu' completo: circa 17.700 voci (prima circa 7.500); tutti i menu e le
---     finestre di dialogo sono tradotti. Le Action restano in inglese; i termini tecnici (item, take, region,
---     track, FX...) restano in inglese. Riavvia REAPER dopo l'aggiornamento.
+--   Il PRE di ZP SOLO Recorder e del telecomando web aggiorna anche la spia del pre-roll nella toolbar nativa di REAPER.
+--   I colori speaker del Gobbo si possono applicare selezionando item voce o note personaggio associate.
+--   Il language pack italiano mantiene la voce principale Help per la ricerca nativa nei menu di macOS.
+--   Aggiunti Render & Copy, lo strumento REAPER di ZP Remote per Dubbertools e il link in SOLO Web.
+--   Report Minuti Voce esporta in CSV. ZP Colori gestisce item, tracce, marker e regioni.
 -- @provides
 --   [langpack] /REAPER_Italiano/Italiano (ZP).ReaperLangPack > Italiano (ZP).ReaperLangPack
 --   [main] 01_Importa_Video_SRT.lua
@@ -74,6 +66,22 @@
 --   [main] 33_Benvenuto_Controllo_Installazione.lua
 --   [main] 34_ZP_Set_Comandi.lua
 --   [main] 35_ZP_Colori.lua
+--   [main] render_copy/ZP_RenderCopy.lua
+--   render_copy/assets/zp_render_copy.png
+--   [main] remote/ZP_Remote_Crea_Pacchetto.lua
+--   [nomain] remote/zp_remote_character_ids.lua
+--   [nomain] remote/zp_remote_json.lua
+--   [nomain] remote/zp_remote_importer.lua
+--   [nomain] remote/zp_remote_import_logic.lua
+--   remote/zp_remote_esporta.py
+--   remote/zp_remote_identity.py
+--   remote/zp_remote_preflight.py
+--   remote/assets/zp_remote_pacchetto.png
+--   [data] icons/ZP_RenderCopy.png > toolbar_icons/ZP_RenderCopy.png
+--   [data] icons/150/ZP_RenderCopy.png > toolbar_icons/150/ZP_RenderCopy.png
+--   [data] icons/200/ZP_RenderCopy.png > toolbar_icons/200/ZP_RenderCopy.png
+--   [data] icons/ZP_Remote_Crea_Pacchetto.png > toolbar_icons/ZP_Remote_Crea_Pacchetto.png
+--   [data] icons/200/ZP_Remote_Crea_Pacchetto.png > toolbar_icons/200/ZP_Remote_Crea_Pacchetto.png
 --   [main] web/ZP_SOLO_Web_Motore.lua
 --   [main] colori/ZP_Colori_01_Verde_lime.lua
 --   [main] colori/ZP_Colori_02_Crema.lua
@@ -98,6 +106,9 @@
 --   [main] colori/ZP_Colori_Modo_Item.lua
 --   [main] colori/ZP_Colori_Modo_Traccia.lua
 --   [main] colori/ZP_Colori_Modo_Tutto.lua
+--   [main] colori/ZP_Colori_Modo_Marker.lua
+--   [main] colori/ZP_Colori_Modo_Regione.lua
+--   [main] colori/ZP_Colori_Auto.lua
 --   [main] colori/ZP_Colori_Togli.lua
 --   [nomain] 04_worker_Crea_Marker_Item.lua
 --   [nomain] 05_worker_Gestione_SRT.lua
@@ -224,6 +235,12 @@
 --   [data] icons/ZP_tbC_Togli.png > toolbar_icons/ZP_tbC_Togli.png
 --   [data] icons/ZP_tbC_Traccia.png > toolbar_icons/ZP_tbC_Traccia.png
 --   [data] icons/ZP_tbC_Tutto.png > toolbar_icons/ZP_tbC_Tutto.png
+--   [data] icons/ZP_tbC_Marker.png > toolbar_icons/ZP_tbC_Marker.png
+--   [data] icons/ZP_tbC_Regione.png > toolbar_icons/ZP_tbC_Regione.png
+--   [data] icons/ZP_tbC_Auto.png > toolbar_icons/ZP_tbC_Auto.png
+--   [data] icons/200/ZP_tbC_Marker.png > toolbar_icons/200/ZP_tbC_Marker.png
+--   [data] icons/200/ZP_tbC_Regione.png > toolbar_icons/200/ZP_tbC_Regione.png
+--   [data] icons/200/ZP_tbC_Auto.png > toolbar_icons/200/ZP_tbC_Auto.png
 --   [data] icons/200/ZP_tbC_01.png > toolbar_icons/200/ZP_tbC_01.png
 --   [data] icons/200/ZP_tbC_02.png > toolbar_icons/200/ZP_tbC_02.png
 --   [data] icons/200/ZP_tbC_03.png > toolbar_icons/200/ZP_tbC_03.png

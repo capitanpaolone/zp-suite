@@ -22,8 +22,12 @@ toolbar/ZP_StudioSuite.ReaperMenu
 Customize toolbar > Import > ZP_StudioSuite.ReaperMenu
 Diciassette pulsanti (installali con 32 Installa toolbar), icone ZP a tre stati.
 Le 23 action operative hanno un'icona dedicata.
-Colori: 35 ZP Colori (pulsante tavolozza) e' una finestrella con modo Item,
-Traccia o Tutto, 20 colori e Togli colore. Selezioni, clicchi un colore.
+Colori: 35 ZP Colori (pulsante tavolozza) e' una finestrella con sei modi,
+20 colori e Togli colore. Scegli un modo, seleziona gli oggetti e clicca un
+colore: il colore si applica solo con quel clic. Il modo scelto resta acceso.
+Auto colora insieme gli item, i marker e le regioni selezionati. Item,
+Traccia, Tutto, Marker e Regione limitano l'azione al tipo indicato; Tutto
+colora le tracce selezionate e tutti i loro item.
 La stessa cosa come toolbar fissa (facoltativa) si installa dal 33 Benvenuto.
 
 Set di scorciatoie: 34 ZP Set Comandi (pulsante tastiera) mostra cosa fa ogni
@@ -85,3 +89,8 @@ Effects/ZP_Paolo Balestri JSFX.
 Chain Builder prepara la catena, Probe Guard tiene le Probe in fondo al bus.
 Nessun modulo applica correzioni automatiche via bus: Master Pro misura,
 interpreta e suggerisce.
+
+ZP Studio Suite 2.6.4
+Render & Copy copia i file renderizzati nella cartella di consegna.
+ZP Remote Pacchetto esporta da REAPER per Dubbertools e importa le consegne.
+Per l’export servono Python 3 e ffmpeg. Il link è anche in SOLO Web.

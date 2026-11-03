@@ -25,14 +25,15 @@ OUTPUT_PATH = BASE_DIR / "REAPER_Italiano" / "Italiano (ZP).ReaperLangPack"
 # Deve finire con una riga vuota: e' lei a chiudere l'intestazione.
 REAPACK_HEADER = """; @description Italiano (ZP) — traduzione italiana di REAPER 7.82, con le spiegazioni delle preferenze
 ; @noindex
-; @version 2.6.0
+; @version 2.6.4
 ; @author Paolo Balestri (Lato Cardioide)
 ; @about
 ;   Language pack italiano di REAPER, parte della ZP Studio Suite.
 ;   Dopo l'installazione: REAPER > Options > Preferences > General > Language > Browse e scegli "Italiano (ZP)".
 ;   Pensato per REAPER 7.82; le voci che una versione diversa non conosce restano in inglese.
 ; @changelog
-;   Primo rilascio in ReaPack: traduzione completa dei menu e delle finestre, con le spiegazioni delle preferenze.
+;   ZP Studio Suite 2.6.4: aggiornamento terminologico della traduzione; il menu principale "Help" mantiene la ricerca nativa di macOS, con voci e sottomenu in italiano.
+;   2.6.0: Primo rilascio in ReaPack: traduzione completa dei menu e delle finestre, con le spiegazioni delle preferenze.
 
 """
 

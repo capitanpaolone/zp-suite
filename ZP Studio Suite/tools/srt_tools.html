@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SRT Tools</title>
+  <title>SRT Tools · 1.1.0</title>
   <style>
     :root {
       color-scheme: light;
@@ -319,8 +319,8 @@
   <main>
     <header>
       <div>
-        <h1>SRT Tools</h1>
-        <p>Due strumenti in un solo file HTML offline: crea SRT da TXT o Excel con timecode o sostituisci il testo di un SRT esistente.</p>
+        <h1>SRT Tools <small>1.1.0 · SRT + WebVTT</small></h1>
+        <p>Due strumenti offline: crea SRT/WebVTT da TXT o Excel con timecode, oppure sostituisci il testo mantenendo i tempi di un SRT/WebVTT.</p>
       </div>
       <span class="pill">Funziona senza installazione</span>
     </header>
@@ -353,7 +353,7 @@
           <p>Usalo quando hai già un SRT temporizzato e vuoi sostituire il testo con una traduzione che contiene riferimenti temporali.</p>
           <h3>Note pratiche</h3>
           <ul>
-            <li>Carica il TXT tradotto e l'SRT originale.</li>
+            <li>Carica il TXT tradotto e l'SRT/VTT originale.</li>
             <li>Lascia formato e offset automatici se non hai casi strani.</li>
             <li>Il browser non può salvare direttamente nella cartella originale: scarica il risultato.</li>
             <li>Non serve un LLM se i timecode sono regolari; serve solo se il testo è sporco o ambiguo.</li>
@@ -394,6 +394,7 @@
             <label>Gap fra cue ms
               <input id="tcGapMs" type="number" min="0" step="50" value="80">
             </label>
+            <label>Formato output<select id="tcOutputFormat"><option value="srt">SRT</option><option value="vtt">WebVTT</option></select></label>
             <label>Nome download
               <input id="tcFilename" type="text" value="output.srt">
             </label>
@@ -407,7 +408,7 @@
 
         <div class="panel pad">
           <div class="bar">
-            <h2>Output SRT</h2>
+            <h2 id="tcOutputTitle">Output SRT</h2>
             <span id="tcCount" class="pill">0 cue</span>
           </div>
           <textarea id="tcOutput" spellcheck="false" readonly></textarea>
@@ -424,8 +425,8 @@
           </div>
 
           <div class="group">
-            <label for="mergeSrtFile">SRT originale</label>
-            <input id="mergeSrtFile" type="file" accept=".srt,text/plain">
+            <label for="mergeSrtFile">SRT o VTT originale</label>
+            <input id="mergeSrtFile" type="file" accept=".srt,.vtt,text/plain,text/vtt">
           </div>
 
           <div class="group">
@@ -460,7 +461,7 @@
             <button id="mergeRun" class="primary" type="button">Unisci</button>
             <button id="mergeDownload" class="secondary" type="button" disabled>Scarica SRT</button>
           </div>
-          <div id="mergeStatus" class="status">Carica un TXT e un SRT per iniziare.</div>
+          <div id="mergeStatus" class="status">Carica un TXT e un SRT/VTT per iniziare.</div>
         </div>
 
         <div class="panel pad">
@@ -667,11 +668,15 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         const cues = extractTimecodeCues($("tcSource").value);
         const gap = Number($("tcGapMs").value || 0);
         const lastMs = Number($("tcLastDuration").value || 4) * 1000;
+        const format = $("tcOutputFormat").value;
         tcLastSrt = cues.map((cue, index) => {
           const nextStart = index + 1 < cues.length ? cues[index + 1].start : cue.start + lastMs;
           const timecode = cue.timecode || `${formatSrtTime(cue.start)} --> ${formatSrtTime(Math.max(cue.start + 300, nextStart - gap))}`;
-          return `${index + 1}\n${timecode}\n${cue.text}\n`;
+          let cueText = cue.text;
+          if (format === "vtt") { const role = cueText.match(/^([^:\n]{1,80}):\s*(.+)$/s); if (role) cueText = `<v ${role[1]}>${role[2]}</v>`; }
+          return `${index + 1}\n${timecode.replace(/,/g, format === "vtt" ? "." : ",")}\n${cueText}\n`;
         }).join("\n");
+        if (format === "vtt") tcLastSrt = "WEBVTT\n\n" + tcLastSrt;
 
         $("tcOutput").value = tcLastSrt;
         $("tcCount").textContent = `${cues.length} cue`;
@@ -687,9 +692,10 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
     }
 
     function parseSrtTime(value) {
-      const match = value.trim().match(/^(\d{2}):(\d{2}):(\d{2}),(\d{1,3})$/);
-      if (!match) throw new Error("Timecode SRT non valido: " + value);
-      return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]) + Number(match[4].padEnd(3, "0")) / 1000;
+      const normalized = value.trim().replace(",", ".").split(/\s+/)[0];
+      const match = normalized.match(/^(?:(\d{2,}):)?(\d{2}):(\d{2})\.(\d{1,3})$/);
+      if (!match) throw new Error("Timecode SRT/VTT non valido: " + value);
+      return Number(match[1] || 0) * 3600 + Number(match[2]) * 60 + Number(match[3]) + Number(match[4].padEnd(3, "0")) / 1000;
     }
 
     function secToHms(sec) {
@@ -701,27 +707,24 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
     }
 
     function parseSrt(content) {
-      const blocks = normalizeText(content).trim().split(/\n\s*\n/);
+      const blocks = normalizeText(content).replace(/^WEBVTT[^\n]*\n/, "").trim().split(/\n\s*\n/);
       const entries = [];
-
       for (const block of blocks) {
         const lines = block.split("\n").map((line) => line.trimEnd());
-        if (lines.length < 3) continue;
-        const number = Number(lines[0].trim());
-        const timecode = lines[1].trim();
+        const timeIndex = lines.findIndex((line) => line.includes("-->"));
+        if (timeIndex < 0 || lines.length < timeIndex + 2) continue;
+        const timecode = lines[timeIndex].trim();
         const parts = timecode.split(/\s+-->\s+/);
-        if (!Number.isFinite(number) || parts.length !== 2) continue;
-
-        entries.push({
-          num: number,
-          timecode,
-          startSec: parseSrtTime(parts[0]),
-          endSec: parseSrtTime(parts[1]),
-          text: lines.slice(2).join("\n").trim()
-        });
+        if (parts.length !== 2) continue;
+        parts[1] = parts[1].split(/\s+/)[0];
+        let text = lines.slice(timeIndex + 1).join("\n").trim();
+        let speaker = "";
+        const voice = text.match(/^<v(?:\.[^ >]+)?\s+([^>]+)>([\s\S]*?)<\/v>\s*$/i);
+        if (voice) { speaker = voice[1].trim(); text = voice[2].trim(); }
+        else { const label = text.match(/^([^:\n]{1,80}):\s*(.+)$/s); if (label) { speaker = label[1].trim(); text = label[2].trim(); } }
+        entries.push({ num: entries.length + 1, timecode, startSec: parseSrtTime(parts[0]), endSec: parseSrtTime(parts[1]), text, speaker });
       }
-
-      if (!entries.length) throw new Error("Nessuna entry SRT valida trovata.");
+      if (!entries.length) throw new Error("Nessun cue SRT/VTT valido trovato.");
       return entries;
     }
 
@@ -845,21 +848,30 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       return entries;
     }
 
-    function writeSrt(entries) {
-      return entries.map((entry) => `${entry.num}\n${entry.timecode}\n${entry.text}\n`).join("\n");
+    function writeSrt(entries, vtt = false) {
+      const body = entries.map((entry, i) => {
+        let text = entry.text;
+        if (vtt) {
+          const label = entry.speaker || (text.match(/^([^:\n]{1,80}):\s*(.+)$/s) || [])[1];
+          if (label) text = `<v ${label}>${entry.speaker ? text : text.replace(/^[^:\n]{1,80}:\s*/, "")}</v>`;
+        }
+        const timing = vtt ? entry.timecode.replace(/,/g, ".") : entry.timecode.replace(/,/, ",").replace(/(\s+-->\s+\S+)\s+.*$/, "$1");
+        return `${vtt ? i + 1 : entry.num}\n${timing}\n${text}\n`;
+      }).join("\n");
+      return vtt ? `WEBVTT\n\n${body}` : body;
     }
 
     function mergeOutputName() {
       const file = $("mergeSrtFile").files[0];
       if (!file) return "merged [IT].srt";
-      return file.name.replace(/\.srt$/i, "") + " [IT].srt";
+      return file.name.replace(/\.(srt|vtt)$/i, "") + " [IT]." + (/\.vtt$/i.test(file.name) ? "vtt" : "srt");
     }
 
     async function mergeTranslatedText() {
       try {
         const txtFile = $("mergeTxtFile").files[0];
         const srtFile = $("mergeSrtFile").files[0];
-        if (!txtFile || !srtFile) throw new Error("Carica sia il TXT sia il SRT.");
+        if (!txtFile || !srtFile) throw new Error("Carica sia il TXT sia un file SRT/VTT.");
 
         const [txtContent, srtContent] = await Promise.all([readFile(txtFile), readFile(srtFile)]);
         const entries = parseSrt(srtContent);
@@ -882,7 +894,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
         );
 
         const merged = assignSegments(segments, entries);
-        mergeLastOutput = writeSrt(merged);
+        mergeLastOutput = writeSrt(merged, /\.vtt$/i.test(srtFile.name));
         mergeLastName = mergeOutputName();
         $("mergeOutput").value = mergeLastOutput;
         $("mergeDownload").disabled = false;
@@ -939,8 +951,9 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
       finally { $("tcFile").disabled = false; $("tcConvert").disabled = false; }
     });
     $("tcConvert").addEventListener("click", convertTimecodedText);
+    $("tcOutputFormat").addEventListener("change", () => { $("tcOutputTitle").textContent = "Output " + $("tcOutputFormat").value.toUpperCase(); $("tcDownload").textContent = "Scarica " + $("tcOutputFormat").value.toUpperCase(); if ($("tcSource").value.trim()) convertTimecodedText(); });
     $("tcDownload").addEventListener("click", () => {
-      if (tcLastSrt) downloadText(tcLastSrt, $("tcFilename").value.trim() || "output.srt");
+      if (tcLastSrt) { const ext = $("tcOutputFormat").value; let name = $("tcFilename").value.trim() || `output.${ext}`; name = name.replace(/\.(srt|vtt)$/i, "") + `.${ext}`; downloadText(tcLastSrt, name); }
     });
 
     function syncMergeOffsetControls() {

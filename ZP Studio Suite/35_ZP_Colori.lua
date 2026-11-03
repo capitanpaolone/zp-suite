@@ -4,7 +4,7 @@
 -- 35 ZP Colori: finestrella "clicca e colora" (la stessa logica della toolbar ZP Colori, in
 -- ZP_Colori.lua). Si apre e si chiude dalla toolbar ZP come gli altri strumenti, si puo'
 -- agganciare: stretta e alta = colori in griglia da 4 per riga, larga e bassa = due file.
--- Modo Item / Traccia / Tutto come nella toolbar (lo stesso modo, salvato in ExtState).
+-- Si sceglie Auto, Item, Traccia, Tutto, Marker o Regione; poi si seleziona e si colora.
 
 local sep = package.config:sub(1, 1)
 local here = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\][^/\\]+$") or ".")
@@ -13,7 +13,7 @@ local C = dofile(here .. sep .. "ZP_Colori.lua")
 local T = UI.T or function(s) return s end
 
 local SECTION = "ZP_COLORI"
-local S = { status = T("Seleziona, poi clicca un colore."), ok = true, last_cap = 0 }
+local S = { status = T("Scegli un modo, seleziona, poi clicca un colore."), ok = true, last_cap = 0 }
 C.notify = function(msg, ok) S.status, S.ok = msg, ok ~= false end
 
 local TEAL = { 0.10, 0.74, 0.60, 1 }
@@ -22,7 +22,7 @@ local TEAL = { 0.10, 0.74, 0.60, 1 }
 local ICON = {}
 do
   local dir = reaper.GetResourcePath() .. sep .. "Data" .. sep .. "toolbar_icons" .. sep .. "200" .. sep
-  for i, n in ipairs({ "Item", "Traccia", "Tutto", "Togli" }) do
+  for i, n in ipairs({ "Auto", "Item", "Traccia", "Tutto", "Marker", "Regione", "Togli" }) do
     local id = gfx.loadimg(i, dir .. "ZP_tbC_" .. n .. ".png")
     if id and id >= 0 then ICON[n:lower()] = id end
   end
@@ -86,13 +86,14 @@ local function draw()
   local wide = gfx.w > gfx.h * 2.2
   local pad = 10
   if wide then
-    -- larga e bassa (agganciata sotto l'arrangiamento): modi a sinistra, due file da 10, Togli a destra
-    local bh = math.max(22, math.floor((gfx.h - 2 * pad - 8) / 3))
+    -- larga e bassa: sei modi in due colonne, colori al centro, Togli a destra
+    local bh = math.max(20, math.floor((gfx.h - 2 * pad - 8) / 3))
     for i, m in ipairs(C.MODES) do
-      if icon_button(pad, pad + (i - 1) * (bh + 4), 92, bh, m, T(C.MODE_NAMES[m]), m == mode, clicked) then C.set_mode(m) end
+      local col, row = (i - 1) % 2, (i - 1) // 2
+      if icon_button(pad + col * 96, pad + row * (bh + 4), 92, bh, m, T(C.MODE_NAMES[m]), m == mode, clicked) then C.set_mode(m) end
     end
     local tw = 100
-    local gx, gw = pad + 102, gfx.w - pad * 2 - 102 - tw - 8
+    local gx, gw = pad + 198, gfx.w - pad * 2 - 198 - tw - 8
     local per_row = math.ceil(#C.PALETTE / 2)
     local cw, ch = math.floor((gw - (per_row - 1) * 6) / per_row), math.floor((gfx.h - 2 * pad - 24 - 6) / 2)
     for n = 1, #C.PALETTE do
@@ -102,13 +103,14 @@ local function draw()
     if icon_button(gfx.w - pad - tw, pad, tw, math.min(44, 2 * ch + 6), "togli", T("Togli"), false, clicked) then C.apply(0, T("Colore tolto")) end
     text(UI.fit_text(S.hover or S.status, gw), gx, gfx.h - pad - 18, 15, S.hover and UI.colors.text or (S.ok and TEAL or { 1, 0.45, 0.4, 1 }))
   else
-    -- stretta e alta: modi in alto, griglia da 4 per riga, Togli e stato sotto
+    -- stretta e alta: sei modi su due righe, colori, Togli e stato
     local w = gfx.w - 2 * pad
     local mw = math.floor((w - 8) / 3)
     for i, m in ipairs(C.MODES) do
-      if icon_button(pad + (i - 1) * (mw + 4), pad, mw, 40, m, T(C.MODE_NAMES[m]), m == mode, clicked) then C.set_mode(m) end
+      local col, row = (i - 1) % 3, (i - 1) // 3
+      if icon_button(pad + col * (mw + 4), pad + row * 44, mw, 40, m, T(C.MODE_NAMES[m]), m == mode, clicked) then C.set_mode(m) end
     end
-    local top = pad + 50
+    local top = pad + 94
     local bottom = gfx.h - pad - 90
     local cw = math.floor((w - 3 * 6) / 4)
     local rows = math.ceil(#C.PALETTE / 4)
@@ -143,5 +145,5 @@ end
 if reaper.set_action_options then reaper.set_action_options(1 | 4); reaper.atexit(function() reaper.set_action_options(8) end) end
 C.refresh_buttons()
 local d, px, py, pw, ph = (reaper.GetExtState(SECTION, "finestra") .. ","):match("([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)")
-gfx.init(T("ZP Colori"), tonumber(pw) or 300, tonumber(ph) or 430, tonumber(d) or 0, tonumber(px) or 260, tonumber(py) or 160)
+gfx.init(T("ZP Colori"), tonumber(pw) or 300, tonumber(ph) or 480, tonumber(d) or 0, tonumber(px) or 260, tonumber(py) or 160)
 loop()

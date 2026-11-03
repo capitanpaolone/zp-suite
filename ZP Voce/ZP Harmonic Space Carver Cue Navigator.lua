@@ -1,11 +1,13 @@
 -- @description ZP Harmonic Space Carver Cue Navigator (background helper)
--- @version 1.12
+-- @version 1.13
 -- @author Paolo Balestri / Codex
 -- @about Collega i Carver a REAPER: salti tra i cue, punto del cursore a trasporto fermo,
 --   verifica del routing sidechain e cue come marker #HSC sul righello (seguono l'editing).
 -- @changelog
 --   1.12: dal Carver, un clic sull'avviso CUE FUORI POSTO riporta tutti i cue rossi sulla loro voce
 --        e dice quanti ne ha riallineati (Ctrl+Z annulla).
+--   1.13: l'item GUID diventa l'ancora primaria anche quando il take cambia; riferimenti mancanti
+--        distinti dai cue spostati e comando ADOTTA POSIZIONE.
 --   1.11: quando premi ? in un plugin ZP apre la sua sezione nella guida della Suite (italiano o inglese),
 --        e passa ai plugin la lingua scelta nella Suite. Tutto quello che faceva prima resta uguale.
 -- ================================================================
@@ -224,7 +226,7 @@ end
 
 -- ================================================================
 -- Ancore dei cue all'audio della voce: logica pura (provata da test_hsc_sync.lua).
--- Un item voce e' { file, pos, len, offs, rate, track }: pos/len in timeline, offs = inizio nel file.
+-- Un item voce e' { guid, file, pos, len, offs, rate, track }.
 -- Un'ancora e' { file, src }: il punto del file sotto il cue ("" = nessuna voce: cue libero).
 -- ================================================================
 HSC.ATOL = 0.02          -- scarto oltre il quale un cue e' fuori posto (s)
@@ -249,14 +251,24 @@ function HSC.make_anchor(pos, items)
       if it.pos > pos and it.pos - pos <= HSC.BEFORE and (not best_key or it.pos < best_key) then best, best_key = it, it.pos end
     end
   end
-  if not best then return { file = "", src = 0 } end
-  return { file = best.file, src = best.offs + (pos - best.pos) * best.rate }
+  if not best then return { guid = "", rel = 0, file = "", src = 0 } end
+  return { guid = best.guid or "", rel = pos - best.pos,
+    file = best.file, src = best.offs + (pos - best.pos) * best.rate }
 end
 
--- Dove si trova adesso in timeline il punto dell'ancora (nil = audio sparito). Se lo stesso file
+-- Dove si trova adesso in timeline il punto dell'ancora (nil = riferimento non risolto). Se lo stesso file
 -- compare piu' volte, vale l'occorrenza piu' vicina a "near".
 function HSC.expected(anchor, items, near)
-  if not anchor or anchor.file == "" then return nil end
+  if not anchor then return nil end
+  if anchor.guid and anchor.guid ~= "" then
+    for _, it in ipairs(items) do
+      if it.guid == anchor.guid then
+        local t = it.pos + (anchor.rel or 0)
+        if t >= it.pos - HSC.BEFORE and t <= it.pos + it.len + HSC.AFTER then return t end
+      end
+    end
+  end
+  if not anchor.file or anchor.file == "" then return nil end
   local best, bestd
   for _, it in ipairs(items) do
     if it.file == anchor.file then
@@ -272,10 +284,9 @@ function HSC.expected(anchor, items, near)
   return best
 end
 
--- "free" cue senza voce, "ok" al suo posto, "reanchor" trascinato a mano (si ancora al punto nuovo),
--- "lost" l'audio si e' spostato (o non c'e' piu') e il cue no.
+-- "free" senza voce, "ok" al suo posto, "reanchor" trascinato a mano, "lost" spostamento verificabile.
 function HSC.judge(anchor, pos, exp, prev_pos, prev_exp)
-  if not anchor or anchor.file == "" then return "free" end
+  if not anchor or ((anchor.file or "") == "" and (anchor.guid or "") == "") then return "free" end
   if exp and math.abs(exp - pos) <= HSC.ATOL then return "ok" end
   local marker_moved = prev_pos ~= nil and math.abs(pos - prev_pos) > HSC.ATOL
   local audio_moved = (prev_exp == nil) ~= (exp == nil) or (exp ~= nil and prev_exp ~= nil and math.abs(exp - prev_exp) > HSC.ATOL)
@@ -289,7 +300,7 @@ function HSC.serialize(anchors)
   table.sort(keys)
   for _, k in ipairs(keys) do
     local a = anchors[k]
-    out[#out + 1] = string.format("%d\t%.6f\t%s", k, a.src or 0, a.file or "")
+    out[#out + 1] = string.format("%d\t%.6f\t%s\t%s\t%.6f", k, a.src or 0, a.file or "", a.guid or "", a.rel or 0)
   end
   return table.concat(out, "\n")
 end
@@ -297,8 +308,12 @@ end
 function HSC.deserialize(text)
   local anchors = {}
   for line in tostring(text or ""):gmatch("[^\n]+") do
-    local k, src, file = line:match("^(%-?%d+)\t([%-%d%.]+)\t(.*)$")
-    if k then anchors[tonumber(k)] = { src = tonumber(src) or 0, file = file } end
+    local k, src, file, guid, rel = line:match("^(%-?%d+)\t([%-%d%.]+)\t([^\t]*)\t([^\t]*)\t([%-%d%.]*)$")
+    if k then anchors[tonumber(k)] = { src = tonumber(src) or 0, file = file or "", guid = guid or "", rel = tonumber(rel) or 0 }
+    else
+      local old_k, old_src, old_file = line:match("^(%-?%d+)\t([%-%d%.]+)\t(.*)$")
+      if old_k then anchors[tonumber(old_k)] = { src = tonumber(old_src) or 0, file = old_file, guid = "", rel = 0 } end
+    end
   end
   return anchors
 end
@@ -427,18 +442,19 @@ local function handle(base)
   if seq == ack or seq == last_seq[base] then return end
   local cmd = math.floor(reaper.gmem_read(base) + 0.5)
   if cmd == 8 then
-    -- clic sull'avviso CUE FUORI POSTO: riallinea tutti i cue rossi
+    -- clic sull'avviso CUE FUORI POSTO: riallinea tutti i cue con riferimento disponibile
     local n = anchor_command and anchor_command("realign", nil) or 0
     if hsc_notify then
-      hsc_notify(n == 0 and "Nessun cue fuori posto" or (n == 1 and "1 cue riallineato" or (n .. " cue riallineati")))
+      hsc_notify(n == 0 and "Nessun cue riallineabile: controlla i riferimenti voce" or (n == 1 and "1 cue riallineato" or (n .. " cue riallineati")))
     end
     reaper.gmem_write(base + 3, seq)
     last_seq[base] = seq
     return
   end
   if cmd == 6 or cmd == 7 then
-    -- RIALLINEA (6) / TIENI QUI (7) sul cue selezionato nel Carver
-    if anchor_command then anchor_command(cmd == 6 and "realign" or "keep", math.floor(reaper.gmem_read(base + 2) + 0.5)) end
+    -- RIALLINEA (6) / ADOTTA POSIZIONE (7) sul cue selezionato nel Carver
+    local n = anchor_command and anchor_command(cmd == 6 and "realign" or "adopt", math.floor(reaper.gmem_read(base + 2) + 0.5)) or 0
+    if cmd == 7 and hsc_notify then hsc_notify(n > 0 and "Posizione del cue adottata" or "Cue non disponibile per l'adozione") end
     reaper.gmem_write(base + 3, seq)
     last_seq[base] = seq
     return
@@ -614,7 +630,8 @@ local function rescan()
     local base, mask = addresses(c.idx, c.fx, slot)
     if base >= 0 and base < SLOT_BASE + (SLOT_MAX + 1) * SLOT_STRIDE then
       out[#out + 1] = base
-      list[#list + 1] = { base = base, mask = mask, track = c.track, fx = c.fx }
+      list[#list + 1] = { base = base, mask = mask,
+        missing_mask = slot and (base + 74) or nil, track = c.track, fx = c.fx }
     end
   end
   bases, carvers = out, list
@@ -650,6 +667,7 @@ hsc_notify = notify
 local MB = 3800                          -- casella comune dei comandi al Carver (vedi il JSFX)
 local MARKER_COLOR = reaper.ColorToNative(36, 184, 212) | 0x1000000
 local LOST_COLOR = reaper.ColorToNative(232, 64, 56) | 0x1000000
+local MISSING_COLOR = reaper.ColorToNative(236, 169, 54) | 0x1000000
 local HSC_LANE = 3                       -- lane 4 (REAPER le conta da 0): fuori dalle lane 1-2 del 17
 
 local function read_cue_markers()
@@ -839,7 +857,8 @@ local function collect_voice_items()
       if take and reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 0 and not reaper.TakeIsMIDI(take) then
         local f = source_file(take)
         if f ~= "" then
-          items[#items + 1] = { file = f, track = tn,
+          local _, item_guid = reaper.GetSetMediaItemInfo_String(item, "GUID", "", false)
+          items[#items + 1] = { guid = item_guid or "", file = f, track = tn,
             pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION"), len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH"),
             offs = reaper.GetMediaItemTakeInfo_Value(take, "D_STARTOFFS"),
             rate = math.max(0.0001, reaper.GetMediaItemTakeInfo_Value(take, "D_PLAYRATE")) }
@@ -869,7 +888,7 @@ local function anchors_tick(force)
   last_state, last_full = state, now
   local markers, items = read_cue_markers(), collect_voice_items()
   cue_markers_cache, items_cache = markers, items
-  local dirty, lost, present, lost_n = false, {}, {}, 0
+  local dirty, lost, missing, present, lost_n = false, {}, {}, {}, 0
   for i, m in ipairs(markers) do
     present[m.num] = true
     local a, rt = anchors[m.num], runtime[m.num] or {}
@@ -877,23 +896,25 @@ local function anchors_tick(force)
     local st, exp
     if not a then
       a = HSC.make_anchor(m.pos, items); anchors[m.num] = a; dirty = true
-      exp = HSC.expected(a, items, m.pos); st = (a.file == "") and "free" or "ok"
+      exp = HSC.expected(a, items, m.pos); st = ((a.file or "") == "" and (a.guid or "") == "") and "free" or "ok"
     else
-      if a.file == "" then                -- cue libero: si aggancia appena ha una voce vicina
+      if (a.file or "") == "" and (a.guid or "") == "" then -- cue libero: si aggancia appena ha una voce vicina
         local na = HSC.make_anchor(m.pos, items)
         if na.file ~= "" then a = na; anchors[m.num] = a; dirty = true end
       end
       exp = HSC.expected(a, items, m.pos)
       st = HSC.judge(a, m.pos, exp, rt.prev_pos, rt.prev_exp)
+      if st == "lost" and not exp then st = "missing" end
       if st == "reanchor" then
         a = HSC.make_anchor(m.pos, items); anchors[m.num] = a; dirty = true
-        exp = HSC.expected(a, items, m.pos); st = (a.file == "") and "free" or "ok"
+        exp = HSC.expected(a, items, m.pos); st = ((a.file or "") == "" and (a.guid or "") == "") and "free" or "ok"
       end
     end
     rt.prev_pos, rt.prev_exp, rt.status, rt.exp = m.pos, exp, st, exp
     lost[i] = (st == "lost")
+    missing[i] = (st == "missing")
     if lost[i] then lost_n = lost_n + 1 end
-    local want = lost[i] and LOST_COLOR or MARKER_COLOR
+    local want = lost[i] and LOST_COLOR or (missing[i] and MISSING_COLOR or MARKER_COLOR)
     if m.color ~= want then reaper.SetProjectMarker3(0, m.num, false, m.pos, 0, m.name, want) end
   end
   for k in pairs(anchors) do if not present[k] then anchors[k] = nil; runtime[k] = nil; dirty = true end end
@@ -904,19 +925,24 @@ local function anchors_tick(force)
   end
   lost_count_said = lost_n
   local m1, m2 = HSC.masks(lost)
+  local mm1, mm2 = HSC.masks(missing)
   for _, c in ipairs(carvers) do
-    if c.mask then reaper.gmem_write(c.mask, m1); reaper.gmem_write(c.mask + 1, m2) end
+    if c.mask then
+      reaper.gmem_write(c.mask, m1); reaper.gmem_write(c.mask + 1, m2)
+      if c.missing_mask then reaper.gmem_write(c.missing_mask, mm1); reaper.gmem_write(c.missing_mask + 1, mm2) end
+    end
   end
 end
 
--- RIALLINEA / TIENI QUI su un cue (indice in ordine di tempo) o su tutti quelli fuori posto.
+-- RIALLINEA (anche tutti) o ADOTTA POSIZIONE su un cue (indice in ordine di tempo).
 -- Restituisce quanti cue ha toccato.
 anchor_command = function(kind, index)
   anchors_tick(true)
   local targets = {}
   for i, m in ipairs(cue_markers_cache) do
     local rt = runtime[m.num]
-    if (index == nil or index == i - 1) and rt and rt.status == "lost" then targets[#targets + 1] = m end
+    if (index == nil or index == i - 1) and rt and
+      (rt.status == "lost" or (kind == "adopt" and rt.status == "missing")) then targets[#targets + 1] = m end
   end
   if #targets == 0 then return 0 end
   local done = 0
@@ -926,13 +952,13 @@ anchor_command = function(kind, index)
     if kind == "realign" and rt.exp then
       reaper.SetProjectMarker3(0, m.num, false, rt.exp, 0, m.name, MARKER_COLOR)
       rt.prev_pos = rt.exp; done = done + 1
-    elseif kind == "keep" then
+    elseif kind == "adopt" then
       anchors[m.num] = HSC.make_anchor(m.pos, items_cache); runtime[m.num] = nil; done = done + 1
     end
   end
   save_anchors()
   reaper.UpdateTimeline()
-  reaper.Undo_EndBlock2(0, kind == "realign" and "ZP HSC: riallinea cue" or "ZP HSC: tieni il cue qui", -1)
+  reaper.Undo_EndBlock2(0, kind == "realign" and "ZP HSC: riallinea cue" or "ZP HSC: adotta posizione cue", -1)
   anchors_tick(true)
   return done
 end

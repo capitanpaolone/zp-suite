@@ -339,6 +339,8 @@
   <p><a href="solo_recorder.html">I comandi, uno per uno &rarr;</a></p>
 
   <!-- ================================================================== -->
+  <p><strong>Novità 2.6.4.</strong> Render &amp; Copy copia i file renderizzati nella cartella di consegna. ZP Remote esporta la regione per <a href="https://dubbertools.com/">Dubbertools</a> e importa le registrazioni ricevute. Usa il pulsante <strong>?</strong> nelle due finestre. Per esportare da ZP Remote servono Python 3 e ffmpeg.</p>
+
   <h2 id="tool-22">Voice Cleaner (Split silenzi)</h2>
   <p><strong>A cosa serve.</strong> Riconosce dove si parla in un item audio e taglia il resto: rifila testa e coda, oppure divide la presa ai silenzi lunghi, lasciando il respiro che scegli prima e dopo le frasi.</p>
   <p class="when">Quando: dopo una registrazione, per pulire le prese o per spezzare una lunga sessione in un file per frase prima di creare le regioni.</p>
@@ -391,7 +393,8 @@
     <li>Si contano solo item con un file vero: item vuoti e di testo (note) non entrano mai. <strong>No muti</strong> esclude anche gli item in mute (vale per item e tracce, non per le regioni); il report lo scrive accanto al modo.</li>
     <li><strong>Copia + HTML</strong> copia il report e prepara il file.</li>
     <li><strong>Aggiungi allo storico</strong>: aggiorna il report cumulativo del progetto, senza contare due volte le stesse righe.</li>
-    <li><strong>Salva questa sessione</strong>: un HTML a parte con il solo conteggio di adesso; lo storico non cambia.</li>
+    <li><strong>Esporta storico CSV</strong>: legge lo storico HTML del progetto e crea un CSV apribile in un foglio di calcolo, con dettaglio e totale conteggiabile.</li>
+    <li><strong>Salva questa sessione</strong>: crea un HTML e un CSV separati con il solo conteggio di adesso; lo storico non cambia. Nome e data della sessione sono nel nome dei file.</li>
   </ul>
   <p>Perché i conti tornino, le tracce voce devono avere nomi coerenti.</p>
 
@@ -592,7 +595,7 @@
   <p class="nota">Se usi OSARA e il set che scegli non ha i suoi tasti, prima del cambio la finestra lo dice. Come si fa: REAPER riscrive <code>reaper-kb.ini</code> mentre è aperto, quindi il cambio lo fa un piccolo script di sistema che aspetta la chiusura di REAPER, fa la copia di sicurezza, sostituisce le righe dei tasti e, se l'hai chiesto, riapre REAPER.</p>
 
   <h2 id="tool-35">35 &middot; ZP Colori (clicca e colora)</h2>
-  <p>La finestrella dei colori, dal pulsante tavolozza della toolbar ZP: si apre, si usa, si chiude (o resta agganciata). Tre pulsanti per il modo &mdash; <strong>Item</strong> (gli item selezionati), <strong>Traccia</strong> (le tracce selezionate, non gli item: quelli con un colore loro lo tengono), <strong>Tutto</strong> (le tracce e tutti gli item che ci stanno dentro) &mdash;, venti colori (i sedici della palette, più bianco, nero, grigio e rosso acceso) e <strong>Togli colore</strong>. Passando sopra un colore ne leggi il nome; sotto, una riga dice cosa è stato colorato o cosa manca da selezionare. Ogni colorazione si annulla con Ctrl/Cmd+Z. La stessa cosa, sempre a vista, è la toolbar facoltativa <a href="toolbar.html#colori">ZP Colori</a>.</p>
+  <p>La finestrella dei colori, dal pulsante tavolozza della toolbar ZP: si apre, si usa, si chiude (o resta agganciata). Scegli uno dei sei modi, seleziona gli oggetti e poi clicca un colore. <strong>Auto</strong> colora insieme item, marker e regioni selezionati al clic; gli altri modi limitano il clic a Item, Traccia, Tutto (tracce e loro item), Marker o Regione. Un solo selettore resta acceso e nessuna selezione viene colorata da sola. Ci sono venti colori e <strong>Togli colore</strong>. Ogni colorazione si annulla con Ctrl/Cmd+Z. La stessa cosa, sempre a vista, è la toolbar facoltativa <a href="toolbar.html#colori">ZP Colori</a>.</p>
 
   <h2 id="azioni">Azioni senza finestra</h2>
   <p>Si lanciano dall'Action List (cerca <em>ZP Studio Suite</em>) o da una scorciatoia da tastiera.</p>

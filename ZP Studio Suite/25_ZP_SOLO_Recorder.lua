@@ -932,6 +932,11 @@ local function preroll_on()
   return (math.floor(reaper.SNM_GetIntConfigVar("preroll", 0)) & 2) == 2
 end
 
+local function refresh_preroll_toolbar()
+  -- La toolbar nativa usa l'azione 41819: aggiorna la sua spia dopo la scrittura SWS.
+  if reaper.RefreshToolbar2 then reaper.RefreshToolbar2(0, 41819) end
+end
+
 local function measure_seconds(pos)
   local num, denom, bpm = reaper.TimeMap_GetTimeSigAtTime(0, pos)
   num, denom, bpm = tonumber(num) or 4, tonumber(denom) or 4, tonumber(bpm) or 120
@@ -959,6 +964,7 @@ local function toggle_preroll()
   local on = (v & 2) == 0
   if on then apply_preroll_seconds() end
   reaper.SNM_SetIntConfigVar("preroll", on and (v | 2) or (v & ~2))
+  refresh_preroll_toolbar()
   speak(on and ("Pre-roll acceso: il REC riparte " .. state.preroll_s .. " secondi prima, e registra dal cursore.")
     or "Pre-roll spento: il REC parte dal cursore.")
 end

@@ -748,6 +748,57 @@ local function html_escape(value)
   return value
 end
 
+local function csv_escape(value)
+  value = tostring(value == nil and "" or value)
+  if value:find('[;"\r\n]') then
+    return '"' .. value:gsub('"', '""') .. '"'
+  end
+  return value
+end
+
+local function build_csv_report(rows, csv_path)
+  local out = { "\239\187\191Progetto;Data conteggio;Cartella / Selezione;File conteggiato;Durata reale (secondi);Durata reale;Minuti conteggiati" }
+  local total_seconds = 0
+  for _, row in ipairs(rows or {}) do
+    local seconds = tonumber(row.durata_sec) or 0
+    total_seconds = total_seconds + seconds
+    out[#out + 1] = table.concat({
+      csv_escape(project_name()),
+      csv_escape(row.data),
+      csv_escape(row.cartella),
+      csv_escape(row.nome),
+      tostring(math.floor(seconds + 0.5)),
+      csv_escape(row.durata_str or format_time(seconds)),
+      tostring(tonumber(row.minuti) or 0)
+    }, ";")
+  end
+  out[#out + 1] = table.concat({
+    csv_escape(project_name()),
+    csv_escape(os.date("%d/%m/%Y %H:%M:%S")),
+    "RIEPILOGO",
+    csv_escape("Totale conteggiabile sull'intero report"),
+    tostring(math.floor(total_seconds + 0.5)),
+    csv_escape(format_time(total_seconds)),
+    tostring(billed_minutes(total_seconds))
+  }, ";")
+  return write_text_file(csv_path, table.concat(out, "\n"))
+end
+
+local function csv_path_for_html(html_path)
+  return tostring(html_path or ""):gsub("%.[Hh][Tt][Mm][Ll]$", ".csv")
+end
+
+local function export_saved_history_csv()
+  local html_path = project_report_path("html", "", false)
+  if not html_path then return nil, "Cartella progetto non disponibile." end
+  local rows, _, existed = parse_data_block(html_path)
+  if not existed or #rows == 0 then return nil, "Non trovo uno storico conteggi da esportare per questo progetto." end
+  local csv_path = project_report_path("csv", "", false)
+  local ok, err = build_csv_report(rows, csv_path)
+  if not ok then return nil, err end
+  return csv_path, #rows
+end
+
 local function build_html_report(all_rows, html_path)
   local total_seconds, total_billed_sum_rows, total_items = 0, 0, 0
   local blocks_by_name = {}
@@ -891,7 +942,9 @@ local function save_report_file(detail_rows)
   
   local ok, html_err = build_html_report(existing_rows, html_path)
   if not ok then return nil, html_err end
-  return html_path, added, skipped
+  local csv_path = project_report_path("csv", "", false)
+  local csv_ok, csv_err = build_csv_report(existing_rows, csv_path)
+  return html_path, added, skipped, csv_ok and csv_path or nil, csv_err
 end
 
 local function save_session_report_file(detail_rows, label)
@@ -931,7 +984,9 @@ local function save_session_report_file(detail_rows, label)
   if #session_rows == 0 then return nil, "Nessun dato da salvare." end
   local ok, html_err = build_html_report(session_rows, html_path)
   if not ok then return nil, html_err end
-  return html_path, #session_rows
+  local csv_path = csv_path_for_html(html_path)
+  local csv_ok, csv_err = build_csv_report(session_rows, csv_path)
+  return html_path, #session_rows, csv_ok and csv_path or nil, csv_err
 end
 
 local function open_window()
@@ -1060,6 +1115,15 @@ local function open_window()
       pending_report_label = mode_label
       pending_report_suffix = report_suffix or ""
       pending_report_scroll = 0
+    end
+    if ZP_UI.draw_button({ x = 532, y = 146, w = 230, h = 34 }, "Esporta storico CSV", false, true, clicked, "copy") then
+      local csv_path, exported_or_err = export_saved_history_csv()
+      if csv_path then
+        copied_message = "CSV dello storico pronto · Righe: " .. tostring(exported_or_err or 0) .. "\nFile CSV: " .. csv_path
+      else
+        copied_message = tostring(exported_or_err or "Esportazione CSV non riuscita.")
+      end
+      copied_time = reaper.time_precise()
     end
 
     gfx.setfont(1, "Arial", 15)
@@ -1233,9 +1297,14 @@ local function open_window()
 
       if ZP_UI.draw_button({ x = mx + modal_w - 478, y = my + modal_h - 58, w = 170, h = 36 }, "Aggiungi allo storico", false, true, clicked, "save") then
         set_clipboard(pending_report_text)
-        local html_path, added, skipped = save_report_file(pending_detail_rows)
+        local html_path, added, skipped, csv_path, csv_err = save_report_file(pending_detail_rows)
         if html_path then
           copied_message = "Report salvato nello storico. Nuove righe: " .. tostring(added or 0) .. " · Già presenti: " .. tostring(skipped or 0) .. "\nFile HTML: " .. html_path
+          if csv_path then
+            copied_message = copied_message .. "\nCSV aggiornato: " .. csv_path
+          elseif csv_err then
+            copied_message = copied_message .. "\nCSV non salvato: " .. tostring(csv_err)
+          end
         else
           copied_message = "Report copiato negli appunti. File non salvato: " .. tostring(added or "errore")
           reaper.ShowMessageBox("Non sono riuscito a salvare il file:\n\n" .. tostring(added or "errore"), "ZP Studio Suite", 0)
@@ -1249,9 +1318,14 @@ local function open_window()
       if ZP_UI.draw_button({ x = mx + modal_w - 296, y = my + modal_h - 58, w = 160, h = 36 }, "Salva questa sessione", false, true, clicked, "copy") then
         set_clipboard(pending_report_text)
         local session_label = trim(pending_report_suffix) ~= "" and pending_report_suffix or pending_report_label
-        local html_path, saved_or_err = save_session_report_file(pending_detail_rows, session_label)
+        local html_path, saved_or_err, csv_path, csv_err = save_session_report_file(pending_detail_rows, session_label)
         if html_path then
           copied_message = "Report della sola sessione salvato. Righe: " .. tostring(saved_or_err or 0) .. " · Lo storico generale non è stato modificato.\nFile HTML: " .. html_path
+          if csv_path then
+            copied_message = copied_message .. "\nCSV della sessione: " .. csv_path
+          elseif csv_err then
+            copied_message = copied_message .. "\nCSV non salvato: " .. tostring(csv_err)
+          end
         else
           copied_message = "Report copiato negli appunti. File non salvato: " .. tostring(saved_or_err or "errore")
           reaper.ShowMessageBox("Non sono riuscito a salvare il file:\n\n" .. tostring(saved_or_err or "errore"), "ZP Studio Suite", 0)

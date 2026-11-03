@@ -27,6 +27,8 @@ La Suite funziona anche con un’installazione pulita di REAPER. SWS, js_ReaScri
 - **ZP Master** — strumenti per mastering e confronto timbrico.
 - **ZP Misura** — loudness meter, oscilloscopio e sonde passive del segnale.
 
+La 2.6.4 aggiunge Render & Copy, il collegamento Dubbertools in SOLO Web e il tool REAPER di ZP Remote per esportare pacchetti e importare consegne. Per l’export ZP Remote servono Python 3 e ffmpeg.
+
 ## Non incluso in questa versione
 
 ZP Montaggio Parlato (prototipo), ZP BrownSlope Dynamic Guard, ZP BrownSlope Prism e ZP Speech Engine sono ancora in lavorazione e non fanno parte di questa versione ReaPack.

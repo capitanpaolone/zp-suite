@@ -50,7 +50,7 @@ check("icona di serie tenuta, mancante -> riserva ZP, azione nativa col suo nume
   and t8:find("item_3=50125 Video", 1, true) and t8:find("icon_3=toolbar_video_screen.png", 1, true))
 local full = M.menu_text(M.LAYOUT, setmetatable({}, { __index = function() return "_RSx" end }), nil, function(n) return M.STOCK[n] end)
 local nitems = select(2, full:gsub("\nitem_", ""))
-check("layout completo = toolbar 8 + Colori e Set Comandi (25 voci con 6 separatori)", nitems == 25 and full:find("item_18=50125", 1, true)
+check("layout completo con Render & Copy e ZP Remote (27 voci)", nitems == 27 and full:find("item_18=50125", 1, true)
   and full:find("item_19=42653", 1, true) and full:find("icon_1=ZP_tb_17_Regioni_Item.png", 1, true) and full:find("ZP_tb_23_Catena_FX.png", 1, true))
 -- scrittura diretta in reaper-menu.ini
 local ini = "[Main toolbar]\nitem_0=40001\n\n[Floating toolbar 1]\nitem_0=1 A\n\n[Floating toolbar 3]\nitem_0=2 B\ntitle=Mia\n\n[MIDI piano roll]\nitem_0=5\n"
@@ -64,8 +64,9 @@ check("slot: titolo simile non vale", M.pick_slot("[Floating toolbar 1]\nitem_0=
 -- icone B (2026-10-08): se ci sono si usano, altrimenti restano quelle di prima (anche per le azioni native)
 local withB = M.menu_text(M.LAYOUT, setmetatable({}, { __index = function() return "_RSx" end }), nil, function() return true end)
 check("icone B quando sono installate", withB:find("icon_0=ZP_tbB_18_Project_Viewer.png", 1, true)
-  and withB:find("icon_18=ZP_tbB_Video.png", 1, true) and withB:find("icon_24=ZP_tbB_00_Help.png", 1, true)
+  and withB:find("icon_18=ZP_tbB_Video.png", 1, true) and withB:find("icon_26=ZP_tbB_00_Help.png", 1, true)
   and withB:find("icon_22=ZP_tbB_35_Colori.png", 1, true) and withB:find("icon_23=ZP_tbB_34_Set_Comandi.png", 1, true)
+  and withB:find("icon_24=ZP_RenderCopy.png", 1, true) and withB:find("icon_25=ZP_Remote_Crea_Pacchetto.png", 1, true)
   and withB:find("ZP_tb_25_SOLO_Recorder.png", 1, true))
 check("senza icone B: azione nativa usa la sua riserva", full:find("icon_18=toolbar_video_screen.png", 1, true) ~= nil
   and full:find("icon_19=ZP_tb_Importa_SRT_1_video.png", 1, true) ~= nil)

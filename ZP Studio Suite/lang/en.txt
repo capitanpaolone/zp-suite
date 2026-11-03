@@ -169,6 +169,8 @@ Clic o trascina per spostare il cursore (fermo durante il REC).	Click or drag to
 Codice della lingua (es. nl, ar, hi, yue):,extrawidth=60	Language code (e.g. nl, ar, hi, yue):,extrawidth=60
 Codice lingua non valido: servono 2 o 3 lettere (it, fr, yue...).	Invalid language code: 2 or 3 letters required (it, fr, yue...).
 Colore tolto	Color removed
+Colori (modo Marker): nessun marker selezionato	Colors (Marker mode): no markers selected
+Colori (modo Regione): nessuna regione selezionata	Colors (Region mode): no regions selected
 Colori (modo 	Colors (mode 
 Colori (modo Item): nessun item selezionato	Colors (Item mode): no items selected
 Colori: modo 	Colors: mode 
@@ -300,7 +302,7 @@ L'ingresso della scheda audio da cui registra la traccia di destinazione: In 1, 
 LETTURA	READING
 La toolbar ZP e' la Floating toolbar %s: View > Toolbars.	ZP toolbar is Floating toolbar %s: View > Toolbars.
 La toolbar ZP e' nella toolbar principale.	ZP toolbar is in main toolbar.
-La toolbar con 20 colori per item e tracce (stile Reapertips). Di serie i colori sono nella finestrella 35.	Toolbar with 20 colors for items and tracks (Reapertips style). By default colors are in window 35.
+La toolbar con 20 colori per item, marker e regioni (stile Reapertips). Di serie i colori sono nella finestrella 35.	Toolbar with 20 colors for items, markers, and regions (Reapertips style). By default colors are in window 35.
 La toolbar e' pronta ma mancano le catene FX nel percorso di REAPER. Reinstalla le rimette a posto.	The toolbar is ready but FX chains are missing in REAPER's folder. Reinstall restores them.
 La trascrizione automatica e' configurata solo su macOS.\nSu Windows/Linux: crea l'SRT con il tuo whisper (stesso nome del WAV, accanto al file) e parti dalla tappa Abbina.	Automatic transcription is configured for macOS only.\nOn Windows/Linux: generate the SRT with your whisper (same name as WAV, next to file) and start from the Link step.
 Lato Cardioide	Lato Cardioide
@@ -363,7 +365,8 @@ Navigator non disponibile.	Navigator not available.
 Navigatore	Navigator
 Navigatore (%s): clic o trascina per spostare il cursore (fermo durante il REC).	Navigator (%s): click or drag to move cursor (still during REC).
 Navigatore: %s	Navigator: %s
-Nella Floating toolbar %s: modo Item/Traccia/Tutto, 20 colori, Togli.	In Floating toolbar %s: Item/Track/All mode, 20 colors, Remove.
+Nella Floating toolbar %s: selezione item/marker/regione, AutoColor, 20 colori, Togli.	In Floating toolbar %s: selected items/markers/regions, AutoColor, 20 colors, Remove.
+Nella Floating toolbar %s: sei selettori, 20 colori e Togli. Scegli un modo, seleziona, poi clicca un colore.	In Floating toolbar %s: six selectors, 20 colors and Remove. Choose a mode, select objects, then click a color.
 Nero	Black
 Nessun agente AI trovato (Codex, Claude, Qwen, OpenCode, Ollama).	No AI agent found (Codex, Claude, Qwen, OpenCode, Ollama).
 Nessun agente AI trovato su questo Mac (Codex, Claude, Qwen, OpenCode, Ollama).	No AI agent found on this Mac (Codex, Claude, Qwen, OpenCode, Ollama).
@@ -486,6 +489,10 @@ REC ripreso	REC resumed
 REC senza regione: il take resta, la regione no.	REC without region: take remains, region does not.
 REC su %s	REC on %s
 Regione %s	Region %s
+Regione	Region
+ regione	 region
+ regioni	 regions
+Questa versione di REAPER non espone l'API per marker e regioni.	This REAPER version does not expose the marker and region API.
 Regione: 	Region: 
 Regione: %s	Region: %s
 Regioni	Regions
@@ -570,7 +577,10 @@ Seleziona la traccia Copione!	Select Script track!
 Seleziona la traccia testi per ZP Studio Suite!	Select text track for ZP Studio Suite!
 Seleziona prima gli item audio.	Select audio items first.
 Seleziona un item sulla traccia VOCE/RB, oppure porta il cursore/playhead vicino a uno speaker item.	Select an item on the VOICE/RB track, or move the cursor/playhead near a speaker item.
+Seleziona un item sulla traccia VOCE/RB o sulla relativa BB Note Personaggio, oppure porta il cursore/playhead vicino a una nota personaggio.	Select an item on the VOICE/RB track or its Character Notes track, or move the cursor/playhead near a character note.
 Seleziona, poi clicca un colore.	Select, then click a color.
+Seleziona item, marker o regione, poi clicca un colore.	Select items, markers, or regions, then click a color.
+Seleziona un item, un marker o una regione, poi clicca un colore.	Select an item, marker, or region, then click a color.
 Senza SWS: le note del progetto sono nella scheda Notes di Project settings.	Without SWS: project notes are in Notes tab of Project settings.
 Serve all'Harmonic Space Carver per sincronizzare i cue con i marker e muovere la testina. 'Installa' lo aggiunge all'avvio di REAPER (Scripts/__startup.lua).	Required by Harmonic Space Carver to sync cues with markers and move playhead. 'Install' adds it to REAPER startup (Scripts/__startup.lua).
 Serve solo al SOLO Web (browser, iPad). Preferences > Control/OSC/web > Add > Web browser interface.	Only needed for SOLO Web (browser, iPad). Preferences > Control/OSC/web > Add > Web browser interface.
@@ -691,6 +701,22 @@ Volume della traccia selezionata in REAPER: di solito la reference o l'audio del
 ZP Benvenuto	ZP Welcome
 ZP Colori	ZP Colors
 ZP Colori: 	ZP Colors: 
+AutoColor	AutoColor
+Auto	Auto
+Scegli un modo, seleziona, poi clicca un colore.	Choose a mode, select objects, then click a color.
+ZP Colori: modo %s attivo. Seleziona, poi clicca un colore.	ZP Colors: %s mode active. Select objects, then click a color.
+ZP Colori: nessun oggetto selezionato per il modo %s.	ZP Colors: no objects selected for %s mode.
+AutoColor attivo: scegli un colore; gli item, marker e regioni selezionati dopo verranno colorati.	AutoColor is on: choose a color; subsequently selected items, markers, and regions will be colored.
+AutoColor disattivato.	AutoColor is off.
+. Seleziona un item, un marker o una regione.	. Select an item, marker, or region.
+AutoColor armato: rimozione colore. Seleziona un item, un marker o una regione.	AutoColor armed: remove color. Select an item, marker, or region.
+marker	markers
+item	items
+regioni	regions
+tracce	tracks
+oggetti	objects
+ oggetti selezionati	 selected objects
+Colore tolto	Color removed
 ZP SOLO Recorder	ZP SOLO Recorder
 ZP SOLO Recorder: crea/trova struttura SOLO	ZP SOLO Recorder: create/find SOLO structure
 ZP SOLO: effetti della sessione (bus voci + master)	ZP SOLO: session FX (vocal bus + master)

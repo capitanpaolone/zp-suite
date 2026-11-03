@@ -1,10 +1,13 @@
 // @description ZP Harmonic Space Carver
-// @version 2.6.7
+// @version 2.6.8
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   Riferimento primario per item GUID: la sostituzione del take nello stesso item non fa scattare un falso allarme.
+//   Cue ambra quando il riferimento voce manca; selezione + ADOTTA POSIZIONE lo conferma dopo verifica.
 //   L'avviso rosso CUE FUORI POSTO in alto e' un pulsante: un clic riporta tutti i cue rossi sulla
 //     loro voce (come il tasto ZP HSC Cue - Riallinea); Ctrl+Z annulla.
+//   Cue ambra = riferimento voce cambiato/mancante; selezionalo e usa ADOTTA POSIZIONE.
 //   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
 //     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
 //   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
@@ -288,7 +291,7 @@ function quick_delete_selected() local(i, n) (
 // Gira in @block: funziona in Simple, in Dock e a finestra chiusa.
 HSC_MB = 3800;
 // Numeri unici: blocchi da 76 celle da 8310000 (0-71 come sopra, 72-73 maschere dei cue fuori posto).
-HSC_SLOT_BASE = 8310000; HSC_SLOT_STRIDE = 76;
+HSC_SLOT_BASE = 8310000; HSC_SLOT_STRIDE = 76; // +72/73 fuori posto, +74/75 riferimento mancante
 function quick_service() local(base, i, seq, cmd, res, pos, n) (
   quick_place_cnt -= 1;
   floor(slider(65) + 0.5) != quick_slot ? quick_place_cnt = 0;
@@ -305,6 +308,7 @@ function quick_service() local(base, i, seq, cmd, res, pos, n) (
     // maschere dei cue fuori posto: nel blocco del numero unico, o nella zona libera della traccia
     quick_mask_addr = base < 0 ? -1 : (quick_slot >= 1 && quick_slot <= 900) ? base + 72 :
                       quick_host_chain < 32 ? base - quick_host_chain * 72 + 4032 + quick_host_chain * 2 : -1;
+    quick_missing_mask_addr = (base >= 0 && quick_slot >= 1 && quick_slot <= 900) ? base + 74 : -1;
     base != quick_gmem_base ? (
       quick_gmem_base = base;
       quick_ext_seen = gmem[HSC_MB+3];
@@ -365,7 +369,7 @@ quick_inited != 2404 ? (
   quick_msel_clear();
   // il preascolto non sopravvive alla riapertura del progetto (si rischia di renderizzare il "tolto")
   slider31 = 0;
-  quick_gmem_base = -1; quick_place_cnt = 0; quick_ext_seen = 0; quick_slot = -1; quick_mask_addr = -1;
+  quick_gmem_base = -1; quick_place_cnt = 0; quick_ext_seen = 0; quick_slot = -1; quick_mask_addr = -1; quick_missing_mask_addr = -1;
 );
 quick_request = 0; quick_ui_pos = 0; quick_fire_ext = 0;
 quick_total_samples = max(1, floor(0.200 * srate));
@@ -1320,31 +1324,46 @@ function draw_listen_banner(x, y, w, h) local(sy, blink, tw, th) (
 // Cue fuori posto: maschere scritte dall'helper (cue 0-31 e 32-63, in ordine di tempo), all'indirizzo
 // quick_mask_addr (blocco del numero unico, o zona libera della traccia senza numero).
 function cue_lost(i) ( i < 32 ? floor(quick_lost_m1 / (2 ^ i)) % 2 : floor(quick_lost_m2 / (2 ^ (i - 32))) % 2; );
+function cue_missing(i) ( i < 32 ? floor(quick_missing_m1 / (2 ^ i)) % 2 : floor(quick_missing_m2 / (2 ^ (i - 32))) % 2; );
 quick_lost_m1 = 0; quick_lost_m2 = 0; quick_lost_n = 0;
+quick_missing_m1 = 0; quick_missing_m2 = 0; quick_missing_n = 0;
 quick_mask_addr >= 0 && sc_route_fresh ? (
   quick_lost_m1 = max(0, gmem[quick_mask_addr]);
   quick_lost_m2 = max(0, gmem[quick_mask_addr + 1]);
   i = 0; loop(quick_point_count, quick_lost_n += cue_lost(i); i += 1;);
 );
+quick_missing_mask_addr >= 0 && sc_route_fresh ? (
+  quick_missing_m1 = max(0, gmem[quick_missing_mask_addr]);
+  quick_missing_m2 = max(0, gmem[quick_missing_mask_addr + 1]);
+  i = 0; loop(quick_point_count, quick_missing_n += cue_missing(i); i += 1;);
+);
 quick_sel_lost = quick_sel >= 0 && cue_lost(quick_sel);
+quick_sel_missing = quick_sel >= 0 && cue_missing(quick_sel);
 
 // Avviso cue fuori posto (lampeggia, non blocca): scattano nel punto sbagliato finche' non li riallinei.
-function draw_lost_banner(x, y, w, h) local(sy, blink, tw, th, hover) (
-  quick_lost_n > 0 ? (
+function draw_lost_banner(x, y, w, h) local(sy, blink, tw, th, hover, has_lost) (
+  (quick_lost_n > 0 || quick_missing_n > 0) ? (
     sy = ui_sy(y);
     hover = ui_hit(x, y, w, h);
-    blink = hover ? 1 : 0.65 + 0.35 * sin(quick_now * 6.0 + 1.5);
-    gfx_r=0.86; gfx_g=0.20; gfx_b=0.18; gfx_a=blink; gfx_rect(x, sy, w, h); gfx_a = 1;
-    hover ? ( gfx_r=1; gfx_g=0.85; gfx_b=0.82; gfx_rect(x, sy, w, 1); gfx_rect(x, sy + h - 1, w, 1); gfx_rect(x, sy, 1, h); gfx_rect(x + w - 1, sy, 1, h); );
-    // passando sopra dice cosa fa il clic
-    hover ? strcpy(#lost_banner_txt, ui_lang == 1 ? "REALIGN ALL" : "RIALLINEA TUTTI") :
-            sprintf(#lost_banner_txt, ui_lang == 1 ? "CUES DISPLACED: %d" : "CUE FUORI POSTO: %d", quick_lost_n);
+    has_lost = quick_lost_n > 0;
+    has_lost ? (gfx_r=0.86; gfx_g=0.20; gfx_b=0.18;) : (gfx_r=0.82; gfx_g=0.52; gfx_b=0.12;);
+    blink = has_lost ? (hover ? 1 : 0.65 + 0.35 * sin(quick_now * 6.0 + 1.5)) : 0.95;
+    gfx_a=blink; gfx_rect(x, sy, w, h); gfx_a = 1;
+    hover ? ( has_lost ? (gfx_r=1; gfx_g=0.85; gfx_b=0.82;) : (gfx_r=1; gfx_g=0.82; gfx_b=0.42;);
+      gfx_rect(x, sy, w, 1); gfx_rect(x, sy + h - 1, w, 1); gfx_rect(x, sy, 1, h); gfx_rect(x + w - 1, sy, 1, h); );
+    hover ? (
+      has_lost ? strcpy(#lost_banner_txt, ui_lang == 1 ? "REALIGN DISPLACED CUES" : "RIALLINEA I CUE FUORI POSTO") :
+                 strcpy(#lost_banner_txt, ui_lang == 1 ? "SELECT AMBER CUE, THEN ADOPT" : "SELEZIONA CUE AMBRA, POI ADOTTA");
+    ) : (
+      has_lost ? sprintf(#lost_banner_txt, ui_lang == 1 ? "CUES DISPLACED: %d" : "CUE FUORI POSTO: %d", quick_lost_n) :
+                 sprintf(#lost_banner_txt, ui_lang == 1 ? "VOICE REF. CHANGED: %d" : "RIFERIMENTO VOCE CAMBIATO: %d", quick_missing_n);
+    );
     gfx_setfont(5); gfx_measurestr(#lost_banner_txt, tw, th);
     gfx_r=1; gfx_g=0.95; gfx_b=0.93; gfx_x = x + (w - tw) / 2; gfx_y = sy + (h - th) / 2; gfx_drawstr(#lost_banner_txt);
     hover ? (
-      active_info_id = 78;
-      // clic: l'helper riporta tutti i cue rossi sulla loro voce (comando 8, annullabile con Ctrl+Z)
-      mouse_click && quick_gmem_base >= 0 && sc_route_fresh ? ( gmem[quick_gmem_base] = 8; gmem[quick_gmem_base+1] += 1; );
+      active_info_id = has_lost ? 78 : 79;
+      // Clic rosso: riallinea i cue spostati. La segnalazione ambra guida alla selezione e adozione.
+      mouse_click && has_lost && quick_gmem_base >= 0 && sc_route_fresh ? ( gmem[quick_gmem_base] = 8; gmem[quick_gmem_base+1] += 1; );
     );
   );
 );
@@ -1362,7 +1381,8 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
   sprintf(#quick_count_txt, "  %d / 64", quick_point_count);
   gfx_setfont(5); gfx_r=0.62; gfx_g=0.66; gfx_b=0.73; gfx_y = sy + 10; gfx_drawstr(#quick_count_txt);
   quick_gmem_base < 0 ? (gfx_r=0.85; gfx_g=0.55; gfx_b=0.20; gfx_drawstr(ui_lang == 1 ? "   (take/input FX: jump unavailable)" : "   (take/input FX: salto non disponibile)"));
-  quick_lost_n > 0 ? (sprintf(#quick_lost_txt, ui_lang == 1 ? "   %d MISALIGNED" : "   %d FUORI POSTO", quick_lost_n); gfx_r=0.95; gfx_g=0.32; gfx_b=0.28; gfx_drawstr(#quick_lost_txt););
+  quick_lost_n > 0 ? (sprintf(#quick_lost_txt, ui_lang == 1 ? "   %d DISPLACED" : "   %d FUORI POSTO", quick_lost_n); gfx_r=0.95; gfx_g=0.32; gfx_b=0.28; gfx_drawstr(#quick_lost_txt););
+  quick_missing_n > 0 ? (sprintf(#quick_missing_txt, ui_lang == 1 ? "   %d VOICE REF. CHANGED" : "   %d RIF. VOCE CAMBIATO", quick_missing_n); gfx_r=0.98; gfx_g=0.67; gfx_b=0.20; gfx_drawstr(#quick_missing_txt););
   quick_gmem_base >= 0 && !sc_route_fresh ? (gfx_r=0.92; gfx_g=0.60; gfx_b=0.18; gfx_drawstr(ui_lang == 1 ? "   HELPER OFF" : "   HELPER SPENTO"););
   ui_hit(bx, by, 420, 26) && quick_gmem_base >= 0 && !sc_route_fresh ? active_info_id = 75;
 
@@ -1383,7 +1403,7 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
     m = floor(quick_points[quick_sel] / 60); s = quick_points[quick_sel] - m * 60;
     sprintf(#quick_sel_txt, "CUE %d / %d  %d:%04.1f", quick_sel + 1, quick_point_count, m, s);
   ) : quick_point_count > 0 ? strcpy(#quick_sel_txt, ui_lang == 1 ? "NO CUE SELECTED" : "NESSUN CUE SELEZ.") : strcpy(#quick_sel_txt, ui_lang == 1 ? "NO CUES" : "NESSUN CUE");
-  ui_cue_button(x, qy, sel_w, qh, #quick_sel_txt, quick_sel_lost ? 2 : quick_sel >= 0, quick_jump_ok && quick_point_count > 0, quick_sel_lost ? 73 : 56) ? (
+  ui_cue_button(x, qy, sel_w, qh, #quick_sel_txt, quick_sel_lost ? 2 : quick_sel_missing ? 3 : quick_sel >= 0, quick_jump_ok && quick_point_count > 0, quick_sel_lost ? 73 : quick_sel_missing ? 79 : 56) ? (
     gmem[quick_gmem_base] = 3; gmem[quick_gmem_base+1] += 1;
   );
   x += sel_w + 4;
@@ -1423,10 +1443,10 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
 
   // Fila dei cue: dove sei (playhead rosso) rispetto ai cue. Clic su un punto = selezionalo;
   // Cmd/Ctrl+clic aggiunge o toglie un punto, Shift+clic prende l'intervallo (convenzioni di REAPER).
-  // In fondo alla fila: ELIMINA (e RIALLINEA / TIENI QUI se il cue selezionato e' fuori posto).
+  // In fondo alla fila: ELIMINA (e RIALLINEA / ADOTTA POSIZIONE per il cue selezionato).
   lx = qx; row_w = full ? (bw - 130) : (bw - 20);
   del_w = 92; lw = row_w - del_w - 10;
-  quick_sel_lost ? lw -= 214;
+  quick_sel_lost ? lw -= 228 : quick_sel_missing ? lw -= 142;
   ly = by + (full ? 82 : 84);
   gfx_r=0.24; gfx_g=0.24; gfx_b=0.30; gfx_a = 1; gfx_line(lx, ui_sy(ly), lx + lw, ui_sy(ly));
   quick_point_count > 0 ? (
@@ -1437,7 +1457,7 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
     loop(quick_point_count,
       cx = lx + (quick_points[i] - t0) / span * lw;
       ui_hit(cx - 6, ly - 7, 12, 14) && abs(mouse_x - cx) < bestd ? (best = i; bestd = abs(mouse_x - cx););
-      cue_lost(i) ? (gfx_r=0.95; gfx_g=0.32; gfx_b=0.28;) : (gfx_r=0.14; gfx_g=0.72; gfx_b=0.83;);
+      cue_lost(i) ? (gfx_r=0.95; gfx_g=0.32; gfx_b=0.28;) : cue_missing(i) ? (gfx_r=0.98; gfx_g=0.67; gfx_b=0.20;) : (gfx_r=0.14; gfx_g=0.72; gfx_b=0.83;);
       i == quick_sel ? (gfx_circle(cx, ui_sy(ly), 6, 0, 1); gfx_r=1; gfx_g=1; gfx_b=1; gfx_circle(cx, ui_sy(ly), 4, 1, 1);)
                      : (gfx_circle(cx, ui_sy(ly), 4, 1, 1););
       quick_msel[i] ? (gfx_r=1; gfx_g=1; gfx_b=1; gfx_circle(cx, ui_sy(ly), 7, 0, 1); gfx_circle(cx, ui_sy(ly), 4, 1, 1););
@@ -1476,7 +1496,9 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
 
   quick_sel_lost && quick_gmem_base >= 0 ? (
     ui_cue_button(lx + lw + 12, ly - 11, 100, 22, ui_lang == 1 ? "REALIGN" : "RIALLINEA", 2, 1, 73) ? (gmem[quick_gmem_base+2] = quick_sel; gmem[quick_gmem_base] = 6; gmem[quick_gmem_base+1] += 1;);
-    ui_cue_button(lx + lw + 116, ly - 11, 96, 22, ui_lang == 1 ? "KEEP HERE" : "TIENI QUI", 0, 1, 74) ? (gmem[quick_gmem_base+2] = quick_sel; gmem[quick_gmem_base] = 7; gmem[quick_gmem_base+1] += 1;);
+    ui_cue_button(lx + lw + 120, ly - 11, 108, 22, ui_lang == 1 ? "ADOPT POSITION" : "ADOTTA POSIZIONE", 3, 1, 74) ? (gmem[quick_gmem_base+2] = quick_sel; gmem[quick_gmem_base] = 7; gmem[quick_gmem_base+1] += 1;);
+  ) : quick_sel_missing && quick_gmem_base >= 0 ? (
+    ui_cue_button(lx + lw + 12, ly - 11, 130, 22, ui_lang == 1 ? "ADOPT POSITION" : "ADOTTA POSIZIONE", 3, 1, 79) ? (gmem[quick_gmem_base+2] = quick_sel; gmem[quick_gmem_base] = 7; gmem[quick_gmem_base+1] += 1;);
   );
   nsel > 1 ? sprintf(#quick_del_txt, ui_lang == 1 ? "DELETE %d" : "ELIMINA %d", nsel) : strcpy(#quick_del_txt, ui_lang == 1 ? "DELETE" : "ELIMINA");
   ui_cue_button(lx + row_w - del_w, ly - 11, del_w, 22, #quick_del_txt, nsel > 0 ? 2 : 0,
@@ -1511,7 +1533,7 @@ function draw_header() local(rx, ban_w) (
   ui_tab_button(4, 1, rx - 120 - 16 - 92, 12, 92, 26, "ADVANCED", 4);
   ui_tab_button(4, 0, rx - 228 - 4 - 74, 12, 74, 26, "SIMPLE", 4);
   ban_w = max(120, rx - 306 - 384 - 10);
-  slider(31) > 0 && quick_lost_n > 0 ? (
+  slider(31) > 0 && (quick_lost_n > 0 || quick_missing_n > 0) ? (
     draw_listen_banner(384, 12, ban_w / 2 - 2, 26); draw_lost_banner(384 + ban_w / 2 + 2, 12, ban_w / 2 - 2, 26);
   ) : (
     draw_listen_banner(384, 12, ban_w, 26); draw_lost_banner(384, 12, ban_w, 26);
@@ -1860,7 +1882,7 @@ view_mode == 0 ? (
   active_info_id == 58 ? (quick_gmem_base < 0 ? (ui_lang == 1 ? gfx_drawstr("TIMELINE: jump unavailable on take/input FX. HOLD browses cues.") : gfx_drawstr("TIMELINE: salto non disponibile su take FX o input FX. RESTA FERMO scorre i cue.")) :
     (ui_lang == 1 ? gfx_drawstr("TIMELINE: JUMP moves playhead to cues (Cue Navigator helper); HOLD selects only.") : gfx_drawstr("TIMELINE: SALTA sposta il playhead sui cue (helper Cue Navigator); RESTA FERMO solo li seleziona."))) :
   active_info_id == 59 ? (ui_lang == 1 ? gfx_drawstr("UNDO: reverts last cue add, remove, or clear action.") : gfx_drawstr("UNDO: annulla l'ultima aggiunta, rimozione o cancellazione dei cue.")) :
-  active_info_id == 60 ? (ui_lang == 1 ? gfx_drawstr("CUE ROW: cyan = aligned, red = displaced. Click selects, Cmd/Ctrl+click adds, Shift+click range.") : gfx_drawstr("FILA DEI CUE: ciano = al suo posto, rosso = fuori posto. Clic sceglie, Cmd/Ctrl+clic aggiunge, Shift+clic intervallo.")) :
+  active_info_id == 60 ? (ui_lang == 1 ? gfx_drawstr("CUE ROW: cyan = aligned, red = displaced, amber = voice reference changed. Click selects, Cmd/Ctrl+click adds, Shift+click range.") : gfx_drawstr("FILA DEI CUE: ciano = al suo posto, rosso = fuori posto, ambra = riferimento voce cambiato. Clic sceglie, Cmd/Ctrl+clic aggiunge, Shift+clic intervallo.")) :
   active_info_id == 77 ? (ui_lang == 1 ? gfx_drawstr("DELETE: removes selected cues and their #HSC markers (Cmd/Ctrl+click or Shift+click for multiple). UNDO restores.") : gfx_drawstr("ELIMINA: toglie i cue selezionati e i loro marker #HSC (Cmd/Ctrl+clic o Shift+clic per piu' cue). UNDO li rimette.")) :
   active_info_id == 61 ? (ui_lang == 1 ? gfx_drawstr("OPENING: music remains open for this duration after ramp, ignoring voice.") : gfx_drawstr("APERTURA: dopo la Rampa la musica resta aperta per questo tempo, ignorando la voce.")) :
   active_info_id == 65 ? gfx_drawstr(#sc_msg0) : active_info_id == 66 ? gfx_drawstr(#sc_msg1) : active_info_id == 67 ? gfx_drawstr(#sc_msg2) :
@@ -1872,7 +1894,8 @@ view_mode == 0 ? (
   active_info_id == 78 ? (sc_route_fresh ?
     (ui_lang == 1 ? gfx_drawstr("CUES DISPLACED: click to move every red cue back onto its voice (like the Realign key). Ctrl+Z undoes it.") : gfx_drawstr("CUE FUORI POSTO: clic = riporta tutti i cue rossi sulla loro voce (come il tasto Riallinea). Ctrl+Z annulla.")) :
     (ui_lang == 1 ? gfx_drawstr("CUES DISPLACED: start the Cue Navigator helper to realign them.") : gfx_drawstr("CUE FUORI POSTO: per riallinearli avvia l'helper Cue Navigator."))) :
-  active_info_id == 74 ? (ui_lang == 1 ? gfx_drawstr("KEEP HERE: cue stays at current position and locks to current voice below.") : gfx_drawstr("TIENI QUI: il cue resta dov'e' e prende come riferimento la voce che ha sotto adesso.")) :
+  active_info_id == 74 ? (ui_lang == 1 ? gfx_drawstr("ADOPT POSITION: keep this cue here and save the current voice item as its new reference.") : gfx_drawstr("ADOTTA POSIZIONE: lascia qui il cue e salva l'item voce attuale come nuovo riferimento.")) :
+  active_info_id == 79 ? (ui_lang == 1 ? gfx_drawstr("VOICE REFERENCE CHANGED: the cue position is preserved. Select it and choose ADOPT POSITION after checking it.") : gfx_drawstr("RIFERIMENTO VOCE CAMBIATO: la posizione del cue e' conservata. Selezionalo e premi ADOTTA POSIZIONE dopo averlo verificato.")) :
   active_info_id == 64 ? (ui_lang == 1 ? gfx_drawstr("KNEE: Carver threshold knee softness (0 = hard).") : gfx_drawstr("KNEE: morbidezza dell'ingresso in soglia del Carver (0 = netto).")) :
   active_info_id == 70 ? (ui_lang == 1 ? gfx_drawstr("STARTING POINT: sets Depth, Intens, Spread, Prio, Min/Max Duck. SCORE cinema, FLAT balanced, VOCAL podcast.") : gfx_drawstr("PARTENZA: imposta Depth, Intens, Spread, Prio, Min e Max Duck. SCORE cinema, FLAT equilibrio, VOCAL podcast.")) :
   active_info_id == 71 ? (ui_lang == 1 ? gfx_drawstr("ON/OFF: toggles Carver or VCA (at least one remains active).") : gfx_drawstr("ON/OFF: spegne il Carver o il VCA (resta sempre acceso almeno uno dei due).")) :

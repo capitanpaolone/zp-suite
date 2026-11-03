@@ -4,6 +4,23 @@ Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
 ciascun file e nel gestore pacchetti. Questo file registra la storia della Suite
 nel suo insieme.
 
+## ZP Studio Suite 2.6.4 — 2026-11-03
+
+- **Report minuti voce (19)**: esporta in CSV lo storico HTML già presente nel progetto. “Salva questa sessione” crea anche un CSV separato, con progetto, data e modalità nel nome; “Aggiungi allo storico” aggiorna il CSV cumulativo insieme all'HTML.
+
+- **ZP Render & Copy**: copia il risultato del render nella cartella di consegna. La finestra e la toolbar hanno un’icona dedicata e il pulsante di aiuto spiega come impostare le cartelle.
+- **ZP Remote**: da REAPER si può creare il pacchetto di una regione per Dubbertools e importare le registrazioni ricevute. Il telecomando web del Solo Recorder ha un collegamento a dubbertools.com.
+- **ZP Colori e Gestore Progetto**: selettori per item, tracce, marker e regioni, modalità Auto per la selezione mista e colore effettivo delle regioni nel Gestore.
+- **Harmonic Space Carver 2.6.8 e Cue Navigator 1.13**: i cue seguono l’identità dell’item anche se cambia il take. Il navigatore distingue un riferimento mancante da un cue spostato e offre il comando Adotta posizione.
+- **SRT Tools**: aggiornato lo strumento offline per preparare e convertire i sottotitoli.
+- **Pre-roll**: il comando PRE nel Recorder e nel telecomando web aggiorna la spia della toolbar nativa di REAPER, mantenendo sincronizzato lo stato visivo.
+- **Gobbo verticale**: i colori speaker si applicano anche selezionando item della traccia voce o note personaggio associate.
+- **Italiano (ZP)**: la voce principale del menu resta *Help* per mantenere attiva la ricerca nativa dei menu su macOS; le voci interne restano tradotte.
+
+### Non incluso in questa versione
+
+ZP Montaggio Parlato, ZP BrownSlope Dynamic Guard, ZP BrownSlope Prism e ZP Speech Engine sono in lavorazione.
+
 ## ZP Studio Suite 2.6.3 — 2026-10-19
 
 - **Lingua di REAPER, correzione**: nel 33 Benvenuto la scelta della lingua non aveva effetto. La 2.6.2

@@ -732,6 +732,17 @@ function PairedVoiceTrack(note_track)
     return nil
 end
 
+function FindCharacterNoteTrackForVoiceTrack(voice_track)
+    if not voice_track then return nil end
+    for i=0, reaper.CountTracks(0)-1 do
+        local note_track = reaper.GetTrack(0, i)
+        if IsCharacterNoteTrack(note_track) and PairedVoiceTrack(note_track) == voice_track then
+            return note_track
+        end
+    end
+    return nil
+end
+
 function CharacterNameFromTrack(track)
     local voice_track = PairedVoiceTrack(track)
     local voice_name = GetTrackName(voice_track)
@@ -866,12 +877,21 @@ function ApplySpeakerPaletteColor(palette_color)
     local colored_tracks = {}
     for i=0, reaper.CountSelectedMediaItems(0)-1 do
         local item = reaper.GetSelectedMediaItem(0, i)
-        if IsCharacterNoteItem(item) then
-            local note_track = GetItemTrack(item)
-            local key = tostring(note_track)
-            if not colored_tracks[key] then
+        local selected_track = GetItemTrack(item)
+        local note_track = IsCharacterNoteTrack(selected_track) and selected_track
+            or FindCharacterNoteTrackForVoiceTrack(selected_track)
+        local color_key = note_track and tostring(note_track) or tostring(selected_track)
+        if selected_track and not colored_tracks[color_key] then
+            if note_track then
                 changed = changed + ApplySpeakerColorToVoicePair(note_track, native)
-                colored_tracks[key] = true
+                colored_tracks[color_key] = true
+            else
+                local _, role = reaper.GetSetMediaTrackInfo_String(selected_track, "P_EXT:RythmoBand_NP", "", false)
+                if role == "voice" then
+                    reaper.SetTrackColor(selected_track, native)
+                    changed = changed + 1
+                    colored_tracks[color_key] = true
+                end
             end
         end
     end
@@ -885,7 +905,7 @@ function ApplySpeakerPaletteColor(palette_color)
 
     reaper.Undo_EndBlock("ZP Studio Suite colore speaker", -1)
     if changed == 0 then
-        reaper.ShowMessageBox(T("Seleziona un item sulla traccia VOCE/RB, oppure porta il cursore/playhead vicino a uno speaker item."), "ZP Studio Suite", 0)
+        reaper.ShowMessageBox(T("Seleziona un item sulla traccia VOCE/RB o sulla relativa BB Note Personaggio, oppure porta il cursore/playhead vicino a una nota personaggio."), "ZP Studio Suite", 0)
     end
     reaper.UpdateArrange()
     UpdateItems()

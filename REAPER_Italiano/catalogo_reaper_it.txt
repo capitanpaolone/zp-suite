@@ -123,7 +123,7 @@ Attack:	Attack:
 Actions	Actions
 Rename	Rinomina
 Input	Ingresso
-Help	Aiuto
+Help	Help
 &Edit	&Modifica
 10	10
 11	11
@@ -298,7 +298,7 @@ Default Classic	Classico predefinito
 &Layouts	&Layout
 Default Layout	Layout predefinito
 &Preferences...	&Preferenze...
-&Help	&Aiuto
+&Help	&Help
 Documentation	Documentazione
 (documentation list)	(elenco documentazione)
 Key bindings and mouse modifiers	Assegnazioni tasti e modificatori del mouse
@@ -1537,7 +1537,7 @@ No FX	Nessun FX
 When enabled, REAPER will share audio devices with other applications by closing the audio hardware not active.	Quando abilitato, REAPER condivide le periferiche audio con le altre applicazioni chiudendo l'hardware audio quando non è attivo.
 When unchecked and any tracks are record armed, then REAPER will not share audio devices.	Se deselezionato e vi sono track armate per la registrazione, REAPER non condividerà le periferiche audio.
 When unchecked and any ReWire devices are in use, then REAPER will not share audio devices.	Se deselezionato e vi sono periferiche ReWire in uso, REAPER non condividerà le periferiche audio.
-When checked, REAPER will close the audio devices whenever not playing back audio. 	Se selezionato, REAPER chiude le periferiche audio ogni volta che non è in riproduzione audio.
+When checked, REAPER will close the audio devices whenever not playing back audio. 	Se selezionato, REAPER chiude le periferiche audio ogni volta che non è in riproduzione audio. 
 Warn about audio devices that could not be opened.	Avvisa in caso di periferiche audio che non è stato possibile aprire.
 Warn about MIDI devices that could not be opened.	Avvisa in caso di periferiche MIDI che non è stato possibile aprire.
 Warn about MIDI devices that are enabled but could not be found.	Avvisa in caso di periferiche MIDI abilitate ma non rilevate.
@@ -2038,7 +2038,7 @@ Enable tooltips when editing items or envelopes.	Abilita i suggerimenti a compar
 If tooltips are enabled for envelopes, show the tooltip when hovering the mouse over an envelope.	Se i tooltip sono abilitati per gli inviluppi, mostra il suggerimento al passaggio del mouse sopra la linea dell'inviluppo.
 Enable peak value and loudness (if peaks settings are configured to calculate loudness) tooltip when hovering the mouse over a media item.	Mostra il valore di picco e la sonorità (loudness) al passaggio del mouse sopra un item multimediale.
 Use legacy drawing code for drawing text, may be faster but not recommended as it is of lower quality with some fonts.	Usa il motore di rendering testo legacy (può risultare più veloce ma ha resa visiva inferiore con alcuni caratteri).
-Cache rendered font glyphs, which can improve drawing performance significantly vs FreeType. 	Memorizza nella cache i glifi dei font renderizzati, migliorando le prestazioni grafiche rispetto a FreeType.
+Cache rendered font glyphs, which can improve drawing performance significantly vs FreeType. 	Memorizza nella cache i glifi dei font renderizzati, migliorando le prestazioni grafiche rispetto a FreeType. 
 Draw smooth item fadein/fadeout curves and automation envelopes. No meaningful performance penalty.	Disegna con anti-aliasing le curve di dissolvenza degli item e gli inviluppi di automazione (nessun impatto sulle prestazioni).
 Fill automation envelopes with color, for easier reading but a slight performance penalty. (Media item fade area curve fills use a theme setting.)	Riempie con campitura colorata l'area sotto gli inviluppi di automazione per migliorarne la leggibilità.
 Fill automation envelopes with color when drawing envelopes over media, for easier reading but a slight performance penalty.	Riempie con campitura colorata gli inviluppi sovrapposti ai file multimediali per migliorarne il contrasto visivo.

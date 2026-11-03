@@ -68,20 +68,25 @@ M.LAYOUT = {
   "-",
   { "35_ZP_Colori.lua", "ZP Colori", "ZP_tbB_35_Colori.png", "toolbar_color_random_question.png" },
   { "34_ZP_Set_Comandi.lua", "Set Comandi", "ZP_tbB_34_Set_Comandi.png" },
+  { "render_copy/ZP_RenderCopy.lua", "ZP Render & Copy", "ZP_RenderCopy.png" },
+  { "remote/ZP_Remote_Crea_Pacchetto.lua", "ZP Remote · Pacchetto", "ZP_Remote_Crea_Pacchetto.png" },
   { "00_Apri_Help_ZP_Studio_Suite.lua", "Help", "ZP_tbB_00_Help.png", "ZP_tb_00_Help.png" },
 }
 
 -- Toolbar "ZP Colori" (clicca e colora, 2026-10-09), FACOLTATIVA: si scrive solo se chiesta dal 33
 -- Benvenuto (ExtState persistente ZP_STUDIO_SUITE/toolbar_colori = 1) o se c'e' gia' (si aggiorna).
 -- Senza toolbar si usa la finestrella 35 ZP Colori, dal pulsante tavolozza della toolbar ZP.
--- Pulsanti: tre interruttori di modo (Item, Traccia, Tutto),
--- i 20 colori della palette e Togli colore. Logica in ZP_Colori.lua, pulsanti in colori/.
+-- Sei selettori esclusivi, 20 colori e Togli. Auto usa la selezione mista corrente;
+-- nessun colore viene applicato prima del clic sul campione.
 -- Icone: gobbo_ricerca_battuta/strumenti/genera_icone_colori.py
 M.TITLE_COLORI = "ZP Colori"
 M.LAYOUT_COLORI = {
-  { "colori/ZP_Colori_Modo_Item.lua", "ZP Colori: modo Item (colora gli item selezionati)", "ZP_tbC_Item.png" },
-  { "colori/ZP_Colori_Modo_Traccia.lua", "ZP Colori: modo Traccia (colora le tracce, non gli item)", "ZP_tbC_Traccia.png" },
-  { "colori/ZP_Colori_Modo_Tutto.lua", "ZP Colori: modo Tutto (tracce e item dentro)", "ZP_tbC_Tutto.png" },
+  { "colori/ZP_Colori_Auto.lua", "ZP Colori: Auto (item, marker e regioni selezionati al clic sul colore)", "ZP_tbC_Auto.png" },
+  { "colori/ZP_Colori_Modo_Item.lua", "ZP Colori: Item (solo item selezionati)", "ZP_tbC_Item.png" },
+  { "colori/ZP_Colori_Modo_Traccia.lua", "ZP Colori: Traccia (solo tracce selezionate)", "ZP_tbC_Traccia.png" },
+  { "colori/ZP_Colori_Modo_Tutto.lua", "ZP Colori: Tutto (tracce selezionate e tutti i loro item)", "ZP_tbC_Tutto.png" },
+  { "colori/ZP_Colori_Modo_Marker.lua", "ZP Colori: Marker (solo marker selezionati)", "ZP_tbC_Marker.png" },
+  { "colori/ZP_Colori_Modo_Regione.lua", "ZP Colori: Regione (solo regioni selezionate)", "ZP_tbC_Regione.png" },
   "-",
 }
 do
@@ -369,10 +374,11 @@ if want_colori then
   else
     colori_msg = "Toolbar \"ZP Colori\": importala a mano dal file " .. menu_dir .. sep .. "ZP_Colori.ReaperMenu"
   end
-  -- i tre pulsanti dei modi: il loro identificativo serve a ZP_Colori per accendere quello giusto
-  for _, mode in ipairs({ "Item", "Traccia", "Tutto" }) do
-    local id = ids["colori/ZP_Colori_Modo_" .. mode .. ".lua"]
-    if id then reaper.SetExtState("ZP_COLORI", "cmd_" .. mode:lower(), id, true) end
+  -- Gli identificativi servono a tenere acceso il solo selettore scelto.
+  for _, mode in ipairs({ "auto", "item", "traccia", "tutto", "marker", "regione" }) do
+    local path = mode == "auto" and "colori/ZP_Colori_Auto.lua"
+      or "colori/ZP_Colori_Modo_" .. ({ item = "Item", traccia = "Traccia", tutto = "Tutto", marker = "Marker", regione = "Regione" })[mode] .. ".lua"
+    if ids[path] then reaper.SetExtState("ZP_COLORI", "cmd_" .. mode, ids[path], true) end
   end
 else
   colori_msg = "Colori: pulsante tavolozza nella toolbar (finestrella 35 ZP Colori). La toolbar ZP Colori, facoltativa, si installa dal 33 Benvenuto."

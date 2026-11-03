@@ -38,6 +38,14 @@ local function trim(s)
   return (s or ""):gsub("^%s+", ""):gsub("%s+$", "")
 end
 
+-- Use the native marker color only when REAPER marks it as a custom color.
+local function region_preview_rgb(group)
+  local color = group.existing_region and group.existing_color or REGION_COLOR
+  if not color or (color & 0x1000000) == 0 then return nil end
+  local r, g, b = reaper.ColorFromNative(color & 0xFFFFFF)
+  return r / 255, g / 255, b / 255
+end
+
 local function tonumber_locale(s, fallback)
   s = trim(s):gsub(",", ".")
   local n = tonumber(s)
@@ -4191,6 +4199,14 @@ local function open_window()
         gfx.rect(row_rect.x + 2, row_rect.y + 2, 4, row_rect.h - 4, true)
         gfx.rect(row_rect.x + row_rect.w - 6, row_rect.y + 2, 4, row_rect.h - 4, true)
       end
+      -- The swatch mirrors the timeline color; a theme-colored region stays neutral.
+      local region_r, region_g, region_b = region_preview_rgb(group)
+      if region_r then
+        gfx.set(region_r, region_g, region_b, 1)
+      else
+        gfx.set(0.52, 0.54, 0.58, 1)
+      end
+      gfx.rect(row_rect.x + 8, row_rect.y + 3, 5, row_rect.h - 6, true)
 	      if clicked and hovered then
 	        local now = reaper.time_precise()
 	        local row_number = group.region_order or idx

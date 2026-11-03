@@ -1,14 +1,15 @@
 #NAME:Italiano (ZP)
 ; @description Italiano (ZP) — traduzione italiana di REAPER 7.82, con le spiegazioni delle preferenze
 ; @noindex
-; @version 2.6.0
+; @version 2.6.4
 ; @author Paolo Balestri (Lato Cardioide)
 ; @about
 ;   Language pack italiano di REAPER, parte della ZP Studio Suite.
 ;   Dopo l'installazione: REAPER > Options > Preferences > General > Language > Browse e scegli "Italiano (ZP)".
 ;   Pensato per REAPER 7.82; le voci che una versione diversa non conosce restano in inglese.
 ; @changelog
-;   Primo rilascio in ReaPack: traduzione completa dei menu e delle finestre, con le spiegazioni delle preferenze.
+;   ZP Studio Suite 2.6.4: aggiornamento terminologico della traduzione; il menu principale "Help" mantiene la ricerca nativa di macOS, con voci e sottomenu in italiano.
+;   2.6.0: Primo rilascio in ReaPack: traduzione completa dei menu e delle finestre, con le spiegazioni delle preferenze.
 
 ; NOTE: this is the best starting point for making a new langpack.
 ; As you translate a string, remove the ; from the beginning of the
@@ -368,7 +369,7 @@ F84E1DFB577DA637=Stretch marker
 2227C3C30D911E85=Region/Marker Manager
 043FBD1700F7067B=Avviso di render
 83C05BCE6E0BA462=semitoni
-FA363E82A44BE9CC=Aiuto
+FA363E82A44BE9CC=Help
 AE11B17AB3D8B92E=Track Group Manager
 DF2472EC2AB0BAFB=Scarica Python
 2C626DCBF2E2019A=ReaScript
@@ -4728,7 +4729,7 @@ A573EE08254212AF=Guida caratteri jolly dei metadati
 384BAAE7C497D427=Guida caratteri jolly di Salva con nome
 0AE9BDCC75463924=Guida caratteri jolly (Wildcard)
 9D111CE61D6A536B=Guida post-elaborazione di render
-FA363E82A44BE9CC=Aiuto
+FA363E82A44BE9CC=Help
 D840E3186B2B9581=OK
 
 [DLG_512] ; IDD_PROJECTSETTINGS_ADV
@@ -5854,7 +5855,7 @@ ADA780A8581298E0=Theme Adjuster / Controlli colore
 A41E4F58A44DC446=&Layout
 714F281FDDBD3ECE=Layout predefinito
 A0D116C59ED92C43=&Preferenze...
-7B5C2A1FA647D258=&Aiuto
+7B5C2A1FA647D258=&Help
 6405A26549C38BDB=Documentazione
 1A02898D809B83A6=(elenco documentazione)
 8D3B976C312A99F8=Assegnazioni tasti e modificatori del mouse
@@ -6298,7 +6299,7 @@ BBB17EF4311BA65F=Preferenze...
 744B2F6CFBA0A242=Actions
 A0CB20A955DAF552=Mostra Action list...
 593D5AC384550ADA=Mostra azioni recenti
-FA363E82A44BE9CC=Aiuto
+FA363E82A44BE9CC=Help
 9BC67B482921A263=Informazioni su REAPER
 ;^0832A807B4EBA64D= 
 62473318FFD2829F=[impostazioni di registrazione]
@@ -13826,7 +13827,7 @@ A0585E3F045348FA=Can-
 61946358B1034B76=Mute
 2F799723962762C7=Stop
 09D15F38080A7701=Media
-FA363E82A44BE9CC=Aiuto
+FA363E82A44BE9CC=Help
 99FA828F906D3EE4=Trova
 A846017E1E12163F=Nuovo
 109CF946D8C85FC3=Apri
@@ -18773,7 +18774,7 @@ A774979370C2945A=Abilita i suggerimenti a comparsa durante la modifica di item o
 FC697457A24188CD=Se i tooltip sono abilitati per gli inviluppi, mostra il suggerimento al passaggio del mouse sopra la linea dell'inviluppo.
 817322118B249C2C=Mostra il valore di picco e la sonorità (loudness) al passaggio del mouse sopra un item multimediale.
 E329015731738BEA=Usa il motore di rendering testo legacy (può risultare più veloce ma ha resa visiva inferiore con alcuni caratteri).
-AD36F1B35190B546=Memorizza nella cache i glifi dei font renderizzati, migliorando le prestazioni grafiche rispetto a FreeType.
+AD36F1B35190B546=Memorizza nella cache i glifi dei font renderizzati, migliorando le prestazioni grafiche rispetto a FreeType. 
 77B9B339AD44076D=Disegna con anti-aliasing le curve di dissolvenza degli item e gli inviluppi di automazione (nessun impatto sulle prestazioni).
 A7B566458D7B1070=Riempie con campitura colorata l'area sotto gli inviluppi di automazione per migliorarne la leggibilità.
 4633445F44D0C872=Riempie con campitura colorata gli inviluppi sovrapposti ai file multimediali per migliorarne il contrasto visivo.
@@ -18824,7 +18825,7 @@ D82746AB91159511=Le region sul righello possono avere bordi arrotondati o squadr
 9864B7B74DAD01DC=Quando abilitato, REAPER condivide le periferiche audio con le altre applicazioni chiudendo l'hardware audio quando non è attivo.
 7BCD0ED018A7F991=Se deselezionato e vi sono track armate per la registrazione, REAPER non condividerà le periferiche audio.
 56EF83DBB9B533D8=Se deselezionato e vi sono periferiche ReWire in uso, REAPER non condividerà le periferiche audio.
-2C9DA92A74FFB037=Se selezionato, REAPER chiude le periferiche audio ogni volta che non è in riproduzione audio.
+2C9DA92A74FFB037=Se selezionato, REAPER chiude le periferiche audio ogni volta che non è in riproduzione audio. 
 68336ADEF74B10B4=Avvisa in caso di periferiche audio che non è stato possibile aprire.
 01AEB6565994D6E7=Avvisa in caso di periferiche MIDI che non è stato possibile aprire.
 1A40A74117924D4C=Avvisa in caso di periferiche MIDI abilitate ma non rilevate.
@@ -21227,10 +21228,10 @@ E8589A5C2472187A=campioni
 E591BC144611AF3B=DDP è compatibile solo con 
 9AAF7F0BC3B0425F=audio stereo a 44100Hz, 16 bit.
 4EE305C3752EB662=DDPLogo
-FA363E82A44BE9CC=Aiuto
+FA363E82A44BE9CC=Help
 
 [reaper_ddp_DLG_156] ; IDD_HELPDIALOG
-FA363E82A44BE9CC=Aiuto
+FA363E82A44BE9CC=Help
 BAC64C1B2E060EE5=Chiudi
 
 [reaper_opus_DLG_120] ; IDD_OPUSITEMINFO
@@ -26252,7 +26253,7 @@ BAC64C1B2E060EE5=Chiudi
 CE00C3235E535EAA=Salva
 
 [video2_DLG_158] ; IDD_GENERIC_HELP
-FA363E82A44BE9CC=Aiuto
+FA363E82A44BE9CC=Help
 D840E3186B2B9581=OK
 
 [video2_DLG_159] ; IDD_ITEMINFO2_CHILD
