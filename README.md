@@ -27,7 +27,7 @@ The Suite works in a clean REAPER install. SWS, js_ReaScriptAPI and OSARA are op
 - **ZP Master** — mastering and reference-tone tools.
 - **ZP Misura** — loudness meters, oscilloscope and passive signal probes.
 
-Version 2.6.4 adds Render & Copy, a Dubbertools link in SOLO Web, and the ZP Remote REAPER tool for creating packages and importing deliveries. ZP Remote export requires Python 3 and ffmpeg.
+Version 2.6.5 updates the Solo Recorder guide to explain how ZP Remote packages relate to Dubbertools. Version 2.6.4 added Render & Copy, a Dubbertools link in SOLO Web, and the ZP Remote REAPER tool for creating packages and importing deliveries. ZP Remote export requires Python 3 and ffmpeg.
 
 ## Not included in this version
 

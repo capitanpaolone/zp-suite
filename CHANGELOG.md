@@ -4,6 +4,11 @@ Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
 ciascun file e nel gestore pacchetti. Questo file registra la storia della Suite
 nel suo insieme.
 
+## ZP Studio Suite 2.6.5 — 2026-11-03
+
+- **Guida del Solo Recorder**: chiarisce che i pacchetti preparati con ZP Remote sono destinati a Dubbertools e distingue questa consegna dai comandi di registrazione del SOLO Web Remote.
+- **Solo Recorder guide**: clarifies that packages prepared with ZP Remote are intended for Dubbertools and distinguishes package delivery from the SOLO Web Remote recording controls.
+
 ## ZP Studio Suite 2.6.4 — 2026-11-03
 
 - **Report minuti voce (19)**: esporta in CSV lo storico HTML già presente nel progetto. “Salva questa sessione” crea anche un CSV separato, con progetto, data e modalità nel nome; “Aggiungi allo storico” aggiorna il CSV cumulativo insieme all'HTML.

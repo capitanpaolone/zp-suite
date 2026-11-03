@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.6.4
+-- @version 2.6.5
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -22,12 +22,14 @@
 --   NVDA Controller Client (LGPL 2.1, NV Access). Dettagli in README.it.md.
 -- @changelog
 --   EN
+--   Solo Recorder guide now explains that ZP Remote packages are intended for Dubbertools and distinguishes package delivery from the Web Remote recording controls.
 --   Added direct synchronization of the native REAPER pre-roll toolbar indicator when toggled from ZP SOLO Recorder or its web remote.
 --   Gobbo speaker colors can be applied from selected voice items and their paired Character Notes items.
 --   Italian REAPER language pack keeps the top-level Help label for native macOS menu search.
 --   Added Render & Copy, the ZP Remote REAPER tools for Dubbertools, and a Dubbertools link in SOLO Web.
 --   Voice Minutes Report exports CSV, and ZP Colors supports items, tracks, markers and regions.
 --   IT
+--   La guida del Solo Recorder spiega che i pacchetti ZP Remote sono destinati a Dubbertools e distingue la consegna pacchetti dal telecomando web di registrazione.
 --   Il PRE di ZP SOLO Recorder e del telecomando web aggiorna anche la spia del pre-roll nella toolbar nativa di REAPER.
 --   I colori speaker del Gobbo si possono applicare selezionando item voce o note personaggio associate.
 --   Il language pack italiano mantiene la voce principale Help per la ricerca nativa nei menu di macOS.
