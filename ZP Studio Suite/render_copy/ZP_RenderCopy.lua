@@ -15,7 +15,8 @@
 -- "Sincronizza ora" confronta Mixdown e consegna e copia i file mancanti, di dimensione
 -- diversa o piu' recenti (stesso nome, versione aggiornata), dopo una conferma.
 -- Chiudendo la finestra durante una copia, lo script chiede se aspettare che finisca.
--- Il servizio usa i comandi di sistema 'find' e 'stat': macOS (e Linux).
+-- Sistemi: macOS e Linux usano i comandi 'find' e 'stat'; Windows usa le funzioni di REAPER
+-- e l'estensione js_ReaScriptAPI (JS_File_Stat), da installare con ReaPack.
 
 local sep = package.config:sub(1, 1)
 local ui_path = reaper.GetResourcePath() .. sep .. 'Scripts' .. sep .. 'ZP Suite' .. sep .. 'ZP Studio Suite' .. sep .. 'ZP_UI.lua'
@@ -32,9 +33,11 @@ local HELP = [[1. Scegli la cartella di consegna e premi «Salva stato» per sal
 
 3. Se renderizzi dal Gestore Progetto o dalla Render Queue, lascia aperto Render & Copy. Per la coda, quando REAPER passa al progetto temporaneo, la consegna resta quella del progetto di lavoro.
 
-4. Su Mac, «Sincronizza ora» confronta le cartelle sorvegliate con la consegna, anche con la copia automatica su OFF. Dopo la conferma, copia i file mancanti, più recenti o di dimensione diversa. Può sostituire un file con lo stesso nome in consegna.
+4. «Sincronizza ora» confronta le cartelle sorvegliate con la consegna, anche con la copia automatica su OFF. Dopo la conferma, copia i file mancanti, più recenti o di dimensione diversa. Può sostituire un file con lo stesso nome in consegna.
 
-«Mostra in consegna» seleziona l’ultima copia nel Finder oppure apre la cartella di consegna.]]
+«Mostra in consegna» mostra l’ultima copia nel gestore file oppure apre la cartella di consegna.
+
+Su Windows, per la copia automatica e «Sincronizza ora» serve l’estensione js_ReaScriptAPI. Su Linux, per aprire il gestore file serve xdg-open.]]
 local SECTION, KEY = 'ZP_RENDER_COPY', 'DESTINATION'
 local ACTION_RENDER_DIALOG = 40015 -- File: Render project to disk...
 local POLL = 1.0       -- secondi tra un controllo e il successivo
@@ -46,8 +49,18 @@ local AUDIO_EXT = {wav = true, w64 = true, mp3 = true, flac = true, ogg = true, 
   aif = true, aiff = true, aifc = true, m4a = true, aac = true, wv = true, caf = true}
 
 local os_name = reaper.GetOS():lower()
-local SERVICE_OK = not os_name:find('win')
+local WIN = os_name:find('win') ~= nil
 local MAC = (os_name:find('osx') or os_name:find('mac')) ~= nil
+-- macOS e Linux: comandi di sistema find+stat. Windows: funzioni di REAPER
+-- (EnumerateFiles) e JS_File_Stat dell'estensione js_ReaScriptAPI, senza finestre di comando.
+local USE_API = WIN
+local SERVICE_OK = true
+local SERVICE_WHY = nil
+if WIN and not reaper.JS_File_Stat then
+  SERVICE_OK = false
+  SERVICE_WHY = 'su Windows serve l\'estensione js_ReaScriptAPI (installala da ReaPack)'
+end
+if USE_API then POLL = 2.0 end -- senza find, ogni controllo scorre le cartelle: meno frequente
 
 local _, _, sec, cmd = reaper.get_action_context()
 
@@ -60,12 +73,27 @@ end
 
 -- ---------------------------------------------------------------- utilita'
 local function norm(path)
-  return ((path or ''):gsub('\\', '/'):gsub('/+$', ''))
+  path = (path or ''):gsub('\\', '/')
+  local trimmed = path:gsub('/+$', '')
+  if path ~= trimmed and (trimmed == '' or trimmed:match('^%a:$')) then return trimmed .. '/' end
+  return trimmed
 end
-local function dirname(path) return norm(path):match('^(.*)/[^/]+$') or '' end
+local function dirname(path)
+  return norm(norm(path):match('^(.*/)[^/]+$'))
+end
 local function filename(path) return norm(path):match('([^/]+)$') or '' end
-local function join(folder, name) return norm(folder) .. '/' .. name end
+local function join(folder, name)
+  folder = norm(folder)
+  return folder .. (folder:sub(-1) == '/' and '' or '/') .. name
+end
 local function shq(s) return "'" .. tostring(s):gsub("'", "'\\''") .. "'" end
+local function is_abs(p) return p:sub(1, 1) == '/' or p:match('^%a:/') ~= nil end
+local function is_inside(p, base)
+  if WIN then p, base = p:lower(), base:lower() end -- Windows: maiuscole/minuscole indifferenti
+  local prefix = join(base, '')
+  return p == base or p:sub(1, #prefix) == prefix
+end
+local function native_path(p) return WIN and (p:gsub('/', '\\')) or p end
 
 -- RecursiveCreateDirectory restituisce quante cartelle ha CREATO (0 se esiste gia'):
 -- per sapere se la cartella e' utilizzabile si prova a scriverci un file.
@@ -114,10 +142,10 @@ end
 -- (solo il suo primo livello, per non scansionare media e registrazioni).
 local function add_render_root(roots, rf, pd)
   rf = norm(rf)
-  if rf ~= '' and rf:sub(1, 1) ~= '/' and pd ~= '' then rf = join(pd, rf) end
-  if rf == '' or rf:sub(1, 1) ~= '/' then return end
+  if rf ~= '' and not is_abs(rf) and pd ~= '' then rf = join(pd, rf) end
+  if rf == '' or not is_abs(rf) then return end
   for _, r in ipairs(roots) do
-    if rf == r.path or rf:sub(1, #r.path + 1) == r.path .. '/' then return end
+    if is_inside(rf, r.path) then return end
   end
   roots[#roots + 1] = {path = rf, recursive = false}
 end
@@ -127,7 +155,7 @@ end
 local function watch_roots(proj, projfn, queued)
   local roots = {}
   local pd = dirname(projfn or '')
-  if pd ~= '' then roots[#roots + 1] = {path = pd .. '/Mixdown', recursive = true} end
+  if pd ~= '' then roots[#roots + 1] = {path = join(pd, 'Mixdown'), recursive = true} end
   local _, rf = reaper.GetSetProjectInfo_String(proj, 'RENDER_FILE', '', false)
   add_render_root(roots, rf, pd)
   if queued then
@@ -139,7 +167,7 @@ end
 
 -- File audio modificati di recente in una cartella (data e dimensione con una sola
 -- chiamata a find+stat; -mmin riduce l'elenco ai file piu' recenti di 'since').
-local function scan_new(root, recursive, since)
+local function scan_shell(root, recursive, since)
   local out = {}
   local fmt = MAC and "-f '%m %z %N'" or "-c '%Y %s %n'"
   local recent = since and (' -mmin -' .. (math.floor((os.time() - since) / 60) + 2)) or ''
@@ -161,8 +189,53 @@ local function scan_new(root, recursive, since)
   return out
 end
 
+-- Windows: data e dimensione con JS_File_Stat. La data puo' essere un numero o un testo
+-- (stesso tipo per ogni file): si confronta soltanto con altre date dello stesso tipo.
+local function api_stat(path)
+  local rv, size, _, mtime = reaper.JS_File_Stat(native_path(path))
+  if rv ~= 0 or not mtime then return nil end
+  return {mtime = mtime, size = tonumber(size) or 0}
+end
+
+-- JS_File_Stat restituisce data e ora locali in questo formato, ordinabile come testo.
+local function now_stamp()
+  return USE_API and os.date('%Y.%m.%d %H:%M:%S') or os.time()
+end
+
+local function api_scan(root, recursive)
+  local out = {}
+  local function walk(dir, depth)
+    local native_dir = native_path(dir)
+    reaper.EnumerateFiles(native_dir, -1) -- svuota la cache dell'elenco, per non vedere file vecchi
+    local i = 0
+    while true do
+      local name = reaper.EnumerateFiles(native_dir, i)
+      if not name then break end
+      i = i + 1
+      local ext = name:match('%.([^.]+)$')
+      if name:sub(1, 1) ~= '.' and ext and AUDIO_EXT[ext:lower()] then
+        local path = join(dir, name)
+        local st = api_stat(path)
+        if st then out[path] = st end
+      end
+    end
+    if recursive and depth < 8 then
+      reaper.EnumerateSubdirectories(native_dir, -1)
+      local j = 0
+      while true do
+        local sub = reaper.EnumerateSubdirectories(native_dir, j)
+        if not sub then break end
+        j = j + 1
+        if sub:sub(1, 1) ~= '.' then walk(join(dir, sub), depth + 1) end
+      end
+    end
+  end
+  walk(root, 0)
+  return out
+end
+
 -- Data di modifica e dimensione di file precisi (a gruppi, con una chiamata a stat ciascuno).
-local function stat_files(paths)
+local function stat_files_shell(paths)
   local out = {}
   local fmt = MAC and "-f '%m %z %N'" or "-c '%Y %s %n'"
   local i = 1
@@ -182,11 +255,26 @@ local function stat_files(paths)
   return out
 end
 
+local function scan_new(root, recursive, since)
+  if USE_API then return api_scan(root, recursive) end
+  return scan_shell(root, recursive, since)
+end
+
+local function stat_files(paths)
+  if not USE_API then return stat_files_shell(paths) end
+  local out = {}
+  for _, p in ipairs(paths) do
+    local st = api_stat(p)
+    if st then out[p] = st end
+  end
+  return out
+end
+
 -- Progetto su cui lavorare. Con la Render Queue REAPER mette in primo piano un progetto
 -- temporaneo (in QueuedRenders): si resta sul progetto originale, che ha la consegna
 -- e la cartella Mixdown. Restituisce progetto, percorso e, se c'e', il progetto accodato.
 local home_proj = nil
-local function is_queued_path(fn) return (fn or ''):find('/QueuedRenders/', 1, true) ~= nil end
+local function is_queued_path(fn) return norm(fn or ''):find('/QueuedRenders/', 1, true) ~= nil end
 local function work_project()
   local active, active_fn = reaper.EnumProjects(-1)
   if not active then return nil end
@@ -255,6 +343,19 @@ local function finish_job()
     return log('ERRORE: copia incompleta: ' .. filename(j.item.src))
   end
   local moved, merr = os.rename(j.tmp, j.item.dst)
+  if WIN and not moved and file_exists(j.item.dst) then
+    -- Su Windows rename non sostituisce un file esistente. Teniamo la versione
+    -- precedente finché la nuova copia non è al suo posto.
+    local backup = j.tmp .. '.previous'
+    if not file_exists(backup) and os.rename(j.item.dst, backup) then
+      moved, merr = os.rename(j.tmp, j.item.dst)
+      if moved then
+        if not os.remove(backup) then log('Versione precedente conservata in ' .. backup) end
+      elseif not os.rename(backup, j.item.dst) then
+        log('ERRORE: versione precedente da recuperare in ' .. backup)
+      end
+    end
+  end
   if not moved then
     os.remove(j.tmp)
     return log('ERRORE: impossibile completare ' .. filename(j.item.dst) .. ' ' .. tostring(merr))
@@ -291,7 +392,7 @@ end
 -- quando data e dimensione restano invariate per STABLE secondi.
 local enabled = SERVICE_OK
 local window_open = true
-local T0 = os.time()
+local T0 = now_stamp()
 local watch, done, asked = {}, {}, {}
 local need_dest = false
 
@@ -319,7 +420,7 @@ local function set_enabled(v)
   watch = {}
   refresh_indicators()
   if v then
-    T0 = os.time() -- i file creati mentre era spenta non vengono copiati
+    T0 = now_stamp() -- i file creati mentre era spenta non vengono copiati
     log('Copia automatica ATTIVA: i nuovi file di Mixdown verranno copiati nella consegna.')
     local proj, projfn = work_project()
     if proj and not get_destination(proj) then
@@ -351,7 +452,7 @@ local function poll(now)
         if dest then
           done[path] = sig
           watch[path] = nil
-          local rel = path:sub(#f.root + 2)
+          local rel = path:sub(#join(f.root, '') + 1)
           queue[#queue + 1] = {src = path, rel = rel, size = f.s.size, dst = join(dest, rel), destname = filename(dest)}
         else
           need_dest = true -- resta in attesa: si copiera' appena c'e' una destinazione
@@ -375,7 +476,7 @@ local function current_state()
     return ('Copia %d%%  %s'):format(pct, job.item.rel), pct
   end
   if #queue > 0 then return ('In coda: %d file'):format(#queue) end
-  if not SERVICE_OK then return 'Copia automatica disponibile solo su macOS' end
+  if not SERVICE_OK then return 'Copia automatica non disponibile: ' .. (SERVICE_WHY or 'sistema non supportato') end
   if not enabled then return 'Copia automatica SPENTA: i render restano solo in locale' end
   local proj = work_project()
   if proj and not get_destination(proj) then
@@ -397,16 +498,26 @@ local function label(text, x, y, color)
   gfx.drawstr(UI.fit_text(text, gfx.w - x - 24))
 end
 
--- Apre il Finder sull'ultimo file consegnato (selezionato), oppure sulla cartella
--- di consegna se non c'e' ancora una copia recente. Da li' si usano le funzioni
--- del Mac: Condividi, link Dropbox/iCloud dal clic destro, AirDrop, Mail.
+-- Apre il gestore file sulla consegna. Finder ed Esplora file possono anche
+-- selezionare l'ultima copia, mentre xdg-open apre la cartella che la contiene.
+local function open_in_file_manager(path, select_it)
+  if WIN then
+    local np = native_path(path)
+    reaper.ExecProcess('explorer.exe ' .. (select_it and ('/select,"' .. np .. '"') or ('"' .. np .. '"')), -1)
+  elseif MAC then
+    os.execute('open ' .. (select_it and '-R ' or '') .. shq(path) .. ' >/dev/null 2>&1 &')
+  else
+    os.execute('xdg-open ' .. shq(select_it and dirname(path) or path) .. ' >/dev/null 2>&1 &')
+  end
+end
+
 local function reveal_delivery(destination)
-  if not MAC then return end
+  local fm = MAC and 'Finder' or 'file manager'
   if last_delivered and file_exists(last_delivered) then
-    os.execute('open -R ' .. shq(last_delivered) .. ' >/dev/null 2>&1 &')
-    log('Mostrato nel Finder: ' .. filename(last_delivered))
+    open_in_file_manager(last_delivered, true)
+    log('Mostrato nel ' .. fm .. ': ' .. filename(last_delivered))
   elseif destination ~= '' then
-    os.execute('open ' .. shq(destination) .. ' >/dev/null 2>&1 &')
+    open_in_file_manager(destination, false)
     log('Aperta la cartella di consegna (nessuna copia recente da mostrare).')
   end
 end
@@ -430,7 +541,7 @@ local function run_sync()
   end
   local paths = {}
   for path, f in pairs(src) do
-    f.rel = path:sub(#f.root + 2)
+    f.rel = path:sub(#join(f.root, '') + 1)
     f.dst = join(dest, f.rel)
     paths[#paths + 1] = f.dst
   end
@@ -560,10 +671,10 @@ local function loop()
     local path = choose_folder('Cartella di consegna', destination ~= '' and destination or reaper.GetProjectPathEx(proj))
     if path then set_destination(proj, path) end
   end
-  if UI.draw_button({x = 209, y = 254, w = 200, h = 30, font = 17}, 'Mostra in consegna', false, MAC and destination ~= '', clicked, 'reveal') then
+  if UI.draw_button({x = 209, y = 254, w = 200, h = 30, font = 17}, 'Mostra in consegna', false, destination ~= '', clicked, 'reveal') then
     reveal_delivery(destination)
   end
-  if UI.draw_button({x = 419, y = 254, w = 170, h = 30, font = 17}, 'Sincronizza ora', false, MAC and destination ~= '', clicked, 'sync') then
+  if UI.draw_button({x = 419, y = 254, w = 170, h = 30, font = 17}, 'Sincronizza ora', false, SERVICE_OK and destination ~= '', clicked, 'sync') then
     run_sync()
   end
 
@@ -625,7 +736,7 @@ end)
 if SERVICE_OK then
   log('Pronto. Copia automatica attiva: copia i nuovi file audio che compaiono in Mixdown.')
 else
-  log('La copia automatica funziona solo su macOS: la finestra serve per le impostazioni.')
+  log('Copia automatica non disponibile: ' .. (SERVICE_WHY or 'sistema non supportato') .. '. La finestra serve per le impostazioni.')
 end
 
 local d, x, y, w, h = (reaper.GetExtState('ZP_RENDER_COPY', 'window') .. ','):match('([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)')

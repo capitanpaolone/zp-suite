@@ -27,7 +27,7 @@ La Suite funziona anche con un’installazione pulita di REAPER. SWS, js_ReaScri
 - **ZP Master** — strumenti per mastering e confronto timbrico.
 - **ZP Misura** — loudness meter, oscilloscopio e sonde passive del segnale.
 
-La 2.6.5 aggiorna la guida del Solo Recorder per chiarire il collegamento tra i pacchetti creati con ZP Remote e Dubbertools. La 2.6.4 ha aggiunto Render & Copy, il collegamento Dubbertools in SOLO Web e il tool REAPER di ZP Remote per esportare pacchetti e importare consegne. Per l’export ZP Remote servono Python 3 e ffmpeg.
+La 2.6.6 estende la copia automatica e Sincronizza ora di Render & Copy a Windows (serve js_ReaScriptAPI) e Linux (servono find e stat). La 2.6.5 aggiorna la guida del Solo Recorder per chiarire il collegamento tra i pacchetti creati con ZP Remote e Dubbertools. La 2.6.4 ha aggiunto Render & Copy, il collegamento Dubbertools in SOLO Web e il tool REAPER di ZP Remote per esportare pacchetti e importare consegne. Per l’export ZP Remote servono Python 3 e ffmpeg.
 
 ## Non incluso in questa versione
 

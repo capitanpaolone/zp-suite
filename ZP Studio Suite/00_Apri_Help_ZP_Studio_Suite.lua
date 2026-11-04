@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.6.5
+-- @version 2.6.6
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -7,7 +7,8 @@
 -- @about
 --   EN — A REAPER toolkit for voiceover and dubbing: teleprompters, SRT handling,
 --   accessible reading, project and mixdown preparation, and ZP audio tools. Works
---   with a clean REAPER install; SWS, js_ReaScriptAPI and OSARA are optional.
+--   with a clean REAPER install. On Windows, Render & Copy requires js_ReaScriptAPI
+--   for automatic copying and Sync now. SWS and OSARA are optional.
 --   Open 33 Welcome and choose English or Italiano under Suite language. The
 --   preference is saved independently from REAPER's language. Guides are included
 --   in both languages. Windows screen-reader support uses NVDA Controller Client
@@ -15,13 +16,15 @@
 --
 --   IT — Strumenti REAPER per voiceover e doppiaggio: gobbi, gestione SRT,
 --   lettura accessibile, preparazione del progetto e del mixdown, strumenti audio ZP.
---   Funziona anche su un REAPER pulito; SWS, js_ReaScriptAPI e OSARA sono facoltativi.
+--   Funziona anche su un REAPER pulito. Su Windows, per la copia automatica e
+--   Sincronizza ora in Render & Copy serve js_ReaScriptAPI. SWS e OSARA sono facoltativi.
 --   Apri 33 Benvenuto e scegli Italiano o English alla voce Lingua della Suite.
 --   La preferenza viene salvata ed è indipendente dalla lingua di REAPER. Le guide
 --   sono disponibili in entrambe le lingue. Il supporto screen reader Windows usa
 --   NVDA Controller Client (LGPL 2.1, NV Access). Dettagli in README.it.md.
 -- @changelog
 --   EN
+--   Render & Copy supports automatic copying and Sync now on Windows (js_ReaScriptAPI) and Linux (find and stat).
 --   Solo Recorder guide now explains that ZP Remote packages are intended for Dubbertools and distinguishes package delivery from the Web Remote recording controls.
 --   Added direct synchronization of the native REAPER pre-roll toolbar indicator when toggled from ZP SOLO Recorder or its web remote.
 --   Gobbo speaker colors can be applied from selected voice items and their paired Character Notes items.
@@ -29,6 +32,7 @@
 --   Added Render & Copy, the ZP Remote REAPER tools for Dubbertools, and a Dubbertools link in SOLO Web.
 --   Voice Minutes Report exports CSV, and ZP Colors supports items, tracks, markers and regions.
 --   IT
+--   Render & Copy supporta la copia automatica e Sincronizza ora anche su Windows (js_ReaScriptAPI) e Linux (find e stat).
 --   La guida del Solo Recorder spiega che i pacchetti ZP Remote sono destinati a Dubbertools e distingue la consegna pacchetti dal telecomando web di registrazione.
 --   Il PRE di ZP SOLO Recorder e del telecomando web aggiorna anche la spia del pre-roll nella toolbar nativa di REAPER.
 --   I colori speaker del Gobbo si possono applicare selezionando item voce o note personaggio associate.

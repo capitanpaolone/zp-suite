@@ -4,6 +4,11 @@ Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
 ciascun file e nel gestore pacchetti. Questo file registra la storia della Suite
 nel suo insieme.
 
+## ZP Studio Suite 2.6.6 — 2026-11-04
+
+- **ZP Render & Copy** estende la copia automatica e Sincronizza ora a Windows (con js_ReaScriptAPI) e Linux (con `find` e `stat`). Mostra in consegna apre il gestore file del sistema.
+- **ZP Render & Copy** supports automatic copying and Sync now on Windows (with js_ReaScriptAPI) and Linux (with `find` and `stat`). Show in delivery opens the system file manager.
+
 ## ZP Studio Suite 2.6.5 — 2026-11-03
 
 - **Guida del Solo Recorder**: chiarisce che i pacchetti preparati con ZP Remote sono destinati a Dubbertools e distingue questa consegna dai comandi di registrazione del SOLO Web Remote.

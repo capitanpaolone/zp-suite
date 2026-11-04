@@ -90,7 +90,9 @@ Chain Builder prepara la catena, Probe Guard tiene le Probe in fondo al bus.
 Nessun modulo applica correzioni automatiche via bus: Master Pro misura,
 interpreta e suggerisce.
 
-ZP Studio Suite 2.6.5
+ZP Studio Suite 2.6.6
 Render & Copy copia i file renderizzati nella cartella di consegna.
+La copia automatica e Sincronizza ora funzionano anche su Windows
+(con js_ReaScriptAPI) e Linux (con find e stat).
 ZP Remote Pacchetto esporta da REAPER per Dubbertools e importa le consegne.
 Per l’export servono Python 3 e ffmpeg. Il link è anche in SOLO Web.
