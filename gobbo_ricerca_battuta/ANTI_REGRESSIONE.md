@@ -33,6 +33,7 @@ Regola di Paolo, 2026-10-18. Vale per tutti gli agenti (Codex, Claude, altri).
    comandi, test) viene dopo e puo' essere lungo. Mai seppellire un errore o una divergenza nel racconto.
 
 ## Pubblicazione e GitHub
+- Prima della release confrontare anche i file installati elencati nel `@provides` del 00. Una variante diagnostica locale va archiviata prima del riallineamento e resta fuori dalla distribuzione.
 - Ogni `.lua`/`.jsfx` nuovo nei pacchetti deve avere `@version`, `@noindex` o stare nel `@provides`
   di un pacchetto. Senza, il controllo GitHub "check" (`reapack-index --check`) fallisce
   (successo il 2026-10-04: 28_Collega_Marker e le bozze). Gli helper hanno `@noindex`.

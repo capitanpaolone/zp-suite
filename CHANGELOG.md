@@ -9,6 +9,10 @@ nel suo insieme.
 - **ZP Render & Copy** estende la copia automatica e Sincronizza ora a Windows (con js_ReaScriptAPI) e Linux (con `find` e `stat`). Mostra in consegna apre il gestore file del sistema.
 - **ZP Render & Copy** supports automatic copying and Sync now on Windows (with js_ReaScriptAPI) and Linux (with `find` and `stat`). Show in delivery opens the system file manager.
 
+### Non incluso in questa versione
+
+ZP Montaggio Parlato, ZP BrownSlope Dynamic Guard, ZP BrownSlope Prism e ZP Speech Engine sono in lavorazione.
+
 ## ZP Studio Suite 2.6.5 — 2026-11-03
 
 - **Guida del Solo Recorder**: chiarisce che i pacchetti preparati con ZP Remote sono destinati a Dubbertools e distingue questa consegna dai comandi di registrazione del SOLO Web Remote.
