@@ -1,5 +1,9 @@
 # Changelog — ZP Suite
 
+## ZP Studio Suite 2.6.7 — in preparazione
+
+Copia di lavoro avviata dal tag `v2.6.6`. Le modifiche e i componenti aggiornati acquisiti dalla REAPER locale sono registrati in `docs/PRE_RELEASE_2.6.7.md` e `docs/PROVENIENZA_2.6.7.md`; questa sezione sarà completata dopo i collaudi.
+
 Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
 ciascun file e nel gestore pacchetti. Questo file registra la storia della Suite
 nel suo insieme.

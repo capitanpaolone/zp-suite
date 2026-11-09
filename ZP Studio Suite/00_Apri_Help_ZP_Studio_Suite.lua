@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.6.6
+-- @version 2.6.7
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -23,6 +23,9 @@
 --   sono disponibili in entrambe le lingue. Il supporto screen reader Windows usa
 --   NVDA Controller Client (LGPL 2.1, NV Access). Dettagli in README.it.md.
 -- @changelog
+--   2.6.7 (in preparation; not released)
+--   EN — Local REAPER reference updates: safer project-region selection, Voice Minutes 1.0.6, ZP Remote import/export updates, Harmonic Space Carver 2.6.10 and Cue Navigator 1.14. These changes still require release collation and checks.
+--   IT — Aggiornamenti dalla REAPER locale: selezione più sicura delle regioni, Report Minuti 1.0.6, aggiornamenti ZP Remote, Harmonic Space Carver 2.6.10 e Cue Navigator 1.14. Da consolidare e collaudare prima della pubblicazione.
 --   EN
 --   Render & Copy supports automatic copying and Sync now on Windows (js_ReaScriptAPI) and Linux (find and stat).
 --   Solo Recorder guide now explains that ZP Remote packages are intended for Dubbertools and distinguishes package delivery from the Web Remote recording controls.

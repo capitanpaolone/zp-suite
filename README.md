@@ -29,6 +29,9 @@ The Suite works in a clean REAPER install. SWS, js_ReaScriptAPI and OSARA are op
 
 Version 2.6.6 adds automatic copying and Sync now in Render & Copy on Windows (requires js_ReaScriptAPI) and Linux (requires find and stat). Version 2.6.5 updates the Solo Recorder guide to explain how ZP Remote packages relate to Dubbertools. Version 2.6.4 added Render & Copy, a Dubbertools link in SOLO Web, and the ZP Remote REAPER tool for creating packages and importing deliveries. ZP Remote export requires Python 3 and ffmpeg.
 
+
+ZP Studio Suite 2.6.7 is in preparation and is not published. The candidate checkout uses updates from the local REAPER installation; see `docs/PRE_RELEASE_2.6.7.md` and `docs/PROVENIENZA_2.6.7.md`.
+
 ## Not included in this version
 
 ZP Montaggio Parlato (prototype), ZP BrownSlope Dynamic Guard, ZP BrownSlope Prism and ZP Speech Engine are still in development and are not part of this ReaPack release.

@@ -691,6 +691,19 @@ Fuori ambito finché non viene aperta una fase dedicata:
 - whisper.cpp, fallback provider e download/gestione generale dei modelli;
 - resolver source-to-project timeline, Gobbo, Solo Recorder, ricerca FTS/fuzzy/semantica e provider cloud.
 
+### Preparazione release 2.6.7 — integrazione ZP Speech
+
+Lo stato aggiornato del candidato `release/2.6.7`, la baseline verificata sul Mac (MacWhisper 15.10 + servizio attivo), l'implementazione di `OpenAIWhisperProvider`, il selettore `auto | macwhisper | openai-whisper`, gli installatori per macOS/Linux/Windows e gli aggiornamenti a `33_Benvenuto` / `29_ZP_Trascrizione` sono documentati in `docs/PIANO_INTEGRAZIONE_ZP_SPEECH.md`. Windows e Linux restano sperimentali finché non vengono collaudati sui rispettivi sistemi.
+
+Collaudo del 2026-11-09 sul Mac di riferimento (dettagli nel piano, sezione 3):
+
+- Python: 203 test passati, coverage line+branch 98,45% (soglia attuale `fail_under = 95` in `pyproject.toml`; la soglia 100% sopra vale per la sola Fase 1 storica), Ruff check/format OK, basedpyright strict 0 errori, ty OK, wheel OK. Nuovi test: `tests/test_service.py`, `tests/test_client.py`.
+- Lua: `test_benvenuto.lua` (74 OK) e `test_trascrizione.lua` (33 OK); `luac -p` OK su 33 e 29.
+- End-to-end macOS: `install_macos.sh --with-openai-whisper --model small` OK (venv Whisper su Python 3.11.16, `openai-whisper 20250625`, `torch 2.15.0`, `small.pt` con checksum ufficiale). `doctor --engine auto` sceglie macwhisper quando MacWhisper è pronto. Trascrizione italiana JSON (schema ZP v1, `word_timestamps=true`) e SRT coerenti; funziona senza rete con modello già presente; un modello non scaricato restituisce `unsupported_model` senza download.
+- Invariante: la trascrizione non deve mai scaricare modelli. Il download avviene solo con `zp-speech download-model` o con l'installatore e `--model`.
+- Ambiente di sviluppo: `uv` non è installato sul Mac; i controlli sono stati eseguiti con un venv Python 3.11 esterno al repo. `ty` e `basedpyright` vanno lanciati con quel venv attivo, altrimenti cercano i pacchetti nel Python 3.15 di Homebrew e segnalano falsi errori d'import.
+- Non ancora fatto: copia di 33/29 nell'installazione REAPER e prova dall'interno di REAPER; collaudo Windows/Linux.
+
 ## Stato del worktree osservato
 
 - Branch corrente: `codex/zp-speech-phase-1-macwhisper`.
@@ -762,4 +775,13 @@ Fuori ambito finché non viene aperta una fase dedicata:
   - `[common]`: **1.970 / 2.028 (97,1%)**
   - Sezioni UI operative (`track`, `item*`, `env*`, `fx*`, `render*`, `routing`, `send*`, `midi*`, `explorer*`, `projbay`, `prefs*`, `toolbar`, `tooltip`, `transport*`, `ruler`, `marker`, `region`, `regmgr*`, `nudge`, `xfade`, `fade*`, `cpumeter`, `screenset`, `glue`, `import`, `saveas`, `missfile`, `projload`, `projsave`, `projsettings`, `recordmode`, `recmenu`, `trackmgr*`, `undohist`, `undoinfo`, `video*`, `wave*`, `vst`, `au`, `clap`, `lv2`, `jsfx*`, `about`, `splash`, `mbox`, `kb*`): **100% tradotte** (7.058 chiavi).
   - Totale chiavi tradotte e scommentate: **17.697 / 22.026 (80,3%)** delle righe non-action.
+## Layout locale e ciclo release — 2026-11-09
 
+Memoria condivisa per entrambi i checkout: `../AGENTS.md`. Consultarla prima di operare sulla 2.6.6 online o di preparare una release successiva.
+
+- `ZP/zp-suite-2.6.6-online` è il worktree pulito e detached al tag immutabile `v2.6.6`; usarlo solo come riferimento della release pubblicata.
+- `ZP/zp-suite-2.6.7` è il checkout principale, ramo locale `release/2.6.7`, derivato da `v2.6.6`. La REAPER locale è la sorgente beta di riferimento per i file aggiornati; importare le differenze verificate e registrarle in `docs/PROVENIENZA_2.6.7.md`.
+- Gli altri checkout e il backup precedente sono archiviati in `/Volumes/DISCO LACIE/Archivio_Storico_ZP/ZP Suite/2026-11-09_Consolidamento/`, con bundle Git e snapshot del lavoro non committato.
+- Dopo la pubblicazione della 2.6.7, conservare il tag `v2.6.6` come riferimento storico; creare il ramo di preparazione 2.6.8 dal nuovo tag `v2.6.7` e importare soltanto le differenze dei componenti modificati. Le versioni dei singoli componenti ReaPack restano indipendenti dalla versione della Suite.
+- Procedura dettagliata per i cicli successivi: `docs/RELEASE_WORKFLOW.md`.
+- Nessun commit, push, tag o aggiornamento ReaPack senza richiesta esplicita di Paolo.
