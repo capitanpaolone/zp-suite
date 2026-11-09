@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZP Studio Suite - Guida</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f7f4;
+      --paper: #ffffff;
+      --ink: #202024;
+      --muted: #5e6068;
+      --line: #d9d9d2;
+      --accent: #245ba6;
+      --accent-soft: #eaf1fb;
+      --code: #ecece8;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #101217;
+        --paper: #171a21;
+        --ink: #eceff4;
+        --muted: #adb2bd;
+        --line: #303541;
+        --accent: #77a9ff;
+        --accent-soft: #172236;
+        --code: #232834;
+      }
+    }
+    body {
+      margin: 0;
+      padding: 28px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    main { max-width: 1040px; margin: 0 auto; }
+    h1 { font-size: 28px; margin: 0 0 6px; }
+    h2 { font-size: 21px; margin: 34px 0 10px; border-top: 1px solid var(--line); padding-top: 22px; }
+    h3 { font-size: 17px; margin: 0 0 6px; }
+    p { margin: 8px 0; }
+    a { color: var(--accent); }
+    code {
+      background: var(--code);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.94em;
+    }
+    .lead { color: var(--muted); font-size: 16px; max-width: 780px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin: 16px 0 6px;
+    }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .num {
+      display: inline-block;
+      min-width: 32px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .note {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 10px 14px;
+      margin: 14px 0;
+    }
+    ul, ol { padding-left: 22px; }
+    li { margin: 6px 0; }
+    .small { color: var(--muted); font-size: 13px; }
+    .flow { counter-reset: passo; list-style: none; padding-left: 0; }
+    .flow > li { counter-increment: passo; position: relative; padding-left: 34px; }
+    .flow > li::before {
+      content: counter(passo); position: absolute; left: 0; top: 0;
+      width: 24px; height: 24px; border-radius: 12px; text-align: center;
+      background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 13px; line-height: 24px;
+    }
+    .when { color: var(--muted); font-style: italic; margin-top: 2px; }
+    dl.win { margin: 10px 0 0; }
+    dl.win dt { font-weight: 700; margin-top: 8px; }
+    dl.win dd { margin: 2px 0 0 0; }
+    table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+    th, td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-weight: 600; font-size: 13px; }
+    .wrap { overflow-x: auto; }
+    @media (max-width: 600px) { body { padding: 16px; } }
+  </style>
+<style id="lc-firma">
+.lc-testata{display:flex;align-items:center;gap:.5rem;margin:0 0 .4rem;font:600 .78rem/1.2 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  letter-spacing:.08em;text-transform:uppercase;color:#565F66}
+.lc-testata a{color:inherit;text-decoration:none}.lc-testata a:hover{color:#A94F35}
+.lc-logo{width:22px;height:22px;flex:none}
+.lc-filetto{border:0;border-top:2px solid #A94F35;margin:.6rem 0 1.4rem}
+.lc-piede{display:flex;align-items:center;gap:.6rem;margin:3rem 0 1rem;padding:.8rem 1rem;border:1px solid #CFCCC3;
+  border-radius:6px;background:#FAF9F5;color:#37444E;font:.95rem/1.4 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+.lc-piede a{color:#8F4630}
+@media (prefers-color-scheme: dark){
+  .lc-testata{color:#9aa4ac}.lc-piede{background:#1d2226;border-color:#2e3439;color:#c9cfd4}.lc-piede a{color:#d98b6f}
+}
+</style>
+</head>
+<body>
+<main>
+  <!-- lc-testata --><div class="lc-testata"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><a href="https://latocardioide.it/strumenti/">Lato Cardioide</a> &middot; Strumenti</div><!-- /lc-testata -->
+<h1>ZP Studio Suite for REAPER</h1>
+  
+
+<!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
+<p class="lead">Una cassetta degli attrezzi dentro REAPER per chi lavora con la voce: doppiaggio, voiceover, podcast, e-learning, spot. Porta il copione in timeline, te lo fa leggere mentre registri, segue i tagli del montaggio, prepara i file da consegnare e la catena audio. Tutto si può usare anche con lo screen reader.</p>
+
+  <div class="note">
+    <a href="toolbar.html"><strong>La toolbar, pulsante per pulsante &rarr;</strong></a> &middot;
+    <a href="solo_recorder.html">SOLO Recorder &rarr;</a> &middot;
+    <a href="pannello_trascrizione.html">ZP Trascrizione &rarr;</a> &middot;
+    <a href="voice_cleaner.html">Voice Cleaner &rarr;</a><br>
+    <strong>Appena installata:</strong> apri dall'Action List <a href="#tool-33"><strong>33 Benvenuto</strong></a> (si apre anche da solo la prima volta che usi uno strumento ZP). Ti dice quali pezzi sono pronti e quali no, e per ognuno ha il pulsante che lo sistema.<br>
+    Se è la prima volta, leggi le prime tre sezioni: <em>a cosa serve</em>, <em>le parole da sapere</em> e <em>da dove parto</em>. Poi usa questa pagina come manuale: ogni finestra ha la sua scheda, e il <strong>?</strong> in alto a destra di una finestra apre direttamente la scheda giusta.
+  </div>
+
+  <h2 id="indice">Indice</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Per capire</h3>
+      <a href="#scopo">A cosa serve la suite</a><br>
+      <a href="#concetti">Le parole da sapere</a><br>
+      <a href="#percorsi">Da dove parto: i percorsi di lavoro</a>
+    </div>
+    <div class="card">
+      <h3>Il copione</h3>
+      <a href="#tool-29">ZP Trascrizione</a><br>
+      <a href="#tool-02">Gobbo verticale</a> &middot; <a href="#tool-03">orizzontale</a><br>
+      <a href="#tool-30">ZP SRT</a> &middot; <a href="#tool-04">Marker</a><br>
+      <a href="#zp-regia-ruoli">Actor / Note</a>
+    </div>
+    <div class="card">
+      <h3>Registrare e pulire</h3>
+      <a href="#tool-solo">SOLO Recorder</a><br>
+      <a href="#tool-22">Voice Cleaner</a><br>
+      <a href="#tool-09">Lettura OSARA (09-12)</a>
+    </div>
+    <div class="card">
+      <h3>Organizzare e consegnare</h3>
+      <a href="#zp-mixdown-render">Importa cartelle</a><br>
+      <a href="#tool-17">Gestore Progetto</a> &middot; <a href="#zp-project-viewer">Project Viewer</a><br>
+      <a href="#zp-report-minuti">Report minuti voce</a>
+    </div>
+    <div class="card">
+      <h3>Il suono</h3>
+      <a href="#zp-chain-builder">Chain Builder</a> &middot; <a href="#zp-probe-guard">Probe Guard</a><br>
+      <a href="#zp-shared-bus">Plugin ZP Shared Bus</a>
+    </div>
+    <div class="card">
+      <h3>Il resto</h3>
+      <a href="#strumenti-srt">Gli strumenti SRT singoli</a><br>
+      <a href="#azioni">Azioni senza finestra</a><br>
+      <a href="#installazione">Installazione e componenti opzionali</a>
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <h2 id="scopo">A cosa serve la suite</h2>
+  <p>REAPER sa registrare e montare, ma non sa che cosa c'è scritto nel copione. La suite gli insegna tre cose:</p>
+  <ol>
+    <li><strong>Il testo sta in timeline.</strong> Ogni battuta del copione diventa un piccolo item di testo, nel punto in cui va detta. Arriva da un SRT, da una traduzione, da una trascrizione automatica o dai marker che metti tu.</li>
+    <li><strong>Il testo si legge mentre si lavora.</strong> I due <em>Gobbi</em> mostrano le battute che scorrono col playhead, come un teleprompter; chi usa uno screen reader se le fa leggere da OSARA o NVDA.</li>
+    <li><strong>Il testo segue l'audio.</strong> Se agganci le battute al file audio, quando tagli o sposti l'audio le battute si spostano con lui. Alla fine puoi riportarle fuori come SRT.</li>
+  </ol>
+  <p>Intorno a questo nucleo ci sono gli strumenti di produzione: un telecomando per registrare (SOLO Recorder), la pulizia dei silenzi, l'organizzazione di molti file in regioni pronte al render, il conteggio dei minuti per il preventivo, e la costruzione della catena di plugin ZP con il suo controllo di loudness.</p>
+  <p class="small">I nomi storici <em>RythmoBand / Rythmo Band</em> restano in alcune tracce e chiavi interne: servono ad aprire i progetti fatti con le versioni precedenti.</p>
+
+  <!-- ================================================================== -->
+  <h2 id="concetti">Le parole da sapere</h2>
+  <dl class="win">
+    <dt>Item di testo, traccia Rythmo Band Testi</dt>
+    <dd>Una battuta è un item vuoto con il testo nelle note. Stanno sulle tracce il cui nome comincia con <code>Rythmo Band Testi</code>: la principale, le lingue di riferimento (<code>… REF</code>, <code>… ENG</code>), una per ogni voce trascritta. Le tracce create dalla trascrizione sono <strong>nascoste</strong>: le vedi nel Gobbo, non in timeline (le mostra il pulsante <em>Mostra tracce testo</em> di ZP Trascrizione).</dd>
+
+    <dt>Flusso testi</dt>
+    <dd>Quale di quelle tracce sta leggendo il Gobbo. Lo cambi con le frecce &lt; &gt;. <strong>Tutti</strong> le legge insieme, nascoste comprese, in ordine di tempo: serve in montaggio, per cercare una parola in tutto il progetto. Il titolo della finestra del Gobbo dice sempre quale flusso stai leggendo.</dd>
+
+    <dt>Marker di progetto e marker dell'item</dt>
+    <dd>Un <strong>marker di progetto</strong> sta sulla riga del tempo: se sposti l'audio, lui resta fermo. Un <strong>marker dell'item</strong> (take marker) è legato all'item audio, a un punto preciso del parlato (REAPER lo salva nel progetto, non nel file WAV): se tagli o sposti l'item, va con lui. Per questo la suite aggancia le battute ai marker dell'item. Con la suite i marker dell'item non si spostano per sbaglio: trascinando sopra un marker prendi l'item, e il marker si sposta solo con <strong>Shift+trascina</strong> (riga <em>Marker degli item</em> del <a href="#tool-33">33 Benvenuto</a>).</dd>
+
+    <dt>Tempo della timeline e tempo del file</dt>
+    <dd>I sottotitoli di un video usano i tempi della timeline (l'SRT di un film parte quando parte il film). La trascrizione di un audio usa i tempi del file (la battuta a 0:12 è al dodicesimo secondo del WAV, ovunque tu lo metta). Gli strumenti video (01, 05, 08) lavorano nel primo mondo; ZP Trascrizione e SRT dall'audio (29, 31) nel secondo.</dd>
+
+    <dt>Segui i tagli</dt>
+    <dd>Interruttore presente in ZP Trascrizione e nei due Gobbi. Acceso: dopo 10 secondi senza modifiche al progetto, gli item di testo tornano sotto l'audio da cui vengono. Il testo che hai corretto a mano non viene sovrascritto.</dd>
+
+    <dt>Actor / note personaggio</dt>
+    <dd>Per ogni ruolo la suite crea una traccia voce e, sotto, una traccia <code>BB Note Personaggio - ruolo</code>. Il Gobbo prende da lì il colore del personaggio e le note di regia.</dd>
+
+    <dt>Sezioni e regioni (consegna)</dt>
+    <dd>Per consegnare molti file si usa una <strong>regione per file</strong> e un <strong>marker per cartella</strong>. Il Gestore Progetto crea le regioni e manda il render in <code>Mixdown/&lt;marker&gt;/</code>.</dd>
+  </dl>
+
+  <!-- ================================================================== -->
+  <h2 id="percorsi">Da dove parto: i percorsi di lavoro</h2>
+  <p>Non serve usare tutte le finestre. Scegli il percorso che somiglia al tuo lavoro.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Doppiaggio / ADR su un video</h3>
+      <p class="when">Hai il video e l'SRT (o la traduzione) da recitare in sync.</p>
+      <ol class="flow">
+        <li><a href="#zp-chain-builder">Chain Builder</a>, profilo <em>ADR / Doppiaggio</em>.</li>
+        <li><a href="#tool-30">ZP SRT</a> &rarr; <em>Video + SRT</em>. Una lingua in più: <em>Aggiungi lingua</em>.</li>
+        <li><a href="#zp-regia-ruoli">Actor / Note</a> per i personaggi.</li>
+        <li><a href="#tool-02">Gobbo verticale</a> aperto mentre registri con il <a href="#tool-solo">SOLO Recorder</a>.</li>
+        <li>Se serve, <a href="#tool-30">ZP SRT</a> &rarr; <em>Esporta SRT</em>.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>Montare parlato registrato</h3>
+      <p class="when">Podcast, intervista, audiolibro: hai i WAV e vuoi il testo per trovare e tagliare.</p>
+      <ol class="flow">
+        <li>Seleziona gli item audio e apri <a href="#tool-29">ZP Trascrizione</a>: <em>Percorri la strada</em>.</li>
+        <li>Nel <a href="#tool-02">Gobbo</a> scegli il flusso <em>Tutti</em> e usa <em>Cerca</em> (Ctrl/⌘+F).</li>
+        <li>Monta pure: con <em>Segui i tagli</em> acceso il testo resta sotto l'audio.</li>
+        <li>A fine montaggio, <a href="#tool-31">SRT dall'audio</a> riscrive l'SRT corretto.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>Una traduzione da doppiare su un audio</h3>
+      <p class="when">Audio in una lingua, testo tradotto con timecode in un documento.</p>
+      <ol class="flow">
+        <li><a href="#tool-srt-tools">SRT Tools</a>: incolla il testo, ottieni l'SRT (imposta l'offset se il timecode parte da 01:00:00).</li>
+        <li><a href="#tool-29">ZP Trascrizione</a> &rarr; <em>Abbina da…</em> &rarr; SRT esterno o tradotto.</li>
+        <li>Leggi nel <a href="#tool-02">Gobbo</a> mentre registri.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>Molti file da consegnare</h3>
+      <p class="when">Spot, e-learning, cataloghi: decine di file con nomi e cartelle precisi.</p>
+      <ol class="flow">
+        <li><a href="#zp-mixdown-render">Importa cartelle</a>, oppure registra con il <a href="#tool-solo">SOLO Recorder</a>.</li>
+        <li><a href="#tool-22">Voice Cleaner</a> per rifilare e separare le prese.</li>
+        <li><a href="#tool-17">Gestore Progetto</a>: regioni, nomi, render in <code>Mixdown/</code>.</li>
+        <li><a href="#zp-project-viewer">Project Viewer</a> per controllare, <a href="#zp-report-minuti">Report minuti</a> per il consuntivo.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-29">ZP Trascrizione</h2>
+  <p><strong>A cosa serve.</strong> Porta il testo di un audio dentro il Gobbo e lo tiene agganciato all'audio. È una strada in quattro tappe; la finestra mostra a che punto sono gli item selezionati e segna la tappa da fare.</p>
+  <p class="when">Quando: hai dei WAV parlati (o la loro trascrizione, o una traduzione) e vuoi leggerli e cercarli nel Gobbo mentre monti.</p>
+  <ol class="flow">
+    <li><strong>Trascrivi</strong> &mdash; Whisper (ZP Speech) scrive l'SRT accanto al WAV, con lo stesso nome. Salta gli item che hanno già SRT o marker. Se il file va riletto da capo &mdash; dopo un <em>glue</em>, che si porta dietro i marker con i tempi vecchi, o se i tempi sono cambiati &mdash; il pulsante diventa <strong>Ritrascrivi…</strong>: chiede conferma, toglie i take marker degli item selezionati (Annulla li rimette), se il file ha già un SRT accanto (non succede con un glue, che dà un nome nuovo) lo rinomina in <code>.srt.bak-&lt;data&gt;</code> senza cancellarlo, e rifà la strada come per un file nuovo. I testi del gobbo legati ai vecchi marker: quelli mai toccati spariscono, quelli corretti a mano restano in mute. Solo macOS con ZP Speech installato; altrove crea l'SRT con il tuo Whisper e parti dalla tappa 2.</li>
+    <li><strong>Abbina da…</strong> &mdash; sceglie da dove arrivano le battute: SRT accanto al file, SRT esterno o tradotto, marker di progetto già in timeline, oppure i cue scritti dentro il WAV.</li>
+    <li><strong>Porta nel gobbo</strong> &mdash; parte da sola dopo Abbina: ogni marker diventa un item di testo su una traccia nascosta <code>Rythmo Band Testi &lt;voce&gt;</code>. <em>Aggiorna ora</em> la rifà quando vuoi.</li>
+    <li><strong>Segui i tagli</strong> &mdash; acceso, dopo 10 s di quiete i testi tornano sotto l'audio.</li>
+  </ol>
+  <p><strong>Percorri la strada</strong> fa in ordine solo quello che manca. <a href="pannello_trascrizione.html">Guida completa &rarr;</a></p>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-02">Gobbo verticale</h2>
+  <p><strong>A cosa serve.</strong> È il teleprompter: mostra il copione come una pagina che scorre, con la battuta corrente evidenziata, i colori dei personaggi, il countdown prima di ogni battuta e le note di regia. Si può anche correggere il testo lì dentro.</p>
+  <p class="when">Quando: in sala, mentre l'attore registra; in montaggio, per trovare e correggere una battuta. È il formato giusto quando ci sono più voci.</p>
+  <p>La barra a destra è divisa in blocchi: in alto quello che usi lavorando, poi <strong>Testo</strong> e <strong>Lettura</strong>, in fondo <strong>Aspetto</strong> e <strong>Note e tracce</strong>, che si chiudono con un clic sul titolo (il Gobbo ricorda come li lasci). Le caselle ☑ accendono o spengono un'impostazione. Con <strong>&gt;</strong> in alto la barra si nasconde.</p>
+  <h3>Testo e lettura</h3>
+  <ul>
+    <li><strong>Flusso</strong> (tendina ▾): quale traccia di testo leggere (principale, lingue, una per voce, <em>Tutti</em>). Le tracce di backup non compaiono.</li>
+    <li><strong>Corpo</strong>: grandezza del testo.</li>
+    <li><strong>Punto di lettura</strong> (Alto / Terzo / Centro): a che altezza della finestra compare la battuta attiva. Alto lascia sotto il resto del copione; Centro mette a fuoco la battuta e lascia spazio sopra, per esempio alla finestra video.</li>
+    <li><strong>Scorrimento continuo</strong>: acceso, il copione scorre con la timeline come una rythmo band; spento, il testo sta fermo come un foglio e cambia a scatti, una battuta (item) alla volta.</li>
+    <li><strong>Parola per parola</strong>: evidenzia le parole una dopo l'altra durante la battuta.</li>
+    <li><strong>Conto alla rovescia</strong>: il preavviso numerico prima della battuta in arrivo.</li>
+    <li><strong>Mostra timecode</strong>, e nel blocco <strong>Aspetto</strong>: <strong>Tema</strong> (scuro, medio, chiaro), <strong>Contrasto</strong> (sfumato, pieno), <strong>Colori speaker</strong> (un colore a ogni voce/personaggio; il colore viene dalle tracce voce).</li>
+  </ul>
+  <h3>Lavoro sul testo</h3>
+  <ul>
+    <li><strong>Cerca</strong> (anche Ctrl/⌘+F): cerca dal principio di una parola e accetta anche un prefisso (per esempio <code>hijac</code> trova <em>hijacking</em>). Ignora maiuscole e accenti. Racchiudi parola o frase tra virgolette per richiederla esatta. L'elenco mostra timecode, battuta e traccia quando sei in <em>Tutti</em>; clicca un risultato o il pulsante <strong>Vai →</strong> per raggiungere la parola e vederla evidenziata nel Gobbo, oppure usa ↑/↓, <code>&lt;</code> e <code>&gt;</code>. Rotella e barra scorrono l'elenco.
+      <br><strong>Sostituisci</strong> apre il secondo campo; Tab passa da Trova a Sostituisci con. Sostituisci cambia solo <strong>parole intere</strong> e gli accenti contano: <code>è</code> → <code>é</code> non tocca <em>e</em> né <em>effetti</em>. Con Sostituisci aperto l'elenco mostra solo quello che verrebbe cambiato, con l'anteprima. <strong>Sostituisci</strong>: il primo clic porta alla prossima parola, il secondo la cambia e resta lì; un altro clic va alla successiva. <strong>Tutti</strong> chiede conferma e si annulla con un solo Ctrl/⌘+Z. Cambia solo il testo dell'item Gobbo: take marker e file SRT restano invariati.</li>
+    <li><strong>Doppio click</strong> su una battuta: la correggi lì. Invio salva, Shift+Invio va a capo, Esc annulla.</li>
+    <li><strong>Modifica (Studio/Edit)</strong>: ferma la riproduzione e ti lascia navigare il testo; <strong>Muove la timeline</strong> decide se la navigazione sposta anche il cursore di REAPER. Il testo si scorre con la rotella o con la barra a destra, anche con Sync acceso.</li>
+    <li><strong>+ Nota</strong>: aggiunge una nota di regia alla posizione corrente. <strong>Pannello note</strong> (in Note e tracce) mostra o nasconde le note: prima quelle senza <strong>OK</strong>, poi quelle concluse; in ciascun gruppo sono in ordine di tempo. L'elenco scorre con la rotella e segue da solo la nota corrente (barra ambra a sinistra) finché non scorri a mano. Un clic su una nota porta lì la timeline, doppio clic la modifica; doppio clic nello spazio libero crea una nuova nota alla posizione corrente, mentre il clic destro apre <strong>Nuova nota</strong> accanto al puntatore. Il bollino <strong>OK</strong> la segna come fatta (attenuata, bollino verde) e un altro clic la riapre per rilavorarci; la <strong>×</strong> a sinistra la cancella dopo una conferma. Ogni cambio si annulla con Ctrl/⌘+Z.</li>
+    <li><strong>Segui i tagli</strong>: lo stesso interruttore di ZP Trascrizione, comodo perché il Gobbo di solito resta aperto.</li>
+    <li><strong>Traccia note visibile / Tracce gobbo visibili</strong>: mostra o nasconde in REAPER le tracce di note e di testo. <strong>+ Battuta</strong> (in alto) crea un item di testo pronto da scrivere alla posizione corrente (o sulla selezione di tempo), creando la traccia di testo se manca.</li>
+  </ul>
+  <p><strong>Menu OSARA</strong>: un menu leggibile dallo screen reader con i comandi della barra, con gli stessi nomi (timecode, flusso, parola per parola, scorrimento continuo, conto alla rovescia, pannello note, tracce visibili, nuova battuta, tema, contrasto, corpo). Non legge il copione: per quello ci sono le <a href="#tool-09">azioni 09-12</a>.</p>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-03">Gobbo orizzontale</h2>
+  <p><strong>A cosa serve.</strong> Lo stesso copione, ma srotolato da destra a sinistra lungo il tempo, come una banda ritmica: la battuta passa sotto una linea di lettura al centro, con il timecode.</p>
+  <p class="when">Quando: una voce sola che deve stare a tempo con le immagini (sync labiale, spot, narrazione su video).</p>
+  <ul>
+    <li><strong>Scala / velocità</strong> (pixel al secondo) e <strong>Corpo testo</strong>.</li>
+    <li><strong>Anticipo voce</strong> (0-10 s): con OSARA o NVDA la battuta viene letta ad alta voce con questo anticipo. Serve solo a chi usa lo screen reader.</li>
+    <li>Come nel verticale: <strong>flusso testi</strong> con <em>Tutti</em>, <strong>Cerca</strong>, <strong>Studio/Edit</strong>, modifica con doppio click (qui Ctrl+E evidenzia una parte del testo), <strong>Segui tagli</strong>.</li>
+  </ul>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-30">ZP SRT</h2>
+  <p><strong>A cosa serve.</strong> Raccoglie in una finestra tutto quello che si fa con i sottotitoli, nell'ordine del lavoro. Scegli un pulsante: apre lo strumento giusto e la finestra resta aperta, così puoi passare da uno strumento all'altro; la chiudi tu. Passando col mouse su un pulsante leggi quando usarlo.</p>
+  <p class="when">Quando: ogni volta che c'è di mezzo un file SRT e non ricordi quale strumento fa cosa.</p>
+  <div class="wrap"><table>
+    <tr><th>Colonna</th><th>Pulsante</th><th>Apre</th><th>Quando</th></tr>
+    <tr><td rowspan="5">1 Porta dentro</td><td>Video + SRT</td><td><a href="#zp-import">01</a></td><td>Inizi un lavoro su video.</td></tr>
+    <tr><td>Sostituisci testi</td><td><a href="#zp-gestione-srt">05</a></td><td>È arrivata una versione nuova dei sottotitoli.</td></tr>
+    <tr><td>Aggiungi lingua</td><td><a href="#zp-gestione-srt">05</a></td><td>Vuoi l'originale o un'altra lingua accanto, senza toccare la principale.</td></tr>
+    <tr><td>Collega a un audio</td><td><a href="#tool-29">29</a></td><td>L'SRT appartiene a un file audio, e deve seguirne i tagli.</td></tr>
+    <tr><td>Da testo o traduzione</td><td><a href="#tool-srt-tools">26</a></td><td>Hai un testo con timecode (doc, xls) e non un SRT.</td></tr>
+    <tr><td rowspan="3">2 Controlla</td><td>Info item SRT</td><td><a href="#tool-13">13</a></td><td>Vuoi sapere da quale file e da quale cue viene una battuta.</td></tr>
+    <tr><td>Traccia gobbo vuota</td><td><a href="#zp-gestione-srt">05</a></td><td>Vuoi scrivere il copione a mano.</td></tr>
+    <tr><td>Leggi nel Gobbo</td><td><a href="#tool-02">02</a></td><td>Vuoi leggere, cercare, correggere.</td></tr>
+    <tr><td rowspan="2">3 Porta fuori</td><td>Esporta SRT</td><td><a href="#tool-08">08</a></td><td>Consegni i sottotitoli di un video.</td></tr>
+    <tr><td>SRT dall'audio</td><td><a href="#tool-31">31</a></td><td>Consegni il testo di un audio montato.</td></tr>
+  </table></div>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-04">Marker</h2>
+  <p><strong>A cosa serve.</strong> Una finestra, due schede, per i marker legati agli item selezionati.</p>
+  <dl class="win">
+    <dt>Crea dagli item</dt>
+    <dd>Un marker di progetto all'inizio di ogni item selezionato: vuoto, con un nome fisso, o numerato (NOME 001, 002…). Con <em>TC video</em> il nome prende il timecode relativo al video o alla regione. <span class="when">Quando: vuoi segnare l'inizio di ogni presa o di ogni file, per esempio prima di creare le regioni.</span></dd>
+    <dt id="tool-14">Fissa negli item</dt>
+    <dd>I marker di progetto che cadono dentro gli item selezionati diventano marker dell'item, con nome, posizione e colore: da quel momento seguono tagli e spostamenti. Scegli <em>Tutti i selezionati</em> o <em>Solo il primo</em>, e se cancellarli dalla timeline. I marker già presenti vengono saltati, quindi puoi ripetere. Funziona anche su item tagliati o rallentati. <strong>Marker di servizio:</strong> una registrazione può partire prima di un marker e portarselo dentro. Questi non diventano mai testo, non vengono copiati e non vengono cancellati: i <em>segnaposto</em>, cioè i marker il cui nome comincia con <code>#</code> (per esempio <code>#scena 2</code>); le azioni di marker di REAPER (<code>!</code>); i marker del SOLO Recorder (<code>SOLO_MARK_001</code>, <code>OK_001</code>, <code>BAD_001</code>, <code>ALT_001</code>, <code>NOISE_001</code>, <code>INSERT_001</code>); i marker senza nome. Il riepilogo dice quanti ne ha lasciati. La stessa regola vale per i testi del gobbo e per <a href="#tool-31">31 SRT dall'audio</a>. <span class="when">Quando: hai segnato le battute a mano con i marker normali e vuoi che stiano attaccate all'audio (e quindi, con ZP Trascrizione, nel Gobbo).</span></dd>
+  </dl>
+
+  <!-- ================================================================== -->
+  <h2 id="zp-regia-ruoli">Actor / Note</h2>
+  <p><strong>A cosa serve.</strong> Prepara i personaggi. Scrivi i ruoli separati da virgola (<code>Mario, Laura, Narratore</code>): per ognuno nasce una traccia voce e, sotto, la sua traccia <code>BB Note Personaggio</code>, nascosta dal mixer e non armata.</p>
+  <p class="when">Quando: all'inizio di un doppiaggio o di un lavoro a più voci, prima di aprire il Gobbo. Il Gobbo prende da queste tracce i colori dei personaggi e le note di regia.</p>
+  <p>Se esiste già una traccia voce giusta per quel ruolo, non crearne un'altra: il Gobbo si confonderebbe tra i due colori.</p>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-solo">SOLO Recorder</h2>
+  <p><strong>A cosa serve.</strong> Un telecomando per registrare senza tornare continuamente alla finestra di REAPER. Prima di partire controlla che sia armata una sola traccia, crea una regione <em>Take 001, 002…</em> a ogni stop, e tiene sotto mano marker, retake, inserti e versioni alternative su quattro tracce (MAIN, INSERTS, RETAKES, ALT). Tre viste: Mini, Compact, Expanded, con la stessa testata a icone. Meter dell'ingresso vero in dB, pre-roll di REAPER in secondi, pausa anche durante il REC, marker col nome scritto nel pannello. Il globo in testata apre la <strong>versione web</strong> (prototipo) nel browser del Mac, dell'iPad o del telefono.</p>
+  <p class="when">Quando: sessioni di voiceover o di doppiaggio, soprattutto se sei da solo al microfono. Due modi: <strong>Sessione SOLO</strong> crea le sue tracce (cartella ZP SOLO SESSION); <strong>Telecomando</strong> non crea niente e registra sulle tracce che hai armato tu nel progetto. In un progetto che ha già delle tracce parte da solo in Telecomando.</p>
+  <p><a href="solo_recorder.html">I comandi, uno per uno &rarr;</a></p>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-22">Voice Cleaner (Split silenzi)</h2>
+  <p><strong>A cosa serve.</strong> Riconosce dove si parla in un item audio e taglia il resto: rifila testa e coda, oppure divide la presa ai silenzi lunghi, lasciando il respiro che scegli prima e dopo le frasi.</p>
+  <p class="when">Quando: dopo una registrazione, per pulire le prese o per spezzare una lunga sessione in un file per frase prima di creare le regioni.</p>
+  <ol class="flow">
+    <li>Seleziona l'item e premi <strong>ANALIZZA</strong>: legge l'audio senza toccare niente. Controlla la riga <em>Audio read</em>.</li>
+    <li><strong>PREVIEW</strong> mostra i tagli come regioni temporanee; <strong>PULISCI PREVIEW</strong> le toglie.</li>
+    <li><strong>APPLICA</strong> taglia davvero. Si annulla con un solo Undo.</li>
+  </ol>
+  <p>Modalità: <em>Trim testa/coda</em> o <em>Split silenzi interni</em>; <em>Posizione originale</em> o <em>Separa in sequenza</em> (con distanza tra i file). Preset: VO Smart e varianti più morbide o più aggressive. <a href="voice_cleaner.html">Guida dettagliata &rarr;</a></p>
+
+  <!-- ================================================================== -->
+  <h2 id="zp-mixdown-render">Importa cartelle</h2>
+  <p><strong>A cosa serve.</strong> Porta in timeline intere cartelle di audio o video, in ordine. Scegli una cartella madre: ogni sottocartella diventa un marker (una sezione), ogni file una regione col suo nome. Puoi decidere la pausa tra i file e tra le cartelle, e se copiare i media nel progetto.</p>
+  <p class="when">Quando: devi rilavorare o rimissare materiale già organizzato in cartelle (per esempio 40 spot in 4 lingue) e riconsegnarlo con la stessa struttura. Il progetto deve essere salvato. Il render poi si fa dal <a href="#tool-17">Gestore Progetto</a>.</p>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-17">Gestore Progetto</h2>
+  <p><strong>A cosa serve.</strong> Prepara la consegna: crea le regioni di export (una per file) e le manda al render nella cartella giusta. Gli item non vengono mai modificati.</p>
+  <p class="when">Quando: hai registrato o importato tanti file e ognuno deve uscire con un nome preciso.</p>
+  <h3>Creare le regioni</h3>
+  <ul>
+    <li><strong>Sorgente</strong>: <em>Item</em> (selezionati), <em>Tracce</em> (selezionate), <em>Folder+</em> (con le sottotracce), <em>Tutte</em>. Contano solo gli item con un file audio o video vero: item vuoti, item di testo (note) e MIDI sono ignorati. <strong>Video</strong> (acceso di serie) include i file video; spento usa solo l'audio. <strong>No muti</strong> salta gli item in mute.</li>
+    <li><strong>Gap nuovo file</strong>: se tra due item passa più di questo tempo, nasce una nuova regione. <strong>Padding</strong> inizio e fine allargano la regione senza spostare gli item.</li>
+    <li><strong>Nomi</strong>: incolla una lista (uno per riga o separati da <code>;</code>) e i nomi vanno alle regioni in ordine; <em>N. + nome</em> aggiunge il numero. Doppio click su una regione o un marker nell'anteprima per rinominarlo: la modifica resta in bozza finché non premi <em>Crea Regioni</em> o <em>Crea Selez.</em>.</li>
+    <li><strong>Crea Regioni</strong> aggiorna i nomi delle regioni già presenti e crea quelle mancanti; <em>Crea Selez.</em> opera solo sulle righe selezionate. <strong>Salva</strong> applica alle rispettive regioni solo i nomi ancora in bozza, crea le regioni mancanti per quei nomi e salva il progetto, senza rigenerare le altre. Se chiudi con nomi in bozza, <em>Sì</em> li applica e chiude; <em>No</em> torna al Gestore.</li>
+    <li><strong>Rimuovi export</strong> cancella solo le regioni create da questo strumento.</li>
+  </ul>
+  <h3>Prepara Mixdown</h3>
+  <ul>
+    <li><strong>Selezione</strong> sceglie la sezione (un marker): sono incluse le regioni fino al marker successivo.</li>
+    <li><strong>Lane dei marker</strong>: Lane 1 = cartella <code>Mixdown/&lt;marker&gt;/</code>; Lane 2 = sottocartella; Lane 3 e oltre = marker normali. Per il render sono incluse le regioni visibili in Lane 1 e 2; le regioni in Lane 3 e successive o nascoste sono escluse.</li>
+    <li>Formato rapido (WAV/MP3, mono/stereo, sample rate). <strong>Render</strong> imposta cartella, pattern <code>$region</code> e formato, poi apre la finestra Render di REAPER per il controllo finale. <strong>+ Queue</strong> mette in Render Queue un solo job per tutta la sezione; <strong>Que</strong> apre la coda.</li>
+    <li><strong>Log</strong>: tiene lo storico dei render in <code>Mixdown/Mixdown_History.csv</code>. <strong>Index</strong>: scrive anche <code>Mixdown_Index.csv</code> nella cartella della sezione, con una X sui file che esistono davvero.</li>
+    <li>Se i plugin hanno bisogno di scaldarsi prima del primo file, usa l'opzione nativa di REAPER <em>Delay render start</em> nella finestra Render.</li>
+  </ul>
+  <p>Con OSARA attivo, il Gestore Progetto propone un percorso guidato a menu, senza dover usare la lista grafica. <strong>HELP ME</strong> nella finestra riassume tutto. In fondo alla finestra una barra spiega il pulsante su cui passi con il mouse, anche nelle Impostazioni Mixdown e nella guida rapida.</p>
+
+  <!-- ================================================================== -->
+  <p><strong>Dove finiscono i file:</strong> Lane 1 = <code>Mixdown/&lt;marker&gt;/</code>; Lane 2 = <code>Mixdown/&lt;Lane1&gt;/&lt;Lane2&gt;/</code>. Le regioni visibili in Lane 1 e 2 entrano in selezione e render; quelle in Lane 3 e successive o nascoste sono escluse. Il nome file è <code>$region</code> e i nomi delle regioni non vengono modificati. Il CSV con LUFS, Peak e RMS si genera dopo il render, oppure dopo un <em>dry run</em> con le statistiche di REAPER.</p>
+
+  <h2 id="zp-project-viewer">Project Viewer</h2>
+  <p><strong>A cosa serve.</strong> Un indice del progetto: tutti i marker e le regioni in ordine di tempo, su righe separate. Click per andarci, doppio click per rinominare, Play per ascoltare. Le regioni selezionate qui diventano la selezione di render (Ctrl/⌘+Alt+R apre il Render) e il <a href="#zp-report-minuti">Report minuti</a> le può contare.</p>
+  <p class="when">Quando: prima di un render o di una consegna, per controllare che sezioni e nomi siano giusti; oppure per muoverti in un progetto lungo. Può restare agganciato (Dock) accanto alla timeline.</p>
+
+  <!-- ================================================================== -->
+  <h2 id="zp-report-minuti">Report minuti voce</h2>
+  <p><strong>A cosa serve.</strong> Conta i minuti di voce: reali, arrotondati al minuto pieno, e le parole stimate. Puoi contare le regioni selezionate, tutte le regioni, gli item selezionati, le tracce selezionate, tutte le tracce audio o tutti i file.</p>
+  <p class="when">Quando: per il preventivo o il consuntivo, o per sapere quanto ha lavorato ogni voce.</p>
+  <ul>
+    <li>Si contano solo item con un file vero: item vuoti e di testo (note) non entrano mai. <strong>No muti</strong> esclude anche gli item in mute (vale per item e tracce, non per le regioni); il report lo scrive accanto al modo.</li>
+    <li><strong>Formato attivo:</strong> scegli HTML o CSV. Il pulsante evidenziato e l'etichetta indicano il formato selezionato; la scelta resta memorizzata. Ogni salvataggio aggiorna solo lo storico di quel formato: gli storici HTML e CSV sono separati.</li>
+    <li><strong>Copia + HTML / CSV</strong> copia il report e apre la conferma nel formato attivo.</li>
+    <li><strong>Aggiungi allo storico</strong>: aggiorna lo storico del formato attivo, senza ricontare le righe già presenti.</li>
+    <li><strong>Salva questa sessione</strong>: crea un file separato nel formato attivo; lo storico generale non cambia.</li>
+    <li><strong>Esporta storico HTML in CSV</strong>: crea un CSV separato a partire dallo storico HTML, senza modificare lo storico CSV.</li>
+  </ul>
+  <p>Perché i conti tornino, le tracce voce devono avere nomi coerenti.</p>
+
+  <!-- ================================================================== -->
+  <h2 id="zp-chain-builder">Chain Builder</h2>
+  <p><strong>A cosa serve.</strong> Monta in un progetto la struttura di tracce e plugin ZP adatta al tipo di lavoro, e imposta il target di loudness del master. Non cancella niente.</p>
+  <p class="when">Quando: all'inizio di un progetto, oppure su un progetto esistente per controllare che la catena sia completa.</p>
+  <div class="wrap"><table>
+    <tr><th>Profilo</th><th>Cosa crea</th><th>Target master</th></tr>
+    <tr><td>Voiceover</td><td>ZP VO BUS con REC ed EDIT; BUS Chain e Probe VOICE (ultimo FX) sul bus; Master Pro sul master.</td><td>-18 LUFS, ceiling -3 dB</td></tr>
+    <tr><td>ADR / Doppiaggio</td><td>Come Voiceover, più una traccia VIDEO AUDIO per l'audio guida: esce sulle uscite hardware 1/2 e non entra nel bounce.</td><td>-21 LUFS, ceiling -6 dB</td></tr>
+    <tr><td>E-learning</td><td>Come Voiceover.</td><td>-14 LUFS, ceiling -3 dB</td></tr>
+    <tr><td>Podcast</td><td>VO BUS più ZP Music Bus con Harmonic Space Carver e Probe MUSIC (ultimo FX). Se selezioni tracce musicali contigue, le mette dentro il Music Bus.</td><td>-16 LUFS, ceiling -1 dB</td></tr>
+    <tr><td>Spot</td><td>Come Podcast.</td><td>-9 LUFS, ceiling -1 dB</td></tr>
+  </table></div>
+  <ul>
+    <li><strong>Trasforma progetto</strong> crea solo quello che manca. Non elimina FX o item.</li>
+    <li><strong>Preset.</strong> La <em>ZP BUS Chain - Voice/Music Processor</em>, quando la inserisce, parte dal preset <code>Voiceover_Body1_BG80HzDyn_-3dBLim</code>; una BUS Chain già presente resta com'è. Su <em>ZP Master Pro</em>, in tutti i profili, carica il preset <code>Flat -19</code> e poi imposta target e ceiling del profilo. I due preset li installa <a href="#tool-32">32 Installa toolbar ed effetti</a>; se mancano, il rapporto lo dice.</li>
+    <li><strong>Vecchia Unified Chain.</strong> Se sul VO BUS c'è la <em>ZP Voiceover Unified Chain</em>, la BUS Chain prende il suo posto e la Unified resta lì in bypass, non cancellata.</li>
+    <li><strong>Check / Repair</strong> elenca cosa c'è (TROVATO), cosa manca (MANCA) e cosa è fuori posto (DA RIPARARE), e chiede prima di sistemare.</li>
+    <li>Gli invii e il sidechain voce&rarr;musica non vengono creati: per Podcast e Spot controllali tu.</li>
+    <li>Alla fine avvia il <a href="#zp-probe-guard">Probe Guard</a>.</li>
+  </ul>
+
+  <!-- ================================================================== -->
+  <h2 id="zp-probe-guard">Probe Guard</h2>
+  <p><strong>A cosa serve.</strong> La Probe misura quello che esce dal bus, quindi deve essere l'ultimo plugin. Il Probe Guard controlla una volta al secondo che Voice Probe e Music Probe restino in fondo ai loro bus e, se ci metti qualcosa dopo, le rimette in fondo. Non cambia il suono e non cancella plugin.</p>
+  <p class="when">Quando: parte da solo con il Chain Builder. La finestra <em>è</em> il Guard: aperta = attivo, chiusa = fermo. Mostra quante volte ha riordinato e apre il log.</p>
+
+  <!-- ================================================================== -->
+  <h2 id="zp-shared-bus">Plugin ZP Shared Bus</h2>
+  <p>I plugin ZP si parlano attraverso una memoria condivisa (<code>gmem=ZPVoiceoverSharedBus</code>): ognuno dice chi è e cosa sta facendo, la Probe misura cosa esce davvero, Master Pro confronta tutto con il target del profilo e suggerisce. Nessun plugin cambia i parametri di un altro. Si installano dallo stesso repository ReaPack, in <code>Effects/ZP_Paolo Balestri JSFX</code>.</p>
+  <div class="grid">
+    <div class="card" id="plugin-bus-chain">
+      <h3>ZP BUS Chain</h3>
+      <p><strong>A cosa serve:</strong> Processore di canale principale per bus voci (dialogo, voiceover, doppiaggio). Combina Expander/Gate, De-Esser/Air, compressori 1175, LA-2A, Major Tom, stadio analogico Brown e Limiter di sicurezza finale.</p>
+      <p><strong>Dove si inserisce:</strong> Sul Voice Bus (traccia cartella delle voci o bus master voce).</p>
+      <p><strong>Controlli principali:</strong> Expander Thresh/Range, compressori RED/MAKEUP, Brown Drive/Mix, High Air, Limiter Ceiling/Release, interruttori modulo. Pubblica telemetria completa sullo Shared Bus. Nella pagina Brown Guard due interruttori separati: <strong>DYN</strong> (la correzione dinamica che insegue il target Slope) ed <strong>EQ</strong> (i quattro punti di equalizzazione manuale); funzionano indipendentemente dall'interruttore generale Brown.</p>
+    </div>
+    <div class="card" id="plugin-carver">
+      <h3>ZP Harmonic Space Carver</h3>
+      <p><strong>A cosa serve:</strong> Assistente mix/music bus. Crea spazio spettrale e dinamico nella base musicale sotto il parlato, mediante ducking VCA e carving multibanda guidato dalla voce, con cue di rientro rapido sulla timeline (#HSC).</p>
+      <p><strong>Dove si inserisce:</strong> Sul Music Bus (traccia della musica/base). Il Chain Builder lo posiziona nei profili Podcast e Spot.</p>
+      <p><strong>Controlli principali:</strong> <strong>VOCE</strong>: fino a tre fonti sidechain (3/4, 5/6, 7/8), che compaiono solo se la traccia ha quei canali, ognuna con ON, guadagno e una spia di routing; Thresh della voce, RMS Stab, Hold, Anticipo. <strong>CARVER</strong>: Thresh, Intens, bande Low, Mid e High, Spread, Knee, Attack, Release; i crossover si trascinano sulla mappa BANDE. <strong>VCA</strong>: Ceiling, Prio, Min Duck, Max Duck, Attack, Release, rientro STD o GRADUAL. <strong>USCITA</strong>: Mix, Glue, Out, In, Voice Ret. <strong>PARTENZA</strong> SCORE / FLAT / VOCAL imposta i pomelli come punto di partenza. <strong>SIMPLE</strong> mostra i cinque controlli principali dello stesso motore; <strong>DOCK</strong> e' una striscia con stato e cue da tenere aperta mentre monti.</p>
+      <p><strong>Cue di rientro rapido:</strong> ADD / REMOVE mette un cue sul playhead (in Play) o sul cursore (da fermo): li' la musica rientra con la Rampa e resta aperta. Seleziona il cue dalla fila, poi scegli C/S/M/L: la scelta resta associata a quel marker anche quando lo sposti. Anche Rampa e durata Personalizzata sono salvate per il marker selezionato e richiamate nei pomelli quando torni su quel cue; Breve e' 0,5 s, Media 1 s e Lunga 2 s. Durante Rampa e Tenuta il sidechain e' ignorato; allo scadere il detector torna a governare il duck. ELIMINA toglie i cue selezionati (Cmd/Ctrl+clic o Shift+clic per piu' cue), UNDO e CLEAR ALL gestiscono l'elenco. Con l'helper <em>ZP Harmonic Space Carver Cue Navigator</em> avviato all'apertura di REAPER, ogni cue e' anche un marker <code>#HSC</code> nella lane 4: lo sposti a mano o con il ripple e il Carver segue; cue nuovi e cancellazioni passano solo dal Carver (un <code>#HSC</code> cancellato a mano torna). Senza helper i preset per marker restano spenti.</p>
+      <p><strong>Cue fuori posto:</strong> ogni cue ricorda la voce che ha sotto. Se quella voce si sposta e il cue no, il cue diventa rosso e in alto compare <strong>CUE FUORI POSTO</strong>: un clic sull'avviso (o il tasto <em>ZP HSC Cue - Riallinea</em>) riporta tutti i cue rossi sulla loro voce. Sul singolo cue rosso ci sono <strong>RIALLINEA</strong> e <strong>TIENI QUI</strong>. Ctrl+Z annulla.</p>
+      <p><strong>Azioni da tastiera:</strong> ZP HSC Cue - Aggiungi o togli, Successivo, Precedente, Annulla, Riallinea. <em>ZP HSC - Mostra tracce voce</em> seleziona le tracce che il Carver considera voce: quelle che arrivano al sidechain.</p>
+      <p><strong>Avvisi:</strong> il <strong>preascolto</strong> (CARV, VCA, TUTTO fanno sentire solo cio' che viene tolto) lampeggia in alto e torna OFF alla riapertura del progetto; i livelli misurano sempre l'uscita vera. <strong>Min = Max: VCA fisso</strong> vuol dire che con la voce la musica scende sempre di Max Duck e Ceiling e Prio non lavorano: alza Min Duck.</p>
+    </div>
+    <div class="card" id="plugin-spoken-finish">
+      <h3>ZP Spoken Finish</h3>
+      <p><strong>A cosa serve:</strong> Finalizzatore armonico opzionale per la voce. Arricchisce corpo, armoniche pari/dispari, aria e VOG (Voice of God) per dare densità e presenza broadcast.</p>
+      <p><strong>Dove si inserisce:</strong> Sul Voice Bus a valle del BUS Chain o su singole tracce recitanti.</p>
+      <p><strong>Controlli principali:</strong> Harmonic Amount (Even/Odd), Body, Air/Presence, VOG Sub-bass, Dynamic Drive. Pubblica telemetria per il confronto con Master Pro.</p>
+    </div>
+    <div class="card" id="plugin-stagekeeper">
+      <h3>ZP Stagekeeper Dialogue Director</h3>
+      <p><strong>A cosa serve:</strong> Dialogue Director e automixer intelligente per due microfoni (L/R) in podcast, interviste e dialoghi. Riconosce la voce dominante e attenua il bleed sul microfono di chi ascolta, mantenendo naturalezza senza scatti.</p>
+      <p><strong>Dove si inserisce:</strong> Su traccia stereo che riceve i due microfoni (o prima del bus sommato).</p>
+      <p><strong>Controlli principali:</strong> Input Trim L/R, soglie Speech Detect L/R, Delta margin, Response (Attack, Release, Hold, Lookahead, Softness HARD ↔ SMOOTH), Background Attenuation, monitor MIX / CHECK L / CHECK R, Limiter integrato.</p>
+    </div>
+    <div class="card" id="plugin-subliminal">
+      <h3>ZP Subliminal Presence Layer White</h3>
+      <p><strong>A cosa serve:</strong> Strato opzionale di micro-modulazione lenta e sagomata (rumore di presenza calibrato). Riempie e scalda i vuoti digitali tra le battute donando coesione organica senza farsi percepire come fruscio.</p>
+      <p><strong>Dove si inserisce:</strong> In coda alla catena vocale o in parallelo sul bus voce, a volume discreto.</p>
+      <p><strong>Controlli principali:</strong> Level, Color/Filter, Modulation Depth, Envelope follower / Ducking della voce, Mute/Audition.</p>
+    </div>
+    <div class="card" id="plugin-unified-chain">
+      <h3>ZP Voiceover Unified Chain</h3>
+      <p><strong>A cosa serve:</strong> Catena vocale integrata all-in-one per singole tracce di registrazione. Raggruppa pre-filtering, noise gate, de-esser, compressori 1175/LA-2A/Major Tom e limiter in un'unica interfaccia essenziale.</p>
+      <p><strong>Dove si inserisce:</strong> Sulla singola traccia microfonica o nel template di registrazione.</p>
+      <p><strong>Controlli principali:</strong> Input Gain, Gate Threshold, Compressors Amount/Mix, Tone Tilt, Out Ceiling. Dialoga con lo Shared Bus trasmettendo i dati di riduzione.</p>
+    </div>
+    <div class="card" id="plugin-master-pro">
+      <h3>ZP Master Pro</h3>
+      <p><strong>A cosa serve:</strong> Supervisore e analizzatore intelligente per il bus Master finale. Confronta la telemetria di tutti i plugin ZP e le misure delle Probe contro profili target (ADR, Voiceover, E-learning, Podcast, Spot, Radio).</p>
+      <p><strong>Dove si inserisce:</strong> Sul Master Bus finale del progetto (prima o dopo il limiter di consegna).</p>
+      <p><strong>Controlli principali:</strong> Selezione Target Profile, Navigator (MANUAL / AUTO SIMPLE / AUTO COMPLEX), Measure Engine con display causale, parametri di tolleranza [Target], LED di stato del bus.</p>
+    </div>
+    <div class="card" id="plugin-mirror-eq">
+      <h3>ZP Reference Tone Mirror EQ Pro</h3>
+      <p><strong>A cosa serve:</strong> Equalizzatore di confronto e matching timbrico. Permette di confrontare lo spettro della voce con curve di riferimento standard broadcast o di campionare una traccia reference per guidare la correzione spettrale.</p>
+      <p><strong>Dove si inserisce:</strong> Sul bus voce o sulla traccia master durante il bilanciamento timbrico.</p>
+      <p><strong>Controlli principali:</strong> Cattura reference (Learn Reference), Curve Target (Neutral, Warm, Bright, Broadcast), Amount/Matching Gain, smoothing per banda, visualizzazione spettro differenziale.</p>
+    </div>
+    <div class="card" id="plugin-loudness-meter">
+      <h3>ZP Loudness Meter Multichannel</h3>
+      <p><strong>A cosa serve:</strong> Metering di loudness di precisione secondo gli standard ITU-R BS.1770-4 ed EBU R128 su formati da stereo fino a 16 canali surround.</p>
+      <p><strong>Dove si inserisce:</strong> In chiusura della catena Master, o su qualsiasi bus multicanale da monitorare.</p>
+      <p><strong>Controlli principali:</strong> Display numerico e barre per Integrated LUFS, Short-term LUFS, Momentary LUFS, LRA (Loudness Range), True Peak dBTP, reset delle misure, scale broadcast (-23 EBU, -24 ATSC, -14 Streaming).</p>
+    </div>
+    <div class="card" id="plugin-oscilloscope">
+      <h3>ZP Oscilloscope 16ch</h3>
+      <p><strong>A cosa serve:</strong> Oscilloscopio multicanale e visualizzatore di forma d'onda in tempo reale fino a 16 canali sincronizzati, per controllare inviluppo, transienti e relazione di fase tra tracce e microfoni multipli.</p>
+      <p><strong>Dove si inserisce:</strong> Su tracce multicanale o bus d'ascolto di controllo.</p>
+      <p><strong>Controlli principali:</strong> Timebase (ms/div), Gain/Zoom verticale, modalità di trigger (Free, Normal, Single, Channel), visualizzazione sovrapposta o split per canale.</p>
+    </div>
+    <div class="card" id="plugin-probe">
+      <h3>ZP Voice-Music Probe</h3>
+      <p><strong>A cosa serve:</strong> Sonda di misurazione passiva e trasparente per lo Shared Bus. Non altera l'audio ma misura con precisione RMS, True Peak, crest factor, densità, brillantezza e presenza del parlato.</p>
+      <p><strong>Dove si inserisce:</strong> Ultimo slot assoluto del Voice Bus (in ruolo Voice) e del Music Bus (in ruolo Music), protetto dal Probe Guard.</p>
+      <p><strong>Controlli principali:</strong> Selettore di ruolo (Voice / Music), meter di verifica istantanea, stato trasmissione gmem Shared Bus.</p>
+    </div>
+  </div>
+  <p>Il LED dei plugin indica solo stato connessione: verde dati recenti, giallo dati parziali/vecchi, rosso componente essenziale assente. Il livello audio resta sui meter separati.</p>
+
+  <h3>In dettaglio</h3>
+  <h3 id="shared-bus-logica">Come ragiona lo Shared Bus</h3>
+  <p>Shared Bus v2.2 separa due mondi: BUS Chain e Spoken Finish dichiarano cosa stanno facendo; Voice-Music Probe misura cosa esce davvero; Master Pro confronta i dati con lo <strong>ZP Target Engine</strong>. Nessun warning modifica automaticamente il DSP.</p>
+
+  <h3>Voice-Music Probe</h3>
+  <p><code>ZP Voice-Music Probe.jsfx</code> è un analizzatore passivo. In modalità Voice pubblica RMS, peak, crest, density, brightness e speech activity. In modalità Music pubblica le stesse misure senza speech activity. Non scrive sui campioni audio e deve restare ultimo nella catena del bus osservato.</p>
+
+  <h3>Segnalazioni Master Pro</h3>
+  <ul>
+    <li>LED verde: catena coerente oppure analog flavor compatibile col risultato misurato.</li>
+    <li>LED giallo: eccesso o incoerenza, con suggerimento nel footer.</li>
+    <li>LED rosso: componente essenziale mancante oppure valore molto fuori target.</li>
+    <li>Harmonic Space Carver è un assistente mix/music bus e non viene trattato come stadio mastering.</li>
+  </ul>
+
+  <h3>ZP Target Engine</h3>
+  <p>Master Pro legge la riduzione dei singoli stadi BUS Chain, l'attività ANA, l'attività armonica di Spoken Finish e le misure finali della Voice Probe. Confronta intenzione e risultato rispetto al profilo scelto, ma non invia comandi agli altri plugin e non applica correzioni.</p>
+  <ul>
+    <li>La matrice iniziale contiene target per compressione, densità, brillantezza, crest factor e limiter.</li>
+    <li>I target sono modificabili dai parametri <code>[Target]</code> di Master Pro e vengono salvati nel progetto.</li>
+    <li>Il footer mostra il motivo della segnalazione e una riga compatta con valori misurati e target.</li>
+    <li>Una densità alta con poca attività dichiarata dai plugin ZP viene indicata come possibile intervento di plugin esterni o analog flavor.</li>
+    <li>Il LED indica soltanto la connessione: verde recente, giallo dati vecchi/incompleti, rosso componente richiesto assente. Il livello audio usa esclusivamente i meter.</li>
+  </ul>
+  <h3>Navigator / Measure Engine</h3>
+  <p>Il pannello Navigator accumula soltanto intervalli con parlato utile e mantiene la misura attraverso Play, Stop e riapertura della GUI. Si azzera esclusivamente con <strong>RESET MEASURE</strong>.</p>
+  <ul>
+    <li><strong>MANUAL:</strong> usa esattamente i 10, 20 o 30 secondi scelti dal tecnico.</li>
+    <li><strong>AUTO SIMPLE:</strong> richiede più tempo utile, tollera maggiormente eventi isolati ed è pensato per voce, doppiaggio, audiolibri e segnali con pause.</li>
+    <li><strong>AUTO COMPLEX:</strong> usa una soglia di attività più permissiva e stabilizza più rapidamente spot, podcast, musica e mix densi.</li>
+    <li>MANUAL, AUTO SIMPLE e AUTO COMPLEX sono pulsanti separati; il tempo utile richiesto è sempre visibile.</li>
+    <li>La gravità è espressa come OK, ATTENZIONE o FUORI TARGET e non modifica il colore del LED di connessione.</li>
+    <li>Cambiare profilo non azzera la misura: l'ultima misura viene rivalutata immediatamente con le nuove soglie.</li>
+    <li>Mostra un solo messaggio principale con STATO, CAUSA, RAGIONAMENTO, CONTRIBUTI, SUGGERIMENTO e DATI.</li>
+    <li>La causalità confronta 1175, LA2, Major Tom, Brown, ANA, Limiter e Spoken Finish; mostra modulo principale, secondario e contributi relativi.</li>
+    <li>Spoken Finish viene indicato come causa di brightness soltanto quando la Voice Probe conferma un risultato finale brillante.</li>
+    <li>Allo Stop compare ULTIMA MISURA e i dati restano disponibili.</li>
+    <li>Connessione e misura sono indipendenti: dati vecchi, Probe temporaneamente assente, silenzio o Stop non cancellano l'ultima misura valida.</li>
+    <li>Quando la connessione degrada, il Navigator mostra <strong>ULTIMA MISURA VALIDA</strong> e mantiene stato, causa, ragionamento, contributi, suggerimento e dati fino a RESET MEASURE.</li>
+    <li>Il timeout heartbeat è tollerante alle pause; heartbeat significa plugin vivo e non presenza di segnale audio.</li>
+  </ul>
+
+  <h3>Controlli compressori BUS Chain</h3>
+  <p>I tre compressori condividono la stessa grammatica operativa: <strong>RED</strong> indica la quantità di riduzione e <strong>MAKEUP</strong> recupera il livello. Nei moduli 1175 e Major Tom, ruotare RED in senso orario aumenta la compressione. La soglia interna e i valori salvati nei progetti restano compatibili con le versioni precedenti.</p>
+
+
+  <!-- ================================================================== -->
+  <h2 id="strumenti-srt">Gli strumenti SRT singoli</h2>
+  <p>Si aprono dalla finestra <a href="#tool-30">ZP SRT</a>, ma restano nell'Action List e si possono lanciare anche da soli.</p>
+
+  <h3 id="zp-import"><span id="tool-01"></span>01 &middot; Video + SRT</h3>
+  <p>Porta nel progetto un video e i suoi sottotitoli: crea la traccia video e la traccia <code>Rythmo Band Testi</code> con una battuta per ogni cue. Quattro modi: <em>Singolo</em> (un video e il suo SRT/VTT), <em>Cartella</em> (tutte le coppie video+SRT con lo stesso nome, una dopo l'altra con la pausa che scegli), <em>Solo SRT/VTT</em>, <em>Traccia testo</em> vuota. Opzioni: segnalare o correggere le sovrapposizioni tra cue, copiare i file nel progetto, salvare il progetto. Se la posizione è già occupata, chiede se sovrapporre o mettere in fondo.</p>
+  <p class="when">Quando: il primo giorno di un lavoro su video.</p>
+
+  <h3 id="zp-gestione-srt"><span id="tool-05"></span>05 &middot; Gestione SRT</h3>
+  <p>Cambia i testi di un lavoro già avviato. Operazioni: <em>Sostituisci SRT</em> sui video selezionati, o sulla regione sotto il playhead; <em>Aggiungi lingua/reference</em> su una traccia con suffisso (REF, ENG, ORIG…), senza toccare la principale; <em>Batch omonimi</em> su tutti i video, abbinando ogni video all'SRT con lo stesso nome; <em>Aggiungi traccia gobbo vuota</em>. Gli SRT usati vengono copiati nel progetto e i vecchi item finiscono su una traccia BKP, quindi non si perde niente. <em>Overlap in rosso</em> evidenzia le cue sovrapposte.</p>
+  <p class="when">Quando: arriva una revisione dei sottotitoli, o vuoi l'originale accanto alla traduzione.</p>
+  <p id="tool-06" class="small">06 Importa SRT Reference è una scorciatoia senza finestra per <em>Aggiungi lingua/reference</em>.</p>
+
+  <h3 id="tool-08">08 &middot; Esporta SRT</h3>
+  <p>Scrive gli SRT finali. Scegli cosa esportare (video selezionati, regione al cursore, tutte le regioni, tutti i video) e quale flusso testi usare. I tempi partono dall'inizio di ogni video o regione, non dalla posizione in timeline: ogni SRT è pronto per il suo file. Destinazione: cartella del progetto, sua sottocartella <code>SRT_export</code>, oppure <em>Scegli…</em> una cartella tua; la scelta resta per la volta dopo.</p>
+  <p class="when">Quando: a fine lavoro, per consegna o revisione. Controlla sempre il file con un player.</p>
+
+  <h3 id="tool-13">13 &middot; Info item SRT</h3>
+  <p>Una finestra di sola lettura che resta aperta e si aggiorna da sola quando selezioni un altro item: puoi esplorare la timeline senza riaprirla. La chiudi tu (Chiudi, Esc o la X). Mostra traccia, posizione e durata, il testo in grande e l'<strong>origine</strong>: importato da SRT (file, cue, se il file esiste ancora), agganciato a un marker dell'audio (e se è in mute perché il marker non c'è più), scritto a mano. Su un item audio dice quanti marker delle battute ha e se c'è l'SRT accanto al file. Con OSARA legge tutto a ogni cambio di item. Non modifica niente.</p>
+
+  <h3 id="tool-srt-tools"><span id="tool-26"></span>26 &middot; SRT Tools (da testo o traduzione)</h3>
+  <p>Apre nel browser una pagina locale, che funziona senza internet, per trasformare un testo con timecode (copiato da un documento o da un foglio di calcolo) in un SRT. Legge anche i file Excel <strong>XLS e XLSX</strong>: scegli il foglio e le colonne (inizio, fine, testo, personaggio, reazione) e se includere personaggi e reazioni; senza la colonna di fine, la durata e' stimata fino alla battuta successiva. Riconosce il timecode su righe separate o sulla stessa riga del testo, e ha un <strong>offset</strong> per i testi che partono da 01:00:00. Non tocca il progetto.</p>
+  <p class="when">Quando: ti mandano una traduzione da doppiare in Word o Excel invece di un SRT. Poi la porti dentro con <a href="#tool-29">ZP Trascrizione</a> (su un audio) o con <a href="#zp-gestione-srt">Aggiungi lingua</a> (su un video).</p>
+
+  <h3 id="tool-31">31 &middot; SRT dall'audio</h3>
+  <p>Una finestra che resta aperta e segue la selezione: elenca gli item audio selezionati con quante battute daranno (e quelli senza marker, saltati), la <strong>cartella</strong> di destinazione (ricordata; <em>Cambia cartella…</em>) e cosa fare <strong>se l'SRT c'è già</strong>: <em>Sostituisci</em> (il vecchio resta come <code>.bak</code>) o <em>Nuovo file</em> <code>(marker).srt</code>. <em>Scrivi SRT</em> scrive un SRT con lo stesso nome del file sorgente e il risultato resta nella finestra. Non lo mette tra i media. I marker di servizio non entrano. Più pezzi dello stesso file danno un solo SRT; funziona anche su un file nato da un Glue. La fine di ogni battuta è l'inizio della successiva; l'ultima dura al massimo 8 secondi. Riabbinato con ZP Trascrizione (<em>Abbina da &gt; SRT esterno</em>) torna identico.</p>
+  <p class="when">Quando: hai corretto le battute in REAPER e vuoi consegnare o riusare la trascrizione aggiornata.</p>
+
+  <h3 id="tool-collega-marker"><span id="tool-28"></span>28 &middot; Collega marker</h3>
+  <p>Il motore della tappa <em>Abbina da…</em> di ZP Trascrizione: legge l'SRT accanto all'audio (o uno scelto da te) e scrive ogni cue come marker dell'item. Si può ancora lanciare da solo dall'Action List, ma non ha più un pulsante. <a href="collega_marker.html">Dettagli &rarr;</a></p>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-34">34 &middot; ZP Set Comandi (scorciatoie da tastiera)</h2>
+  <p>Per passare da un set di scorciatoie a un altro con un clic: quello per il montaggio video, quello con le abitudini di Pro Tools o di Logic, i tuoi. Apri <strong>34 ZP Set Comandi</strong> dal pulsante tastiera della toolbar ZP (o dall'Action List): c'è un riquadro per ogni set, con il nome, quante scorciatoie ha, quando l'hai salvato e se contiene i tasti di OSARA. Il set in uso ha il bordo verde acqua e la scritta <strong>IN USO</strong>.</p>
+  <ul>
+    <li><strong>Attiva</strong>: sceglie quel set. REAPER carica le scorciatoie solo all'avvio, quindi ti chiede se chiuderlo e riaprirlo adesso (<em>Sì</em>, salva prima il progetto) o se il set deve valere dal prossimo riavvio (<em>No</em>). Finché non riavvii, in alto c'è la riga gialla <em>Al prossimo riavvio</em> con <strong>Annulla</strong>.</li>
+    <li><strong>Cosa fa un set</strong>: clic sul nome e si apre la sua pagina, con tutte le scorciatoie scritte per esteso (tasto &rarr; azione; i tasti di serie spenti in fondo). Lì ci sono anche <strong>Attiva</strong>, <strong>Rinomina…</strong> e <strong>Archivia…</strong> (il set va in <code>KeyMaps/Archivio</code>: niente si cancella). <strong>Esc</strong> o <em>&larr; Elenco</em> per tornare.</li>
+    <li><strong>Spiega con l'AI</strong> (facoltativo, solo quando lo chiedi): una spiegazione breve, in parole semplici, di a cosa serve il set. All'AI va solo l'elenco "tasto &rarr; azione" di quel set, niente altro; prima di partire te lo chiede. Il pulsante <em>Agente</em> accanto sceglie chi la scrive (lo stesso vale per Traduci): L'agente è quello che hai su questo Mac: <strong>Auto</strong> (di serie) usa il primo disponibile fra <strong>Codex</strong> (il testo va a OpenAI con il tuo account ChatGPT), <strong>Claude</strong> (ad Anthropic con il tuo account), <strong>Qwen</strong> e <strong>OpenCode</strong> (al servizio che hai configurato lì) e <strong>Ollama</strong> (un modello locale: il testo resta sul Mac). Prima di partire la domanda dice quale agente userà e dove va il testo. La spiegazione resta salvata accanto al set (<code>Nome.spiegazione.txt</code>) e segue il set se lo rinomini o lo archivi. Serve ZP Speech (Mac).</li>
+    <li><strong>Cambia solo i tasti.</strong> Gli script, le azioni personalizzate, le toolbar e i menu restano come sono.</li>
+    <li><strong>Backup automatico</strong>: prima di ogni cambio i tasti di quel momento vanno nel set <em>Backup automatico</em>; per tornare indietro basta attivarlo. In più, accanto a <code>reaper-kb.ini</code> resta una copia del file intero (<code>reaper-kb.ini.ZP_backup_…</code>).</li>
+    <li><strong>Salva tasti attuali…</strong>: salva le scorciatoie di adesso come set nuovo, col nome che scegli (es. <em>Video</em>, <em>Doppiaggio</em>).</li>
+    <li><strong>Importa file…</strong>: aggiunge un set da un file <code>.ReaperKeyMap</code> (per esempio una mappa Pro Tools scaricata o quella di un collega).</li>
+    <li><strong>REAPER di serie</strong>: i tasti originali di REAPER, senza scorciatoie personali.</li>
+    <li><strong>Apri cartella</strong>: i set sono file in <code>REAPER/KeyMaps</code>; quelli che ci metti tu compaiono da soli.</li>
+  </ul>
+  <p class="nota">Se usi OSARA e il set che scegli non ha i suoi tasti, prima del cambio la finestra lo dice. Come si fa: REAPER riscrive <code>reaper-kb.ini</code> mentre è aperto, quindi il cambio lo fa un piccolo script di sistema che aspetta la chiusura di REAPER, fa la copia di sicurezza, sostituisce le righe dei tasti e, se l'hai chiesto, riapre REAPER.</p>
+
+  <h2 id="tool-35">35 &middot; ZP Colori (clicca e colora)</h2>
+  <p>La finestrella dei colori, dal pulsante tavolozza della toolbar ZP: si apre, si usa, si chiude (o resta agganciata). Scegli uno dei sei modi, seleziona gli oggetti e poi clicca un colore. <strong>Auto</strong> colora insieme item, marker e regioni selezionati al clic; gli altri modi limitano il clic a Item, Traccia, Tutto (tracce e loro item), Marker o Regione. Un solo selettore resta acceso e nessuna selezione viene colorata da sola. Ci sono venti colori e <strong>Togli colore</strong>. Ogni colorazione si annulla con Ctrl/Cmd+Z. La stessa cosa, sempre a vista, è la toolbar facoltativa <a href="toolbar.html#colori">ZP Colori</a>.</p>
+
+  <h2 id="azioni">Azioni senza finestra</h2>
+  <p>Si lanciano dall'Action List (cerca <em>ZP Studio Suite</em>) o da una scorciatoia da tastiera.</p>
+
+  <h3 id="tool-09">09-12 &middot; Lettura delle battute con OSARA</h3>
+  <p>Per chi registra con lo screen reader: fanno leggere il copione senza aprire il Gobbo e senza togliere il focus a REAPER. Conviene assegnarle a dei tasti.</p>
+  <ul>
+    <li><strong>09 Battuta corrente</strong>: legge la battuta sotto il cursore (o la prossima, se sei in una pausa).</li>
+    <li><strong>10 Battuta successiva</strong> e <strong>11 Battuta precedente</strong>: si spostano e leggono.</li>
+    <li><strong>12 Lettura automatica</strong>: acceso/spento; durante la riproduzione legge ogni battuta quando arriva.</li>
+  </ul>
+  <p>Leggono solo il testo utile: numeri di cue, timecode e intestazioni tecniche vengono tolti. Richiedono OSARA.</p>
+
+  <h3>14 &middot; Marker da timeline a item</h3>
+  <p>La scheda <a href="#tool-14">Fissa negli item</a> della finestra Marker, in versione con domande. Resta per chi l'ha già su una scorciatoia.</p>
+
+  <h3 id="tool-27">27 &middot; Pulisci installazione precedente</h3>
+  <p>Per chi arriva dal vecchio installer: trova le copie vecchie degli script e dei plugin ZP, mostra un elenco, e solo dopo la tua conferma le mette in uno ZIP in <code>ZP Studio Suite Archives/</code> prima di toglierle. Nel dubbio non tocca niente. Le toolbar non vengono modificate.</p>
+
+  <h3>00 &middot; Help</h3>
+  <p>Apre questa pagina.</p>
+
+  <!-- ================================================================== -->
+  <h2 id="installazione">Installazione e componenti opzionali</h2>
+  <p>La suite si installa e si aggiorna con <strong>ReaPack</strong>: <em>Extensions &rarr; ReaPack &rarr; Import repositories</em>, incolla <code>https://github.com/capitanpaolone/zp-suite/raw/master/index.xml</code>, poi <em>Browse packages</em>, cerca <em>ZP</em> e installa <em>ZP Studio Suite</em> e i plugin che ti servono. Le azioni compaiono nell'Action List come <em>ZP Studio Suite - …</em>.</p>
+  <p id="tool-33"><strong>33 Benvenuto (controllo installazione):</strong> si apre da solo la prima volta che usi uno strumento ZP, e poi quando vuoi dall'Action List. Una riga per pezzo, con una spia: <strong>verde</strong> pronto, <strong>rossa</strong> da fare, <strong>grigio-azzurra</strong> facoltativo assente, <strong>grigia</strong> non serve. Lo stato si aggiorna da solo ogni secondo.</p>
+  <ul>
+    <li><strong>Lingua della Suite</strong>: due pulsanti a vista (<em>Italiano</em> | <em>English</em>). Vale subito per le finestre, i messaggi e le guide che si aprono dopo.</li>
+    <li><strong>Lingua di REAPER</strong>: menu con la scelta attuale (<em>Originale (inglese)</em> o i pack in <code>REAPER/LangPack</code>). Quando cambi lingua la spia diventa gialla (<em>manca un passo</em>) e compare il pulsante <em>Riavvia ora</em> per applicarla subito.</li>
+    <li><strong>Toolbar ed effetti</strong>: <em>Installa</em> lancia il 32 (vedi sotto). Poi la spia è gialla, <em>manca un passo</em>: chiudi e riapri REAPER, e prima di farlo non aprire Customize toolbars. Al riavvio la spia è verde, la riga dice in quale toolbar si trova la <em>ZP Studio Suite</em> e <em>Apri la toolbar</em> la apre; si sceglie anche con Switch toolbar.</li>
+    <li><strong>Cue Navigator</strong> del Harmonic Space Carver (solo se il Carver è installato): deve girare sempre. <em>Avvia ora</em> lo accende; <em>A ogni apertura</em> aggiunge a <code>Scripts/__startup.lua</code> un blocco segnato che lo avvia quando apri REAPER (senza SWS e senza toccare il resto del file). Se l'hai già messo come azione di avvio di SWS, il Benvenuto lo riconosce.</li>
+    <li><strong>ZP Speech</strong> (solo Mac, facoltativo): serve a Trascrivi. <em>Installa</em> apre il Terminale, che scarica da GitHub l'installatore e fa tutto da solo; quando ha finito la spia diventa verde (<em>Aggiorna</em> lo rifà). Prima servono Python 3.11 o più recente e MacWhisper: se mancano, la riga lo dice e ha i pulsanti per scaricarli.</li>
+    <li><strong>SWS</strong>, <strong>js_ReaScriptAPI</strong>, <strong>OSARA</strong>: facoltative, ciascuna con cosa aggiunge e dove si prende.</li>
+    <li><strong>Marker degli item</strong>: con i comandi di serie di REAPER, trascinando sopra un take marker si sposta il marker invece dell'item. Protetti (lo fa già il 32 se non hai impostazioni tue): trascinando sopra un marker prendi l'item, <strong>Shift+trascina</strong> sposta il marker, il doppio clic lo modifica. <em>Ripristina standard</em> rimette i comandi di serie di REAPER; <em>Proteggi</em> torna alla protezione. È l'impostazione di REAPER <em>Preferences &gt; Mouse Modifiers &gt; Media item take marker &gt; left drag</em> (Default action = No action, Shift = Move take marker): se l'hai cambiata a mano, la riga lo dice e non la tocca senza il tuo clic.</li>
+    <li><strong>Interfaccia web di REAPER</strong>: serve solo al SOLO Web; <em>Preferenze</em> apre le impostazioni di REAPER.</li>
+  </ul>
+  <p id="tool-32"><strong>Toolbar ed effetti:</strong> dopo l'installazione lancia dall'Action List <strong>32 Installa toolbar ZP</strong>. Scrive la toolbar <em>ZP Studio Suite</em> (Project Viewer, Gestore Progetto, Report minuti, Trascrizione, i due Gobbi, Importa cartelle, ZP SRT, Marker, Actor/Note, Voice Cleaner, Chain Builder, SOLO Recorder, finestra video e video dai progetti in sottofondo, Probe Guard, Help) con le icone di REAPER e gli identificativi delle azioni del tuo REAPER, e la mette direttamente fra le toolbar di REAPER, col suo nome: nella toolbar che si chiama già così, altrimenti nella prima Floating toolbar libera fra 1 e 16 (le altre toolbar restano come sono; accanto a <code>reaper-menu.ini</code> lascia un backup). La vedi dopo aver chiuso e riaperto REAPER; fino ad allora non aprire Customize toolbars, altrimenti va rifatto. Una copia resta in <code>MenuSets/ZP_StudioSuite.ReaperMenu</code> per importarla a mano dove vuoi; mette anche in REAPER/FXChains le catene di effetti del SOLO Recorder (ZP Bus VoiceChain e ZP MasterChain), senza sovrascrivere quelle che hai già. Aggiunge in REAPER/presets i preset usati dal Chain Builder (BUS Chain <code>Voiceover_Body1_BG80HzDyn_-3dBLim</code>, Master Pro <code>Flat -19</code>): solo se non hai già un preset con lo stesso nome, e i tuoi restano. La toolbar <strong>ZP Colori</strong> (facoltativa: di serie i colori stanno nella finestrella <a href="#tool-35">35 ZP Colori</a>) la scrive solo se l'hai chiesta dal 33 Benvenuto, in un'altra Floating toolbar (<a href="toolbar.html#colori">come si usa</a>). Rilancialo se un pulsante resta vuoto o dopo un aggiornamento che aggiunge strumenti. <a href="toolbar.html">I pulsanti, uno per uno</a>.</p>
+  <p>In alternativa c'è il file pronto <code>toolbar/ZP_StudioSuite.ReaperMenu</code> nella cartella della suite (Options &rarr; Customize menus/toolbars &rarr; Import), ma è fatto con gli identificativi di un altro REAPER: i pulsanti degli strumenti più recenti possono restare vuoti. Meglio la 32. <a href="toolbar.html">Cosa fa ogni pulsante &rarr;</a></p>
+  <p>Funziona su un REAPER pulito. Queste estensioni non sono obbligatorie, ma aggiungono qualcosa:</p>
+  <div class="wrap"><table>
+    <tr><th>Estensione</th><th>Senza</th><th>Con</th></tr>
+    <tr><td>SWS / S&amp;M</td><td>Niente copia-incolla da tastiera nei campi di testo; i pulsanti che aprono un file (log, report) non aprono niente.</td><td>Copia-incolla e apertura dei file.</td></tr>
+    <tr><td>js_ReaScriptAPI</td><td>La cartella si scrive a mano; niente selezione sincronizzata con il Region/Marker Manager; il SOLO Recorder non resta in primo piano.</td><td>Finestra di sistema per le cartelle, selezione delle regioni sincronizzata, finestra sempre sopra.</td></tr>
+    <tr><td>OSARA</td><td>Le azioni 09-12 e il Menu OSARA del Gobbo non parlano.</td><td>Lettura delle battute e dei comandi con lo screen reader.</td></tr>
+    <tr><td>ZP Speech (solo macOS)</td><td>La tappa <em>Trascrivi</em> non c'è: crei l'SRT con un altro Whisper.</td><td>Trascrizione automatica dentro ZP Trascrizione.</td></tr>
+  </table></div>
+  <p class="small">File di supporto, da non lanciare né modificare: <code>ZP_UI.lua</code>, <code>ZP_sincronizza_aggancio.lua</code>, <code>lib_RythmoBand_Accessibile.lua</code>, i <code>worker</code> di 04 e 05, i template traccia, il ponte NVDA per Windows. Un aggiornamento ReaPack li sostituisce.</p>
+<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Sviluppata su un'idea di Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
+</main>
+</body>
+</html>

@@ -47,6 +47,13 @@
 ). Scaricalo da python.org prima di installare ZP Speech.	). Download from python.org before installing ZP Speech.
 ): nessuna traccia selezionata	): no tracks selected
 + Battuta	+ Cue
++ Testo temporizzato	+ Timed text
+Velocità testo	Text speed
+parole/min	words/min
+Riposiziona sul player	Reposition to playhead
+Nuovo testo temporizzato	New timed text
+17 Nuovo testo temporizzato	17 New timed text
+Incolla il testo; la durata si calcola alla velocità impostata.	Paste the text; duration is calculated at the selected speed.
 + Nota	+ Note
 , %d NON riusciti (dettagli nella console)	, %d FAILED (details in console)
 , %d gia' tradotti	, %d already translated
@@ -878,3 +885,22 @@ Esiste gia' un language pack con questo nome. Sostituirlo?	A language pack with 
 Non riesco a copiare il file in LangPack.	Cannot copy the file into LangPack.
 Importato: %s. Riavvia per usarlo.	Imported: %s. Restart to use it.
 ReaPack non risponde: aprilo da Extensions > ReaPack > Browse packages e cerca "langpack".	ReaPack is not responding: open it from Extensions > ReaPack > Browse packages and search for "langpack".
+ZP Remote (Importa / Esporta)	ZP Remote (Import / Export)
+Python 3	Python 3
+Mancano file ZP Remote:	Missing ZP Remote files:
+Pronto: importa con Python 3 e shasum; esporta con Python 3 e FFmpeg.	Ready: import with Python 3 and shasum; export with Python 3 and FFmpeg.
+Importazione pronta (Python 3 e shasum). Per esportare manca FFmpeg.	Import ready (Python 3 and shasum). FFmpeg is required for export.
+Esportazione pronta (Python 3 e FFmpeg). Per importare manca shasum.	Export ready (Python 3 and FFmpeg). shasum is required for import.
+Manca Python 3: serve per importare e per esportare.	Python 3 is required for both import and export.
+Mancano shasum per importare e FFmpeg per esportare.	shasum is required for import and FFmpeg for export.
+Manca shasum per importare. FFmpeg è presente per esportare.	shasum is required for import. FFmpeg is available for export.
+Manca FFmpeg per esportare. L'importazione è pronta.	FFmpeg is required for export. Import is ready.
+ZP Speech non e' installato.\nApri 33 Benvenuto e clicca Installa nella riga ZP Speech.\nOppure crea l'SRT con il tuo whisper e parti dalla tappa Abbina.	ZP Speech is not installed.\nOpen 33 Welcome and click Install on the ZP Speech row.\nOr create the SRT with your own whisper and start from the Match step.
+Installato: 29 Trascrivi crea l'SRT dal WAV con whisper (%s).	Installed: 29 Transcribe creates the SRT from WAV with whisper (%s).
+Servizio installato, ma manca il motore: apri MacWhisper in Applicazioni oppure installa Whisper locale + modello.	Service installed, but speech engine missing: open MacWhisper in Applications or install local Whisper + model.
+Servizio installato, ma manca il modello OpenAI Whisper: clicca Whisper locale per scaricarne uno.	Service installed, but OpenAI Whisper model missing: click Local Whisper to download one.
+Facoltativo, serve a Trascrivi (29). Prima installa Python 3.11+ (python.org), poi clicca Installa.	Optional, used by Transcribe (29). First install Python 3.11+ (python.org), then click Install.
+Facoltativo, serve a Trascrivi (29). Funziona con MacWhisper o con OpenAI Whisper locale.	Optional, used by Transcribe (29). Works with MacWhisper or with local OpenAI Whisper.
+Facoltativo, serve a Trascrivi (29) con OpenAI Whisper locale (sperimentale su Windows/Linux).	Optional, used by Transcribe (29) with local OpenAI Whisper (experimental on Windows/Linux).
+Whisper locale	Local Whisper
+Si apre il Terminale per configurare OpenAI Whisper e il modello.	Opens Terminal to configure OpenAI Whisper and the model.

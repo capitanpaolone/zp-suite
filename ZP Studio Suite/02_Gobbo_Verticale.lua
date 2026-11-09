@@ -153,6 +153,10 @@ local tc_alert_mode = "off"
 local countdown_alert = true
 local max_character_rows = 1
 local reading_point = 0.34
+local timed_scroll_wpm = 120
+local timed_manual_override = false
+local timed_reposition_requested = false
+local timed_override_item = nil
 local active_progress = 0.0
 local show_timecode = true
 local timecode_offset = 0.0
@@ -293,6 +297,7 @@ function SaveSettings()
     reaper.SetExtState(settings_section, "countdown_alert", bool_to_state(countdown_alert), true)
     reaper.SetExtState(settings_section, "max_character_rows", tostring(max_character_rows), true)
     reaper.SetExtState(settings_section, "reading_point", tostring(reading_point), true)
+    reaper.SetExtState(settings_section, "timed_scroll_wpm", tostring(timed_scroll_wpm), true)
     reaper.SetExtState(settings_section, "show_timecode", bool_to_state(show_timecode), true)
     reaper.SetExtState(settings_section, "master_font_size", tostring(master_font_size), true)
     reaper.SetExtState(settings_section, "document_margin_x", tostring(document_margin_x), true)
@@ -334,6 +339,7 @@ function LoadSettings()
 
     local saved_reading = tonumber(reaper.GetExtState(settings_section, "reading_point"))
     if saved_reading then reading_point = math.max(0.12, math.min(0.65, saved_reading)) end
+    timed_scroll_wpm = math.max(40, math.min(240, tonumber(reaper.GetExtState(settings_section, "timed_scroll_wpm")) or timed_scroll_wpm))
 
     window_w = math.max(420, tonumber(reaper.GetExtState(settings_section, "window_w")) or window_w)
     window_h = math.max(360, tonumber(reaper.GetExtState(settings_section, "window_h")) or window_h)
@@ -496,6 +502,67 @@ function AddEmptyGobboTextItem()
     reaper.UpdateArrange()
     UpdateItems()
     RecalculateDocumentLayout()
+end
+
+local function CountTimedTextWords(text)
+    local count = 0
+    for _ in tostring(text or ""):gmatch("%S+") do count = count + 1 end
+    return math.max(1, count)
+end
+
+local function TimedTextDuration(text, wpm)
+    text = tostring(text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
+    local words = CountTimedTextWords(text)
+    local notes_w = (not panels_hidden and notes_panel_open) and NOTES_PANEL_W or 0
+    local side_w = not panels_hidden and (sidebar_collapsed and 30 or side_panel_w) or 0
+    local available_w = math.max(200, gfx.w - side_w - notes_w - speaker_shoulder_w - document_margin_x * 2)
+    gfx.setfont(1, default_font, master_font_size)
+    local lines = WrapText(text, available_w)
+    local blank_lines, text_lines = 0, 0
+    for _, line in ipairs(lines) do
+        if trim(line) == "" then blank_lines = blank_lines + 1 else text_lines = text_lines + 1 end
+    end
+    -- La pausa di una riga vuota equivale al tempo medio necessario per leggere
+    -- una riga piena; il numero di righe dipende poi da font e larghezza del Gobbo.
+    local rate = math.max(40, math.min(240, wpm or 120))
+    local average_words_per_line = words / math.max(1, text_lines)
+    return math.max(5, (words * 60 / rate) + (blank_lines * average_words_per_line * 60 / rate))
+end
+
+function AddTimedGobboTextItem()
+    local pos = GetCurrentProjectPosition()
+    local ts_start, ts_end = reaper.GetSet_LoopTimeRange(false, false, 0, 0, false)
+    if ts_start and ts_end and ts_end - ts_start > 0.2 then pos = ts_start end
+    local editor_w = math.min(900, math.max(480, gfx.w - 80))
+    local editor_h = math.max(240, math.min(420, gfx.h - 60))
+    -- Editor dedicato: non richiama OnStopButton, quindi non interrompe play o REC.
+    inline_edit = {
+        item = nil, mode = "timed_new", timed_position = pos, timed_wpm = timed_scroll_wpm,
+        text = "", original = "", cursor = 1,
+        x = math.max(12, (gfx.w - editor_w) * 0.5),
+        y = math.max(12, (gfx.h - editor_h) * 0.42),
+        w = editor_w, h = editor_h,
+        font_size = math.max(18, math.min(master_font_size, 28)),
+        title = T("Nuovo testo temporizzato"), undo_stack = {}
+    }
+end
+
+function SetTimedScrollSpeed(delta, play_pos)
+    timed_scroll_wpm = math.max(40, math.min(240, timed_scroll_wpm + delta))
+    reaper.SetExtState(settings_section, "timed_scroll_wpm", tostring(timed_scroll_wpm), true)
+    play_pos = play_pos or GetCurrentProjectPosition()
+    for _, item in ipairs(cached_items or {}) do
+        if item.timed_scroll and play_pos >= item.pos and play_pos <= item.pos + item.len then
+            local _, text = reaper.GetSetMediaItemInfo_String(item.item, "P_NOTES", "", false)
+            local duration = TimedTextDuration(text or "", timed_scroll_wpm)
+            reaper.Undo_BeginBlock()
+            reaper.SetMediaItemInfo_Value(item.item, "D_LENGTH", duration)
+            reaper.GetSetMediaItemInfo_String(item.item, "P_EXT:ZP_TIMED_SCROLL_WPM", tostring(timed_scroll_wpm), true)
+            reaper.UpdateItemInProject(item.item)
+            reaper.Undo_EndBlock("ZP Studio Suite: regola velocità testo temporizzato", -1)
+            break
+        end
+    end
 end
 
 function TextFlowDisplayName(name)
@@ -1585,9 +1652,14 @@ end
 -- =============================================
 function WrapText(text, max_w)
     local lines = {}
-    for paragraph in text:gmatch("([^\r\n]+)") do
+    text = tostring(text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
+    for paragraph in (text .. "\n"):gmatch("(.-)\n") do
         local words = {}
         for word in paragraph:gmatch("%S+") do table.insert(words, word) end
+
+        if #words == 0 then
+            table.insert(lines, "")
+        else
         
         local current_line = ""
         for _, word in ipairs(words) do
@@ -1601,6 +1673,7 @@ function WrapText(text, max_w)
             end
         end
         if current_line ~= "" then table.insert(lines, current_line) end
+        end
     end
     if #lines == 0 then table.insert(lines, "") end
     return lines
@@ -2379,7 +2452,27 @@ function SaveInlineSubtitleEdit()
     if not inline_edit then return end
     local new_text = trim(inline_edit.text or "")
     local mode = inline_edit.mode or "subtitle"
-    if mode == "note_new" and new_text ~= "" then
+    if mode == "timed_new" and new_text ~= "" then
+        local track = GetOrCreateTextFlowTrack()
+        if track then
+            local pos = inline_edit.timed_position or GetCurrentProjectPosition()
+            local wpm = inline_edit.timed_wpm or timed_scroll_wpm
+            local duration = TimedTextDuration(new_text, wpm)
+            reaper.Undo_BeginBlock()
+            local item = reaper.AddMediaItemToTrack(track)
+            reaper.SetMediaItemInfo_Value(item, "D_POSITION", pos)
+            reaper.SetMediaItemInfo_Value(item, "D_LENGTH", duration)
+            reaper.SetMediaItemInfo_Value(item, "I_CUSTOMCOLOR", NativeColor(COLOR_SUBS))
+            reaper.GetSetMediaItemInfo_String(item, "P_NOTES", new_text, true)
+            reaper.GetSetMediaItemInfo_String(item, "P_EXT:ZP_TIMED_SCROLL", "1", true)
+            reaper.GetSetMediaItemInfo_String(item, "P_EXT:ZP_TIMED_SCROLL_WPM", tostring(wpm), true)
+            UpdateSubtitleItemName(item, new_text)
+            reaper.UpdateItemInProject(item)
+            reaper.Undo_EndBlock("ZP Studio Suite: inserisci testo temporizzato", -1)
+            timed_manual_override = false
+            timed_reposition_requested = true
+        end
+    elseif mode == "note_new" and new_text ~= "" then
         local track = GetOrCreateNotesTrack()
         if not track then
             reaper.ShowMessageBox(T("Impossibile creare la traccia note."), "ZP Studio Suite", 0)
@@ -2885,10 +2978,11 @@ function UpdateItems()
             local color = GetDisplayedItemColor(item, COLOR_SUBS)
             local _, notes = reaper.GetSetMediaItemInfo_String(item, "P_NOTES", "", false)
             local _, highlight_raw = reaper.GetSetMediaItemInfo_String(item, "P_EXT:RythmoBand_HIGHLIGHT", "", false)
+            local _, timed_scroll = reaper.GetSetMediaItemInfo_String(item, "P_EXT:ZP_TIMED_SCROLL", "", false)
             
             local r, g, b = ColorToRGB(color, COLOR_SUBS)
             
-            table.insert(cached_items, {item=item, pos=pos, len=len, notes=notes, highlights=ParseHighlightTerms(highlight_raw), has_note=has_note, person_notes=person_notes, r=r, g=g, b=b, flow=flow_index, track_name=GetTrackName(track), source_file=SyncSourceFileName(item)})
+            table.insert(cached_items, {item=item, pos=pos, len=len, notes=notes, highlights=ParseHighlightTerms(highlight_raw), timed_scroll=timed_scroll == "1", has_note=has_note, person_notes=person_notes, r=r, g=g, b=b, flow=flow_index, track_name=GetTrackName(track), source_file=SyncSourceFileName(item)})
         end
     end
     -- Ordine cronologico rigidissimo! È un copione. A parita' di tempo, l'ordine delle tracce.
@@ -3008,7 +3102,8 @@ function OpenGobboAccessibleMenu()
         T("13 Contrasto"),
         T("14 Corpo -"),
         T("15 Corpo +"),
-        T("16 Help")
+        T("16 Help"),
+        T("17 Nuovo testo temporizzato")
     }, ", ")
 
     local ok, value = reaper.GetUserInputs(
@@ -3087,6 +3182,9 @@ function OpenGobboAccessibleMenu()
     elseif choice == 16 then
         OpenSuiteHelp()
         GobboAccessibleSpeak(T("Apro help ZP Studio Suite."))
+    elseif choice == 17 then
+        AddTimedGobboTextItem()
+        GobboAccessibleSpeak(T("Incolla il testo; la durata si calcola alla velocità impostata."))
     else
         GobboAccessibleSpeak(T("Scelta non disponibile."))
     end
@@ -3500,6 +3598,29 @@ function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
                 AddEmptyGobboTextItem()
             end
             y = y + 38
+            if DrawButton(x + pad, y, full_w, 28, T("+ Testo temporizzato"), 0.20, 0.42, 0.48) then
+                AddTimedGobboTextItem()
+            end
+            y = y + 32
+            SidebarLabel(x + pad, y + 3, T("Velocità testo"))
+            y = y + 19
+            if DrawButton(x + pad + full_w - 112, y, 34, 24, "−", 0.45, 0.20, 0.20) then
+                SetTimedScrollSpeed(-10, tc_position); SaveSettings()
+            end
+            gfx.setfont(3, "Arial", 13, 'b')
+            SetThemeColor("active", 0.95)
+            local wpm_label = tostring(timed_scroll_wpm) .. " " .. T("parole/min")
+            local wpm_w = gfx.measurestr(wpm_label)
+            gfx.x, gfx.y = x + pad + full_w - 74 - wpm_w, y + 5
+            gfx.drawstr(wpm_label)
+            if DrawButton(x + pad + full_w - 36, y, 34, 24, "+", 0.20, 0.45, 0.20) then
+                SetTimedScrollSpeed(10, tc_position); SaveSettings()
+            end
+            y = y + 30
+            if DrawButton(x + pad, y, full_w, 25, T("Riposiziona sul player"), 0.22, 0.30, 0.42) then
+                timed_reposition_requested = true
+            end
+            y = y + 31
             if SidebarCheck(x + pad, y, full_w, T("Modifica (Studio/Edit)"), studio_edit_mode) then
                 studio_edit_mode = not studio_edit_mode
                 if studio_edit_mode then
@@ -3958,6 +4079,7 @@ function DrawGUI()
     local found_active = false
     local static_display_item = nil
     active_media_item = nil
+    local active_timed_scroll_item = nil
     active_progress = 0.0
     
     for i, item in ipairs(cached_items) do
@@ -3981,6 +4103,7 @@ function DrawGUI()
             end
             found_active = true
             active_media_item = item.item
+            if item.timed_scroll then active_timed_scroll_item = item.item end
             break
         end
         
@@ -4020,8 +4143,32 @@ function DrawGUI()
     -- Studio/Edit: la rotella sul testo scorre anche con Sync ON (porta con se' il cursore della
     -- timeline, come la barra). Per 0,6 s dopo l'ultimo scatto il testo non insegue il cursore.
     local over_document = gfx.mouse_x >= notes_w and gfx.mouse_x <= notes_w + read_w and gfx.mouse_y >= 0 and gfx.mouse_y <= teleprompter_bottom
-    if studio_edit_mode and wheel ~= 0 and over_document then EditWheelUntil = reaper.time_precise() + 0.6 end
-    if studio_edit_mode and (not studio_edit_sync or edit_scroll_dragging or edit_scroll_was_dragging
+    if active_timed_scroll_item ~= timed_override_item then
+        timed_override_item = active_timed_scroll_item
+        timed_manual_override = false
+    end
+    if timed_reposition_requested then
+        timed_reposition_requested = false
+        timed_manual_override = false
+        document_scroll_y = target_scroll_y
+    end
+    if active_timed_scroll_item and wheel ~= 0 and over_document then
+        local step = math.max(42, master_font_size * 2.2)
+        document_scroll_y = document_scroll_y + (wheel > 0 and -step or step)
+        timed_manual_override = true
+        wheel = 0
+    end
+    if active_timed_scroll_item and (edit_scroll_dragging or edit_scroll_was_dragging) then
+        timed_manual_override = true
+    end
+    if active_timed_scroll_item and timed_manual_override then
+        -- La rotella e la barra restano libere; il player riprende a seguire il testo
+        -- soltanto quando si preme "Riposiziona sul player".
+        document_scroll_y = ClampDocumentScroll(document_scroll_y, teleprompter_bottom)
+    elseif studio_edit_mode and wheel ~= 0 and over_document then
+        EditWheelUntil = reaper.time_precise() + 0.6
+    end
+    if not (active_timed_scroll_item and timed_manual_override) and studio_edit_mode and (not studio_edit_sync or edit_scroll_dragging or edit_scroll_was_dragging
         or reaper.time_precise() < (EditWheelUntil or 0)) then
         if wheel ~= 0 and over_document then
             local step = math.max(42, master_font_size * 2.2)
@@ -4029,7 +4176,7 @@ function DrawGUI()
             if studio_edit_sync then JumpTimelineFromDocumentScroll(teleprompter_bottom) end
         end
         document_scroll_y = ClampDocumentScroll(document_scroll_y, teleprompter_bottom)
-    else
+    elseif not (active_timed_scroll_item and timed_manual_override) then
         -- Smooth follow camera. In modalita' Fisso il cambio blocco e' diretto:
         -- niente scorrimento interno mentre la battuta e' valida.
         if fixed_block_mode then

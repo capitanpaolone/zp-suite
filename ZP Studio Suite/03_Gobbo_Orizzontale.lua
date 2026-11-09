@@ -796,9 +796,10 @@ function RecalculateLayout()
         local natural_w = item.text_w + 72
         item.box_w = math.max(120, natural_w)
         item.tape_w = math.max(80, item.text_w + 42)
-        local scroll_distance = math.max(80, item.text_w + 70)
+        local scroll_distance = math.max(item.timed_scroll and 2 or 80, item.text_w + 70)
         local scroll_duration = math.max(0.20, item.len or 0)
-        item.scroll_pps = math.max(80, scroll_distance / scroll_duration)
+        item.scroll_pps = item.timed_scroll and math.max(2, scroll_distance / scroll_duration)
+            or math.max(80, scroll_distance / scroll_duration)
         item.line_h = item.font_size * 1.15
         item.lines = { item.read_text }
         item.line_words = { item.words }
@@ -1188,11 +1189,12 @@ function UpdateItems()
             local color = GetDisplayedItemColor(item, COLOR_SUBS)
             local _, notes = reaper.GetSetMediaItemInfo_String(item, "P_NOTES", "", false)
             local _, highlight_raw = reaper.GetSetMediaItemInfo_String(item, "P_EXT:RythmoBand_HIGHLIGHT", "", false)
+            local _, timed_scroll = reaper.GetSetMediaItemInfo_String(item, "P_EXT:ZP_TIMED_SCROLL", "", false)
             local person_notes = CollectCharacterNotesForRange(pos, len)
             
             local r, g, b = ColorToRGB(color, COLOR_SUBS)
             
-            table.insert(cached_items, {item=item, pos=pos, len=len, notes=notes, highlights=ParseHighlightTerms(highlight_raw), person_notes=person_notes, r=r, g=g, b=b, flow=flow_index, track_name=GetTrackName(track), source_file=SyncSourceFileName(item)})
+            table.insert(cached_items, {item=item, pos=pos, len=len, notes=notes, highlights=ParseHighlightTerms(highlight_raw), timed_scroll=timed_scroll == "1", person_notes=person_notes, r=r, g=g, b=b, flow=flow_index, track_name=GetTrackName(track), source_file=SyncSourceFileName(item)})
         end
     end
     -- in ordine di tempo; a parita' di tempo, l'ordine delle tracce
