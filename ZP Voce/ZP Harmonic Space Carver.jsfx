@@ -1,8 +1,16 @@
 // @description ZP Harmonic Space Carver
-// @version 2.6.8
+// @version 2.6.10
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   2026-11-09: Rampa e durata Custom salvate e richiamate per marker insieme a C/S/M/L.
+//   2026-11-09: ripristino proporzioni GUI compatte; preset sopra Rampa/Custom e Voice Ret leggibile.
+//   Corretta la parentesi mancante nel comando cue in Play; algoritmi DSP invariati.
+//   2.6.10: preset C/S/M/L salvati per singolo marker nel progetto.
+//   GUI cue riordinata: Voice Ret leggibile, preset sopra i controlli e timeline libera da sovrapposizioni.
+//   2.6.9: Tenuta cue selezionabile (Personalizzata/Breve/Media/Lunga); alla scadenza il detector torna attivo.
+//   Il cue apre indipendentemente dal detector per la Rampa e una tenuta Custom/Breve/Media/Lunga.
+//   Il contatore del cue avanza anche quando il VCA e' escluso o ha priorita' zero.
 //   Riferimento primario per item GUID: la sostituzione del take nello stesso item non fa scattare un falso allarme.
 //   Cue ambra quando il riferimento voce manca; selezione + ADOTTA POSIZIONE lo conferma dopo verifica.
 //   L'avviso rosso CUE FUORI POSTO in alto e' un pulsante: un clic riporta tutti i cue rossi sulla
@@ -94,6 +102,7 @@ slider62:0<0,1,1{Off,On}>-SC 3 On (7/8)
 slider63:0<0,20,0.1>-Lookahead (ms)
 slider64:6<0,12,0.1>-Carver Knee (dB)
 slider65:0<0,900,1>-HSC Slot (helper)
+slider66:0<0,3,1{Custom,Short,Medium,Long}>-Cue Hold Mode (new cue default)
 
 // -----------------------------
 // METER VITALI (Esclusivi per OSARA, prefisso [Read])
@@ -167,8 +176,8 @@ log2db = 8.68588963806504;
 DECAY = 0.99997;
 // MAPPA DELLA MEMORIA (vedi ANTI_REGRESSIONE): 0-15 stati SVF, 16-6159 oscilloscopio,
 // 8192-8255 cue, 8320-8383 backup cue, 8400-8431 tabella Partenza, 8440-8442 stato fonti SC,
-// 8460-8523 cue selezionati per ELIMINA,
-// 16384-49151 lookahead. gmem: vedi quick_service (numeri unici da 8310000).
+// 8460-8523 cue selezionati per ELIMINA, 8530-8593 preset per cue, 8600-8663 backup preset.
+// 16384-49151 lookahead. gmem: vedi quick_service (numeri unici da 8310000 e preset da 8379000).
 BUF_SIZE   = 2048;
 buf_main_L = 16; buf_sc_L = buf_main_L + BUF_SIZE; buf_out_L = buf_sc_L + BUF_SIZE;
 i_init = 0; loop(16, i_init[0] = 0; i_init += 1;);
@@ -199,6 +208,11 @@ last_play_pos = play_position; was_playing = play_state & 1;
 // Cue di rientro rapido. Memoria propria da 8192 e inizializzazione UNA volta sola:
 // REAPER rilancia @init a ogni Play (niente ext_noinit).
 quick_points = 8192; quick_backup = 8320; quick_msel = 8460;
+quick_cue_modes = 8530; quick_backup_modes = 8600;
+quick_cue_ramps = 8680; quick_cue_holds = 8750;
+quick_backup_ramps = 8820; quick_backup_holds = 8890; quick_timing_dirty = 8960;
+quick_sync_ramps = 9040; quick_sync_holds = 9110; quick_sync_dirty = 9180;
+// 8680..9243: tempi per cue, backup undo, modifiche in attesa e copia durante la sincronizzazione.
 // Selezione multipla per ELIMINA (indici dei cue): si azzera a ogni cambio dell'elenco.
 function quick_msel_clear() local(i) ( i = 0; loop(64, quick_msel[i] = 0; i += 1;); quick_msel_n = 0; quick_msel_anchor = -1; );
 function quick_msel_count() local(i) (
@@ -207,22 +221,32 @@ function quick_msel_count() local(i) (
 function quick_insert(t) local(i) (
   quick_point_count < 64 ? (
     i = quick_point_count;
-    while (i > 0 && quick_points[i-1] > t) ( quick_points[i] = quick_points[i-1]; i -= 1; );
-    quick_points[i] = t; quick_point_count += 1; i;
+    while (i > 0 && quick_points[i-1] > t) (
+      quick_points[i] = quick_points[i-1]; quick_cue_modes[i] = quick_cue_modes[i-1];
+      quick_cue_ramps[i] = quick_cue_ramps[i-1]; quick_cue_holds[i] = quick_cue_holds[i-1]; quick_timing_dirty[i] = quick_timing_dirty[i-1]; i -= 1;
+    );
+    quick_points[i] = t; quick_cue_modes[i] = floor(slider(66) + 0.5);
+    quick_cue_ramps[i] = slider(56); quick_cue_holds[i] = slider(57); quick_timing_dirty[i] = 0;
+    quick_point_count += 1; i;
   ) : -1;
 );
 function quick_delete(idx) local(i) (
   idx >= 0 && idx < quick_point_count ? (
-    i = idx; loop(quick_point_count - idx - 1, quick_points[i] = quick_points[i+1]; i += 1;);
-    quick_point_count -= 1; quick_points[quick_point_count] = -1;
+    i = idx; loop(quick_point_count - idx - 1,
+      quick_points[i] = quick_points[i+1]; quick_cue_modes[i] = quick_cue_modes[i+1];
+      quick_cue_ramps[i] = quick_cue_ramps[i+1]; quick_cue_holds[i] = quick_cue_holds[i+1]; quick_timing_dirty[i] = quick_timing_dirty[i+1]; i += 1;
+    );
+    quick_point_count -= 1; quick_points[quick_point_count] = -1; quick_cue_modes[quick_point_count] = floor(slider(66) + 0.5); quick_timing_dirty[quick_point_count] = 0;
   );
 );
-function quick_sort() local(i, j, v) (
+function quick_sort() local(i, j, v, vm, vr, vh) (
   i = 1;
   loop(max(0, quick_point_count - 1),
-    v = quick_points[i]; j = i;
-    while (j > 0 && quick_points[j-1] > v) ( quick_points[j] = quick_points[j-1]; j -= 1; );
-    quick_points[j] = v; i += 1;
+    v = quick_points[i]; vm = quick_cue_modes[i]; vr = quick_cue_ramps[i]; vh = quick_cue_holds[i]; j = i;
+    while (j > 0 && quick_points[j-1] > v) (
+      quick_points[j] = quick_points[j-1]; quick_cue_modes[j] = quick_cue_modes[j-1]; quick_cue_ramps[j] = quick_cue_ramps[j-1]; quick_cue_holds[j] = quick_cue_holds[j-1]; j -= 1;
+    );
+    quick_points[j] = v; quick_cue_modes[j] = vm; quick_cue_ramps[j] = vr; quick_cue_holds[j] = vh; i += 1;
   );
 );
 function quick_set_status(st) ( quick_status = st; quick_status_t = time_precise(); );
@@ -231,7 +255,7 @@ function quick_toggle_at(t) local(i, found, added) (
   found = -1; i = 0; added = 0; quick_msel_clear();
   loop(quick_point_count, abs(quick_points[i] - t) <= 0.08 ? found = i; i += 1;);
   found >= 0 ? (
-    quick_last_action = 2; quick_last_action_pos = quick_points[found];
+    quick_last_action = 2; quick_last_action_pos = quick_points[found]; quick_last_action_mode = quick_cue_modes[found]; quick_last_action_ramp = quick_cue_ramps[found]; quick_last_action_hold = quick_cue_holds[found];
     quick_delete(found); quick_sel = -1; quick_set_status(2);
   ) : quick_point_count < 64 ? (
     quick_sel = quick_insert(t); added = 1;
@@ -248,9 +272,11 @@ function quick_undo() local(i, idx, r) (
     loop(quick_point_count, abs(quick_points[i] - quick_last_action_pos) < 0.001 ? idx = i; i += 1;);
     idx >= 0 ? (quick_delete(idx); r = 5;);
   ) : quick_last_action == 2 ? (
-    quick_insert(quick_last_action_pos) >= 0 ? r = 6;
+    idx = quick_insert(quick_last_action_pos);
+    idx >= 0 ? (quick_cue_modes[idx] = quick_last_action_mode; quick_cue_ramps[idx] = quick_last_action_ramp; quick_cue_holds[idx] = quick_last_action_hold; r = 6;);
   ) : quick_last_action == 3 ? (
-    quick_point_count = 0; i = 0; loop(quick_backup_count, quick_insert(quick_backup[i]); i += 1;); r = 6;
+    quick_point_count = 0; i = 0;
+    loop(quick_backup_count, quick_insert(quick_backup[i]); quick_cue_modes[i] = quick_backup_modes[i]; quick_cue_ramps[i] = quick_backup_ramps[i]; quick_cue_holds[i] = quick_backup_holds[i]; i += 1;); r = 6;
   );
   r > 0 ? quick_set_status(r);
   quick_last_action = 0; quick_last_action_pos = -1; quick_sel = -1;
@@ -259,7 +285,9 @@ function quick_undo() local(i, idx, r) (
 );
 function quick_clear_all() local(i) (
   quick_msel_clear(); quick_backup_count = quick_point_count; i = 0;
-  loop(quick_point_count, quick_backup[i] = quick_points[i]; quick_points[i] = -1; i += 1;);
+  loop(quick_point_count,
+    quick_backup[i] = quick_points[i]; quick_backup_modes[i] = quick_cue_modes[i]; quick_backup_ramps[i] = quick_cue_ramps[i]; quick_backup_holds[i] = quick_cue_holds[i]; quick_points[i] = -1; i += 1;
+  );
   quick_point_count = 0; quick_sel = -1; quick_last_action = 3; quick_last_action_pos = -1;
   quick_gmem_base >= 0 ? gmem[quick_gmem_base+2] = -1;
   quick_set_status(7);
@@ -271,7 +299,7 @@ function quick_delete_selected() local(i, n) (
   n = quick_msel_count();
   n > 0 ? (
     quick_backup_count = quick_point_count; i = 0;
-    loop(quick_point_count, quick_backup[i] = quick_points[i]; i += 1;);
+    loop(quick_point_count, quick_backup[i] = quick_points[i]; quick_backup_modes[i] = quick_cue_modes[i]; quick_backup_ramps[i] = quick_cue_ramps[i]; quick_backup_holds[i] = quick_cue_holds[i]; i += 1;);
     i = quick_point_count - 1;                 // dall'ultimo al primo: gli indici sotto restano validi
     loop(quick_point_count, quick_msel[i] ? quick_delete(i); i -= 1;);
     quick_last_action = 3; quick_last_action_pos = -1; quick_sel = -1;
@@ -292,7 +320,67 @@ function quick_delete_selected() local(i, n) (
 HSC_MB = 3800;
 // Numeri unici: blocchi da 76 celle da 8310000 (0-71 come sopra, 72-73 maschere dei cue fuori posto).
 HSC_SLOT_BASE = 8310000; HSC_SLOT_STRIDE = 76; // +72/73 fuori posto, +74/75 riferimento mancante
-function quick_service() local(base, i, seq, cmd, res, pos, n) (
+// Banca preset per slot separata dai blocchi HSC legacy; 4 celle = 64 scelte da 2 bit, +revisione +heartbeat.
+HSC_PREF_BASE = 8379000; HSC_PREF_STRIDE = 6;
+function quick_pref_available() (
+  quick_pref_addr >= 0 && gmem[quick_pref_addr+5] > 0 &&
+  time_precise() >= gmem[quick_pref_addr+5] && time_precise() - gmem[quick_pref_addr+5] <= 1.0;
+);
+function quick_pref_mode(idx) (
+  idx >= 0 && idx < quick_point_count ? quick_cue_modes[idx] : floor(slider(66) + 0.5);
+);
+function quick_pref_set_mode(idx, mode) local(part, shift, packed, old_mode) (
+  idx >= 0 && idx < quick_point_count && quick_pref_available() ? (
+    mode = max(0, min(3, floor(mode + 0.5)));
+    part = floor(idx / 16); shift = (idx % 16) * 2;
+    packed = floor(gmem[quick_pref_addr + part] + 0.5);
+    old_mode = floor(packed / (2 ^ shift)) % 4;
+    gmem[quick_pref_addr + part] = packed + (mode - old_mode) * (2 ^ shift);
+    quick_cue_modes[idx] = mode;
+  );
+);
+function quick_pref_sync() local(now, revision, i, part, shift, packed) (
+  quick_pref_addr >= 0 ? (
+    now = time_precise();
+    gmem[quick_pref_addr+5] > 0 && now >= gmem[quick_pref_addr+5] && now - gmem[quick_pref_addr+5] <= 1.0 ? (
+      revision = floor(gmem[quick_pref_addr+4] + 0.5);
+      revision > 0 && revision != quick_pref_seen ? (
+        i = 0;
+        loop(64,
+          part = floor(i / 16); shift = (i % 16) * 2;
+          packed = floor(gmem[quick_pref_addr + part] + 0.5);
+          quick_cue_modes[i] = floor(packed / (2 ^ shift)) % 4;
+          i += 1;
+        );
+        quick_pref_seen = revision;
+      );
+    );
+  );
+);
+// GUI -> helper timing changes: +70 packs cue position in milliseconds and two 8-bit time values.
+// Helper -> JSFX: 3920..3983 carries timing tuples for command 5, 3984 is the protocol tag.
+function quick_timing_service() local(i, packed) (
+  quick_gmem_base >= 0 && quick_pref_available() && gmem[3984] == 905245 ? (
+    quick_timing_inflight && gmem[quick_gmem_base+3] >= quick_timing_seq ? (
+      gmem[quick_gmem_base+3] > quick_timing_seq ? (
+        i = 0; loop(quick_point_count, abs(quick_points[i] - quick_timing_pos) < 0.0005 ? quick_timing_dirty[i] = 1; i += 1;);
+      );
+      quick_timing_inflight = 0;
+    );
+    !quick_timing_inflight && gmem[quick_gmem_base+1] == gmem[quick_gmem_base+3] ? (
+      i = 0;
+      while(i < quick_point_count && !quick_timing_dirty[i]) (i += 1;);
+      i < quick_point_count ? (
+        packed = floor(quick_cue_ramps[i] + 0.5) + floor(quick_cue_holds[i] / 10 + 0.5) * 256;
+        gmem[quick_gmem_base+70] = floor(quick_points[i] * 1000 + 0.5) * 65536 + packed;
+        gmem[quick_gmem_base] = 9; gmem[quick_gmem_base+1] += 1;
+        quick_timing_seq = gmem[quick_gmem_base+1]; quick_timing_inflight = 1;
+        quick_timing_pos = quick_points[i]; quick_timing_dirty[i] = 0;
+      );
+    );
+  );
+);
+function quick_service() local(base, i, seq, cmd, res, pos, n, same_list, selected, packed) (
   quick_place_cnt -= 1;
   floor(slider(65) + 0.5) != quick_slot ? quick_place_cnt = 0;
   quick_place_cnt <= 0 ? (
@@ -304,6 +392,7 @@ function quick_service() local(base, i, seq, cmd, res, pos, n) (
     base >= 8300000 ? base = -1;
     // numero unico assegnato dall'helper (1.8+): indirizzo indipendente da progetto, traccia e posizione
     quick_slot = floor(slider(65) + 0.5);
+    quick_pref_addr = quick_slot >= 1 && quick_slot <= 900 ? HSC_PREF_BASE + quick_slot * HSC_PREF_STRIDE : -1;
     quick_slot >= 1 && quick_slot <= 900 && base >= 0 ? base = HSC_SLOT_BASE + quick_slot * HSC_SLOT_STRIDE;
     // maschere dei cue fuori posto: nel blocco del numero unico, o nella zona libera della traccia
     quick_mask_addr = base < 0 ? -1 : (quick_slot >= 1 && quick_slot <= 900) ? base + 72 :
@@ -311,6 +400,7 @@ function quick_service() local(base, i, seq, cmd, res, pos, n) (
     quick_missing_mask_addr = (base >= 0 && quick_slot >= 1 && quick_slot <= 900) ? base + 74 : -1;
     base != quick_gmem_base ? (
       quick_gmem_base = base;
+      quick_pref_seen = -1;
       quick_ext_seen = gmem[HSC_MB+3];
     );
   );
@@ -345,9 +435,29 @@ function quick_service() local(base, i, seq, cmd, res, pos, n) (
         ) : cmd == 5 ? (
           // 2.6: l'helper sostituisce l'elenco con i marker #HSC della timeline
           n = max(0, min(64, floor(gmem[HSC_MB+10] + 0.5)));
+          same_list = n == quick_point_count; selected = quick_sel;
+          i = 0; loop(n, abs(quick_points[i] - gmem[HSC_MB+11+i]) > 0.0005 ? same_list = 0; i += 1;);
+          i = 0; loop(64,
+            quick_sync_ramps[i] = quick_cue_ramps[i]; quick_sync_holds[i] = quick_cue_holds[i];
+            quick_sync_dirty[i] = quick_timing_dirty[i] || (quick_timing_inflight && abs(quick_points[i] - quick_timing_pos) < 0.0005);
+            i += 1;
+          );
           quick_point_count = 0; i = 0; loop(64, quick_points[i] = -1; i += 1;);
           i = 0; loop(n, gmem[HSC_MB+11+i] >= 0 ? quick_insert(gmem[HSC_MB+11+i]); i += 1;);
-          quick_sel = -1; quick_msel_clear(); res = 9;
+          gmem[3984] == 905245 ? (
+            i = 0; loop(n,
+              packed = floor(gmem[3920+i] + 0.5);
+              same_list && quick_sync_dirty[i] ? (
+                quick_cue_ramps[i] = quick_sync_ramps[i]; quick_cue_holds[i] = quick_sync_holds[i];
+                quick_timing_dirty[i] = 1;
+              ) : (
+                quick_cue_ramps[i] = max(10, min(250, packed % 256));
+                quick_cue_holds[i] = max(0, min(2000, floor(packed / 256) * 10));
+              ); i += 1;
+            );
+          );
+          quick_sel = same_list ? selected : -1; gmem[base+2] = quick_sel;
+          quick_msel_clear(); quick_pref_seen = -1; quick_pref_sync(); res = 9;
         );
         // elenco aggiornato subito, prima dell'ack: l'helper legge cue gia' nuovi
         gmem[base+4] = quick_point_count;
@@ -358,22 +468,33 @@ function quick_service() local(base, i, seq, cmd, res, pos, n) (
   );
   quick_jump_ok = quick_nav_jump && base >= 0;
   quick_sel >= quick_point_count ? quick_sel = -1;
+  quick_timing_service();
   quick_service_t = time_precise();
 );
 quick_wait_seq = 0; quick_wait_t = 0;
-quick_inited != 2404 ? (
-  quick_inited = 2404;
+quick_inited != 2610 ? (
+  quick_inited = 2610;
   quick_point_count = 0; quick_backup_count = 0; quick_nav_jump = 1; quick_sel = -1;
-  quick_last_action = 0; quick_last_action_pos = -1; quick_status = 0; quick_status_t = 0; quick_clear_arm_t = -10;
+  quick_last_action = 0; quick_last_action_pos = -1; quick_last_action_mode = floor(slider(66) + 0.5);
+  quick_status = 0; quick_status_t = 0; quick_clear_arm_t = -10;
   qpi = 0; loop(128, quick_points[qpi] = -1; qpi += 1;);
+  qpi = 0; loop(64, quick_cue_modes[qpi] = floor(slider(66) + 0.5); quick_backup_modes[qpi] = floor(slider(66) + 0.5); qpi += 1;);
   quick_msel_clear();
   // il preascolto non sopravvive alla riapertura del progetto (si rischia di renderizzare il "tolto")
   slider31 = 0;
-  quick_gmem_base = -1; quick_place_cnt = 0; quick_ext_seen = 0; quick_slot = -1; quick_mask_addr = -1; quick_missing_mask_addr = -1;
+  quick_gmem_base = -1; quick_place_cnt = 0; quick_ext_seen = 0; quick_slot = -1; quick_pref_addr = -1; quick_pref_seen = -1;
+  quick_mask_addr = -1; quick_missing_mask_addr = -1;
 );
+quick_timing_init != 2611 ? (
+  qpi = 0; loop(64, quick_cue_ramps[qpi] = slider(56); quick_cue_holds[qpi] = slider(57); quick_timing_dirty[qpi] = 0; qpi += 1;);
+  quick_timing_init = 2611; quick_last_action_ramp = slider(56); quick_last_action_hold = slider(57);
+);
+quick_timing_inflight = 0;
 quick_request = 0; quick_ui_pos = 0; quick_fire_ext = 0;
 quick_total_samples = max(1, floor(0.200 * srate));
-quick_samples_left = 0; quick_guard_samples_left = 0; quick_start_gr = 1.0;
+quick_hold_ms = slider(57); quick_hold_samples = max(0, floor(quick_hold_ms * 0.001 * srate));
+quick_samples_left = 0; quick_guard_samples_left = 0; quick_event_total_samples = quick_total_samples; quick_event_hold_samples = 0;
+quick_ramp_active = 0; quick_hold_active = 0; quick_override_active = 0; quick_start_gr = 1.0;
 quick_carver_start_l = 1.0; quick_carver_start_m = 1.0; quick_carver_start_h = 1.0;
 quick_last_event_pos = -1;
 last_mouse_cap = 0;
@@ -492,20 +613,23 @@ zp_bus_refresh(ZP_BUS_ID);
 gmem[201] = max(0, -log2db * log(max(0.000001, glue_meter_gr)));
 // ================================================================
 quick_service();
+quick_pref_sync();
 is_playing = play_state & 1; is_jumping = abs(play_position - last_play_pos) > 0.2;
 quick_ui_pos = play_position;
 quick_total_samples = max(1, floor(slider(56) * 0.001 * srate));
-quick_fire = 0;
-quick_fire_ext ? (quick_fire_ext = 0; quick_fire = 1;);
+quick_fire = 0; quick_fire_idx = -1; quick_fire_default = 0;
+quick_fire_ext ? (quick_fire_ext = 0; quick_fire = 1; quick_fire_default = 1;);
 quick_request ? (
   quick_request = 0;
   // in Play: al playhead (e il rientro si sente subito); da fermo lo gestisce la GUI con l'helper
-  is_playing ? (quick_toggle_at(play_position) ? quick_fire = 1;);
+  is_playing ? (quick_toggle_at(play_position) ? (quick_fire = 1; quick_fire_idx = -1; quick_fire_default = 1;););
 );
 !is_jumping && is_playing ? (
   qpi = 0;
   loop(quick_point_count,
-    quick_points[qpi] > last_play_pos && quick_points[qpi] <= play_position ? quick_fire = 1;
+    quick_points[qpi] > last_play_pos && quick_points[qpi] <= play_position ? (
+      quick_fire = 1; quick_fire_idx = qpi; quick_fire_default = 0;
+    );
     qpi += 1;
   );
 );
@@ -513,7 +637,9 @@ quick_request ? (
 is_jumping && is_playing ? (
   qpi = 0;
   loop(quick_point_count,
-    quick_points[qpi] >= play_position - 0.005 && quick_points[qpi] <= play_position + samplesblock / srate ? quick_fire = 2;
+    quick_points[qpi] >= play_position - 0.005 && quick_points[qpi] <= play_position + samplesblock / srate ? (
+      quick_fire = 2; quick_fire_idx = qpi; quick_fire_default = 0;
+    );
     qpi += 1;
   );
 );
@@ -535,7 +661,13 @@ quick_fire ? (
   quick_start_gr = final_vca_gr;
   quick_carver_start_l = gr_l; quick_carver_start_m = gr_m; quick_carver_start_h = gr_h;
   quick_fire == 2 ? (quick_start_gr = 1.0; quick_carver_start_l = 1.0; quick_carver_start_m = 1.0; quick_carver_start_h = 1.0;);
-  quick_samples_left = quick_total_samples;
+  // Latch ramp and hold at the cue: later SC activity/automation cannot shorten this override.
+  quick_event_total_samples = (quick_fire_idx >= 0 && !quick_fire_default) ? max(1, floor(quick_cue_ramps[quick_fire_idx] * 0.001 * srate)) : quick_total_samples;
+  quick_hold_mode = (quick_fire_idx >= 0 && !quick_fire_default) ? quick_pref_mode(quick_fire_idx) : floor(slider(66) + 0.5);
+  quick_hold_ms = quick_hold_mode == 1 ? 500 : quick_hold_mode == 2 ? 1000 : quick_hold_mode == 3 ? 2000 : (quick_fire_idx >= 0 && !quick_fire_default) ? quick_cue_holds[quick_fire_idx] : slider(57);
+  quick_hold_samples = max(0, floor(quick_hold_ms * 0.001 * srate));
+  quick_event_hold_samples = quick_hold_samples;
+  quick_samples_left = quick_event_total_samples;
   quick_guard_samples_left = 0;
   quick_last_event_pos = play_position;
 );
@@ -746,12 +878,15 @@ gr_l = max(0.0001, 1.0 - (raw_l * s_eff_dl * k_l)); gr_m = max(0.0001, 1.0 - (ra
 
 spread > 0 ? ( r_l=gr_l; r_m=gr_m; r_h=gr_h; sp2=spread*0.5;
   gr_l = max(0.0001, r_l*(1-spread) + r_m*sp2 + r_h*sp2); gr_m = max(0.0001, r_m*(1-spread) + r_l*sp2 + r_h*sp2); gr_h = max(0.0001, r_h*(1-spread) + r_l*sp2 + r_m*sp2); );
-quick_samples_left > 0 ? (
-  quick_t = min(1.0, (quick_total_samples - quick_samples_left + 1) / max(1, quick_total_samples));
+quick_ramp_active = quick_samples_left > 0;
+quick_hold_active = !quick_ramp_active && quick_guard_samples_left > 0;
+quick_override_active = quick_ramp_active || quick_hold_active;
+quick_ramp_active ? (
+  quick_t = min(1.0, (quick_event_total_samples - quick_samples_left + 1) / max(1, quick_event_total_samples));
   gr_l = quick_carver_start_l + (1.0 - quick_carver_start_l) * quick_t;
   gr_m = quick_carver_start_m + (1.0 - quick_carver_start_m) * quick_t;
   gr_h = quick_carver_start_h + (1.0 - quick_carver_start_h) * quick_t;
-) : quick_guard_samples_left > 0 ? (gr_l = 1.0; gr_m = 1.0; gr_h = 1.0;);
+) : quick_hold_active ? (gr_l = 1.0; gr_m = 1.0; gr_h = 1.0;);
 
 procL = inL + mL_lo*(gr_l - 1.0) + mL_md*(gr_m - 1.0) + mL_hi*(gr_h - 1.0);
 procR = inR + mR_lo*(gr_l - 1.0) + mR_md*(gr_m - 1.0) + mR_hi*(gr_h - 1.0);
@@ -783,14 +918,10 @@ s_vca_amt > 0 ? (
   dbg_after_max_gr = target_vca_gr;
 
   speech_just_started ? vca_return_progress = 1.0;
-  quick_samples_left > 0 ? (
-    quick_t = min(1.0, (quick_total_samples - quick_samples_left + 1) / max(1, quick_total_samples));
+  quick_ramp_active ? (
     final_vca_gr = quick_start_gr + (1.0 - quick_start_gr) * quick_t;
-    quick_samples_left -= 1;
-    quick_samples_left <= 0 ? (final_vca_gr = 1.0; quick_guard_samples_left = floor(max(0, slider(57)) * 0.001 * srate););
-  ) : quick_guard_samples_left > 0 ? (
+  ) : quick_hold_active ? (
     final_vca_gr = 1.0;
-    quick_guard_samples_left -= 1;
   ) : speech_active ? (
     target_vca_gr < final_vca_gr ? ( final_vca_gr = vca_att_coef * final_vca_gr + (1.0 - vca_att_coef) * target_vca_gr;
     ) : ( final_vca_gr = vca_rel_coef * final_vca_gr + (1.0 - vca_rel_coef) * target_vca_gr; );
@@ -816,6 +947,12 @@ s_vca_amt <= 0 ? (
   vca_rawL = inL; vca_rawR = inR;
 );
 
+// Advance the shared cue timer once per sample, outside the VCA gate and SC detector.
+quick_ramp_active ? (
+  quick_samples_left -= 1;
+  quick_samples_left <= 0 ? quick_guard_samples_left = quick_event_hold_samples;
+) : quick_hold_active ? quick_guard_samples_left -= 1;
+
 flat_mix_both = flat_mix_both * flat_focus_tc + flat_t_both * (1.0 - flat_focus_tc);
 flat_mix_carver = flat_mix_carver * flat_focus_tc + flat_t_carver * (1.0 - flat_focus_tc);
 flat_mix_vca = flat_mix_vca * flat_focus_tc + flat_t_vca * (1.0 - flat_focus_tc);
@@ -826,7 +963,7 @@ procR = (vca_carvR * flat_mix_both + carvR * flat_mix_carver + vca_rawR * flat_m
 carver_returning = (gr_l < 0.999) || (gr_m < 0.999) || (gr_h < 0.999) || (meter_gr_l < 0.999) || (meter_gr_m < 0.999) || (meter_gr_h < 0.999);
 vca_returning = final_vca_gr < 0.999;
 glue_authorized = speech_active || (speech_state > 0) || carver_returning || vca_returning;
-(quick_samples_left > 0 || quick_guard_samples_left > 0) ? glue_authorized = 0;
+quick_override_active ? glue_authorized = 0;
 glue_gr = 1.0; glue_active = 0;
 glue_drive = max(max(max(1.0 - gr_l, 1.0 - gr_m), 1.0 - gr_h), 1.0 - final_vca_gr);
 glue_target_gr = 1.0;
@@ -890,14 +1027,14 @@ speech_was_active = speech_active;
 
 // ================================================================
 @serialize
-quick_serialize_version = 2602;
+quick_serialize_version = 2611;
 file_avail(0) >= 0 ? (
   // caricamento (progetto, undo, preset): il preascolto riparte spento
   listen_reset_pending = 1;
   file_avail(0) > 0 ? (
     file_var(0, quick_serialize_version);
     quick_serialize_version < 2602 ? duck_migrate = 1;
-    quick_serialize_version >= 2402 && quick_serialize_version <= 2602 ? (
+    quick_serialize_version >= 2402 && quick_serialize_version <= 2611 ? (
       file_var(0, quick_point_count);
       quick_point_count = max(0, min(64, floor(quick_point_count)));
       qpi = 0;
@@ -908,7 +1045,26 @@ file_avail(0) >= 0 ? (
         quick_last_action = max(0, min(2, floor(quick_last_action)));
       ) : (quick_last_action = 0; quick_last_action_pos = -1;);
       quick_serialize_version >= 2404 ? (file_var(0, quick_nav_jump); quick_nav_jump = quick_nav_jump ? 1 : 0;) : (quick_nav_jump = 1;);
-      quick_sort(); quick_sel = -1; quick_backup_count = 0; quick_msel_clear();
+      quick_serialize_version >= 2610 ? (
+        qpi = 0; loop(64, file_var(0, quick_cue_modes[qpi]); quick_cue_modes[qpi] = max(0, min(3, floor(quick_cue_modes[qpi] + 0.5))); qpi += 1;);
+        file_var(0, quick_last_action_mode); quick_last_action_mode = max(0, min(3, floor(quick_last_action_mode + 0.5)));
+      ) : (
+        qpi = 0; loop(64, quick_cue_modes[qpi] = floor(slider(66) + 0.5); qpi += 1;);
+        quick_last_action_mode = floor(slider(66) + 0.5);
+      );
+      quick_serialize_version >= 2611 ? (
+        qpi = 0; loop(64,
+          file_var(0, quick_cue_ramps[qpi]); file_var(0, quick_cue_holds[qpi]); file_var(0, quick_timing_dirty[qpi]);
+          quick_cue_ramps[qpi] = max(10, min(250, floor(quick_cue_ramps[qpi] + 0.5)));
+          quick_cue_holds[qpi] = max(0, min(2000, floor(quick_cue_holds[qpi] / 10 + 0.5) * 10));
+          quick_timing_dirty[qpi] = quick_timing_dirty[qpi] ? 1 : 0; qpi += 1;
+        );
+        file_var(0, quick_last_action_ramp); file_var(0, quick_last_action_hold);
+      ) : (
+        qpi = 0; loop(64, quick_cue_ramps[qpi] = slider(56); quick_cue_holds[qpi] = slider(57); quick_timing_dirty[qpi] = 0; qpi += 1;);
+        quick_last_action_ramp = slider(56); quick_last_action_hold = slider(57);
+      );
+      quick_sort(); quick_sel = -1; quick_backup_count = 0; quick_msel_clear(); quick_pref_seen = -1;
     ) : (quick_point_count = 0; quick_last_action = 0; quick_last_action_pos = -1;);
   ) : (quick_point_count = 0; quick_last_action = 0; quick_last_action_pos = -1;);
 ) : (
@@ -920,6 +1076,14 @@ file_avail(0) >= 0 ? (
   file_var(0, quick_la_w);
   file_var(0, quick_last_action_pos);
   file_var(0, quick_nav_jump);
+  qpi = 0; loop(64, file_var(0, quick_cue_modes[qpi]); qpi += 1;);
+  file_var(0, quick_last_action_mode);
+  qpi = 0; loop(64,
+    file_var(0, quick_cue_ramps[qpi]); file_var(0, quick_cue_holds[qpi]);
+    quick_td_write = quick_timing_dirty[qpi] || (quick_timing_inflight && abs(quick_points[qpi] - quick_timing_pos) < 0.0005);
+    file_var(0, quick_td_write); qpi += 1;
+  );
+  file_var(0, quick_last_action_ramp); file_var(0, quick_last_action_hold);
 );
 
 @gfx 900 700
@@ -1186,7 +1350,9 @@ local(lt, val, norm_val, ang_min, ang_max, ang, is_hover, hover_mult, tw, th, sy
 (
   lt = show_simple && !ui_dark_panel;
   sy = ui_sy(ky);
-  is_hover = ui_hit(kx-r-12, ky-r-ui_font_label-10, 2*r+24, 2*r+2*ui_font_label+24);
+  strlen(label) == 0 ?
+    is_hover = ui_hit(kx-r-8, ky-r-5, 2*r+16, 2*r+2*r+10)
+  : is_hover = ui_hit(kx-r-12, ky-r-ui_font_label-10, 2*r+24, 2*r+2*ui_font_label+24);
   is_hover ? active_info_id = info_id;
   val = ui_drag(sl_idx, is_hover, min_v, max_v, def_v);
   hover_mult = (is_hover || ui_drag_id == sl_idx) ? 1.4 : 0.8;
@@ -1359,6 +1525,12 @@ function draw_lost_banner(x, y, w, h) local(sy, blink, tw, th, hover, has_lost) 
                  sprintf(#lost_banner_txt, ui_lang == 1 ? "VOICE REF. CHANGED: %d" : "RIFERIMENTO VOCE CAMBIATO: %d", quick_missing_n);
     );
     gfx_setfont(5); gfx_measurestr(#lost_banner_txt, tw, th);
+    tw > w - 8 ? (
+      has_lost ? sprintf(#lost_banner_txt, ui_lang == 1 ? "CUES: %d" : "CUE: %d", quick_lost_n) :
+                 sprintf(#lost_banner_txt, ui_lang == 1 ? "VOICE REF: %d" : "RIF. VOCE: %d", quick_missing_n);
+      gfx_measurestr(#lost_banner_txt, tw, th);
+      tw > w - 8 ? (sprintf(#lost_banner_txt, "%d", has_lost ? quick_lost_n : quick_missing_n); gfx_measurestr(#lost_banner_txt, tw, th););
+    );
     gfx_r=1; gfx_g=0.95; gfx_b=0.93; gfx_x = x + (w - tw) / 2; gfx_y = sy + (h - th) / 2; gfx_drawstr(#lost_banner_txt);
     hover ? (
       active_info_id = has_lost ? 78 : 79;
@@ -1371,7 +1543,7 @@ function draw_lost_banner(x, y, w, h) local(sy, blink, tw, th, hover, has_lost) 
 // Barra QUICK RETURN CUES, identica in Advanced, Simple e Dock. full = con Rampa e Apertura.
 function draw_cue_bar(bx, by, bw, full)
 local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m, s, sel_w, tl_w, add_state,
-      row_w, del_w, nsel, a)
+      row_w, del_w, nsel, a, hold_mode, cue_has_selection, preset_enabled, preset_x)
 (
   ui_dark_panel = 1;
   sy = ui_sy(by);
@@ -1387,7 +1559,7 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
   ui_hit(bx, by, 420, 26) && quick_gmem_base >= 0 && !sc_route_fresh ? active_info_id = 75;
 
   qx = bx + 10; qy = by + 32; qh = 24;
-  sel_w = full ? 170 : 140;
+  sel_w = full ? 154 : 140;
   // < cue selezionato >
   x = qx;
   ui_cue_button(x, qy, 32, qh, "<", 0, quick_point_count > 0, 56) ? (
@@ -1433,10 +1605,7 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
   );
   x += 80 + 12;
   // Timeline SALTA / RESTA FERMO
-  full ? (
-    gfx_setfont(5); gfx_r=0.60; gfx_g=0.60; gfx_b=0.72; gfx_x = x; gfx_y = ui_sy(qy + 5); gfx_drawstr("Timeline");
-    x += 58; tl_w = 104;
-  ) : (tl_w = 60;);
+  tl_w = full ? 104 : 60;
   ui_cue_button(x, qy, 56, qh, ui_lang == 1 ? "JUMP" : "SALTA", quick_nav_jump, quick_gmem_base >= 0, 58) ? (quick_nav_jump = 1; quick_sel = -1;);
   x += 60;
   ui_cue_button(x, qy, tl_w, qh, full ? (ui_lang == 1 ? "STAY" : "RESTA FERMO") : (ui_lang == 1 ? "STAY" : "FERMO"), !quick_nav_jump, 1, 58) ? (quick_nav_jump = 0;);
@@ -1444,7 +1613,7 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
   // Fila dei cue: dove sei (playhead rosso) rispetto ai cue. Clic su un punto = selezionalo;
   // Cmd/Ctrl+clic aggiunge o toglie un punto, Shift+clic prende l'intervallo (convenzioni di REAPER).
   // In fondo alla fila: ELIMINA (e RIALLINEA / ADOTTA POSIZIONE per il cue selezionato).
-  lx = qx; row_w = full ? (bw - 130) : (bw - 20);
+  lx = qx; row_w = full ? (bw - 218) : (bw - 20);
   del_w = 92; lw = row_w - del_w - 10;
   quick_sel_lost ? lw -= 228 : quick_sel_missing ? lw -= 142;
   ly = by + (full ? 82 : 84);
@@ -1504,8 +1673,35 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
   ui_cue_button(lx + row_w - del_w, ly - 11, del_w, 22, #quick_del_txt, nsel > 0 ? 2 : 0,
                 quick_point_count > 0 && (nsel > 0 || quick_sel >= 0), 77) ? quick_delete_selected();
   full ? (
-    ui_knob(56, bx + bw - 86, by + 70, 12, 10, 250, 200, ui_lang == 1 ? "Ramp" : "Rampa", "ms", 0.95, 0.42, 0.20, 56);
-    ui_knob(57, bx + bw - 34, by + 70, 12, 0, 2000, 500, ui_lang == 1 ? "Release" : "Apertura", "ms", 0.95, 0.42, 0.20, 61);
+    cue_has_selection = quick_sel >= 0 && quick_sel < quick_point_count;
+    preset_enabled = cue_has_selection && quick_pref_available();
+    hold_mode = cue_has_selection ? quick_pref_mode(quick_sel) : floor(slider(66) + 0.5);
+    preset_x = bx + bw - 166;
+    ui_cue_button(preset_x,      by + 32, 26, 20, "C", hold_mode == 0, preset_enabled, 80) ? quick_pref_set_mode(quick_sel, 0);
+    ui_cue_button(preset_x + 36, by + 32, 26, 20, "S", hold_mode == 1, preset_enabled, 80) ? quick_pref_set_mode(quick_sel, 1);
+    ui_cue_button(preset_x + 72, by + 32, 26, 20, "M", hold_mode == 2, preset_enabled, 80) ? quick_pref_set_mode(quick_sel, 2);
+    ui_cue_button(preset_x + 108, by + 32, 26, 20, "L", hold_mode == 3, preset_enabled, 80) ? quick_pref_set_mode(quick_sel, 3);
+    gfx_setfont(5); gfx_r=0.70; gfx_g=0.72; gfx_b=0.78; gfx_a=1;
+    gfx_measurestr(ui_lang == 1 ? "Ramp" : "Rampa", tw, th); gfx_x = bx + bw - 146 - tw/2; gfx_y = ui_sy(by + 57); gfx_drawstr(ui_lang == 1 ? "Ramp" : "Rampa");
+    hold_mode == 0 ? strcpy(#quick_hold_label, ui_lang == 1 ? "Custom" : "Personalizza") : strcpy(#quick_hold_label, ui_lang == 1 ? "Hold" : "Tenuta");
+    gfx_measurestr(#quick_hold_label, tw, th); gfx_x = bx + bw - 50 - tw/2; gfx_y = ui_sy(by + 57); gfx_drawstr(#quick_hold_label);
+    cue_has_selection ? (slider(56) = quick_cue_ramps[quick_sel]; slider(57) = quick_cue_holds[quick_sel];);
+    ui_knob(56, bx + bw - 146, by + 82, 12, 10, 250, 200, "", "ms", 0.95, 0.42, 0.20, 56);
+    hold_mode == 0 ?
+      ui_knob(57, bx + bw - 50, by + 82, 12, 0, 2000, 500, "", "ms", 0.95, 0.42, 0.20, 80)
+    : (
+      quick_hold_ms = hold_mode == 1 ? 500 : hold_mode == 2 ? 1000 : 2000;
+      gfx_setfont(5); gfx_r=0.95; gfx_g=0.72; gfx_b=0.32; gfx_a=1;
+      sprintf(#quick_hold_readout, "%d ms", quick_hold_ms); gfx_measurestr(#quick_hold_readout, tw, th);
+      gfx_x = bx + bw - 50 - tw/2; gfx_y = ui_sy(by + 100); gfx_drawstr(#quick_hold_readout);
+    );
+    cue_has_selection ? (
+      (slider(56) != quick_cue_ramps[quick_sel] || slider(57) != quick_cue_holds[quick_sel]) ? (
+        quick_cue_ramps[quick_sel] = slider(56); quick_cue_holds[quick_sel] = slider(57);
+        quick_timing_dirty[quick_sel] = 1;
+      );
+    );
+    quick_timing_service();
   );
   ui_dark_panel = 0;
 );
@@ -1760,7 +1956,10 @@ show_simple ? (
   ui_knob(35, 808, 344, 15, 0, 100, 100, "Mix", "%", 0.7, 0.7, 0.7, 35);
   ui_knob(34, 860, 344, 13, -12, 12, 0, "Out", "dB", 0.7, 0.7, 0.7, 34);
   ui_knob(2,  808, 428, 13, -24, 24, 0, "In", "dB", 0.7, 0.7, 0.7, 2);
-  ui_knob(32, 860, 428, 13, -120, 12, -120, "Voice Ret", "dB", 0.92, 0.65, 0.10, 32);
+  ui_knob(32, 854, 428, 13, -120, 12, -120, "", "dB", 0.92, 0.65, 0.10, 32);
+  gfx_setfont(5); gfx_r=0.70; gfx_g=0.72; gfx_b=0.78;
+  gfx_measurestr("Voice Ret", voice_ret_tw, voice_ret_th);
+  gfx_x = 854 - voice_ret_tw/2; gfx_y = ui_sy(395); gfx_drawstr("Voice Ret");
 
   draw_box(10, 276, 250, 204, ui_lang == 1 ? "LEVELS" : "LIVELLI", 0.82, 0.84, 0.90);
   draw_hmeter(20, 312, 230, 10, max(meter_main_l, meter_main_r), "MAIN", 0.18, 0.88, 0.35);
@@ -1884,7 +2083,8 @@ view_mode == 0 ? (
   active_info_id == 59 ? (ui_lang == 1 ? gfx_drawstr("UNDO: reverts last cue add, remove, or clear action.") : gfx_drawstr("UNDO: annulla l'ultima aggiunta, rimozione o cancellazione dei cue.")) :
   active_info_id == 60 ? (ui_lang == 1 ? gfx_drawstr("CUE ROW: cyan = aligned, red = displaced, amber = voice reference changed. Click selects, Cmd/Ctrl+click adds, Shift+click range.") : gfx_drawstr("FILA DEI CUE: ciano = al suo posto, rosso = fuori posto, ambra = riferimento voce cambiato. Clic sceglie, Cmd/Ctrl+clic aggiunge, Shift+clic intervallo.")) :
   active_info_id == 77 ? (ui_lang == 1 ? gfx_drawstr("DELETE: removes selected cues and their #HSC markers (Cmd/Ctrl+click or Shift+click for multiple). UNDO restores.") : gfx_drawstr("ELIMINA: toglie i cue selezionati e i loro marker #HSC (Cmd/Ctrl+clic o Shift+clic per piu' cue). UNDO li rimette.")) :
-  active_info_id == 61 ? (ui_lang == 1 ? gfx_drawstr("OPENING: music remains open for this duration after ramp, ignoring voice.") : gfx_drawstr("APERTURA: dopo la Rampa la musica resta aperta per questo tempo, ignorando la voce.")) :
+  active_info_id == 61 ? (ui_lang == 1 ? gfx_drawstr("CUSTOM CUE HOLD: after the ramp, music stays open for this duration while ignoring voice.") : gfx_drawstr("TENUTA CUE PERSONALIZZATA: dopo la rampa la musica resta aperta per questo tempo, ignorando la voce.")) :
+  active_info_id == 80 ? (ui_lang == 1 ? gfx_drawstr("CUE PRESET: select a cue, then choose C/S/M/L; the choice is saved with that marker. Ramp and Custom duration are saved per marker. Sidechain resumes when Hold expires.") : gfx_drawstr("PRESET CUE: seleziona un cue e scegli C/S/M/L; la scelta resta salvata su quel marker. Rampa e durata Personalizzata sono salvate per marker. Il sidechain riprende alla fine della tenuta.")) :
   active_info_id == 65 ? gfx_drawstr(#sc_msg0) : active_info_id == 66 ? gfx_drawstr(#sc_msg1) : active_info_id == 67 ? gfx_drawstr(#sc_msg2) :
   active_info_id == 68 ? (ui_lang == 1 ? gfx_drawstr("VOICE INPUTS: visible when track has channels. Plugin I/O, Track channels 6 (SC2) or 8 (SC3).") : gfx_drawstr("FONTI VOCE: compaiono quando la traccia ha i canali. Pulsante I/O del plugin, Track channels 6 (SC2) o 8 (SC3).")) :
   active_info_id == 63 ? (ui_lang == 1 ? gfx_drawstr("LOOKAHEAD: Carver analyzes voice before music (lookahead), adding matching latency (PDC).") : gfx_drawstr("ANTICIPO: il Carver vede la voce prima della musica (lookahead). Aggiunge la stessa latenza (PDC).")) :

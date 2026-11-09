@@ -1,18 +1,27 @@
 -- @description ZP Harmonic Space Carver Cue Navigator (background helper)
--- @version 1.13
+-- @version 1.14
 -- @author Paolo Balestri / Codex
 -- @about Collega i Carver a REAPER: salti tra i cue, punto del cursore a trasporto fermo,
 --   verifica del routing sidechain e cue come marker #HSC sul righello (seguono l'editing).
 -- @changelog
---   1.12: dal Carver, un clic sull'avviso CUE FUORI POSTO riporta tutti i cue rossi sulla loro voce
---        e dice quanti ne ha riallineati (Ctrl+Z annulla).
+--   2026-11-09: memoria per marker estesa a Rampa e durata Custom; sincronizzazione con JSFX e render.
+--   1.14: preset C/S/M/L salvati per marker nel progetto; il Carver riceve anche una copia nel suo stato
+--        per mantenere le impostazioni cue-specifiche disponibili durante il render offline.
 --   1.13: l'item GUID diventa l'ancora primaria anche quando il take cambia; riferimenti mancanti
 --        distinti dai cue spostati e comando ADOTTA POSIZIONE.
+--   1.12: dal Carver, un clic sull'avviso CUE FUORI POSTO riporta tutti i cue rossi sulla loro voce
+--        e dice quanti ne ha riallineati (Ctrl+Z annulla).
 --   1.11: quando premi ? in un plugin ZP apre la sua sezione nella guida della Suite (italiano o inglese),
 --        e passa ai plugin la lingua scelta nella Suite. Tutto quello che faceva prima resta uguale.
 -- ================================================================
 -- Sincronizzazione cue <-> marker #HSC: logica pura (provata da test_hsc_sync.lua).
 -- ================================================================
+-- Provenienza ZP:
+--   Proprietà: ZP Harmonic Space Carver / Cue Navigator.
+--   Pacchetto d’origine: ZP Harmonic Space Carver 2.6.10 (installazione locale REAPER).
+--   Copia locale REAPER acquisita il 2026-11-09; preparazione Suite 2.6.7.
+--   Versione interna: 1.14, campo @version ReaPack.
+
 local HSC = { TOL = 0.005, MAX = 64, NAME = "#HSC" }
 
 function HSC.is_cue_marker(name, isrgn)
@@ -435,12 +444,19 @@ end
 
 local anchor_command               -- definita piu' sotto (ancore dei cue)
 local hsc_notify                   -- definita piu' sotto (messaggio non bloccante)
+local timing_command               -- definita dopo il registro preferenze
 local function handle(base)
   if reaper.gmem_read(base + 69) ~= MAGIC then return end
   local seq = math.floor(reaper.gmem_read(base + 1) + 0.5)
   local ack = math.floor(reaper.gmem_read(base + 3) + 0.5)
   if seq == ack or seq == last_seq[base] then return end
   local cmd = math.floor(reaper.gmem_read(base) + 0.5)
+  if cmd == 9 then
+    if timing_command and timing_command(reaper.gmem_read(base + 70)) then
+      reaper.gmem_write(base + 3, seq); last_seq[base] = seq
+    end
+    return
+  end
   if cmd == 8 then
     -- clic sull'avviso CUE FUORI POSTO: riallinea tutti i cue con riferimento disponibile
     local n = anchor_command and anchor_command("realign", nil) or 0
@@ -498,6 +514,8 @@ end
 local bases, carvers, last_scan = {}, {}, -1
 -- Numeri unici (Carver 2.6.3+): blocchi da 76 celle da 8310000 (+72/+73 maschere dei cue rossi).
 local SLOT_BASE, SLOT_STRIDE, SLOT_MAX = 8310000, 76, 900
+-- Banca separata: 4 celle impacchettano 64 preset a 2 bit; +4 revisione, +5 heartbeat helper.
+local PREF_BASE, PREF_STRIDE = 8379000, 6
 
 local function is_carver(track, fx)
   local ok, name = reaper.TrackFX_GetFXName(track, fx, "")
@@ -623,6 +641,11 @@ local function route_value(track, fx)
 end
 
 local voice_list = {}                 -- tracce voce di tutti i Carver (aggiornata da rescan)
+local cue_prefs, cue_prefs_key, pref_slot_state = {}, nil, {}
+local function rekey_cue_pref(old, new)
+  if old == new or not cue_prefs[old] then return end
+  cue_prefs[new], cue_prefs[old] = cue_prefs[old], nil
+end
 local function rescan()
   local out, list = {}, {}
   for _, c in ipairs(assign_slots()) do
@@ -630,7 +653,8 @@ local function rescan()
     local base, mask = addresses(c.idx, c.fx, slot)
     if base >= 0 and base < SLOT_BASE + (SLOT_MAX + 1) * SLOT_STRIDE then
       out[#out + 1] = base
-      list[#list + 1] = { base = base, mask = mask,
+      list[#list + 1] = { base = base, mask = mask, slot = slot,
+        pref_addr = slot and (PREF_BASE + slot * PREF_STRIDE) or nil,
         missing_mask = slot and (base + 74) or nil, track = c.track, fx = c.fx }
     end
   end
@@ -735,6 +759,8 @@ end
 -- ================================================================
 local synced, expected, pending, sync_key = nil, {}, nil, nil
 local last_sync, last_mb_seen = -1, 0
+local timing_sent, timing_bank = {}, nil
+local last_prefs_tick = -1
 local settle_until = 0                    -- dopo un cambio di progetto: attesa che i Carver scrivano i loro cue
 HSC.SETTLE = 0.75
 local save_anchors                        -- definita con le ancore
@@ -744,14 +770,17 @@ local function project_key()
   return tostring(proj) .. "|" .. tostring(fn or "")
 end
 
-local function send_list(base, list)
+local function send_list(base, list, markers, timing_signature)
   local seq = math.floor(reaper.gmem_read(MB + 3) + 0.5) + 1
   reaper.gmem_write(MB + 10, #list)
   for i = 1, HSC.MAX do reaper.gmem_write(MB + 10 + i, list[i] or -1) end
+  local bank = timing_bank and timing_bank(markers) or {}
+  for i = 1, HSC.MAX do reaper.gmem_write(3919 + i, bank[i] or 13000) end
+  reaper.gmem_write(3984, 905245)
   reaper.gmem_write(MB, base)
   reaper.gmem_write(MB + 1, 5)
   reaper.gmem_write(MB + 3, seq)
-  pending = { base = base, seq = seq, t = reaper.time_precise(), list = list }
+  pending = { base = base, seq = seq, t = reaper.time_precise(), list = list, timing_signature = timing_signature }
 end
 
 local function alive_carvers()
@@ -765,13 +794,14 @@ local function sync()
   if key ~= sync_key then
     -- altro progetto (scheda o file): mai confrontare i suoi marker con i Carver del progetto di prima
     synced, expected, pending, sync_key = nil, {}, nil, key
+    timing_sent = {}
     rescan(); last_scan = reaper.time_precise()
     settle_until = reaper.time_precise() + HSC.SETTLE
   end
   if reaper.time_precise() < settle_until then return end
   if pending then
     if math.floor(reaper.gmem_read(MB + 4) + 0.5) == pending.seq then
-      expected[pending.base] = pending.list; pending = nil
+      expected[pending.base] = pending.list; timing_sent[pending.base] = pending.timing_signature; pending = nil
     elseif reaper.time_precise() - pending.t > 1.0 then
       pending = nil                       -- Carver fermo: si riprova al prossimo giro
     end
@@ -797,10 +827,10 @@ local function sync()
   else
     -- lato marker: spostamenti accettati, cancellazioni rimesse, aggiunte tolte
     local ops = HSC.marker_side(synced, markers)
-    for old, new in pairs(ops.rekey) do rekey_anchor(old, new); changed_anchors = true end
+    for old, new in pairs(ops.rekey) do rekey_anchor(old, new); rekey_cue_pref(old, new); changed_anchors = true end
     if #ops.restore > 0 or #ops.delete > 0 then
       local moved = apply_marker_ops(ops.restore, ops.delete)
-      for old, new in pairs(moved) do rekey_anchor(old, new); changed_anchors = true end
+      for old, new in pairs(moved) do rekey_anchor(old, new); rekey_cue_pref(old, new); changed_anchors = true end
       notify(#ops.restore > 0
         and string.format("Cue rimessi sul righello: %d. I cue si tolgono dal Carver (ADD/REMOVE, CLEAR ALL).", #ops.restore)
         or "I cue si aggiungono dal Carver: marker #HSC aggiunto a mano tolto.")
@@ -824,8 +854,11 @@ local function sync()
 
   -- ogni Carver riceve le posizioni dei marker (un Carver per giro mentre si aspetta l'ack)
   local target = HSC.positions(markers)
+  local _, timing_signature = timing_bank(markers)
   for _, c in ipairs(list) do
-    if not HSC.same(HSC.sorted(cue_times(c.base)), target) then send_list(c.base, target); return end
+    if not HSC.same(HSC.sorted(cue_times(c.base)), target) or timing_sent[c.base] ~= timing_signature then
+      send_list(c.base, target, markers, timing_signature); return
+    end
     expected[c.base] = target
   end
 end
@@ -871,6 +904,89 @@ end
 
 save_anchors = function()
   reaper.SetProjExtState(0, "ZP_HSC", "anchors", HSC.serialize(anchors))
+end
+
+local function deserialize_cue_prefs(text)
+  local prefs = {}
+  for raw_line in tostring(text or ""):gmatch("[^\n]+") do
+    local line = raw_line:gsub("\r$", "")
+    local id, pos, mode, ramp, hold = line:match("^(%-?%d+)\t([%-%d%.]+)\t([%-%d]+)\t([%d%.]+)\t([%d%.]+)$")
+    if not id then id, pos, mode = line:match("^(%-?%d+)\t([%-%d%.]+)\t([%-%d]+)$") end
+    if id then prefs[tonumber(id)] = { pos = tonumber(pos) or 0, mode = math.max(0, math.min(3, tonumber(mode) or 0)), ramp = tonumber(ramp), hold = tonumber(hold) } end
+  end
+  return prefs
+end
+
+local function serialize_cue_prefs(prefs)
+  local keys, out = {}, {}
+  for id in pairs(prefs) do keys[#keys + 1] = id end
+  table.sort(keys)
+  for _, id in ipairs(keys) do
+    local p = prefs[id]
+    out[#out + 1] = string.format("%d\t%.6f\t%d\t%d\t%d", id, p.pos or 0, math.max(0, math.min(3, math.floor((p.mode or 0) + 0.5))), p.ramp or 200, p.hold or 500)
+  end
+  return table.concat(out, "\n")
+end
+
+local function default_hold_mode(c)
+  if not c or not c.track or not c.fx then return 0 end
+  for p = 0, reaper.TrackFX_GetNumParams(c.track, c.fx) - 1 do
+    local _, name = reaper.TrackFX_GetParamName(c.track, c.fx, p, "")
+    if name and name:find("Cue Hold Mode", 1, true) then
+      return math.max(0, math.min(3, math.floor(reaper.TrackFX_GetParam(c.track, c.fx, p) + 0.5)))
+    end
+  end
+  return 0
+end
+
+local function default_cue_times(c)
+  local ramp, hold = 200, 500
+  if c and c.track and c.fx then
+    for p = 0, reaper.TrackFX_GetNumParams(c.track, c.fx) - 1 do
+      local _, name = reaper.TrackFX_GetParamName(c.track, c.fx, p, "")
+      if name and name:find("Quick Return Ramp", 1, true) then ramp = reaper.TrackFX_GetParam(c.track, c.fx, p) end
+      if name and name:find("Quick Return Open", 1, true) then hold = reaper.TrackFX_GetParam(c.track, c.fx, p) end
+    end
+  end
+  return math.max(10, math.min(250, math.floor(ramp + 0.5))), math.max(0, math.min(2000, math.floor(hold / 10 + 0.5) * 10))
+end
+
+local function load_cue_prefs(key)
+  local _, text = reaper.GetProjExtState(0, "ZP_HSC", "cue_prefs")
+  cue_prefs, cue_prefs_key, pref_slot_state = deserialize_cue_prefs(text), key, {}
+end
+
+local function save_cue_prefs()
+  reaper.SetProjExtState(0, "ZP_HSC", "cue_prefs", serialize_cue_prefs(cue_prefs))
+  if reaper.MarkProjectDirty then reaper.MarkProjectDirty(0) end
+end
+
+timing_bank = function(markers)
+  local bank = {}
+  for i, m in ipairs(markers) do
+    if i > HSC.MAX then break end
+    local p = cue_prefs[m.num] or {}
+    bank[i] = (p.ramp or 200) + math.floor((p.hold or 500) / 10 + 0.5) * 256
+  end
+  return bank, table.concat(bank, ",")
+end
+
+timing_command = function(payload)
+  local key = project_key()
+  if key ~= cue_prefs_key then load_cue_prefs(key) end
+  local pos = math.floor(payload / 65536) / 1000
+  local packed = math.floor(payload + 0.5) % 65536
+  local ramp = math.max(10, math.min(250, packed % 256))
+  local hold = math.max(0, math.min(2000, math.floor(packed / 256) * 10))
+  for _, m in ipairs(read_cue_markers()) do
+    if math.abs(m.pos - pos) <= HSC.TOL or (synced and synced[m.num] and math.abs(synced[m.num] - pos) <= HSC.TOL) then
+      local p = cue_prefs[m.num] or {mode = default_hold_mode(carvers[1])}
+      p.pos, p.ramp, p.hold = m.pos, ramp, hold; cue_prefs[m.num] = p
+      save_cue_prefs()
+      return true
+    end
+  end
+  return false -- cue appena aggiunto: riprovare dopo la sincronizzazione dei marker
 end
 
 -- Gira quando il progetto cambia (stato di REAPER), e comunque ogni 2 s.
@@ -930,6 +1046,129 @@ local function anchors_tick(force)
     if c.mask then
       reaper.gmem_write(c.mask, m1); reaper.gmem_write(c.mask + 1, m2)
       if c.missing_mask then reaper.gmem_write(c.missing_mask, mm1); reaper.gmem_write(c.missing_mask + 1, mm2) end
+    end
+  end
+end
+
+-- Banca cue-specifica: il helper conserva il modo in ProjExtState per ID marker e lo pubblica
+-- in quattro celle gmem per Carver. Il Carver ne salva una copia nel proprio stato JSFX per il render offline.
+local function cue_pref_signature(markers)
+  local ids = {}
+  for i = 1, math.min(#markers, HSC.MAX) do ids[i] = tostring(markers[i].num) end
+  return table.concat(ids, ",")
+end
+
+local function read_pref_bank(addr)
+  local bank = {}
+  for i = 1, 4 do bank[i] = math.floor(reaper.gmem_read(addr + i - 1) + 0.5) end
+  return bank
+end
+
+local function same_pref_bank(a, b)
+  if not a or not b then return false end
+  for i = 1, 4 do if a[i] ~= b[i] then return false end end
+  return true
+end
+
+local function pack_pref_bank(markers)
+  local bank = { 0, 0, 0, 0 }
+  for i = 1, math.min(#markers, HSC.MAX) do
+    local p = cue_prefs[markers[i].num]
+    local index = i - 1
+    bank[math.floor(index / 16) + 1] = bank[math.floor(index / 16) + 1] + (p and p.mode or 0) * (4 ^ (index % 16))
+  end
+  return bank
+end
+
+local function publish_pref_bank(c, signature, bank, now)
+  local addr = c.pref_addr
+  if not addr then return end
+  local revision = math.floor(reaper.gmem_read(addr + 4) + 0.5) + 1
+  if revision < 1 or revision > 2000000000 then revision = 1 end
+  for i = 1, 4 do reaper.gmem_write(addr + i - 1, bank[i]) end
+  reaper.gmem_write(addr + 4, revision)
+  reaper.gmem_write(addr + 5, now)
+  pref_slot_state[c.base] = { signature = signature, packed = bank }
+end
+
+local function prefs_tick()
+  if not reaper.GetProjExtState or not reaper.gmem_read or not reaper.gmem_write then return end
+  local key = project_key()
+  if key ~= cue_prefs_key then load_cue_prefs(key) end
+  local markers = read_cue_markers()
+  while #markers > HSC.MAX do table.remove(markers) end
+  local signature, dirty, fallback = cue_pref_signature(markers), false, nil
+
+  local present = {}
+  for _, m in ipairs(markers) do present[m.num] = true end
+  for _, m in ipairs(markers) do
+    local p = cue_prefs[m.num]
+    if not p then
+      local old_id, old_pref
+      for id, candidate in pairs(cue_prefs) do
+        if not present[id] and math.abs((candidate.pos or -1000000) - m.pos) <= 0.08 then old_id, old_pref = id, candidate; break end
+      end
+      if old_pref then
+        cue_prefs[m.num] = { pos = m.pos, mode = old_pref.mode, ramp = old_pref.ramp, hold = old_pref.hold }; cue_prefs[old_id] = nil
+      else
+        if fallback == nil then fallback = default_hold_mode(carvers[1]) end
+        cue_prefs[m.num] = { pos = m.pos, mode = fallback }
+      end
+      dirty = true
+    else
+      p.mode = math.max(0, math.min(3, math.floor((p.mode or (fallback or 0)) + 0.5)))
+      if math.abs((p.pos or m.pos) - m.pos) > 0.0005 then p.pos = m.pos; dirty = true end
+    end
+  end
+
+  local default_ramp, default_hold
+  for _, m in ipairs(markers) do
+    local p = cue_prefs[m.num]
+    if p.ramp == nil or p.hold == nil then
+      if not default_ramp then default_ramp, default_hold = default_cue_times(carvers[1]) end
+      p.ramp, p.hold = p.ramp or default_ramp, p.hold or default_hold; dirty = true
+    end
+  end
+
+  local initialize = false
+  for _, c in ipairs(carvers) do
+    if c.pref_addr then
+      local state = pref_slot_state[c.base]
+      if not state or state.signature ~= signature then initialize = true end
+    end
+  end
+
+  local adopted = false
+  if not initialize then
+    for _, c in ipairs(carvers) do
+      if c.pref_addr then
+        local state, current = pref_slot_state[c.base], read_pref_bank(c.pref_addr)
+        if state and not same_pref_bank(current, state.packed) then
+          for i, m in ipairs(markers) do
+            local index = i - 1
+            local part, shift = math.floor(index / 16) + 1, (index % 16) * 2
+            local mode = math.floor(current[part] / (2 ^ shift)) % 4
+            local p = cue_prefs[m.num]
+            if p and p.mode ~= mode then p.mode = mode; p.pos = m.pos; dirty = true end
+          end
+          adopted = true
+          break
+        end
+      end
+    end
+  end
+
+  if dirty then save_cue_prefs() end
+  local now = reaper.time_precise()
+  if initialize or adopted then
+    local bank = pack_pref_bank(markers)
+    for _, c in ipairs(carvers) do if c.pref_addr then publish_pref_bank(c, signature, bank, now) end end
+  else
+    for _, c in ipairs(carvers) do
+      if c.pref_addr then
+        local state = pref_slot_state[c.base]
+        if state then reaper.gmem_write(c.pref_addr + 5, now) end
+      end
     end
   end
 end
@@ -1007,7 +1246,8 @@ local function run()
   local now = reaper.time_precise()
   if now - last_scan >= 1.0 then rescan(); last_scan = now end
   for _, base in ipairs(bases) do handle(base) end
-  if now - last_sync >= 0.25 then sync(); anchors_tick(); serve_requests(); last_sync = now end
+  if now - last_prefs_tick >= 0.05 then prefs_tick(); last_prefs_tick = now end
+  if now - last_sync >= 0.25 then anchors_tick(); sync(); serve_requests(); last_sync = now end
   if tip_until > 0 and now > tip_until then reaper.TrackCtl_SetToolTip("", 0, 0, true); tip_until = 0 end
   reaper.defer(run)
 end

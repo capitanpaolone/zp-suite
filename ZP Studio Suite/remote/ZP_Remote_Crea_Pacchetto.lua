@@ -1,10 +1,15 @@
--- @noindex
 -- @description ZP Remote: controlla il progetto REAPER e crea il pacchetto da condividere
 -- @version 1.0
 -- @author ZP
 -- @about
 --   Interfaccia guidata per l'esportatore ZP Remote. Richiede accanto a questo file
 --   zp_remote_esporta.py e zp_remote_json.lua.
+
+-- Provenienza ZP:
+--   Proprietà: ZP Remote / esportazione pacchetti.
+--   Pacchetto d’origine: ZP Studio Suite 2.6.6 (installazione locale con aggiornamenti beta).
+--   Copia locale REAPER acquisita il 2026-11-09; preparazione Suite 2.6.7.
+--   Versione interna: 1.0, campo @version ReaPack.
 
 local r = reaper
 local TITLE, SECTION = "ZP Remote · Pacchetto", "ZP_REMOTE_EXPORT"
@@ -16,7 +21,7 @@ local HELP = [[Da REAPER a dubbertools.com
 
 3. Usa «Apri cartella» per trovare lo ZIP. Mettilo su uno spazio che fornisce un link HTTPS scaricabile. Accedi al tuo spazio su dubbertools.com, apri il progetto e incolla quel link nella parte che vuoi assegnare.
 
-4. Quando ricevi le registrazioni, apri «Importa» nello stesso progetto REAPER. Seleziona la cartella della consegna con consegna.json, lo ZIP originale e la regione. Premi «Controlla consegna», verifica il riepilogo e scegli «Importa nel progetto».]]
+4. Quando ricevi le registrazioni, apri «Importa» nello stesso progetto REAPER. Scegli lo ZIP di ritorno oppure la cartella estratta con consegna.json. Se l’ID coincide, i tempi BWF collocano le take nel progetto senza ZIP di partenza; per riallineare una copia diversa, scegli anche il pacchetto originale. Premi «Controlla consegna» e verifica la regione e il riepilogo prima di importare.]]
 local src = debug.getinfo(1, "S").source:sub(2)
 local script_dir = src:match("^(.*)[/\\][^/\\]+$") or "."
 local function join(a, b) return a:gsub("[/\\]+$", "") .. package.config:sub(1,1) .. b end
@@ -27,14 +32,7 @@ local json_ok, json = pcall(dofile, json_path)
 local function quote(s)
   s = tostring(s)
   if r.GetOS():match("^Win") then return '"' .. s:gsub('"', '\\"') .. '"' end
-  -- ExecProcess does not interpret POSIX single-quote escapes in macOS paths.
-  -- Double quotes keep spaces and apostrophes in one argument.
-  local backslash = "\\"
-  s = s:gsub(backslash, backslash .. backslash)
-  s = s:gsub('"', backslash .. '"')
-  s = s:gsub("%$", backslash .. "$")
-  s = s:gsub("`", backslash .. "`")
-  return '"' .. s .. '"'
+  return "'" .. s:gsub("'", "'\\''") .. "'"
 end
 local function find_python()
   local osname = r.GetOS()
@@ -89,10 +87,12 @@ local view = "export"
 local export_regions, export_region_index = {}, 1
 local import_delivery = r.GetExtState(SECTION, "import_consegna")
 local import_zip = r.GetExtState(SECTION, "import_zip")
-local import_regions, import_region_index = {}, 1
+local import_regions, import_region_index, import_region_manual = {}, 1, false
+local import_sync_project = ""
+local import_last_reaper_cursor, import_last_ui_selected_idx
+local import_last_loop_start, import_last_loop_end
 local import_busy, import_status_file, import_started_at = false, nil, nil
-local import_plan_path, import_plan, import_status_text, import_status_kind = nil, nil, "Scegli la cartella consegna e il relativo ZIP.", "info"
-local import_report = nil
+local import_plan_path, import_plan, import_status_text, import_status_kind = nil, nil, "Scegli la cartella oppure lo ZIP di ritorno.", "info"
 local C, rect, label, wrapped_label, buttons
 local start_import_preflight
 local refresh_export_regions
@@ -220,6 +220,10 @@ local function request_save(action)
     pending_save_action = action
     status_text = "Salva il progetto per continuare con il passaggio selezionato."
     status_kind = "info"
+    if action == "import_check" then
+      import_plan=nil
+      import_status_text,import_status_kind="Salva il progetto per controllare la consegna.","info"
+    end
     return false
   end
   return true
@@ -395,7 +399,8 @@ local function save_and_continue()
   refresh_project_info()
   if rpp == "" or r.IsProjectDirty(0) > 0 then
     pending_save_action = nil
-    status_text, status_kind = "Il progetto non risulta salvato. Nessun passaggio è stato eseguito.", "error"
+    status_text, status_kind = "Il progetto non risulta salvato.", "error"
+    if action=="import_check" then import_status_text,import_status_kind=status_text,status_kind end
     return
   end
   pending_save_action = nil
@@ -437,6 +442,14 @@ local function poll_export()
 end
 
 local function refresh_import_regions()
+  local previous=import_regions[import_region_index]
+  local previous_manual=import_region_manual
+  if import_sync_project ~= rpp then
+    import_sync_project = rpp
+    import_last_reaper_cursor, import_last_ui_selected_idx = nil, nil
+    import_last_loop_start, import_last_loop_end = nil, nil
+    previous, previous_manual = nil, false
+  end
   import_regions = {}
   local _, marker_count, region_count = r.CountProjectMarkers(0)
   local count=(marker_count or 0)+(region_count or 0)
@@ -466,12 +479,32 @@ local function refresh_import_regions()
     end
   end
   if #import_regions > 0 then
-    local found
-    for i,region in ipairs(import_regions) do
-      if cursor >= region.start and cursor <= region.ending then import_region_index=i; found=true; break end
+    local selected_start,selected_end
+    if r.GetSet_LoopTimeRange2 then
+      selected_start,selected_end=r.GetSet_LoopTimeRange2(0,false,false,0,0,false)
     end
-    if not found then import_region_index=math.min(import_region_index,#import_regions) end
-  else import_region_index=1 end
+    local found
+    if previous then
+      for i,region in ipairs(import_regions) do
+        local same_guid=previous.guid and region.guid and previous.guid:upper()==region.guid:upper()
+        local same_legacy=not previous.guid and not region.guid and previous.marker_index==region.marker_index and math.abs(previous.start-region.start)<=1/48000
+        if same_guid or same_legacy then import_region_index=i; import_region_manual=previous_manual; found=true; break end
+      end
+    end
+    if not found and selected_start and selected_end and selected_end>selected_start then
+      for i,region in ipairs(import_regions) do
+        if math.abs(region.start-selected_start)<=1/48000 and math.abs(region.ending-selected_end)<=1/48000 then
+          import_region_index=i; import_region_manual=false; found=true; break
+        end
+      end
+    end
+    if not found then
+      for i,region in ipairs(import_regions) do
+        if cursor >= region.start and cursor <= region.ending then import_region_index=i; import_region_manual=false; found=true; break end
+      end
+    end
+    if not found then import_region_index=math.min(import_region_index,#import_regions); import_region_manual=false end
+  else import_region_index=1; import_region_manual=false end
 end
 
 refresh_export_regions = function()
@@ -608,38 +641,107 @@ local function sync_export_region_to_reaper()
   end
 end
 
-local function choose_import_delivery()
-  local ok,selected = r.GetUserFileName(3,"Scegli la cartella della consegna (consegna.json)",import_delivery,"")
-  if ok and selected and selected ~= "" then
-    import_delivery=selected:gsub("[/\\]+$","")
-    r.SetExtState(SECTION,"import_consegna",import_delivery,true)
-    import_plan=nil
-    import_status_text,import_status_kind="Cartella consegna selezionata.","info"
+local function sync_import_region_to_reaper()
+  if #import_regions == 0 then return end
+  local target
+  local ui_selected_idx = selected_region_from_reaper_ui()
+  local ui_changed = ui_selected_idx ~= import_last_ui_selected_idx
+  import_last_ui_selected_idx = ui_selected_idx
+  local loop_start, loop_end
+  if r.GetSet_LoopTimeRange2 then
+    local ok, a, b = pcall(r.GetSet_LoopTimeRange2, 0, false, false, 0, 0, false)
+    if ok then loop_start, loop_end = a, b end
+  elseif r.GetSet_LoopTimeRange then
+    local ok, a, b = pcall(r.GetSet_LoopTimeRange, false, false, 0, 0, false)
+    if ok then loop_start, loop_end = a, b end
+  end
+  if loop_start and loop_end and (import_last_loop_start == nil or math.abs(loop_start-import_last_loop_start)>0.00001 or math.abs(loop_end-import_last_loop_end)>0.00001) then
+    import_last_loop_start, import_last_loop_end = loop_start, loop_end
+    for i, region in ipairs(import_regions) do
+      if math.abs(loop_start-region.start)<0.00001 and math.abs(loop_end-region.ending)<0.00001 then target=i; break end
+    end
+  end
+  local cursor = r.GetCursorPosition()
+  if import_last_reaper_cursor == nil or math.abs(cursor-import_last_reaper_cursor)>0.00001 then
+    import_last_reaper_cursor = cursor
+    if r.GetLastMarkerAndCurRegion then
+      local ok, _, region_idx = pcall(r.GetLastMarkerAndCurRegion, 0, cursor)
+      if ok and region_idx and region_idx >= 0 then
+        for i, region in ipairs(import_regions) do
+          if region.marker_index == region_idx then target=i; break end
+        end
+      end
+    end
+  end
+  if ui_changed and ui_selected_idx then
+    for i, region in ipairs(import_regions) do
+      if region.marker_index == ui_selected_idx then target=i; break end
+    end
+  end
+  if target and target ~= import_region_index then
+    import_region_index = target
+    import_region_manual = false
+    import_plan = nil
+    local selected = import_regions[target]
+    import_status_text = "Regione selezionata in REAPER: " .. selected.name .. ". Ricontrolla la consegna."
+    import_status_kind = "info"
   end
 end
 
+local function choose_import_delivery()
+  local choice=gfx.showmenu("ZIP di ritorno|Cartella con consegna.json")
+  if choice==0 then return end
+  local ok,selected
+  if choice==1 then
+    ok,selected=r.GetUserFileName(1,"Scegli lo ZIP di ritorno","", "ZIP di ritorno|*.zip")
+  elseif choice==2 then
+    ok,selected=r.GetUserFileName(3,"Scegli la cartella che contiene consegna.json",import_delivery,"")
+  end
+  if not ok then return end
+  if not selected or selected=="" then
+    import_status_text,import_status_kind="Selezione annullata.","info"
+    return
+  end
+  selected=selected:gsub("[/\\]+$","")
+  if selected:lower():match("%.zip$") then
+    if not r.file_exists(selected) then
+      import_status_text,import_status_kind="Lo ZIP selezionato non esiste o non è leggibile.","error"
+      return
+    end
+  elseif r.file_exists(join(selected,"manifest.json")) and not r.file_exists(join(selected,"consegna.json")) then
+    import_status_text,import_status_kind="Questa è la cartella del pacchetto di partenza. Scegli lo ZIP di ritorno oppure la cartella con consegna.json.","error"
+    return
+  elseif not r.file_exists(join(selected,"consegna.json")) then
+    import_status_text,import_status_kind="Scegli uno ZIP di ritorno oppure una cartella che contenga consegna.json e i WAV.","error"
+    return
+  end
+  import_delivery=selected
+  r.SetExtState(SECTION,"import_consegna",import_delivery,true)
+  import_plan=nil
+  local kind=selected:lower():match("%.zip$") and "ZIP di ritorno" or "Cartella consegna"
+  import_status_text,import_status_kind=kind.." selezionata. Premi Controlla consegna.","info"
+end
+
 local function choose_import_zip()
-  local ok,selected = r.GetUserFileNameForRead(import_zip,"Scegli il pacchetto ZIP ZP Remote","zip")
+  local ok,selected = r.GetUserFileNameForRead(import_zip,"Scegli il pacchetto di partenza inviato al doppiatore","zip")
   if ok and selected and selected ~= "" then
     import_zip=selected
     r.SetExtState(SECTION,"import_zip",import_zip,true)
     import_plan=nil
-    import_status_text,import_status_kind="Pacchetto ZIP selezionato.","info"
+    import_status_text,import_status_kind="Pacchetto di partenza selezionato.","info"
   end
 end
 
 start_import_preflight = function()
+  import_plan=nil
   refresh_project_info()
   refresh_import_regions()
   if rpp == "" then import_status_text,import_status_kind="Salva prima il progetto REAPER.","error"; return end
   if not python then import_status_text,import_status_kind="Non trovo Python 3.","error"; return end
   local preflight_script=join(script_dir,"zp_remote_preflight.py")
   if not r.file_exists(preflight_script) then import_status_text,import_status_kind="Non trovo zp_remote_preflight.py accanto all’azione.","error"; return end
-  if import_delivery == "" or not r.file_exists(join(import_delivery,"consegna.json")) then import_status_text,import_status_kind="Scegli la cartella che contiene consegna.json.","error"; return end
-  if import_zip == "" or not r.file_exists(import_zip) then import_status_text,import_status_kind="Scegli il file ZIP della stessa consegna.","error"; return end
-  if #import_regions == 0 then import_status_text,import_status_kind="Il progetto non contiene regioni REAPER.","error"; return end
+  if import_delivery == "" then import_status_text,import_status_kind="Scegli lo ZIP di ritorno o la cartella estratta.","error"; return end
   local region=import_regions[import_region_index]
-  if not region or not region.name or region.name == "" then import_status_text,import_status_kind="La regione selezionata deve avere un nome.","error"; return end
   local resource=r.GetResourcePath()
   local preflight_dir=join(resource,"ZP Remote/Preflight")
   r.RecursiveCreateDirectory(preflight_dir,0)
@@ -647,9 +749,30 @@ start_import_preflight = function()
   import_plan_path=join(preflight_dir,"piano_"..nonce..".json")
   import_status_file=join(preflight_dir,"stato_"..nonce..".json")
   os.remove(import_plan_path); os.remove(import_status_file)
-  local args={quote(preflight_script),"--consegna",quote(import_delivery),"--pacchetto",quote(import_zip),"--progetto",quote(rpp),"--output",quote(import_plan_path),region.guid and "--region-guid" or "--region-name",quote(region.guid or region.name),"--status-file",quote(import_status_file)}
-  -- Nei progetti senza ID ZP Remote il preflight può attestare il collegamento storico tra GUID RPP e GUID consegna.
-  if not project_identity() then args[#args+1]="--legacy-alias-auto" end
+  local args={quote(preflight_script),"--consegna",quote(import_delivery),"--progetto",quote(rpp),"--output",quote(import_plan_path),"--status-file",quote(import_status_file),"--allow-unanchored"}
+  if import_zip ~= "" then
+    args[#args+1]="--pacchetto"
+    args[#args+1]=quote(import_zip)
+  end
+  if region then
+    args[#args+1]=region.guid and "--region-guid" or "--region-name"
+    args[#args+1]=quote(region.guid or region.name)
+  end
+  local selected=r.GetSelectedMediaItem(0,0)
+  if selected then
+    local take=r.GetActiveTake(selected)
+    local source=take and r.GetMediaItemTake_Source(take)
+    local kind=source and r.GetMediaSourceType(source,"") or ""
+    args[#args+1]="--selected-item-type"
+    args[#args+1]=quote(kind)
+    if kind=="VIDEO" then
+      local media=r.GetMediaSourceFileName(source,"")
+      args[#args+1]="--selected-item-start"
+      args[#args+1]=tostring(r.GetMediaItemInfo_Value(selected,"D_POSITION"))
+      args[#args+1]="--selected-item-file"
+      args[#args+1]=quote(media)
+    end
+  end
   r.ExecProcess(command(args),-1)
   import_plan=nil
   import_busy=true
@@ -665,13 +788,15 @@ local function poll_import_preflight()
   if result and result.stato == "completato" then
     import_busy=false
     import_plan=read_json(import_plan_path)
-    import_report=result
     if import_plan then
       local c=import_plan.counts or {}
       import_status_text=("Controllo completato · %s WAV · %s item · %s personaggi · regione %s"):format(c.files or 0,c.items or 0,(function() local n=0; for _ in pairs(c.characters or {}) do n=n+1 end; return n end)(),import_plan.region and import_plan.region.name or "")
-      import_status_kind=(result.rpp_missing_media and #result.rpp_missing_media>0) and "error" or "ok"
-      if import_status_kind == "error" then import_status_text=import_status_text..(" · %d media del progetto mancanti"):format(#result.rpp_missing_media) end
-      if result.warnings and #result.warnings>0 then import_status_text=import_status_text..(" · %d avvisi fuori regione"):format(#result.warnings) end
+      import_status_kind="ok"
+      local placement=import_plan.placement
+      if placement and placement.mode=="cursor" then
+        import_status_text="Prima take al cursore, su nuove tracce. "..placement.reason.."."
+      end
+      if result.warnings and #result.warnings>0 then import_status_text=import_status_text..(" · %d avvisi"):format(#result.warnings) end
     else import_status_text,import_status_kind="Il preflight non ha prodotto il piano d’importazione.","error" end
     os.remove(import_status_file)
   elseif result and result.stato == "errore" then
@@ -688,7 +813,7 @@ local function poll_import_preflight()
 end
 
 local function run_import()
-  if import_busy or not import_plan or (import_report and import_report.rpp_missing_media and #import_report.rpp_missing_media>0) then return end
+  if import_busy or not import_plan then return end
   refresh_project_info()
   if rpp == "" or r.IsProjectDirty(0)>0 then
     import_status_text="Salva il progetto e rifai il controllo prima di importare."
@@ -707,7 +832,10 @@ local function run_import()
   import_status_kind="working"
   local ok,result=importer.run({
     plan_path=import_plan_path,
-    confirm=function() return true end,
+    confirm=function(message)
+      local placement=import_plan.placement
+      return not placement or placement.mode~="cursor" or r.MB(message,"ZP Remote — importa al cursore",1)==1
+    end,
     onProgress=function(message)
       import_status_text=tostring(message):gsub("\n"," · ")
       buttons={}
@@ -734,25 +862,29 @@ local function run_import()
   end
 end
 
+local function focus_revealed_folder(directory, deadline)
+  local folder_name = directory:match("([^/\\]+)$")
+  if folder_name and r.JS_Window_FindTop and r.JS_Window_SetForeground then
+    local hwnd = r.JS_Window_FindTop(folder_name, false)
+    if hwnd then
+      pcall(r.JS_Window_SetForeground, hwnd)
+      return
+    end
+  end
+  if r.time_precise and r.time_precise() < deadline then
+    r.defer(function() focus_revealed_folder(directory, deadline) end)
+  end
+end
+
 local function reveal_package(path)
   local osname = r.GetOS()
   local directory = path:match("^(.*)[/\\][^/\\]+$") or path
-  if osname:find("OSX", 1, true) or osname:find("macOS", 1, true) then
-    local function shell_quote(value)
-      return "'" .. value:gsub("'", "'\\''") .. "'"
-    end
-    local open_folder = "/usr/bin/open " .. shell_quote(directory ~= "" and directory or "/")
-    local open_target = open_folder
-    if r.file_exists(path) then
-      open_target = "/usr/bin/open -R " .. shell_quote(path) .. " || " .. open_folder
-    end
-    os.execute("(" .. open_target .. ") >/dev/null 2>&1 &")
-    status_text, status_kind = "Richiesta di apertura inviata al Finder.", "info"
-    return
-  end
   local cmd
   if osname:match("^Win") then
     cmd = "explorer " .. quote(directory)
+  elseif osname:find("OSX", 1, true) then
+    -- open -R mostra la cartella che contiene lo ZIP; JS_ReaScriptAPI porta Finder davanti a REAPER.
+    cmd = "/usr/bin/open -R " .. quote(path)
   else
     cmd = "xdg-open " .. quote(directory)
   end
@@ -761,7 +893,10 @@ local function reveal_package(path)
   if exit_code and exit_code ~= 0 then
     status_text, status_kind = "Non riesco ad aprire la cartella del pacchetto: " .. directory, "error"
   else
-    status_text, status_kind = "Cartella del pacchetto aperta.", "ok"
+    if osname:find("OSX", 1, true) and r.JS_Window_FindTop and r.JS_Window_SetForeground and r.time_precise then
+      r.defer(function() focus_revealed_folder(directory, r.time_precise() + 2) end)
+    end
+    status_text, status_kind = "Cartella del pacchetto mostrata in Finder.", "ok"
   end
 end
 
@@ -828,7 +963,10 @@ gfx.setfont(1, "Arial", scaled(16))
 local function frame()
   poll_export()
   poll_import_preflight()
-  if view == "export" and not busy and not pending_save_action then sync_export_region_to_reaper() end
+  if not busy and not pending_save_action then
+    if view == "export" then sync_export_region_to_reaper()
+    elseif not import_busy then sync_import_region_to_reaper() end
+  end
   if busy then
     local now = r.time_precise and r.time_precise() or os.time()
     local elapsed = math.max(0, math.floor(now - (started_precise or started_at or now)))
@@ -868,11 +1006,16 @@ local function frame()
   end
   if view == "import" then
     rect(20,204,720,94,C.panel,7)
-    label(38,216,"CONSEGNA E PACCHETTO",C.sub,"Arial",13)
-    wrapped_label(38,242,"Consegna: "..(import_delivery~="" and folder_label(import_delivery) or "non selezionata"),C.text,"Arial",15,490,1)
-    wrapped_label(38,267,"ZIP: "..(import_zip~="" and folder_label(import_zip) or "non selezionato"),C.text,"Arial",15,490,1)
-    button("delivery","Cartella…",546,224,176,38,false,import_busy)
-    button("package_zip","ZIP…",546,264,176,34,false,import_busy)
+    label(38,216,"CONSEGNA DI RITORNO",C.sub,"Arial",13)
+    local delivery_label="Scegli uno ZIP di ritorno oppure la cartella con consegna.json"
+    if import_delivery~="" then
+      local kind=import_delivery:lower():match("%.zip$") and "ZIP di ritorno" or "Cartella consegna"
+      delivery_label=kind.." · "..folder_label(import_delivery)
+    end
+    wrapped_label(38,241,delivery_label,C.text,"Arial",15,478,1)
+    wrapped_label(38,273,"ZIP di partenza (serve per riallineare un’altra copia) · "..(import_zip~="" and folder_label(import_zip) or "non selezionato"),C.text,"Arial",15,478,1)
+    button("delivery","Scegli consegna…",546,225,176,36,false,import_busy)
+    button("package_zip","ZIP di partenza…",546,264,176,34,false,import_busy)
     rect(20,316,720,172,C.panel,7)
     label(38,332,"REGIONE E ANTEPRIMA",C.sub,"Arial",13)
     local selected=import_regions[import_region_index]
@@ -889,13 +1032,20 @@ local function frame()
       rect(30,414,700,70,C.error_panel,6)
       wrapped_label(42,422,import_status_text,C.red,"Arial",17,660,3)
     else
-      label(38,421,"Il controllo verifica manifest, WAV, ZIP e media del progetto.",C.sub,"Arial",16)
-      label(38,451,"I file mancanti bloccano l’importazione prima di ogni modifica.",C.sub,"Arial",15)
+      label(38,421,"La consegna può essere una cartella o uno ZIP di ritorno.",C.sub,"Arial",16)
+      label(38,451,"Nello stesso progetto i tempi BWF agganciano le take alla regione.",C.sub,"Arial",15)
     end
     local stat_color=import_status_kind=="error" and C.red or (import_status_kind=="ok" and C.green or C.sub)
     wrapped_label(24,501,import_status_text,stat_color,"Arial",15,710,2)
-    button("import_check",import_busy and "Controllo in corso…" or "Controlla consegna",24,544,250,44,false,import_busy or import_delivery=="" or import_zip=="")
-    button("import_run","Importa nel progetto",486,544,236,44,true,import_busy or not import_plan or (import_report and import_report.rpp_missing_media and #import_report.rpp_missing_media>0))
+    if pending_save_action=="import_check" then
+      button("save_continue","Salva progetto e controlla",24,544,290,44,true,import_busy)
+      button("cancel_save","Annulla",322,544,120,44,false,import_busy)
+    else
+      button("import_check",import_busy and "Controllo in corso…" or "Controlla consegna",24,544,250,44,false,import_busy or import_delivery=="")
+    end
+    local placement=import_plan and import_plan.placement
+    local import_label=placement and placement.mode=="cursor" and "Importa al cursore" or "Importa nel progetto"
+    button("import_run",import_label,486,544,236,44,true,import_busy or not import_plan)
   else
   rect(20,204,720,64,C.panel,7)
   label(38,213,"CARTELLA DI DESTINAZIONE",C.sub,"Arial",13)
@@ -989,8 +1139,8 @@ local function frame()
   end
   if click("delivery") then choose_import_delivery() end
   if click("package_zip") then choose_import_zip() end
-  if click("region_prev") then import_region_index=math.max(1,import_region_index-1); import_plan=nil; import_status_text="Regione cambiata: ricontrolla la consegna."; import_status_kind="info" end
-  if click("region_next") then import_region_index=math.min(#import_regions,import_region_index+1); import_plan=nil; import_status_text="Regione cambiata: ricontrolla la consegna."; import_status_kind="info" end
+  if click("region_prev") then import_region_index=math.max(1,import_region_index-1); import_region_manual=true; import_plan=nil; import_status_text="Regione cambiata: ricontrolla la consegna."; import_status_kind="info" end
+  if click("region_next") then import_region_index=math.min(#import_regions,import_region_index+1); import_region_manual=true; import_plan=nil; import_status_text="Regione cambiata: ricontrolla la consegna."; import_status_kind="info" end
   if click("export_region_prev") then
     export_region_index=math.max(1,export_region_index-1); summary=nil; summary_error=nil; completed_zip=nil
     local selected=export_regions[export_region_index]
@@ -1013,7 +1163,11 @@ local function frame()
   if click("create") then start_export() end
   if click("open") and completed_zip then reveal_package(completed_zip) end
   if click("save_continue") then save_and_continue() end
-  if click("cancel_save") then pending_save_action = nil; status_text, status_kind = "Passaggio annullato; il progetto non è stato salvato.", "info" end
+  if click("cancel_save") then
+    pending_save_action = nil
+    status_text, status_kind = "Salvataggio annullato.", "info"
+    if view=="import" then import_status_text,import_status_kind=status_text,status_kind end
+  end
   if click("close") then gfx.quit(); return end
   local ch = gfx.getchar()
   if recovery_mode and input_focus and ch > 0 then

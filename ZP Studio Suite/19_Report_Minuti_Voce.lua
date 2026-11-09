@@ -1,12 +1,19 @@
 -- @noindex
 
+-- Provenienza ZP:
+--   Proprietà: ZP Studio Suite / Report Minuti Voce.
+--   Pacchetto d’origine: ZP Studio Suite 2.6.6 (installazione locale con aggiornamenti beta).
+--   Copia locale REAPER acquisita il 2026-11-09; preparazione Suite 2.6.7.
+--   Versione interna: 1.0.6, indicata nel file.
+
 -- REPORT MINUTI VOCE
 -- Linea: ZP Paolo Balestri
--- Suite: ZP Studio Suite for REAPER v1.0.5
+-- Suite: ZP Studio Suite for REAPER v1.0.6
+-- Versione 1.0.6: scelta HTML/CSV esclusiva e più evidente; ogni salvataggio aggiorna un solo formato.
 -- Distribuzione gratuita.
 -- Calcola minuti reali e minuti arrotondati in eccesso da regioni o item audio.
 
-local SCRIPT_TITLE = "ZP Studio Suite v1.0.5 - Report Minuti Voce"
+local SCRIPT_TITLE = "ZP Studio Suite v1.0.6 - Report Minuti Voce"
 local PROJECT_VIEWER_SECTION = "ZP_RythmoBand_ProjectViewer"
 local ROW_H = 30
 local HEADER_H = 196
@@ -197,6 +204,7 @@ end
 
 local STATE_SECTION = "ZP_STUDIO_SUITE"
 local SKIP_MUTED_KEY = "Report19_skip_muted"
+local SAVE_FORMAT_KEY = "Report19_save_format"
 -- Pulsante "No muti": gli item in mute non entrano nei conteggi per item/tracce.
 local skip_muted = reaper.GetExtState(STATE_SECTION, SKIP_MUTED_KEY) == "1"
 
@@ -784,16 +792,84 @@ local function build_csv_report(rows, csv_path)
   return write_text_file(csv_path, table.concat(out, "\n"))
 end
 
-local function csv_path_for_html(html_path)
-  return tostring(html_path or ""):gsub("%.[Hh][Tt][Mm][Ll]$", ".csv")
+local function csv_history_key(row)
+  return table.concat({
+    trim(row.cartella),
+    trim(row.nome),
+    tostring(math.floor((tonumber(row.durata_sec) or 0) + 0.5)),
+    tostring(math.floor((tonumber(row.minuti) or 0) + 0.5))
+  }, "\31")
+end
+
+local function parse_csv_report(csv_path)
+  local rows, keys = {}, {}
+  local f = io.open(csv_path, "rb")
+  if not f then return rows, keys, false end
+  local content = f:read("*a")
+  f:close()
+  content = content:gsub("^\239\187\191", "")
+
+  local records, record, field = {}, {}, ""
+  local in_quotes = false
+  local function finish_field()
+    record[#record + 1] = field
+    field = ""
+  end
+  local function finish_record()
+    finish_field()
+    if #record > 1 or record[1] ~= "" then records[#records + 1] = record end
+    record = {}
+  end
+
+  local i = 1
+  while i <= #content do
+    local ch = content:sub(i, i)
+    if ch == '"' then
+      if in_quotes and content:sub(i + 1, i + 1) == '"' then
+        field = field .. '"'
+        i = i + 2
+      else
+        in_quotes = not in_quotes
+        i = i + 1
+      end
+    elseif ch == ";" and not in_quotes then
+      finish_field()
+      i = i + 1
+    elseif (ch == "\n" or ch == "\r") and not in_quotes then
+      finish_record()
+      if ch == "\r" and content:sub(i + 1, i + 1) == "\n" then i = i + 2 else i = i + 1 end
+    else
+      field = field .. ch
+      i = i + 1
+    end
+  end
+  if #record > 0 or field ~= "" then finish_record() end
+
+  for record_index = 2, #records do
+    local fields = records[record_index]
+    if fields[3] and fields[3] ~= "RIEPILOGO" and fields[4] then
+      local row = {
+        id = "CSV_ROW_" .. tostring(record_index),
+        data = fields[2] or "",
+        cartella = fields[3] or "",
+        nome = fields[4] or "",
+        durata_sec = tonumber(fields[5]) or 0,
+        durata_str = fields[6] or "",
+        minuti = tonumber(fields[7]) or 0
+      }
+      rows[#rows + 1] = row
+      keys[csv_history_key(row)] = true
+    end
+  end
+  return rows, keys, true
 end
 
 local function export_saved_history_csv()
   local html_path = project_report_path("html", "", false)
   if not html_path then return nil, "Cartella progetto non disponibile." end
   local rows, _, existed = parse_data_block(html_path)
-  if not existed or #rows == 0 then return nil, "Non trovo uno storico conteggi da esportare per questo progetto." end
-  local csv_path = project_report_path("csv", "", false)
+  if not existed or #rows == 0 then return nil, "Non trovo uno storico HTML da esportare per questo progetto." end
+  local csv_path = project_report_path("csv", "Esportazione storico HTML", true)
   local ok, err = build_csv_report(rows, csv_path)
   if not ok then return nil, err end
   return csv_path, #rows
@@ -907,54 +983,68 @@ local function build_html_report(all_rows, html_path)
   return write_text_file(html_path, table.concat(out, "\n"))
 end
 
-local function save_report_file(detail_rows)
-  local html_path = project_report_path("html", "", false)
-  if not html_path then return nil, "Cartella progetto non disponibile." end
-  
-  local existing_rows, keys, existed = parse_data_block(html_path)
+local function save_report_file(detail_rows, output_format)
+  output_format = output_format == "csv" and "csv" or "html"
+  local output_path = project_report_path(output_format, "", false)
+  if not output_path then return nil, "Cartella progetto non disponibile." end
+
+  local existing_rows, keys, existed
+  if output_format == "csv" then
+    existing_rows, keys, existed = parse_csv_report(output_path)
+  else
+    existing_rows, keys, existed = parse_data_block(output_path)
+  end
   local saved_at = os.date("%d/%m/%Y %H:%M:%S")
-  
-  local added, skipped = 0, 0
+  local added, skipped, seen_ids = 0, 0, {}
+
   for _, row in ipairs(detail_rows or {}) do
-    if row.id and not keys[row.id] then
-      local marker_cartella = trim(row.marker or "")
-      if marker_cartella == "" and trim(row.scope or "") ~= "" then
-        marker_cartella = trim(row.scope)
-      end
-      local progetto = trim(row.project or "")
-      local cartella = marker_cartella ~= "" and marker_cartella or progetto
-      
-      table.insert(existing_rows, {
-        id = row.id,
-        cartella = cartella,
-        nome = row.name,
-        durata_sec = row.seconds or 0,
-        durata_str = format_time(row.seconds),
-        minuti = row.billed or 0,
-        data = saved_at
-      })
-      keys[row.id] = true
+    local marker_cartella = trim(row.marker or "")
+    if marker_cartella == "" and trim(row.scope or "") ~= "" then
+      marker_cartella = trim(row.scope)
+    end
+    local progetto = trim(row.project or "")
+    local report_row = {
+      id = row.id,
+      cartella = marker_cartella ~= "" and marker_cartella or progetto,
+      nome = row.name,
+      durata_sec = row.seconds or 0,
+      durata_str = format_time(row.seconds),
+      minuti = row.billed or 0,
+      data = saved_at
+    }
+    local duplicate = row.id and (keys[row.id] or seen_ids[row.id])
+    if not duplicate and output_format == "csv" then
+      duplicate = keys[csv_history_key(report_row)]
+    end
+    if row.id and not duplicate then
+      existing_rows[#existing_rows + 1] = report_row
+      seen_ids[row.id] = true
+      if output_format == "html" then keys[row.id] = true end
       added = added + 1
     else
       skipped = skipped + 1
     end
   end
-  
-  local ok, html_err = build_html_report(existing_rows, html_path)
-  if not ok then return nil, html_err end
-  local csv_path = project_report_path("csv", "", false)
-  local csv_ok, csv_err = build_csv_report(existing_rows, csv_path)
-  return html_path, added, skipped, csv_ok and csv_path or nil, csv_err
+
+  local ok, save_err
+  if output_format == "csv" then
+    ok, save_err = build_csv_report(existing_rows, output_path)
+  else
+    ok, save_err = build_html_report(existing_rows, output_path)
+  end
+  if not ok then return nil, save_err end
+  return output_path, added, skipped
 end
 
-local function save_session_report_file(detail_rows, label)
+local function save_session_report_file(detail_rows, label, output_format)
+  output_format = output_format == "csv" and "csv" or "html"
   local suffix_parts = { "Sessione" }
   label = trim(label or "")
   if label ~= "" then suffix_parts[#suffix_parts + 1] = label end
   suffix_parts[#suffix_parts + 1] = os.date("%Y-%m-%d_%H-%M-%S")
 
-  local html_path = project_report_path("html", table.concat(suffix_parts, " - "), true)
-  if not html_path then return nil, "Cartella progetto non disponibile." end
+  local output_path = project_report_path(output_format, table.concat(suffix_parts, " - "), true)
+  if not output_path then return nil, "Cartella progetto non disponibile." end
 
   local session_rows = {}
   local keys = {}
@@ -966,11 +1056,9 @@ local function save_session_report_file(detail_rows, label)
         marker_cartella = trim(row.scope)
       end
       local progetto = trim(row.project or "")
-      local cartella = marker_cartella ~= "" and marker_cartella or progetto
-
       session_rows[#session_rows + 1] = {
         id = row.id,
-        cartella = cartella,
+        cartella = marker_cartella ~= "" and marker_cartella or progetto,
         nome = row.name,
         durata_sec = row.seconds or 0,
         durata_str = format_time(row.seconds),
@@ -982,11 +1070,14 @@ local function save_session_report_file(detail_rows, label)
   end
 
   if #session_rows == 0 then return nil, "Nessun dato da salvare." end
-  local ok, html_err = build_html_report(session_rows, html_path)
-  if not ok then return nil, html_err end
-  local csv_path = csv_path_for_html(html_path)
-  local csv_ok, csv_err = build_csv_report(session_rows, csv_path)
-  return html_path, #session_rows, csv_ok and csv_path or nil, csv_err
+  local ok, save_err
+  if output_format == "csv" then
+    ok, save_err = build_csv_report(session_rows, output_path)
+  else
+    ok, save_err = build_html_report(session_rows, output_path)
+  end
+  if not ok then return nil, save_err end
+  return output_path, #session_rows
 end
 
 local function open_window()
@@ -1001,6 +1092,9 @@ local function open_window()
   local pending_report_label = ""
   local pending_report_suffix = ""
   local pending_report_scroll = 0
+  local pending_save_format = "html"
+  local save_format = reaper.GetExtState(STATE_SECTION, SAVE_FORMAT_KEY)
+  if save_format ~= "csv" then save_format = "html" end
   local calc_icon = -1
 
   -- toolbar: icona accesa finche' la finestra e' aperta; un altro clic sull'icona la chiude (REAPER 7.03+)
@@ -1108,23 +1202,42 @@ local function open_window()
         reaper.osara_outputMessage(skip_muted and "Item muti esclusi." or "Item muti inclusi.")
       end
     end
-    local copied_recently = copied_message ~= "" and (reaper.time_precise() - copied_time) < 1.3
-    if ZP_UI.draw_button({ x = gfx.w - 164, y = 146, w = 142, h = 34 }, copied_recently and "OK salvato" or "Copia + HTML", copied_recently, #rows > 0, clicked, "copy") then
-      pending_report_text = build_report_text(mode_label, rows, total_seconds, total_billed, total_items, item_label)
-      pending_detail_rows = detail_rows or {}
-      pending_report_label = mode_label
-      pending_report_suffix = report_suffix or ""
-      pending_report_scroll = 0
-    end
-    if ZP_UI.draw_button({ x = 532, y = 146, w = 230, h = 34 }, "Esporta storico CSV", false, true, clicked, "copy") then
+    if ZP_UI.draw_button({ x = 532, y = 104, w = 230, h = 34 }, "Esporta HTML in CSV", false, true, clicked, "copy") then
       local csv_path, exported_or_err = export_saved_history_csv()
       if csv_path then
-        copied_message = "CSV dello storico pronto · Righe: " .. tostring(exported_or_err or 0) .. "\nFile CSV: " .. csv_path
+        copied_message = "CSV esportato dallo storico HTML · Righe: " .. tostring(exported_or_err or 0) .. "\nFile CSV: " .. csv_path
       else
         copied_message = tostring(exported_or_err or "Esportazione CSV non riuscita.")
       end
       copied_time = reaper.time_precise()
     end
+
+    if ZP_UI.draw_button({ x = 532, y = 146, w = 92, h = 34 }, "HTML", save_format == "html", true, clicked, "tab") then
+      save_format = "html"
+      reaper.SetExtState(STATE_SECTION, SAVE_FORMAT_KEY, save_format, true)
+      if reaper.osara_outputMessage then reaper.osara_outputMessage("Formato di salvataggio attivo: HTML.") end
+    end
+    if ZP_UI.draw_button({ x = 630, y = 146, w = 92, h = 34 }, "CSV", save_format == "csv", true, clicked, "tab") then
+      save_format = "csv"
+      reaper.SetExtState(STATE_SECTION, SAVE_FORMAT_KEY, save_format, true)
+      if reaper.osara_outputMessage then reaper.osara_outputMessage("Formato di salvataggio attivo: CSV.") end
+    end
+
+    local copied_recently = copied_message ~= "" and (reaper.time_precise() - copied_time) < 1.3
+    local save_label = copied_recently and "OK salvato" or ("Copia + " .. save_format:upper())
+    if ZP_UI.draw_button({ x = gfx.w - 164, y = 146, w = 142, h = 34 }, save_label, copied_recently, #rows > 0, clicked, "copy") then
+      pending_report_text = build_report_text(mode_label, rows, total_seconds, total_billed, total_items, item_label)
+      pending_detail_rows = detail_rows or {}
+      pending_report_label = mode_label
+      pending_report_suffix = report_suffix or ""
+      pending_report_scroll = 0
+      pending_save_format = save_format
+    end
+    gfx.setfont(1, "Arial", 12)
+    if save_format == "html" then gfx.set(0.40, 0.78, 1.0, 1) else gfx.set(1.0, 0.76, 0.38, 1) end
+    gfx.x = 532
+    gfx.y = 188
+    gfx.drawstr(fit_text("FORMATO ATTIVO: " .. save_format:upper() .. " · un solo formato per salvataggio", gfx.w - 554))
 
     gfx.setfont(1, "Arial", 15)
     gfx.set(0.86, 0.82, 0.70, 1)
@@ -1136,7 +1249,7 @@ local function open_window()
       gfx.set(0.95, 0.62, 0.42, 1)
       gfx.x = 156
       gfx.y = 188
-      gfx.drawstr(fit_text(warning, gfx.w - 178))
+      gfx.drawstr(fit_text(warning, math.max(80, gfx.w - 586)))
     end
 
     local list = { x = 22, y = HEADER_H + 28, w = gfx.w - 44, h = gfx.h - HEADER_H - FOOTER_H - 28 }
@@ -1260,7 +1373,7 @@ local function open_window()
       gfx.set(0.72, 0.78, 0.88, 1)
       gfx.x = mx + 22
       gfx.y = my + 50
-      gfx.drawstr(fit_text("Controlla il report, poi scegli se aggiornare lo storico o salvare solo questa sessione:", modal_w - 44))
+      gfx.drawstr(fit_text("Formato attivo: " .. pending_save_format:upper() .. ". Il salvataggio crea un solo formato; scegli storico o sola sessione:", modal_w - 44))
       gfx.setfont(1, "Arial", 13)
       gfx.set(0.56, 0.72, 0.86, 1)
       gfx.x = mx + 22
@@ -1297,14 +1410,9 @@ local function open_window()
 
       if ZP_UI.draw_button({ x = mx + modal_w - 478, y = my + modal_h - 58, w = 170, h = 36 }, "Aggiungi allo storico", false, true, clicked, "save") then
         set_clipboard(pending_report_text)
-        local html_path, added, skipped, csv_path, csv_err = save_report_file(pending_detail_rows)
-        if html_path then
-          copied_message = "Report salvato nello storico. Nuove righe: " .. tostring(added or 0) .. " · Già presenti: " .. tostring(skipped or 0) .. "\nFile HTML: " .. html_path
-          if csv_path then
-            copied_message = copied_message .. "\nCSV aggiornato: " .. csv_path
-          elseif csv_err then
-            copied_message = copied_message .. "\nCSV non salvato: " .. tostring(csv_err)
-          end
+        local saved_path, added, skipped = save_report_file(pending_detail_rows, pending_save_format)
+        if saved_path then
+          copied_message = "Report salvato nello storico. Nuove righe: " .. tostring(added or 0) .. " · Già presenti: " .. tostring(skipped or 0) .. "\nFile " .. pending_save_format:upper() .. ": " .. saved_path
         else
           copied_message = "Report copiato negli appunti. File non salvato: " .. tostring(added or "errore")
           reaper.ShowMessageBox("Non sono riuscito a salvare il file:\n\n" .. tostring(added or "errore"), "ZP Studio Suite", 0)
@@ -1318,14 +1426,9 @@ local function open_window()
       if ZP_UI.draw_button({ x = mx + modal_w - 296, y = my + modal_h - 58, w = 160, h = 36 }, "Salva questa sessione", false, true, clicked, "copy") then
         set_clipboard(pending_report_text)
         local session_label = trim(pending_report_suffix) ~= "" and pending_report_suffix or pending_report_label
-        local html_path, saved_or_err, csv_path, csv_err = save_session_report_file(pending_detail_rows, session_label)
-        if html_path then
-          copied_message = "Report della sola sessione salvato. Righe: " .. tostring(saved_or_err or 0) .. " · Lo storico generale non è stato modificato.\nFile HTML: " .. html_path
-          if csv_path then
-            copied_message = copied_message .. "\nCSV della sessione: " .. csv_path
-          elseif csv_err then
-            copied_message = copied_message .. "\nCSV non salvato: " .. tostring(csv_err)
-          end
+        local saved_path, saved_or_err = save_session_report_file(pending_detail_rows, session_label, pending_save_format)
+        if saved_path then
+          copied_message = "Report della sola sessione salvato. Righe: " .. tostring(saved_or_err or 0) .. " · Lo storico generale non è stato modificato.\nFile " .. pending_save_format:upper() .. ": " .. saved_path
         else
           copied_message = "Report copiato negli appunti. File non salvato: " .. tostring(saved_or_err or "errore")
           reaper.ShowMessageBox("Non sono riuscito a salvare il file:\n\n" .. tostring(saved_or_err or "errore"), "ZP Studio Suite", 0)
@@ -1335,6 +1438,7 @@ local function open_window()
         pending_detail_rows = {}
         pending_report_label = ""
         pending_report_suffix = ""
+        pending_save_format = save_format
       end
       if ZP_UI.draw_button({ x = mx + modal_w - 124, y = my + modal_h - 58, w = 102, h = 36 }, "Annulla", false, true, clicked, "danger") then
         pending_report_text = nil

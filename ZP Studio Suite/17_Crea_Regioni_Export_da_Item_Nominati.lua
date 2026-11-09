@@ -1,5 +1,11 @@
 -- @noindex
 
+-- Provenienza ZP:
+--   Proprietà: ZP Studio Suite / Gestore Progetto.
+--   Pacchetto d’origine: ZP Studio Suite 2.6.6 (installazione locale con aggiornamenti beta).
+--   Copia locale REAPER acquisita il 2026-11-09; preparazione Suite 2.6.7.
+--   Versione interna: 1.0.5, indicata nell’intestazione Suite.
+
 -- CREA REGIONI EXPORT DA ITEM NOMINATI
 -- Linea: ZP Paolo Balestri
 -- Suite: ZP Studio Suite for REAPER v1.0.5
@@ -1318,24 +1324,35 @@ local function listview_region_id(list, row_index)
   return nil
 end
 
-local function select_regions_in_region_manager(regions)
+local region_selection = {}
+
+function region_selection.native_regions_by_id()
+  if not (reaper.GetNumRegionsOrMarkers and reaper.GetRegionOrMarker and
+    reaper.GetRegionOrMarkerInfo_Value and reaper.SetRegionOrMarkerInfo_Value) then
+    return nil
+  end
+
+  local regions = {}
+  for i = 0, reaper.GetNumRegionsOrMarkers(0) - 1 do
+    local entry = reaper.GetRegionOrMarker(0, i, "")
+    if entry and reaper.GetRegionOrMarkerInfo_Value(0, entry, "B_ISREGION") ~= 0 then
+      regions[reaper.GetRegionOrMarkerInfo_Value(0, entry, "I_NUMBER")] = entry
+    end
+  end
+  return regions
+end
+
+function region_selection.set_with_manager(selected_region_ids, open_manager)
   if not (reaper.JS_Window_Find and reaper.JS_Window_FindChildByID and
     reaper.JS_ListView_GetItemCount and reaper.JS_ListView_GetItemText and
     reaper.JS_ListView_SetItemState) then
     return false, "JS_ReaScript non disponibile: non posso selezionare con certezza solo le regioni export."
   end
 
-  local selected_region_ids = {}
-  for _, region in ipairs(regions or {}) do
-    if not is_warmup_region(region) then
-      selected_region_ids[region.idx] = true
-    end
-  end
-
   local title = reaper.JS_Localize and reaper.JS_Localize("Region/Marker Manager", "common") or "Region/Marker Manager"
   local manager = reaper.JS_Window_Find(title, true)
   local opened_manager = false
-  if not manager then
+  if not manager and open_manager then
     reaper.Main_OnCommand(40326, 0) -- View: Region/Marker Manager, open fresh
     manager = reaper.JS_Window_Find(title, true)
     opened_manager = manager ~= nil
@@ -1356,7 +1373,48 @@ local function select_regions_in_region_manager(regions)
     end
   end
   if opened_manager and reaper.JS_Window_Show then reaper.JS_Window_Show(manager, "HIDE") end
-  if selected == 0 then return false, "Nessuna regione export selezionata nel Region/Marker Manager." end
+  if selected == 0 and next(selected_region_ids) then
+    return false, "Nessuna regione export selezionata nel Region/Marker Manager."
+  end
+  return true, nil, selected
+end
+
+function region_selection.set(regions, open_manager)
+  local selected_ids = {}
+  local expected = 0
+  for _, region in ipairs(regions) do
+    if not is_warmup_region(region) and not selected_ids[region.idx] then
+      selected_ids[region.idx] = true
+      expected = expected + 1
+    end
+  end
+
+  local native_regions = region_selection.native_regions_by_id()
+  if not native_regions then
+    return region_selection.set_with_manager(selected_ids, open_manager)
+  end
+
+  for id, entry in pairs(native_regions) do
+    local wanted = selected_ids[id] and 1 or 0
+    if reaper.GetRegionOrMarkerInfo_Value(0, entry, "B_UISEL") ~= wanted then
+      reaper.SetRegionOrMarkerInfo_Value(0, entry, "B_UISEL", wanted)
+    end
+  end
+
+  local selected = 0
+  local unexpected = 0
+  for id, entry in pairs(native_regions) do
+    if reaper.GetRegionOrMarkerInfo_Value(0, entry, "B_UISEL") ~= 0 then
+      if selected_ids[id] then selected = selected + 1
+      else unexpected = unexpected + 1 end
+    end
+  end
+  if selected ~= expected or unexpected > 0 then
+    return false, string.format(
+      "REAPER ha selezionato %d di %d regioni richieste e %d regioni fuori selezione.",
+      selected, expected, unexpected
+    ), selected
+  end
   return true, nil, selected
 end
 
@@ -1405,10 +1463,11 @@ end
 local function select_project_material_for_groups(groups, state)
   local existing = matching_export_regions(groups or {})
   if #existing > 0 then
-    select_regions_in_region_manager(existing)
+    local ok, err, count = region_selection.set(existing, true)
     set_time_selection_for_regions_or_groups(existing)
     reaper.UpdateArrange()
-    return "regions", #existing
+    if ok then return "regions", count end
+    return "region_selection_failed", nil, err
   end
   local selected_items = select_items_overlapping_groups(groups or {}, state)
   if selected_items > 0 then return "items", selected_items end
@@ -2014,9 +2073,9 @@ local function setup_mixdown_render_target(groups, folder_override, action_label
     reaper.GetSetProjectInfo(0, "RENDER_BOUNDSFLAG", 3, true) -- sole regioni presenti nella snapshot del job
     render_debug_log("setup_mixdown_render_target | queue snapshot mode selected_count=" .. tostring(selected_count))
   else
-    selected_ok, select_err, selected_count = select_regions_in_region_manager(regions)
+    selected_ok, select_err, selected_count = region_selection.set(regions, true)
     render_debug_log(string.format(
-      "setup_mixdown_render_target | region manager selection ok=%s count=%s err=%s",
+      "setup_mixdown_render_target | project region selection ok=%s count=%s err=%s",
       tostring(selected_ok),
       tostring(selected_count),
       log_escape(select_err or "")
@@ -2024,9 +2083,9 @@ local function setup_mixdown_render_target(groups, folder_override, action_label
   end
   if queue_snapshot_mode then
     -- +Queue usa una snapshot multi-regione autonoma: nessun Region/Marker Manager richiesto.
-  elseif selected_ok then
+  elseif selected_ok or selected_count ~= nil then
     local expected_selected_count = #real_mixdown_regions(regions)
-    if selected_count and selected_count ~= expected_selected_count then
+    if not selected_ok or selected_count ~= expected_selected_count then
       if enable_preroll_warmup then
         delete_warmup_regions()
         delete_warmup_items()
@@ -2034,9 +2093,10 @@ local function setup_mixdown_render_target(groups, folder_override, action_label
         reaper.UpdateArrange()
       end
       reaper.ShowMessageBox(
-        "Selezione regioni non coerente: REAPER ha selezionato " .. tostring(selected_count) ..
-        " regioni reali, ma il render ne richiede " .. tostring(expected_selected_count) .. ".\n\n" ..
-        "Fermo il render per evitare nomi scalati o file mancanti. Ho gia' aggiornato il Region/Marker Manager prima del controllo; riprova una volta.",
+        (select_err or string.format(
+          "REAPER ha selezionato %d regioni, ma il render ne richiede %d.",
+          selected_count, expected_selected_count
+        )) .. "\n\nRender interrotto.",
         SCRIPT_TITLE,
         0
       )
@@ -2981,40 +3041,28 @@ local function open_window()
     return {}
   end
 
-  local function sync_preview_to_region_manager(groups)
-    if not (reaper.JS_Window_Find and reaper.JS_Window_FindChildByID and
-      reaper.JS_ListView_GetItemCount and reaper.JS_ListView_GetItemText and
-      reaper.JS_ListView_SetItemState) then
-      return
-    end
-    local selected_region_ids = {}
+  local function selection_hash(ids)
+    local parts = {}
+    for id in pairs(ids) do parts[#parts + 1] = tostring(id) end
+    table.sort(parts)
+    return table.concat(parts, ",")
+  end
+
+  local function sync_preview_to_project(groups)
+    local targets = {}
     for i, group in ipairs(groups or {}) do
       if selected_rows[i] and is_region_row(group) then
-        local regions = matching_export_regions({ group })
-        for _, region in ipairs(regions) do
-          selected_region_ids[region.idx] = true
-        end
+        targets[#targets + 1] = group
       end
     end
-    local title = reaper.JS_Localize and reaper.JS_Localize("Region/Marker Manager", "common") or "Region/Marker Manager"
-    local manager = reaper.JS_Window_Find(title, true)
-    if not manager then return end
-    local list = reaper.JS_Window_FindChildByID(manager, 1071)
-    if not list then return end
-    local item_count = reaper.JS_ListView_GetItemCount(list)
-    reaper.JS_ListView_SetItemState(list, -1, 0x0, 0x3)
-    for i = 0, item_count - 1 do
-      local region_id = listview_region_id(list, i)
-      if region_id and selected_region_ids[region_id] then
-        reaper.JS_ListView_SetItemState(list, i, 0x3, 0x3)
-      end
-    end
+    local regions = matching_export_regions(targets)
+    local ok = region_selection.set(regions, false)
+    if not ok then return end
+
+    local selected_ids = {}
+    for _, region in ipairs(regions) do selected_ids[region.idx] = true end
     suppress_rm_sync_until = reaper.time_precise() + 0.5
-    -- Update hash so reverse sync doesn't immediately overwrite
-    local hash_parts = {}
-    for id in pairs(selected_region_ids) do hash_parts[#hash_parts + 1] = tostring(id) end
-    table.sort(hash_parts)
-    last_rm_selection_hash = table.concat(hash_parts, ",")
+    last_rm_selection_hash = selection_hash(selected_ids)
   end
 
   local function toggle_marker_section_selection(all_groups, marker_row, additive)
@@ -3047,38 +3095,44 @@ local function open_window()
     selected_marker_index = should_select and marker_row.__row_index or nil
     chosen_mixdown_groups = selected_or_all_groups(all_groups, {})
     chosen_mixdown_info = render_folder_info(chosen_mixdown_groups)
-    sync_preview_to_region_manager(all_groups)
+    sync_preview_to_project(all_groups)
     return true
   end
 
-  local function sync_preview_from_region_manager(groups)
-    if not (reaper.JS_Window_Find and reaper.JS_Window_FindChildByID and
-      reaper.JS_ListView_GetItemCount and reaper.JS_ListView_GetItemText and
-      reaper.JS_ListView_GetItemState) then
-      return
-    end
+  local function sync_preview_from_project(groups)
     local now = reaper.time_precise()
     if now < suppress_rm_sync_until then return end
     if now - last_rm_sync_time < 0.5 then return end
     last_rm_sync_time = now
-    local title = reaper.JS_Localize and reaper.JS_Localize("Region/Marker Manager", "common") or "Region/Marker Manager"
-    local manager = reaper.JS_Window_Find(title, true)
-    if not manager then return end
-    local list = reaper.JS_Window_FindChildByID(manager, 1071)
-    if not list then return end
-    local item_count = reaper.JS_ListView_GetItemCount(list)
     local selected_ids = {}
-    for i = 0, item_count - 1 do
-      local state = reaper.JS_ListView_GetItemState(list, i) or 0
-      if (state & 0x2) == 0x2 then
-        local region_id = listview_region_id(list, i)
-        if region_id then selected_ids[region_id] = true end
+    local native_regions = region_selection.native_regions_by_id()
+    if native_regions then
+      for id, entry in pairs(native_regions) do
+        if reaper.GetRegionOrMarkerInfo_Value(0, entry, "B_UISEL") ~= 0 then
+          selected_ids[id] = true
+        end
+      end
+    else
+      if not (reaper.JS_Window_Find and reaper.JS_Window_FindChildByID and
+        reaper.JS_ListView_GetItemCount and reaper.JS_ListView_GetItemText and
+        reaper.JS_ListView_GetItemState) then
+        return
+      end
+      local title = reaper.JS_Localize and reaper.JS_Localize("Region/Marker Manager", "common") or "Region/Marker Manager"
+      local manager = reaper.JS_Window_Find(title, true)
+      if not manager then return end
+      local list = reaper.JS_Window_FindChildByID(manager, 1071)
+      if not list then return end
+      local item_count = reaper.JS_ListView_GetItemCount(list)
+      for i = 0, item_count - 1 do
+        local state = reaper.JS_ListView_GetItemState(list, i) or 0
+        if (state & 0x2) == 0x2 then
+          local region_id = listview_region_id(list, i)
+          if region_id then selected_ids[region_id] = true end
+        end
       end
     end
-    local hash_parts = {}
-    for id in pairs(selected_ids) do hash_parts[#hash_parts + 1] = tostring(id) end
-    table.sort(hash_parts)
-    local current_hash = table.concat(hash_parts, ",")
+    local current_hash = selection_hash(selected_ids)
     if current_hash == last_rm_selection_hash then return end
     last_rm_selection_hash = current_hash
     local new_selected = {}
@@ -3119,7 +3173,7 @@ local function open_window()
       selected_rows = { [index] = true }
       last_range_anchor = index
     end
-    sync_preview_to_region_manager(groups)
+    sync_preview_to_project(groups)
     chosen_mixdown_groups = nil
     chosen_mixdown_info = nil
     selected_marker_index = nil
@@ -3438,7 +3492,7 @@ local function open_window()
     if created_ok then
       local created_regions = matching_export_regions(fresh_groups)
       if #created_regions > 0 then
-        select_regions_in_region_manager(created_regions)
+        region_selection.set(created_regions, true)
         set_time_selection_for_regions_or_groups(created_regions)
       end
       chosen_mixdown_groups = fresh_groups
@@ -3591,7 +3645,7 @@ local function open_window()
     end
 
     local items, groups, names, source = rebuild()
-    sync_preview_from_region_manager(groups)
+    sync_preview_from_project(groups)
 
     if active_field == "inline_name" and ch > 0 then
       if ch == 22 then
@@ -4560,9 +4614,11 @@ local function run_osara_mode()
   end
 
   if action == 1 then
-    local kind, count = select_project_material_for_groups(target_groups, state)
+    local kind, count, err = select_project_material_for_groups(target_groups, state)
     if kind == "regions" then
       speak(string.format("Selezionate %d regioni export nel progetto.", count))
+    elseif kind == "region_selection_failed" then
+      speak(err)
     elseif kind == "items" then
       speak(string.format("Selezionati %d item sorgente per creare le regioni.", count))
     else
@@ -4582,9 +4638,13 @@ local function run_osara_mode()
   if create_regions(target_groups, names, state) then
     local created_regions = matching_export_regions(target_groups)
     if #created_regions > 0 then
-      select_regions_in_region_manager(created_regions)
+      local ok, err, count = region_selection.set(created_regions, true)
       set_time_selection_for_regions_or_groups(created_regions)
-      speak(string.format("Regioni create o aggiornate. Selezionate %d regioni nel progetto.", #created_regions))
+      if ok then
+        speak(string.format("Regioni create o aggiornate. Selezionate %d regioni nel progetto.", count))
+      else
+        speak("Regioni create o aggiornate. " .. err)
+      end
     else
       speak("Regioni create o aggiornate. Non sono riuscito a selezionarle nel Region Manager.")
     end
