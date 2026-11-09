@@ -33,6 +33,30 @@ check("versione dall'intestazione", M.header_version("-- @description X\n-- @ver
 local set = { ["/Library/Frameworks/Python.framework/Versions/3.12/bin/python3"] = true, ["/opt/homebrew/bin/python3.11"] = true }
 check("python: il piu' recente trovato", M.find_python(function(p) return set[p] end) == "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3")
 check("python: nessuno", M.find_python(function() return false end) == nil)
+check("python: trova 3.11 in ~/.local/bin", M.find_python(function(p) return p == "/Users/p/.local/bin/python3.11" end, nil, "/Users/p") == "/Users/p/.local/bin/python3.11")
+check("python: trova nel PATH", M.find_python(function(p) return p == "/custom/bin/python3" end, "/usr/bin:/custom/bin", "/Users/p") == "/custom/bin/python3")
+
+local sp_mac = M.speech_paths("macOS-arm64", "/Users/p")
+check("speech paths mac", sp_mac.cli == "/Users/p/Library/Application Support/ZP/runtimes/speech/bin/zp-speech"
+  and sp_mac.models_dir == "/Users/p/Library/Application Support/ZP/models/whisper")
+local sp_win = M.speech_paths("Win64", "C:\\Users\\p", "C:\\Users\\p\\AppData\\Local")
+check("speech paths win", sp_win.cli == "C:\\Users\\p\\AppData\\Local\\ZP\\runtimes\\speech\\Scripts\\zp-speech.exe")
+local sp_lin = M.speech_paths("Other", "/home/p", nil, "")
+check("speech paths linux", sp_lin.cli == "/home/p/.local/share/zp/runtimes/speech/bin/zp-speech")
+
+local u_tag, p_tag = M.speech_archive_url("2.6.7")
+check("speech archive url con tag versione", u_tag:find("refs/tags/v2.6.7", 1, true) ~= nil and p_tag == "zp-suite-2.6.7/speech-engine")
+local u_mas, p_mas = M.speech_archive_url("?")
+check("speech archive url fallback master", u_mas:find("refs/heads/master", 1, true) ~= nil and p_mas == "zp-suite-master/speech-engine")
+
+local st1, lb1 = M.speech_state({ ready = true, mw = true, whisper_ready = false })
+check("speech state: pronto con MacWhisper", st1 == "ok" and lb1 == "MacWhisper")
+local st2, lb2 = M.speech_state({ ready = true, mw = false, whisper_ready = true })
+check("speech state: pronto con OpenAI Whisper", st2 == "ok" and lb2 == "OpenAI Whisper")
+local st3 = M.speech_state({ ready = true, mw = false, whisper_ready = false })
+check("speech state: runtime senza motore = passo", st3 == "passo")
+local st4 = M.speech_state({ ready = false, mw = true, whisper_ready = true })
+check("speech state: non installato = manca", st4 == "manca")
 local menu = "[Main toolbar]\nitem_0=40001\n\n[Floating toolbar 2]\nicon_0=ZP_tb_x.png\nitem_0=_RS1 A\n\n[Floating toolbar 8]\nicon_0=ZP_tb_y.png\nitem_0=_RS2 B\ntitle=ZP Studio Suite\n\n[Floating toolbar 9]\nitem_0=1\n"
 check("toolbar ZP: vince quella col nome ZP Studio Suite", M.toolbar_slot(menu) == 8)
 check("toolbar ZP: senza nome, la prima con icone ZP", M.toolbar_slot("[Floating toolbar 5]\nicon_0=ZP_tb_a.png\n") == 5)

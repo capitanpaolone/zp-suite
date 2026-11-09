@@ -1,5 +1,11 @@
 -- @noindex
 
+-- Provenienza ZP:
+--   Proprietà: ZP Studio Suite / Benvenuto.
+--   Pacchetto d’origine: ZP Studio Suite 2.6.6 (installazione locale con aggiornamenti beta).
+--   Copia locale REAPER acquisita il 2026-11-09; preparazione Suite 2.6.7.
+--   Versione interna: non autonoma; segue la versione del pacchetto principale in 00 Apri Help.
+
 -- ZP Studio Suite for REAPER
 -- 33 Benvenuto: controllo installazione. Un pannello che dice quali pezzi della suite sono
 -- pronti e quali no, e per ognuno ha il pulsante che lo mette a posto.
@@ -137,15 +143,120 @@ function M.header_version(text)
   return (text or ""):match("@version%s+([%w%.%-]+)")
 end
 
--- Python 3.11+ fra i posti dove lo mettono python.org e Homebrew (exists e' passato da fuori).
-function M.find_python(exists)
-  for _, v in ipairs({ "3.14", "3.13", "3.12", "3.11" }) do
+-- Python 3.11+ fra i posti dove lo mettono python.org, Homebrew, uv (~/.local/bin) e PATH.
+function M.find_python(exists, path, home)
+  for _, v in ipairs({ "3.14", "3.13", "3.12", "3.11", "3.15" }) do
     for _, p in ipairs({ "/Library/Frameworks/Python.framework/Versions/" .. v .. "/bin/python3",
                          "/opt/homebrew/bin/python" .. v, "/usr/local/bin/python" .. v,
                          "/opt/homebrew/opt/python@" .. v .. "/bin/python" .. v }) do
       if exists(p) then return p end
     end
   end
+  if home and home ~= "" then
+    for _, v in ipairs({ "3.11", "3.12", "3.13", "3.14", "3.15", "3" }) do
+      local p = home .. "/.local/bin/python" .. v
+      if exists(p) then return p end
+    end
+  end
+  for _, p in ipairs({ "/opt/homebrew/bin/python3", "/usr/local/bin/python3" }) do
+    if exists(p) then return p end
+  end
+  if path and path ~= "" then
+    local sep_char = path:find(";", 1, true) and ";" or ":"
+    for dir in tostring(path):gmatch("[^" .. sep_char .. "]+") do
+      local base = dir:gsub("[/\\]+$", "")
+      for _, name in ipairs({ "python3.11", "python3.12", "python3.13", "python3.14", "python3", "python.exe", "python" }) do
+        local cand = base .. "/" .. name
+        if exists(cand) then return cand end
+      end
+    end
+  end
+  return nil
+end
+
+-- Percorsi multipiattaforma di ZP Speech (macOS, Windows, Linux).
+function M.speech_paths(os_name, home, localappdata, xdg_data_home)
+  os_name = tostring(os_name or "")
+  home = tostring(home or "")
+  if os_name:match("Win") then
+    local base = (localappdata and localappdata ~= "") and localappdata or (home .. "\\AppData\\Local")
+    local root = base .. "\\ZP"
+    return {
+      root = root,
+      cli = root .. "\\runtimes\\speech\\Scripts\\zp-speech.exe",
+      whisper_py = root .. "\\runtimes\\openai-whisper\\Scripts\\python.exe",
+      models_dir = root .. "\\models\\whisper",
+    }
+  elseif os_name:match("OSX") or os_name:match("macOS") then
+    local root = home .. "/Library/Application Support/ZP"
+    return {
+      root = root,
+      cli = root .. "/runtimes/speech/bin/zp-speech",
+      whisper_py = root .. "/runtimes/openai-whisper/bin/python",
+      models_dir = root .. "/models/whisper",
+    }
+  else
+    local base = (xdg_data_home and xdg_data_home ~= "") and xdg_data_home or (home .. "/.local/share")
+    local root = base .. "/zp"
+    return {
+      root = root,
+      cli = root .. "/runtimes/speech/bin/zp-speech",
+      whisper_py = root .. "/runtimes/openai-whisper/bin/python",
+      models_dir = root .. "/models/whisper",
+    }
+  end
+end
+
+-- URL e prefisso dell'archivio GitHub di speech-engine legato alla versione della Suite.
+function M.speech_archive_url(version)
+  local v = tostring(version or ""):match("^([%w%.%-]+)$")
+  if v and v ~= "" and v ~= "?" then
+    return "https://codeload.github.com/capitanpaolone/zp-suite/tar.gz/refs/tags/v" .. v,
+           "zp-suite-" .. v .. "/speech-engine"
+  end
+  return "https://codeload.github.com/capitanpaolone/zp-suite/tar.gz/refs/heads/master",
+         "zp-suite-master/speech-engine"
+end
+
+-- Stato distinto di ZP Speech: runtime installato, provider (MacWhisper e/o OpenAI Whisper) e modelli.
+function M.speech_state(info)
+  info = info or {}
+  local has_mw = info.mw == true
+  local has_ow = info.whisper_ready == true
+  if info.ready and (has_mw or has_ow) then
+    local label = (has_mw and has_ow) and "MacWhisper + OpenAI Whisper"
+      or (has_mw and "MacWhisper" or "OpenAI Whisper")
+    return "ok", label
+  elseif info.ready then
+    return "passo", nil
+  else
+    return "manca", nil
+  end
+end
+
+-- Requisiti esterni di ZP Remote su macOS. La verifica guarda gli stessi percorsi
+-- usati dal launcher e dal suo esportatore, senza avviare processi a ogni refresh.
+function M.remote_tools(exists, path)
+  local function in_path(name)
+    for dir in tostring(path or ""):gmatch("[^:]+") do
+      if exists(dir:gsub("/+$", "") .. "/" .. name) then return true end
+    end
+    return false
+  end
+  local python = false
+  for _, p in ipairs({
+    "/opt/homebrew/bin/python3", "/usr/local/bin/python3", "/usr/bin/python3",
+    "/Library/Frameworks/Python.framework/Versions/3.15/bin/python3",
+    "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+    "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+    "/Library/Frameworks/Python.framework/Versions/3.12/bin/python3",
+    "/Library/Frameworks/Python.framework/Versions/3.11/bin/python3",
+  }) do
+    if exists(p) then python = true; break end
+  end
+  local ffmpeg = exists("/opt/homebrew/bin/ffmpeg") or exists("/usr/local/bin/ffmpeg") or in_path("ffmpeg")
+  local shasum = exists("/usr/bin/shasum") or in_path("shasum")
+  return { python = python, ffmpeg = ffmpeg, shasum = shasum }
 end
 
 -- Language pack di REAPER (pura)
@@ -323,21 +434,65 @@ local function speak(t)
   if reaper.osara_outputMessage then reaper.osara_outputMessage(t) end
 end
 
--- ZP Speech: il Terminale scarica da GitHub solo speech-engine e lancia install_macos.sh.
-local function install_speech()
-  local cmd = os.tmpname() .. "_zp_speech.command"
+-- ZP Speech: avvia l'installatore per il sistema corrente (usa speech-engine locale se presente,
+-- altrimenti scarica il tag della versione della Suite da GitHub con fallback a master).
+local function install_speech(with_whisper)
+  local osname = reaper.GetOS() or ""
+  local ver = M.header_version(read(P(here, "00_Apri_Help_ZP_Studio_Suite.lua")))
+  local tag_url, tag_prefix = M.speech_archive_url(ver)
+  local master_url, master_prefix = M.speech_archive_url(nil)
+  local local_se = P(here, "..", "speech-engine")
+  local has_local = exists(P(local_se, "pyproject.toml"))
+  if osname:match("Win") then
+    local ps1 = os.tmpname() .. "_zp_speech.ps1"
+    local lines = {
+      "$ErrorActionPreference = 'Stop'",
+      has_local and ("$S = " .. string.format("%q", local_se) .. "\n& (Join-Path $S 'install_windows.ps1')") or table.concat({
+        "$T = Join-Path $env:TEMP ('zp_speech_' + [guid]::NewGuid().ToString('N'))",
+        "New-Item -ItemType Directory -Force -Path $T | Out-Null",
+        "$Tar = Join-Path $T 'se.tar.gz'",
+        "try { Invoke-WebRequest -Uri '" .. tag_url .. "' -OutFile $Tar } catch { Invoke-WebRequest -Uri '" .. master_url .. "' -OutFile $Tar }",
+        "tar -xzf $Tar -C $T",
+        "$Dir = Get-ChildItem -Path $T -Directory | Select-Object -First 1",
+        "& (Join-Path $Dir.FullName 'speech-engine\\install_windows.ps1')",
+        "Remove-Item -Recurse -Force $T -ErrorAction SilentlyContinue",
+      }, "\r\n"),
+    }
+    if not write(ps1, table.concat(lines, "\r\n") .. "\r\n") then speak("Non riesco a preparare l'installazione di ZP Speech."); return false end
+    os.execute('start "ZP Speech" powershell -NoExit -NoProfile -ExecutionPolicy Bypass -File "' .. ps1 .. '"')
+    return true
+  end
+  local is_mac = osname:match("OSX") or osname:match("macOS")
+  local script_name = is_mac and "install_macos.sh" or "install_linux.sh"
+  local extra = (with_whisper and is_mac) and " --with-openai-whisper" or ""
+  local cmd = os.tmpname() .. (is_mac and "_zp_speech.command" or "_zp_speech.sh")
+  local run_block
+  if has_local then
+    run_block = "bash " .. shq(local_se .. "/" .. script_name) .. extra
+  else
+    run_block = table.concat({
+      "echo 'ZP Speech: scarico l installatore da GitHub (capitanpaolone/zp-suite)...'",
+      "T=$(mktemp -d)",
+      "(curl -fsSL " .. shq(tag_url) .. " | tar -xz -C \"$T\" --strip-components=1 " .. shq(tag_prefix) ..
+        " 2>/dev/null || curl -fsSL " .. shq(master_url) .. " | tar -xz -C \"$T\" --strip-components=1 " .. shq(master_prefix) ..
+        ") || { echo 'Download non riuscito: controlla la connessione.'; read -n 1 -s -r -p 'Premi un tasto per chiudere.'; exit 1; }",
+      "bash \"$T/speech-engine/" .. script_name .. "\"" .. extra,
+      "rm -rf \"$T\"",
+    }, "\n")
+  end
   local body = table.concat({
     "#!/bin/bash",
-    "echo 'ZP Speech: scarico l installatore da GitHub (capitanpaolone/zp-suite)...'",
-    "T=$(mktemp -d)",
-    "curl -fsSL https://codeload.github.com/capitanpaolone/zp-suite/tar.gz/refs/heads/master | tar -xz -C \"$T\" --strip-components=1 zp-suite-master/speech-engine || { echo 'Download non riuscito: controlla la connessione.'; read -n 1 -s -r -p 'Premi un tasto per chiudere.'; exit 1; }",
-    "bash \"$T/speech-engine/install_macos.sh\" && echo 'ZP Speech pronto: torna in REAPER, la spia del Benvenuto diventa verde.' || echo 'Installazione non riuscita: leggi i messaggi qui sopra.'",
-    "rm -rf \"$T\"",
+    run_block .. " && echo 'ZP Speech pronto: torna in REAPER, la spia del Benvenuto diventa verde.' || echo 'Installazione non riuscita: leggi i messaggi qui sopra.'",
     "echo",
     "read -n 1 -s -r -p 'Fatto. Premi un tasto per chiudere questa finestra.'",
   }, "\n") .. "\n"
   if not write(cmd, body) then speak("Non riesco a preparare l'installazione di ZP Speech."); return false end
-  os.execute("chmod +x " .. string.format("%q", cmd) .. " && open " .. string.format("%q", cmd))
+  if is_mac then
+    os.execute("chmod +x " .. string.format("%q", cmd) .. " && open " .. string.format("%q", cmd))
+  else
+    os.execute("chmod +x " .. string.format("%q", cmd) .. " && (x-terminal-emulator -e " .. string.format("%q", cmd) ..
+      " || gnome-terminal -- " .. string.format("%q", cmd) .. " || xterm -e " .. string.format("%q", cmd) .. ") &")
+  end
   return true
 end
 
@@ -596,33 +751,98 @@ local function check_all()
     }
   end
 
-  -- 3 ZP Speech: un clic su Installa apre il Terminale, scarica da GitHub solo la cartella
-  -- speech-engine e lancia il suo installatore (si vede tutto quello che fa).
-  if not IS_MAC then
-    out[#out + 1] = { title = T("ZP Speech (Trascrivi)"), state = "na", line = T("Solo su Mac. Altrove crea l'SRT con il tuo whisper e parti da Abbina."), buttons = {} }
-  else
-    local home = os.getenv("HOME") or ""
-    local ready = exists(home .. "/Library/Application Support/ZP/runtimes/speech/bin/zp-speech")
-    local mw = exists("/Applications/MacWhisper.app")
-    local py = M.find_python(exists)
-    local mancano = {}
-    if not py then mancano[#mancano + 1] = "Python 3.11 o piu' recente (python.org)" end
-    if not mw then mancano[#mancano + 1] = "MacWhisper (in Applicazioni)" end
+  -- 3 ZP Speech: un clic su Installa apre il Terminale / PowerShell, scarica (o usa) speech-engine
+  -- e avvia l'installatore per macOS, Windows o Linux.
+  do
+    local osname = reaper.GetOS() or ""
+    local home = os.getenv("HOME") or os.getenv("USERPROFILE") or ""
+    local sp = M.speech_paths(osname, home, os.getenv("LOCALAPPDATA"), os.getenv("XDG_DATA_HOME"))
+    local ready = exists(sp.cli)
+    local mw = IS_MAC and exists("/Applications/MacWhisper.app") or false
+    local has_whisper_py = exists(sp.whisper_py)
+    local has_pt_model = false
+    if reaper.EnumerateFiles then
+      local idx = 0
+      while true do
+        local f = reaper.EnumerateFiles(sp.models_dir, idx)
+        if not f then break end
+        if f:match("^[^%.].*%.pt$") then has_pt_model = true; break end
+        idx = idx + 1
+      end
+    end
+    local whisper_ready = has_whisper_py and has_pt_model
+    local py = M.find_python(exists, os.getenv("PATH"), home)
+    local sp_state, eng_label = M.speech_state({ ready = ready, mw = mw, whisper_ready = whisper_ready })
+    local sp_line
+    if sp_state == "ok" then
+      sp_line = string.format(T("Installato: 29 Trascrivi crea l'SRT dal WAV con whisper (%s)."), eng_label or "attivo")
+    elseif sp_state == "passo" then
+      sp_line = IS_MAC
+        and T("Servizio installato, ma manca il motore: apri MacWhisper in Applicazioni oppure installa Whisper locale + modello.")
+        or T("Servizio installato, ma manca il modello OpenAI Whisper: clicca Whisper locale per scaricarne uno.")
+    else
+      sp_line = not py
+        and T("Facoltativo, serve a Trascrivi (29). Prima installa Python 3.11+ (python.org), poi clicca Installa.")
+        or (IS_MAC
+          and T("Facoltativo, serve a Trascrivi (29). Funziona con MacWhisper o con OpenAI Whisper locale.")
+          or T("Facoltativo, serve a Trascrivi (29) con OpenAI Whisper locale (sperimentale su Windows/Linux)."))
+    end
     out[#out + 1] = {
       title = T("ZP Speech (Trascrivi)"),
-      state = (ready and mw) and "ok" or "manca",
-      line = (ready and mw) and T("Installato: 29 Trascrivi crea l'SRT dal WAV con whisper (MacWhisper).")
-        or ready and T("Installato, ma per trascrivere serve MacWhisper in Applicazioni (aprilo una volta).")
-        or (#mancano > 0 and string.format(T("Facoltativo, serve a Trascrivi (29). Prima di installarlo serve: %s."), table.concat(mancano, ", "))
-          or T("Facoltativo, serve a Trascrivi (29). Installa: il Terminale scarica e installa tutto da solo.")),
+      state = sp_state,
+      line = sp_line,
       buttons = {
-        { ready and T("Aggiorna") or T("Installa"), function() if install_speech() then speak(T("Si apre il Terminale: segui li' l'installazione di ZP Speech.")) end end,
+        { ready and T("Aggiorna") or T("Installa"), function() if install_speech(not IS_MAC or not mw) then speak(T("Si apre il Terminale: segui li' l'installazione di ZP Speech.")) end end,
           enabled = py ~= nil },
-        { "Python", function() UI.open_url("https://www.python.org/downloads/macos/") end, hidden = py ~= nil },
-        { "MacWhisper", function() UI.open_url("https://goodsnooze.gumroad.com/l/macwhisper") end, hidden = mw },
+        { T("Whisper locale"), function() if install_speech(true) then speak(T("Si apre il Terminale per configurare OpenAI Whisper e il modello.")) end end,
+          enabled = py ~= nil, hidden = not IS_MAC and not ready },
+        { "Python", function() UI.open_url("https://www.python.org/downloads/") end, hidden = py ~= nil },
+        { "MacWhisper", function() UI.open_url("https://goodsnooze.gumroad.com/l/macwhisper") end, hidden = not IS_MAC or mw or whisper_ready },
       },
     }
   end
+
+  -- 3b ZP Remote: importazione e esportazione hanno requisiti diversi.
+  local remote_dir = P(here, "remote")
+  local rt = M.remote_tools(exists, os.getenv("PATH"))
+  local remote_files = {
+    "ZP_Remote_Crea_Pacchetto.lua", "zp_remote_json.lua", "zp_remote_identity.py",
+    "zp_remote_importer.lua", "zp_remote_import_logic.lua", "zp_remote_preflight.py",
+    "zp_remote_esporta.py",
+  }
+  local missing_remote = {}
+  for _, name in ipairs(remote_files) do
+    if not exists(P(remote_dir, name)) then missing_remote[#missing_remote + 1] = name end
+  end
+  local import_ready = #missing_remote == 0 and rt.python and rt.shasum
+  local export_ready = #missing_remote == 0 and rt.python and rt.ffmpeg
+  local remote_line
+  if #missing_remote > 0 then
+    remote_line = T("Mancano file ZP Remote:") .. " " .. table.concat(missing_remote, ", ") .. "."
+  elseif import_ready and export_ready then
+    remote_line = T("Pronto: importa con Python 3 e shasum; esporta con Python 3 e FFmpeg.")
+  elseif import_ready then
+    remote_line = T("Importazione pronta (Python 3 e shasum). Per esportare manca FFmpeg.")
+  elseif export_ready then
+    remote_line = T("Esportazione pronta (Python 3 e FFmpeg). Per importare manca shasum.")
+  elseif not rt.python then
+    remote_line = T("Manca Python 3: serve per importare e per esportare.")
+  elseif not rt.shasum and not rt.ffmpeg then
+    remote_line = T("Mancano shasum per importare e FFmpeg per esportare.")
+  elseif not rt.shasum then
+    remote_line = T("Manca shasum per importare. FFmpeg è presente per esportare.")
+  else
+    remote_line = T("Manca FFmpeg per esportare. L'importazione è pronta.")
+  end
+  out[#out + 1] = {
+    title = T("ZP Remote (Importa / Esporta)"),
+    state = import_ready and export_ready and "ok" or "fare",
+    line = remote_line,
+    buttons = {
+      { T("Python 3"), function() UI.open_url("https://www.python.org/downloads/macos/") end, hidden = rt.python },
+      { "FFmpeg / Homebrew", function() UI.open_url("https://brew.sh") end, hidden = rt.ffmpeg },
+    },
+  }
 
   -- 4 SWS
   local sws = reaper.CF_GetSWSVersion and reaper.CF_GetSWSVersion() or nil

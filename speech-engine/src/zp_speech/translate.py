@@ -20,15 +20,23 @@ import tempfile
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 TIME_LINE = re.compile(
     r"^\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})(.*)$"
 )
 DEFAULT_BLOCK = 60
 LANG_NAMES = {
-    "it": "Italian", "en": "English", "fr": "French", "de": "German", "es": "Spanish",
-    "pt": "Portuguese", "zh": "Chinese", "ja": "Japanese", "ko": "Korean", "ru": "Russian",
+    "it": "Italian",
+    "en": "English",
+    "fr": "French",
+    "de": "German",
+    "es": "Spanish",
+    "pt": "Portuguese",
+    "zh": "Chinese",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "ru": "Russian",
 }
 
 
@@ -116,18 +124,25 @@ def parse_answer(answer: str, expected: Sequence[int]) -> dict[int, str]:
         document = json.loads(answer)
     except json.JSONDecodeError as error:
         raise TranslationError(f"the agent did not answer with JSON: {error}") from error
-    rows = document.get("lines") if isinstance(document, dict) else None
+    rows: object = (
+        cast(dict[str, object], document).get("lines") if isinstance(document, dict) else None
+    )
     if not isinstance(rows, list):
         raise TranslationError("the agent answer has no 'lines' list")
     out: dict[int, str] = {}
-    for row in rows:
-        if not isinstance(row, dict) or not isinstance(row.get("n"), int):
+    for raw_row in cast(list[object], rows):
+        if not isinstance(raw_row, dict):
             raise TranslationError("the agent answer has a malformed line")
-        if not isinstance(row.get("text"), str):
-            raise TranslationError(f"line {row['n']}: text is not a string")
-        if row["n"] in out:
-            raise TranslationError(f"line {row['n']} translated twice")
-        out[row["n"]] = row["text"].replace(" / ", "\n").strip()
+        row = cast(dict[str, object], raw_row)
+        number = row.get("n")
+        if not isinstance(number, int):
+            raise TranslationError("the agent answer has a malformed line")
+        text = row.get("text")
+        if not isinstance(text, str):
+            raise TranslationError(f"line {number}: text is not a string")
+        if number in out:
+            raise TranslationError(f"line {number} translated twice")
+        out[number] = text.replace(" / ", "\n").strip()
     missing = [n for n in expected if n not in out]
     extra = [n for n in out if n not in set(expected)]
     if missing or extra:
@@ -161,8 +176,12 @@ def search_path() -> str:
 
 # CLI che arrivano dentro un'app e si aggiornano con lei: hanno la precedenza su quelle
 # installate a mano (npm), che restano indietro e non conoscono i modelli nuovi.
-APP_CLIS = {"codex": ("/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex",
-                      "/Applications/Codex.app/Contents/Resources/codex-cli/bin/codex")}
+APP_CLIS = {
+    "codex": (
+        "/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex",
+        "/Applications/Codex.app/Contents/Resources/codex-cli/bin/codex",
+    )
+}
 
 
 def find_cli(name: str) -> str | None:
@@ -192,8 +211,14 @@ class CodexTranslator:
 
     name = "codex"
 
-    def __init__(self, executable: str, *, model: str | None = None, timeout: float = 600,
-                 runner: Runner = subprocess.run) -> None:
+    def __init__(
+        self,
+        executable: str,
+        *,
+        model: str | None = None,
+        timeout: float = 600,
+        runner: Runner = subprocess.run,
+    ) -> None:
         self.executable = executable
         self.model = model
         self.timeout = timeout
@@ -205,9 +230,20 @@ class CodexTranslator:
             answer = Path(work) / "answer.json"
             schema.write_text(json.dumps(OUTPUT_SCHEMA), encoding="utf-8")
             command = [
-                self.executable, "exec", "--sandbox", "read-only", "--skip-git-repo-check",
-                "--ephemeral", "--color", "never", "-C", work,
-                "--output-schema", str(schema), "-o", str(answer),
+                self.executable,
+                "exec",
+                "--sandbox",
+                "read-only",
+                "--skip-git-repo-check",
+                "--ephemeral",
+                "--color",
+                "never",
+                "-C",
+                work,
+                "--output-schema",
+                str(schema),
+                "-o",
+                str(answer),
             ]
             if self.model:
                 command += ["-m", self.model]
@@ -215,8 +251,13 @@ class CodexTranslator:
             env = dict(os.environ, PATH=search_path())
             try:
                 result = self.runner(
-                    command, input=build_prompt(lines, source, target), capture_output=True,
-                    text=True, timeout=self.timeout, env=env, check=False,
+                    command,
+                    input=build_prompt(lines, source, target),
+                    capture_output=True,
+                    text=True,
+                    timeout=self.timeout,
+                    env=env,
+                    check=False,
                 )
             except subprocess.TimeoutExpired as error:
                 message = f"codex did not answer within {self.timeout:.0f} s"
@@ -231,8 +272,18 @@ class CodexTranslator:
         with tempfile.TemporaryDirectory(prefix="zp-ask-") as work:
             answer = Path(work) / "answer.txt"
             command = [
-                self.executable, "exec", "--sandbox", "read-only", "--skip-git-repo-check",
-                "--ephemeral", "--color", "never", "-C", work, "-o", str(answer),
+                self.executable,
+                "exec",
+                "--sandbox",
+                "read-only",
+                "--skip-git-repo-check",
+                "--ephemeral",
+                "--color",
+                "never",
+                "-C",
+                work,
+                "-o",
+                str(answer),
             ]
             if self.model:
                 command += ["-m", self.model]
@@ -247,12 +298,21 @@ def _tail(result: subprocess.CompletedProcess[str]) -> str:
     return " | ".join((result.stderr or result.stdout or "").strip().splitlines()[-3:])
 
 
-def _run(runner: Runner, command: list[str], prompt: str | None, timeout: float, cwd: str,
-         name: str) -> subprocess.CompletedProcess[str]:
+def _run(
+    runner: Runner, command: list[str], prompt: str | None, timeout: float, cwd: str, name: str
+) -> subprocess.CompletedProcess[str]:
     env = dict(os.environ, PATH=search_path(), NO_COLOR="1")
     try:
-        return runner(command, input=prompt, capture_output=True, text=True, timeout=timeout,
-                      env=env, check=False, cwd=cwd)
+        return runner(
+            command,
+            input=prompt,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env=env,
+            check=False,
+            cwd=cwd,
+        )
     except subprocess.TimeoutExpired as error:
         raise TranslationError(f"{name} did not answer within {timeout:.0f} s") from error
 
@@ -272,11 +332,11 @@ def extract_json(text: str) -> str:
     start, end = text.find("{"), text.rfind("}")
     if start < 0 or end <= start:
         raise TranslationError("the agent did not answer with JSON")
-    return text[start:end + 1]
+    return text[start : end + 1]
 
 
 JSON_FORMAT = (
-    '\nAnswer ONLY with this JSON, nothing before or after: '
+    "\nAnswer ONLY with this JSON, nothing before or after: "
     '{"lines": [{"n": <number>, "text": "<translation>"}, ...]}\n'
 )
 
@@ -284,8 +344,15 @@ JSON_FORMAT = (
 class PromptAgent:
     """Any agent CLI that takes a prompt and prints the answer (Claude, Qwen, OpenCode, Ollama)."""
 
-    def __init__(self, name: str, executable: str, *, model: str | None = None,
-                 timeout: float = 600, runner: Runner = subprocess.run) -> None:
+    def __init__(
+        self,
+        name: str,
+        executable: str,
+        *,
+        model: str | None = None,
+        timeout: float = 600,
+        runner: Runner = subprocess.run,
+    ) -> None:
         self.name = name
         self.executable = executable
         self.model = model
@@ -296,8 +363,14 @@ class PromptAgent:
         """argv, and whether the prompt goes on stdin."""
         exe, model = self.executable, self.model
         if self.name == "claude":
-            cmd = [exe, "-p", "--output-format", "text", "--disallowedTools",
-                   "Bash,Edit,Write,NotebookEdit,WebFetch,WebSearch"]
+            cmd = [
+                exe,
+                "-p",
+                "--output-format",
+                "text",
+                "--disallowedTools",
+                "Bash,Edit,Write,NotebookEdit,WebFetch,WebSearch",
+            ]
             return cmd + (["--model", model] if model else []), True
         if self.name == "qwen":
             return [exe] + (["-m", model] if model else []) + ["Answer the request above."], True
@@ -316,8 +389,9 @@ class PromptAgent:
             prompt_file = str(Path(work) / "richiesta.txt")
             Path(prompt_file).write_text(prompt, encoding="utf-8")
             command, stdin = self.command(work, prompt_file)
-            result = _run(self.runner, command, prompt if stdin else None, self.timeout, work,
-                          self.name)
+            result = _run(
+                self.runner, command, prompt if stdin else None, self.timeout, work, self.name
+            )
             text = _clean(result.stdout)
             if result.returncode != 0 or not text:
                 raise TranslationError(f"{self.name} failed: " + _tail(result))
@@ -329,8 +403,13 @@ class PromptAgent:
 
 
 # engine -> (CLI, where the text goes); "auto" tries them in this order
-ENGINES: dict[str, str] = {"codex": "codex", "claude": "claude", "qwen": "qwen",
-                           "opencode": "opencode", "ollama": "ollama"}
+ENGINES: dict[str, str] = {
+    "codex": "codex",
+    "claude": "claude",
+    "qwen": "qwen",
+    "opencode": "opencode",
+    "ollama": "ollama",
+}
 WHERE = {
     "codex": "OpenAI (your ChatGPT account)",
     "claude": "Anthropic (your Claude account)",
@@ -343,22 +422,42 @@ WHERE = {
 def codex_models(executable: str, runner: Runner = subprocess.run) -> list[str]:
     """Models the logged-in Codex offers, best first (`codex debug models`, visible ones only)."""
     try:
-        result = runner([executable, "debug", "models"], capture_output=True, text=True,
-                        timeout=30, env=dict(os.environ, PATH=search_path()), check=False)
+        result = runner(
+            [executable, "debug", "models"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env=dict(os.environ, PATH=search_path()),
+            check=False,
+        )
         catalog = json.loads(result.stdout or "{}")
     except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
         return []
-    rows = [m for m in catalog.get("models", []) if isinstance(m, dict)
-            and m.get("visibility") == "list" and isinstance(m.get("slug"), str)]
+    raw_models: object = (
+        cast(dict[str, object], catalog).get("models", []) if isinstance(catalog, dict) else []
+    )
+    rows: list[dict[str, Any]] = [
+        cast(dict[str, Any], m)
+        for m in (cast(list[object], raw_models) if isinstance(raw_models, list) else [])
+        if isinstance(m, dict)
+        and cast(dict[str, Any], m).get("visibility") == "list"
+        and isinstance(cast(dict[str, Any], m).get("slug"), str)
+    ]
     rows.sort(key=lambda m: m.get("priority", 999))
-    return [m["slug"] for m in rows]
+    return [str(m["slug"]) for m in rows]
 
 
 def ollama_models(executable: str, runner: Runner = subprocess.run) -> list[str]:
     """Local models (`ollama list`), in the order Ollama prints them."""
     try:
-        result = runner([executable, "list"], capture_output=True, text=True, timeout=20,
-                        env=dict(os.environ, PATH=search_path()), check=False)
+        result = runner(
+            [executable, "list"],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            env=dict(os.environ, PATH=search_path()),
+            check=False,
+        )
     except (OSError, subprocess.TimeoutExpired):
         return []
     rows = (result.stdout or "").splitlines()[1:]
@@ -375,14 +474,22 @@ def engine_models(engine: str, path: str) -> list[str]:
 
 def available_engines() -> list[dict[str, Any]]:
     """Engines this Mac can use now, for the REAPER menus (with where the text goes)."""
-    found = []
+    found: list[dict[str, Any]] = []
     for engine, cli in ENGINES.items():
         path = find_cli(cli)
         models = engine_models(engine, path) if path else []
         usable = path is not None and (engine != "ollama" or bool(models))
-        found.append({"engine": engine, "available": usable, "path": path,
-                      "cloud": engine != "ollama", "login": engine != "ollama",
-                      "where": WHERE[engine], "models": models})
+        found.append(
+            {
+                "engine": engine,
+                "available": usable,
+                "path": path,
+                "cloud": engine != "ollama",
+                "login": engine != "ollama",
+                "where": WHERE[engine],
+                "models": models,
+            }
+        )
     return found
 
 
@@ -396,8 +503,9 @@ def resolve_engine(engine: str) -> str:
     raise TranslationError("no AI agent found on this Mac (Codex, Claude, Qwen, OpenCode, Ollama)")
 
 
-def make_translator(engine: str, *, model: str | None = None,
-                    timeout: float = 600) -> CodexTranslator | PromptAgent:
+def make_translator(
+    engine: str, *, model: str | None = None, timeout: float = 600
+) -> CodexTranslator | PromptAgent:
     engine = resolve_engine(engine)
     if engine not in ENGINES:
         raise TranslationError(f"unknown engine: {engine}")
@@ -425,8 +533,13 @@ def default_output(source: Path, target: str) -> Path:
 
 
 def translate_srt(
-    source: Path, target: str, translator: Translator, *, source_lang: str = "auto",
-    block: int = DEFAULT_BLOCK, progress: Callable[[int, int], None] | None = None,
+    source: Path,
+    target: str,
+    translator: Translator,
+    *,
+    source_lang: str = "auto",
+    block: int = DEFAULT_BLOCK,
+    progress: Callable[[int, int], None] | None = None,
 ) -> str:
     cues = parse_srt(source.read_text(encoding="utf-8"))
     if not cues:
@@ -435,7 +548,7 @@ def translate_srt(
     numbers = list(numbered)
     done: dict[int, str] = {}
     for start in range(0, len(numbers), block):
-        part = {n: numbered[n] for n in numbers[start:start + block]}
+        part = {n: numbered[n] for n in numbers[start : start + block]}
         done.update(translator.translate(part, source_lang, target))
         if progress:
             progress(min(start + block, len(numbers)), len(numbers))

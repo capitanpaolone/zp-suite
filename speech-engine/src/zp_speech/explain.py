@@ -3,6 +3,7 @@
 Used by ZP Set Comandi (34): REAPER sends only the list "key -> action name" of one set
 (a few dozen lines), the agent answers with a few short sentences. Nothing else leaves the Mac.
 """
+
 from __future__ import annotations
 
 from zp_speech.translate import (
@@ -13,7 +14,7 @@ from zp_speech.translate import (
     make_translator,
 )
 
-MAX_LINES = 400        # a set is a few dozen lines; cap what we send anyway
+MAX_LINES = 400  # a set is a few dozen lines; cap what we send anyway
 MAX_WORDS = 120
 
 
@@ -34,9 +35,15 @@ def build_keys_prompt(listing: str, lang: str = "it") -> str:
     )
 
 
-def explain_keys(listing: str, *, engine: str = "auto", model: str | None = None,
-                 lang: str = "it", timeout: float = 300,
-                 agent: CodexTranslator | PromptAgent | None = None) -> str:
+def explain_keys(
+    listing: str,
+    *,
+    engine: str = "auto",
+    model: str | None = None,
+    lang: str = "it",
+    timeout: float = 300,
+    agent: CodexTranslator | PromptAgent | None = None,
+) -> str:
     if not listing.strip():
         raise TranslationError("the set has no shortcuts to explain")
     agent = agent or make_translator(engine, model=model, timeout=timeout)

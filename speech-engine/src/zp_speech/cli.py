@@ -11,7 +11,15 @@ from typing import Any, Protocol
 
 from zp_speech.client import request_transcription
 from zp_speech.exporters import transcript_to_srt
-from zp_speech.providers import MacWhisperProvider, ProviderError
+from zp_speech.providers import (
+    ENGINE_CHOICES,
+    MacWhisperProvider,
+    OpenAIWhisperProvider,
+    ProviderError,
+    detect_provider,
+    download_model,
+    list_models_status,
+)
 
 
 class SpeechProvider(Protocol):
@@ -34,17 +42,27 @@ ProviderFactory = Callable[[], SpeechProvider]
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="zp-speech")
     commands = parser.add_subparsers(dest="command", required=True)
-    commands.add_parser("doctor", help="inspect the MacWhisper CLI")
+    doctor = commands.add_parser("doctor", help="inspect the active transcription provider")
+    doctor.add_argument("--engine", choices=ENGINE_CHOICES, default="auto")
     serve = commands.add_parser("serve", help="run the singleton loopback speech service")
     serve.add_argument("--host", choices=["127.0.0.1", "localhost"], default="127.0.0.1")
     serve.add_argument("--port", type=int, choices=range(1024, 65536), default=8770)
-    request_service = commands.add_parser("request", help="submit a job to the shared local service")
+    request_service = commands.add_parser(
+        "request", help="submit a job to the shared local service"
+    )
     request_service.add_argument("source", type=Path)
+    request_service.add_argument("--engine", choices=ENGINE_CHOICES, default="auto")
     request_service.add_argument("--language", default="it")
     request_service.add_argument("--model")
     request_service.add_argument("--timeout", type=float, default=21600)
     request_service.add_argument("--format", choices=["json", "srt"], default="srt")
     request_service.add_argument("--output", type=Path)
+    commands.add_parser("models", help="list local OpenAI Whisper models and disk space")
+    dl_model = commands.add_parser(
+        "download-model", help="explicitly download an OpenAI Whisper model"
+    )
+    dl_model.add_argument("model", help="model name (e.g. small, medium, large-v3-turbo, large-v3)")
+    dl_model.add_argument("--timeout", type=float, default=3600)
     translate = commands.add_parser("translate", help="translate an SRT with a logged-in AI agent")
     translate.add_argument("source", type=Path)
     translate.add_argument("--to", required=True, dest="target")
@@ -57,7 +75,8 @@ def _parser() -> argparse.ArgumentParser:
     translate.add_argument("--overwrite", action="store_true")
     commands.add_parser("translators", help="list the translation engines available here")
     explain = commands.add_parser(
-        "explain-keys", help="explain a REAPER shortcut list with a logged-in AI agent")
+        "explain-keys", help="explain a REAPER shortcut list with a logged-in AI agent"
+    )
     explain.add_argument("source", type=Path, help="text file, one 'key -> action' per line")
     explain.add_argument("--output", type=Path, required=True)
     explain.add_argument("--engine", default="auto")
@@ -66,7 +85,7 @@ def _parser() -> argparse.ArgumentParser:
     explain.add_argument("--timeout", type=float, default=300)
     transcribe = commands.add_parser("transcribe", help="transcribe a local audio file")
     transcribe.add_argument("source", type=Path)
-    transcribe.add_argument("--engine", choices=["macwhisper"], default="macwhisper")
+    transcribe.add_argument("--engine", choices=ENGINE_CHOICES, default="auto")
     transcribe.add_argument("--language", default="it")
     transcribe.add_argument("--model")
     transcribe.add_argument("--speakers", action="store_true")
@@ -96,8 +115,14 @@ def _translate(args: argparse.Namespace) -> int:
 
     try:
         translator = make_translator(args.engine, model=args.model, timeout=args.timeout)
-        rendered = translate_srt(source, args.target, translator, source_lang=args.source_lang,
-                                 block=max(1, args.block), progress=progress)
+        rendered = translate_srt(
+            source,
+            args.target,
+            translator,
+            source_lang=args.source_lang,
+            block=max(1, args.block),
+            progress=progress,
+        )
         output.write_text(rendered, encoding="utf-8")
     except (TranslationError, OSError, UnicodeDecodeError) as error:
         sys.stderr.write(f"zp-speech translate: {error}\n")
@@ -107,7 +132,11 @@ def _translate(args: argparse.Namespace) -> int:
 
 
 def _default_provider() -> SpeechProvider:
-    return MacWhisperProvider.detect()
+    return detect_provider(
+        "auto",
+        macwhisper_detector=MacWhisperProvider.detect,
+        openai_whisper_detector=OpenAIWhisperProvider.detect,
+    )
 
 
 def main(
@@ -126,6 +155,21 @@ def main(
             sys.stderr.write(f"zp-speech serve: {error}\n")
             return 2
         return 0
+    if args.command == "models":
+        sys.stdout.write(
+            json.dumps(list_models_status(), ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+        )
+        return 0
+    if args.command == "download-model":
+        try:
+            path = download_model(args.model, timeout=args.timeout)
+            sys.stdout.write(str(path) + "\n")
+            return 0
+        except ProviderError as error:
+            sys.stderr.write(
+                json.dumps(error.as_document(), ensure_ascii=False, sort_keys=True) + "\n"
+            )
+            return 2
     if args.command == "translators":
         from zp_speech.translate import available_engines
 
@@ -139,8 +183,13 @@ def main(
 
         try:
             listing = args.source.expanduser().read_text(encoding="utf-8")
-            text = explain_keys(listing, engine=args.engine, model=args.model,
-                                lang=args.lang, timeout=args.timeout)
+            text = explain_keys(
+                listing,
+                engine=args.engine,
+                model=args.model,
+                lang=args.lang,
+                timeout=args.timeout,
+            )
             args.output.expanduser().write_text(text + "\n", encoding="utf-8")
         except (TranslationError, OSError, UnicodeDecodeError) as error:
             sys.stderr.write(f"zp-speech explain-keys: {error}\n")
@@ -150,8 +199,11 @@ def main(
     if args.command == "request":
         try:
             payload = request_transcription(
-                str(args.source.expanduser().resolve()), language=args.language,
-                model=args.model, timeout=args.timeout,
+                str(args.source.expanduser().resolve()),
+                engine=args.engine,
+                language=args.language,
+                model=args.model,
+                timeout=args.timeout,
             )
             rendered = (
                 transcript_to_srt(payload)
@@ -167,7 +219,15 @@ def main(
             sys.stderr.write(f"zp-speech request: {error}\n")
             return 2
     try:
-        provider = provider_factory()
+        if provider_factory is _default_provider:
+            provider: SpeechProvider = detect_provider(
+                getattr(args, "engine", "auto"),
+                model=getattr(args, "model", None),
+                macwhisper_detector=MacWhisperProvider.detect,
+                openai_whisper_detector=OpenAIWhisperProvider.detect,
+            )
+        else:
+            provider = provider_factory()
         if args.command == "doctor":
             payload = provider.capabilities()
             rendered = json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"

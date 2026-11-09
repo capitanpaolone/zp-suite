@@ -92,6 +92,21 @@ function M.parse_models(json)
   return list
 end
 
+-- Percorso dell'eseguibile zp-speech per macOS, Windows e Linux.
+function M.speech_cli_path(os_name, home, localappdata, xdg_data_home)
+  os_name = tostring(os_name or "")
+  home = tostring(home or "")
+  if os_name:match("Win") then
+    local base = (localappdata and localappdata ~= "") and localappdata or (home .. "\\AppData\\Local")
+    return base .. "\\ZP\\runtimes\\speech\\Scripts\\zp-speech.exe"
+  elseif os_name:match("OSX") or os_name:match("macOS") then
+    return home .. "/Library/Application Support/ZP/runtimes/speech/bin/zp-speech"
+  else
+    local base = (xdg_data_home and xdg_data_home ~= "") and xdg_data_home or (home .. "/.local/share")
+    return base .. "/zp/runtimes/speech/bin/zp-speech"
+  end
+end
+
 -- Lingue in tendina (codici ISO 639-1, come li vuole MacWhisper); "Altra..." accetta qualsiasi codice.
 M.LANGS = {
   { code = "it", label = "Italiano" }, { code = "en", label = "Inglese" }, { code = "fr", label = "Francese" },
@@ -529,8 +544,8 @@ end
 
 -- Tappa 1: coda sequenziale su ZP Speech
 local function speech_cli()
-  local home = os.getenv("HOME") or ""
-  return home .. "/Library/Application Support/ZP/runtimes/speech/bin/zp-speech", home
+  local home = os.getenv("HOME") or os.getenv("USERPROFILE") or ""
+  return M.speech_cli_path(reaper.GetOS(), home, os.getenv("LOCALAPPDATA"), os.getenv("XDG_DATA_HOME")), home
 end
 
 local function start_next()
@@ -583,22 +598,25 @@ local function poll_job()
 end
 
 local function speech_ready()
-  local osname = reaper.GetOS()
-  if not (osname:match("OSX") or osname:match("macOS")) then
-    reaper.ShowMessageBox(T("La trascrizione automatica e' configurata solo su macOS.\nSu Windows/Linux: crea l'SRT con il tuo whisper (stesso nome del WAV, accanto al file) e parti dalla tappa Abbina."), T("ZP Trascrizione"), 0)
+  local osname = reaper.GetOS() or ""
+  local cli, home = speech_cli()
+  if not exists(cli) then
+    reaper.ShowMessageBox(T("ZP Speech non e' installato.\nApri 33 Benvenuto e clicca Installa nella riga ZP Speech.\nOppure crea l'SRT con il tuo whisper e parti dalla tappa Abbina."), T("ZP Trascrizione"), 0)
     return false
   end
-  if not exists((speech_cli())) then
-    reaper.ShowMessageBox(T("ZP Speech non e' installato.\nNel repo zp-suite lancia: bash speech-engine/install_macos.sh\n(serve Python 3.11+ e MacWhisper). Oppure crea l'SRT con il tuo whisper e parti dalla tappa Abbina."), T("ZP Trascrizione"), 0)
-    return false
-  end
-  -- il servizio va avviato se non gira (come in 26_SRT_Tools.lua)
-  local p = io.popen("/usr/bin/id -u 2>/dev/null", "r")
-  local uid = p and p:read("*l"); if p then p:close() end
-  if uid and uid:match("^%d+$") then
-    local plist = select(2, speech_cli()) .. "/Library/LaunchAgents/com.zp.speech-service.plist"
-    os.execute("/bin/launchctl kickstart gui/" .. uid .. "/com.zp.speech-service >/dev/null 2>&1 || /bin/launchctl bootstrap 'gui/" ..
-      uid .. "' " .. shell_quote(plist) .. " >/dev/null 2>&1")
+  -- il servizio va avviato se non gira
+  if osname:match("OSX") or osname:match("macOS") then
+    local p = io.popen("/usr/bin/id -u 2>/dev/null", "r")
+    local uid = p and p:read("*l"); if p then p:close() end
+    if uid and uid:match("^%d+$") then
+      local plist = home .. "/Library/LaunchAgents/com.zp.speech-service.plist"
+      os.execute("/bin/launchctl kickstart gui/" .. uid .. "/com.zp.speech-service >/dev/null 2>&1 || /bin/launchctl bootstrap 'gui/" ..
+        uid .. "' " .. shell_quote(plist) .. " >/dev/null 2>&1")
+    end
+  elseif osname:match("Win") then
+    os.execute('start "" /B "' .. cli .. '" serve >nul 2>&1')
+  else
+    os.execute("(systemctl --user start zp-speech-service.service || nohup " .. shell_quote(cli) .. " serve >/dev/null 2>&1 &) >/dev/null 2>&1")
   end
   return true
 end

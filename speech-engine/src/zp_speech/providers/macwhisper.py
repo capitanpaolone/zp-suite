@@ -32,6 +32,7 @@ class ProviderError(RuntimeError):
         *,
         retryable: bool = False,
         details: Mapping[str, object] | None = None,
+        provider: str | None = PROVIDER,
     ) -> None:
         if code not in ERROR_CODES:
             raise ValueError(f"unknown public error code: {code}")
@@ -39,6 +40,7 @@ class ProviderError(RuntimeError):
         self.code = code
         self.retryable = retryable
         self.details = dict(details or {})
+        self.provider = provider
 
     def as_document(self) -> dict[str, Any]:
         document: dict[str, Any] = {
@@ -49,7 +51,7 @@ class ProviderError(RuntimeError):
                 "code": self.code,
                 "message": str(self),
                 "retryable": self.retryable,
-                "provider": PROVIDER,
+                "provider": self.provider,
                 "details": self.details,
             },
         }
@@ -59,6 +61,10 @@ class ProviderError(RuntimeError):
 
 def _run(args: Sequence[str], timeout: float) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, capture_output=True, text=True, check=False, timeout=timeout)
+
+
+# Public name for sibling providers; the private alias stays for existing callers/tests.
+default_runner: Runner = _run
 
 
 def _milliseconds(value: object, path: str) -> int:
@@ -190,7 +196,7 @@ def normalize_macwhisper_json(
     try:
         validate_document(document)
     except ContractValidationError as error:
-        timing_details = []
+        timing_details: list[str] = []
         for segment_index, segment in enumerate(segments):
             for word_index, word in enumerate(segment.get("words", [])):
                 if word["start_ms"] < segment["start_ms"] or word["end_ms"] > segment["end_ms"]:

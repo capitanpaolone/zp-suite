@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 import time
-from typing import Any
+from typing import Any, cast
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -14,13 +14,18 @@ from zp_speech.providers import ProviderError
 DEFAULT_BASE_URL = "http://127.0.0.1:8770"
 
 
+def _as_dict(value: object) -> dict[str, Any] | None:
+    return cast(dict[str, Any], value) if isinstance(value, dict) else None
+
+
 def _get_json(url: str, timeout: float = 10) -> dict[str, Any]:
     request = Request(url, headers={"Accept": "application/json"})
     with urlopen(request, timeout=timeout) as response:
-        payload = json.load(response)
-    if not isinstance(payload, dict):
+        payload: object = json.load(response)
+    document = _as_dict(payload)
+    if document is None:
         raise RuntimeError("ZP Speech Service returned invalid JSON")
-    return payload
+    return document
 
 
 def request_transcription(
@@ -28,6 +33,7 @@ def request_transcription(
     *,
     language: str = "it",
     model: str | None = None,
+    engine: str | None = None,
     timeout: float = 21600,
     poll_interval: float = 1.0,
     base_url: str | None = None,
@@ -53,6 +59,8 @@ def request_transcription(
     payload: dict[str, Any] = {"source": source, "language": language, "timeout": timeout}
     if model:
         payload["model"] = model
+    if engine and engine != "auto":
+        payload["engine"] = engine
     request = Request(
         f"{endpoint}/api/v1/transcriptions",
         data=json.dumps(payload).encode("utf-8"),
@@ -61,16 +69,20 @@ def request_transcription(
     )
     try:
         with urlopen(request, timeout=10) as response:
-            submitted = json.load(response)
+            raw_submitted: object = json.load(response)
     except HTTPError as error:
+        message: object = None
         try:
-            document = json.loads(error.read())
-            provider_error = document.get("error", {})
-            message = provider_error.get("message") if isinstance(provider_error, dict) else None
+            document = _as_dict(json.loads(error.read())) or {}
+            provider_error = _as_dict(document.get("error")) or {}
+            message = provider_error.get("message")
         except (ValueError, UnicodeDecodeError):
             message = None
-        raise RuntimeError(message or f"ZP Speech Service ha risposto HTTP {error.code}") from error
-    if not isinstance(submitted, dict) or not isinstance(submitted.get("job_id"), str):
+        raise RuntimeError(
+            str(message or f"ZP Speech Service ha risposto HTTP {error.code}")
+        ) from error
+    submitted = _as_dict(raw_submitted)
+    if submitted is None or not isinstance(submitted.get("job_id"), str):
         raise RuntimeError("ZP Speech Service non ha restituito l'ID del job")
 
     deadline = time.monotonic() + timeout
@@ -81,17 +93,16 @@ def request_transcription(
             raise RuntimeError(f"Connessione a ZP Speech Service interrotta: {error}") from error
         state = job.get("status")
         if state == "succeeded":
-            result = job.get("result")
-            if not isinstance(result, dict) or result.get("kind") != "transcript":
+            result = _as_dict(job.get("result"))
+            if result is None or result.get("kind") != "transcript":
                 raise RuntimeError("Il servizio ha restituito un transcript ZP non valido")
             return result
         if state == "failed":
-            document = job.get("error", {})
-            error_doc = document.get("error", {}) if isinstance(document, dict) else {}
-            message = error_doc.get("message") if isinstance(error_doc, dict) else None
+            failure = _as_dict(job.get("error")) or {}
+            error_doc = _as_dict(failure.get("error")) or {}
             raise ProviderError(
                 str(error_doc.get("code", "transcription_failed")),
-                str(message or "Trascrizione ZP non riuscita"),
+                str(error_doc.get("message") or "Trascrizione ZP non riuscita"),
             )
         if state not in {"queued", "running"}:
             raise RuntimeError(f"Stato job ZP non riconosciuto: {state}")

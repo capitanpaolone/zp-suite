@@ -159,8 +159,19 @@ def test_cli_translate(tmp_path: Path, monkeypatch, capsys) -> None:
     assert main(["translate", str(src), "--to", "it"]) == 2  # no overwrite
     assert "exists" in capsys.readouterr().err
     assert main(["translate", str(src), "--to", "it", "--overwrite"]) == 0
-    assert main(["translate", str(tmp_path / "manca.srt"), "--to", "it", "--output",
-                 str(tmp_path / "x.srt")]) == 2
+    assert (
+        main(
+            [
+                "translate",
+                str(tmp_path / "manca.srt"),
+                "--to",
+                "it",
+                "--output",
+                str(tmp_path / "x.srt"),
+            ]
+        )
+        == 2
+    )
 
 
 def test_cli_translators(capsys) -> None:
@@ -169,11 +180,13 @@ def test_cli_translators(capsys) -> None:
 
 
 def test_codex_models_best_first() -> None:
-    catalog = {"models": [
-        {"slug": "old", "visibility": "list", "priority": 9},
-        {"slug": "hidden", "visibility": "hide", "priority": 1},
-        {"slug": "best", "visibility": "list", "priority": 2},
-    ]}
+    catalog = {
+        "models": [
+            {"slug": "old", "visibility": "list", "priority": 9},
+            {"slug": "hidden", "visibility": "hide", "priority": 1},
+            {"slug": "best", "visibility": "list", "priority": 2},
+        ]
+    }
 
     def runner(command, **kwargs):
         assert command[1:] == ["debug", "models"]
