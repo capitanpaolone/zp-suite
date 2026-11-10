@@ -125,6 +125,8 @@
 --   [nomain] ZP_UI.lua
 --   [nomain] ZP_sincronizza_aggancio.lua
 --   [nomain] ZP_cerca.lua
+--   [nomain] ZP_Testo_Copione.lua
+--   [nomain] ZP_Editor_Copione.lua
 --   [nomain] ZP_Colori.lua
 --   [nomain] ZP_Agenti.lua
 --   [nomain] ZP_Lingua.lua

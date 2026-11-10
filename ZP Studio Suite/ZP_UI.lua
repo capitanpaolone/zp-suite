@@ -100,9 +100,12 @@ function UI.fit_text(text, max_w)
   local suffix_w = gfx.measurestr(suffix)
   local out = ""
   for i = 1, #text do
+    local next_byte=text:byte(i+1)
+    if not next_byte or next_byte<128 or next_byte>=192 then
     local candidate = text:sub(1, i)
     if gfx.measurestr(candidate) + suffix_w > max_w then break end
     out = candidate
+    end
   end
   return (out ~= "" and out:gsub("%s+$", "") or "") .. suffix
 end
@@ -143,6 +146,11 @@ local function button_colors(style)
     colors.hover = {0.76, 0.16, 0.14, 1}
     colors.active = {1.00, 0.18, 0.12, 1}
     colors.border = {1.00, 0.46, 0.38, 1}
+  elseif style == "warning" then
+    colors.normal = {0.26, 0.17, 0.06, 1}
+    colors.hover = {0.48, 0.30, 0.08, 1}
+    colors.active = {0.40, 0.25, 0.06, 1}
+    colors.border = {0.95, 0.68, 0.22, 1}
   elseif style == "tab" then
     colors.normal = {0.13, 0.13, 0.19, 1}
     colors.hover = {0.22, 0.44, 0.70, 1}

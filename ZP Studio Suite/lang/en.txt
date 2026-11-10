@@ -904,3 +904,53 @@ Facoltativo, serve a Trascrivi (29). Funziona con MacWhisper o con OpenAI Whispe
 Facoltativo, serve a Trascrivi (29) con OpenAI Whisper locale (sperimentale su Windows/Linux).	Optional, used by Transcribe (29) with local OpenAI Whisper (experimental on Windows/Linux).
 Whisper locale	Local Whisper
 Si apre il Terminale per configurare OpenAI Whisper e il modello.	Opens Terminal to configure OpenAI Whisper and the model.
+ · Durata: %02d:%02d	 · Duration: %02d:%02d
+18 Carica file…	18 Load file…
+19 Riposiziona sul player	19 Reposition to playhead
+20 Fascia di lettura si/no	20 Reading focus on/off
+Annulla modifica (Ctrl+Z)	Undo edit (Ctrl+Z)
+Carica file… (.docx, .odt, .rtf, .txt)	Load file… (.docx, .odt, .rtf, .txt)
+Comando non disponibile o documento non leggibile.	Command unavailable or document unreadable.
+Evidenzia	Highlight
+Fascia di lettura	Reading focus
+Formato supportato: .docx, .odt, .rtf, .txt.	Supported formats: .docx, .odt, .rtf, .txt.
+Il file TXT deve essere UTF-8.	TXT files must use UTF-8.
+Importa grassetto/evidenziato	Import bold/highlighted text
+Importazione copione	Script import
+Impossibile avviare il convertitore.	Cannot start the converter.
+Impossibile leggere gli appunti.	Cannot read the clipboard.
+Incolla pulito	Paste clean text
+Parole: %d · Pause: %d	Words: %d · Pauses: %d
+Pulisci spazi	Clean spacing
+Ricalcola durata item in timeline	Recalculate timeline item duration
+Scorrimento manuale — Clicca o Esc per tornare sul player	Manual scrolling — Click or Esc to follow the playhead
+Selezione: MAIUSCOLO	Selection: UPPERCASE
+Selezione: iniziale maiuscola	Selection: sentence case
+Selezione: minuscolo	Selection: lowercase
+Separa frasi per respiro	Split sentences for breathing
+Strumenti ▾	Tools ▾
+Unisci righe PDF	Join PDF lines
+XML del documento mancante.	Missing document XML.
+11 Pausa nel testo (Shift+Invio)	11 Text pause (Shift+Enter)
+Per aggiungere una pausa, apri il testo con doppio clic e premi Shift+Invio. La pausa resta nello stesso item.	To add a pause, double-click the text and press Shift+Enter. The pause remains in the same item.
+Shift+Invio: pausa	Shift+Enter: pause
+Shift+Invio: accapo	Shift+Enter: newline
+Questa parola ha già un promemoria. Puoi spostare il marker liberamente nella timeline.	This word already has a reminder. You can move the marker freely in the timeline.
+Promemoria del copione	Script reminder
+Nome marker:	Marker name:
+Impossibile collegare il marker alla parola.	Cannot link the marker to the word.
+Aggiungi promemoria su questa parola…	Add reminder on this word…
+Scollega i marker di questo testo	Unlink this text’s markers
+Edita testo…	Edit text…
+Dividi prima di questa parola	Split before this word
+Dividi il copione	Split script
+Il testo è cambiato: seleziona di nuovo la parola.	The text has changed: select the word again.
+L’item selezionato non è più disponibile.	The selected item is no longer available.
+La divisione dal copione è disponibile solo per testi temporizzati autonomi.	Splitting from the script is available only for standalone timed text.
+Seleziona una parola del copione.	Select a word in the script.
+Il taglio deve lasciare testo in entrambi gli item.	The split must leave text in both items.
+Impossibile conservare le pause in questo punto di taglio.	Cannot preserve pauses at this split point.
+Il punto di taglio è troppo vicino al bordo dell’item.	The split point is too close to the item edge.
+REAPER non ha diviso l’item.	REAPER did not split the item.
+Divisione annullata: impossibile salvare il contenuto dei due item.	Split reverted: could not save the contents of both items.
+Per aggiungere una pausa, seleziona la parola con doppio clic, scegli Edita testo dal menu destro e premi Shift+Invio.	To add a pause, double-click the word, choose Edit text from the right-click menu and press Shift+Enter.

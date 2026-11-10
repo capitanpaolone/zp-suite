@@ -3,7 +3,7 @@
 --[[
    * ReaScript Name: ZP Studio Suite GUI Nativa
    * Linea: ZP Paolo Balestri
-   * Suite: ZP Studio Suite for REAPER v1.0.5
+   * Suite: ZP Studio Suite for REAPER (versione dinamica dal 00)
    * Credito idea gobbo: da un'idea di Nicola Lanci.
    * Distribuzione gratuita.
    * Description: Finestra fluida nativa integrata in REAPER (stile HeDa Notes Reader).
@@ -19,6 +19,10 @@ local gobbo_settings_section = "ZP_VoiceOver_Studio_Gobbo_Orizzontale"
 local speech_lead_key = "accessibility_speech_lead"
 local studio_mode_key = "studio_edit_mode"
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
+local ZP_UI = dofile(SCRIPT_DIR .. 'ZP_UI.lua')
+local ZP_TESTO = dofile(SCRIPT_DIR .. 'ZP_Testo_Copione.lua')
+local ZP_EDITOR = dofile(SCRIPT_DIR .. 'ZP_Editor_Copione.lua')
+local TimedTextDuration
 local ZP_LINGUA
 do
     local path = SCRIPT_DIR .. "ZP_Lingua.lua"
@@ -114,7 +118,7 @@ local last_proj_state = -1
 local last_track_guid = ""
 local selected_text_track_guid = ""
 local READ_ALL = "ALL"   -- flusso virtuale "Tutti" (Leggi tutto): tutte le tracce testo insieme
-local WINDOW_TITLE = "ZP Studio Suite v1.0.5 - " .. T("Gobbo Orizzontale")
+local WINDOW_TITLE = ("ZP Studio Suite " .. ZP_UI.suite_version() .. " - ") .. T("Gobbo Orizzontale")
 local current_text_track = nil
 local current_text_flow_label = T("Nessun testo")
 local cached_project_fps = 25
@@ -777,6 +781,10 @@ function RecalculateLayout()
         local display_text = (item.notes or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
         local measure_text = display_text:gsub("[\r\n]+", " ")
         item.speaker_prefix, item.read_text = ExtractSpeakerPrefix(display_text)
+        item.reading_plan=item.timed_scroll and ZP_TESTO.reading_plan(item.notes,nil,item.pause_weight,item.len,item.timed_wpm,item.timing) or nil
+        if item.reading_plan then item.reading_plan.reminders=ZP_TESTO.reminder_markers(item.reading_plan,item.anchors,item.anchor_markers or {}) end
+        item.word_plan=item.reading_plan or ZP_TESTO.reading_plan(item.notes,nil)
+        item.reading_prefix_words=item.speaker_prefix~="" and #SplitWords(item.speaker_prefix) or 0
         local prefix_w = item.speaker_prefix ~= "" and gfx.measurestr(item.speaker_prefix .. " ") or 0
         local tw, _ = gfx.measurestr(item.read_text)
         item.words = SplitWords(item.read_text)
@@ -1162,6 +1170,7 @@ end
 
 -- =============================================
 function UpdateItems()
+    local gobbo_markers=ZP_TESTO.timeline_markers(reaper)
     local track = GetRythmoTrack()
     current_text_track = track
     current_text_flow_label = track and TextFlowDisplayName(GetTrackName(track)) or "Nessun testo"
@@ -1188,13 +1197,21 @@ function UpdateItems()
             local len   = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
             local color = GetDisplayedItemColor(item, COLOR_SUBS)
             local _, notes = reaper.GetSetMediaItemInfo_String(item, "P_NOTES", "", false)
+            notes=(notes or ''):gsub('\r\n','\n'):gsub('\r','\n')
+            local _, timing_raw=reaper.GetSetMediaItemInfo_String(item,'P_EXT:ZP_GOBBO_TIMING','',false)
+            local _, timing_text=reaper.GetSetMediaItemInfo_String(item,'P_EXT:ZP_GOBBO_TIMING_TEXT','',false)
+            local timing=timing_text==notes and ZP_TESTO.parse_reading_timing(timing_raw) or nil
+
             local _, highlight_raw = reaper.GetSetMediaItemInfo_String(item, "P_EXT:RythmoBand_HIGHLIGHT", "", false)
             local _, timed_scroll = reaper.GetSetMediaItemInfo_String(item, "P_EXT:ZP_TIMED_SCROLL", "", false)
+            local _, pause_weight = reaper.GetSetMediaItemInfo_String(item, "P_EXT:ZP_TIMED_SCROLL_PAUSE_WEIGHT", "", false)
+            local _, timed_wpm = reaper.GetSetMediaItemInfo_String(item, "P_EXT:ZP_TIMED_SCROLL_WPM", "", false)
+            local _, anchor_raw = reaper.GetSetMediaItemInfo_String(item, "P_EXT:ZP_GOBBO_ANCHORS", "", false)
             local person_notes = CollectCharacterNotesForRange(pos, len)
             
             local r, g, b = ColorToRGB(color, COLOR_SUBS)
             
-            table.insert(cached_items, {item=item, pos=pos, len=len, notes=notes, highlights=ParseHighlightTerms(highlight_raw), timed_scroll=timed_scroll == "1", person_notes=person_notes, r=r, g=g, b=b, flow=flow_index, track_name=GetTrackName(track), source_file=SyncSourceFileName(item)})
+            table.insert(cached_items, {item=item, pos=pos, len=len, notes=notes, highlights=ParseHighlightTerms(highlight_raw), timed_scroll=timed_scroll == "1", pause_weight=tonumber(pause_weight) or 4, timed_wpm=tonumber(timed_wpm) or 120, timing=timing, anchors=ZP_TESTO.parse_anchors(anchor_raw), anchor_markers=gobbo_markers, person_notes=person_notes, r=r, g=g, b=b, flow=flow_index, track_name=GetTrackName(track), source_file=SyncSourceFileName(item)})
         end
     end
     -- in ordine di tempo; a parita' di tempo, l'ordine delle tracce
@@ -1219,26 +1236,9 @@ function RefreshCachedSubtitleItem(item, new_text)
 end
 
 -- =============================================
-function DrawButton(x, y, w, h, label, hover_r, hover_g, hover_b, active)
-    local mx, my = gfx.mouse_x, gfx.mouse_y
-    local hover = (mx >= x and mx <= x+w and my >= y and my <= y+h)
-    
-    if active then gfx.set(0.13, 0.42, 0.72, 1)
-    elseif hover then gfx.set(hover_r or 0.3, hover_g or 0.3, hover_b or 0.5, 1)
-    else gfx.set(0.18, 0.18, 0.25, 1) end
-    gfx.rect(x, y, w, h, 1)
-    
-    gfx.set(0.4, 0.4, 0.6, 1)
-    gfx.rect(x, y, w, h, 0)
-    
-    gfx.setfont(3, "Arial", 16, 'b')
-    local tw, th = gfx.measurestr(label)
-    gfx.x = x + (w - tw) / 2
-    gfx.y = y + (h - th) / 2
-    if hover then gfx.set(1, 1, 1, 1) else gfx.set(0.75, 0.75, 0.85, 1) end
-    gfx.drawstr(label)
-    
-    return hover and (gfx.mouse_cap == 0) and mouse_was_down
+function DrawButton(x,y,w,h,label,hover_r,hover_g,hover_b,active)
+    if inline_edit then return false end
+    return ZP_UI.draw_button({x=x,y=y,w=w,h=h},label,active,true,(gfx.mouse_cap&1)==0 and mouse_was_down,'neutral')
 end
 
 function DrawSearchPanel(w, h)
@@ -1347,7 +1347,11 @@ end
 function UpdateSubtitleItemName(item, text)
     local one_line = tostring(text or ""):gsub("[\r\n]+", " / ")
     one_line = one_line:gsub("%s+", " "):match("^%s*(.-)%s*$") or ""
-    if #one_line > 160 then one_line = one_line:sub(1, 157) .. "..." end
+    if #one_line > 160 then
+        local finish=157
+        while finish>0 and one_line:byte(finish+1)>=128 and one_line:byte(finish+1)<192 do finish=finish-1 end
+        one_line=one_line:sub(1,finish).."..."
+    end
     reaper.GetSetMediaItemInfo_String(item, "P_NAME", one_line, true)
     reaper.UpdateItemInProject(item)
 end
@@ -1441,6 +1445,39 @@ function InlineSelectedText()
     return (inline_edit.text or ""):sub(a, b - 1)
 end
 
+function InlinePushUndo()
+    InitInlineCopione(); SyncInlineAnchors()
+    if not inline_edit then return end
+    inline_edit.undo_stack = inline_edit.undo_stack or {}
+    inline_edit.undo_stack[#inline_edit.undo_stack + 1] = {
+        text = inline_edit.text or "",
+        anchors_raw=ZP_TESTO.serialize_anchors(inline_edit.anchors),
+        cursor = inline_edit.cursor or 1,
+        sel_start = inline_edit.sel_start,
+        sel_end = inline_edit.sel_end,
+        highlights = SerializeHighlightTerms(inline_edit.highlights or {}),
+        imported_highlights = inline_edit.imported_highlights,
+        import_highlights = inline_edit.import_highlights
+    }
+    if #inline_edit.undo_stack > 80 then table.remove(inline_edit.undo_stack, 1) end
+end
+
+function InlineRestoreUndo()
+    if not inline_edit or not inline_edit.undo_stack then return end
+    local state = table.remove(inline_edit.undo_stack)
+    if not state then return end
+    inline_edit.text = state.text or ""
+    inline_edit.anchors=ZP_TESTO.parse_anchors(state.anchors_raw)
+    inline_edit.anchors_text=inline_edit.text
+    inline_edit.cursor = state.cursor or (#(inline_edit.text or "") + 1)
+    inline_edit.sel_start = state.sel_start
+    inline_edit.sel_end = state.sel_end
+    inline_edit.highlights = ParseHighlightTerms(state.highlights or "")
+    inline_edit.imported_highlights = state.imported_highlights
+    inline_edit.import_highlights = state.import_highlights
+    inline_edit.desired_x = nil
+end
+
 function InlineDeleteSelection()
     local a, b = InlineSelectionRange()
     if not a then return false end
@@ -1451,7 +1488,9 @@ function InlineDeleteSelection()
 end
 
 function InlineInsertText(text)
+    InitInlineCopione()
     if not inline_edit then return end
+    InlinePushUndo()
     InlineDeleteSelection()
     local source = inline_edit.text or ""
     local cursor = inline_edit.cursor or (#source + 1)
@@ -1461,6 +1500,8 @@ end
 
 function InlineBackspace()
     if not inline_edit then return end
+    InitInlineCopione()
+    InlinePushUndo()
     if InlineDeleteSelection() then return end
     local source = inline_edit.text or ""
     local cursor = inline_edit.cursor or (#source + 1)
@@ -1472,6 +1513,8 @@ end
 
 function InlineDelete()
     if not inline_edit then return end
+    InitInlineCopione()
+    InlinePushUndo()
     if InlineDeleteSelection() then return end
     local source = inline_edit.text or ""
     local cursor = inline_edit.cursor or (#source + 1)
@@ -1553,14 +1596,7 @@ function InlineCursorFromPoint(px, py)
     line_index = math.max(1, math.min(line_index, #lines))
     local line = lines[line_index]
     local rel_x = math.max(0, px - inline_edit.text_x)
-    local best_pos = line.start
-    for pos = line.start, line.finish + 1 do
-        local part = inline_edit.text:sub(line.start, pos - 1)
-        local tw = gfx.measurestr(part)
-        if rel_x < tw then break end
-        best_pos = pos
-    end
-    InlineSetCursor(best_pos)
+    InlineSetCursor(ZP_TESTO.cursor_in_words(inline_edit.text,line.start,line.finish,rel_x,gfx.measurestr))
 end
 
 function InlineCursorAtPoint(px, py)
@@ -1594,15 +1630,6 @@ function InlineCopy()
     if selected == "" then return end
     inline_clipboard = selected
     if reaper.CF_SetClipboard then pcall(reaper.CF_SetClipboard, selected) end
-end
-
-function InlinePaste()
-    local clip = inline_clipboard
-    if reaper.CF_GetClipboard then
-        local ok, value = pcall(reaper.CF_GetClipboard, "")
-        if ok and value and value ~= "" then clip = value end
-    end
-    if clip and clip ~= "" then InlineInsertText((clip:gsub("\r\n", "\n"):gsub("\r", "\n"))) end
 end
 
 function InlineCut()
@@ -1648,17 +1675,6 @@ function ToggleItemHighlight(item, selected_text)
     return not removed
 end
 
-function InlineToggleHighlight()
-    if not inline_edit or not inline_edit.item then return end
-    local selected = InlineSelectedText()
-    if selected == "" then
-        InlineSelectWordAtCursor()
-        selected = InlineSelectedText()
-    end
-    ToggleItemHighlight(inline_edit.item, selected)
-    UpdateItems()
-end
-
 function InlineMoveVertical(direction)
     if not inline_edit then return end
     local lines = InlineVisualLines(inline_edit.text_w or 400)
@@ -1674,15 +1690,18 @@ function InlineMoveVertical(direction)
     local target = math.max(1, math.min(current_line + direction, #lines))
     local target_line = lines[target]
     local best = target_line.start
-    for pos = target_line.start, target_line.finish + 1 do
+    local pos=target_line.start
+    while pos<=target_line.finish+1 do
         local tw = gfx.measurestr(inline_edit.text:sub(target_line.start, pos - 1))
         if tw > desired_x then break end
-        best = pos
+        if pos > #inline_edit.text or (inline_edit.text:byte(pos) or 0) < 128 or (inline_edit.text:byte(pos) or 0) >= 192 then best = pos end
+        if pos>=#inline_edit.text+1 then break end
+        pos=Utf8NextCursor(inline_edit.text,pos)
     end
     InlineSetCursor(best)
 end
 
-function StartInlineSubtitleEdit(item, x, y, w, h)
+function StartInlineSubtitleEdit(item, x, y, w, h, click_x, click_y)
     if not item then return end
     local _, old_text = reaper.GetSetMediaItemInfo_String(item, "P_NOTES", "", false)
     inline_edit = {
@@ -1696,29 +1715,68 @@ function StartInlineSubtitleEdit(item, x, y, w, h)
         h = math.max(master_font_size * 2.0, h),
         font_size = math.max(22, math.min(master_font_size, 46))
     }
-    reaper.OnStopButton()
+    if click_x then
+        gfx.setfont(1,default_font,master_font_size,'b')
+        local source=inline_edit.text
+        local prefix=ExtractSpeakerPrefix(source)
+        local first,last,rel=1,#source,math.max(0,click_x-(x+12))
+        if prefix~='' then
+            local colon=source:find(':',1,true)
+            local prefix_width=gfx.measurestr(prefix..' ')
+            if rel>=prefix_width then first=colon+1;rel=rel-prefix_width else last=colon end
+        end
+        InlineSetCursor(ZP_TESTO.cursor_in_words(source,first,last,rel,gfx.measurestr))
+        inline_edit.center_cursor=true
+        inline_edit.opening_mouse_down=true
+    end
+    -- Aprire il testo conserva trasporto e posizione della timeline.
 end
 
 function SaveInlineSubtitleEdit()
-    if not inline_edit or not inline_edit.item then return end
-    local new_text = trim(inline_edit.text or "")
-    if new_text ~= "" and new_text ~= inline_edit.original then
+    InitInlineCopione(); SyncInlineAnchors()
+    if not inline_edit then return end
+    if inline_edit.mode=='timed_new' then
+        local text=inline_edit.text or ''
+        if trim(text)=='' then inline_edit=nil; return end
+        reaper.Undo_BeginBlock()
+        local track=GetRythmoTrack()
+        if not track then
+            reaper.InsertTrackAtIndex(reaper.CountTracks(0),true)
+            track=reaper.GetTrack(0,reaper.CountTracks(0)-1)
+            reaper.GetSetMediaTrackInfo_String(track,'P_NAME',default_track_name,true)
+        end
+        local item=reaper.AddMediaItemToTrack(track)
+        reaper.SetMediaItemInfo_Value(item,'D_POSITION',reaper.GetCursorPosition())
+        local duration=TimedTextDuration(text,inline_edit.timed_wpm)
+        reaper.SetMediaItemInfo_Value(item,'D_LENGTH',duration)
+        reaper.GetSetMediaItemInfo_String(item,'P_NOTES',text,true)
+        reaper.GetSetMediaItemInfo_String(item,'P_EXT:ZP_TIMED_SCROLL','1',true)
+        reaper.GetSetMediaItemInfo_String(item,'P_EXT:ZP_TIMED_SCROLL_WPM',tostring(inline_edit.timed_wpm or 120),true)
+        ApplyInlineMetadata(item); UpdateSubtitleItemName(item,text)
+        reaper.Undo_EndBlock('ZP: importa copione temporizzato',-1)
+        inline_edit=nil; reaper.UpdateArrange(); UpdateItems(); return
+    end
+    if not inline_edit.item then return end
+    local new_text = (inline_edit.text or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
+    if trim(new_text) ~= "" and (new_text ~= inline_edit.original or InlineHighlightRaw() ~= inline_edit.original_highlights or (inline_edit.timed_existing and inline_edit.timed_wpm~=inline_edit.original_wpm)) then
         reaper.Undo_BeginBlock()
         reaper.GetSetMediaItemInfo_String(inline_edit.item, "P_NOTES", new_text, true)
+        ApplyInlineMetadata(inline_edit.item)
         UpdateSubtitleItemName(inline_edit.item, new_text)
         reaper.UpdateItemInProject(inline_edit.item)
         reaper.Undo_EndBlock("ZP Studio Suite: modifica testo inline dal gobbo orizzontale", -1)
-        if not RefreshCachedSubtitleItem(inline_edit.item, new_text) then UpdateItems() end
+        UpdateItems()
         last_proj_state = reaper.GetProjectStateChangeCount(0)
     end
     inline_edit = nil
 end
 
 function ProcessInlineSubtitleEditKey(char)
+    if inline_edit then gfx.setfont(1,default_font,inline_edit.layout_font or math.min(28,inline_edit.font_size or 22)) end
     if not inline_edit or char <= 0 then return false end
     if char == 13 then
         if (gfx.mouse_cap & 8) == 8 then
-            InlineInsertText("\n")
+            InlineInsertText("\n\n")
         else
             SaveInlineSubtitleEdit()
         end
@@ -1738,7 +1796,11 @@ function ProcessInlineSubtitleEditKey(char)
     elseif char == 22 then
         InlinePaste()
         return true
+    elseif char == 26 then
+        InlineRestoreUndo()
+        return true
     elseif char == 24 then
+        InlinePushUndo()
         InlineCut()
         return true
     elseif char == 5 then
@@ -1775,114 +1837,316 @@ function ProcessInlineSubtitleEditKey(char)
     return true
 end
 
+
+TimedTextDuration = function(text,wpm)
+    local words,pauses=ZP_TESTO.stats(text)
+    local lines=0
+    for line in tostring(text):gmatch('[^\n]+') do if line:match('%S') then lines=lines+1 end end
+    local rate=math.max(40,math.min(240,wpm or 120))
+    local pause_seconds=math.max(1,words)/math.max(1,lines)*60/rate
+    return math.max(5,words*60/rate)+pauses*pause_seconds,pauses,pause_seconds
+end
+function AddTimedGobboTextItem()
+    inline_edit={mode='timed_new',text='',original='',cursor=1,font_size=22,timed_wpm=120,title=T('Nuovo testo temporizzato')}
+end
+function InitInlineCopione()
+    local e=inline_edit
+    if not e or e.metadata_ready then return end
+    e.metadata_ready=true
+    local raw=''
+    if e.item then
+        raw=({reaper.GetSetMediaItemInfo_String(e.item,'P_EXT:RythmoBand_HIGHLIGHT','',false)})[2] or ''
+        e.timed_existing=({reaper.GetSetMediaItemInfo_String(e.item,'P_EXT:ZP_TIMED_SCROLL','',false)})[2]=='1'
+        e.timed_wpm=tonumber(({reaper.GetSetMediaItemInfo_String(e.item,'P_EXT:ZP_TIMED_SCROLL_WPM','',false)})[2]) or 120
+    end
+    e.timed_wpm=math.max(40,math.min(240,e.timed_wpm or 120))
+    if e.item then e.pause_weight=tonumber(({reaper.GetSetMediaItemInfo_String(e.item,'P_EXT:ZP_TIMED_SCROLL_PAUSE_WEIGHT','',false)})[2]) end
+    e.anchors=e.item and ZP_TESTO.parse_anchors(({reaper.GetSetMediaItemInfo_String(e.item,'P_EXT:ZP_GOBBO_ANCHORS','',false)})[2]) or {}
+    e.anchors_text=e.text
+    e.original_duration=e.item and reaper.GetMediaItemInfo_Value(e.item,'D_LENGTH') or nil
+    e.original_wpm=e.timed_wpm
+    e.original_highlights=raw
+    e.highlights=ParseHighlightTerms(raw)
+    e.recalculate=true
+end
+function InlineHighlightRaw()
+    InitInlineCopione()
+    local terms={}
+    for _,v in ipairs(inline_edit.highlights or {}) do terms[#terms+1]=v end
+    if inline_edit.import_highlights then
+        for _,v in ipairs(inline_edit.imported_highlights or {}) do terms[#terms+1]=v end
+    end
+    local out,seen={},{}
+    for _,v in ipairs(terms) do if not seen[v] then out[#out+1]=v; seen[v]=true end end
+    return SerializeHighlightTerms(out)
+end
+function SyncInlineAnchors()
+    if not inline_edit or not inline_edit.metadata_ready then return end
+    local e=inline_edit
+    if e.anchors_text~=e.text then
+        e.anchors=ZP_TESTO.relocate_anchors(e.anchors_text or e.original,e.text,e.anchors)
+        e.anchors_text=e.text
+    end
+end
+function InlineEstimatedDuration(text,wpm)
+    local e=inline_edit
+    if e and e.timed_existing and e.recalculate==false then return e.original_duration end
+    local duration,pauses=TimedTextDuration(text,wpm)
+    if e and e.timed_existing and wpm==e.original_wpm and ZP_TESTO.same_words(text,e.original) then
+        -- La pausa allunga la durata reale, anche se prima era stata fissata a mano.
+        local _,old_pauses,pause_seconds=TimedTextDuration(e.original,wpm)
+        duration=math.max(0.2,e.original_duration+(pauses-old_pauses)*pause_seconds)
+    end
+    return duration
+end
+function ApplyInlineMetadata(item)
+    if inline_edit.text~=inline_edit.original or inline_edit.timed_wpm~=inline_edit.original_wpm then
+        reaper.GetSetMediaItemInfo_String(item,'P_EXT:ZP_GOBBO_TIMING','',true)
+        reaper.GetSetMediaItemInfo_String(item,'P_EXT:ZP_GOBBO_TIMING_TEXT','',true)
+    end
+    SyncInlineAnchors()
+    reaper.GetSetMediaItemInfo_String(item,'P_EXT:ZP_GOBBO_ANCHORS',ZP_TESTO.serialize_anchors(inline_edit.anchors),true)
+    if inline_edit.mode=='timed_new' or inline_edit.timed_existing and inline_edit.recalculate~=false then
+        local _,_,pause_seconds=TimedTextDuration(inline_edit.text,inline_edit.timed_wpm)
+        local weight=pause_seconds*(inline_edit.timed_wpm or 120)/60
+        if inline_edit.timed_existing and ZP_TESTO.same_words(inline_edit.text,inline_edit.original) and inline_edit.timed_wpm==inline_edit.original_wpm then
+            local _,_,old_seconds=TimedTextDuration(inline_edit.original,inline_edit.timed_wpm)
+            weight=inline_edit.pause_weight or old_seconds*inline_edit.timed_wpm/60
+        end
+        reaper.GetSetMediaItemInfo_String(item,'P_EXT:ZP_TIMED_SCROLL_PAUSE_WEIGHT',tostring(weight),true)
+    end
+    reaper.GetSetMediaItemInfo_String(item,'P_EXT:RythmoBand_HIGHLIGHT',InlineHighlightRaw(),true)
+    if inline_edit.timed_existing and inline_edit.recalculate~=false and (inline_edit.text~=inline_edit.original or inline_edit.timed_wpm~=inline_edit.original_wpm) then
+        reaper.SetMediaItemInfo_Value(item,'D_LENGTH',InlineEstimatedDuration(inline_edit.text,inline_edit.timed_wpm))
+        reaper.GetSetMediaItemInfo_String(item,'P_EXT:ZP_TIMED_SCROLL_WPM',tostring(inline_edit.timed_wpm),true)
+    end
+    reaper.UpdateItemInProject(item)
+end
+function InlinePaste()
+    local text,err=ZP_TESTO.clipboard(reaper,reaper.GetOS())
+    if text then if text~='' then InlineInsertText(text) end
+    elseif inline_clipboard and inline_clipboard~='' then InlineInsertText(ZP_TESTO.normalize(inline_clipboard))
+    else reaper.ShowMessageBox(T('Impossibile leggere gli appunti.')..'\n'..T(err),'ZP Studio Suite',0) end
+end
+function InlineLoadFile()
+    local ok,path=reaper.GetUserFileNameForRead('','ZP - '..T('Carica file… (.docx, .odt, .rtf, .txt)'), '')
+    if not ok then return end
+    local text,terms=ZP_TESTO.read_file(path,reaper.GetOS())
+    if not text then reaper.ShowMessageBox(T(tostring(terms)),T('Importazione copione'),0); return end
+    InitInlineCopione()
+    InlineInsertText(text)
+    inline_edit.imported_highlights=terms
+end
+function InlineTransform(fn,selection_only)
+    local a,b=InlineSelectionRange()
+    if selection_only and not a then return end
+    a,b=a or 1,b or (#inline_edit.text+1)
+    local transformed=fn(inline_edit.text:sub(a,b-1))
+    InlineSetSelection(a,b)
+    InlineInsertText(transformed)
+    InlineSetSelection(a,a+#transformed)
+end
+function InlineToggleHighlight()
+    if not inline_edit then return end
+    InitInlineCopione()
+    if InlineSelectedText()=='' then InlineSelectWordAtCursor() end
+    local term=trim(InlineSelectedText():gsub('[\r\n]+',' '))
+    if term=='' then return end
+    InlinePushUndo()
+    local terms=inline_edit.highlights; local found=false
+    for i=#terms,1,-1 do if ZP_TESTO.lower(terms[i])==ZP_TESTO.lower(term) then table.remove(terms,i); found=true end end
+    if not found then terms[#terms+1]=term end
+end
 function DrawInlineSubtitleEditor()
     if not inline_edit then return end
-    local pad = 12
-    local x = math.max(8, math.min(inline_edit.x, gfx.w - 320))
-    local y = math.max(alert_strip_h + 8, inline_edit.y)
-    local w = math.min(inline_edit.w, gfx.w - x - 8)
-    local line_h = inline_edit.font_size * 1.18
-    inline_edit.line_h = line_h
-    gfx.setfont(1, default_font, inline_edit.font_size, 'b')
-    local text_w = math.max(80, w - (pad * 2))
-    inline_edit.text_w = text_w
-    local lines = InlineVisualLines(text_w)
-    local h = math.max(inline_edit.h, (#lines * line_h) + (pad * 2) + 20)
-    if y + h > gfx.h - 8 then y = math.max(alert_strip_h + 8, gfx.h - h - 8) end
-    inline_edit.text_x = x + pad
-    inline_edit.text_y = y + pad
-
-    gfx.set(0.02, 0.02, 0.025, 0.97)
-    gfx.rect(x, y, w, h, 1)
-    gfx.set(1.0, 0.78, 0.18, 0.92)
-    gfx.rect(x, y, w, 3, 1)
-    gfx.set(0.96, 0.91, 0.78, 1)
-    for i, line in ipairs(lines) do
-        gfx.x = x + pad
-        gfx.y = y + pad + ((i - 1) * line_h)
-        local sel_a, sel_b = InlineSelectionRange()
-        if sel_a then
-            local a = math.max(sel_a, line.start)
-            local b = math.min(sel_b, line.finish + 1)
-            if a < b then
-                local before_w = gfx.measurestr((inline_edit.text or ""):sub(line.start, a - 1))
-                local sel_w = gfx.measurestr((inline_edit.text or ""):sub(a, b - 1))
-                gfx.set(0.18, 0.44, 0.95, 0.55)
-                gfx.rect(x + pad + before_w, y + pad + ((i - 1) * line_h) - 2, math.max(2, sel_w), line_h, 1)
-                gfx.set(0.96, 0.91, 0.78, 1)
-            end
-        end
-        gfx.drawstr(line.text)
-    end
-
-    if (gfx.mouse_cap & 1) == 1 and not mouse_was_down then
-        if gfx.mouse_x >= x and gfx.mouse_x <= x + w and gfx.mouse_y >= y and gfx.mouse_y <= y + h then
-            local now = reaper.time_precise()
-            InlineCursorFromPoint(gfx.mouse_x, gfx.mouse_y)
-            if inline_edit.last_click_time and now - inline_edit.last_click_time < 0.35 then
-                InlineSelectWordAtCursor()
-            else
-                inline_edit.drag_anchor = inline_edit.cursor
-                inline_edit.dragging = true
-            end
-            inline_edit.last_click_time = now
-        else
-            inline_edit.dragging = false
-        end
-    end
-    if (gfx.mouse_cap & 1) == 1 and inline_edit.dragging then
-        local cursor = InlineCursorAtPoint(gfx.mouse_x, gfx.mouse_y)
-        InlineSetSelection(inline_edit.drag_anchor or cursor, cursor)
-    elseif (gfx.mouse_cap & 1) == 0 then
-        inline_edit.dragging = false
-    end
-
-    local cursor = inline_edit.cursor or (#(inline_edit.text or "") + 1)
-    local cursor_line = lines[#lines]
-    local cursor_line_index = #lines
-    for i, line in ipairs(lines) do
-        if cursor >= line.start and cursor <= line.finish + 1 then
-            cursor_line = line
-            cursor_line_index = i
-            break
-        end
-    end
-    local cw = gfx.measurestr(inline_edit.text:sub(cursor_line.start, cursor - 1))
-    if (math.floor(reaper.time_precise() * 2) % 2) == 0 then
-        gfx.set(1.0, 0.78, 0.18, 1)
-        gfx.rect(x + pad + cw + 2, y + pad + ((cursor_line_index - 1) * line_h), 2, line_h * 0.9, 1)
-    end
-    gfx.setfont(3, "Arial", 12)
-    gfx.set(0.84, 0.70, 0.38, 0.88)
-    gfx.x = x + pad
-    gfx.y = y + h - 17
-    gfx.drawstr(T("Invio salva  |  Shift+Invio accapo  |  Ctrl+E evidenzia  |  Esc annulla"))
+    InitInlineCopione()
+    SyncInlineAnchors()
+    local action=ZP_EDITOR.draw(inline_edit,{
+        ui=ZP_UI,T=T,font=default_font,lines=InlineVisualLines,stats=ZP_TESTO.stats,
+        duration=(inline_edit.timed_existing or inline_edit.mode=='timed_new') and InlineEstimatedDuration or nil,
+        selection=InlineSelectionRange,cursor_point=InlineCursorFromPoint,cursor_at=InlineCursorAtPoint,
+        set_selection=InlineSetSelection,select_word=InlineSelectWordAtCursor,time=reaper.time_precise,
+        pressed=(gfx.mouse_cap&1)==1 and not mouse_was_down,
+        released=(gfx.mouse_cap&1)==0 and mouse_was_down
+    })
+    if action=='paste' then InlinePaste()
+    elseif action=='load' then InlineLoadFile()
+    elseif action=='clean' then InlineTransform(function(s) return ZP_TESTO.normalize(s,true) end)
+    elseif action=='join' then InlineTransform(ZP_TESTO.join_lines)
+    elseif action=='highlight' then InlineToggleHighlight()
+    elseif action=='slower' then inline_edit.timed_wpm=math.max(40,(inline_edit.timed_wpm or 120)-10)
+    elseif action=='faster' then inline_edit.timed_wpm=math.min(240,(inline_edit.timed_wpm or 120)+10)
+    elseif action=='tools' then
+        gfx.x,gfx.y=gfx.mouse_x,gfx.mouse_y
+        local choice=gfx.showmenu(table.concat({T('Separa frasi per respiro'),T('Selezione: minuscolo'),T('Selezione: MAIUSCOLO'),T('Selezione: iniziale maiuscola'),T('Annulla modifica (Ctrl+Z)'),(inline_edit.import_highlights and '!' or '')..T('Importa grassetto/evidenziato')},'|'))
+        if choice==1 then InlineTransform(ZP_TESTO.breathe)
+        elseif choice==2 then InlineTransform(ZP_TESTO.lower,true)
+        elseif choice==3 then InlineTransform(ZP_TESTO.upper,true)
+        elseif choice==4 then InlineTransform(ZP_TESTO.sentence_case,true)
+        elseif choice==5 then InlineRestoreUndo()
+        elseif choice==6 then inline_edit.import_highlights=not inline_edit.import_highlights end
+    elseif action=='save' then SaveInlineSubtitleEdit()
+    elseif action=='cancel' then inline_edit=nil end
 end
 
-function HandleSubtitleEditDoubleClick(item, x, y, w, h)
-    local mx, my = gfx.mouse_x, gfx.mouse_y
-    local hover = (mx >= x and mx <= x + w and my >= y and my <= y + h)
-    local mouse_down = (gfx.mouse_cap & 1) == 1
-    if hover and mouse_down and not mouse_was_down then
-        local now = reaper.time_precise()
-        if last_edit_click_item == item and (now - last_edit_click_time) < 0.35 then
-            last_edit_click_time = 0
-            last_edit_click_item = nil
-            StartInlineSubtitleEdit(item, x, y, w, h)
-        else
-            last_edit_click_time = now
-            last_edit_click_item = item
+local gobbo_word_selection=nil
+local gobbo_word_right_down=false
+function GobboPickWord(item,x,y,w,h,px,py)
+    if not item or px<x or px>x+w or py<y or py>y+h then return nil end
+    local plan=item.word_plan or item.reading_plan
+    if not plan then return nil end
+    local offset
+    local first,last,rel=1,#item.notes,math.max(0,px-x)
+    if item.speaker_prefix~='' then
+        local colon=item.notes:find(':',1,true)
+        if colon then
+            if rel>=(item.prefix_w or 0) then first=colon+1;rel=rel-(item.prefix_w or 0) else last=colon end
         end
     end
+    offset=ZP_TESTO.cursor_in_words(item.notes,first,last,rel,gfx.measurestr)
+    if not offset then return nil end
+    local event=ZP_TESTO.word_event(plan,offset)
+    if not event then return nil end
+    local _,guid=reaper.GetSetMediaItemInfo_String(item.item,'GUID','',false)
+    return {item=item.item,guid=guid,text=item.notes,first=event.first,last=event.last,x=x,y=y,w=w,h=h}
+end
+function GobboSelectWord(item,x,y,w,h,px,py)
+    local selected=GobboPickWord(item,x,y,w,h,px,py)
+    if selected then gobbo_word_selection=selected end
+    return selected
+end
+function GobboWordSelectionValid()
+    local s=gobbo_word_selection
+    if not s or not reaper.ValidatePtr2(0,s.item,'MediaItem*') then return false end
+    local _,guid=reaper.GetSetMediaItemInfo_String(s.item,'GUID','',false)
+    local _,text=reaper.GetSetMediaItemInfo_String(s.item,'P_NOTES','',false)
+    text=(text or ''):gsub('\r\n','\n'):gsub('\r','\n')
+    return guid==s.guid and text==s.text
+end
+function GobboEditSelectedWord()
+    if not GobboWordSelectionValid() then
+        gobbo_word_selection=nil
+        reaper.ShowMessageBox(T('Il testo è cambiato: seleziona di nuovo la parola.'),T('Gobbo'),0)
+        return
+    end
+    local s=gobbo_word_selection
+    StartInlineSubtitleEdit(s.item,s.x,s.y,s.w,s.h)
+    InlineSetCursor(s.first)
+    inline_edit.center_cursor=true;inline_edit.opening_mouse_down=true
+end
+function GobboSplitSelectedWord()
+    if not GobboWordSelectionValid() then
+        gobbo_word_selection=nil
+        reaper.ShowMessageBox(T('Il testo è cambiato: seleziona di nuovo la parola.'),T('Gobbo'),0)
+        return
+    end
+    local s=gobbo_word_selection
+    local right,result=ZP_TESTO.split_timed_item(reaper,s.item,s.first,s.text,UpdateSubtitleItemName)
+    if not right then reaper.ShowMessageBox(T(result),T('Dividi il copione'),0);return end
+    gobbo_word_selection=nil
+    UpdateItems()
+end
+function HandleSubtitleEditDoubleClick(item,x,y,w,h)
+    if inline_edit or search_panel_open then return false end
+    local down=(gfx.mouse_cap&1)~=0
+    if down and not mouse_was_down and gfx.mouse_x>=x and gfx.mouse_x<=x+w and gfx.mouse_y>=y and gfx.mouse_y<=y+h then
+        local now=reaper.time_precise()
+        if last_edit_click_item==item.item and now-last_edit_click_time<=0.35 then
+            last_edit_click_item=nil;last_edit_click_time=0
+            return GobboSelectWord(item,x,y,w,h,gfx.mouse_x,gfx.mouse_y)~=nil
+        end
+        last_edit_click_item=item.item;last_edit_click_time=now
+    end
+    return false
+end
+function HandleGobboWordAnchorMenu(item,x,y,w,h)
+    if inline_edit or search_panel_open or (gfx.mouse_cap&2)==0 or gobbo_word_right_down then return end
+    if gfx.mouse_x<x or gfx.mouse_x>x+w or gfx.mouse_y<y or gfx.mouse_y>y+h then return end
+    gobbo_word_right_down=true
+    -- Dopo il doppio clic il punto rimane quello scelto, anche se il testo continua a scorrere.
+    local s=gobbo_word_selection
+    if not s or s.item~=item.item or not GobboWordSelectionValid() then
+        s=GobboSelectWord(item,x,y,w,h,gfx.mouse_x,gfx.mouse_y)
+    end
+    if not s then return end
+    local target=reaper.GetCursorPosition()
+    local _,sync_key=reaper.GetSetMediaItemInfo_String(item.item,'P_EXT:ZP_SYNC_KEY','',false)
+    local can_split=item.timed_scroll and sync_key=='' and reaper.GetMediaItemNumTakes(item.item)==0
+    gfx.x,gfx.y=gfx.mouse_x,gfx.mouse_y
+    local menu=T('Edita testo…')..'|'..(item.timed_scroll and '' or '#')..T('Aggiungi promemoria su questa parola…')..'|'..(can_split and '' or '#')..T('Dividi prima di questa parola')
+    if #(item.anchors or {})>0 then menu=menu..'|'..T('Scollega i marker di questo testo') end
+    local choice=gfx.showmenu(menu)
+    if choice==1 then GobboEditSelectedWord()
+    elseif choice==2 and item.timed_scroll then
+        if GobboWordSelectionValid() then AddGobboWordAnchor(item,s.first,target) end
+    elseif choice==3 and can_split then GobboSplitSelectedWord()
+    elseif choice==4 and #(item.anchors or {})>0 then
+        reaper.Undo_BeginBlock()
+        reaper.GetSetMediaItemInfo_String(item.item,'P_EXT:ZP_GOBBO_ANCHORS','',true)
+        reaper.UpdateItemInProject(item.item)
+        reaper.Undo_EndBlock('ZP Gobbo: scollega marker del testo',-1)
+        reaper.UpdateArrange();UpdateItems()
+    end
+end
+function DrawGobboWordSelection(item,x,y,line_h)
+    local s=gobbo_word_selection
+    if not s or s.item~=item.item or s.text~=item.notes then return end
+    local event=ZP_TESTO.word_event(item.word_plan or item.reading_plan,s.first)
+    if not event then return end
+    local index=event.word-(item.reading_prefix_words or 0)
+    local px,width=x,item.prefix_w or 0
+    if index>0 then px=x+(item.prefix_w or 0)+(item.word_x[index] or 0);width=item.word_w[index] or 4 end
+    gfx.set(0.25,0.65,1,0.28);gfx.rect(px-2,y-2,width+4,line_h,1)
+    gfx.set(0.35,0.75,1,1);gfx.rect(px-2,y-2,2,line_h,1)
+end
+
+function AddGobboWordAnchor(item,offset,target_pos)
+    if not item or not item.timed_scroll or not item.reading_plan then return end
+    local event
+    for _,e in ipairs(item.reading_plan.events) do
+        if not e.pause and offset>=e.first and offset<=e.last+1 then event=e;break end
+    end
+    if not event then return end
+    local markers=ZP_TESTO.timeline_markers(reaper)
+    for _,a in ipairs(item.anchors or {}) do
+        if a.offset==event.first and markers[a.guid] then
+            reaper.ShowMessageBox(T('Questa parola ha già un promemoria. Puoi spostare il marker liberamente nella timeline.'),T('Promemoria del copione'),0)
+            return
+        end
+    end
+    local anchors={};for _,a in ipairs(item.anchors or {}) do anchors[#anchors+1]={guid=a.guid,offset=a.offset} end
+    local word=(item.notes or ''):sub(event.first,event.last)
+    local ok,label=reaper.GetUserInputs(T('Promemoria del copione'),1,T('Nome marker:')..',extrawidth=300',T('Gobbo')..' · '..word:gsub(',',' '))
+    if not ok then return end
+    reaper.Undo_BeginBlock()
+    local id=reaper.AddProjectMarker2(0,false,target_pos,0,label,-1,0)
+    local guid
+    if id and id>=0 then
+        for key,m in pairs(ZP_TESTO.timeline_markers(reaper)) do if m.id==id then guid=key;break end end
+    end
+    if not guid then
+        if id and id>=0 then reaper.DeleteProjectMarker(0,id,false) end
+        reaper.Undo_EndBlock('ZP Gobbo: marker non creato',-1)
+        reaper.ShowMessageBox(T('Impossibile collegare il marker alla parola.'),T('Promemoria del copione'),0)
+        return
+    end
+    anchors[#anchors+1]={guid=guid,offset=event.first}
+    reaper.GetSetMediaItemInfo_String(item.item,'P_EXT:ZP_GOBBO_ANCHORS',ZP_TESTO.serialize_anchors(anchors),true)
+    reaper.UpdateItemInProject(item.item)
+    reaper.Undo_EndBlock('ZP Gobbo: promemoria della parola',-1)
+    reaper.UpdateArrange();UpdateItems()
 end
 
 function HandleStudioItemClick(item, x, y, w, h)
-    if not studio_edit_mode or inline_edit or search_panel_open then return end
+    if not item or not studio_edit_mode or inline_edit or search_panel_open then return end
     local mx, my = gfx.mouse_x, gfx.mouse_y
-    local hover = (mx >= x and mx <= x + w and my >= y and my <= y + h)
+    local hover = mx >= x and mx <= x + w and my >= y and my <= y + h
     local mouse_down = (gfx.mouse_cap & 1) == 1
     if hover and mouse_down and not mouse_was_down then
-        SelectSubtitleItemAndJump(item)
+        -- Il clic seleziona; la navigazione esplicita resta a ricerca, rotella e scrollbar.
+        reaper.Main_OnCommand(40289, 0) -- Unselect all items
+        reaper.SetMediaItemSelected(item, true)
+        reaper.UpdateArrange()
     end
 end
 
@@ -2046,7 +2310,7 @@ function DrawAlertStrip(w, strip_h, play_pos, attack_x)
 
     gfx.setfont(3, "Arial", 11)
     gfx.set(0.56, 0.72, 0.86, 1)
-    local suite_label = "ZP Studio Suite v1.0.5"
+    local suite_label = ("ZP Studio Suite " .. ZP_UI.suite_version())
     local credit_label = " - Paolo Balestri & Nicola Lanci"
     local label = suite_label .. credit_label
     local label_x = 190
@@ -2062,7 +2326,7 @@ function DrawAlertStrip(w, strip_h, play_pos, attack_x)
         label = label .. "."
     end
     gfx.x, gfx.y = label_x, 10
-    gfx.drawstr(label)
+    if max_label_w>280 then ZP_UI.draw_credit(label_x,8,11) else gfx.drawstr(label) end
 
     local studio_label = studio_edit_mode and T("Studio/Edit ON") or T("Studio/Edit OFF")
     if DrawButton(w - 282, 29, 138, 24, studio_label, 0.20, 0.48, 0.40, studio_edit_mode) then
@@ -2070,6 +2334,9 @@ function DrawAlertStrip(w, strip_h, play_pos, attack_x)
     end
     if DrawButton(w - 138, 29, 28, 24, "?", 0.22, 0.30, 0.42) then zp_open_help_section("tool-03") end
 
+    if w>=740 and DrawButton(w-108,29,96,24,T('Carica file…'),0.2,0.4,0.5) then
+        AddTimedGobboTextItem(); InlineLoadFile()
+    end
     local flow_label = CurrentTextFlowLabel()
     if #flow_label > 20 then flow_label = flow_label:sub(1, 19) .. "." end
     -- flusso a tendina: un clic apre l'elenco delle tracce testo e "Tutti"
@@ -2141,6 +2408,22 @@ function DrawAlertStrip(w, strip_h, play_pos, attack_x)
 end
 
 function GetWordModeX(item, play_pos, w, reading_x)
+    if item.reading_plan and (play_pos or item.pos)>=item.pos and (play_pos or item.pos)<item.pos+item.len then
+        local p=((play_pos or item.pos)-item.pos)/math.max(0.001,item.len)
+        local state=ZP_TESTO.reading_state(item.reading_plan,p)
+        item.reading_state=state
+        local phase=math.max(0,state.word_phase-(item.reading_prefix_words or 0))
+        local index=math.min(#item.word_x,math.floor(phase)+1)
+        local start=item.word_x[index] or 0
+        local next_x=item.word_x[index+1] or start+(item.word_w[index] or 0)
+        local offset=start+(next_x-start)*math.min(1,phase-(index-1))
+        if state.paused then
+            local previous=math.max(0,state.word-(item.reading_prefix_words or 0))
+            offset=previous>0 and (item.word_x[previous] or 0)+(item.word_w[previous] or 0) or 0
+        end
+        return reading_x-(item.prefix_w or 0)-offset
+    end
+    item.reading_state=nil
     local speed = item.scroll_pps or pixels_per_second
     return reading_x - (((play_pos or item.pos) - item.pos) * speed)
 end
@@ -2172,7 +2455,7 @@ function DrawWordModeText(item, x, y, is_active, reading_x, r, g, b, alpha)
         end
 
         local words = item.line_words and item.line_words[line_index] or SplitWords(line)
-        for _, word in ipairs(words) do
+        for word_index, word in ipairs(words) do
             local word_w = gfx.measurestr(word)
 
             local word_center = cursor_x + (word_w * 0.5)
@@ -2184,6 +2467,7 @@ function DrawWordModeText(item, x, y, is_active, reading_x, r, g, b, alpha)
                 spectrum = 1 - (math.abs(dist) / left_glow)
             end
 
+            if item.reading_state and item.reading_state.paused and word_index>item.reading_state.word-(item.reading_prefix_words or 0) then spectrum=0 end
             local word_alpha = math.max(0.30, alpha * (0.42 + (0.52 * spectrum)))
             local base = 0.78 + (0.20 * spectrum)
             gfx.set(base, base, base, word_alpha)
@@ -2203,7 +2487,7 @@ function BuildHorizontalDrawJob(item, smoothed_play_pos, window_w, attack_x, gro
     local end_px = start_px + bg_w
     if end_px <= -20 or start_px >= window_w + 20 then return nil end
 
-    local is_active = (smoothed_play_pos >= item.pos and smoothed_play_pos <= item.pos + item.len)
+    local is_active = smoothed_play_pos >= item.pos and (smoothed_play_pos < item.pos + item.len or not item.timed_scroll and smoothed_play_pos <= item.pos + item.len)
     local distance = 0
     if smoothed_play_pos < item.pos then
         distance = item.pos - smoothed_play_pos
@@ -2266,7 +2550,10 @@ function DrawHorizontalItemJob(job, attack_x)
     local text_h = num_lines * (item.line_h or master_font_size * 1.15)
     DrawWordModeText(item, job.start_px, item_y + (box_h - text_h) / 2, is_active, attack_x, item_r, item_g, item_b, alpha)
     HandleStudioItemClick(item.item, job.start_px - 12, item_y, job.bg_w, box_h)
-    HandleSubtitleEditDoubleClick(item.item, job.start_px - 12, item_y, job.bg_w, box_h)
+    local text_y=item_y+(box_h-text_h)/2
+    HandleSubtitleEditDoubleClick(item,job.start_px,text_y,job.bg_w,text_h)
+    HandleGobboWordAnchorMenu(item,job.start_px,text_y,job.bg_w,text_h)
+    DrawGobboWordSelection(item,job.start_px,text_y,item.line_h)
 end
 
 function FindOsaraCueAtPosition(play_pos)
@@ -2332,6 +2619,9 @@ function DrawGUI()
     elseif search_panel_open and ProcessSearchPanelKey(char) then
         char = 0
     end
+    if char > 0 and (char==12 or ((gfx.mouse_cap&4)~=0 or (gfx.mouse_cap&32)~=0) and (char==76 or char==108)) then
+        AddTimedGobboTextItem(); InlineLoadFile(); char=0
+    end
     if char > 0 then
         local changed = false
         if char == 9 then panel_open = not panel_open
@@ -2346,6 +2636,7 @@ function DrawGUI()
         end
     end
 
+    if inline_edit then inline_edit.wheel=gfx.mouse_wheel or 0; gfx.mouse_wheel=0 end
     FollowTick()
     local track = IsValidTrack(current_text_track) and current_text_track or GetRythmoTrack()
     if not IsValidTrack(track) then
@@ -2430,10 +2721,19 @@ function DrawGUI()
     gfx.drawstr(hint)
 
     if panel_anim > 0.01 then DrawSettingsPanel(w, h) end
+    if not inline_edit then
+        for _,item in ipairs(cached_items) do
+            if item.timed_scroll and smoothed_play_pos>=item.pos and smoothed_play_pos<item.pos+item.len then
+                local p=math.max(0,math.min(1,(smoothed_play_pos-item.pos)/math.max(0.001,item.len)))
+                gfx.set(0.35,0.8,0.62,0.95); gfx.rect(8,band_y+band_h-4,(w-16)*p,3,1); break
+            end
+        end
+    end
     DrawInlineSubtitleEditor()
-    DrawSearchPanel(w, h)
+    if not inline_edit then DrawSearchPanel(w, h) end
 
     mouse_was_down = (gfx.mouse_cap & 1) == 1
+    if (gfx.mouse_cap&2)==0 then gobbo_word_right_down=false end
     gfx.update()
     reaper.defer(DrawGUI)
 end

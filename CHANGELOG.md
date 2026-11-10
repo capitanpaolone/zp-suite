@@ -2,6 +2,8 @@
 
 ## ZP Studio Suite 2.6.7 — in preparazione
 
+- Gobbi: importazione DOCX/ODT/RTF/TXT, incolla pulito, editor con scroll/Undo e durata temporizzata opzionale; controlli ZP_UI, progresso e riaggancio rapido. Guide IT/EN aggiornate. Pause effettive con Shift+Invio, promemoria tramite marker e divisione alla parola selezionata con conservazione del testo rimanente. Verifiche automatiche superate; collaudo del Gobbo confermato da Paolo il 10 novembre 2026.
+
 Copia di lavoro avviata dal tag `v2.6.6`. Le modifiche e i componenti aggiornati acquisiti dalla REAPER locale sono registrati in `docs/PRE_RELEASE_2.6.7.md` e `docs/PROVENIENZA_2.6.7.md`; questa sezione sarà completata dopo i collaudi.
 
 Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
