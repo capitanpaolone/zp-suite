@@ -128,6 +128,22 @@ def default_models_dir(data_root: Path | None = None) -> Path:
     return root / "models" / "whisper"
 
 
+def default_whisper_cache_dir() -> Path:
+    """Return the standard upstream PyTorch/OpenAI Whisper cache directory (~/.cache/whisper)."""
+    return Path.home() / ".cache" / "whisper"
+
+
+def find_model_file(stem: str, models_dir: Path) -> Path:
+    """Locate the .pt model file in models_dir or the standard upstream cache fallback."""
+    candidate = models_dir / f"{stem}.pt"
+    if candidate.is_file() and candidate.stat().st_size > 0:
+        return candidate
+    fallback = default_whisper_cache_dir() / f"{stem}.pt"
+    if fallback.is_file() and fallback.stat().st_size > 0:
+        return fallback
+    return candidate
+
+
 def canonical_model_stem(model: str) -> str:
     """Strip optional provider prefix and resolve Whisper model aliases."""
     cleaned = model.strip()
@@ -145,19 +161,29 @@ def canonical_model_stem(model: str) -> str:
     return MODEL_ALIASES.get(cleaned, cleaned)
 
 
-def installed_models(models_dir: Path) -> list[str]:
-    """List installed OpenAI Whisper models in deterministic preference order."""
-    if not models_dir.is_dir():
-        return []
+def installed_models(models_dir: Path, *, include_cache: bool = True) -> list[str]:
+    """List installed OpenAI Whisper models in deterministic preference order.
+
+    Checks models_dir and, when include_cache is True, also checks the standard
+    upstream cache ~/.cache/whisper so already-downloaded models are recognized.
+    """
     found: set[str] = set()
-    for entry in models_dir.iterdir():
-        if (
-            entry.is_file()
-            and entry.suffix == ".pt"
-            and not entry.name.startswith(".")
-            and entry.stat().st_size > 0
-        ):
-            found.add(entry.stem)
+    directories: list[Path] = [models_dir]
+    if include_cache:
+        cache_dir = default_whisper_cache_dir()
+        if cache_dir != models_dir and cache_dir.is_dir():
+            directories.append(cache_dir)
+    for directory in directories:
+        if not directory.is_dir():
+            continue
+        for entry in directory.iterdir():
+            if (
+                entry.is_file()
+                and entry.suffix == ".pt"
+                and not entry.name.startswith(".")
+                and entry.stat().st_size > 0
+            ):
+                found.add(entry.stem)
     ordered: list[str] = []
     for preferred in PREFERRED_MODELS:
         if preferred in found:
@@ -576,7 +602,7 @@ class OpenAIWhisperProvider:
                     provider=PROVIDER,
                     details={"models_dir": str(self.models_dir), "installed": models},
                 )
-        model_file = self.models_dir / f"{stem}.pt"
+        model_file = find_model_file(stem, self.models_dir)
         result = self._command(
             [
                 "-c",

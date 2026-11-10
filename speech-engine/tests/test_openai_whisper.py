@@ -516,3 +516,24 @@ def test_detect_provider_selection() -> None:
     with pytest.raises(ProviderError) as e_bad:
         detect_provider("unknown-engine")
     assert error_code(e_bad) == "unsupported_capability"
+
+
+def test_find_model_file_and_cache_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from zp_speech.providers.openai_whisper import find_model_file, installed_models
+
+    primary = tmp_path / "primary"
+    primary.mkdir()
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    target = "zp_speech.providers.openai_whisper.default_whisper_cache_dir"
+    monkeypatch.setattr(target, lambda: cache)
+
+    (cache / "small.pt").write_bytes(b"small-weights")
+    assert find_model_file("small", primary) == cache / "small.pt"
+    assert installed_models(primary, include_cache=True) == ["openai-whisper:small"]
+
+    # Primary overrides cache
+    (primary / "small.pt").write_bytes(b"primary-weights")
+    assert find_model_file("small", primary) == primary / "small.pt"
