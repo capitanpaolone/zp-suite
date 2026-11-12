@@ -37,6 +37,13 @@ local function resolve(path)
   return dir and join(dir, path) or path
 end
 
+local IS_WIN = tostring(reaper.GetOS and reaper.GetOS() or ""):match("Win") ~= nil
+local function same_path(a, b)
+  a, b = tostring(a or ""):gsub("\\", "/"), tostring(b or ""):gsub("\\", "/")
+  if IS_WIN then a, b = a:lower(), b:lower() end
+  return a == b
+end
+
 local function encode(s)
   return (tostring(s or ""):gsub("[^%w%._%-]", function(c) return string.format("%%%02X", c:byte()) end))
 end
@@ -110,7 +117,7 @@ function M.remap_source(old_path, new_path)
   if old_path == "" or new_path == "" or old_path == new_path then return false end
   local records, changed = read_records(), false
   for _, r in ipairs(records) do
-    if r.source == old_path then r.source = new_path; changed = true end
+    if same_path(r.source, old_path) then r.source = new_path; changed = true end
   end
   if changed then write_records(records) end
   return changed
@@ -156,7 +163,7 @@ function M.register(source, path, lang, kind)
   local records = read_records()
   lang, kind = tostring(lang or ""), tostring(kind or "srt")
   for _, r in ipairs(records) do
-    if r.source == source and r.lang == lang and r.kind == kind then
+    if same_path(r.source, source) and r.lang == lang and r.kind == kind then
       r.path, r.kind = path, kind
       write_records(records)
       return true
