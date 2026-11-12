@@ -2,6 +2,10 @@
 
 ## ZP Studio Suite 2.6.7 — in preparazione
 
+- **ZP Consolidate (37)**: raccoglie in Media le sorgenti file dei take e gli SRT/VTT registrati nel progetto, preserva montaggio e originali, e gestisce le collisioni scegliendo sovrascrittura o rinomina. Aggiunti modulo SRT condiviso, icona e pulsante toolbar.
+- **Benvenuto (33)**: scroll della lista smussato e limitato prima del disegno per evitare salti dovuti ai delta rapidi/inerziali della rotella.
+- **SRT di progetto**: trascrizioni e traduzioni sono copiate/registrate in Media e referenziate nel file RPP.
+
 - Gobbi: importazione DOCX/ODT/RTF/TXT, incolla pulito, editor con scroll/Undo e durata temporizzata opzionale; controlli ZP_UI, progresso e riaggancio rapido. Guide IT/EN aggiornate. Pause effettive con Shift+Invio, promemoria tramite marker e divisione alla parola selezionata con conservazione del testo rimanente. Verifiche automatiche superate; collaudo del Gobbo confermato da Paolo il 10 novembre 2026.
 
 Copia di lavoro avviata dal tag `v2.6.6`. Le modifiche e i componenti aggiornati acquisiti dalla REAPER locale sono registrati in `docs/PRE_RELEASE_2.6.7.md` e `docs/PROVENIENZA_2.6.7.md`; questa sezione sarà completata dopo i collaudi.

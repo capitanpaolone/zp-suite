@@ -84,6 +84,7 @@ local function file_base(p) return (base(p):match("[^/\\]+$") or base(p)) end
 local sep = package.config:sub(1, 1)
 local here = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\][^/\\]+$") or ".")
 local EXT, DIR_KEY, MODE_KEY = "ZP_STUDIO_SUITE", "SRT31_dir", "SRT31_existing"
+local SRT_REGISTRY = dofile(here .. sep .. "ZP_SRT_Progetto.lua")
 
 local ok_ui, UI = pcall(dofile, here .. sep .. "ZP_UI.lua")
 if not ok_ui then
@@ -165,8 +166,13 @@ local function write_all(order)
     local f = io.open(target, "wb")
     if f then
       f:write(M.srt(e.cues)); f:close()
-      written, lines = written + 1, lines + #e.cues
-      out[#out + 1] = "Scritto: " .. (target:match("[^/\\]+$") or target) .. note
+      local media_path, media_err = SRT_REGISTRY.copy_to_media(e.path, target, "", "srt_da_marker")
+      if media_path then
+        written, lines = written + 1, lines + #e.cues
+        out[#out + 1] = "Scritto: " .. (media_path:match("[^/\\]+$") or media_path) .. note
+      else
+        out[#out + 1] = "Scritto fuori Media, non raccolto: " .. tostring(media_err)
+      end
     else
       out[#out + 1] = "NON scritto: " .. target
     end

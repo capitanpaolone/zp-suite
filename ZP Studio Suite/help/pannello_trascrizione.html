@@ -53,6 +53,16 @@ body{margin:0;padding:28px;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Sego
 <h2>Nel Gobbo</h2>
 <p>In <em>Flusso testi</em> scorri con <code>&lt;</code> <code>&gt;</code>: oltre ai flussi singoli c'è <strong>Tutti</strong>, che legge insieme tutte le tracce di testo (Leggi tutto), anche nascoste. Il titolo della finestra dice quale flusso stai leggendo. La ricerca lavora sul flusso scelto, quindi in Tutti cerca dappertutto.</p>
 
+<h2>Motori ASR, modelli Whisper e distinzione dagli LLM</h2>
+<p>ZP Speech lavora con motori di riconoscimento vocale dedicati (<strong>ASR</strong>: <em>Automatic Speech Recognition</em>), locali e offline. Non usa modelli di linguaggio testuali generici (LLM):</p>
+<ul>
+<li><strong>Perché non Ollama o OpenCode per trascrivere:</strong> Ollama e OpenCode sono integrati in ZP solo per la <em>traduzione</em> testo-a-testo (in <em>Traduci</em>) o la spiegazione delle scorciatoie. Un LLM riceve e genera testo in chat, ma non sa decodificare un file WAV per produrre l'allineamento temporale millimetrico parola per parola (<code>word_timestamps</code>). Senza quei timestamp esatti il Gobbo non può sincronizzarsi con il parlato e il montaggio non può seguire i tagli.</li>
+<li><strong>Whisper (MacWhisper e OpenAI Whisper locale):</strong> sono i motori ASR di riferimento. Leggono l'audio e calcolano segmenti e parole con precisione di millisecondi. MacWhisper usa la sua CLI e i modelli già scaricati nell'app; OpenAI Whisper usa un ambiente Python isolato con i modelli salvati su disco.</li>
+<li><strong>Riconoscimento di modelli Whisper già presenti:</strong> se hai già scaricato modelli Whisper (.pt) con un altro programma o dalla riga di comando ufficiale, ZP Speech li rileva automaticamente controllando sia la propria cartella (<code>~/Library/Application Support/ZP/models/whisper</code>) sia la cache standard di sistema (<code>~/.cache/whisper</code>). Puoi anche indicare una cartella modelli personalizzata con la variabile <code>ZP_WHISPER_MODELS_DIR</code> o un interprete Python dedicato con <code>ZP_WHISPER_PYTHON</code>.</li>
+<li><strong>Zero download a sorpresa:</strong> la trascrizione non avvia mai download nascosti durante una sessione. Se chiedi un modello non ancora scaricato, lo strumento si ferma subito e segnala il modello mancante. Il download avviene solo quando lo decidi tu (dalla riga di comando o dall'installatore guidato).</li>
+<li><strong>Modelli ASR alternativi (es. Qwen ASR, SenseVoice):</strong> modelli vocali compatti come Qwen-Audio o SenseVoice sono interessanti perché soffrono meno delle allucinazioni sui silenzi tipiche di Whisper. Tuttavia non sono interrogabili da Ollama come funzione Whisper: richiedono un runtime ASR dedicato in grado di esportare timestamp di allineamento prima di poter essere inseriti nella pipeline di ZP.</li>
+</ul>
+
 <h2>Da sapere</h2>
 <ul>
 <li>La trascrizione è una traccia di lavoro: i tempi delle parole possono essere imprecisi, il segmento resta il riferimento da ascoltare.</li>

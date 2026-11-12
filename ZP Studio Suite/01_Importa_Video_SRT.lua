@@ -16,6 +16,8 @@ local SRT_TEMPLATE_NAME = "SRT Track.RTrackTemplate"
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
 local GOBBO_STATE_SECTION = "RythmoBand_Gobbo_State"
 local ZP_UI = dofile(SCRIPT_DIR .. "ZP_UI.lua")
+local srt_registry_file = SCRIPT_DIR .. "ZP_SRT_Progetto.lua"
+local SRT_REGISTRY = nil
 
 local COLOR_VIDEO = 0xE74C3C
 local COLOR_SUBS  = 0x3498DB
@@ -77,6 +79,25 @@ local function project_dir()
   local path = project_file_path()
   if not path then return nil end
   return dirname(path)
+end
+
+if file_exists(srt_registry_file) then
+  local ok, result = pcall(dofile, srt_registry_file)
+  if ok then SRT_REGISTRY = result end
+end
+
+local function register_srt(source_path, srt_path, kind)
+  if not SRT_REGISTRY or not source_path or source_path == "" or not srt_path or srt_path == "" then return srt_path end
+  kind = (kind or "sottotitoli") .. ":" .. basename(srt_path):lower()
+  local project_folder = project_dir()
+  local media_dir = project_folder and (project_folder .. sep .. "Media") or ""
+  local prefix = media_dir ~= "" and (media_dir .. sep) or ""
+  if prefix ~= "" and srt_path:sub(1, #prefix) == prefix then
+    local ok, err = SRT_REGISTRY.register(source_path, srt_path, "", kind)
+    if not ok then return nil, err end
+    return srt_path
+  end
+  return SRT_REGISTRY.copy_to_media(source_path, srt_path, "", kind)
 end
 
 local function ensure_saved_project()
@@ -1288,6 +1309,15 @@ local function run_import(video_path, srt_path, fix_overlaps, copy_files, save_a
     copied_files = true
   end
 
+  if srt_path and srt_path ~= "" and file_exists(srt_path) then
+    local project_srt, srt_err = register_srt(video_path, srt_path, "video_subtitle")
+    if not project_srt then
+      reaper.ShowMessageBox(srt_err or "SRT non copiato in Media.", "ZP Studio Suite", 0)
+      return
+    end
+    srt_path = project_srt
+  end
+
   local has_subtitle = srt_path and srt_path ~= "" and file_exists(srt_path) and is_srt(srt_path)
   local cues = {}
   if has_subtitle then
@@ -1373,6 +1403,7 @@ local function run_import(video_path, srt_path, fix_overlaps, copy_files, save_a
 end
 
 local function run_srt_only_import(srt_path, fix_overlaps, copy_files, save_after)
+  local original_srt = srt_path
   local copied_files = false
   if copy_files then
     local local_srt, copy_err = copy_srt_to_project(srt_path)
@@ -1383,6 +1414,13 @@ local function run_srt_only_import(srt_path, fix_overlaps, copy_files, save_afte
     srt_path = local_srt
     copied_files = true
   end
+
+  local project_srt, srt_err = register_srt(original_srt, srt_path, "srt_import")
+  if not project_srt then
+    reaper.ShowMessageBox(srt_err or "SRT non copiato in Media.", "ZP Studio Suite", 0)
+    return
+  end
+  srt_path = project_srt
 
   local cues, err = parse_srt(srt_path)
   if not cues then
@@ -1498,7 +1536,13 @@ local function run_batch_import(folder, start_at, gap, flag_overlaps)
       if not local_pair then
         reaper.ShowConsoleMsg(copy_err .. "\n")
       else
-        local cues, err = parse_srt(local_pair.srt)
+        local project_srt, srt_err = register_srt(local_pair.video, local_pair.srt, "video_subtitle")
+        if not project_srt then
+          reaper.ShowConsoleMsg((srt_err or "SRT non registrato nel progetto.") .. "\n")
+        end
+        if project_srt then local_pair.srt = project_srt end
+        local cues, err
+        if project_srt then cues, err = parse_srt(local_pair.srt) else err = srt_err end
         if cues then
           local video_len_preview = video_file_length(local_pair.video) or 0
           cursor = next_free_video_position(video_track, cursor, video_len_preview, gap)
@@ -1509,7 +1553,7 @@ local function run_batch_import(folder, start_at, gap, flag_overlaps)
             add_video_region(local_pair.base, cursor, cursor + video_len)
             local previous_end = nil
             for i, cue in ipairs(cues) do
-              local new_end, cue_ok, cue_overlap = add_batch_subtitle_item(subs_track, cue, i, cursor, previous_end, flag_overlaps, pair.srt)
+              local new_end, cue_ok, cue_overlap = add_batch_subtitle_item(subs_track, cue, i, cursor, previous_end, flag_overlaps, local_pair.srt)
               previous_end = new_end
               if cue_ok then
                 total_cues = total_cues + 1

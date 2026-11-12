@@ -915,7 +915,9 @@ end
 local LED = { ok = {0.25, 0.85, 0.42}, fare = {0.95, 0.30, 0.22}, passo = {0.98, 0.72, 0.20}, manca = {0.55, 0.60, 0.70}, na = {0.32, 0.34, 0.40} }
 local WORD = { ok = "pronto", fare = "da fare", passo = "manca un passo", manca = "facoltativo", na = "non serve" }
 local mouse_was_down = false
-local scroll = 0          -- righe che scorrono quando la finestra e' bassa
+local scroll = 0          -- posizione visualizzata: righe che scorrono quando la finestra e' bassa
+local scroll_target = 0   -- destinazione della rotella, separata dalla posizione animata
+local scroll_max = 0
 
 local function draw()
   UI.fill_background()
@@ -923,11 +925,29 @@ local function draw()
   local da_fare = 0
   for _, r in ipairs(rows) do if r.state == "fare" or r.state == "passo" then da_fare = da_fare + 1 end end
 
-  -- elenco delle righe: scorre fra top e bottom (rotella), il resto resta fermo
+  -- elenco delle righe: calcola prima i limiti, cosi' l'inerzia non disegna oltre il bordo
   local top, bottom = 76, gfx.h - 56
+  local bw = 136
+  local content_h = 0
+  for _, r in ipairs(rows) do
+    local shown = {}
+    for _, b in ipairs(r.buttons) do if not b.hidden then shown[#shown + 1] = b end end
+    local total_btn_w = 0
+    for _, b in ipairs(shown) do total_btn_w = total_btn_w + (b.w or bw) + 8 end
+    gfx.setfont(1, "Arial", 13)
+    local lines = UI.wrap_text(r.line, gfx.w - 24 - 46 - total_btn_w - 10)
+    content_h = content_h + math.max(70, 40 + math.min(3, #lines) * 16) + 8
+  end
+  scroll_max = math.max(0, content_h - (bottom - top))
   local in_list = gfx.mouse_y >= top and gfx.mouse_y <= bottom
-  if gfx.mouse_wheel ~= 0 then scroll = scroll - gfx.mouse_wheel / 4; gfx.mouse_wheel = 0 end
-  local y, bw = top - scroll, 136
+  local wheel = gfx.mouse_wheel or 0
+  gfx.mouse_wheel = 0
+  if wheel ~= 0 then scroll_target = scroll_target - wheel / 4 end
+  scroll_target = math.max(0, math.min(scroll_max, scroll_target))
+  -- Ammortizza i delta rapidi e quelli di inerzia del trackpad senza scatti per frame.
+  scroll = scroll + (scroll_target - scroll) * 0.30
+  if math.abs(scroll_target - scroll) < 0.25 then scroll = scroll_target end
+  local y = top - scroll
   local list_clicked = clicked and in_list
   for _, r in ipairs(rows) do
     local shown = {}
@@ -968,18 +988,17 @@ local function draw()
     y = y + h + 8
     local _ = panel
   end
-  local total = y + scroll - top
-  local max_scroll = math.max(0, total - (bottom - top))
-  scroll = math.max(0, math.min(max_scroll, scroll))
+  scroll = math.max(0, math.min(scroll_max, scroll))
+  scroll_target = math.max(0, math.min(scroll_max, scroll_target))
   -- copre sopra e sotto quello che esce dall'elenco, poi titolo e barra in basso
   UI.set_color(UI.colors.bg)
   gfx.rect(0, 0, gfx.w, top - 4, true)
   gfx.rect(0, bottom, gfx.w, gfx.h - bottom, true)
-  if max_scroll > 0 then
+  if scroll_max > 0 then
     local track = bottom - top
-    local thumb = math.max(30, track * track / total)
+    local thumb = math.max(30, track * track / content_h)
     gfx.set(0.20, 0.20, 0.26, 1); gfx.rect(gfx.w - 9, top, 5, track, true)
-    gfx.set(0.60, 0.62, 0.72, 1); gfx.rect(gfx.w - 9, top + (track - thumb) * scroll / max_scroll, 5, thumb, true)
+    gfx.set(0.60, 0.62, 0.72, 1); gfx.rect(gfx.w - 9, top + (track - thumb) * scroll / scroll_max, 5, thumb, true)
   end
   gfx.setfont(1, "Arial", 22, "b"); gfx.set(0.95, 0.95, 0.97, 1)
   gfx.x, gfx.y = 20, 16
@@ -1006,7 +1025,7 @@ local function draw()
   gfx.x, gfx.y = 20, 46
   local ver = M.header_version(read(P(here, "00_Apri_Help_ZP_Studio_Suite.lua"))) or "?"
   gfx.drawstr((da_fare == 0 and T("Tutto pronto.") or (da_fare == 1 and T("Una cosa da fare.") or (da_fare .. T(" cose da fare.")))) ..
-    T("  Versione ") .. ver .. T(". Lo stato si aggiorna da solo.") .. (max_scroll > 0 and T("  Altre righe: rotella.") or ""))
+    T("  Versione ") .. ver .. T(". Lo stato si aggiorna da solo.") .. (scroll_max > 0 and T("  Altre righe: rotella.") or ""))
 
   local by = gfx.h - 46
   if UI.draw_button({ x = 20, y = by, w = 130, h = 30 }, T("Apri l'help"), false, true, clicked, "tab") then UI.open_help("installazione") end

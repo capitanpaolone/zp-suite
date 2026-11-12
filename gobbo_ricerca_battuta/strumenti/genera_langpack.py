@@ -73,7 +73,8 @@ def validate_placeholders(orig, trans):
     """Verifica che i segnaposto in orig siano conservati in trans."""
     orig_fmt = re.findall(r"%[-+0-9.]*[a-zA-Z%]", orig)
     trans_fmt = re.findall(r"%[-+0-9.]*[a-zA-Z%]", trans)
-    if sorted(orig_fmt) != sorted(trans_fmt):
+    # Ordine incluso: printf legge gli argomenti per posizione, scambiarli (es. %s al posto di %d) manda in crash REAPER.
+    if orig_fmt != trans_fmt:
         return False, f"Mismatch segnaposto: orig={orig_fmt} trans={trans_fmt}"
     
     # Controllo tab e newline letterali (\t, \n)

@@ -17,6 +17,9 @@ Stato: raccolta aperta. Da aggiornare con i collaudi e le modifiche fino alla pu
 - **ZP Remote — esportazione progetto:** collaudo avviato da Paolo il 7 novembre 2026; esito e correzioni da annotare dopo la prova.
 - **Gobbo — testo temporizzato:** dal Gobbo verticale si incolla un copione in un item standard. La durata si stima da parole/minuto (predefinito 120), layout e righe vuote; i due Gobbi seguono la durata dell'item. Rotella e barra consentono il riposizionamento manuale e «Riposiziona sul player» riaggancia la lettura. La fine del testo non ferma play o registrazione. Da collaudare in REAPER.
 
+- **ZP Consolidate e registro SRT**: azione 37, modulo `ZP_SRT_Progetto.lua`, PNG toolbar 90×30/180×60, riga toolbar e help integrati; `@provides` e routing ReaPack sono stati integrati; il controllo dell’indice generato resta un gate prima del tag. I SRT/VTT vengono tenuti nel Media e registrati nel RPP. Non è inclusa la scansione degli SRT fuori timeline non registrati: resta affidata all’incarico separato.
+- **Benvenuto 33**: scroll smussato e limitato; codice aggiornato in candidata e installazione beta locale, senza prova interattiva dichiarata.
+
 ## Prima della pubblicazione
 
 - Raccogliere qui tutti gli interventi verificati dopo la 2.6.6, inclusi quelli emersi nel collaudo export.

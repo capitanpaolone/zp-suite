@@ -116,10 +116,12 @@ function UI.fill_background()
 end
 
 local function draw_rect(rect, filled)
-  if gfx.roundrect then
-    gfx.roundrect(rect.x, rect.y, rect.w, rect.h, rect.r or 4, true, filled)
+  if filled then
+    UI.fill_round(rect.x, rect.y, rect.w, rect.h, rect.r or 4)
+  elseif gfx.roundrect then
+    gfx.roundrect(rect.x, rect.y, rect.w, rect.h, rect.r or 4, true)
   else
-    gfx.rect(rect.x, rect.y, rect.w, rect.h, filled)
+    gfx.rect(rect.x, rect.y, rect.w, rect.h, false)
   end
 end
 
@@ -168,11 +170,7 @@ function UI.draw_button(rect, label, active, enabled, clicked, style)
   local fill = active and colors.active or (hover and colors.hover or colors.normal)
   if not enabled then fill = {0.08, 0.08, 0.11, 1} end
   gfx.set(0.02, 0.02, 0.03, enabled and 0.55 or 0.30)
-  if gfx.roundrect then
-    gfx.roundrect(rect.x + 1, rect.y + 2, rect.w, rect.h, rect.r or 4, true, true)
-  else
-    gfx.rect(rect.x + 1, rect.y + 2, rect.w, rect.h, true)
-  end
+  UI.fill_round(rect.x + 1, rect.y + 2, rect.w, rect.h, rect.r or 4)
   set_color(fill)
   draw_rect(rect, true)
   gfx.set(math.min(1, fill[1] + 0.16), math.min(1, fill[2] + 0.16), math.min(1, fill[3] + 0.18), enabled and 0.42 or 0.16)

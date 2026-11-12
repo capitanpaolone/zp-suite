@@ -7,7 +7,7 @@
 -- audio selezionati. Ogni tappa dice a che punto sei e ha il suo pulsante; la tappa
 -- da fare adesso e' evidenziata. "Percorri la strada" fa in ordine quello che manca.
 --
---   1 Trascrivi       whisper (ZP Speech) crea l'SRT accanto al WAV, stesso nome
+--   1 Trascrivi       ZP Speech crea l'SRT in Media e lo registra nel progetto
 --   2 Abbina da...    sorgente a scelta -> take marker sull'item: SRT accanto al file o SRT
 --                     esterno/tradotto (28_Collega_Marker.lua), marker di progetto (14);
 --                     in piu' "cue del WAV -> marker in timeline" (azione nativa 40692)
@@ -137,7 +137,7 @@ function M.lang_warning(model, code)
   return nil
 end
 
--- Traduzione (a richiesta): Episodio01.srt -> Episodio01.it.srt, accanto all'originale.
+-- Traduzione (a richiesta): Episodio01.srt -> Episodio01.it.srt in Media, registrato nel progetto.
 -- Un tag di lingua gia' presente nel nome viene sostituito (come fa zp-speech translate).
 function M.translated_name(srt, code)
   local base = tostring(srt):gsub("%.[Ss][Rr][Tt]$", "")
@@ -280,6 +280,12 @@ if not ui_path then
 end
 local UI = dofile(ui_path)
 local AG = dofile((ui_path:gsub("ZP_UI%.lua$", "ZP_Agenti.lua")))   -- agenti AI (Traduci)
+local srt_registry_path = find_file("ZP_SRT_Progetto.lua")
+if not srt_registry_path then
+  reaper.ShowMessageBox(T("Non trovo ZP_SRT_Progetto.lua: gli SRT non possono essere raccolti nel progetto."), T("ZP Trascrizione"), 0)
+  return
+end
+local SRT = dofile(srt_registry_path)
 
 local EXT = "ZP_STUDIO_SUITE"
 local follow = reaper.GetExtState(EXT, "PanelAutofollow") == "1"
@@ -312,6 +318,7 @@ local tr_lang = reaper.GetExtState(EXT, TR_LANG_KEY); if tr_lang == "" then tr_l
 local tr_engines = nil                                            -- nil = non ancora chiesti
 local tr_run_engine = nil                                         -- agente vero (auto risolto) del lavoro
 local tr_queue, tr_running, tr_report = {}, nil, nil
+local tr_poll_items = {}
 
 ---------------------------------------------------------------------------
 -- Stato degli item selezionati e dei testi gia' in timeline
@@ -346,19 +353,38 @@ local function refresh_rows()
     local src = take and reaper.GetMediaItemTake_Source(take)
     local path = src and reaper.GetMediaSourceFileName(src, "") or ""
     if path ~= "" then
+      local srt_path = SRT.find(path, "", "trascrizione")
+      if not srt_path then
+        local legacy = sidecar(path)
+        if exists(legacy) then
+          local collected, collect_err = SRT.copy_to_media(path, legacy, "", "trascrizione")
+          srt_path = collected or legacy
+          if not collected then status = collect_err or T("Impossibile copiare l'SRT in Media.") end
+        end
+      end
       local tguid = get_s(reaper.GetSetMediaItemTakeInfo_String, take, "GUID")
       local vguid = reaper.GetTrackGUID(reaper.GetMediaItem_Track(it))
       rows[#rows + 1] = {
         name = path:match("[^/\\]+$") or path, path = path,
         wav = path:lower():match("%.wav$") ~= nil,
-        srt = exists(sidecar(path)), markers = reaper.GetNumTakeMarkers(take),
+        srt = srt_path ~= nil, srt_path = srt_path, markers = reaper.GetNumTakeMarkers(take),
         len = reaper.GetMediaSourceLength(src),
         texts = per_take[tguid] or 0,
         made = select(2, reaper.GetProjExtState(0, MADE_SECTION, path)),
       }
       local tr = {}
       for _, l in ipairs(M.LANGS) do
-        if l.code ~= "auto" and exists(M.translated_name(sidecar(path), l.code)) then tr[#tr + 1] = l.code end
+        if l.code ~= "auto" then
+          local translated = SRT.find(path, l.code, "traduzione") or (srt_path and M.translated_name(srt_path, l.code))
+          if translated and exists(translated) then
+            if not SRT.find(path, l.code, "traduzione") then
+              local collected, collect_err = SRT.copy_to_media(path, translated, l.code, "traduzione")
+              translated = collected or translated
+              if not collected then status = collect_err or T("Impossibile copiare la traduzione in Media.") end
+            end
+            tr[#tr + 1] = l.code
+          end
+        end
       end
       rows[#rows].translations = tr
       audio_len[path] = rows[#rows].len
@@ -555,8 +581,11 @@ local function start_next()
   if speech_model ~= "" then opts = opts .. " --model " .. shell_quote(speech_model) end
   local items = {}
   for _, job in ipairs(queue) do
+    local output, output_err = SRT.output_path(job, "", "trascrizione")
+    if not output then status = output_err or T("Impossibile preparare Media per lo SRT."); queue = {}; return end
     items[#items + 1] = { path = job, len = audio_len[job], made = M.model_label(speech_model) .. " " .. speech_lang,
-      cmd = shell_quote(cli) .. " request " .. shell_quote(job) .. opts .. " --format srt --output " .. shell_quote(sidecar(job)) }
+      output = output,
+      cmd = shell_quote(cli) .. " request " .. shell_quote(job) .. opts .. " --format srt --output " .. shell_quote(output) }
   end
   queue = {}
   if #items == 0 then return end
@@ -572,6 +601,8 @@ local function poll_job()
   running = poll_batch("trascrivi", function(e, row, dir)
     if e.code == 0 then
       reaper.SetProjExtState(0, MADE_SECTION, e.path, row.made or "")   -- con che modello e lingua
+      local output = SRT.output_path(e.path, "", "trascrizione")
+      if output and exists(output) then SRT.register(e.path, output, "", "trascrizione") end
       -- impara la velocita' (media mobile) per stimare le prossime trascrizioni
       if row.len and row.len > 5 and e.secs > 0 then
         local r = e.secs / row.len
@@ -713,7 +744,7 @@ local function do_retranscribe()
     "Poi: trascrizione con %s (si cambiano dalle tendine in alto),\nAbbina e testi nel gobbo.\n" ..
     "I testi del gobbo legati ai vecchi marker: quelli mai toccati spariscono,\n" ..
     "quelli corretti a mano restano in mute.\n\nProcedo?"), #list, n_mark,
-    n_srt > 0 and string.format(T("\nL'SRT gia' accanto a %d file lo rinomino in .srt.bak-<data>, non lo cancello."), n_srt) or "",
+    n_srt > 0 and string.format(T("\nGli SRT esistenti di %d file li rinomino in .srt.bak-<data> nella loro cartella, non li cancello."), n_srt) or "",
     speech_choice_text())
   if reaper.ShowMessageBox(msg, T("ZP Trascrizione - Ritrascrivi"), 4) ~= 6 then
     status = T("Ritrascrivi annullato.")
@@ -737,7 +768,7 @@ local function do_retranscribe()
   reaper.UpdateArrange()
   local stamp = os.date("%Y%m%d_%H%M%S")
   for _, p in ipairs(list) do
-    local sc = sidecar(p)
+    local sc = SRT.find(p, "", "trascrizione") or sidecar(p)
     if exists(sc) then os.rename(sc, sc .. ".bak-" .. stamp) end
   end
   refresh_rows()
@@ -748,7 +779,7 @@ local function do_retranscribe()
 end
 
 ---------------------------------------------------------------------------
--- Traduci (facoltativo): l'SRT accanto al file -> Nome.<lingua>.srt con un agente AI
+-- Traduci (facoltativo): l'SRT registrato -> Nome.<lingua>.srt in Media con un agente AI
 -- (Codex con il tuo login). Coda in background come la trascrizione.
 ---------------------------------------------------------------------------
 local function load_engines()
@@ -766,10 +797,13 @@ local function tr_start_next()
   local opts = " --to " .. shell_quote(tr_lang) .. " --engine " .. shell_quote(tr_run_engine or tr_engine)
   if tr_model ~= "" then opts = opts .. " --model " .. shell_quote(tr_model) end
   for _, job in ipairs(tr_queue) do
-    items[#items + 1] = { path = job, cmd = shell_quote((speech_cli())) .. " translate " .. shell_quote(job) .. opts }
+    items[#items + 1] = { path = job.path, source = job.source, output = job.output,
+      cmd = shell_quote((speech_cli())) .. " translate " .. shell_quote(job.path) .. opts ..
+        " --output " .. shell_quote(job.output) }
   end
   tr_queue = {}
   if #items == 0 then return end
+  tr_poll_items = items
   write_file(JOBS .. sep .. "traduci_report", string.format("%s %d %d", tr_lang, tr_report.skipped, tr_report.nosrt))
   start_batch("traduci", items, false, "ZP Traduci", "Traduzione")
   status = string.format(T("Traduco %d SRT in background: puoi chiudere la finestra, alla fine arriva una notifica."), #items)
@@ -779,6 +813,9 @@ local function tr_poll()
   tr_running = poll_batch("traduci", function(e, row, dir)
     if e.code ~= 0 then
       reaper.ShowConsoleMsg("[ZP Traduci] errore su " .. e.path .. "\n" .. (read_file(dir .. sep .. "log_" .. e.i) or ""):sub(-1200) .. "\n")
+    else
+      local job = tr_poll_items[e.i]
+      if job then SRT.register(job.source, job.output, tr_lang, "traduzione") end
     end
   end, function(ok, ko)
     refresh_rows()
@@ -799,10 +836,20 @@ local function do_translate()
   for _, r in ipairs(rows) do
     if not seen[r.path] then
       seen[r.path] = true
-      local srt = sidecar(r.path)
+      local srt = r.srt_path or sidecar(r.path)
       if not exists(srt) then tr_report.nosrt = tr_report.nosrt + 1
-      elseif exists(M.translated_name(srt, tr_lang)) then tr_report.skipped = tr_report.skipped + 1
-      else list[#list + 1] = srt end
+      elseif SRT.find(r.path, tr_lang, "traduzione") or exists(M.translated_name(srt, tr_lang)) then
+        local existing = SRT.find(r.path, tr_lang, "traduzione") or M.translated_name(srt, tr_lang)
+        if exists(existing) and not SRT.find(r.path, tr_lang, "traduzione") then
+          local _, collect_err = SRT.copy_to_media(r.path, existing, tr_lang, "traduzione")
+          if collect_err then status = collect_err end
+        end
+        tr_report.skipped = tr_report.skipped + 1
+      else
+        local output, output_err = SRT.output_path(r.path, tr_lang, "traduzione")
+        if output then list[#list + 1] = { path = srt, source = r.path, output = output }
+        else status = output_err or T("Impossibile preparare Media per la traduzione."); return end
+      end
     end
   end
   if #list == 0 then
@@ -816,7 +863,7 @@ local function do_translate()
   tr_run_engine = eng      -- quello detto nella domanda e' quello che si usa
   local where = AG.where(eng):gsub("Il testo", "Il testo delle battute") .. "\n"
   local msg = string.format(T("Traduco %d SRT in %s con %s.\n\n%sGli originali non vengono toccati: " ..
-    "accanto nasce Nome.%s.srt, con gli stessi tempi.\n\nProcedo?"), #list, T(M.lang_label(tr_lang)):lower(),
+    "in Media nasce Nome.%s.srt, con gli stessi tempi e un riferimento salvato nel progetto.\n\nProcedo?"), #list, T(M.lang_label(tr_lang)):lower(),
     (AG.NAMES[eng] or eng) .. (tr_model ~= "" and (" (" .. tr_model .. ")") or ""), where, tr_lang)
   if reaper.ShowMessageBox(msg, T("ZP Trascrizione - Traduci"), 4) ~= 6 then status = T("Traduzione annullata."); return end
   tr_queue = list

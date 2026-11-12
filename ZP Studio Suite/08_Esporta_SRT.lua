@@ -12,6 +12,7 @@
 local SUBTITLE_TRACK_NAME = "Rythmo Band Testi"
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
 local ZP_UI = dofile(SCRIPT_DIR .. "ZP_UI.lua")
+local SRT_REGISTRY = dofile(SCRIPT_DIR .. "ZP_SRT_Progetto.lua")
 
 local function trim(s)
   local out = (s or ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -581,7 +582,14 @@ local function run_export(sub_track, sub_track_name, mode, visual_out_dir)
     if #cues > 0 then
       local filename = custom_single_name or safe_filename(range.base)
       local out_path = out_dir .. "/" .. filename .. ".srt"
-      if write_srt(out_path, cues) then exported = exported + 1 else skipped = skipped + 1 end
+      if write_srt(out_path, cues) then
+        local source = range.source_path or ("region:" .. filename .. ":" .. string.format("%.3f", range.pos or 0))
+        local media_path, media_err = SRT_REGISTRY.copy_to_media(source, out_path, "", "esportazione_video:" .. filename:lower())
+        if media_path then exported = exported + 1
+        else skipped = skipped + 1; reaper.ShowConsoleMsg("[ZP SRT] " .. tostring(media_err) .. "\n") end
+      else
+        skipped = skipped + 1
+      end
     else
       skipped = skipped + 1
     end

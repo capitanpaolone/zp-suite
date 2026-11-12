@@ -88,3 +88,19 @@ Backup locale: `/Users/paolob/Library/Application Support/REAPER/ZP_StudioSuite_
 ## Collaudo Gobbo confermato — 2026-11-10
 
 Paolo conferma in questa chat che il collaudo del Gobbo è passato. Consolidate in un commit locale dedicato le modifiche ai due Gobbi, i moduli copione/editor, i test e le fixture, le guide IT/EN e i riferimenti del pacchetto. La conferma riguarda il collaudo svolto da Paolo: in questa fase non sono stati ripetuti i test o le prove interattive. Suite 2.6.7 invariata, nessun push, tag o pubblicazione. La modifica indipendente a help/pannello_trascrizione.html resta fuori dal commit Gobbo. Snapshot pre-commit con SHA-256: `/Volumes/DISCO LACIE/Archivio_Storico_ZP/ZP Suite/Gobbo/2026-11-10_collaudo_confermato_commit_231310`.
+
+
+## Gobbo — leggibilità dei comandi nel tema Chiaro, 2026-11-11
+
+Corretto il modulo condiviso `ZP Studio Suite/ZP_UI.lua`, distribuito come helper `@provides` della Suite 2.6.7. Origine della modifica: sorgente locale del ramo `release/2.6.7`, gia identico alla copia REAPER prima dell’intervento. `draw_rect` usava `gfx.roundrect` con un argomento di riempimento non supportato, lasciando trasparenti i fondi dei pulsanti. Ora fondo e ombra usano `UI.fill_round`, gia presente nel modulo; il bordo mantiene il disegno nativo. Nel tema Chiaro le etichette chiare hanno quindi il fondo scuro previsto. La correzione vale anche per il Gobbo orizzontale e gli altri chiamanti dello stesso helper. Palette e attenuazione del testo del copione conservate. Versione Suite 2.6.7 invariata.
+
+Test di regressione `test_ui_button_background.lua`: il codice precedente fallisce, il corretto supera 54 controlli di composizione del fondo e contrasto su tre sfondi e tre stati, con e senza `gfx.roundrect`; verificati anche clic e disabilitazione. Verifica del rendering simulata, nessun collaudo visuale interattivo dichiarato in questa fase. Backup sorgente/installato e hash: `/Volumes/DISCO LACIE/Archivio_Storico_ZP/ZP Suite/Gobbo/2026-11-11_contrasto_comandi_220430`. Installato il solo helper nella REAPER locale, source/runtime identici. Nessun commit o pubblicazione.
+
+
+## ZP Consolidate, registro SRT e scroll Benvenuto — 2026-11-12
+
+Aggiunta l’azione `37_ZP_Consolidate.lua` con helper `ZP_SRT_Progetto.lua`, icone toolbar PNG 90×30 e 180×60 e pulsante nel layout `32_Installa_Toolbar_ZP.lua`. Il registro SRT/VTT è nel Project ExtState del file RPP; `29_ZP_Trascrizione.lua`, `01_Importa_Video_SRT.lua`, `08_Esporta_SRT.lua` e `31_SRT_da_Marker_Audio.lua` lo usano per tenere i file associati in Media. Consolidate copia byte per byte i file referenziati da tutti i take e i sottotitoli registrati, relinka i take dopo la copia e lascia gli originali al loro posto. Gli SRT fuori timeline non registrati non vengono cercati, secondo il perimetro concordato; restano fuori da questa modifica.
+
+Il Lua 33 calcola i limiti prima del disegno e interpola una posizione target dello scroll; così i delta inerziali non disegnano oltre il bordo. Candidato e installazione REAPER hanno lo stesso contenuto per il 33; la copia installata precedente è conservata in `/Users/paolob/Library/Application Support/REAPER/ZP_StudioSuite_Backups/2026-11-12_33_scroll_inertia/`. ZP Consolidate è installato localmente nella beta REAPER 7.85 con backup dei file precedenti in `ZP_StudioSuite_Backups/2026-11-12_ZP_Consolidate_install/`. Non è stata fatta una prova interattiva del nuovo scroll o della raccolta su un progetto reale.
+
+Per la distribuzione, `00_Apri_Help_ZP_Studio_Suite.lua` dichiara l’azione, l’helper non indicizzato e le due icone tramite `@provides`; l’SVG resta sorgente Git esclusa dalla scansione ReaPack. Nessun commit, push, tag o pubblicazione ancora effettuato.

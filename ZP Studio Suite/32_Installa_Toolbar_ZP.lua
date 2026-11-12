@@ -46,6 +46,7 @@ M.PRESETS = {
 M.LAYOUT = {
   { "18_Project_Viewer.lua", "Project Viewer", "ZP_tbB_18_Project_Viewer.png", "toolbar_item_arpeggiate.png" },
   { "17_Crea_Regioni_Export_da_Item_Nominati.lua", "Gestore Progetto", "ZP_tbB_17_Gestore_Progetto.png", "ZP_tb_17_Regioni_Item.png" },
+  { "37_ZP_Consolidate.lua", "ZP Consolidate", "ZP_tbB_37_Consolidate.png", "toolbar_color_load_disk.png" },
   { "19_Report_Minuti_Voce.lua", "Report minuti voce", "ZP_tbB_19_Report_Minuti.png", "toolbar_misc_calculate_numeric.png" },
   "-",
   { "29_ZP_Trascrizione.lua", "ZP Trascrizione", "ZP_tbB_29_Trascrizione.png", "ZP_tb_29_Pannello_Trascrizione.png" },

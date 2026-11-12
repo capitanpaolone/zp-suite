@@ -142,7 +142,7 @@ local function fit_text_middle(text, max_w)
 end
 
 local function log_escape(value)
-  return tostring(value or ""):gsub("\n", "\\n"):gsub("\r", "\\r"):sub(1, 180)
+  return tostring(value or ""):gsub("\n", "\\n"):gsub("\r", "\\r"):sub(1, 512)
 end
 
 local function log_debug(event, details)
@@ -1418,6 +1418,34 @@ function region_selection.set(regions, open_manager)
   return true, nil, selected
 end
 
+function region_selection.save_state()
+  local sel = {}
+  if reaper.GetNumRegionsOrMarkers and reaper.GetRegionOrMarker and reaper.GetRegionOrMarkerInfo_Value then
+    for i = 0, reaper.GetNumRegionsOrMarkers(0) - 1 do
+      local entry = reaper.GetRegionOrMarker(0, i, "")
+      if entry and reaper.GetRegionOrMarkerInfo_Value(0, entry, "B_ISREGION") ~= 0 then
+        if reaper.GetRegionOrMarkerInfo_Value(0, entry, "B_UISEL") ~= 0 then
+          sel[entry] = true
+        end
+      end
+    end
+  end
+  return sel
+end
+
+function region_selection.restore_state(saved_sel)
+  if reaper.GetNumRegionsOrMarkers and reaper.GetRegionOrMarker and reaper.SetRegionOrMarkerInfo_Value then
+    for i = 0, reaper.GetNumRegionsOrMarkers(0) - 1 do
+      local entry = reaper.GetRegionOrMarker(0, i, "")
+      if entry and reaper.GetRegionOrMarkerInfo_Value(0, entry, "B_ISREGION") ~= 0 then
+        local wanted = (saved_sel and saved_sel[entry]) and 1 or 0
+        if reaper.GetRegionOrMarkerInfo_Value(0, entry, "B_UISEL") ~= wanted then
+          reaper.SetRegionOrMarkerInfo_Value(0, entry, "B_UISEL", wanted)
+        end
+      end
+    end
+  end
+end
 
 local function set_time_selection_for_regions_or_groups(regions_or_groups)
   local first_pos, last_pos = nil, nil
@@ -1481,11 +1509,30 @@ local function render_window_is_open(activate)
     render_debug_log("render_window_is_open | JS_Window_Find non disponibile")
     return false
   end
-  local probes = {
-    { title = "Render to File", exact = true },
-    { title = "Rendering to file", exact = false },
-    { title = "Finished in", exact = false }
-  }
+
+  local probes = {}
+  local function add_probe(title, exact)
+    if not title or title == "" then return end
+    for _, probe in ipairs(probes) do
+      if probe.title == title and probe.exact == exact then return end
+    end
+    probes[#probes + 1] = { title = title, exact = exact }
+  end
+  local function add_localized_probe(english_title, exact)
+    if not reaper.JS_Localize then return end
+    for _, section in ipairs({ "common", "DLG_106" }) do
+      local ok, localized = pcall(reaper.JS_Localize, english_title, section)
+      if ok and type(localized) == "string" then add_probe(localized, exact) end
+    end
+  end
+
+  add_localized_probe("Render to File", true)
+  add_probe("Render to File", true)
+  add_localized_probe("Rendering to file", false)
+  add_probe("Rendering to file", false)
+  add_localized_probe("Finished in", false)
+  add_probe("Finished in", false)
+
   for _, probe in ipairs(probes) do
     local hwnd = reaper.JS_Window_Find(probe.title, probe.exact)
     render_debug_log("render_window_probe | title=" .. tostring(probe.title) .. " exact=" .. tostring(probe.exact) .. " hwnd=" .. tostring(hwnd))
@@ -1510,36 +1557,9 @@ local function render_window_is_open(activate)
   return false
 end
 
--- Render Queue snapshot: REAPER salva il progetto corrente nel job.
--- Per accodare una sola sezione senza dipendere dal Region/Marker Manager,
--- togliamo temporaneamente dalla snapshot le altre regioni e le ripristiniamo subito.
-local function queue_with_only_regions(regions, callback)
-  local keep = {}
-  for _, region in ipairs(regions or {}) do keep[region.idx] = true end
-  local hidden = {}
-  local _, marker_count, region_count = reaper.CountProjectMarkers(0)
-  for i = 0, marker_count + region_count - 1 do
-    local ok, is_region, pos, region_end, name, idx, color = reaper.EnumProjectMarkers3(0, i)
-    if ok and is_region and not keep[idx] then
-      hidden[#hidden + 1] = {
-        idx = idx, pos = pos, region_end = region_end,
-        name = name or "", color = color or 0
-      }
-    end
-  end
-
-  reaper.PreventUIRefresh(1)
-  for _, region in ipairs(hidden) do
-    reaper.DeleteProjectMarker(0, region.idx, true)
-  end
-  local ok, err = xpcall(callback, debug.traceback)
-  for _, region in ipairs(hidden) do
-    reaper.AddProjectMarker2(0, true, region.pos, region.region_end, region.name, region.idx, region.color)
-  end
-  reaper.PreventUIRefresh(-1)
-  reaper.UpdateArrange()
-  return ok, err, #hidden
-end
+-- Render Queue: i job vengono accodati usando la selezione nativa (Bounds 5 / &8)
+-- tramite region_selection.set() e ripristinati con region_selection.restore_state().
+-- Nessuna regione viene mai cancellata o ricreata dalla timeline.
 
 local function save_render_settings_snapshot()
   local fields = {
@@ -2067,23 +2087,15 @@ local function setup_mixdown_render_target(groups, folder_override, action_label
 
   save_render_settings_snapshot()
 
-  local selected_ok, select_err, selected_count
-  if queue_snapshot_mode then
-    selected_ok, selected_count = true, #regions
-    reaper.GetSetProjectInfo(0, "RENDER_BOUNDSFLAG", 3, true) -- sole regioni presenti nella snapshot del job
-    render_debug_log("setup_mixdown_render_target | queue snapshot mode selected_count=" .. tostring(selected_count))
-  else
-    selected_ok, select_err, selected_count = region_selection.set(regions, true)
-    render_debug_log(string.format(
-      "setup_mixdown_render_target | project region selection ok=%s count=%s err=%s",
-      tostring(selected_ok),
-      tostring(selected_count),
-      log_escape(select_err or "")
-    ))
-  end
-  if queue_snapshot_mode then
-    -- +Queue usa una snapshot multi-regione autonoma: nessun Region/Marker Manager richiesto.
-  elseif selected_ok or selected_count ~= nil then
+  local selected_ok, select_err, selected_count = region_selection.set(regions, not queue_snapshot_mode)
+  render_debug_log(string.format(
+    "setup_mixdown_render_target | project region selection ok=%s count=%s err=%s",
+    tostring(selected_ok),
+    tostring(selected_count),
+    log_escape(select_err or "")
+  ))
+
+  if selected_ok or selected_count ~= nil then
     local expected_selected_count = #real_mixdown_regions(regions)
     if not selected_ok or selected_count ~= expected_selected_count then
       if enable_preroll_warmup then
@@ -2121,6 +2133,9 @@ local function setup_mixdown_render_target(groups, folder_override, action_label
     render_debug_log("setup_mixdown_render_target | fallback tutte le regioni accettato")
   end
 
+  if queue_snapshot_mode then
+    reaper.GetSetProjectInfo(0, "RENDER_QDELAY", 0, true) -- Immunità da ritardi/suffissi localizzati nel job
+  end
   reaper.GetSetProjectInfo(0, "RENDER_SETTINGS", 0, true) -- Master mix
   reaper.GetSetProjectInfo(0, "RENDER_ADDTOPROJ", 0, true)
   apply_mixdown_render_settings()
@@ -2167,29 +2182,51 @@ local function add_mixdown_section_to_queue(groups, folder_override)
     #(groups or {}),
     log_escape((folder_override and (folder_override.relative or folder_override.safe_name or folder_override.raw_name)) or "")
   ))
-  local ok, folder, detail, report_path, regions = setup_mixdown_render_target(groups, folder_override, "aggiungendo la sezione alla Render Queue", false, true)
+
+  local target_folder = folder_override or render_folder_info(groups)
+  local target_dir = mixdown_folder_path(target_folder)
+  if target_dir and directory_exists(target_dir) and directory_has_files(target_dir) then
+    local folder_label = target_folder.relative or target_folder.safe_path or target_folder.safe_name or "Mixdown"
+    local msg = "La cartella di destinazione contiene gia' file:\n" .. folder_label ..
+      "\n\nNon elimino ne' sovrascrivo file dal Gestore Progetto. Se continui, REAPER puo' chiederti come gestire i nomi gia' esistenti.\n\nAggiungere comunque il job alla Render Queue?"
+    render_debug_log("add_mixdown_section_to_queue | destinazione con file=" .. log_escape(target_dir))
+    if reaper.ShowMessageBox(msg, SCRIPT_TITLE, 4) ~= 6 then
+      render_debug_log("add_mixdown_section_to_queue | annullato: destinazione con file")
+      return false
+    end
+  end
+
+  -- Salva selezione e impostazioni correnti per ripristinarle fedelmente dopo l'accodamento
+  local saved_sel = region_selection.save_state()
+  local prev_qdelay = reaper.GetSetProjectInfo(0, "RENDER_QDELAY", 0, false)
+  local prev_bounds = reaper.GetSetProjectInfo(0, "RENDER_BOUNDSFLAG", 0, false)
+  local _, prev_file = reaper.GetSetProjectInfo_String(0, "RENDER_FILE", "", false)
+  local _, prev_pattern = reaper.GetSetProjectInfo_String(0, "RENDER_PATTERN", "", false)
+
+  local ok, folder, detail, report_path, regions = setup_mixdown_render_target(groups, target_folder, "aggiungendo la sezione alla Render Queue", false, true)
   if not ok then
     render_debug_log("add_mixdown_section_to_queue | setup fallito")
+    region_selection.restore_state(saved_sel)
     return false
   end
   local before = render_queue_files()
   local before_count = 0
   for _ in pairs(before) do before_count = before_count + 1 end
   render_debug_log("add_mixdown_section_to_queue | before queue files=" .. tostring(before_count))
-  -- Un solo job contiene tutte le regioni della sezione/cartella scelta.
-  -- La snapshot temporanea esclude le altre sezioni senza alterare il progetto finale.
-  local snapshot_ok, snapshot_err = queue_with_only_regions(regions, function()
-    render_debug_project_state("add_mixdown_section_to_queue | inside snapshot before command")
-    reaper.GetSetProjectInfo(0, "RENDER_BOUNDSFLAG", 3, true) -- Project regions presenti nella snapshot
-    reaper.GetSetProjectInfo_String(0, "RENDER_FILE", mixdown_folder_path(folder), true)
-    reaper.GetSetProjectInfo_String(0, "RENDER_PATTERN", "$region", true)
-    reaper.Main_OnCommand(ADD_TO_RENDER_QUEUE_CMD, 0)
-  end)
-  if not snapshot_ok then
-    render_debug_log("add_mixdown_section_to_queue | snapshot fallita err=" .. log_escape(snapshot_err or ""))
-    reaper.ShowMessageBox("Non riesco a preparare il job multi-regione:\n" .. tostring(snapshot_err or "errore sconosciuto"), SCRIPT_TITLE, 0)
-    return false
-  end
+
+  -- Accoda direttamente usando Bounds 5 (Selected regions) con le sole regioni della sezione selezionate (&8).
+  -- Nessuna regione viene cancellata o ricreata: GUID, corsie e metadati restano intatti al 100%.
+  render_debug_project_state("add_mixdown_section_to_queue | before ADD_TO_RENDER_QUEUE_CMD")
+  reaper.Main_OnCommand(ADD_TO_RENDER_QUEUE_CMD, 0)
+
+  -- Ripristino immediato dello stato della timeline del progetto attivo
+  reaper.GetSetProjectInfo(0, "RENDER_BOUNDSFLAG", prev_bounds, true)
+  reaper.GetSetProjectInfo(0, "RENDER_QDELAY", prev_qdelay, true)
+  reaper.GetSetProjectInfo_String(0, "RENDER_FILE", prev_file, true)
+  reaper.GetSetProjectInfo_String(0, "RENDER_PATTERN", prev_pattern, true)
+  region_selection.restore_state(saved_sel)
+  reaper.UpdateArrange()
+
   local after = render_queue_files()
   local queued = 0
   for name in pairs(after) do
@@ -2201,7 +2238,7 @@ local function add_mixdown_section_to_queue(groups, folder_override)
     reaper.ShowMessageBox("REAPER non ha creato alcun job nella Render Queue.\n\nControlla che il progetto sia salvato e che il formato Render sia valido.", SCRIPT_TITLE, 0)
     return false
   end
-  notify_status(string.format("Aggiunto un job multi-regione alla Render Queue: %s, %d regioni incluse. Il warm-up fantasma e' usato solo nel render manuale, non nella Queue. Report audio CSV da generare dopo il render/dry run.", folder.relative, #real_mixdown_regions(regions)))
+  notify_status(string.format("Aggiunto un job alla Render Queue: %s, %d regioni selezionate. Zero regioni alterate.", folder.relative, #real_mixdown_regions(regions)))
   return true
 end
 

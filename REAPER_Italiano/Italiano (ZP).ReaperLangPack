@@ -13579,7 +13579,7 @@ EB23908B8ABFD719=Mono (Destra)
 2A4E859EDE54DBFC=Importa MIDI a %d canali come:
 3423153C6B5BCC44=Importa MIDI a %d canali e meta-eventi come:
 8760B8EAFB5FC6F6=Importazione %s: %s
-CBE458B8A675A6A8=Importare %s a %d canali come %d track mono?
+CBE458B8A675A6A8=Importare %d canali %s come %d track mono?
 
 [itemprop]
 943504C358764A1E=%d item multimediali selezionati.\r\nModificare le proprietà di più item tutte insieme o una alla volta?
@@ -23261,7 +23261,7 @@ B3F8390D4327AB3C=Vedi sopra per il formato personalizzato di $projectpos, $proje
 D3BC181CB0EE6EFD=Data/Ora
 8406BA540B0EBD5A=Limiti
 5F78C7926247817C=Destinazione di render
-F1B801E6F94AB9D5=(ritardo %ds)
+F1B801E6F94AB9D5=(delay %ds)
 FEE3D8E1E609E3D3=sel_regions
 C879AB4AE275313D=sel_markers
 C2281FEBC45E6DE8=%d.%dkHz 

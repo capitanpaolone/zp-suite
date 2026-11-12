@@ -954,3 +954,10 @@ Il punto di taglio è troppo vicino al bordo dell’item.	The split point is too
 REAPER non ha diviso l’item.	REAPER did not split the item.
 Divisione annullata: impossibile salvare il contenuto dei due item.	Split reverted: could not save the contents of both items.
 Per aggiungere una pausa, seleziona la parola con doppio clic, scegli Edita testo dal menu destro e premi Shift+Invio.	To add a pause, double-click the word, choose Edit text from the right-click menu and press Shift+Enter.
+Non trovo ZP_SRT_Progetto.lua: gli SRT non possono essere raccolti nel progetto.	Cannot find ZP_SRT_Progetto.lua: SRT files cannot be collected into the project.
+Impossibile copiare l'SRT in Media.	Could not copy the SRT to Media.
+Impossibile copiare la traduzione in Media.	Could not copy the translation to Media.
+Impossibile preparare Media per lo SRT.	Could not prepare Media for the SRT.
+\nGli SRT esistenti di %d file li rinomino in .srt.bak-<data> nella loro cartella, non li cancello.	\nExisting SRTs for %d files will be renamed to .srt.bak-<date> in their current folder, not deleted.
+Impossibile preparare Media per la traduzione.	Could not prepare Media for translation.
+Traduco %d SRT in %s con %s.\n\n%sGli originali non vengono toccati: in Media nasce Nome.%s.srt, con gli stessi tempi e un riferimento salvato nel progetto.\n\nProcedo?	Translating %d SRTs into %s with %s.\n\n%sOriginal files will not be touched: Name.%s.srt will be created in Media with identical timings and a reference saved in the project.\n\nProceed?

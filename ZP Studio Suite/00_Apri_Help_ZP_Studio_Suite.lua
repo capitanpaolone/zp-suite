@@ -26,6 +26,8 @@
 --   2.6.7 (in preparation; not released)
 --   EN — Local REAPER reference updates: safer project-region selection, Voice Minutes 1.0.6, ZP Remote import/export updates, Harmonic Space Carver 2.6.10 and Cue Navigator 1.14. These changes still require release collation and checks.
 --   IT — Aggiornamenti dalla REAPER locale: selezione più sicura delle regioni, Report Minuti 1.0.6, aggiornamenti ZP Remote, Harmonic Space Carver 2.6.10 e Cue Navigator 1.14. Da consolidare e collaudare prima della pubblicazione.
+--   EN — ZP Consolidate copies referenced take sources and project-registered SRT/VTT files into Media without converting them; the 33 Welcome list now scrolls with bounded, damped motion.
+--   IT — ZP Consolidate raccoglie in Media le sorgenti dei take e gli SRT/VTT registrati nel progetto senza conversioni; lo scroll del 33 Benvenuto è smussato e limitato ai bordi.
 --   EN
 --   Render & Copy supports automatic copying and Sync now on Windows (js_ReaScriptAPI) and Linux (find and stat).
 --   Solo Recorder guide now explains that ZP Remote packages are intended for Dubbertools and distinguishes package delivery from the Web Remote recording controls.
@@ -75,6 +77,8 @@
 --   [main] 33_Benvenuto_Controllo_Installazione.lua
 --   [main] 34_ZP_Set_Comandi.lua
 --   [main] 35_ZP_Colori.lua
+--   [main] 37_ZP_Consolidate.lua
+--   [nomain] ZP_SRT_Progetto.lua
 --   [main] render_copy/ZP_RenderCopy.lua
 --   render_copy/assets/zp_render_copy.png
 --   [main] remote/ZP_Remote_Crea_Pacchetto.lua
@@ -90,6 +94,8 @@
 --   [data] icons/150/ZP_RenderCopy.png > toolbar_icons/150/ZP_RenderCopy.png
 --   [data] icons/200/ZP_RenderCopy.png > toolbar_icons/200/ZP_RenderCopy.png
 --   [data] icons/ZP_Remote_Crea_Pacchetto.png > toolbar_icons/ZP_Remote_Crea_Pacchetto.png
+--   [data] icons/ZP_tbB_37_Consolidate.png > toolbar_icons/ZP_tbB_37_Consolidate.png
+--   [data] icons/200/ZP_tbB_37_Consolidate.png > toolbar_icons/200/ZP_tbB_37_Consolidate.png
 --   [data] icons/200/ZP_Remote_Crea_Pacchetto.png > toolbar_icons/200/ZP_Remote_Crea_Pacchetto.png
 --   [main] web/ZP_SOLO_Web_Motore.lua
 --   [main] colori/ZP_Colori_01_Verde_lime.lua

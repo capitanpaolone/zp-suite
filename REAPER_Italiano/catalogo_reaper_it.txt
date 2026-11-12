@@ -8260,7 +8260,7 @@ loop	loop
 Import %d-channel MIDI as:	Importa MIDI a %d canali come:
 Import %d-channel MIDI and meta-events as:	Importa MIDI a %d canali e meta-eventi come:
 %s import: %s	Importazione %s: %s
-Import %d-channel %s as %d mono tracks?	Importare %s a %d canali come %d track mono?
+Import %d-channel %s as %d mono tracks?	Importare %d canali %s come %d track mono?
 %d media items selected.\r\nEdit multiple item properties all at once, or one by one?	%d item multimediali selezionati.\r\nModificare le proprietà di più item tutte insieme o una alla volta?
 Use track/project timebase	Usa base temporale della track/progetto
 Project item mix behavior	Comportamento di mix degli item del progetto
@@ -11273,7 +11273,7 @@ project directory parent level N (example: $directory2 is \"a\" for /a/b/project
 Date/Time	Data/Ora
 Bounds	Limiti
 Render Target	Destinazione di render
-(delay %ds)	(ritardo %ds)
+(delay %ds)	(delay %ds)
 sel_regions	sel_regions
 sel_markers	sel_markers
 %d.%dkHz	%d.%dkHz
