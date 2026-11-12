@@ -82,3 +82,19 @@ python3 gobbo_ricerca_battuta/strumenti/genera_langpack.py
 # 2. Esegue il test di integrità del Language Pack (header, ReaPack tag, 0 chiavi in ACTION_SECTIONS)
 python3 gobbo_ricerca_battuta/test/test_langpack.py
 ```
+
+---
+
+## 5. Voci che NON vanno tradotte (REAPER le confronta in inglese)
+
+Dimostrato dal disassemblato: la Render Queue riconosce un job cercando `.RPP (delay` nel nome, quindi con il suffisso tradotto il job non si cancella né parte.
+
+| Sezione | Chiave | Deve restare |
+|---|---|---|
+| `renderq` | `F1B801E6F94AB9D5` | `(delay %ds)` |
+| `renderq` | `FEE3D8E1E609E3D3` | `sel_regions` |
+| `renderq` | `C879AB4AE275313D` | `sel_markers` |
+
+Il test `test_langpack.py` lo controlla; `strumenti/controlla_langpack.py` fa lo stesso su qualsiasi pack (anche di terzi) e controlla l'ordine dei segnaposto `%d %s`. I pack in `REAPER/LangPack` diversi da Italiano (ZP) non vengono con REAPER: li scarica l'utente (ReaPack, stash, Benvenuto), e al 2026-11-12 sei su sette traducono queste voci.
+
+Per gli script che cercano finestre con `JS_Localize(msgid, sezione)` servono msgid e sezione esatti del template (es. `Render to File` in `DLG_506`, `Rendering to file...` in `DLG_124`, `Finished in ` in `render`).

@@ -1518,19 +1518,22 @@ local function render_window_is_open(activate)
     end
     probes[#probes + 1] = { title = title, exact = exact }
   end
-  local function add_localized_probe(english_title, exact)
+  -- JS_Localize cerca per msgid ESATTO nella sezione ESATTA del language pack
+  -- (template REAPER 7.82): se uno dei due e' sbagliato restituisce l'inglese
+  -- invariato e la sonda non trova la finestra tradotta.
+  local function add_localized_probe(english_title, exact, sections)
     if not reaper.JS_Localize then return end
-    for _, section in ipairs({ "common", "DLG_106" }) do
+    for _, section in ipairs(sections) do
       local ok, localized = pcall(reaper.JS_Localize, english_title, section)
       if ok and type(localized) == "string" then add_probe(localized, exact) end
     end
   end
 
-  add_localized_probe("Render to File", true)
+  add_localized_probe("Render to File", true, { "DLG_506", "common" })
   add_probe("Render to File", true)
-  add_localized_probe("Rendering to file", false)
+  add_localized_probe("Rendering to file...", false, { "DLG_124", "common" })
   add_probe("Rendering to file", false)
-  add_localized_probe("Finished in", false)
+  add_localized_probe("Finished in ", false, { "render", "common" })
   add_probe("Finished in", false)
 
   for _, probe in ipairs(probes) do
