@@ -378,7 +378,7 @@
   <ul>
     <li><strong>Source</strong>: <em>Items</em> (selected), <em>Tracks</em> (selected), <em>Folder+</em>, <em>All</em>. Only valid audio/video items are processed; empty items, notes, and MIDI are skipped. <strong>Video</strong> includes video files; <strong>Skip muted</strong> ignores muted clips.</li>
     <li><strong>File Gap</strong>: silence duration triggering a new region. Head/Tail <strong>Padding</strong> expands region boundaries without moving audio.</li>
-    <li><strong>Naming</strong>: paste a list of names (one per line or <code>;</code> separated) to apply sequentially; <em>No. + name</em> prefixes sequential numbers. Double-click to rename in preview; edits stay as drafts until applied.</li>
+    <li><strong>Naming</strong>: paste a list of names (one per line or <code>;</code> separated) to apply sequentially; <em>No. + name</em> prefixes sequential numbers. The list starts <strong>from the region selected</strong> in the preview (the button says <em>Incolla da 03</em>; the same applies when you click in the names column to type). <strong>Svuota lista</strong>: one click undoes the last entry, double-click clears all names. Double-click to rename in preview; edits stay as drafts until applied. Closing with draft names asks: <em>Yes</em> applies them, <em>No</em> discards them and closes, <em>Cancel</em> goes back.</li>
     <li><strong>Create Regions</strong> updates existing regions and creates missing ones; <em>Create Selected</em> acts only on selected rows. <strong>Save</strong> applies only pending names to their corresponding regions, creates missing regions for those names, and saves the project without rebuilding the others. When closing with pending names, choose <em>Yes</em> to apply them and close or <em>No</em> to return to the Project Manager.</li>
   </ul>
   <h3>Prepare Mixdown</h3>
@@ -538,7 +538,7 @@
   <ul>
     <li><strong>Activate</strong>: switches to selected set. Prompts to restart REAPER immediately or on next launch.</li>
     <li><strong>Inspect Layout</strong>: displays complete key-to-action list.</li>
-    <li><strong>Export…</strong> (in a set's page): puts a copy of the set's <code>.ReaperKeyMap</code> file on the Desktop and shows it, to carry to another computer or keep as a copy.</li>
+    <li><strong>Export…</strong> (in a set's page): puts a copy of the set's <code>.ReaperKeyMap</code> file on the Desktop and shows it, to carry to another computer or keep as a copy. Sets saved here also include the <strong>mouse modifiers</strong> (a second file, <code>.ReaperMouseMap</code>, with the same name): they are saved, exported, imported and activated together with the keys; sets without that file leave mouse modifiers untouched.</li>
     <li><strong>AI Explanation</strong> (optional): generates plain-English summary of shortcut layout using local or cloud AI agents via ZP Speech.</li>
     <li><strong>Automatic Backup</strong>: archives current keys to <em>Automatic Backup</em> before any switch.</li>
     <li><strong>Save Current Keys…</strong> / <strong>Import File…</strong>: manage custom <code>.ReaperKeyMap</code> files.</li>

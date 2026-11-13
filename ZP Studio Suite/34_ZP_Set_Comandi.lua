@@ -18,6 +18,10 @@ local M = {}
 M.PENDING = "ZP_Set_in_attesa.txt"
 M.BACKUP_NAME = "Backup automatico"
 M.EXT = ".ReaperKeyMap"
+-- Mouse modifier del set: file accanto al set, stesso nome, nel formato che REAPER importa da
+-- Preferences > Mouse Modifiers. Chi non ce l'ha non tocca i mouse modifier.
+M.MOUSE_EXT = ".ReaperMouseMap"
+M.PENDING_MOUSE = "ZP_Set_mouse_in_attesa.txt"
 M.STOCK = "REAPER di serie"
 
 ---------------------------------------------------------------------------
@@ -160,6 +164,12 @@ function M.waiter_sh(kb, pending, app, reopen, proc)
     "[ -f \"$NEW\" ] || { rm -f \"$NEW.pid\"; exit 0; }",
     "cp \"$KB\" \"$KB.ZP_backup_$(date +%Y%m%d_%H%M%S)\" || exit 1",
     "{ grep -v '^KEY ' \"$KB\"; cat \"$NEW\"; } > \"$KB.zp_nuovo\" && mv \"$KB.zp_nuovo\" \"$KB\" && mv \"$NEW\" \"$NEW.applicato\"",
+    "MKB=\"$(dirname \"$KB\")/reaper-mouse.ini\"",
+    "NEWM=\"$(dirname \"$NEW\")/" .. M.PENDING_MOUSE .. "\"",
+    "if [ -f \"$NEWM\" ]; then",
+    "  [ -f \"$MKB\" ] && cp \"$MKB\" \"$MKB.ZP_backup_$(date +%Y%m%d_%H%M%S)\"",
+    "  cp \"$NEWM\" \"$MKB\" && mv \"$NEWM\" \"$NEWM.applicato\"",
+    "fi",
     "rm -f \"$NEW.pid\"",
     reopen and "[ -n \"$APP\" ] && open \"$APP\"" or "",
     "",
@@ -183,6 +193,13 @@ function M.waiter_ps1(kb, pending, exe, reopen)
     "$add = [IO.File]::ReadAllLines($new)",
     "[IO.File]::WriteAllLines($kb, [string[]]($keep + $add), (New-Object Text.UTF8Encoding($false)))",
     "Move-Item -LiteralPath $new -Destination ($new + '.applicato') -Force",
+    "$mkb = Join-Path (Split-Path -Parent $kb) 'reaper-mouse.ini'",
+    "$newm = Join-Path (Split-Path -Parent $new) '" .. M.PENDING_MOUSE .. "'",
+    "if (Test-Path -LiteralPath $newm) {",
+    "  if (Test-Path -LiteralPath $mkb) { Copy-Item -LiteralPath $mkb -Destination ($mkb + '.ZP_backup_' + (Get-Date -Format 'yyyyMMdd_HHmmss')) }",
+    "  Copy-Item -LiteralPath $newm -Destination $mkb -Force",
+    "  Move-Item -LiteralPath $newm -Destination ($newm + '.applicato') -Force",
+    "}",
     reopen and exe and ("Start-Process " .. psq(exe)) or "",
     "",
   }, "\r\n")
@@ -271,6 +288,8 @@ local resource = reaper.GetResourcePath()
 local KB = resource .. sep .. "reaper-kb.ini"
 local DIR = resource .. sep .. "KeyMaps"
 local PENDING = DIR .. sep .. M.PENDING
+local PENDING_MOUSE = DIR .. sep .. M.PENDING_MOUSE
+local MOUSE_INI = resource .. sep .. "reaper-mouse.ini"
 local IS_WIN = reaper.GetOS():match("Win") ~= nil
 local SECTION = "ZP_SET_COMANDI"
 
@@ -301,6 +320,7 @@ local function load_sets()
       local text = read(DIR .. sep .. f) or ""
       local info = M.info(text)
       sets[#sets + 1] = { name = name, file = DIR .. sep .. f, info = info, text = text,
+        mouse = read(DIR .. sep .. name .. M.MOUSE_EXT),
         in_use = M.same_keys(info, current), pending = pending_info and M.same_keys(info, pending_info) or false }
     end
     i = i + 1
@@ -329,6 +349,7 @@ local function detail(s)
   if s.name == M.BACKUP_NAME then parts[#parts + 1] = T("i tasti di prima dell'ultimo cambio")
   elseif d ~= "" then parts[#parts + 1] = T("salvato il ") .. d end
   if s.info.osara then parts[#parts + 1] = T("con i tasti OSARA") end
+  if s.mouse then parts[#parts + 1] = T("con i mouse modifier") end
   return table.concat(parts, "  ·  ")
 end
 
@@ -368,6 +389,7 @@ local function rearm_waiter()
 end
 
 local function cancel_pending()
+  os.rename(PENDING_MOUSE, PENDING_MOUSE .. ".annullato")
   if os.rename(PENDING, PENDING .. ".annullato") then
     reaper.SetExtState(SECTION, "in_attesa", "", true)
     set_status(T("Cambio annullato: al riavvio restano i tasti di adesso."))
@@ -385,6 +407,7 @@ local function activate(s)
     T("\"?\n\nLe scorciatoie cambiano quando REAPER si riapre. Script, azioni e toolbar restano come sono.\nPrima del cambio i tasti di adesso vanno nel set \"") ..
     T(M.BACKUP_NAME) .. T("\".\n\n") ..
     (warn_osara and T("ATTENZIONE: questo set non ha i tasti di OSARA, che adesso usi.\n\n") or "") ..
+    (s.mouse and T("Questo set ha anche i suoi mouse modifier: prendono il posto di quelli di adesso (che vanno nel backup).\n\n") or "") ..
     T("Si' = chiudi e riapri REAPER adesso (salva prima il progetto)\nNo = piu' tardi: vale dal prossimo riavvio\nAnnulla = non cambiare niente")
   local r = reaper.MB(msg, T("ZP Set Comandi"), 3)
   if r ~= 6 and r ~= 7 then return end
@@ -394,10 +417,17 @@ local function activate(s)
     return set_status(T("Non riesco a scrivere il backup in KeyMaps: niente cambiato"), false)
   end
   reaper.SetExtState(SECTION, "data_" .. M.BACKUP_NAME, os.date("%d/%m/%Y %H:%M"), true)
+  -- mouse modifier: quelli di adesso nel backup; quelli del set (se li ha) in attesa come i tasti
+  local mouse_now = read(MOUSE_INI)
+  if mouse_now then write(DIR .. sep .. M.BACKUP_NAME .. M.MOUSE_EXT, mouse_now)
+  else os.remove(DIR .. sep .. M.BACKUP_NAME .. M.MOUSE_EXT) end
+  os.remove(PENDING_MOUSE)
+  if s.mouse and not write(PENDING_MOUSE, s.mouse) then return set_status(T("Non riesco a preparare il set"), false) end
   if not write(PENDING, M.payload(kb, s.text)) then return set_status(T("Non riesco a preparare il set"), false) end
   reaper.SetExtState(SECTION, "in_attesa", s.name, true)
   if not start_waiter(r == 6) then
     os.rename(PENDING, PENDING .. ".annullato")
+    os.rename(PENDING_MOUSE, PENDING_MOUSE .. ".annullato")
     return set_status(T("Non riesco ad avviare il cambio: niente cambiato"), false)
   end
   if r == 6 then
@@ -418,8 +448,12 @@ local function save_current()
   if read(path) and reaper.MB(T("Esiste gia' un set \"") .. name .. T("\". Lo sostituisco con i tasti attuali?"), T("ZP Set Comandi"), 4) ~= 6 then return end
   local kb = read(KB)
   if not kb or not write(path, M.extract_set(kb)) then return set_status(T("Non riesco a salvare il set"), false) end
+  local mouse_now = read(MOUSE_INI) -- insieme ai tasti, i mouse modifier di adesso
+  if mouse_now then write(DIR .. sep .. name .. M.MOUSE_EXT, mouse_now)
+  else os.remove(DIR .. sep .. name .. M.MOUSE_EXT) end
   reaper.SetExtState(SECTION, "data_" .. name, os.date("%d/%m/%Y"), true)
-  set_status(string.format(T("Salvato \"%s\" con %d scorciatoie."), name, M.info(kb).keys))
+  set_status(string.format(T("Salvato \"%s\" con %d scorciatoie."), name, M.info(kb).keys) ..
+    (mouse_now and T(" Salvati anche i mouse modifier.") or ""))
   load_sets()
 end
 
@@ -432,6 +466,9 @@ local function import_file()
   local dest = DIR .. sep .. name .. M.EXT
   if read(dest) then name = name .. " " .. os.date("%H%M%S"); dest = DIR .. sep .. name .. M.EXT end
   if not write(dest, text) then return set_status(T("Non riesco a copiarlo in KeyMaps"), false) end
+  -- se accanto al file c'e' il .ReaperMouseMap con lo stesso nome (un set esportato da qui), entra anche quello
+  local src_mouse = read((src:gsub("%.[^./\\]+$", "")) .. M.MOUSE_EXT)
+  if src_mouse then write(DIR .. sep .. name .. M.MOUSE_EXT, src_mouse) end
   reaper.SetExtState(SECTION, "data_" .. name, "importato " .. os.date("%d/%m/%Y"), true)
   set_status(T("Importato \"") .. name .. T("\": ora e' nell'elenco."))
   load_sets()
@@ -454,11 +491,12 @@ local function export_set(s)
     if read(p) then p = folder .. sep .. s.name .. " " .. os.date("%Y%m%d_%H%M%S") .. M.EXT end
     if write(p, s.text) then dest = p; break end
   end
+  if dest and s.mouse then write((dest:gsub("%.[^./\\]+$", "")) .. M.MOUSE_EXT, s.mouse) end
   if not dest then return set_status(T("Non riesco a scrivere la copia in ") .. folders[1], false) end
   if reaper.CF_LocateInExplorer then reaper.CF_LocateInExplorer(dest)
   elseif IS_WIN then os.execute('explorer /select,"' .. dest .. '"')
   else os.execute("open -R " .. shq(dest)) end
-  set_status(T("Copia esportata: ") .. dest)
+  set_status((s.mouse and T("Esportati tasti e mouse modifier: ") or T("Copia esportata: ")) .. dest)
 end
 
 local function open_folder()
@@ -475,6 +513,7 @@ local function move_set(s, new_dir, new_name)
   if read(dest) then return false end
   if not os.rename(s.file, dest) then return false end
   os.rename(expl_path(s.name), new_dir .. sep .. new_name .. ".spiegazione.txt")
+  os.rename(DIR .. sep .. s.name .. M.MOUSE_EXT, new_dir .. sep .. new_name .. M.MOUSE_EXT)
   local d = saved_date(s.name)
   if d ~= "" then reaper.SetExtState(SECTION, "data_" .. new_name, d, true) end
   return true

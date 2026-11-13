@@ -974,3 +974,7 @@ Copia esportata: 	Copy exported:
 Automatico: il primo pronto	Automatic: first one ready
 OpenAI Whisper locale	Local OpenAI Whisper
 Motore per le prossime trascrizioni: %s.	Engine for upcoming transcriptions: %s.
+con i mouse modifier	with mouse modifiers
+Questo set ha anche i suoi mouse modifier: prendono il posto di quelli di adesso (che vanno nel backup).\n\n	This set also has its own mouse modifiers: they replace the current ones (which go into the backup).\n\n
+ Salvati anche i mouse modifier.	 Mouse modifiers saved too.
+Esportati tasti e mouse modifier: 	Keys and mouse modifiers exported: 

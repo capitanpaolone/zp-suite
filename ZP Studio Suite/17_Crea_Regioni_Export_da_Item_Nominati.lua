@@ -23,8 +23,6 @@ local WARMUP_COLOR = reaper.ColorToNative(115, 115, 125) | 0x1000000
 local WARMUP_EXT_KEY = "ZP_WARMUP_GHOST"
 local WARMUP_SOURCE_NAME = "__ZP_WARMUP_SOURCE__.wav"
 local EPS = 0.000001
-local DEBUG_KEYS = false
-local DEBUG_LOG_PATH = (reaper.GetResourcePath and (reaper.GetResourcePath() .. "/RythmoBand_ExportRegions_keylog.txt")) or "/tmp/RythmoBand_ExportRegions_keylog.txt"
 local PLAY_PREROLL = 0.10
 local FIXED_WINDOW_W = 980
 local MIN_WINDOW_H = 620
@@ -143,23 +141,6 @@ end
 
 local function log_escape(value)
   return tostring(value or ""):gsub("\n", "\\n"):gsub("\r", "\\r"):sub(1, 512)
-end
-
-local function log_debug(event, details)
-  if not DEBUG_KEYS then return end
-  local file = io.open(DEBUG_LOG_PATH, "a")
-  if not file then return end
-  file:write(string.format("%s | %s | %s\n", os.date("%H:%M:%S"), event, details or ""))
-  file:close()
-end
-
-local function reset_debug_log()
-  if not DEBUG_KEYS then return end
-  local file = io.open(DEBUG_LOG_PATH, "w")
-  if not file then return end
-  file:write(string.format("ZP Studio Suite - Export Regions keylog - %s\n", os.date("%Y-%m-%d %H:%M:%S")))
-  file:write("Formato: ora | evento | dettagli\n")
-  file:close()
 end
 
 local function decode_draft_names(text)
@@ -1492,11 +1473,24 @@ local function select_project_material_for_groups(groups, state)
   return "range", 0
 end
 
+local last_render_window_outcome = nil
 local function render_window_is_open(activate)
   local should_activate = activate ~= false
+  -- Durante l'attesa del render questa funzione gira piu' volte al secondo: le righe di log si
+  -- scrivono solo quando l'esito cambia, oppure quando la finestra viene portata avanti.
+  local notes = {}
+  local function note(message) notes[#notes + 1] = message end
+  local function finish(found, title)
+    local outcome = notes[#notes]
+    if should_activate or outcome ~= last_render_window_outcome then
+      for _, message in ipairs(notes) do render_debug_log(message) end
+    end
+    last_render_window_outcome = outcome
+    return found, title
+  end
   if not reaper.JS_Window_Find then
-    render_debug_log("render_window_is_open | JS_Window_Find non disponibile")
-    return false
+    note("render_window_is_open | JS_Window_Find non disponibile")
+    return finish(false)
   end
 
   local probes = {}
@@ -1527,26 +1521,26 @@ local function render_window_is_open(activate)
 
   for _, probe in ipairs(probes) do
     local hwnd = reaper.JS_Window_Find(probe.title, probe.exact)
-    render_debug_log("render_window_probe | title=" .. tostring(probe.title) .. " exact=" .. tostring(probe.exact) .. " hwnd=" .. tostring(hwnd))
+    note("render_window_probe | title=" .. tostring(probe.title) .. " exact=" .. tostring(probe.exact) .. " hwnd=" .. tostring(hwnd))
     if hwnd then
       local visible = true
       if reaper.JS_Window_IsVisible then visible = reaper.JS_Window_IsVisible(hwnd) end
-      render_debug_log("render_window_probe_found | title=" .. tostring(probe.title) .. " visible=" .. tostring(visible) .. " hwnd=" .. tostring(hwnd))
+      note("render_window_probe_found | title=" .. tostring(probe.title) .. " visible=" .. tostring(visible) .. " hwnd=" .. tostring(hwnd))
       if should_activate and not visible and reaper.JS_Window_Show then
         reaper.JS_Window_Show(hwnd, "RESTORE")
         if reaper.JS_Window_IsVisible then visible = reaper.JS_Window_IsVisible(hwnd) end
-        render_debug_log("render_window_restore | title=" .. tostring(probe.title) .. " visible_after=" .. tostring(visible) .. " hwnd=" .. tostring(hwnd))
+        note("render_window_restore | title=" .. tostring(probe.title) .. " visible_after=" .. tostring(visible) .. " hwnd=" .. tostring(hwnd))
       end
       if visible then
         if should_activate and reaper.JS_Window_Show then reaper.JS_Window_Show(hwnd, "RESTORE") end
         if should_activate and reaper.JS_Window_SetForeground then reaper.JS_Window_SetForeground(hwnd) end
-        render_debug_log("render_window_is_open | true title=" .. tostring(probe.title) .. " hwnd=" .. tostring(hwnd))
-        return true, probe.title
+        note("render_window_is_open | true title=" .. tostring(probe.title) .. " hwnd=" .. tostring(hwnd))
+        return finish(true, probe.title)
       end
     end
   end
-  render_debug_log("render_window_is_open | false")
-  return false
+  note("render_window_is_open | false")
+  return finish(false)
 end
 
 -- Render Queue: i job vengono accodati usando la selezione nativa (Bounds 5 / &8)
@@ -1756,6 +1750,16 @@ local function render_queue_count()
   return count
 end
 
+-- Per la finestra: il conteggio si rilegge dal disco al massimo due volte al secondo.
+local queue_count_cache, queue_count_cache_time = 0, nil
+local function render_queue_count_cached()
+  local now = reaper.time_precise()
+  if not queue_count_cache_time or now - queue_count_cache_time >= 0.5 then
+    queue_count_cache, queue_count_cache_time = render_queue_count(), now
+  end
+  return queue_count_cache
+end
+
 local function mixdown_folder_status(info)
   if not info then return "gray", "nessuna sezione" end
   local path = mixdown_folder_path(info)
@@ -1763,6 +1767,19 @@ local function mixdown_folder_status(info)
   if directory_exists(path) and directory_has_files(path) then return "yellow", "cartella con file" end
   if directory_exists(path) then return "green", "cartella pronta" end
   return "green", "cartella da creare"
+end
+
+-- Per la finestra: lo stato della cartella si ricontrolla sul disco al massimo due volte al
+-- secondo, subito se cambia la sezione scelta.
+local folder_status_cache = { info = false, time = nil }
+local function mixdown_folder_status_cached(info)
+  local now = reaper.time_precise()
+  local c = folder_status_cache
+  if c.info ~= (info or false) or not c.time or now - c.time >= 0.5 then
+    c.info, c.time = info or false, now
+    c.color, c.label = mixdown_folder_status(info)
+  end
+  return c.color, c.label
 end
 
 local function draw_mixdown_status_dot(x, y, status)
@@ -2247,7 +2264,7 @@ local BUTTON_HELP = {
   ["Set"] = "Apre le impostazioni di formato, qualità, frequenza e canali del mixdown.",
   ["Que"] = "Apre la Render Queue di REAPER.",
   ["Incolla lista"] = "Incolla i nomi dagli appunti, a partire dalla riga scelta.",
-  ["Svuota lista"] = "Rimuove tutti i nomi inseriti nella lista.",
+  ["Svuota lista"] = "Un clic: annulla l'ultimo inserimento. Doppio clic: azzera tutti i nomi della lista.",
   ["Item"] = "Usa gli item selezionati come sorgente.",
   ["Tracce"] = "Usa gli item delle tracce selezionate come sorgente.",
   ["Folder+"] = "Usa le tracce selezionate e le relative sottotracce folder.",
@@ -2546,79 +2563,6 @@ local function first_clipboard_line()
 end
 
 
-local function draw_help_overlay(clicked)
-  local margin_x = 58
-  local margin_y = 38
-  local rect = {
-    x = margin_x,
-    y = margin_y,
-    w = math.max(720, gfx.w - margin_x * 2),
-    h = math.max(560, gfx.h - margin_y * 2)
-  }
-  local close_rect = { x = rect.x + rect.w - 126, y = rect.y + rect.h - 48, w = 100, h = 32 }
-  local text_bottom = close_rect.y - 16
-
-  gfx.set(0, 0, 0, 0.62)
-  gfx.rect(0, 0, gfx.w, gfx.h, true)
-  gfx.set(0.10, 0.10, 0.14, 1)
-  gfx.rect(rect.x, rect.y, rect.w, rect.h, true)
-  gfx.set(0.42, 0.39, 0.55, 1)
-  gfx.rect(rect.x, rect.y, rect.w, rect.h, false)
-
-  gfx.setfont(1, "Arial", 20)
-  gfx.set(0.92, 0.88, 0.78, 1)
-  gfx.x = rect.x + 22
-  gfx.y = rect.y + 18
-  gfx.drawstr("Help rapido")
-
-  gfx.setfont(1, "Arial", 13)
-  local y = rect.y + 54
-  local line_h = 17
-  local blank_h = 7
-  local lines = {
-    "Gap nuovo file: se tra due item passa piu' di questo tempo, nasce una nuova regione.",
-    "Esempi utili: 0.5, 1.0, 1.5, 2.0 secondi.",
-    "",
-    "Padding inizio: anticipa l'inizio della regione senza spostare gli item.",
-    "Esempio: 0.2 = 200 ms prima.",
-    "",
-    "Padding fine: allunga la fine della regione. Esempio: 0.5 = mezzo secondo dopo l'ultimo item.",
-    "",
-    "Sorgente: Item usa gli item selezionati; Tracce usa le tracce selezionate.",
-    "Folder+: include le tracce selezionate e tutte le sottotracce folder.",
-    "Tutte guarda tutto il progetto.",
-    "",
-    "Rimuovi export precedenti: cancella solo le regioni azzurre create da questo script.",
-    "Marker inizio: crea anche un marker all'inizio di ogni regione.",
-    "",
-    "Anteprima: doppio click su regioni o marker per rinominarli dentro la finestra.",
-    "Nomi: seleziona una riga nell'anteprima o nei nomi, poi incolla per partire da li'.",
-    "",
-    "Prepara Mixdown: Selezione sceglie marker/regioni; Crea Selez. crea solo quelle.",
-    "Render apre Render to File. + Queue aggiunge un solo job per la sezione scelta.",
-    "Que apre la Render Queue: nero se vuota, verde quando contiene almeno un job.",
-    "",
-    "Index ON: aggiorna anche Mixdown/<Lane1>/Mixdown_Index.csv con colonna Presente = X se il file esiste.",
-    "Index OFF: aggiorna solo Mixdown/Mixdown_Report.csv.",
-    "",
-    "Directory: Lane 1 = Mixdown/<marker>/; Lane 2 = Mixdown/<Lane1>/<Lane2>/.",
-	"L'anteprima legge le regioni di tutte le lane: Lane 1 e 2 visibili in azzurro, le altre grigie.",
-	"Render e Queue usano le regioni visibili in Lane 1 e 2; Lane 3+ sono escluse. Pattern file: $region.",
-    "I nomi regione non vengono modificati.",
-    "Il CSV con LUFS/Peak/RMS va generato dopo render o dry run con statistiche REAPER."
-  }
-  for _, line in ipairs(lines) do
-    if y + line_h > text_bottom then break end
-    gfx.set(line == "" and 0.40 or 0.82, line == "" and 0.40 or 0.80, line == "" and 0.45 or 0.86, 1)
-    gfx.x = rect.x + 22
-    gfx.y = y
-    if line ~= "" then gfx.drawstr(fit_text(line, rect.w - 44)) end
-    y = y + (line == "" and blank_h or line_h)
-  end
-
-  return draw_button(close_rect, "Chiudi", false, true, clicked)
-end
-
 local function open_window()
   if not gfx or not gfx.init then return false end
   render_debug_log("open_window | Gestore Progetto aperto log=" .. tostring(RENDER_DEBUG_LOG_PATH))
@@ -2645,7 +2589,8 @@ local function open_window()
   local draft_order = decode_draft_order(state.draft_order)
   local names_scroll = 0
   local names_anchor_row = nil
-  local show_help = false
+  local names_undo = nil
+  local last_clear_click_time = 0
   local chosen_mixdown_info = nil
   local chosen_mixdown_groups = nil
   local show_mixdown_settings = false
@@ -2663,8 +2608,6 @@ local function open_window()
   local numeric_select_all = { gap = false, pad_in = false, pad_out = false }
   local last_input_click_time = 0
   local last_input_click_field = nil
-  local names_cursor = #(state.names_text or "") + 1
-  local names_select_all = false
   local play_until = nil
   local last_saved_time = 0
   local pending_mixdown_report = nil
@@ -2678,8 +2621,6 @@ local function open_window()
   if reaper.set_action_options then reaper.set_action_options(1 | 4); reaper.atexit(function() reaper.set_action_options(8) end) end
   gfx.init(SCRIPT_TITLE, FIXED_WINDOW_W, 660)
   gfx.setfont(1, "Arial", 15)
-  reset_debug_log()
-  log_debug("OPEN", "finestra aperta")
 
   if reaper.JS_Window_Find and reaper.JS_Window_Show then
     local title = reaper.JS_Localize and reaper.JS_Localize("Region/Marker Manager", "common") or "Region/Marker Manager"
@@ -3195,18 +3136,44 @@ local function open_window()
     state.draft_order = ""
     custom_names = {}
     draft_order = {}
-    names_cursor = 1
-    names_select_all = false
     names_scroll = 0
     names_anchor_row = nil
+    names_undo = nil
     cancel_name_edit()
     save_state(state)
+  end
+
+  -- Fotografia dei nomi prima di un inserimento (lista incollata o riga scritta): un clic su
+  -- "Svuota lista" torna a questa; il doppio clic azzera tutto.
+  local function remember_names_before_change()
+    local names_copy, order_copy = {}, {}
+    for key, value in pairs(custom_names) do names_copy[key] = value end
+    for key, value in pairs(draft_order) do order_copy[key] = value end
+    names_undo = { names_text = state.names_text, custom_names = names_copy, draft_order = order_copy,
+      anchor = names_anchor_row, scroll = names_scroll }
+  end
+
+  local function undo_last_name_change()
+    if edit_name_index and active_field == "inline_name" then
+      cancel_name_edit()
+      return true
+    end
+    if not names_undo then return false end
+    state.names_text = names_undo.names_text
+    custom_names = names_undo.custom_names
+    draft_order = names_undo.draft_order
+    names_anchor_row = names_undo.anchor
+    names_scroll = names_undo.scroll or 0
+    names_undo = nil
+    save_draft_state()
+    return true
   end
 
   local function paste_name_list_from_row(text, start_row, groups)
     local pasted_names = parse_names(text)
     start_row = math.max(1, tonumber(start_row) or 1)
     if #pasted_names == 0 then return false end
+    remember_names_before_change()
 
     local last_row = start_row + #pasted_names - 1
     for offset, name in ipairs(pasted_names) do
@@ -3231,8 +3198,6 @@ local function open_window()
       last_range_anchor = first_selected_index
     end
 
-    names_cursor = #(state.names_text or "") + 1
-    names_select_all = false
     names_anchor_row = start_row
     names_scroll = math.max(0, start_row - 1)
     selected_preview = selected_preview or 1
@@ -3241,6 +3206,7 @@ local function open_window()
     return true
   end
 
+  local selection_start_row
   local function paste_start_row_for_groups(groups)
     if active_field == "inline_name" and edit_name_source == "names" and edit_name_index then
       return math.max(1, edit_name_index)
@@ -3249,6 +3215,11 @@ local function open_window()
       local group = groups and groups[edit_name_index]
       if group and group.region_order then return group.region_order end
     end
+    return selection_start_row(groups)
+  end
+
+  -- Numero della prima regione selezionata nell'anteprima: e' la riga da cui parte l'elenco dei nomi.
+  function selection_start_row(groups)
     local first_selected_order = nil
     for index in pairs(selected_rows or {}) do
       local group = groups and groups[index]
@@ -3319,9 +3290,12 @@ local function open_window()
     if not edit_name_index then return end
     local new_name = trim(edit_name_text)
     if edit_name_source == "names" then
+      remember_names_before_change()
       state.names_text = set_line_in_text(state.names_text, edit_name_index, new_name)
-      names_cursor = #(state.names_text or "") + 1
-      local group = groups and groups[edit_name_index]
+      local group = nil
+      for _, candidate in ipairs(groups or {}) do
+        if candidate.region_order == edit_name_index then group = candidate break end
+      end
       if group and group.preview_key then custom_names[group.preview_key] = new_name end
       draft_order[edit_name_index] = new_name
     elseif edit_name_source == "marker" then
@@ -3418,11 +3392,17 @@ local function open_window()
     if pending == 0 then return true end
     local noun = pending == 1 and "nome" or "nomi"
     local message = string.format(
-      "%d %s sono ancora in bozza e non sono applicati alle regioni.\n\nSì: applica i nomi alle rispettive regioni e chiude.\nNo: torna al Gestore senza applicarli.",
+      "%d %s sono ancora in bozza e non sono applicati alle regioni.\n\nSì: applica i nomi alle rispettive regioni e chiude.\nNo: scarta i nomi in bozza e chiude.\nAnnulla: torna al Gestore.",
       pending,
       noun
     )
-    if reaper.ShowMessageBox(message, SCRIPT_TITLE, 4) ~= 6 then return false end
+    local answer = reaper.ShowMessageBox(message, SCRIPT_TITLE, 3)
+    if answer == 7 then
+      clear_name_state()
+      notify_status("Nomi in bozza scartati.")
+      return true
+    end
+    if answer ~= 6 then return false end
     local updated, created = apply_pending_names(groups, names)
     save_draft_state()
     save_project_file()
@@ -3595,31 +3575,8 @@ local function open_window()
         play_until = nil
       end
     end
-    if ch > 0 then
-      log_debug(
-        "KEY_IN",
-        string.format(
-          "ch=%s active=%s edit_src=%s edit_idx=%s edit_cursor=%s names_cursor=%s gap='%s' pad_in='%s' pad_out='%s' edit='%s' names_len=%d mouse=%d,%d cap=%d",
-          tostring(ch),
-          tostring(active_field),
-          tostring(edit_name_source),
-          tostring(edit_name_index),
-          tostring(edit_name_cursor),
-          tostring(names_cursor),
-          log_escape(gap_text),
-          log_escape(pad_in_text),
-          log_escape(pad_out_text),
-          log_escape(edit_name_text),
-          #(state.names_text or ""),
-          gfx.mouse_x,
-          gfx.mouse_y,
-          gfx.mouse_cap
-        )
-      )
-    end
     if ch == 27 then
       if show_mixdown_settings then show_mixdown_settings = false mixdown_draft = nil
-      elseif show_help then show_help = false
       elseif edit_name_index then cancel_name_edit()
       else
         if confirm_close_with_pending_names() then
@@ -3697,25 +3654,6 @@ local function open_window()
         paste_name_list_from_row(pasted, start_row, groups)
       end
     end
-    if ch > 0 then
-      log_debug(
-        "KEY_OUT",
-        string.format(
-          "ch=%s active=%s edit_src=%s edit_idx=%s edit_cursor=%s names_cursor=%s gap='%s' pad_in='%s' pad_out='%s' edit='%s' names_len=%d",
-          tostring(ch),
-          tostring(active_field),
-          tostring(edit_name_source),
-          tostring(edit_name_index),
-          tostring(edit_name_cursor),
-          tostring(names_cursor),
-          log_escape(gap_text),
-          log_escape(pad_in_text),
-          log_escape(pad_out_text),
-          log_escape(edit_name_text),
-          #(state.names_text or "")
-        )
-      )
-    end
 
     local mouse_down = (gfx.mouse_cap & 1) == 1
     local clicked = mouse_down and not last_mouse_down
@@ -3725,7 +3663,8 @@ local function open_window()
     local wheel = gfx.mouse_wheel
     gfx.mouse_wheel = 0
 
-    items, groups, names, source = rebuild()
+    -- Fra la prima ricostruzione e qui cambia qualcosa solo se e' arrivato un tasto.
+    if ch > 0 then items, groups, names, source = rebuild() end
     for group_index, group in ipairs(groups) do group.__row_index = group_index end
     local region_count = count_region_rows(groups)
     local renderable_region_count = count_renderable_region_rows(groups)
@@ -3752,12 +3691,6 @@ local function open_window()
       end
     end
 
-    if clicked then
-      log_debug(
-        "CLICK",
-        string.format("x=%d y=%d active_before=%s edit_src=%s edit_idx=%s groups=%d names=%d", gfx.mouse_x, gfx.mouse_y, tostring(active_field), tostring(edit_name_source), tostring(edit_name_index), #groups, #names)
-      )
-    end
 
     hovered_button_help = nil
     ZP_UI.fill_background()
@@ -3774,7 +3707,7 @@ local function open_window()
     end
 
     local render_info = chosen_mixdown_info or render_folder_info(groups)
-    local status_color, status_label = mixdown_folder_status(chosen_mixdown_info)
+    local status_color, status_label = mixdown_folder_status_cached(chosen_mixdown_info)
     local render_panel_x = content_right - 394
     local choose_btn = { x = render_panel_x, y = 64, w = 94, h = 28 }
     local create_top_btn = { x = render_panel_x + 100, y = 64, w = 104, h = 28 }
@@ -3886,7 +3819,7 @@ local function open_window()
       mixdown_draft = copy_mixdown_settings()
       show_mixdown_settings = true
     end
-    local native_queue_count = render_queue_count()
+    local native_queue_count = render_queue_count_cached()
     if draw_button(open_queue_btn, "Que", native_queue_count > 0, native_queue_count > 0, clicked, native_queue_count > 0 and "save" or nil) then
       render_debug_log("open_queue_button | apro Render Queue count=" .. tostring(native_queue_count))
       reaper.Main_OnCommand(OPEN_RENDER_QUEUE_CMD, 0)
@@ -3910,8 +3843,6 @@ local function open_window()
     gfx.y = 167
     gfx.drawstr(fit_text_middle(tostring(render_info.relative or "Mixdown/"), render_summary_w))
 
-    local compact_actions = false
-
     local gap_rect = { x = 22, y = 104, w = 126, h = 32 }
     local pad_in_rect = { x = 168, y = 104, w = 126, h = 32 }
     local pad_out_rect = { x = 314, y = 104, w = 126, h = 32 }
@@ -3922,7 +3853,6 @@ local function open_window()
       numeric_select_all.gap = is_double
       numeric_cursor.gap = is_double and (#gap_text + 1) or cursor_from_x(gap_text, gfx.mouse_x, gap_rect.x + 8)
       last_input_click_field, last_input_click_time = "gap", now
-      log_debug("FOCUS", string.format("gap cursor=%d", numeric_cursor.gap))
     end
     if draw_input(pad_in_rect, "Padding inizio (s)", pad_in_text, active_field == "pad_in", true, clicked, numeric_cursor.pad_in, numeric_select_all.pad_in) then
       local now = reaper.time_precise()
@@ -3931,7 +3861,6 @@ local function open_window()
       numeric_select_all.pad_in = is_double
       numeric_cursor.pad_in = is_double and (#pad_in_text + 1) or cursor_from_x(pad_in_text, gfx.mouse_x, pad_in_rect.x + 8)
       last_input_click_field, last_input_click_time = "pad_in", now
-      log_debug("FOCUS", string.format("pad_in cursor=%d", numeric_cursor.pad_in))
     end
     if draw_input(pad_out_rect, "Padding fine (s)", pad_out_text, active_field == "pad_out", true, clicked, numeric_cursor.pad_out, numeric_select_all.pad_out) then
       local now = reaper.time_precise()
@@ -3940,7 +3869,6 @@ local function open_window()
       numeric_select_all.pad_out = is_double
       numeric_cursor.pad_out = is_double and (#pad_out_text + 1) or cursor_from_x(pad_out_text, gfx.mouse_x, pad_out_rect.x + 8)
       last_input_click_field, last_input_click_time = "pad_out", now
-      log_debug("FOCUS", string.format("pad_out cursor=%d", numeric_cursor.pad_out))
     end
 
     local list_btn_y = 104
@@ -3954,7 +3882,16 @@ local function open_window()
       end
     end
     if draw_button({ x = list_btn_x, y = list_btn_y + 38, w = 142, h = 32 }, "Svuota lista", false, true, clicked) then
-      clear_name_state()
+      local now = reaper.time_precise()
+      if now - last_clear_click_time < 0.45 then
+        clear_name_state()
+        notify_status("Lista dei nomi azzerata.")
+      elseif undo_last_name_change() then
+        notify_status("Ultimo inserimento annullato. Doppio clic su Svuota lista: azzera tutti i nomi.")
+      else
+        notify_status("Niente da annullare. Doppio clic su Svuota lista: azzera tutti i nomi.")
+      end
+      last_clear_click_time = now
     end
 
     local mode_y = 178
@@ -3991,7 +3928,7 @@ local function open_window()
 
     local action_y = mode_y + 42
     local old_count = count_own_regions()
-    local transport_y = compact_actions and (action_y + 38) or action_y
+    local transport_y = action_y
     if draw_button({ x = 22, y = action_y, w = 170, h = 30 }, "Rimuovi export", state.delete_old, true, clicked) then
       state.delete_old = not state.delete_old
     end
@@ -4001,7 +3938,7 @@ local function open_window()
     if draw_button({ x = 300, y = action_y, w = 105, h = 30 }, "N. + nome", state.number_names, true, clicked) then
       state.number_names = not state.number_names
     end
-    local transport_x = compact_actions and 22 or 420
+    local transport_x = 420
     if draw_button({ x = transport_x, y = transport_y, w = 86, h = 30 }, "Sel", play_row, region_count > 0, clicked, "play_select") then
       play_row = not play_row
       reaper.SetExtState(EXT_SECTION, "play_row", play_row and "1" or "0", true)
@@ -4038,8 +3975,8 @@ local function open_window()
         notify_status("Log Mixdown History disattivato.")
       end
     end
-    local final_x = compact_actions and math.max(22, content_right - 92) or (content_right - 78)
-    local final_y = compact_actions and transport_y or action_y
+    local final_x = content_right - 78
+    local final_y = action_y
     if draw_button({ x = final_x, y = final_y, w = 72, h = 30 }, "Annulla", false, true, clicked) then
       if confirm_close_with_pending_names() then
         gfx.quit()
@@ -4156,7 +4093,6 @@ local function open_window()
 	            toggle_marker_section_selection(groups, group, additive)
 	            if is_double then
 	              start_marker_inline_name_input(groups, idx, true)
-	              log_debug("FOCUS", string.format("inline marker row=%d", idx))
 	            end
 	          end
 	          last_preview_click_time = now
@@ -4250,7 +4186,6 @@ local function open_window()
 	        end
         if is_double then
           start_preview_inline_name_input(groups, idx, true)
-          log_debug("FOCUS", string.format("inline preview row=%d", idx))
         end
         last_preview_click_time = now
         end
@@ -4342,7 +4277,15 @@ local function open_window()
     if clicked and point_in_rect(gfx.mouse_x, gfx.mouse_y, names_box.x, names_box.y, names_box.w, names_box.h) then
       local now = reaper.time_precise()
       local row = names_scroll + math.floor((gfx.mouse_y - names_box.y - 10) / names_row_h) + 1
-      row = math.max(1, math.min(row, math.max(#names + 1, 1)))
+      if row > #names then
+        -- zona vuota: si parte dalla regione selezionata nell'anteprima (se e' oltre i nomi gia' scritti)
+        local wanted = selection_start_row(groups) or 1
+        row = math.max(#names + 1, wanted, 1)
+        if #names == 0 then
+          names_anchor_row = row > 1 and row or nil
+          names_scroll = row - 1
+        end
+      end
       local same_inline = active_field == "inline_name" and edit_name_source == "names" and edit_name_index == row
       local is_double = (now - last_names_click_time) < 0.35
       if same_inline then
@@ -4363,7 +4306,6 @@ local function open_window()
         edit_name_cursor = #edit_name_text + 1
         edit_name_select_all = is_double
         active_field = "inline_name"
-        log_debug("FOCUS", string.format("inline names row=%d cursor=%d text='%s'", row, edit_name_cursor, log_escape(edit_name_text)))
       end
       last_names_click_time = now
     end
@@ -4433,9 +4375,6 @@ local function open_window()
     if show_mixdown_settings then
       hovered_button_help = nil
       draw_mixdown_settings_overlay(overlay_clicked)
-    elseif show_help then
-      hovered_button_help = nil
-      if draw_help_overlay(clicked) then show_help = false end
     end
 
     local help_y = gfx.h - 34
