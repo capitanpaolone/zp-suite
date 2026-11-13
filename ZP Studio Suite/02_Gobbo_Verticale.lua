@@ -330,9 +330,9 @@ function LoadSettings()
     studio_edit_mode = state_to_bool(reaper.GetExtState(settings_section, "studio_edit_mode"), studio_edit_mode)
     studio_edit_sync = state_to_bool(reaper.GetExtState(settings_section, "studio_edit_sync"), studio_edit_sync)
     local saved_tc_alert = reaper.GetExtState(settings_section, "tc_alert_mode")
-    if saved_tc_alert == "off" or saved_tc_alert == "side" or saved_tc_alert == "line" then
-        tc_alert_mode = saved_tc_alert == "side" and "line" or saved_tc_alert
-    end
+    -- "box" = il riquadro del timecode lampeggia quando una battuta sta per arrivare.
+    -- I vecchi valori ("side", "line") valgono come spento.
+    tc_alert_mode = saved_tc_alert == "box" and "box" or "off"
     max_character_rows = 1
 
     master_font_size = math.max(10, math.min(60, tonumber(reaper.GetExtState(settings_section, "master_font_size")) or master_font_size))
@@ -3537,6 +3537,11 @@ function DrawSidePanel(w, h, tc_position)
                 SaveSettings()
             end
             y = y + 26
+            if SidebarCheck(x + pad, y, full_w, T("Avviso TC in arrivo"), tc_alert_mode == "box") then
+                tc_alert_mode = tc_alert_mode == "box" and "off" or "box"
+                SaveSettings()
+            end
+            y = y + 26
             if SidebarCheck(x + pad, y, full_w, T("Mostra timecode"), show_timecode) then
                 show_timecode = not show_timecode
                 SaveSettings()
@@ -3674,8 +3679,12 @@ function DrawSidePanel(w, h, tc_position)
     end
         end
         
-        function DrawTimecodeHud(notes_w, tc_position)
-            if not show_timecode then return end
+        function DrawTimecodeHud(notes_w, tc_position, tc_alert_item)
+            -- Avviso TC: nei secondi prima dell'attacco il riquadro lampeggia in giallo.
+            -- Con "Mostra timecode" spento il riquadro compare solo durante l'avviso.
+            local alert = tc_alert_mode == "box" and tc_alert_item ~= nil
+            if not show_timecode and not alert then return end
+            local flash = alert and (math.floor(reaper.time_precise() * 4) % 2 == 0)
             local tc_text = FormatVideoTimecode(tc_position or GetCurrentProjectPosition())
             gfx.setfont(3, "Arial", math.max(14, master_font_size - 2), 'b')
             local tw, th = gfx.measurestr(tc_text)
@@ -3683,11 +3692,11 @@ function DrawSidePanel(w, h, tc_position)
             local y = 12
             gfx.set(0, 0, 0, 1)
             gfx.rect(x - 10, y - 7, tw + 20, th + 14, 1)
-            gfx.set(0, 0, 0, 1)
+            if flash then gfx.set(1, 0.86, 0.18, 1) else gfx.set(0, 0, 0, 1) end
             gfx.rect(x - 8, y - 5, tw + 16, th + 10, 1)
             gfx.set(0.82, 0.82, 0.82, 1)
             gfx.rect(x - 8, y - 5, tw + 16, th + 10, 0)
-            gfx.set(1, 1, 1, 1)
+            if flash then gfx.set(0, 0, 0, 1) else gfx.set(1, 1, 1, 1) end
             gfx.x, gfx.y = x, y
             gfx.drawstr(tc_text)
         end
@@ -4174,7 +4183,7 @@ function DrawGUI()
 
     DrawSidePanel(w, h, smoothed_play_pos)
     sidebar_scroll_y = math.max(0, math.min(sidebar_scroll_y, math.max(0, (sidebar_content_h or 0) - h)))
-    DrawTimecodeHud(notes_w, smoothed_play_pos)
+    DrawTimecodeHud(notes_w, smoothed_play_pos, tc_alert_item)
     if active_timed_scroll_item and not inline_edit then
         local pos=reaper.GetMediaItemInfo_Value(active_timed_scroll_item,'D_POSITION')
         local len=reaper.GetMediaItemInfo_Value(active_timed_scroll_item,'D_LENGTH')

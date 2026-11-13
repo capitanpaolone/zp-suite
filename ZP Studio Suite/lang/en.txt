@@ -192,6 +192,7 @@ Consigliata: copia-incolla nei pannelli, file che si aprono, secondi del pre-rol
 Consigliata: permette di scegliere le cartelle col selettore nativo del sistema (es. export SRT dall'audio). Si installa da ReaPack.	Recommended: enables native folder browsing (e.g. SRT export from audio). Install via ReaPack.
 Consigliata: scelta cartelle di sistema, finestra del SOLO sempre sopra. Si installa da ReaPack.	Recommended: system folder dialogs, SOLO window always on top. Install via ReaPack.
 Conto alla rovescia	Countdown
+Avviso TC in arrivo	Incoming cue TC alert
 Conto alla rovescia attivo.	Countdown enabled.
 Conto alla rovescia spento.	Countdown disabled.
 Contrasto	Contrast
