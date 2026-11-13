@@ -141,5 +141,12 @@ check("restart sh con lingua: scrive langpack dopo la chiusura e prima di open",
   and shp:find("'Italiano (ZP).ReaperLangPack'", 1, true) ~= nil and shp:find("reaper.ini.zp_bak", 1, true) ~= nil)
 check("restart sh senza lingua: nessun awk", M.restart_sh("/Applications/REAPER.app"):find("awk", 1, true) == nil)
 
+local vs = M.verify_script_windows("C:\\T\\v'x.txt")
+check("verifica Windows: PATH riletto da sistema e utente", vs:find("GetEnvironmentVariable('Path','Machine')", 1, true) and vs:find("GetEnvironmentVariable('Path','User')", 1, true))
+check("verifica Windows: percorso con apice raddoppiato e niente stub Store", vs:find("'C:\\T\\v''x.txt'", 1, true) and vs:find("WindowsApps", 1, true))
+local pv = M.parse_verify("python=C:\\Py\\python.exe\r\n")
+check("verifica Windows: legge python presente", pv.python == "C:\\Py\\python.exe" and pv.done)
+check("verifica Windows: file assente", not M.parse_verify(nil).done)
+
 if fails > 0 then print(fails .. " FALLITI") os.exit(1) end
 print("TUTTI OK")

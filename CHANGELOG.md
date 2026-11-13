@@ -5,6 +5,10 @@
 - **ZP Consolidate (37)**: raccoglie in Media le sorgenti file dei take e gli SRT/VTT registrati nel progetto, preserva montaggio e originali, e gestisce le collisioni scegliendo sovrascrittura o rinomina. Aggiunti modulo SRT condiviso, icona e pulsante toolbar.
 - **Benvenuto (33)**: scroll della lista smussato e limitato prima del disegno per evitare salti dovuti ai delta rapidi/inerziali della rotella.
 - **SRT di progetto**: trascrizioni e traduzioni sono copiate/registrate in Media e referenziate nel file RPP.
+- **ZP Speech su Windows (sperimentale)**: Trascrivi e Traduci (29) girano in background anche su Windows (PowerShell), con elenco modelli via `curl.exe`; il Benvenuto (33) installa ZP Speech con PowerShell e l'installatore si ferma con un errore se un passo non riesce. ZP Remote nel Benvenuto dice che per ora funziona solo su macOS.
+- **ZP Speech on Windows (experimental)**: Transcribe and Translate (29) run in the background on Windows too (PowerShell), with the model list read through `curl.exe`; Welcome (33) installs ZP Speech with PowerShell and the installer stops with an error if a step fails. ZP Remote in Welcome says it only works on macOS for now.
+- **Language pack italiano e Render Queue**: il suffisso `(delay %ds)` e le voci `sel_regions`/`sel_markers` restano in inglese, come le riconosce REAPER; l'import multicanale rispetta l'ordine degli argomenti. `controlla_langpack.py` verifica qualsiasi pack, anche di terzi.
+- **ZP Crea Regioni Export (17)**: riconosce la finestra di render anche con REAPER localizzato.
 
 - Gobbi: importazione DOCX/ODT/RTF/TXT, incolla pulito, editor con scroll/Undo e durata temporizzata opzionale; controlli ZP_UI, progresso e riaggancio rapido. Guide IT/EN aggiornate. Pause effettive con Shift+Invio, promemoria tramite marker e divisione alla parola selezionata con conservazione del testo rimanente. Verifiche automatiche superate; collaudo del Gobbo confermato da Paolo il 10 novembre 2026.
 

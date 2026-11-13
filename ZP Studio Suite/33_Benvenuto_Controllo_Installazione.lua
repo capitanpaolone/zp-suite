@@ -15,7 +15,7 @@
 -- riapre dall'Action List ("33 Benvenuto") o dall'help.
 --
 -- Pezzi controllati: toolbar ed effetti (32), Cue Navigator del Harmonic Space Carver
--- (deve partire a ogni apertura di REAPER), ZP Speech (Trascrivi, solo Mac), SWS,
+-- (deve partire a ogni apertura di REAPER), ZP Speech (Trascrivi; Windows sperimentale), SWS,
 -- js_ReaScriptAPI, OSARA, marker degli item protetti (Mouse Modifiers), interfaccia web di REAPER (SOLO Web).
 -- Lo stato si ricontrolla da solo ogni secondo: fai una cosa e la spia cambia.
 
@@ -234,6 +234,23 @@ function M.speech_state(info)
   end
 end
 
+-- Verifica Windows: rilegge il PATH di sistema e dell'utente (REAPER ha quello di quando e' partito,
+-- quindi non vede un Python installato dopo) e scrive "python=<percorso>".
+function M.verify_script_windows(out_path)
+  local o = "'" .. tostring(out_path):gsub("'", "''") .. "'"
+  return table.concat({
+    "$env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')",
+    "$py = ''",
+    "foreach ($v in '-3.11','-3.12','-3.13','-3.14','-3') { if ($py) { break }; try { $e = & py $v -c \"import sys; print(sys.executable if sys.version_info >= (3,11) else '')\" 2>$null; if ($e -and (Test-Path ([string]$e).Trim())) { $py = ([string]$e).Trim() } } catch {} }",
+    "if (-not $py) { foreach ($c in 'python3','python') { $f = Get-Command $c -ErrorAction SilentlyContinue; if ($f -and $f.Source -notmatch 'WindowsApps') { try { $ok = & $f.Source -c \"import sys; print('1' if sys.version_info >= (3,11) else '0')\" 2>$null; if (([string]$ok).Trim() -eq '1') { $py = $f.Source; break } } catch {} } } }",
+    "[System.IO.File]::WriteAllText(" .. o .. ", \"python=$py`n\", (New-Object System.Text.UTF8Encoding $false))",
+  }, "\r\n") .. "\r\n"
+end
+function M.parse_verify(text)
+  local py = tostring(text or ""):match("python=([^\r\n]*)")
+  return { python = (py and py ~= "") and py or nil, done = text ~= nil }
+end
+
 -- Requisiti esterni di ZP Remote su macOS. La verifica guarda gli stessi percorsi
 -- usati dal launcher e dal suo esportatore, senza avviare processi a ogni refresh.
 function M.remote_tools(exists, path)
@@ -444,21 +461,26 @@ local function install_speech(with_whisper)
   local local_se = P(here, "..", "speech-engine")
   local has_local = exists(P(local_se, "pyproject.toml"))
   if osname:match("Win") then
-    local ps1 = os.tmpname() .. "_zp_speech.ps1"
+    -- os.tmpname() su Windows da' un percorso nella radice del disco (C:\), dove non si puo' scrivere
+    local tmpdir = os.getenv("TEMP") or os.getenv("TMP") or reaper.GetResourcePath()
+    local ps1 = tmpdir:gsub("[/\\]+$", "") .. "\\zp_speech_" .. os.time() .. ".ps1"
     local lines = {
       "$ErrorActionPreference = 'Stop'",
-      has_local and ("$S = " .. string.format("%q", local_se) .. "\n& (Join-Path $S 'install_windows.ps1')") or table.concat({
+      has_local and ("$S = '" .. local_se:gsub("'", "''") .. "'\n& (Join-Path $S 'install_windows.ps1')") or table.concat({
         "$T = Join-Path $env:TEMP ('zp_speech_' + [guid]::NewGuid().ToString('N'))",
         "New-Item -ItemType Directory -Force -Path $T | Out-Null",
         "$Tar = Join-Path $T 'se.tar.gz'",
         "try { Invoke-WebRequest -Uri '" .. tag_url .. "' -OutFile $Tar } catch { Invoke-WebRequest -Uri '" .. master_url .. "' -OutFile $Tar }",
         "tar -xzf $Tar -C $T",
         "$Dir = Get-ChildItem -Path $T -Directory | Select-Object -First 1",
-        "& (Join-Path $Dir.FullName 'speech-engine\\install_windows.ps1')",
+        "$Inst = Join-Path $Dir.FullName 'speech-engine\\install_windows.ps1'",
+        "if (-not (Test-Path $Inst)) { Write-Host ''; Write-Host ('ZP Speech per Windows non e'' ancora nella versione scaricata da GitHub (' + $Dir.Name + '): manca speech-engine\\install_windows.ps1.') -ForegroundColor Yellow; Write-Host 'Aggiorna la Suite e riprova piu'' avanti, oppure usa il tuo Whisper e \"Abbina da...\" nella 29.'; Remove-Item -Recurse -Force $T -ErrorAction SilentlyContinue; return }",
+        "& $Inst",
         "Remove-Item -Recurse -Force $T -ErrorAction SilentlyContinue",
       }, "\r\n"),
     }
-    if not write(ps1, table.concat(lines, "\r\n") .. "\r\n") then speak("Non riesco a preparare l'installazione di ZP Speech."); return false end
+    -- BOM UTF-8: senza, PowerShell 5.1 legge gli accenti dei percorsi come ANSI
+    if not write(ps1, "\239\187\191" .. table.concat(lines, "\r\n") .. "\r\n") then speak("Non riesco a preparare l'installazione di ZP Speech."); return false end
     os.execute('start "ZP Speech" powershell -NoExit -NoProfile -ExecutionPolicy Bypass -File "' .. ps1 .. '"')
     return true
   end
@@ -772,6 +794,17 @@ local function check_all()
     end
     local whisper_ready = has_whisper_py and has_pt_model
     local py = M.find_python(exists, os.getenv("PATH"), home)
+    local is_win = osname:match("^Win") ~= nil
+    local verify_file = (os.getenv("TEMP") or os.getenv("TMP") or "") .. "\\zp_speech_verifica.txt"
+    local verifying = false
+    if is_win then
+      local vr = M.parse_verify(read(verify_file))
+      if vr.python and not py then py = vr.python end
+      -- dal clic su Verifica al risultato (max 60 s): la riga resta gialla con "attendi"
+      if vr.done then M.verify_busy = nil end
+      verifying = M.verify_busy ~= nil and (os.time() - M.verify_busy) < 60
+      if not verifying then M.verify_busy = nil end
+    end
     local sp_state, eng_label = M.speech_state({ ready = ready, mw = mw, whisper_ready = whisper_ready })
     local sp_line
     if sp_state == "ok" then
@@ -782,10 +815,15 @@ local function check_all()
         or T("Servizio installato, ma manca il modello OpenAI Whisper: clicca Whisper locale per scaricarne uno.")
     else
       sp_line = not py
-        and T("Facoltativo, serve a Trascrivi (29). Prima installa Python 3.11+ (python.org), poi clicca Installa.")
+        and (is_win and T("Facoltativo, serve a Trascrivi (29). Prima installa Python 3.11+ (python.org), poi clicca Verifica.")
+          or T("Facoltativo, serve a Trascrivi (29). Prima installa Python 3.11+ (python.org), poi clicca Installa."))
         or (IS_MAC
           and T("Facoltativo, serve a Trascrivi (29). Funziona con MacWhisper o con OpenAI Whisper locale.")
           or T("Facoltativo, serve a Trascrivi (29) con OpenAI Whisper locale (sperimentale su Windows/Linux)."))
+    end
+    if verifying then
+      sp_state = "passo"
+      sp_line = T("Sto verificando Python: attendi, non chiudere questa finestra") .. string.rep(".", os.time() % 4)
     end
     out[#out + 1] = {
       title = T("ZP Speech (Trascrivi)"),
@@ -793,10 +831,20 @@ local function check_all()
       line = sp_line,
       buttons = {
         { ready and T("Aggiorna") or T("Installa"), function() if install_speech(not IS_MAC or not mw) then speak(T("Si apre il Terminale: segui li' l'installazione di ZP Speech.")) end end,
-          enabled = py ~= nil },
+          enabled = py ~= nil and not verifying },
         { T("Whisper locale"), function() if install_speech(true) then speak(T("Si apre il Terminale per configurare OpenAI Whisper e il modello.")) end end,
           enabled = py ~= nil, hidden = not IS_MAC and not ready },
-        { "Python", function() UI.open_url("https://www.python.org/downloads/") end, hidden = py ~= nil },
+        { "Python", function() UI.open_url(is_win and "https://www.python.org/downloads/windows/" or "https://www.python.org/downloads/") end, hidden = py ~= nil },
+        { verifying and T("Verifico...") or T("Verifica"), function()
+            if verifying then return end
+            local ps = verify_file:gsub("%.txt$", ".ps1")
+            os.remove(verify_file)
+            M.verify_busy = os.time()
+            if write(ps, "\239\187\191" .. M.verify_script_windows(verify_file)) then
+              os.execute('start "" /B powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "' .. ps .. '"')
+              speak(T("Controllo Python: attendi qualche secondo."))
+            end
+          end, hidden = not is_win or ready or py ~= nil },
         { "MacWhisper", function() UI.open_url("https://goodsnooze.gumroad.com/l/macwhisper") end, hidden = not IS_MAC or mw or whisper_ready },
       },
     }
@@ -834,7 +882,7 @@ local function check_all()
   else
     remote_line = T("Manca FFmpeg per esportare. L'importazione è pronta.")
   end
-  out[#out + 1] = {
+  local remote_row = {
     title = T("ZP Remote (Importa / Esporta)"),
     state = import_ready and export_ready and "ok" or "fare",
     line = remote_line,
@@ -843,6 +891,17 @@ local function check_all()
       { "FFmpeg / Homebrew", function() UI.open_url("https://brew.sh") end, hidden = rt.ffmpeg },
     },
   }
+  -- Importa/Esporta usano shasum, i percorsi di Python e le cartelle Unix: su Windows non partono,
+  -- quindi niente richieste di Python/FFmpeg/Homebrew che non servirebbero a nulla.
+  if (reaper.GetOS() or ""):match("^Win") then
+    remote_row = {
+      title = T("ZP Remote (Importa / Esporta)"),
+      state = "na",
+      line = T("Per ora funziona solo su macOS: su Windows non serve installare nulla."),
+      buttons = {},
+    }
+  end
+  out[#out + 1] = remote_row
 
   -- 4 SWS
   local sws = reaper.CF_GetSWSVersion and reaper.CF_GetSWSVersion() or nil

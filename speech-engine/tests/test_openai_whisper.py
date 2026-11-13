@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -138,6 +139,13 @@ def test_find_ffmpeg(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     with pytest.raises(ProviderError) as error:
         find_ffmpeg(tmp_path / "missing", env={"PATH": ""})
     assert error_code(error) == "provider_unavailable"
+
+
+def test_find_ffmpeg_private_zp_copy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    name = "ffmpeg.exe" if sys.platform.startswith("win") else "ffmpeg"
+    private = _make_exec(tmp_path / "ffmpeg" / "bin" / name)
+    monkeypatch.setattr("zp_speech.providers.openai_whisper.shutil.which", lambda *_, **__: None)
+    assert find_ffmpeg(env={"ZP_DATA_DIR": str(tmp_path), "PATH": ""}) == private
 
 
 def test_detect_provider_errors_and_success(tmp_path: Path) -> None:
@@ -339,11 +347,11 @@ def test_transcribe_flow_and_errors(tmp_path: Path) -> None:
         provider.transcribe(tmp_path / "absent.wav")
     assert error_code(e_src) == "invalid_source"
 
-    mp3 = tmp_path / "voice.mp3"
-    mp3.write_bytes(b"mp3")
-    with pytest.raises(ProviderError) as e_mp3:
-        provider.transcribe(mp3)
-    assert error_code(e_mp3) == "unsupported_capability"
+    bad_format = tmp_path / "voice.xyz"
+    bad_format.write_bytes(b"xyz")
+    with pytest.raises(ProviderError) as e_fmt:
+        provider.transcribe(bad_format)
+    assert error_code(e_fmt) == "unsupported_capability"
 
     with pytest.raises(ProviderError) as e_cancel:
         provider.transcribe(source, cancelled=lambda: True)

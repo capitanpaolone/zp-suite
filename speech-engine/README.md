@@ -1,6 +1,11 @@
 # ZP Speech Engine — contract foundation
 
-## Installazione (macOS)
+## Installazione
+
+Il modo più semplice è il pulsante *Installa* della riga ZP Speech nel Benvenuto (33 della
+ZP Studio Suite), che lancia l'installatore giusto per il sistema.
+
+### macOS
 
 Dalla radice del repo, su questo Mac o su un altro dopo `git clone`:
 
@@ -12,8 +17,24 @@ Serve Python 3.11 o più recente (quello di serie su macOS è spesso 3.9: lo scr
 cerca da sé e, se manca, dice cosa installare) e MacWhisper per trascrivere. Rilanciarlo
 aggiorna il motore e riavvia il servizio su `127.0.0.1:8770`.
 
-Su Windows e Linux lo script si ferma subito e spiega l'alternativa: SRT creato con il
-proprio Whisper, accanto al WAV con lo stesso nome, poi «Abbina da…» nella 29.
+### Windows (sperimentale)
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File speech-engine\install_windows.ps1
+```
+
+Serve Python 3.11 o più recente. FFmpeg, se non c'è nel PATH, lo scarica lo script in
+`%LOCALAPPDATA%\ZP\ffmpeg` (build essentials di gyan.dev). Usa OpenAI Whisper locale in
+`%LOCALAPPDATA%\ZP`. Lo script si ferma con un errore se un passo
+(pip, download del modello, avvio del servizio) non riesce. Non ancora collaudato su
+un'installazione pulita di Windows.
+
+### Linux
+
+`install_linux.sh` (OpenAI Whisper locale).
+
+Se non vuoi installare nulla: crea l'SRT con il tuo Whisper, accanto al WAV con lo stesso
+nome, poi «Abbina da…» nella 29.
 
 This directory contains ZP Speech API/Schema v1, the MacWhisper provider adapter,
 the singleton loopback service, and its CLI client for REAPER and ZP applications.

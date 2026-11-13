@@ -961,3 +961,9 @@ Impossibile preparare Media per lo SRT.	Could not prepare Media for the SRT.
 \nGli SRT esistenti di %d file li rinomino in .srt.bak-<data> nella loro cartella, non li cancello.	\nExisting SRTs for %d files will be renamed to .srt.bak-<date> in their current folder, not deleted.
 Impossibile preparare Media per la traduzione.	Could not prepare Media for translation.
 Traduco %d SRT in %s con %s.\n\n%sGli originali non vengono toccati: in Media nasce Nome.%s.srt, con gli stessi tempi e un riferimento salvato nel progetto.\n\nProcedo?	Translating %d SRTs into %s with %s.\n\n%sOriginal files will not be touched: Name.%s.srt will be created in Media with identical timings and a reference saved in the project.\n\nProceed?
+Per ora funziona solo su macOS: su Windows non serve installare nulla.	For now it only works on macOS: nothing needs to be installed on Windows.
+Facoltativo, serve a Trascrivi (29). Prima installa Python 3.11+ (python.org), poi clicca Verifica.	Optional, needed by Transcribe (29). First install Python 3.11+ (python.org), then click Verify.
+Controllo Python: attendi qualche secondo.	Checking Python: please wait a few seconds.
+Sto verificando Python: attendi, non chiudere questa finestra	Checking Python: please wait, do not close this window
+Verifico...	Checking...
+Verifica	Verify

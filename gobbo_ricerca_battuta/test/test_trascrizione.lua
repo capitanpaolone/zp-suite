@@ -51,4 +51,16 @@ check("coda: ogni comando nel suo log, raggruppato", sh:find('{ cmd1 ; } > "$D/l
 check("coda: fine e notifica", sh:find('"$D/end"', 1, true) and sh:find("display notification", 1, true) and sh:find("di 2 file", 1, true))
 local dn = M.parse_done("1\t0\t12\t/a/x.wav\n2\t1\t0\t/b c.wav\nrotta\n")
 check("coda: righe dei lavori finiti", #dn == 2 and dn[1].secs == 12 and dn[2].code == 1 and dn[2].path == "/b c.wav")
+-- Windows: quoting PowerShell e script di coda
+check("ps_quote raddoppia gli apici", M.ps_quote("C:\\Users\\L'a\\x.wav") == "'C:\\Users\\L''a\\x.wav'")
+check("ps_cmd: comando con & e argomenti quotati", M.ps_cmd({ "C:\\Z P\\zp-speech.exe", "request", "a'b.wav", "--language", "it" }) ==
+  "& 'C:\\Z P\\zp-speech.exe' 'request' 'a''b.wav' '--language' 'it'")
+check("unix_cmd: argomenti quotati", M.unix_cmd({ "/a b/cli", "request", "l'x.wav" }) == "'/a b/cli' 'request' 'l'\\''x.wav'")
+local ws = M.batch_script_windows("C:\\Reaper\\ZP_jobs\\trascrivi", { { path = "C:\\a\\l'x.wav", ps = M.ps_cmd({ "cli", "request", "C:\\a\\l'x.wav" }) }, { path = "C:\\b.wav", ps = "& 'cli'" } }, "ZP T", "Trascrizione")
+check("win: lock esclusivo e pid", ws:find("'OpenOrCreate', 'ReadWrite', 'None'", 1, true) and ws:find("[string]$PID", 1, true))
+check("win: percorsi con apici raddoppiati", ws:find("'C:\\a\\l''x.wav'", 1, true))
+check("win: log e done per ogni lavoro", ws:find("'log_1'", 1, true) and ws:find("'log_2'", 1, true) and ws:find("'done'", 1, true))
+check("win: end e conteggio", ws:find("'end'", 1, true) and ws:find("di 2 file", 1, true) and ws:find("Trascrizione finita: ", 1, true))
+check("win: fine riga CRLF e separatori tab nei file di stato", ws:find("\r\n", 1, true) and ws:find("`t", 1, true))
+check("win: il codice di uscita e' quello del comando", ws:find("$c = $LASTEXITCODE", 1, true))
 print(fails == 0 and "\nTUTTI OK" or ("\nFALLITI: " .. fails)); os.exit(fails == 0 and 0 or 1)

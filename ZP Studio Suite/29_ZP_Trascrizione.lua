@@ -188,6 +188,53 @@ function M.batch_script(dir, items, title, what)
   return table.concat(out, "\n") .. "\n"
 end
 
+-- Comando da riga di argomenti: Unix (apici singoli) o PowerShell (apici singoli raddoppiati).
+function M.unix_cmd(argv)
+  local p = {}
+  for i, a in ipairs(argv) do p[i] = sq(a) end
+  return table.concat(p, " ")
+end
+function M.ps_quote(v) return "'" .. tostring(v):gsub("'", "''") .. "'" end
+function M.ps_cmd(argv)
+  local p = {}
+  for i, a in ipairs(argv) do p[i] = M.ps_quote(a) end
+  return "& " .. table.concat(p, " ")
+end
+
+-- Come batch_script ma per Windows (PowerShell 5.1 di serie): stessi file nella cartella del lavoro
+-- (cur, done, log_i, end) piu' "lock", tenuto aperto in esclusiva finche' lo script vive, e "pid".
+-- Chi legge capisce se il lavoro e' morto provando ad aprire "lock": se ci riesce, nessuno lo tiene.
+-- items: { {path=..., ps=...}, ... } (ps = comando PowerShell gia' quotato, vedi ps_cmd).
+function M.batch_script_windows(dir, items, title, what)
+  local q = M.ps_quote
+  local out = {
+    "$ErrorActionPreference = 'Continue'",
+    "$D = " .. q(dir),
+    "$U = New-Object System.Text.UTF8Encoding $false",
+    "function W($f, $t) { [System.IO.File]::AppendAllText($f, $t, $U) }",
+    "function Get-Epoch { [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() }",
+    "$lock = [System.IO.File]::Open((Join-Path $D 'lock'), 'OpenOrCreate', 'ReadWrite', 'None')",
+    "[System.IO.File]::WriteAllText((Join-Path $D 'pid'), [string]$PID, $U)",
+    "$ok = 0; $ko = 0",
+  }
+  for i, it in ipairs(items) do
+    local pth = q((tostring(it.path):gsub("[\t\n\r]", " ")))
+    out[#out + 1] = "$t0 = Get-Epoch"
+    out[#out + 1] = string.format("[System.IO.File]::WriteAllText((Join-Path $D 'cur'), (\"{0}`t{1}`t{2}`n\" -f %d, $t0, %s), $U)", i, pth)
+    out[#out + 1] = string.format("$log = Join-Path $D 'log_%d'; [System.IO.File]::WriteAllText($log, '', $U); $c = 1", i)
+    out[#out + 1] = string.format("try { %s 2>&1 | ForEach-Object { W $log ($_.ToString() + \"`n\") }; $c = $LASTEXITCODE; if ($c -eq $null) { $c = 1 } } catch { W $log ($_.ToString() + \"`n\"); $c = 1 }", it.ps)
+    out[#out + 1] = "if ($c -eq 0) { $ok++ } else { $ko++ }"
+    out[#out + 1] = string.format("W (Join-Path $D 'done') (\"{0}`t{1}`t{2}`t{3}`n\" -f %d, $c, ((Get-Epoch) - $t0), %s)", i, pth)
+  end
+  out[#out + 1] = string.format("$msg = %s + $ok + ' di %d file'; if ($ko -ne 0) { $msg += ', ' + $ko + ' non riusciti' }", q(what .. " finita: "), #items)
+  out[#out + 1] = "W (Join-Path $D 'end') (\"$ok $ko`n\")"
+  out[#out + 1] = "$lock.Dispose()"
+  out[#out + 1] = "try { Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; " ..
+    "$n = New-Object System.Windows.Forms.NotifyIcon; $n.Icon = [System.Drawing.SystemIcons]::Information; $n.Visible = $true; " ..
+    "$n.ShowBalloonTip(5000, " .. q(title) .. ", $msg, 'Info'); Start-Sleep -Seconds 6; $n.Dispose() } catch {}"
+  return table.concat(out, "\r\n") .. "\r\n"
+end
+
 -- Righe di "done": { {i=, code=, secs=, path=}, ... }
 function M.parse_done(text)
   local list = {}
@@ -256,6 +303,16 @@ if not reaper then return M end
 ---------------------------------------------------------------------------
 
 local sep = package.config:sub(1, 1)
+local IS_WIN = (reaper.GetOS() or ""):match("^Win") ~= nil
+local IS_MAC = ((reaper.GetOS() or ""):match("OSX") or (reaper.GetOS() or ""):match("macOS")) ~= nil
+-- Cosa si puo' mandare a whisper: WAV sempre; su Windows/Linux (solo OpenAI Whisper, che legge via FFmpeg)
+-- anche MP3 e gli altri formati audio comuni. Su macOS con MacWhisper resta solo WAV.
+local AUDIO_EXT = { wav = true, mp3 = true, flac = true, m4a = true, ogg = true, opus = true, aac = true }
+local function transcribable(path)
+  local ext = tostring(path):lower():match("%.(%w+)$")
+  if ext == "wav" then return true end
+  return not IS_MAC and ext ~= nil and AUDIO_EXT[ext] == true
+end
 local here = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\][^/\\]+$") or ".")
 
 local function exists(p) local f = io.open(p, "rb"); if f then f:close() return true end return false end
@@ -366,7 +423,7 @@ local function refresh_rows()
       local vguid = reaper.GetTrackGUID(reaper.GetMediaItem_Track(it))
       rows[#rows + 1] = {
         name = path:match("[^/\\]+$") or path, path = path,
-        wav = path:lower():match("%.wav$") ~= nil,
+        wav = transcribable(path),   -- "wav" = trascrivibile (vedi AUDIO_EXT)
         srt = srt_path ~= nil, srt_path = srt_path, markers = reaper.GetNumTakeMarkers(take),
         len = reaper.GetMediaSourceLength(src),
         texts = per_take[tguid] or 0,
@@ -486,6 +543,7 @@ end
 -- "Percorri la strada", segnato nel file chain).
 ---------------------------------------------------------------------------
 local JOBS = reaper.GetResourcePath() .. sep .. "ZP_jobs"
+reaper.RecursiveCreateDirectory(JOBS, 0)
 local batches = {}                 -- kind -> { total, seen, plan, chain }
 
 local function job_dir(kind) return JOBS .. sep .. kind end
@@ -496,21 +554,32 @@ local function write_file(p, text)
 end
 
 local function clear_dir(dir)
-  os.execute("/bin/rm -rf " .. shell_quote(dir) .. " 2>/dev/null")
+  if IS_WIN then
+    os.execute('rmdir /s /q "' .. dir .. '" 2>nul')
+  else
+    os.execute("/bin/rm -rf " .. shell_quote(dir) .. " 2>/dev/null")
+  end
 end
 
 -- items: { {path=, cmd=, made=, len=}, ... }
 local function start_batch(kind, items, with_chain, title, what)
   local dir = job_dir(kind)
   clear_dir(dir)
-  os.execute("/bin/mkdir -p " .. shell_quote(dir))
+  if IS_WIN then reaper.RecursiveCreateDirectory(dir, 0) else os.execute("/bin/mkdir -p " .. shell_quote(dir)) end
   local plan = {}
   for i, it in ipairs(items) do plan[#plan + 1] = string.format("%d\t%s\t%s\t%s", i, it.made or "", tostring(it.len or 0), it.path) end
   write_file(dir .. sep .. "plan", table.concat(plan, "\n") .. "\n")
   if with_chain then write_file(dir .. sep .. "chain", "1\n") end
-  write_file(dir .. sep .. "run.sh", M.batch_script(dir, items, title, what))
-  os.execute("/usr/bin/nohup /bin/bash " .. shell_quote(dir .. sep .. "run.sh") ..
-    " </dev/null >/dev/null 2>&1 & echo $! > " .. shell_quote(dir .. sep .. "pid"))
+  if IS_WIN then
+    -- BOM UTF-8: senza, PowerShell 5.1 legge gli accenti dei percorsi come ANSI
+    write_file(dir .. sep .. "run.ps1", "\239\187\191" .. M.batch_script_windows(dir, items, title, what))
+    os.execute('start "" /B powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "' .. dir .. sep .. 'run.ps1"')
+    write_file(dir .. sep .. "started", tostring(os.time()))
+  else
+    write_file(dir .. sep .. "run.sh", M.batch_script(dir, items, title, what))
+    os.execute("/usr/bin/nohup /bin/bash " .. shell_quote(dir .. sep .. "run.sh") ..
+      " </dev/null >/dev/null 2>&1 & echo $! > " .. shell_quote(dir .. sep .. "pid"))
+  end
   batches[kind] = nil
 end
 
@@ -552,7 +621,18 @@ local function poll_batch(kind, on_item, on_end)
   if now - b.checked >= 2 then
     b.checked = now
     local pid = (read_file(dir .. sep .. "pid") or ""):match("%d+")
-    if pid and not os.execute("kill -0 " .. pid .. " 2>/dev/null") and not read_file(dir .. sep .. "end") then
+    local dead
+    if IS_WIN then
+      -- "lock" e' aperto in esclusiva da run.ps1: se riesco ad aprirlo il processo non c'e' piu'.
+      -- Se il pid non e' mai comparso entro 30 secondi lo script non e' partito.
+      local lf = pid and io.open(dir .. sep .. "lock", "r+b")
+      if lf then lf:close() end
+      local started = tonumber(read_file(dir .. sep .. "started") or "") or os.time()
+      dead = (pid and lf ~= nil and lf ~= false) or (not pid and os.time() - started > 30)
+    else
+      dead = pid and not os.execute("kill -0 " .. pid .. " 2>/dev/null")
+    end
+    if dead and not read_file(dir .. sep .. "end") then
       clear_dir(dir)
       batches[kind] = nil
       status = string.format(T("Il lavoro in background si e' interrotto (%d di %d fatti). Riprova: riparte da quelli che mancano."), b.seen, b.total)
@@ -577,15 +657,15 @@ end
 local function start_next()
   -- tutta la coda parte in background: chiudere la finestra non la ferma
   local cli = speech_cli()
-  local opts = " --language " .. shell_quote(speech_lang)
-  if speech_model ~= "" then opts = opts .. " --model " .. shell_quote(speech_model) end
   local items = {}
   for _, job in ipairs(queue) do
     local output, output_err = SRT.output_path(job, "", "trascrizione")
     if not output then status = output_err or T("Impossibile preparare Media per lo SRT."); queue = {}; return end
+    local argv = { cli, "request", job, "--language", speech_lang }
+    if speech_model ~= "" then argv[#argv + 1] = "--model"; argv[#argv + 1] = speech_model end
+    for _, a in ipairs({ "--format", "srt", "--output", output }) do argv[#argv + 1] = a end
     items[#items + 1] = { path = job, len = audio_len[job], made = M.model_label(speech_model) .. " " .. speech_lang,
-      output = output,
-      cmd = shell_quote(cli) .. " request " .. shell_quote(job) .. opts .. " --format srt --output " .. shell_quote(output) }
+      output = output, cmd = M.unix_cmd(argv), ps = M.ps_cmd(argv) }
   end
   queue = {}
   if #items == 0 then return end
@@ -656,7 +736,14 @@ end
 local function load_models()
   speech_models = {}
   local url = (os.getenv("ZP_SPEECH_URL") or "http://127.0.0.1:8770"):gsub("/+$", "") .. "/api/v1/capabilities"
-  local p = io.popen("/usr/bin/curl -s --max-time 2 " .. shell_quote(url) .. " 2>/dev/null", "r")
+  local curl_cmd
+  if IS_WIN then
+    -- curl.exe e' di serie in Windows 10/11; il servizio puo' essere appena partito: riprova per qualche secondo
+    curl_cmd = 'curl.exe -s --max-time 2 --retry 4 --retry-connrefused --retry-delay 1 "' .. url .. '" 2>nul'
+  else
+    curl_cmd = "/usr/bin/curl -s --max-time 2 " .. shell_quote(url) .. " 2>/dev/null"
+  end
+  local p = io.popen(curl_cmd, "r")
   if p then speech_models = M.parse_models(p:read("*a")); p:close() end
 end
 
@@ -784,7 +871,8 @@ end
 ---------------------------------------------------------------------------
 local function load_engines()
   tr_engines = {}
-  local p = io.popen(shell_quote((speech_cli())) .. " translators 2>/dev/null", "r")
+  local p = io.popen(IS_WIN and ('"' .. (speech_cli()) .. '" translators 2>nul')
+    or (shell_quote((speech_cli())) .. " translators 2>/dev/null"), "r")
   if p then tr_engines = M.parse_engines(p:read("*a")); p:close() end
 end
 
@@ -794,12 +882,12 @@ end
 
 local function tr_start_next()
   local items = {}
-  local opts = " --to " .. shell_quote(tr_lang) .. " --engine " .. shell_quote(tr_run_engine or tr_engine)
-  if tr_model ~= "" then opts = opts .. " --model " .. shell_quote(tr_model) end
   for _, job in ipairs(tr_queue) do
+    local argv = { (speech_cli()), "translate", job.path, "--to", tr_lang, "--engine", tr_run_engine or tr_engine }
+    if tr_model ~= "" then argv[#argv + 1] = "--model"; argv[#argv + 1] = tr_model end
+    argv[#argv + 1] = "--output"; argv[#argv + 1] = job.output
     items[#items + 1] = { path = job.path, source = job.source, output = job.output,
-      cmd = shell_quote((speech_cli())) .. " translate " .. shell_quote(job.path) .. opts ..
-        " --output " .. shell_quote(job.output) }
+      cmd = M.unix_cmd(argv), ps = M.ps_cmd(argv) }
   end
   tr_queue = {}
   if #items == 0 then return end

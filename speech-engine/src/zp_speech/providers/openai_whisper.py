@@ -202,6 +202,10 @@ def _is_executable(path: Path) -> bool:
     return bool(path.stat().st_mode & 0o111)
 
 
+# Formati che FFmpeg legge senza problemi e che Whisper accetta: la lettura passa tutta da FFmpeg.
+SUPPORTED_AUDIO_SUFFIXES = (".wav", ".mp3", ".flac", ".m4a", ".ogg", ".opus", ".aac")
+
+
 def find_ffmpeg(explicit: Path | None = None, *, env: Mapping[str, str] | None = None) -> Path:
     """Locate a usable ffmpeg binary or raise ProviderError."""
     environment = os.environ if env is None else env
@@ -214,6 +218,9 @@ def find_ffmpeg(explicit: Path | None = None, *, env: Mapping[str, str] | None =
     which_path = shutil.which("ffmpeg", path=environment.get("PATH"))
     if which_path:
         candidates.append(Path(which_path))
+    # Copia privata di ZP (la scarica install_windows.ps1): niente PATH da modificare.
+    private_name = "ffmpeg.exe" if sys.platform.startswith("win") else "ffmpeg"
+    candidates.append(zp_data_root(env=environment) / "ffmpeg" / "bin" / private_name)
     for fixed in ("/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"):
         candidates.append(Path(fixed))
     for candidate in candidates:
@@ -550,7 +557,7 @@ class OpenAIWhisperProvider:
                 "diarization": False,
                 "language_detection": True,
                 "streaming": False,
-                "input_formats": ["wav"],
+                "input_formats": [suffix.lstrip(".") for suffix in SUPPORTED_AUDIO_SUFFIXES],
                 "output_formats": ["json", "srt", "txt"],
             },
         }
@@ -573,10 +580,12 @@ class OpenAIWhisperProvider:
                 f"source is not a readable file: {source.name}",
                 provider=PROVIDER,
             )
-        if source.suffix.lower() != ".wav":
+        if source.suffix.lower() not in SUPPORTED_AUDIO_SUFFIXES:
             raise ProviderError(
                 "unsupported_capability",
-                "only WAV input has been verified for OpenAI Whisper",
+                "unsupported audio format for OpenAI Whisper: "
+                + ", ".join(s.lstrip(".") for s in SUPPORTED_AUDIO_SUFFIXES)
+                + " are accepted",
                 provider=PROVIDER,
             )
         if cancelled is not None and cancelled():

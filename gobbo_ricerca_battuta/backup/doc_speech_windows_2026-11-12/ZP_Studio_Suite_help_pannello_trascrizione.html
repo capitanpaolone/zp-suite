@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>29 ZP Trascrizione — guida</title><style>
+:root{color-scheme:light dark;--bg:#f7f7f4;--paper:#fff;--ink:#202024;--muted:#5e6068;--line:#d9d9d2;--accent:#245ba6}
+@media(prefers-color-scheme:dark){:root{--bg:#101217;--paper:#171a21;--ink:#eceff4;--muted:#adb2bd;--line:#303541;--accent:#77a9ff}}
+body{margin:0;padding:28px;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}main{max-width:900px;margin:auto}h1{margin:0 0 6px}h2{margin-top:30px;border-top:1px solid var(--line);padding-top:18px}h3{margin-bottom:4px}p,li{max-width:78ch}.lead,.muted{color:var(--muted)}.card{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:14px;margin:12px 0}code{background:rgba(127,127,127,.16);padding:2px 5px;border-radius:4px}.icon{width:180px;height:60px;image-rendering:pixelated}.note{border-left:4px solid var(--accent);padding:10px 14px;background:color-mix(in srgb,var(--accent) 10%,var(--bg))}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{text-align:left;vertical-align:top;padding:9px;border-bottom:1px solid var(--line)}
+</style><style id="lc-firma">
+.lc-testata{display:flex;align-items:center;gap:.5rem;margin:0 0 .4rem;font:600 .78rem/1.2 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  letter-spacing:.08em;text-transform:uppercase;color:#565F66}
+.lc-testata a{color:inherit;text-decoration:none}.lc-testata a:hover{color:#A94F35}
+.lc-logo{width:22px;height:22px;flex:none}
+.lc-filetto{border:0;border-top:2px solid #A94F35;margin:.6rem 0 1.4rem}
+.lc-piede{display:flex;align-items:center;gap:.6rem;margin:3rem 0 1rem;padding:.8rem 1rem;border:1px solid #CFCCC3;
+  border-radius:6px;background:#FAF9F5;color:#37444E;font:.95rem/1.4 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+.lc-piede a{color:#8F4630}
+@media (prefers-color-scheme: dark){
+  .lc-testata{color:#9aa4ac}.lc-piede{background:#1d2226;border-color:#2e3439;color:#c9cfd4}.lc-piede a{color:#d98b6f}
+}
+</style>
+</head>
+<body><main>
+<!-- lc-testata --><div class="lc-testata"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><a href="https://latocardioide.it/strumenti/">Lato Cardioide</a> &middot; Strumenti</div><!-- /lc-testata -->
+<h1>29 · ZP Trascrizione</h1>
+
+
+<!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
+<p class="lead">Una finestra, una strada: dall'audio al testo nel Gobbo, che poi segue i tagli. Seleziona gli item audio e guarda quale tappa è segnata <strong>&lt;- adesso</strong>.</p>
+
+<h2>Modello e lingua</h2>
+<p>In alto, due tendine: <strong>Modello</strong> (l'elenco arriva da ZP Speech, quindi mostra i modelli che hai installato, per esempio large-v3, più preciso, o small, più veloce; <em>Predefinito</em> è il primo del motore) e <strong>Lingua</strong> (italiano, inglese, francese, tedesco, spagnolo, portoghese, cinese, giapponese, coreano, russo, <em>Automatica</em>, oppure <em>Altra…</em> per scrivere il codice, per esempio <code>nl</code> o <code>yue</code>). I modelli Whisper (large-v3, small) conoscono circa 99 lingue; Parakeet solo 25 europee: se scegli Parakeet con una lingua che non conosce, la finestra lo avvisa. La scelta resta ricordata e vale per Trascrivi e Ritrascrivi. Ogni file trascritto si ricorda con cosa è stato fatto: nell'elenco degli item compare accanto a «SRT sì», per esempio <em>(small it)</em>. Per rifare un file con un altro modello: scegli il modello, seleziona l'item e usa <strong>Ritrascrivi…</strong>.</p>
+
+<h2>Lavora in background</h2>
+<p>Trascrivi, Ritrascrivi e Traduci lavorano <strong>in background</strong>: puoi chiudere la finestra, il lavoro continua. Il titolo della finestra mostra l'avanzamento («trascrivo 3 di 14»); alla fine arriva una <strong>notifica di macOS</strong> con quanti file sono riusciti. Riaprendo la finestra a lavoro in corso ne vedi l'avanzamento; se nel frattempo è finito, raccoglie i risultati e, se avevi scelto <em>Percorri la strada</em>, fa anche Abbina e Porta nel gobbo. Un file che non riesce non ferma gli altri: nel riepilogo finale c'è il conto e i dettagli vanno nella console.</p>
+
+<h2>Traduci (facoltativo)</h2>
+<p><strong>Traduci…</strong> traduce, solo quando lo chiedi, l'SRT accanto ai file degli item selezionati. Nel menu scegli la lingua d'arrivo (parte subito, dopo una conferma), il <em>Motore</em> e il <em>Modello</em>; la scelta resta ricordata. Il risultato è <code>Nome.it.srt</code> accanto all'originale, con gli stessi tempi: l'originale non viene toccato e una traduzione già esistente non viene rifatta. Nel menu, <em>Motore</em>: L'agente è quello che hai su questo Mac: <strong>Auto</strong> (di serie) usa il primo disponibile fra <strong>Codex</strong> (il testo va a OpenAI con il tuo account ChatGPT), <strong>Claude</strong> (ad Anthropic con il tuo account), <strong>Qwen</strong> e <strong>OpenCode</strong> (al servizio che hai configurato lì) e <strong>Ollama</strong> (un modello locale: il testo resta sul Mac). Prima di partire la domanda dice quale agente userà e dove va il testo. <em>Modello</em>: con Codex, <em>Quello scelto in Codex</em> usa il modello della tua configurazione; con Ollama il primo modello installato, o quello che scegli. Mentre lavora il pulsante mostra file, battute fatte e tempo. Se l'agente salta o unisce battute il file non viene scritto e i dettagli vanno nella console. Nell'elenco degli item, accanto all'SRT, compaiono le traduzioni presenti (per esempio <em>+it,en</em>). <strong>Nel Gobbo</strong>: con <em>Porta nel gobbo</em> (o Segui i tagli) ogni traduzione diventa un flusso in più, per esempio «Kevin · IT»: battute agganciate agli stessi marker dell'originale, quindi seguono i tagli. Scegli il flusso dalla tendina del Gobbo; con <em>Tutti</em> vedi originale e traduzione insieme, e la ricerca trova la frase tradotta portandoti dove l'originale la dice.</p>
+
+<h2>Le quattro tappe</h2>
+<ol>
+<li><strong>Trascrivi.</strong> Whisper (ZP Speech) crea l'SRT accanto al WAV, con lo stesso nome. Trascrive solo quelli che mancano: gli item che hanno già SRT o marker restano come sono, e la riga della tappa lo dice («5 selezionati: 3 da trascrivere, 2 già fatti»). Se il file va riletto da capo &mdash; dopo un <em>glue</em>, che si porta dietro i marker con i tempi vecchi, o se i tempi sono cambiati &mdash; il pulsante diventa <strong>Ritrascrivi…</strong>: chiede conferma, toglie i take marker degli item selezionati (Annulla li rimette), se il file ha già un SRT accanto (non succede con un glue, che dà un nome nuovo) lo rinomina in <code>.srt.bak-&lt;data&gt;</code> senza cancellarlo, e rifà la strada come per un file nuovo. I testi del gobbo legati ai vecchi marker: quelli mai toccati spariscono, quelli corretti a mano restano in mute. Mentre lavora la finestra dice «Sto lavorando, non sono bloccato» con il tempo trascorso e, dalla seconda volta, una stima di quanto manca. Se il processo si ferma senza risposta, lo dice.</li>
+<li><strong>Abbina da…</strong> Scegli da dove arrivano le battute; diventano take marker sull'item, in tempo sorgente:
+<ul>
+<li><em>SRT accanto al file</em>: il caso normale dopo la tappa 1. Con più item non apre mai il Finder: abbina quelli che hanno l'SRT con lo stesso nome del file, salta senza domande quelli già abbinati (per rifarne uno da capo c'è <strong>Ritrascrivi…</strong>, che poi riabbina da solo) e, nella riga in basso, elenca gli altri (senza SRT &rarr; Trascrivi; con marker ma senza SRT, tipico dopo un <em>glue</em> che dà un nome nuovo al file &rarr; restano com'erano, Ritrascrivi se vanno riletti);</li>
+<li><em>SRT esterno o tradotto</em>: un file scelto da te per tutti gli item selezionati, anche se accanto c'è già l'SRT di Whisper (doppiaggio: audio inglese, SRT italiano fatto con 26 SRT Tools). Se alcuni item hanno già i loro marker fa una domanda sola per tutti: sostituirli o lasciarli;</li>
+<li><em>Marker di progetto in timeline</em>: usa il 14, senza doppioni; chiede se cancellarli dalla timeline;</li>
+<li><em>Cue del WAV → marker in timeline</em>: porta in timeline i cue già scritti nel file, per gestirli in REAPER; per fissarli nell'item scegli poi «Marker di progetto».</li>
+</ul></li>
+<li><strong>Porta nel gobbo.</strong> Parte da sola dopo Abbina. Ogni marker diventa un item di testo su una traccia nascosta <code>Rythmo Band Testi &lt;nome traccia voce&gt;</code>. Il testo che correggi a mano non viene sovrascritto. «Aggiorna ora» la rifà quando vuoi.</li>
+<li><strong>Segui i tagli.</strong> Dopo 10 secondi senza modifiche al progetto i testi tornano sull'audio, anche dopo tagli e spostamenti. Lo stesso interruttore c'è nei due Gobbi, che di solito restano aperti mentre lavori: non serve tenere aperta questa finestra.</li>
+</ol>
+<p><strong>Percorri la strada</strong> fa in ordine solo quello che manca. <strong>Mostra tracce testo</strong> rende visibili le tracce di testo, che altrimenti restano nascoste.</p>
+
+<h2>Nel Gobbo</h2>
+<p>In <em>Flusso testi</em> scorri con <code>&lt;</code> <code>&gt;</code>: oltre ai flussi singoli c'è <strong>Tutti</strong>, che legge insieme tutte le tracce di testo (Leggi tutto), anche nascoste. Il titolo della finestra dice quale flusso stai leggendo. La ricerca lavora sul flusso scelto, quindi in Tutti cerca dappertutto.</p>
+
+<h2>Motori ASR, modelli Whisper e distinzione dagli LLM</h2>
+<p>ZP Speech lavora con motori di riconoscimento vocale dedicati (<strong>ASR</strong>: <em>Automatic Speech Recognition</em>), locali e offline. Non usa modelli di linguaggio testuali generici (LLM):</p>
+<ul>
+<li><strong>Perché non Ollama o OpenCode per trascrivere:</strong> Ollama e OpenCode sono integrati in ZP solo per la <em>traduzione</em> testo-a-testo (in <em>Traduci</em>) o la spiegazione delle scorciatoie. Un LLM riceve e genera testo in chat, ma non sa decodificare un file WAV per produrre l'allineamento temporale millimetrico parola per parola (<code>word_timestamps</code>). Senza quei timestamp esatti il Gobbo non può sincronizzarsi con il parlato e il montaggio non può seguire i tagli.</li>
+<li><strong>Whisper (MacWhisper e OpenAI Whisper locale):</strong> sono i motori ASR di riferimento. Leggono l'audio e calcolano segmenti e parole con precisione di millisecondi. MacWhisper usa la sua CLI e i modelli già scaricati nell'app; OpenAI Whisper usa un ambiente Python isolato con i modelli salvati su disco.</li>
+<li><strong>Riconoscimento di modelli Whisper già presenti:</strong> se hai già scaricato modelli Whisper (.pt) con un altro programma o dalla riga di comando ufficiale, ZP Speech li rileva automaticamente controllando sia la propria cartella (<code>~/Library/Application Support/ZP/models/whisper</code>) sia la cache standard di sistema (<code>~/.cache/whisper</code>). Puoi anche indicare una cartella modelli personalizzata con la variabile <code>ZP_WHISPER_MODELS_DIR</code> o un interprete Python dedicato con <code>ZP_WHISPER_PYTHON</code>.</li>
+<li><strong>Zero download a sorpresa:</strong> la trascrizione non avvia mai download nascosti durante una sessione. Se chiedi un modello non ancora scaricato, lo strumento si ferma subito e segnala il modello mancante. Il download avviene solo quando lo decidi tu (dalla riga di comando o dall'installatore guidato).</li>
+<li><strong>Modelli ASR alternativi (es. Qwen ASR, SenseVoice):</strong> modelli vocali compatti come Qwen-Audio o SenseVoice sono interessanti perché soffrono meno delle allucinazioni sui silenzi tipiche di Whisper. Tuttavia non sono interrogabili da Ollama come funzione Whisper: richiedono un runtime ASR dedicato in grado di esportare timestamp di allineamento prima di poter essere inseriti nella pipeline di ZP.</li>
+</ul>
+
+<h2>Da sapere</h2>
+<ul>
+<li>La trascrizione è una traccia di lavoro: i tempi delle parole possono essere imprecisi, il segmento resta il riferimento da ascoltare.</li>
+<li>La trascrizione automatica funziona su macOS con ZP Speech installato. Altrove crea l'SRT con il tuo Whisper, stesso nome del WAV, e parti da «Abbina da…».</li>
+<li>Se l'SRT tradotto usa il timecode del video (per esempio da 01:00:00) e il WAV parte da zero, imposta l'offset in SRT Tools: altrimenti le battute cadono fuori dall'item.</li>
+<li>Porta nel gobbo scorre tutte le tracce: anche marker di prova o di lavoro con un nome diventano testo.</li>
+</ul>
+<p class="note"><a href="index.html">Torna alla guida della Suite</a></p>
+<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Sviluppata su un'idea di Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
+</main></body></html>

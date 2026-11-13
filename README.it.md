@@ -34,7 +34,9 @@ La ZP Studio Suite 2.6.7 è in preparazione e non è pubblicata. La candidata 2.
 
 ## Non incluso in questa versione
 
-ZP Montaggio Parlato (prototipo), ZP BrownSlope Dynamic Guard, ZP BrownSlope Prism e ZP Speech Engine sono ancora in lavorazione e non fanno parte di questa versione ReaPack.
+ZP Montaggio Parlato (prototipo), ZP BrownSlope Dynamic Guard e ZP BrownSlope Prism sono ancora in lavorazione e non fanno parte di questa versione ReaPack.
+
+ZP Speech (il motore di trascrizione usato da Trascrivi, 29) non è nel pacchetto ReaPack: si installa dal Benvenuto (33), che lo scarica da GitHub. Su macOS usa MacWhisper o OpenAI Whisper; su Windows e Linux usa OpenAI Whisper locale ed è ancora **sperimentale**.
 
 ## Guide e sorgenti
 
