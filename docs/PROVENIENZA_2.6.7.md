@@ -13,6 +13,7 @@ Lo snapshot byte per byte precedente alla copia è conservato in `/Volumes/DISCO
 | `ZP Studio Suite/remote/zp_remote_import_logic.lua` | Suite 2.6.6 locale / helper ZP Remote | Non dichiarata; `@noindex` |
 | `ZP Studio Suite/remote/zp_remote_importer.lua` | Suite 2.6.6 locale / helper ZP Remote | Non dichiarata separatamente |
 | `ZP Studio Suite/remote/zp_remote_preflight.py` | Suite 2.6.6 locale / helper ZP Remote | Non dichiarata separatamente |
+| `ZP Studio Suite/remote/ZP_Remote_Importa_Consegna.lua`, `ZP_Remote_Imposta_ID_Progetto.lua`, `ZP_Remote_Importa_WAV_senza_manifest.lua`, `zp_remote_recupero.lua`, `zp_remote_recupero_logic.lua` | Progetto ZP Remote (`ZP_Solo_Recorder_WebRemote/reaper`), copiati il 2026-11-13; codice identico al sorgente, aggiunta la sola intestazione | Non dichiarata; `@noindex` |
 | `ZP Studio Suite/help/index.html`, `help/en/index.html`, `lang/en.txt` | Suite 2.6.6 locale | Risorse del pacchetto |
 | `ZP Voce/ZP Harmonic Space Carver Cue Navigator.lua` | Harmonic Space Carver 2.6.10 locale | 1.14 |
 | `ZP Voce/ZP Harmonic Space Carver.jsfx` | Harmonic Space Carver 2.6.10 locale | 2.6.10 |

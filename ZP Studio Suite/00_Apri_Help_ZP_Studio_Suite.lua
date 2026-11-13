@@ -82,10 +82,15 @@
 --   [main] render_copy/ZP_RenderCopy.lua
 --   render_copy/assets/zp_render_copy.png
 --   [main] remote/ZP_Remote_Crea_Pacchetto.lua
+--   [main] remote/ZP_Remote_Importa_Consegna.lua
+--   [main] remote/ZP_Remote_Imposta_ID_Progetto.lua
+--   [main] remote/ZP_Remote_Importa_WAV_senza_manifest.lua
 --   [nomain] remote/zp_remote_character_ids.lua
 --   [nomain] remote/zp_remote_json.lua
 --   [nomain] remote/zp_remote_importer.lua
 --   [nomain] remote/zp_remote_import_logic.lua
+--   [nomain] remote/zp_remote_recupero.lua
+--   [nomain] remote/zp_remote_recupero_logic.lua
 --   remote/zp_remote_esporta.py
 --   remote/zp_remote_identity.py
 --   remote/zp_remote_preflight.py
