@@ -1527,6 +1527,9 @@ end
 
 function SetThemeColor(kind, alpha)
     alpha = alpha or 1
+    -- SidebarThemeForce: la barra dei comandi resta sempre scura, qualunque sia il tema del testo.
+    local theme_mode = SidebarThemeForce or theme_mode
+    if SidebarThemeForce and kind == "dim" then kind = "text" end -- etichette leggibili sul fondo scuro
     if theme_mode == "dark" then
         if kind == "bg" then gfx.set(0.045, 0.045, 0.042, alpha)
         elseif kind == "panel" then gfx.set(0.075, 0.075, 0.08, alpha)
@@ -3392,6 +3395,12 @@ function ShowTextFlowMenu(mx, my)
 end
 
 function DrawSidePanel(w, h, tc_position)
+    SidebarThemeForce = "dark"
+    DrawSidePanelBody(w, h, tc_position)
+    SidebarThemeForce = nil
+end
+
+function DrawSidePanelBody(w, h, tc_position)
     if panels_hidden then return end
     local x = w - (sidebar_collapsed and 30 or side_panel_w)
     local pad = 12
