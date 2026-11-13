@@ -134,8 +134,6 @@ local show_timecode = true
 local max_character_rows = 1
 local alert_strip_h = 58
 local attack_x_ratio = 0.34
-local word_pre_roll = 5.0
-local word_post_roll = 3.0
 local horizontal_text_lanes = 2
 local smooth_scroll_pos = nil
 local character_lane_by_key = {}
@@ -180,17 +178,6 @@ local playback_anchor_time = 0
 local last_play_state = 0
 
 function lerp(a, b, t) return a + (b - a) * t end
-
-function Clamp(value, min_value, max_value)
-    if value < min_value then return min_value end
-    if value > max_value then return max_value end
-    return value
-end
-
-function SmoothStep(t)
-    t = Clamp(t or 0, 0, 1)
-    return t * t * (3 - (2 * t))
-end
 
 function OsaraActive()
     return type(reaper.osara_outputMessage) == "function"
@@ -439,16 +426,6 @@ function FindTrackByName(name)
     return nil
 end
 
-function IsVoiceTrackName(name)
-    local n = NormalizeName(name)
-    if n == "" then return false end
-    if n:find(NormalizeName(default_track_name), 1, true) then return false end
-    if n:find(NormalizeName(notes_track_name), 1, true) then return false end
-    if n:find("video", 1, true) then return false end
-    if n == "master" then return false end
-    return true
-end
-
 function IsCharacterNoteTrack(track)
     if not track then return false end
     local _, ext = reaper.GetSetMediaTrackInfo_String(track, "P_EXT:RythmoBand_NP", "", false)
@@ -530,21 +507,6 @@ function TextFlowDisplayName(name)
         if suffix ~= "" then return suffix end
     end
     return name ~= "" and name or "Nessuno"
-end
-
-function GetPreferredCharacterName()
-    local selected = reaper.GetSelectedTrack(0, 0)
-    local selected_name = GetTrackName(selected)
-    if IsVoiceTrackName(selected_name) then return NormalizeName(selected_name) end
-
-    for i=0, reaper.CountTracks(0)-1 do
-        local track = reaper.GetTrack(0, i)
-        if reaper.GetMediaTrackInfo_Value(track, "I_RECARM") > 0 then
-            local name = GetTrackName(track)
-            if IsVoiceTrackName(name) then return NormalizeName(name) end
-        end
-    end
-    return ""
 end
 
 function GetTrackIndex(track)
@@ -727,29 +689,6 @@ function CollectCharacterNotes()
 end
 
 -- =============================================
-function WrapText(text, max_w)
-    local lines = {}
-    for paragraph in text:gmatch("([^\r\n]+)") do
-        local words = {}
-        for word in paragraph:gmatch("%S+") do table.insert(words, word) end
-        
-        local current_line = ""
-        for _, word in ipairs(words) do
-            local test_line = current_line == "" and word or current_line .. " " .. word
-            local lw, _ = gfx.measurestr(test_line)
-            if lw > max_w and current_line ~= "" then
-                table.insert(lines, current_line)
-                current_line = word
-            else
-                current_line = test_line
-            end
-        end
-        if current_line ~= "" then table.insert(lines, current_line) end
-    end
-    if #lines == 0 then table.insert(lines, "") end
-    return lines
-end
-
 function SplitWords(text)
     local words = {}
     for word in (text or ""):gmatch("%S+") do table.insert(words, word) end
@@ -770,7 +709,6 @@ end
 
 -- =============================================
 function RecalculateLayout()
-    local text_line_h = master_font_size * 1.15
     local lane_slot_height = master_font_size * 1.35 + 20
     tape_origin_pos = cached_items[1] and cached_items[1].pos or 0
 
@@ -779,7 +717,6 @@ function RecalculateLayout()
         gfx.setfont(1, default_font, item.font_size, 'b')
         
         local display_text = (item.notes or ""):gsub("\r\n", "\n"):gsub("\r", "\n")
-        local measure_text = display_text:gsub("[\r\n]+", " ")
         item.speaker_prefix, item.read_text = ExtractSpeakerPrefix(display_text)
         item.reading_plan=item.timed_scroll and ZP_TESTO.reading_plan(item.notes,nil,item.pause_weight,item.len,item.timed_wpm,item.timing) or nil
         if item.reading_plan then item.reading_plan.reminders=ZP_TESTO.reminder_markers(item.reading_plan,item.anchors,item.anchor_markers or {}) end
@@ -953,23 +890,6 @@ local function zp_open_help_section(anchor)
     return false
 end
 
-function CycleTextFlow(delta)
-    local tracks = CollectTextFlowTracks()
-    if #tracks == 0 then return end
-    -- con due o piu' flussi c'e' anche "Tutti" (Leggi tutto)
-    if #tracks >= 2 then tracks[#tracks + 1] = {guid=READ_ALL} end
-
-    local current = CurrentTextFlowEntry()
-    local current_guid = selected_text_track_guid == READ_ALL and READ_ALL or (current and current.guid or "")
-    local current_index = 1
-    for i, entry in ipairs(tracks) do
-        if entry.guid == current_guid then current_index = i break end
-    end
-
-    local next_index = ((current_index - 1 + delta) % #tracks) + 1
-    SelectTextFlow(tracks[next_index].guid)
-end
-
 -- Imposta il flusso letto (guid di una traccia testo, o READ_ALL = Tutti).
 function SelectTextFlow(guid)
     selected_text_track_guid = guid
@@ -991,8 +911,6 @@ function SyncSourceFileName(item)
     if path == "" then return nil end
     return path:match("[^/\\]+$") or path
 end
-
-function NormalizeSearchText(text) return ZP_CERCA.fold(text) end
 
 function FindSubtitleMatch(query, start_pos)
     if ZP_CERCA.fold(query) == "" then return nil end
@@ -1224,17 +1142,6 @@ function UpdateItems()
     if search_panel_open then search_results_dirty=true; search_results_deadline=reaper.time_precise()+0.15 end
 end
 
-function RefreshCachedSubtitleItem(item, new_text)
-    for _, cached in ipairs(cached_items) do
-        if cached.item == item then
-            cached.notes = new_text
-            RecalculateLayout()
-            return true
-        end
-    end
-    return false
-end
-
 -- =============================================
 function DrawButton(x,y,w,h,label,hover_r,hover_g,hover_b,active)
     if inline_edit then return false end
@@ -1354,24 +1261,6 @@ function UpdateSubtitleItemName(item, text)
     end
     reaper.GetSetMediaItemInfo_String(item, "P_NAME", one_line, true)
     reaper.UpdateItemInProject(item)
-end
-
-function EditSubtitleItemText(item)
-    if not item then return end
-    local _, current = reaper.GetSetMediaItemInfo_String(item, "P_NOTES", "", false)
-    local edit_text = (current or ""):gsub("\r", ""):gsub("\n", "\\n")
-    local ok, values = reaper.GetUserInputs(T("Edit testo gobbo"), 1, T("Testo (usa \\n per andare a capo):,extrawidth=700"), edit_text)
-    if not ok then return end
-    local new_text = (values or ""):gsub("\\n", "\n")
-    new_text = new_text:match("^%s*(.-)%s*$") or ""
-    if new_text == "" or new_text == current then return end
-
-    reaper.Undo_BeginBlock()
-    reaper.GetSetMediaItemInfo_String(item, "P_NOTES", new_text, true)
-    UpdateSubtitleItemName(item, new_text)
-    reaper.Undo_EndBlock("ZP Studio Suite: modifica testo dal gobbo orizzontale", -1)
-
-    UpdateItems()
 end
 
 function Utf8Backspace(text)
@@ -1653,26 +1542,6 @@ function SerializeHighlightTerms(terms)
         if term ~= "" then table.insert(out, term) end
     end
     return table.concat(out, "\n")
-end
-
-function ToggleItemHighlight(item, selected_text)
-    if not item then return end
-    local term = trim(tostring(selected_text or ""):gsub("[\r\n]+", " "))
-    if term == "" then return end
-    local _, raw = reaper.GetSetMediaItemInfo_String(item, "P_EXT:RythmoBand_HIGHLIGHT", "", false)
-    local terms = ParseHighlightTerms(raw)
-    local key = NormalizeSearchText(term)
-    local removed = false
-    for i = #terms, 1, -1 do
-        if NormalizeSearchText(terms[i]) == key then
-            table.remove(terms, i)
-            removed = true
-        end
-    end
-    if not removed then table.insert(terms, term) end
-    reaper.GetSetMediaItemInfo_String(item, "P_EXT:RythmoBand_HIGHLIGHT", SerializeHighlightTerms(terms), true)
-    reaper.UpdateItemInProject(item)
-    return not removed
 end
 
 function InlineMoveVertical(direction)
@@ -2455,8 +2324,10 @@ function DrawWordModeText(item, x, y, is_active, reading_x, r, g, b, alpha)
         end
 
         local words = item.line_words and item.line_words[line_index] or SplitWords(line)
+        -- larghezze gia' misurate da RecalculateLayout con lo stesso font
+        local known_w = words == item.words and item.word_w or nil
         for word_index, word in ipairs(words) do
-            local word_w = gfx.measurestr(word)
+            local word_w = known_w and known_w[word_index] or gfx.measurestr(word)
 
             local word_center = cursor_x + (word_w * 0.5)
             local dist = word_center - reading_x
@@ -2488,13 +2359,6 @@ function BuildHorizontalDrawJob(item, smoothed_play_pos, window_w, attack_x, gro
     if end_px <= -20 or start_px >= window_w + 20 then return nil end
 
     local is_active = smoothed_play_pos >= item.pos and (smoothed_play_pos < item.pos + item.len or not item.timed_scroll and smoothed_play_pos <= item.pos + item.len)
-    local distance = 0
-    if smoothed_play_pos < item.pos then
-        distance = item.pos - smoothed_play_pos
-    elseif smoothed_play_pos > item.pos + item.len then
-        distance = smoothed_play_pos - (item.pos + item.len)
-    end
-
     return {
         item = item,
         start_px = start_px,
@@ -2503,7 +2367,6 @@ function BuildHorizontalDrawJob(item, smoothed_play_pos, window_w, attack_x, gro
         is_active = is_active,
         alpha = WordModeAlpha(item, smoothed_play_pos),
         item_y = group_start_y + item.y_offs,
-        priority = (is_active and 100000 or 0) - distance,
     }
 end
 
@@ -2653,7 +2516,7 @@ function DrawGUI()
         UpdateWindowTitle()
     end
 
-    local smoothed_play_pos, is_playing = GetContinuousPlayPosition()
+    local smoothed_play_pos = GetContinuousPlayPosition()
     UpdateOsaraTextFlow(smoothed_play_pos)
 
     local w, h = gfx.w, gfx.h
