@@ -929,17 +929,6 @@ local function create_warmup_item(track, start_pos, end_pos)
   return item
 end
 
-local function first_real_region_start(groups)
-  local first = nil
-  for _, group in ipairs(groups or {}) do
-    if is_region_row(group) then
-      local pos = group.region_start or group.start_pos or 0
-      first = first and math.min(first, pos) or pos
-    end
-  end
-  return first
-end
-
 local function create_or_refresh_warmup_for_groups(groups)
   local has_region = false
   for _, group in ipairs(groups or {}) do
@@ -1020,27 +1009,27 @@ local function normalize_warmup_render_stats(out_dir)
   return nil
 end
 
-local function basename_without_extension(path)
-  local name = tostring(path or ""):match("([^/\\]+)$") or tostring(path or "")
-  return (name:gsub("%.[^%.]+$", ""))
-end
-
 local function normalize_real_render_stats(out_dir, regions, settings)
   if not out_dir or out_dir == "" then return nil end
   -- Scan the output directory for any .render_stats.html file that is NOT the warmup one.
   -- REAPER names the stats file after the first rendered file, which may not match regions[1].name.
-  local src = nil
-  local p = io.popen('ls -1 "' .. out_dir:gsub('"', '\\"') .. '"')
-  if p then
-    for entry in p:lines() do
-      if entry:match("%.render_stats%.html$") and not is_warmup_region_name(entry:match("^(.-)%.render_stats%.html$") or "") then
-        src = out_dir .. "/" .. entry
-        break
-      end
+  -- EnumerateFiles funziona su macOS, Windows e Linux; -1 fa rileggere la cartella,
+  -- altrimenti REAPER puo' restituire l'elenco memorizzato prima del render.
+  local candidates = {}
+  reaper.EnumerateFiles(out_dir, -1)
+  local file_index = 0
+  while true do
+    local entry = reaper.EnumerateFiles(out_dir, file_index)
+    if not entry then break end
+    if entry:match("%.render_stats%.html$") and not is_warmup_region_name(entry:match("^(.-)%.render_stats%.html$") or "") then
+      candidates[#candidates + 1] = entry
     end
-    p:close()
+    file_index = file_index + 1
   end
-  if not src then return nil end
+  -- Ordine alfabetico, come faceva "ls": con piu' file si sceglie sempre lo stesso.
+  table.sort(candidates)
+  if #candidates == 0 then return nil end
+  local src = out_dir .. "/" .. candidates[1]
   local html = read_text_file(src)
   if not html then return nil end
   local dst = out_dir .. "/Mixdown_Render_Stats.html"
@@ -2245,13 +2234,6 @@ local function add_mixdown_section_to_queue(groups, folder_override)
   return true
 end
 
-local function format_time(seconds)
-  local value = math.max(0, seconds or 0)
-  local m = math.floor(value / 60)
-  local s = value - (m * 60)
-  return string.format("%02d:%06.3f", m, s)
-end
-
 local hovered_button_help = nil
 
 local BUTTON_HELP = {
@@ -2352,10 +2334,6 @@ local function is_select_all_key(ch)
   if ch == 1 then return true end
   local ctrl_or_cmd = (gfx.mouse_cap & 4) == 4 or (gfx.mouse_cap & 32) == 32
   return ctrl_or_cmd and (ch == 65 or ch == 97)
-end
-
-local function is_navigation_key(ch)
-  return ch == KEY_LEFT or ch == KEY_RIGHT or ch == KEY_HOME or ch == KEY_END
 end
 
 local function is_delete_key(ch)
@@ -2717,15 +2695,6 @@ local function open_window()
   local save_draft_state
   local commit_name_edit
   local selected_or_all_groups
-
-  local function current_mixdown_report_context(groups, names)
-    local render_groups = chosen_mixdown_groups
-    if not render_groups then render_groups = selected_or_all_groups(groups, names) end
-    local folder = chosen_mixdown_info or render_folder_info(render_groups)
-    local out_dir = mixdown_folder_path(folder)
-    if not (render_groups and folder and out_dir) then return nil, nil, nil end
-    return region_rows_for_render(render_groups), folder, out_dir
-  end
 
 
 
@@ -3234,20 +3203,6 @@ local function open_window()
     save_state(state)
   end
 
-  local function replace_name_list(text)
-    state.names_text = normalize_name_list(text or "")
-    state.draft_names = ""
-    state.draft_order = ""
-    custom_names = {}
-    draft_order = {}
-    names_cursor = #(state.names_text or "") + 1
-    names_select_all = false
-    names_scroll = 0
-    names_anchor_row = nil
-    cancel_name_edit()
-    save_state(state)
-  end
-
   local function paste_name_list_from_row(text, start_row, groups)
     local pasted_names = parse_names(text)
     start_row = math.max(1, tonumber(start_row) or 1)
@@ -3394,16 +3349,6 @@ local function open_window()
     edit_name_cursor = 1
     edit_name_select_all = false
     active_field = nil
-  end
-
-  local function save_preview_name(groups, index, new_name)
-    local group = groups and groups[index]
-    if not group or group.marker_only then return false end
-    local value = tostring(new_name or "")
-    if group.preview_key then custom_names[group.preview_key] = value end
-    if group.region_order then draft_order[group.region_order] = value end
-    save_draft_state()
-    return true
   end
 
   local function pending_name_rows(groups, names)
@@ -3722,24 +3667,8 @@ local function open_window()
       if is_select_all_key(ch) and (active_field == "gap" or active_field == "pad_in" or active_field == "pad_out") then
         numeric_select_all[active_field] = true
         numeric_cursor[active_field] = #(active_field == "gap" and gap_text or active_field == "pad_in" and pad_in_text or pad_out_text) + 1
-      elseif is_select_all_key(ch) and active_field == "names" then
-        names_select_all = true
-        names_cursor = #(state.names_text or "") + 1
-      elseif active_field == "names" and ch == 22 then
-        local pasted = get_clipboard()
-        if pasted and pasted ~= "" then
-          replace_name_list(pasted)
-        end
       elseif ch == 13 then
-        if active_field == "names" then
-          if names_select_all then
-            state.names_text, names_cursor, names_select_all = edit_selected_text(state.names_text, ch, true)
-          else
-            state.names_text, names_cursor = edit_text_at_cursor(state.names_text, names_cursor, ch, true)
-          end
-        else
-          active_field = nil
-        end
+        active_field = nil
       elseif active_field == "gap" then
         if numeric_select_all.gap then
           gap_text, numeric_cursor.gap, numeric_select_all.gap = edit_selected_numeric(gap_text, ch)
@@ -3757,12 +3686,6 @@ local function open_window()
           pad_out_text, numeric_cursor.pad_out, numeric_select_all.pad_out = edit_selected_numeric(pad_out_text, ch)
         else
           pad_out_text, numeric_cursor.pad_out = edit_numeric_at_cursor(pad_out_text, numeric_cursor.pad_out, ch)
-        end
-      elseif active_field == "names" then
-        if names_select_all then
-          state.names_text, names_cursor, names_select_all = edit_selected_text(state.names_text, ch, true)
-        else
-          state.names_text, names_cursor = edit_text_at_cursor(state.names_text, names_cursor, ch, true)
         end
       end
     elseif ch == 13 then
@@ -3853,7 +3776,6 @@ local function open_window()
     local render_info = chosen_mixdown_info or render_folder_info(groups)
     local status_color, status_label = mixdown_folder_status(chosen_mixdown_info)
     local render_panel_x = content_right - 394
-    local render_panel_w = 394
     local choose_btn = { x = render_panel_x, y = 64, w = 94, h = 28 }
     local create_top_btn = { x = render_panel_x + 100, y = 64, w = 104, h = 28 }
     local prepare_btn = { x = render_panel_x + 210, y = 64, w = 88, h = 28 }
@@ -3988,7 +3910,6 @@ local function open_window()
     gfx.y = 167
     gfx.drawstr(fit_text_middle(tostring(render_info.relative or "Mixdown/"), render_summary_w))
 
-    local compact_top = false
     local compact_actions = false
 
     local gap_rect = { x = 22, y = 104, w = 126, h = 32 }
