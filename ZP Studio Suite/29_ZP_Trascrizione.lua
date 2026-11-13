@@ -366,6 +366,12 @@ local speech_model = reaper.GetExtState(EXT, MODEL_KEY)          -- "" = predefi
 local speech_lang = reaper.GetExtState(EXT, LANG_KEY)
 if speech_lang == "" then speech_lang = "it" end
 local speech_models = nil                                         -- nil = non ancora chiesti
+-- Motore di trascrizione: "auto" (MacWhisper se c'e', altrimenti OpenAI Whisper locale) oppure uno dei due.
+local ENGINE_KEY = "PanelSpeechEngine"
+local SPEECH_ENGINES = { { id = "auto", label = "Automatico: il primo pronto" }, { id = "macwhisper", label = "MacWhisper" },
+  { id = "openai-whisper", label = "OpenAI Whisper locale" } }
+local speech_engine = reaper.GetExtState(EXT, ENGINE_KEY)
+if speech_engine ~= "macwhisper" and speech_engine ~= "openai-whisper" then speech_engine = "auto" end
 
 -- Traduzione degli SRT (a richiesta): motore, modello e lingua d'arrivo ricordati.
 local TR_ENGINE_KEY, TR_MODEL_KEY, TR_LANG_KEY = "PanelTranslateEngine", "PanelTranslateModel", "PanelTranslateLang"
@@ -662,6 +668,7 @@ local function start_next()
     local output, output_err = SRT.output_path(job, "", "trascrizione")
     if not output then status = output_err or T("Impossibile preparare Media per lo SRT."); queue = {}; return end
     local argv = { cli, "request", job, "--language", speech_lang }
+    if speech_engine ~= "auto" then argv[#argv + 1] = "--engine"; argv[#argv + 1] = speech_engine end
     if speech_model ~= "" then argv[#argv + 1] = "--model"; argv[#argv + 1] = speech_model end
     for _, a in ipairs({ "--format", "srt", "--output", output }) do argv[#argv + 1] = a end
     items[#items + 1] = { path = job, len = audio_len[job], made = M.model_label(speech_model) .. " " .. speech_lang,
@@ -735,7 +742,8 @@ end
 -- Modelli installati, chiesti una volta al servizio ZP Speech (curl, max 2 s).
 local function load_models()
   speech_models = {}
-  local url = (os.getenv("ZP_SPEECH_URL") or "http://127.0.0.1:8770"):gsub("/+$", "") .. "/api/v1/capabilities"
+  local url = (os.getenv("ZP_SPEECH_URL") or "http://127.0.0.1:8770"):gsub("/+$", "") .. "/api/v1/capabilities" ..
+    (speech_engine ~= "auto" and ("?engine=" .. speech_engine) or "")
   local curl_cmd
   if IS_WIN then
     -- curl.exe e' di serie in Windows 10/11; il servizio puo' essere appena partito: riprova per qualche secondo
@@ -757,10 +765,29 @@ local function model_menu()
     items[#items + 1] = m
     parts[#parts + 1] = (m == speech_model and "!" or "") .. M.model_label(m)
   end
-  if #items == 1 then parts[#parts + 1] = "#" .. T("(ZP Speech non risponde: nessun elenco)") end
+  if #items == 1 then parts[#parts + 1] = "#" .. T("(ZP Speech non risponde: nessun elenco)"); items[#items + 1] = false end
+  -- sottomenu Motore: in showmenu la voce ">..." non conta come scelta, quindi non entra in items
+  parts[#parts + 1] = ""
+  parts[#parts + 1] = ">" .. T("Motore")
+  local shown = {}
+  for _, e in ipairs(SPEECH_ENGINES) do
+    if e.id ~= "macwhisper" or not IS_WIN then shown[#shown + 1] = e end
+  end
+  for i, e in ipairs(shown) do
+    parts[#parts + 1] = (i == #shown and "<" or "") .. (e.id == speech_engine and "!" or "") .. T(e.label)
+    items[#items + 1] = { engine = e }
+  end
   gfx.x, gfx.y = gfx.mouse_x, gfx.mouse_y
   local choice = gfx.showmenu(table.concat(parts, "|"))
-  if choice > 0 and items[choice] then
+  if choice > 0 and type(items[choice]) == "table" then
+    -- cambio motore: il modello torna al predefinito e l'elenco dei modelli si richiede da capo
+    speech_engine = items[choice].engine.id
+    reaper.SetExtState(EXT, ENGINE_KEY, speech_engine, true)
+    speech_model = ""
+    reaper.SetExtState(EXT, MODEL_KEY, "", true)
+    speech_models = nil
+    status = string.format(T("Motore per le prossime trascrizioni: %s."), T(items[choice].engine.label))
+  elseif choice > 0 and items[choice] then
     speech_model = items[choice]
     reaper.SetExtState(EXT, MODEL_KEY, speech_model, true)
     status = string.format(T("Modello per le prossime trascrizioni: %s."), T(M.model_label(speech_model)))

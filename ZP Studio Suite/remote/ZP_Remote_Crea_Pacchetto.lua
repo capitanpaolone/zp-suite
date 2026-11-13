@@ -689,6 +689,10 @@ local function sync_import_region_to_reaper()
 end
 
 local function choose_import_delivery()
+  -- Il menu si apre a gfx.x/gfx.y: lo si mette subito sotto il pulsante «Scegli consegna…».
+  for _, b in ipairs(buttons) do
+    if b.id=="delivery" then gfx.x,gfx.y=math.floor(b.x),math.floor(b.y+b.h+2) end
+  end
   local choice=gfx.showmenu("ZIP di ritorno|Cartella con consegna.json")
   if choice==0 then return end
   local ok,selected

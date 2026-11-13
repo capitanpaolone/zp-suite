@@ -55,6 +55,17 @@ check("sh: in attesa -> .applicato, backup fatto", io.open(newp, "rb") == nil an
 os.execute("/bin/sh '" .. sh .. "'")
 f = io.open(kbp, "rb"); local res2 = f:read("a"); f:close()
 check("sh: senza file in attesa (annullato) non fa niente", res2 == res)
+-- con il PID di un processo "reaper" finto: aspetta proprio quello, poi applica e toglie il .pid
+f = io.open(kbp, "wb"); f:write(kb); f:close()
+f = io.open(newp, "wb"); f:write(pl); f:close()
+f = io.open(sh, "wb"); f:write(M.waiter_sh(kbp, newp, nil, false, { "ZP_nessun_processo_xyz" })); f:close()
+os.execute("ln -s /bin/sleep '" .. dir .. "/reaper_finto'")
+local t0 = os.time()
+os.execute("'" .. dir .. "/reaper_finto' 3 & /bin/sh '" .. sh .. "' $!")
+f = io.open(kbp, "rb"); local res3 = f:read("a"); f:close()
+check("sh: con PID aspetta quel REAPER e poi applica", os.time() - t0 >= 2 and res3 == M.apply(kb, pl))
+check("sh: il file .pid non resta", io.open(newp .. ".pid", "rb") == nil)
+check("ps1: aspetta il REAPER di quel percorso", M.waiter_ps1("C:\\R\\reaper-kb.ini", "C:\\R\\K\\x.txt", "C:\\R\\reaper.exe", true):find("$_.Path -eq $exe", 1, true) ~= nil)
 check("ps1: generato con i percorsi", M.waiter_ps1("C:\\R\\reaper-kb.ini", "C:\\R\\K\\x.txt", "C:\\R\\reaper.exe", true):find("Wait-Process -Name reaper", 1, true) ~= nil)
 os.execute("rm -r '" .. dir .. "'")
 -- elenco leggibile

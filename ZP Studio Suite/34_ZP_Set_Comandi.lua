@@ -132,6 +132,9 @@ end
 
 -- Script di sistema (macOS / Linux): aspetta che REAPER sia chiuso, poi applica.
 local function shq(s) return "'" .. tostring(s):gsub("'", "'\\''") .. "'" end
+-- Lo script riceve come primo argomento il PID del REAPER che ha chiesto il cambio: aspetta la
+-- chiusura di QUEL REAPER (un altro REAPER aperto, per esempio una copia portatile, non lo blocca)
+-- e su macOS riapre proprio quella applicazione. Senza PID valido aspetta per nome di processo.
 -- proc: nomi del processo da aspettare (di serie REAPER e reaper; i test ne passano uno inesistente)
 function M.waiter_sh(kb, pending, app, reopen, proc)
   local wait = {}
@@ -141,12 +144,24 @@ function M.waiter_sh(kb, pending, app, reopen, proc)
     "# ZP Set Comandi: aspetta la chiusura di REAPER, poi cambia le scorciatoie in reaper-kb.ini.",
     "KB=" .. shq(kb),
     "NEW=" .. shq(pending),
-    "while " .. table.concat(wait, " || ") .. "; do sleep 1; done",
+    "APP=" .. shq(app or ""),
+    "PID=\"$1\"",
+    "echo $$ > \"$NEW.pid\"",
+    "EXE=\"\"",
+    "[ -n \"$PID\" ] && EXE=$(ps -o comm= -p \"$PID\" 2>/dev/null)",
+    "case \"$EXE\" in *[Rr][Ee][Aa][Pp][Ee][Rr]*) ;; *) PID=\"\" ;; esac",
+    "case \"$EXE\" in */Contents/MacOS/*) APP=\"${EXE%/Contents/MacOS/*}\" ;; esac",
+    "if [ -n \"$PID\" ]; then",
+    "  while kill -0 \"$PID\" 2>/dev/null; do sleep 1; done",
+    "else",
+    "  while " .. table.concat(wait, " || ") .. "; do sleep 1; done",
+    "fi",
     "sleep 1",
-    "[ -f \"$NEW\" ] || exit 0",
+    "[ -f \"$NEW\" ] || { rm -f \"$NEW.pid\"; exit 0; }",
     "cp \"$KB\" \"$KB.ZP_backup_$(date +%Y%m%d_%H%M%S)\" || exit 1",
     "{ grep -v '^KEY ' \"$KB\"; cat \"$NEW\"; } > \"$KB.zp_nuovo\" && mv \"$KB.zp_nuovo\" \"$KB\" && mv \"$NEW\" \"$NEW.applicato\"",
-    reopen and app and ("open " .. shq(app)) or "",
+    "rm -f \"$NEW.pid\"",
+    reopen and "[ -n \"$APP\" ] && open \"$APP\"" or "",
     "",
   }, "\n")
 end
@@ -158,7 +173,9 @@ function M.waiter_ps1(kb, pending, exe, reopen)
     "# ZP Set Comandi: aspetta la chiusura di REAPER, poi cambia le scorciatoie in reaper-kb.ini.",
     "$kb = " .. psq(kb),
     "$new = " .. psq(pending),
-    "Wait-Process -Name reaper -ErrorAction SilentlyContinue",
+    "$exe = " .. psq(exe or ""),
+    "$mine = @(Get-Process -Name reaper -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $exe })",
+    "if ($mine.Count -gt 0) { $mine | Wait-Process -ErrorAction SilentlyContinue } else { Wait-Process -Name reaper -ErrorAction SilentlyContinue }",
     "Start-Sleep -Seconds 1",
     "if (-not (Test-Path -LiteralPath $new)) { exit 0 }",
     "Copy-Item -LiteralPath $kb -Destination ($kb + '.ZP_backup_' + (Get-Date -Format 'yyyyMMdd_HHmmss'))",
@@ -332,9 +349,22 @@ local function start_waiter(reopen)
   else
     local sh = resource .. sep .. "ZP_Set_Comandi_cambio.sh"
     if not write(sh, M.waiter_sh(KB, PENDING, app_path(), reopen)) then return false end
-    os.execute("nohup /bin/sh " .. shq(sh) .. " >/dev/null 2>&1 &")
+    -- $PPID qui e' il PID di REAPER: lo script aspetta proprio questo processo
+    os.execute("nohup /bin/sh " .. shq(sh) .. " $PPID >/dev/null 2>&1 &")
   end
   return true
+end
+
+-- C'e' un cambio in attesa ma lo script che deve applicarlo non gira piu' (computer riavviato,
+-- processo chiuso)? Lo si riavvia, senza riaprire REAPER. Su Windows non si controlla.
+local function rearm_waiter()
+  if IS_WIN or not read(PENDING) then return end
+  local pid = tonumber((read(PENDING .. ".pid") or ""):match("%d+"))
+  if pid then
+    local r = os.execute("kill -0 " .. pid .. " 2>/dev/null")
+    if r == true or r == 0 then return end
+  end
+  start_waiter(false)
 end
 
 local function cancel_pending()
@@ -405,6 +435,30 @@ local function import_file()
   reaper.SetExtState(SECTION, "data_" .. name, "importato " .. os.date("%d/%m/%Y"), true)
   set_status(T("Importato \"") .. name .. T("\": ora e' nell'elenco."))
   load_sets()
+end
+
+-- Esporta: una copia del file del set sulla Scrivania (o nella cartella utente), poi la mostra.
+-- Il file e' un .ReaperKeyMap: si importa qui con "Importa file…" o dall'Action List di REAPER.
+local function export_set(s)
+  if s.stock or not s.file then return end
+  local home = os.getenv(IS_WIN and "USERPROFILE" or "HOME") or resource
+  local folders = { home .. sep .. "Desktop", home }
+  if reaper.JS_Dialog_BrowseForFolder then -- con l'estensione JS la cartella la scegli tu
+    local ok, picked = reaper.JS_Dialog_BrowseForFolder(T("ZP Set Comandi: dove metto la copia?"), folders[1])
+    if ok ~= 1 or not picked or picked == "" then return end
+    folders = { (picked:gsub("[/\\]+$", "")) }
+  end
+  local dest
+  for _, folder in ipairs(folders) do
+    local p = folder .. sep .. s.name .. M.EXT
+    if read(p) then p = folder .. sep .. s.name .. " " .. os.date("%Y%m%d_%H%M%S") .. M.EXT end
+    if write(p, s.text) then dest = p; break end
+  end
+  if not dest then return set_status(T("Non riesco a scrivere la copia in ") .. folders[1], false) end
+  if reaper.CF_LocateInExplorer then reaper.CF_LocateInExplorer(dest)
+  elseif IS_WIN then os.execute('explorer /select,"' .. dest .. '"')
+  else os.execute("open -R " .. shq(dest)) end
+  set_status(T("Copia esportata: ") .. dest)
 end
 
 local function open_folder()
@@ -633,8 +687,11 @@ local function draw_detail(clicked)
     activate(s)
   end
   if not s.stock then
-    if UI.draw_button({ x = x + bw + 8, y = row, w = bw, h = 40, font = 16 }, T("Rinomina…"), false, true, clicked) then rename_set(s) end
-    if UI.draw_button({ x = x + 2 * (bw + 8), y = row, w = bw, h = 40, font = 16 }, T("Archivia…"), false, true, clicked) then archive_set(s) end
+    local sw = math.floor((w - bw - 24) / 3)
+    local sx = x + bw + 8
+    if UI.draw_button({ x = sx, y = row, w = sw, h = 40, font = 16 }, T("Rinomina…"), false, true, clicked) then rename_set(s) end
+    if UI.draw_button({ x = sx + sw + 8, y = row, w = sw, h = 40, font = 16 }, T("Esporta…"), false, true, clicked) then export_set(s) end
+    if UI.draw_button({ x = sx + 2 * (sw + 8), y = row, w = sw, h = 40, font = 16 }, T("Archivia…"), false, true, clicked) then archive_set(s) end
   end
 end
 
@@ -747,6 +804,7 @@ end
 
 if reaper.set_action_options then reaper.set_action_options(1 | 4); reaper.atexit(function() reaper.set_action_options(8) end) end
 load_sets()
+rearm_waiter()
 local d, px, py, pw, ph = (reaper.GetExtState(SECTION, "finestra") .. ","):match("([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)")
 gfx.init(T("ZP Set Comandi"), math.max(560, tonumber(pw) or W), math.max(H, tonumber(ph) or H), tonumber(d) or 0, tonumber(px) or 200, tonumber(py) or 120)
 loop()

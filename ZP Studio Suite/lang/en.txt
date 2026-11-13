@@ -3,7 +3,7 @@
 
 \nL'SRT gia' accanto a %d file lo rinomino in .srt.bak-<data>, non lo cancello.	\nRenaming existing SRT next to %d files to .srt.bak-<date>, not deleting.
    <- adesso	   <- now
-  Altre righe: rotella.	  More rows: mouse wheel.
+  Sotto ci sono altre righe: scorri con la rotella.	  More rows below: scroll with the mouse wheel.
   Testi: %s	  Texts: %s
   Versione 	  Version 
   ·  	  ·  
@@ -967,3 +967,10 @@ Controllo Python: attendi qualche secondo.	Checking Python: please wait a few se
 Sto verificando Python: attendi, non chiudere questa finestra	Checking Python: please wait, do not close this window
 Verifico...	Checking...
 Verifica	Verify
+Esporta…	Export…
+ZP Set Comandi: dove metto la copia?	ZP Command Sets: where should the copy go?
+Non riesco a scrivere la copia in 	Cannot write the copy in 
+Copia esportata: 	Copy exported: 
+Automatico: il primo pronto	Automatic: first one ready
+OpenAI Whisper locale	Local OpenAI Whisper
+Motore per le prossime trascrizioni: %s.	Engine for upcoming transcriptions: %s.

@@ -1084,7 +1084,7 @@ local function draw()
   gfx.x, gfx.y = 20, 46
   local ver = M.header_version(read(P(here, "00_Apri_Help_ZP_Studio_Suite.lua"))) or "?"
   gfx.drawstr((da_fare == 0 and T("Tutto pronto.") or (da_fare == 1 and T("Una cosa da fare.") or (da_fare .. T(" cose da fare.")))) ..
-    T("  Versione ") .. ver .. T(". Lo stato si aggiorna da solo.") .. (scroll_max > 0 and T("  Altre righe: rotella.") or ""))
+    T("  Versione ") .. ver .. T(". Lo stato si aggiorna da solo.") .. (scroll_max > 0 and T("  Sotto ci sono altre righe: scorri con la rotella.") or ""))
 
   local by = gfx.h - 46
   if UI.draw_button({ x = 20, y = by, w = 130, h = 30 }, T("Apri l'help"), false, true, clicked, "tab") then UI.open_help("installazione") end
