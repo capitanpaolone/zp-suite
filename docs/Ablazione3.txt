@@ -1,0 +1,18 @@
+Passiamo alla Fase 3 della pulizia ablativa sui plugin JSFX/EEL2, seguendo `AGENTS.md` e `MEMORIA_PROGRAMMAZIONE_ZP_SUITE_2.6.7.md`.
+
+Target corrente: `<inserisci_percorso_jsfx>` (es. `ZP Voce/.../BUS Chain`).
+
+Regole specifiche inviolabili per EEL2 / JSFX:
+1. **Backup e Hash:** Esegui subito il backup del file in `.backup_ablativo/<timestamp>/` preservando la struttura directory e stampa lo SHA-256.
+2. **Intangibilità degli Slider:** NON rimuovere, commentare, riordinare o rinominare mai alcuna riga `sliderN:...`, nemmeno se uno slider sembra inutilizzato o legacy: gli indici sono salvati nei progetti REAPER degli utenti.
+3. **Attenzione allo scope globale EEL2:** In EEL2 tutte le variabili non dichiarate in `local(...)` sono globali tra `@init`, `@slider`, `@block`, `@sample` e `@gfx`. Prima di segnalare una variabile come "morta", verifica che non sia letta o scritta in nessuna delle altre sezioni, né usata come puntatore/offset di buffer di memoria (`mem[...]`).
+4. **Separazione dei domini DSP vs GUI:**
+   - NON toccare alcuna costante matematica, coefficiente di filtro, curva di rilevazione o formula DSP nelle sezioni `@sample` e `@block` (il suono deve restare bit-identical).
+   - NON modificare alcuna coordinata, colore (`gfx_set`), font (`gfx_setfont`) o disegno nella sezione `@gfx`.
+5. **Cosa cercare davvero:**
+   - Funzioni definite in `@init` mai chiamate in nessuna sezione.
+   - Variabili dichiarate in `local(...)` dentro una funzione ma mai usate.
+   - Vecchi blocchi di codice commentato risalenti a versioni precedenti del DSP o della GUI.
+   - Calcoli costanti ridondanti ripetuti inutilmente in `@block` quando dipendono solo da parametri modificati in `@slider`.
+
+Esegui il backup, analizza il file sezione per sezione (`@init`, `@slider`, `@block`, `@sample`, `@gfx`) e mostrami l'elenco classificato prima di applicare qualsiasi modifica.

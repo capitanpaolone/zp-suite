@@ -1,0 +1,18 @@
+Passiamo alla Fase 4 della pulizia ablativa sui moduli Python, applicando `AGENTS.md` e `MEMORIA_PROGRAMMAZIONE_ZP_SUITE_2.6.7.md`:
+- `speech-engine/` (inclusi servizio locale, client/CLI, provider MacWhisper e OpenAI Whisper)
+- `remote/` (`zp_remote_esporta.py`, `zp_remote_preflight.py` e helper correlati)
+
+Lavora su UN FILE ALLA VOLTA.
+
+Regole specifiche inviolabili per Python:
+1. **Backup e Hash:** Prima di toccare qualsiasi file, crea il backup in `.backup_ablativo/<timestamp>/` preservando la struttura directory e stampa lo SHA-256.
+2. **Contratti di interfaccia intoccabili:**
+   - NON rinominare, rimuovere o alterare il formato dei flag/argomenti CLI invocati dagli script Lua (`29_ZP_Trascrizione.lua`, `33_Benvenuto_Controllo_Installazione.lua`, exporter/importer Remote).
+   - NON alterare alcuno schema JSON di output, incluse chiavi `schema_version=1`, tempi interi in millisecondi, intervalli semiaperti, `source_id` (SHA-256) e struttura del manifest/ZIP di ZP Remote. Anche se una chiave del dizionario sembra non letta in Python, è parte del contratto verso Lua.
+   - NON rimuovere gestori di eccezioni o codici di uscita (`sys.exit`) usati da Lua per rilevare errori o dipendenze mancanti (`ffmpeg`, provider esterni).
+3. **Cosa rimuovere:**
+   - `import` inutilizzati, variabili locali morte, rami irraggiungibili, vecchie funzioni helper superate e stampe `print`/`logging.debug` di sviluppo rimaste fuori dai flussi previsti.
+4. **Verifica automatica:**
+   - Dopo ogni singolo file modificato, esegui `python3 -m py_compile <file>` e lancia la suite di test esistente in `speech-engine/` (es. `pytest`). Se un test fallisce o viene alterato un contratto CLI/JSON, annulla subito la modifica.
+
+Esegui il backup dei file Python in `speech-engine/src/zp_speech/` e `remote/`, poi presentami l'inventario classificato partendo dal file più esteso (il provider OpenAI Whisper).

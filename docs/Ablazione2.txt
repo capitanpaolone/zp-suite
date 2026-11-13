@@ -1,0 +1,16 @@
+Passiamo alla Fase 2 della pulizia ablativa secondo `AGENTS.md` e `MEMORIA_PROGRAMMAZIONE_ZP_SUITE_2.6.7.md`:
+- `ZP Studio Suite/02_Gobbo_Verticale.lua`
+- `ZP Studio Suite/03_Gobbo_Orizzontale.lua`
+
+Lavora su UN SOLO FILE ALLA VOLTA (inizia da `02_Gobbo_Verticale.lua`, poi `03_Gobbo_Orizzontale.lua`).
+
+Regole specifiche aggiuntive per i Gobbi:
+1. **Backup e Hash:** Prima di leggere/modificare, crea il backup di entrambi i file nella cartella `.backup_ablativo/<timestamp>/ZP Studio Suite/` preservando i percorsi e mostra gli hash SHA-256.
+2. **Divieto di fusione:** Non unificare codice tra il Gobbo Verticale e quello Orizzontale, anche se sembrano simili: le differenze di ciclo UI e interazione potrebbero essere intenzionali.
+3. **Focus sul ciclo `reaper.defer()`:** Cerca specificamente:
+   - API REAPER (es. ricerca tracce `Rythmo Band Testi…`, lettura item, controlli trasporto) chiamate ridondantemente più volte all'interno dello stesso frame di disegno.
+   - Variabili di stato UI, flag di vecchie modalità di scorrimento o helper di testo superati dopo l'introduzione di `ZP_Testo_Copione.lua` e `ZP_Editor_Copione.lua` che non vengono più chiamati.
+   - Stampe di debug (`ShowConsoleMsg`) rimaste nei percorsi di tastiera, ricerca o scroll.
+4. **Inviolabilità grafica e funzionale:** Non alterare alcuna coordinata di disegno, font, colore, margini, gestione del focus tastiera, scorciatoie o chiavi `ExtState` delle preferenze UI.
+
+Esegui ora il backup di entrambi i file, poi ferma l'esecuzione dopo avermi mostrato l'inventario classificato (Sicure / Ottimizzazioni frame `defer` / Dubbie) per `02_Gobbo_Verticale.lua`.

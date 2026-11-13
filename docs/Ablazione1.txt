@@ -1,0 +1,8 @@
+Leggi `MEMORIA_PROGRAMMAZIONE_ZP_SUITE_2.6.7.md` e applica il "Protocollo di Pulizia Ablativa" definito in `AGENTS.md` e Agents_extra_code.md.
+
+Iniziamo dal primo file autonomo: `ZP Studio Suite/17_Crea_Regioni_Export_da_Item_Nominati.lua`.
+
+Esegui in ordine strettamente sequenziale:
+1. Verifica `git status` e `git rev-parse HEAD` (deve corrispondere al ramo `release/2.6.7`).
+2. Crea il backup del file in `.backup_ablativo/<timestamp>/ZP Studio Suite/17_Crea_Regioni_Export_da_Item_Nominati.lua`, assicurati che `.backup_ablativo/` sia escluso localmente in `.git/info/exclude`, e mostrami l'hash SHA-256 del file salvato.
+3. NON modificare ancora il file: leggilo interamente e dammi prima l'inventario classificato delle scorie trovate (Sicure / Ottimizzazioni loop / Dubbie), verificando che nessuna funzione rimossa sia richiamata esternamente o tramite callback/defer.

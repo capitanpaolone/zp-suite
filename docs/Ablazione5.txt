@@ -1,0 +1,17 @@
+Passiamo alla Fase 5 (finale) della pulizia ablativa sugli helper condivisi Lua della `ZP Studio Suite`, seguendo `AGENTS.md` e `MEMORIA_PROGRAMMAZIONE_ZP_SUITE_2.6.7.md`:
+- `ZP_UI.lua`
+- `ZP_Lingua.lua`
+- `ZP_Testo_Copione.lua` e `ZP_Editor_Copione.lua`
+- `ZP_SRT_Progetto.lua` e `ZP_sincronizza_aggancio.lua`
+- `ZP_Colori.lua` e `ZP_cerca.lua`
+
+Regola d'oro per i moduli condivisi:
+1. **Backup globale degli helper:** Crea il backup di tutti questi helper in `.backup_ablativo/<timestamp>/ZP Studio Suite/` con relativi hash SHA-256 prima di iniziare.
+2. **Ricerca cross-repository obbligatoria prima di qualsiasi rimozione:** Poiché questi file sono librerie caricate via `dofile`, NON puoi mai considerare "morta" una funzione o variabile globale/tabella esportata guardando solo il singolo file. Prima di proporre la rimozione di qualsiasi simbolo non `local`, devi eseguire una ricerca testuale (`grep`/`rg`) su **tutto il repository** (inclusi gli altri pacchetti `ZP Voce`, `ZP Master`, `ZP Misura`, `ZP Lab` e `web/`).
+3. **Inviolabilità grafica e dei calcoli:**
+   - In `ZP_UI.lua`: NON toccare primitive grafiche, palette, margini, dimensioni font, hitbox dei pulsanti o gestione tooltip.
+   - In `ZP_sincronizza_aggancio.lua`: NON alterare la formula di conversione tempo progetto (`pos_item + (source_time - startoffs) / playrate`), la gestione dei GUID take o la protezione delle correzioni manuali.
+   - In `ZP_Lingua.lua`: NON rimuovere chiavi di traduzione anche se sembrano non usate in un singolo script (potrebbero essere costruite dinamicamente).
+4. **Target consentito:** Concentrati esclusivamente su funzioni `local` strettamente interne al singolo helper mai chiamate al suo interno, variabili `local` morte, commenti di codice vecchio e letture API REAPER ridondanti dentro le funzioni disegnate a ogni frame.
+
+Esegui il backup, poi analizza per primo `ZP_UI.lua` incrociando ogni simbolo con l'intero repository e mostrami l'elenco classificato prima di applicare qualsiasi modifica.
