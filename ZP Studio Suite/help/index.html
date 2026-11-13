@@ -143,7 +143,7 @@
     </div>
     <div class="card">
       <h3>Registrare e pulire</h3>
-      <a href="#tool-solo">SOLO Recorder</a><br>
+      <a href="#tool-solo">SOLO Recorder</a> &middot; <a href="#zp-remote">ZP Remote</a><br>
       <a href="#tool-22">Voice Cleaner</a><br>
       <a href="#tool-09">Lettura OSARA (09-12)</a>
     </div>
@@ -316,6 +316,7 @@
     <li><strong>Scala / velocità</strong> (pixel al secondo) e <strong>Corpo testo</strong>.</li>
     <li><strong>Anticipo voce</strong> (0-10 s): con OSARA o NVDA la battuta viene letta ad alta voce con questo anticipo. Serve solo a chi usa lo screen reader.</li>
     <li>Come nel verticale: <strong>flusso testi</strong> con <em>Tutti</em>, <strong>Cerca</strong>, <strong>Studio/Edit</strong>, selezione con doppio clic e modifica da <strong>Edita testo…</strong> nel menu destro (nell’editor Ctrl+E evidenzia una parte del testo), <strong>Segui tagli</strong>.</li>
+    <li><strong>Note agganciate alla battuta</strong>: anche qui ogni nota segue la sua battuta quando la sposti e se ne va con lei quando la cancelli, come nel <a href="#tool-02">Gobbo verticale</a>.</li>
   </ul>
 
   <!-- ================================================================== -->
@@ -357,6 +358,17 @@
   <p><strong>A cosa serve.</strong> Un telecomando per registrare senza tornare continuamente alla finestra di REAPER. Prima di partire controlla che sia armata una sola traccia, crea una regione <em>Take 001, 002…</em> a ogni stop, e tiene sotto mano marker, retake, inserti e versioni alternative su quattro tracce (MAIN, INSERTS, RETAKES, ALT). Tre viste: Mini, Compact, Expanded, con la stessa testata a icone. Meter dell'ingresso vero in dB, pre-roll di REAPER in secondi, pausa anche durante il REC, marker col nome scritto nel pannello. Il globo in testata apre la <strong>versione web</strong> (prototipo) nel browser del Mac, dell'iPad o del telefono.</p>
   <p class="when">Quando: sessioni di voiceover o di doppiaggio, soprattutto se sei da solo al microfono. Due modi: <strong>Sessione SOLO</strong> crea le sue tracce (cartella ZP SOLO SESSION); <strong>Telecomando</strong> non crea niente e registra sulle tracce che hai armato tu nel progetto. In un progetto che ha già delle tracce parte da solo in Telecomando.</p>
   <p><a href="solo_recorder.html">I comandi, uno per uno &rarr;</a></p>
+
+  <!-- ================================================================== -->
+  <h2 id="zp-remote">ZP Remote (doppiaggio a distanza)</h2>
+  <p><strong>A cosa serve.</strong> Prepara in REAPER il materiale per far registrare un interprete a distanza e riporta nel progetto quello che consegna. La registrazione vera avviene su un servizio esterno, <strong>Dubbertools</strong>, che l'interprete apre nel browser: la Suite si occupa solo dei due estremi, il pacchetto in uscita e la consegna in entrata.</p>
+  <p class="when">Quando: un doppiatore o uno speaker registra da casa sua e tu vuoi ritrovare i suoi take già al posto giusto nella Timeline.</p>
+  <ul>
+    <li><strong>ZP Remote · Pacchetto</strong> (anche nella toolbar): crea il pacchetto da caricare su Dubbertools, con video, guida audio e anelli presi dal progetto.</li>
+    <li><strong>Importa consegna</strong>: porta nel progetto i file registrati dall'interprete, sulla traccia del suo personaggio. <strong>Importa WAV senza manifest</strong> serve quando arrivano solo i file audio.</li>
+    <li><strong>Imposta ID progetto</strong>: lega il progetto REAPER al progetto su Dubbertools, così le consegne tornano nel progetto giusto.</li>
+  </ul>
+  <p>Il servizio è ancora in sviluppo: questa sezione verrà ampliata quando Dubbertools sarà completo.</p>
 
   <!-- ================================================================== -->
   <h2 id="tool-22">Voice Cleaner (Split silenzi)</h2>

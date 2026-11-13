@@ -138,6 +138,9 @@ local horizontal_text_lanes = 2
 local smooth_scroll_pos = nil
 local character_lane_by_key = {}
 local NOTE_WAKE_LEAD = 5.0
+-- Note agganciate alla battuta (vedi SyncLinkedNotes); stessa logica del Gobbo Verticale
+local NOTE_LINK_MAX_DISTANCE = 10.0   -- oltre questa distanza da ogni battuta la nota resta libera
+local NOTE_LINK_EPSILON = 0.0005
 local NOTE_HOT_MARGIN = 0.35
 local COLOR_SUBS = 0x3498DB
 local COLOR_NOTES = 0xF2C94C
@@ -632,6 +635,119 @@ function FormatVideoTimecode(project_seconds)
     return FormatTimecode(pos)
 end
 
+-- ---------------------------------------------------------------------------
+-- Note agganciate alla battuta.
+-- Ogni nota ricorda nel proprio item a quale battuta appartiene:
+--   P_EXT:ZP_NOTE_LINK      GUID dell'item della battuta
+--   P_EXT:ZP_NOTE_LINK_OFF  distanza della nota dall'inizio della battuta (secondi)
+--   P_EXT:ZP_NOTE_LINK_POS  inizio della battuta all'ultimo controllo
+-- Se la battuta si sposta la nota la segue; se la battuta viene cancellata la nota se ne va.
+-- Le correzioni non creano punti di Undo propri: l'Undo dello spostamento o della
+-- cancellazione della battuta riporta indietro anche la nota.
+
+function CollectAllTextItems()
+    local list, by_guid = {}, {}
+    for _, entry in ipairs(CollectTextFlowTracks()) do
+        for i = 0, reaper.CountTrackMediaItems(entry.track) - 1 do
+            local item = reaper.GetTrackMediaItem(entry.track, i)
+            local _, guid = reaper.GetSetMediaItemInfo_String(item, "GUID", "", false)
+            local rec = {
+                item = item, guid = guid,
+                pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION"),
+                len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH"),
+            }
+            list[#list + 1] = rec
+            if guid and guid ~= "" then by_guid[guid] = rec end
+        end
+    end
+    return list, by_guid
+end
+
+-- La battuta che contiene la posizione; altrimenti, se max_distance > 0, la piu' vicina entro quel limite.
+function NoteTargetItem(list, pos, max_distance)
+    local best, best_distance
+    for _, rec in ipairs(list) do
+        local finish = rec.pos + rec.len
+        if pos >= rec.pos - NOTE_LINK_EPSILON and pos <= finish + NOTE_LINK_EPSILON then return rec end
+        local distance = pos < rec.pos and (rec.pos - pos) or (pos - finish)
+        if not best_distance or distance < best_distance then best, best_distance = rec, distance end
+    end
+    if best and (max_distance or 0) > 0 and best_distance <= max_distance then return best end
+    return nil
+end
+
+function SetNoteLink(note_item, rec, note_pos)
+    local guid = rec and rec.guid or ""
+    reaper.GetSetMediaItemInfo_String(note_item, "P_EXT:ZP_NOTE_LINK", guid, true)
+    reaper.GetSetMediaItemInfo_String(note_item, "P_EXT:ZP_NOTE_LINK_OFF", rec and string.format("%.9f", note_pos - rec.pos) or "", true)
+    reaper.GetSetMediaItemInfo_String(note_item, "P_EXT:ZP_NOTE_LINK_POS", rec and string.format("%.9f", rec.pos) or "", true)
+end
+
+function SyncLinkedNotes()
+    local track = FindTrackByName(notes_track_name)
+    if not track then return end
+    local count = reaper.CountTrackMediaItems(track)
+    if count == 0 then return end
+    local list, by_guid = CollectAllTextItems()
+    local project_guids = nil
+    local changed, orphans = false, {}
+    for i = 0, count - 1 do
+        local note_item = reaper.GetTrackMediaItem(track, i)
+        local _, text = reaper.GetSetMediaItemInfo_String(note_item, "P_NOTES", "", false)
+        if trim(text) ~= "" then
+            local pos = reaper.GetMediaItemInfo_Value(note_item, "D_POSITION")
+            local _, guid = reaper.GetSetMediaItemInfo_String(note_item, "P_EXT:ZP_NOTE_LINK", "", false)
+            if guid == "" then
+                -- nota ancora libera: si aggancia alla battuta che ha sotto, o alla piu' vicina
+                local rec = NoteTargetItem(list, pos, NOTE_LINK_MAX_DISTANCE)
+                if rec then SetNoteLink(note_item, rec, pos); changed = true end
+            else
+                local rec = by_guid[guid]
+                local _, off_raw = reaper.GetSetMediaItemInfo_String(note_item, "P_EXT:ZP_NOTE_LINK_OFF", "", false)
+                local _, known_raw = reaper.GetSetMediaItemInfo_String(note_item, "P_EXT:ZP_NOTE_LINK_POS", "", false)
+                local off, known = tonumber(off_raw) or 0, tonumber(known_raw)
+                if not rec then
+                    if not project_guids then
+                        project_guids = {}
+                        for k = 0, reaper.CountMediaItems(0) - 1 do
+                            local _, g = reaper.GetSetMediaItemInfo_String(reaper.GetMediaItem(0, k), "GUID", "", false)
+                            project_guids[g] = true
+                        end
+                    end
+                    if not project_guids[guid] then
+                        -- la battuta non esiste piu'. Se nello stesso punto ce n'e' un'altra (item incollato,
+                        -- unito o ricreato) la nota passa a quella; altrimenti se ne va con la battuta.
+                        local under = NoteTargetItem(list, pos, 0)
+                        if under then SetNoteLink(note_item, under, pos) else orphans[#orphans + 1] = note_item end
+                        changed = true
+                    end
+                    -- se l'item esiste ancora ma su una traccia che non e' piu' un flusso di testo, la nota resta dov'e'
+                elseif known and math.abs(rec.pos - known) > NOTE_LINK_EPSILON then
+                    -- battuta spostata: la nota la segue
+                    reaper.SetMediaItemInfo_Value(note_item, "D_POSITION", math.max(0, rec.pos + off))
+                    reaper.GetSetMediaItemInfo_String(note_item, "P_EXT:ZP_NOTE_LINK_POS", string.format("%.9f", rec.pos), true)
+                    changed = true
+                elseif not known or math.abs(pos - (rec.pos + off)) > NOTE_LINK_EPSILON then
+                    -- nota spostata a mano: si aggancia alla battuta dove e' stata messa
+                    SetNoteLink(note_item, NoteTargetItem(list, pos, NOTE_LINK_MAX_DISTANCE), pos)
+                    changed = true
+                elseif pos > rec.pos + rec.len + NOTE_LINK_EPSILON then
+                    -- battuta divisa o accorciata: la nota passa alla parte che ora la contiene
+                    local under = NoteTargetItem(list, pos, 0)
+                    if under and under ~= rec then SetNoteLink(note_item, under, pos); changed = true end
+                end
+            end
+        end
+    end
+    for _, note_item in ipairs(orphans) do
+        if reaper.ValidatePtr(note_item, "MediaItem*") then reaper.DeleteTrackMediaItem(track, note_item) end
+    end
+    if changed then
+        reaper.MarkProjectDirty(0)
+        reaper.UpdateArrange()
+    end
+end
+
 function CollectNotes()
     local notes = {}
     local track = FindTrackByName(notes_track_name)
@@ -1097,6 +1213,7 @@ function UpdateItems()
     cached_project_fps = GetProjectFPS()
     cached_regions = CollectRegions()
     cached_video_items = CollectVideoItems()
+    SyncLinkedNotes()
     cached_notes = CollectNotes()
     cached_character_notes = CollectCharacterNotes()
     BuildCharacterLanes()

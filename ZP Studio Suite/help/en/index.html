@@ -143,7 +143,7 @@
     </div>
     <div class="card">
       <h3>Recording & Editing</h3>
-      <a href="#tool-solo">SOLO Recorder</a><br>
+      <a href="#tool-solo">SOLO Recorder</a> &middot; <a href="#zp-remote">ZP Remote</a><br>
       <a href="#tool-22">Voice Cleaner</a><br>
       <a href="#tool-09">OSARA Speech (09-12)</a>
     </div>
@@ -317,6 +317,7 @@
     <li><strong>Speech Lead</strong> (0-10 s): announces cues in advance via OSARA or NVDA for screen reader users.</li>
     <li>Shared feature set: <strong>Text flow</strong> with <em>All</em>, <strong>Search</strong>, <strong>Studio/Edit</strong>, inline editing, <strong>Follow cuts</strong>.</li>
       <li><strong>Load file…</strong> (visible at 740 px width or above) or Ctrl/⌘+L creates timed text. Double-click a word and choose <strong>Edit text…</strong> from the right-click menu to use the same editor. A thin bar shows timed-item progress.</li>
+      <li><strong>Notes linked to their cue</strong>: here too each note follows its cue when you move it and goes away with it when you delete it, as in the <a href="#tool-02">Vertical Teleprompter</a>.</li>
   </ul>
 
   <!-- ================================================================== -->
@@ -356,6 +357,17 @@
   <h2 id="tool-solo">SOLO Recorder</h2>
   <p><strong>Overview.</strong> Recording remote control allowing you to track without switching window focus back to REAPER. Enforces exclusive track arming, numbers take regions (<em>Take 001, 002…</em>) on each stop, and handles markers, retakes, inserts, and alternate takes across dedicated tracks (MAIN, INSERTS, RETAKES, ALT). Features Mini, Compact, and Expanded views. Live hardware input metering in dB, pre-roll in seconds, and built-in marker naming. The web icon launches a <strong>Web Remote</strong> in your browser for iPad/phone control.</p>
   <p class="when">When: recording voiceover or dubbing sessions, especially unattended solo tracking. Supports <strong>SOLO Session</strong> (creates ZP SOLO SESSION folder) and <strong>Remote Control</strong> (controls pre-existing tracks). <a href="solo_recorder.html">Full control guide &rarr;</a></p>
+
+  <!-- ================================================================== -->
+  <h2 id="zp-remote">ZP Remote (remote dubbing)</h2>
+  <p><strong>Overview.</strong> Prepares in REAPER the material a performer needs to record remotely and brings what they deliver back into the project. The recording itself happens on an external service, <strong>Dubbertools</strong>, which the performer opens in a browser: the Suite only handles the two ends, the outgoing package and the incoming delivery.</p>
+  <p class="when">When: a dubbing actor or voice talent records from home and you want their takes already in place on the Timeline.</p>
+  <ul>
+    <li><strong>ZP Remote · Package</strong> (also on the toolbar): builds the package to upload to Dubbertools, with video, audio guide and loops taken from the project.</li>
+    <li><strong>Import delivery</strong>: brings the performer's recorded files into the project, on their character's track. <strong>Import WAV without manifest</strong> is for when only the audio files arrive.</li>
+    <li><strong>Set project ID</strong>: links the REAPER project to the project on Dubbertools, so deliveries return to the right project.</li>
+  </ul>
+  <p>The service is still in development: this section will be expanded once Dubbertools is complete.</p>
 
   <!-- ================================================================== -->
   <h2 id="tool-22">Voice Cleaner (Silence Split)</h2>
