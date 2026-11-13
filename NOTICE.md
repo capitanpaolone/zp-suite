@@ -81,4 +81,15 @@ questo repository e non vengono distribuite.
 
 ---
 
+## Origini e contributi alla ZP Suite
+
+Questi riconoscimenti descrivono le origini dei lavori, le richieste funzionali e la collaborazione al codice; non sostituiscono le attribuzioni di licenza dei componenti elencati sopra.
+
+- **Gobbo** — la radice del progetto è il lavoro di **Nicola Lanci**.
+- **Sistema di importazione video** — deriva da un piccolo script Lua iniziale di **Fabio Loi**.
+- **Render & Copy** e **Gobbo Libero** — funzioni aggiunte su richiesta di **Ivano Lenny Pelizzoni** e **Daniele Campanari**.
+- **Nome ZP della Suite** — idea di **Gianluca Sordi**.
+- **OSARA nella Suite** — contributo di **Mario Loreti**.
+- **Codice della candidata 2.6.7** — lavoro diretto da **Paolo Balestri**, con la collaborazione di **Codex**, **Antigravity** e **Claude**.
+
 Se una attribuzione è incompleta o imprecisa, apri una issue: verrà corretta.
