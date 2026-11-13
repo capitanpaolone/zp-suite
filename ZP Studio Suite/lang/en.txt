@@ -979,3 +979,12 @@ con i mouse modifier	with mouse modifiers
 Questo set ha anche i suoi mouse modifier: prendono il posto di quelli di adesso (che vanno nel backup).\n\n	This set also has its own mouse modifiers: they replace the current ones (which go into the backup).\n\n
  Salvati anche i mouse modifier.	 Mouse modifiers saved too.
 Esportati tasti e mouse modifier: 	Keys and mouse modifiers exported: 
+Bip prima della battuta	Beep before the cue
+Volume bip	Beep volume
+Bip attivo.	Beep enabled.
+Bip spento.	Beep disabled.
+Volume bip %d dB.	Beep volume %d dB.
+21 Bip prima della battuta si/no	21 Beep before the cue yes/no
+22 Volume bip -	22 Beep volume -
+23 Volume bip +	23 Beep volume +
+Per il bip serve l'estensione SWS.	The beep needs the SWS extension.

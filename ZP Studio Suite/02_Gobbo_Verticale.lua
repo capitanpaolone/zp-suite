@@ -159,6 +159,8 @@ local sidebar_collapsed = false
 
 local tc_alert_mode = "off"
 local countdown_alert = true
+-- Bip prima della battuta: due bip a 3 e 2 secondi dall'attacco, l'ultimo secondo resta muto.
+local beep = { on = false, db = -12, db_min = -36, db_max = -6, source = nil, last_item = nil, last_n = nil }
 local max_character_rows = 1
 local reading_point = 0.34
 local timed_scroll_wpm = 120
@@ -299,6 +301,8 @@ function SaveSettings()
     reaper.SetExtState(settings_section, "sidebar_collapsed", bool_to_state(sidebar_collapsed), true)
     reaper.SetExtState(settings_section, "tc_alert_mode", tc_alert_mode, true)
     reaper.SetExtState(settings_section, "countdown_alert", bool_to_state(countdown_alert), true)
+    reaper.SetExtState(settings_section, "countdown_beep", bool_to_state(beep.on), true)
+    reaper.SetExtState(settings_section, "countdown_beep_db", tostring(beep.db), true)
     reaper.SetExtState(settings_section, "max_character_rows", tostring(max_character_rows), true)
     reaper.SetExtState(settings_section, "reading_point", tostring(reading_point), true)
     reaper.SetExtState(settings_section, "timed_scroll_wpm", tostring(timed_scroll_wpm), true)
@@ -330,6 +334,8 @@ function LoadSettings()
     sidebar_collapsed = state_to_bool(reaper.GetExtState(settings_section, "sidebar_collapsed"), sidebar_collapsed)
     show_timecode = state_to_bool(reaper.GetExtState(settings_section, "show_timecode"), show_timecode)
     countdown_alert = state_to_bool(reaper.GetExtState(settings_section, "countdown_alert"), countdown_alert)
+    beep.on = state_to_bool(reaper.GetExtState(settings_section, "countdown_beep"), beep.on)
+    beep.db = math.max(beep.db_min, math.min(beep.db_max, tonumber(reaper.GetExtState(settings_section, "countdown_beep_db")) or beep.db))
     studio_edit_mode = state_to_bool(reaper.GetExtState(settings_section, "studio_edit_mode"), studio_edit_mode)
     studio_edit_sync = state_to_bool(reaper.GetExtState(settings_section, "studio_edit_sync"), studio_edit_sync)
     local saved_tc_alert = reaper.GetExtState(settings_section, "tc_alert_mode")
@@ -1065,6 +1071,84 @@ function DeleteNote(note)
     reaper.Undo_EndBlock("ZP Studio Suite cancella nota", -1)
     reaper.UpdateArrange()
     UpdateItems()
+end
+
+-- Il bip e' lo stesso del Gobbo di Dubbertools: 1 kHz, un decimo di secondo, attacco e coda morbidi.
+-- Il file si crea da solo la prima volta nella cartella Data di REAPER; per suonarlo serve SWS.
+function EnsureBeepFile()
+    local path = reaper.GetResourcePath() .. "/Data/ZP_bip_1kHz.wav"
+    local file = io.open(path, "rb")
+    if file then file:close() return path end
+    local rate, freq = 48000, 1000
+    local count, ramp = math.floor(rate * 0.1), math.floor(rate * 0.004)
+    local data = {}
+    for i = 0, count - 1 do
+        local env = 1
+        if i < ramp then env = i / ramp elseif i >= count - ramp then env = (count - 1 - i) / ramp end
+        data[#data + 1] = string.pack("<i2", math.floor(32000 * env * math.sin(2 * math.pi * freq * i / rate) + 0.5))
+    end
+    local body = table.concat(data)
+    file = io.open(path, "wb")
+    if not file then return nil end
+    file:write("RIFF", string.pack("<I4", 36 + #body), "WAVEfmt ",
+        string.pack("<I4I2I2I4I4I2I2", 16, 1, 1, rate, rate * 2, 2, 16), "data", string.pack("<I4", #body), body)
+    file:close()
+    return path
+end
+
+function BeepAvailable()
+    return type(reaper.CF_CreatePreview) == "function"
+end
+
+function PlayBeep()
+    if not BeepAvailable() then return false end
+    if not beep.source then
+        local path = EnsureBeepFile()
+        if not path then return false end
+        beep.source = reaper.PCM_Source_CreateFromFile(path)
+        if not beep.source then return false end
+    end
+    return pcall(function()
+        local preview = reaper.CF_CreatePreview(beep.source)
+        reaper.CF_Preview_SetValue(preview, "D_VOLUME", 10 ^ (beep.db / 20))
+        reaper.CF_Preview_Play(preview)
+    end)
+end
+
+function SetBeepEnabled(value)
+    if value and not BeepAvailable() then
+        reaper.ShowMessageBox(T("Per il bip serve l'estensione SWS."), "ZP Studio Suite", 0)
+        value = false
+    end
+    beep.on = value
+    SaveSettings()
+    if beep.on then PlayBeep() end
+end
+
+function SetBeepVolume(db)
+    beep.db = math.max(beep.db_min, math.min(beep.db_max, db))
+    SaveSettings()
+    PlayBeep()
+end
+
+-- Chiamata a ogni frame: suona quando il conto alla rovescia passa a 3 e a 2, solo in riproduzione.
+function UpdateCountdownBeep(cue, pos)
+    if not beep.on then return end
+    if not cue or (reaper.GetPlayState() & 1) ~= 1 then
+        beep.last_item, beep.last_n = nil, nil
+        return
+    end
+    local n = math.ceil(cue.pos - pos)
+    if cue.item ~= beep.last_item or n ~= beep.last_n then
+        beep.last_item, beep.last_n = cue.item, n
+        if n == 3 or n == 2 then PlayBeep() end
+    end
+end
+
+if reaper.atexit then
+    reaper.atexit(function()
+        if beep.source then pcall(reaper.PCM_Source_Destroy, beep.source) end
+    end)
 end
 
 function FindUpcomingCue(pos)
@@ -3114,6 +3198,7 @@ function GobboAccessibleStatus()
         word_follow and T("Parola per parola attiva.") or T("Parola per parola spenta."),
         fixed_block_mode and T("Scorrimento continuo spento: testo a scatti, una battuta alla volta.") or T("Scorrimento continuo attivo."),
         countdown_alert and T("Conto alla rovescia attivo.") or T("Conto alla rovescia spento."),
+        beep.on and T("Bip attivo.") or T("Bip spento."),
         notes_panel_open and T("Pannello note aperto.") or T("Pannello note chiuso."),
         string.format(T("Corpo testo %s."), tostring(master_font_size))
     }
@@ -3141,7 +3226,10 @@ function OpenGobboAccessibleMenu()
         T("17 Nuovo testo temporizzato"),
         T("18 Carica file…"),
         T("19 Riposiziona sul player"),
-        T("20 Fascia di lettura si/no")
+        T("20 Fascia di lettura si/no"),
+        T("21 Bip prima della battuta si/no"),
+        T("22 Volume bip -"),
+        T("23 Volume bip +")
     }, ", ")
 
     local ok, value = reaper.GetUserInputs(
@@ -3225,6 +3313,12 @@ function OpenGobboAccessibleMenu()
         timed_reposition_requested=true
     elseif choice == 20 then
         focus_zone=not focus_zone; SaveSettings()
+    elseif choice == 21 then
+        SetBeepEnabled(not beep.on)
+        GobboAccessibleSpeak(beep.on and T("Bip attivo.") or T("Bip spento."))
+    elseif choice == 22 or choice == 23 then
+        SetBeepVolume(beep.db + (choice == 23 and 3 or -3))
+        GobboAccessibleSpeak(string.format(T("Volume bip %d dB."), beep.db))
     elseif choice == 17 then
         AddTimedGobboTextItem()
         GobboAccessibleSpeak(T("Incolla il testo; la durata si calcola alla velocità impostata."))
@@ -3673,6 +3767,24 @@ function DrawSidePanelBody(w, h, tc_position)
                 SaveSettings()
             end
             y = y + 26
+            if SidebarCheck(x + pad, y, full_w, T("Bip prima della battuta"), beep.on) then
+                SetBeepEnabled(not beep.on)
+            end
+            y = y + 26
+            if beep.on then
+                SidebarLabel(x + pad, y + 6, T("Volume bip"))
+                if DrawButton(x + pad + 86, y, 36, 26, "−", 0.45, 0.20, 0.20) then SetBeepVolume(beep.db - 3) end
+                gfx.setfont(3, "Arial", 15, 'b')
+                SetThemeColor("active", 0.95)
+                local beep_value = string.format("%d dB", beep.db)
+                local beep_w = gfx.measurestr(beep_value)
+                if y >= (sidebar_clip_top or 0) - 4 then
+                    gfx.x, gfx.y = x + pad + 86 + 36 + ((full_w - 86 - 72) - beep_w) / 2, y + 5
+                    gfx.drawstr(beep_value)
+                end
+                if DrawButton(x + pad + full_w - 36, y, 36, 26, "+", 0.20, 0.45, 0.20) then SetBeepVolume(beep.db + 3) end
+                y = y + 32
+            end
             if SidebarCheck(x + pad, y, full_w, T("Mostra timecode"), show_timecode) then
                 show_timecode = not show_timecode
                 SaveSettings()
@@ -4042,6 +4154,7 @@ function DrawGUI()
     local text_x = notes_w + document_margin_x + speaker_shoulder_w
     local reading_y = h * reading_point
     local tc_alert_item = FindUpcomingCue(smoothed_play_pos)
+    UpdateCountdownBeep(tc_alert_item, smoothed_play_pos)
 
     local teleprompter_bottom = h
 
