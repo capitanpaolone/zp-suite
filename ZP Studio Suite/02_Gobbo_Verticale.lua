@@ -108,6 +108,9 @@ do
 end
 local cached_items = {}
 local cached_notes = {}
+-- Risultati tenuti da un fotogramma all'altro per non rifare la scansione delle tracce:
+-- traccia del testo (finche' il progetto non cambia) e visibilita' mostrata nel pannello laterale.
+local frame_cache = { track_state = -1, vis_time = -1 }
 local cached_character_notes = {}
 local cached_regions = {}
 local cached_video_items = {}
@@ -120,7 +123,6 @@ local WINDOW_TITLE = ("ZP Studio Suite " .. ZP_UI.suite_version() .. " - ") .. T
 local READ_ALL = "ALL"   -- flusso virtuale "Tutti" (Leggi tutto): tutte le tracce testo insieme
 local current_text_track = nil
 local last_win_w = 0
-local active_media_item = nil
 
 local document_total_h = 0
 local document_scroll_y = 0
@@ -223,7 +225,6 @@ local last_play_pos_raw = -1
 local last_play_pos_time = 0
 
 local COLOR_SUBS = 0x3498DB
-local COLOR_SUBS_HOT = 0xD84D7A
 local COLOR_NOTES = 0xF2C94C
 local SPEAKER_PALETTE = {
     {name="Rosa", color=0xD84D7A},
@@ -239,7 +240,6 @@ local character_note_prefix = "BB Note Personaggio - "
 local NOTE_DEFAULT_LEN = 3.0
 local NOTE_HOT_MARGIN = 0.35
 local NOTE_WAKE_LEAD = 5.0
-local NOTE_PIXELS_PER_SECOND = 46
 local NOTES_PANEL_W = 250
 local TC_ALERT_LEAD = 3.0
 
@@ -358,21 +358,17 @@ function SaveWindowStateIfChanged()
     y = y or window_y
     dock = dock or window_dock
 
-    local state = table.concat({
-        tostring(math.floor(w + 0.5)),
-        tostring(math.floor(h + 0.5)),
-        tostring(math.floor(x + 0.5)),
-        tostring(math.floor(y + 0.5)),
-        tostring(dock)
-    }, ",")
+    local rw, rh = math.floor(w + 0.5), math.floor(h + 0.5)
+    local rx, ry = math.floor(x + 0.5), math.floor(y + 0.5)
 
-    if state ~= last_saved_window_state then
-        window_w = math.floor(w + 0.5)
-        window_h = math.floor(h + 0.5)
-        window_x = math.floor(x + 0.5)
-        window_y = math.floor(y + 0.5)
+    if last_saved_window_state == "" or rw ~= window_w or rh ~= window_h
+        or rx ~= window_x or ry ~= window_y or dock ~= window_dock then
+        window_w = rw
+        window_h = rh
+        window_x = rx
+        window_y = ry
         window_dock = dock
-        last_saved_window_state = state
+        last_saved_window_state = "salvato"
         SaveSettings()
     end
 end
@@ -592,11 +588,6 @@ function ToggleFollow()
     follow_last_count = reaper.GetProjectStateChangeCount(0)
 end
 
-function FollowLabel()
-    if not FollowScriptPath() then return "Segui: manca script" end
-    return FollowEnabled() and "Segui tagli ON" or "Segui tagli OFF"
-end
-
 function FollowTick()
     if not FollowEnabled() or not FollowScriptPath() then return end
     local count = reaper.GetProjectStateChangeCount(0)
@@ -638,7 +629,6 @@ function SelectTextFlow(guid)
     local entry = guid ~= READ_ALL and FindTextFlowByGuid(guid) or nil
     current_text_track = entry and entry.track or nil
     reaper.SetExtState(settings_section, "read_all", selected_text_track_guid == READ_ALL and "1" or "0", true)
-    active_media_item = nil
     cached_items = {}
     cached_notes = {}
     cached_headers = {}
@@ -724,16 +714,6 @@ function NormalizeName(name)
     return trim(name or ""):lower()
 end
 
-function IsVoiceTrackName(name)
-    local n = NormalizeName(name)
-    if n == "" then return false end
-    if n:find(NormalizeName(default_track_name), 1, true) then return false end
-    if n:find(NormalizeName(notes_track_name), 1, true) then return false end
-    if n:find("video", 1, true) then return false end
-    if n == "master" then return false end
-    return true
-end
-
 function IsCharacterNoteTrack(track)
     if not track then return false end
     local _, ext = reaper.GetSetMediaTrackInfo_String(track, "P_EXT:RythmoBand_NP", "", false)
@@ -794,21 +774,6 @@ function GetTrackName(track)
     return trim(name)
 end
 
-function GetPreferredCharacterName()
-    local selected = reaper.GetSelectedTrack(0, 0)
-    local selected_name = GetTrackName(selected)
-    if IsVoiceTrackName(selected_name) then return NormalizeName(selected_name) end
-
-    for i=0, reaper.CountTracks(0)-1 do
-        local track = reaper.GetTrack(0, i)
-        if reaper.GetMediaTrackInfo_Value(track, "I_RECARM") > 0 then
-            local name = GetTrackName(track)
-            if IsVoiceTrackName(name) then return NormalizeName(name) end
-        end
-    end
-    return ""
-end
-
 function FindRoleTrackOrder(note_track_index, role_key)
     for i=note_track_index-1, 0, -1 do
         local track = reaper.GetTrack(0, i)
@@ -859,10 +824,6 @@ function GetItemTrack(item)
         end
     end
     return nil
-end
-
-function IsCharacterNoteItem(item)
-    return IsCharacterNoteTrack(GetItemTrack(item))
 end
 
 function ApplySpeakerColorToVoicePair(note_track, native)
@@ -963,6 +924,18 @@ function IsTrackVisible(track)
     return reaper.GetMediaTrackInfo_Value(track, "B_SHOWINTCP") > 0.5
 end
 
+-- Stato delle caselle "Traccia note visibile" e "Tracce gobbo visibili": riletto ogni mezzo
+-- secondo e subito dopo un clic sulle caselle, non a ogni fotogramma.
+function SidebarTrackVisibility()
+    local now = reaper.time_precise()
+    if frame_cache.vis_time < 0 or now - frame_cache.vis_time > 0.5 then
+        frame_cache.vis_notes = IsTrackVisible(FindTrackByName(notes_track_name))
+        frame_cache.vis_flows = AnyTextFlowTrackVisible()
+        frame_cache.vis_time = now
+    end
+    return frame_cache.vis_notes, frame_cache.vis_flows
+end
+
 function ApplyNotesTrackLayout(track)
     if not track or notes_track_tcp_layout == "" then return end
     reaper.GetSetMediaTrackInfo_String(track, "P_TCP_LAYOUT", notes_track_tcp_layout, true)
@@ -980,18 +953,13 @@ function SetTrackVisible(track, visible, select_when_visible)
     end
     if reaper.TrackList_AdjustWindows then reaper.TrackList_AdjustWindows(false) end
     reaper.UpdateArrange()
+    frame_cache.vis_time = -1
 end
 
 function ToggleNotesTrackVisibility()
     local track = GetOrCreateNotesTrack()
     if not track then return end
     SetTrackVisible(track, not IsTrackVisible(track))
-end
-
-function NotesTrackLabel()
-    local track = FindTrackByName(notes_track_name)
-    if IsTrackVisible(track) then return "Track Note View VIS" end
-    return "Track Note View NASC"
 end
 
 function AnyTextFlowTrackVisible()
@@ -1009,15 +977,11 @@ function SetTextFlowTracksVisible(visible)
     end
     if reaper.TrackList_AdjustWindows then reaper.TrackList_AdjustWindows(false) end
     reaper.UpdateArrange()
+    frame_cache.vis_time = -1
 end
 
 function ToggleTextFlowTracksVisibility()
     SetTextFlowTracksVisible(not AnyTextFlowTrackVisible())
-end
-
-function TextFlowTracksLabel()
-    if AnyTextFlowTrackVisible() then return "Track Gobbo VIS" end
-    return "Track Gobbo NASC"
 end
 
 function GetCurrentProjectPosition()
@@ -1083,67 +1047,8 @@ function FormatVideoTimecode(project_seconds)
     return FormatTimecode(pos - GetVideoTimecodeBase(pos))
 end
 
-function FindItemAtPosition(pos)
-    for _, entry in ipairs(cached_items) do
-        if pos >= entry.pos and pos <= entry.pos + entry.len then
-            return entry.item
-        end
-    end
-    return nil
-end
-
-function EditCurrentText()
-    local item = active_media_item or FindItemAtPosition(GetCurrentProjectPosition())
-    if not item then
-        reaper.ShowMessageBox(T("Nessuna battuta sotto il cursore/playhead."), "ZP Studio Suite", 0)
-        return
-    end
-
-    local _, notes = reaper.GetSetMediaItemInfo_String(item, "P_NOTES", "", false)
-    local edit_text = notes:gsub("[\r\n]+", " / ")
-    local ok, new_text = reaper.GetUserInputs(T("Modifica battuta corrente"), 1, T("Testo:,extrawidth=700"), edit_text)
-    if not ok then return end
-
-    new_text = new_text:gsub("%s*/%s*", "\n")
-    reaper.Undo_BeginBlock()
-    reaper.GetSetMediaItemInfo_String(item, "P_NOTES", new_text, true)
-    reaper.Undo_EndBlock("ZP Studio Suite modifica testo", -1)
-    reaper.UpdateArrange()
-    UpdateItems()
-end
-
 function InsertNoteAtCurrentPosition()
     StartInlineNoteEdit(nil)
-end
-
-function FindNearestNote(pos)
-    local best_note = nil
-    local best_score = nil
-    for _, note in ipairs(cached_notes) do
-        local note_end = note.pos + note.len
-        local score = nil
-        if pos >= note.pos - NOTE_HOT_MARGIN and pos <= note_end + NOTE_HOT_MARGIN then
-            score = 0
-        else
-            score = math.min(math.abs(pos - note.pos), math.abs(pos - note_end))
-        end
-
-        if not best_score or score < best_score then
-            best_score = score
-            best_note = note
-        end
-    end
-    return best_note, best_score
-end
-
-function EditNearestNote()
-    local note, distance = FindNearestNote(GetCurrentProjectPosition())
-    if not note or (distance and distance > 12) then
-        reaper.ShowMessageBox(T("Nessuna nota vicina al playhead/cursore."), "ZP Studio Suite", 0)
-        return
-    end
-
-    StartInlineNoteEdit(note)
 end
 
 -- Cancella una nota dal pannello (la x sulla scheda), con conferma. Undo la rimette.
@@ -1151,24 +1056,6 @@ function DeleteNote(note)
     if not note or not note.item or not reaper.ValidatePtr(note.item, "MediaItem*") then return end
     local ok = reaper.ShowMessageBox(T("Cancellare questa nota?\n\n") .. FormatVideoTimecode(note.pos) .. "\n" .. note.text, "ZP Studio Suite", 4)
     if ok ~= 6 then return end
-    local track = reaper.GetMediaItem_Track(note.item)
-    reaper.Undo_BeginBlock()
-    reaper.DeleteTrackMediaItem(track, note.item)
-    reaper.Undo_EndBlock("ZP Studio Suite cancella nota", -1)
-    reaper.UpdateArrange()
-    UpdateItems()
-end
-
-function DeleteNearestNote()
-    local note, distance = FindNearestNote(GetCurrentProjectPosition())
-    if not note or (distance and distance > 12) then
-        reaper.ShowMessageBox(T("Nessuna nota vicina al playhead/cursore."), "ZP Studio Suite", 0)
-        return
-    end
-
-    local ok = reaper.ShowMessageBox(T("Cancellare la nota vicina?\n\n") .. note.text, "ZP Studio Suite", 4)
-    if ok ~= 6 then return end
-
     local track = reaper.GetMediaItem_Track(note.item)
     reaper.Undo_BeginBlock()
     reaper.DeleteTrackMediaItem(track, note.item)
@@ -1198,8 +1085,6 @@ function SyncSourceFileName(item)
 end
 
 function NormalizeSearchText(text) return ZP_CERCA.fold(text) end
-function FindExactSearchInText(text, query) return ZP_CERCA.find(text, query) end
-
 function FindSubtitleMatch(query, start_pos)
     if ZP_CERCA.fold(query) == "" then return nil end
     local fallback
@@ -1592,19 +1477,6 @@ function ProcessSearchPanelKey(char)
     return false
 end
 
-function CycleTCAlertMode()
-    tc_alert_mode = "off"
-    SaveSettings()
-end
-
-function TCAlertLabel()
-    return "TC Gobbo OFF"
-end
-
-function CountdownAlertLabel()
-    return countdown_alert and "Countdown ON" or "Countdown OFF"
-end
-
 function InitGUI()
     gfx.clear = 0x111111 
     -- toolbar: icona accesa finche' la finestra e' aperta; un altro clic sull'icona la chiude (REAPER 7.03+)
@@ -1991,12 +1863,6 @@ function DrawNotesPanel(h, play_pos, reading_y)
     end
 end
 
-function TruncateText(text, max_chars)
-    local out = tostring(text or "")
-    if #out > max_chars then return out:sub(1, max_chars - 3) .. "..." end
-    return out
-end
-
 function UpdateSubtitleItemName(item, text)
     local one_line = trim((text or ""):gsub("[\r\n]+", " / "))
     one_line = one_line:gsub("%s+", " ")
@@ -2007,39 +1873,6 @@ function UpdateSubtitleItemName(item, text)
     end
     reaper.GetSetMediaItemInfo_String(item, "P_NAME", one_line, true)
     reaper.UpdateItemInProject(item)
-end
-
-function EditSubtitleItemText(item)
-    if not item then return end
-    local _, old_text = reaper.GetSetMediaItemInfo_String(item, "P_NOTES", "", false)
-    local edit_text = (old_text or ""):gsub("\r\n", "\n"):gsub("\r", "\n"):gsub("\n", " \\n ")
-    local ok, new_text = reaper.GetUserInputs(
-        T("Edit testo gobbo"),
-        1,
-        T("Testo (usa \\n per andare a capo):,extrawidth=700"),
-        edit_text
-    )
-    if not ok then return end
-    new_text = trim((new_text or ""):gsub("%s*\\n%s*", "\n"))
-    if new_text == "" or new_text == old_text then return end
-
-    reaper.Undo_BeginBlock()
-    reaper.GetSetMediaItemInfo_String(item, "P_NOTES", new_text, true)
-    UpdateSubtitleItemName(item, new_text)
-    reaper.Undo_EndBlock("Edit testo dal gobbo verticale", -1)
-    reaper.UpdateArrange()
-    UpdateItems()
-    RecalculateDocumentLayout()
-end
-
-function Utf8Backspace(text)
-    text = tostring(text or "")
-    if text == "" then return "" end
-    if utf8 and utf8.offset then
-        local byte = utf8.offset(text, -1)
-        if byte then return text:sub(1, byte - 1) end
-    end
-    return text:sub(1, -2)
 end
 
 function Utf8PrevCursor(text, cursor)
@@ -2311,26 +2144,6 @@ function SerializeHighlightTerms(terms)
         if term ~= "" then table.insert(out, term) end
     end
     return table.concat(out, "\n")
-end
-
-function ToggleItemHighlight(item, selected_text)
-    if not item then return end
-    local term = trim(tostring(selected_text or ""):gsub("[\r\n]+", " "))
-    if term == "" then return end
-    local _, raw = reaper.GetSetMediaItemInfo_String(item, "P_EXT:RythmoBand_HIGHLIGHT", "", false)
-    local terms = ParseHighlightTerms(raw)
-    local key = NormalizeSearchText(term)
-    local removed = false
-    for i = #terms, 1, -1 do
-        if NormalizeSearchText(terms[i]) == key then
-            table.remove(terms, i)
-            removed = true
-        end
-    end
-    if not removed then table.insert(terms, term) end
-    reaper.GetSetMediaItemInfo_String(item, "P_EXT:RythmoBand_HIGHLIGHT", SerializeHighlightTerms(terms), true)
-    reaper.UpdateItemInProject(item)
-    return not removed
 end
 
 function InlineMoveVertical(direction)
@@ -3578,7 +3391,7 @@ function ShowTextFlowMenu(mx, my)
     if choice and choice > 0 and entries[choice] then SelectTextFlow(entries[choice].guid) end
 end
 
-function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
+function DrawSidePanel(w, h, tc_position)
     if panels_hidden then return end
     local x = w - (sidebar_collapsed and 30 or side_panel_w)
     local pad = 12
@@ -3777,11 +3590,12 @@ function DrawSidePanel(w, h, tc_position, tc_alert_item, tc_alert_flash)
                     if FollowScriptPath() then ToggleFollow() end
                 end
                 y = y + 26
-                if SidebarCheck(x + pad, y, full_w, T("Traccia note visibile"), IsTrackVisible(FindTrackByName(notes_track_name))) then
+                local notes_track_visible, flow_tracks_visible = SidebarTrackVisibility()
+                if SidebarCheck(x + pad, y, full_w, T("Traccia note visibile"), notes_track_visible) then
                     ToggleNotesTrackVisibility()
                 end
                 y = y + 26
-                if SidebarCheck(x + pad, y, full_w, T("Tracce gobbo visibili"), AnyTextFlowTrackVisible()) then
+                if SidebarCheck(x + pad, y, full_w, T("Tracce gobbo visibili"), flow_tracks_visible) then
                     ToggleTextFlowTracksVisibility()
                 end
                 y = y + 30
@@ -4036,9 +3850,18 @@ function DrawGUI()
     end
 
     FollowTick()
-    local track = GetRythmoTrack()
-    local track_guid = selected_text_track_guid == READ_ALL and READ_ALL or (track and reaper.GetTrackGUID(track) or "")
     local proj_state = reaper.GetProjectStateChangeCount(0)
+    local project = reaper.EnumProjects(-1)
+    if proj_state ~= frame_cache.track_state or project ~= frame_cache.project
+        or selected_text_track_guid ~= frame_cache.track_sel
+        or (frame_cache.track and not IsValidTrack(frame_cache.track)) then
+        frame_cache.track = GetRythmoTrack()
+        frame_cache.track_state = proj_state
+        frame_cache.project = project
+        frame_cache.track_sel = selected_text_track_guid
+    end
+    local track = frame_cache.track
+    local track_guid = selected_text_track_guid == READ_ALL and READ_ALL or (track and reaper.GetTrackGUID(track) or "")
 
     if proj_state ~= last_proj_state or track_guid ~= last_track_guid then
         last_proj_state = proj_state
@@ -4075,12 +3898,10 @@ function DrawGUI()
     end
 
     local notes_w = (not panels_hidden and notes_panel_open) and NOTES_PANEL_W or 0
-    local spw = not panels_hidden and (sidebar_collapsed and 30 or side_panel_w) or 0
     local read_w = math.max(320, w - spw - notes_w)
     local text_x = notes_w + document_margin_x + speaker_shoulder_w
     local reading_y = h * reading_point
     local tc_alert_item = FindUpcomingCue(smoothed_play_pos)
-    local tc_alert_flash = tc_alert_item and (math.floor(reaper.time_precise() * 4) % 2 == 0)
 
     local teleprompter_bottom = h
 
@@ -4108,7 +3929,6 @@ function DrawGUI()
     local target_scroll_y = 0
     local found_active = false
     local static_display_item = nil
-    active_media_item = nil
     local active_timed_scroll_item = nil
     active_progress = 0.0
     
@@ -4133,7 +3953,6 @@ function DrawGUI()
                 target_scroll_y = (item.doc_start_y + pixel_progress) - reading_y
             end
             found_active = true
-            active_media_item = item.item
             if item.timed_scroll then active_timed_scroll_item = item.item end
             break
         end
@@ -4295,16 +4114,6 @@ function DrawGUI()
                 gfx.rect(text_x - 10, start_py - 6, 4, hit_h, 1)
             end
             
-            if is_active then
-                SetThemeColor("active", 1.0)
-            elseif is_sfumato_ready then
-                SetThemeColor("active", 0.86)
-            elseif full_contrast then
-                SetThemeColor("text", 0.92)
-            else
-                SetThemeColor("dim", 0.48)
-            end
-
             local base_color_kind = "dim"
             local base_alpha = 0.48
             if is_active then
@@ -4363,7 +4172,7 @@ function DrawGUI()
         show_settings_timer = show_settings_timer - 1
     end
 
-    DrawSidePanel(w, h, smoothed_play_pos, tc_alert_item, tc_alert_flash)
+    DrawSidePanel(w, h, smoothed_play_pos)
     sidebar_scroll_y = math.max(0, math.min(sidebar_scroll_y, math.max(0, (sidebar_content_h or 0) - h)))
     DrawTimecodeHud(notes_w, smoothed_play_pos)
     if active_timed_scroll_item and not inline_edit then
