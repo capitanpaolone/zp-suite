@@ -1,6 +1,25 @@
+// @description ZP BrownSlope Prism
+// @version 1.0
+// @author Paolo Balestri
+// @license GPL-3.0-or-later
+// @about
+//   ### ZP BrownSlope Prism
+//   Analizzatore passivo della pendenza brown: l'audio passa intatto. Lo spettro e' compensato di 4,5 dB per ottava,
+//   cosi' un rumore brown diventa una linea piatta; due riferimenti a -18 e -24 LUFS, scarto per zona,
+//   pendenza residua, livello ed esito Pareggiato / Quasi / No. Vista JSFX con le letture per OSARA.
+//
+//   Passive brown-slope analyzer: audio passes through untouched. The spectrum is compensated by 4.5 dB per octave,
+//   so brown noise becomes a flat line; two references at -18 and -24 LUFS, deviation per zone,
+//   residual slope, level and a Matched / Close / No result. JSFX view exposes the readings to OSARA.
+//
+//   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
+//   Guida completa: ZP Studio Suite/help/index.html#plugin-brownslope-prism
+// @changelog
+//   Prima versione distribuita: analizzatore passivo con riferimenti a -18 e -24 LUFS, confronto Livello o Forma,
+//     pomelli Media, Pendenza e Scala, Calibra sul proprio file di riferimento, guida con ? e vista JSFX per OSARA.
 desc:ZP BrownSlope Prism - Passive Brown Slope Analyzer - Paolo Balestri
 // Autore: Paolo Balestri
-// Versione: 0.1-lab
+// Versione: 1.0
 //
 // Analizzatore PASSIVO: l'audio passa intatto. Mostra lo spettro del programma
 // come TDR Prism con "Slope 4.5 dB/oct": compensando 4,5 dB per ottava, un rumore
@@ -54,10 +73,10 @@ function help_bridge_open(plugin_id) (
 function help_bridge_warn() local(tw2, th2) (
   time_precise() < help_warn_until ? (
     gfx_setfont(9, "Arial", 14);
-    gfx_measurestr("Guida: avvia il Cue Navigator (33 Benvenuto) per aprirla da qui, oppure Help ZP > ZP Lab.", tw2, th2);
+    gfx_measurestr("Guida: avvia il Cue Navigator (33 Benvenuto) per aprirla da qui, oppure apri l'Help ZP.", tw2, th2);
     gfx_set(0.10, 0.08, 0.04, 0.95); gfx_rect(16, gfx_h - th2 - 22, tw2 + 20, th2 + 12);
     gfx_set(1.0, 0.78, 0.35, 1); gfx_x = 26; gfx_y = gfx_h - th2 - 16;
-    gfx_drawstr("Guida: avvia il Cue Navigator (33 Benvenuto) per aprirla da qui, oppure Help ZP > ZP Lab.");
+    gfx_drawstr("Guida: avvia il Cue Navigator (33 Benvenuto) per aprirla da qui, oppure apri l'Help ZP.");
   );
 );
 // JSFX non accetta la notazione scientifica (1e-30): costanti calcolate qui

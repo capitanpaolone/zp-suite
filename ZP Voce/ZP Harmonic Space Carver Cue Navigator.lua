@@ -4,6 +4,7 @@
 -- @about Collega i Carver a REAPER: salti tra i cue, punto del cursore a trasporto fermo,
 --   verifica del routing sidechain e cue come marker #HSC sul righello (seguono l'editing).
 -- @changelog
+--   Il ? di ZP BrownSlope Prism apre la sua sezione nella guida principale della Suite.
 --   2026-11-09: memoria per marker estesa a Rampa e durata Custom; sincronizzazione con JSFX e render.
 --   1.14: preset C/S/M/L salvati per marker nel progetto; il Carver riceve anche una copia nel suo stato
 --        per mantenere le impostazioni cue-specifiche disponibili durante il render offline.
@@ -360,11 +361,11 @@ local Bridge = {
     [9] = "plugin-loudness-meter",
     [10] = "plugin-oscilloscope",
     [11] = "plugin-probe",
-    -- ZP Lab (plugin in lavorazione, non pubblicati): pagina a parte, help/lab.html
     [12] = "plugin-brownslope-prism",
+    -- ZP Lab (plugin in lavorazione, non pubblicati): pagina a parte, help/lab.html
     [13] = "plugin-brownslope-guard",
   },
-  PLUGIN_PAGES = { [12] = "lab.html", [13] = "lab.html" },   -- di serie index.html
+  PLUGIN_PAGES = { [13] = "lab.html" },   -- di serie index.html
   FALLBACK_URL = "https://latocardioide.it/strumenti/"
 }
 HSC.Bridge = Bridge

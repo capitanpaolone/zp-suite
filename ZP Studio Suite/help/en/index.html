@@ -521,6 +521,13 @@
       <p><strong>Where to place:</strong> Absolute final slot on Voice Bus (Voice role) and Music Bus (Music role), guarded by Probe Guard.</p>
       <p><strong>Key controls:</strong> Role switch (Voice / Music), real-time meter display, Shared Bus gmem activity indicator.</p>
     </div>
+    <div class="card" id="plugin-brownslope-prism">
+      <h3>ZP BrownSlope Prism</h3>
+      <p><strong>Purpose:</strong> Passive brown-slope analyzer: audio passes through untouched. It shows the spectrum with a 4.5 dB per octave slope compensation, so brown noise becomes a flat line. The two green lines are the -18 and -24 LUFS references; the orange curve is your audio. You are matched when the orange curve is flat and sits on the chosen line.</p>
+      <p><strong>Where to place:</strong> At the end of the bus or track you want to compare with the brown reference, or on the Master.</p>
+      <p><strong>Key controls:</strong> Average, Slope, Scale knobs (drag vertically; double click or right click = default); Ref., Shape, Reset, Calibrate, Default buttons. Shape removes the level difference and compares EQ only. Calibrate: play your reference loop with long average and press Calibrate; the curve is saved with the project, Default removes it.</p>
+      <p><strong>Readings:</strong> Deviation in dB per zone (Lows, Low-mids, High-mids, Highs), residual slope (+ = brighter than brown, - = darker), level against the reference, result Matched / Close / No. JSFX view brings back REAPER's parameter list, readings included, for OSARA and screen readers.</p>
+    </div>
   </div>
 
   <!-- ================================================================== -->

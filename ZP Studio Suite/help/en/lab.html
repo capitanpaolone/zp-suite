@@ -63,18 +63,6 @@ a{color:var(--accento)}
 <p class="occhiello">Work-in-progress plugins: not in the ReaPack package, copied by hand. They may change.</p><!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
 
 
-<h2 id="plugin-brownslope-prism">ZP BrownSlope Prism</h2>
-<p><strong>Passive analyzer</strong>: audio passes through untouched. It shows the spectrum with a 4.5 dB per octave slope compensation, so brown noise becomes a flat line. The two green lines are the -18 and -24 LUFS references, measured from the brown loops with the plugin's own calculation; the orange curve is your audio.</p>
-<ul>
-<li><strong>You are matched</strong> when the orange curve is flat and sits on the chosen line.</li>
-<li><strong>Readings</strong>: deviation in dB per zone (Lows, Low-mids, High-mids, Highs), residual slope (+ = brighter than brown, - = darker), level against the reference, result Matched / Close / No.</li>
-<li><strong>Shape</strong> removes the level difference and compares EQ only.</li>
-<li><strong>Controls</strong>: Average, Slope, Scale knobs (drag vertically; double click or right click = default); Ref., Shape, Reset, Calibrate, Default buttons.</li>
-<li><strong>Calibrate</strong>: play the reference loop with long average and press Calibrate; the curve is saved with the project. Default removes it.</li>
-<li><strong>JSFX view</strong>: brings back REAPER's parameter list, readings included, for OSARA and screen readers.</li>
-<li><strong>?</strong> opens the guide inside the plugin; from there, <em>GUIDA COMPLETA</em> (full guide) opens this page (Cue Navigator must be running).</li>
-</ul>
-
 <h2 id="plugin-brownslope-guard">ZP BrownSlope Dynamic Guard</h2>
 <p>Advanced, visible version of the Brown module already inside ZP BUS Chain and ZP Master Pro: a <strong>4-band dynamic tonal guard</strong> for the end of a voice/music chain, before the final limiter. It gently steers long-term band energy toward a brown slope, then applies optional broadcast HPF/LPF guards.</p>
 <ul>

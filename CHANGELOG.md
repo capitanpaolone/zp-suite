@@ -2,6 +2,8 @@
 
 ## ZP Studio Suite 2.6.7 — in preparazione
 
+- **ZP BrownSlope Prism 1.0 (ZP Misura)**: analizzatore passivo della pendenza brown. Lo spettro è compensato di 4,5 dB per ottava, con riferimenti a -18 e -24 LUFS, scarto per zona, pendenza residua ed esito Pareggiato / Quasi / No; Calibra lega il riferimento a un proprio file, la vista JSFX espone le letture a OSARA. Il ? apre la sezione nella guida della Suite.
+- **ZP BrownSlope Prism 1.0 (ZP Misura)**: passive brown-slope analyzer. The spectrum is compensated by 4.5 dB per octave, with -18 and -24 LUFS references, deviation per zone, residual slope and a Matched / Close / No result; Calibrate ties the reference to your own file, the JSFX view exposes the readings to OSARA. The ? opens its section in the Suite guide.
 - **ZP Consolidate (37)**: raccoglie in Media le sorgenti file dei take e gli SRT/VTT registrati nel progetto, preserva montaggio e originali, e gestisce le collisioni scegliendo sovrascrittura o rinomina. Aggiunti modulo SRT condiviso, icona e pulsante toolbar.
 - **Benvenuto (33)**: scroll della lista smussato e limitato prima del disegno per evitare salti dovuti ai delta rapidi/inerziali della rotella.
 - **SRT di progetto**: trascrizioni e traduzioni sono copiate/registrate in Media e referenziate nel file RPP.

@@ -530,6 +530,13 @@
       <p><strong>Dove si inserisce:</strong> Ultimo slot assoluto del Voice Bus (in ruolo Voice) e del Music Bus (in ruolo Music), protetto dal Probe Guard.</p>
       <p><strong>Controlli principali:</strong> Selettore di ruolo (Voice / Music), meter di verifica istantanea, stato trasmissione gmem Shared Bus.</p>
     </div>
+    <div class="card" id="plugin-brownslope-prism">
+      <h3>ZP BrownSlope Prism</h3>
+      <p><strong>A cosa serve:</strong> Analizzatore passivo della pendenza brown: l'audio passa intatto. Mostra lo spettro con la pendenza compensata di 4,5 dB per ottava, cos&igrave; un rumore brown diventa una linea piatta. Le due linee verdi sono i riferimenti a -18 e -24 LUFS; la curva arancione &egrave; il tuo audio. Sei pareggiato quando l'arancio &egrave; piatto e sta sulla linea scelta.</p>
+      <p><strong>Dove si inserisce:</strong> In fondo al bus o alla traccia che vuoi confrontare con il riferimento brown, oppure sul Master.</p>
+      <p><strong>Controlli principali:</strong> Pomelli Media, Pendenza, Scala (trascina in verticale; doppio clic o clic destro = valore di partenza); pulsanti Rif., Forma, Reset, Calibra, Default. Forma toglie la differenza di livello e confronta solo l'EQ. Calibra: suona il tuo loop di riferimento con media lunga e premi Calibra; la curva resta salvata nel progetto, Default la toglie.</p>
+      <p><strong>Letture:</strong> Scarto in dB per zona (Bassi, Medio-bassi, Medio-alti, Alti), pendenza residua (+ = pi&ugrave; brillante del brown, - = pi&ugrave; scuro), livello rispetto al riferimento, esito Pareggiato / Quasi / No. La Vista JSFX riporta la lista dei parametri di REAPER, letture comprese, per OSARA e screen reader.</p>
+    </div>
   </div>
   <p>Il LED dei plugin indica solo stato connessione: verde dati recenti, giallo dati parziali/vecchi, rosso componente essenziale assente. Il livello audio resta sui meter separati.</p>
 

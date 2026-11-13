@@ -25,7 +25,7 @@ The Suite works in a clean REAPER install. SWS, js_ReaScriptAPI and OSARA are op
 - **ZP Studio Suite** — teleprompters, SRT import/export and references, project tools, mixdown preparation, voice-minute reports, Voice Cleaner and accessible workflows.
 - **ZP Voce** — voice chains, dialogue tools and voice/music processing.
 - **ZP Master** — mastering and reference-tone tools.
-- **ZP Misura** — loudness meters, oscilloscope and passive signal probes.
+- **ZP Misura** — loudness meters, oscilloscope, passive signal probes and ZP BrownSlope Prism, a passive brown-slope analyzer.
 
 Version 2.6.6 adds automatic copying and Sync now in Render & Copy on Windows (requires js_ReaScriptAPI) and Linux (requires find and stat). Version 2.6.5 updates the Solo Recorder guide to explain how ZP Remote packages relate to Dubbertools. Version 2.6.4 added Render & Copy, a Dubbertools link in SOLO Web, and the ZP Remote REAPER tool for creating packages and importing deliveries. ZP Remote export requires Python 3 and ffmpeg.
 
@@ -34,7 +34,7 @@ ZP Studio Suite 2.6.7 is in preparation and is not published. The 2.6.7 candidat
 
 ## Not included in this version
 
-ZP Montaggio Parlato (prototype), ZP BrownSlope Dynamic Guard and ZP BrownSlope Prism are still in development and are not part of this ReaPack release.
+ZP Montaggio Parlato (prototype) and ZP BrownSlope Dynamic Guard are still in development and are not part of this ReaPack release.
 
 ZP Speech (the transcription engine behind Transcribe, 29) is not in the ReaPack package: install it from Welcome (33), which downloads it from GitHub. On macOS it uses MacWhisper or OpenAI Whisper; on Windows and Linux it uses local OpenAI Whisper and is still **experimental**.
 
