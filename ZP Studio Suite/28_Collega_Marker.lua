@@ -16,19 +16,21 @@ end
 local function parse_srt(data)
   if type(data) ~= "string" then return {} end
   data = data:gsub("^\239\187\191", ""):gsub("\r\n", "\n"):gsub("\r", "\n")
-  local cues, start, lines = {}, nil, {}
+  local cues, start, stop, lines = {}, nil, nil, {}
   local function finish()
     if start and #lines > 0 then
       local text = table.concat(lines, " "):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
-      if text ~= "" then cues[#cues + 1] = { start = start, text = text } end
+      if text ~= "" then cues[#cues + 1] = { start = start, stop = stop, text = text } end
     end
-    start, lines = nil, {}
+    start, stop, lines = nil, nil, {}
   end
   for line in (data .. "\n"):gmatch("(.-)\n") do
     local a, b = line:match("^%s*(%S+)%s+%-%->%s+(%S+)")
     if a and b then
       finish()
       start = parse_time(a)
+      stop = parse_time(b)
+      if not start or not stop or stop <= start then stop = nil end
     elseif line:match("^%s*$") then
       finish()
     elseif start then
@@ -201,7 +203,11 @@ local function main()
       end
     end
     for _, cue in ipairs(plan.cues) do
-      reaper.SetTakeMarker(plan.take, -1, cue.text, cue.start)
+      local index = reaper.SetTakeMarker(plan.take, -1, cue.text, cue.start)
+      -- Da REAPER 7.86 il marker dell'item puo' avere una durata: quella della battuta.
+      if reaper.SetTakeMarkerInfo and cue.stop and index and index >= 0 then
+        reaper.SetTakeMarkerInfo(plan.take, index, "LENGTH", cue.stop - cue.start)
+      end
       cue_count = cue_count + 1
     end
     applied = applied + 1

@@ -43,7 +43,7 @@ function M.cues(markers, source_len)
   local list = {}
   for _, m in ipairs(markers) do
     local text = (m.text or ""):gsub("^%s+", ""):gsub("%s+$", "")
-    if text ~= "" and not M.is_service(text) and m.src >= 0 then list[#list + 1] = { start = m.src, text = text } end
+    if text ~= "" and not M.is_service(text) and m.src >= 0 then list[#list + 1] = { start = m.src, text = text, len = m.len } end
   end
   table.sort(list, function(a, b) return a.start < b.start end)
   local cues = {}
@@ -52,9 +52,15 @@ function M.cues(markers, source_len)
   end
   for i, c in ipairs(cues) do
     local nxt = cues[i + 1] and cues[i + 1].start
-    local stop = nxt or math.min(c.start + LAST_MAX, (source_len and source_len > c.start) and source_len or c.start + LAST_MAX)
+    local stop
+    if c.len and c.len > 0 then
+      stop = c.start + c.len   -- durata scritta sul marker (REAPER 7.86): e' la fine vera della battuta
+    else
+      stop = nxt or math.min(c.start + LAST_MAX, (source_len and source_len > c.start) and source_len or c.start + LAST_MAX)
+    end
     if stop - c.start < MIN_LEN then stop = c.start + MIN_LEN end
     c.stop = stop
+    c.len = nil
   end
   return cues
 end
@@ -137,7 +143,8 @@ local function collect()
       end
       for j = 0, reaper.GetNumTakeMarkers(take) - 1 do
         local pos, name = reaper.GetTakeMarker(take, j)
-        entry.markers[#entry.markers + 1] = { src = pos, text = name }
+        local len = reaper.GetTakeMarkerInfo and reaper.GetTakeMarkerInfo(take, j, "LENGTH") or 0
+        entry.markers[#entry.markers + 1] = { src = pos, text = name, len = len }
       end
     elseif path ~= "" then
       no_markers = no_markers + 1

@@ -2,6 +2,8 @@
 
 ## ZP Studio Suite 2.6.7 — in preparazione
 
+- **Collega marker (28) e SRT dall'audio (31) con REAPER 7.86**: i marker dell'item portano la durata della battuta e l'SRT riscritto dai marker ha la fine esatta. Con REAPER precedenti il comportamento non cambia.
+- **Collega marker (28) and SRT from audio (31) with REAPER 7.86**: item markers carry the cue length and the SRT rewritten from markers has the exact end time. Nothing changes on earlier REAPER versions.
 - **Gobbi: unisci battute**: clic destro sul testo → «Unisci con la battuta successiva» o «Unisci le battute selezionate in timeline». Resta il primo item con i testi in fila e la durata fino alla fine dell'ultimo; promemoria e parole evidenziate seguono il testo. Nuova azione **38 ZP Unisci Battute** per farlo sugli item selezionati senza aprire il Gobbo.
 - **Teleprompters: join cues**: right-click the text → "Join with the next cue" or "Join the cues selected in the timeline". The first item stays with the texts in a row and its length reaching the end of the last one; reminders and highlighted words follow the text. New action **38 ZP Unisci Battute** does it on the selected items without opening the Teleprompter.
 - **ZP Consolidate (37): Numera item**: terzo comando della finestra; rinomina gli item delle tracce selezionate con nome della traccia e numero progressivo, nell'ordine in cui stanno sulla traccia.

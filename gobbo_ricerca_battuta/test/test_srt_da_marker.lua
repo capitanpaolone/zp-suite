@@ -24,4 +24,19 @@ do
   local cues = M.cues({ { src = 1, text = "Uno" }, { src = 2, text = "BAD_001" }, { src = 3, text = "#nota" }, { src = 4, text = "Due" } }, 10)
   check("servizio: segnaposto e marker SOLO esclusi dall'SRT", #cues == 2 and cues[1].text == "Uno" and cues[2].text == "Due")
 end
+-- Durata sul marker (REAPER 7.86): la fine e' quella scritta, non l'inizio della battuta dopo
+c = M.cues({ { src = 1, text = "A", len = 1.5 }, { src = 5, text = "B", len = 0 }, { src = 9, text = "C" } }, 12)
+check("marker con durata: fine vera", c[1].stop == 2.5)
+check("marker senza durata: fine stimata come prima", c[2].stop == 9 and c[3].stop == 12)
+c = M.cues({ { src = 1, text = "A", len = 0.05 } }, 12)
+check("durata minima anche con la durata scritta", math.abs(c[1].stop - 1.3) < 1e-9)
+do
+  local parsed = P.parse_srt("1\n00:00:01,000 --> 00:00:02,500\nUno\n\n2\n00:00:05,000 --> 00:00:04,000\nDue\n")
+  check("il 28 legge anche la fine della battuta", parsed[1].stop == 2.5 and parsed[2].stop == nil and parsed[2].start == 5)
+  -- giro completo con le durate: SRT -> marker con durata -> SRT identico
+  local src = "1\n00:00:01,000 --> 00:00:02,500\nUno\n\n2\n00:00:05,000 --> 00:00:07,250\nDue\n"
+  local markers = {}
+  for i, cue in ipairs(P.parse_srt(src)) do markers[i] = { src = cue.start, text = cue.text, len = cue.stop - cue.start } end
+  check("SRT -> marker con durata -> SRT: identico", M.srt(M.cues(markers, 60)) == src)
+end
 print(fails == 0 and "\nTUTTI OK" or ("\nFALLITI: " .. fails)); os.exit(fails == 0 and 0 or 1)
