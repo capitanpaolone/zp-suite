@@ -10,6 +10,7 @@
 local SUBTITLE_TRACK_NAME = "Rythmo Band Testi"
 local SRT_TEMPLATE_NAME = "SRT Track.RTrackTemplate"
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
+local ZP_XLSX = dofile(SCRIPT_DIR .. 'ZP_Xlsx_Copione.lua')
 local COLOR_SUBS = 0x3498DB
 local COLOR_OVERLAP = 0xE53935
 local COLOR_BACKUP = 0xF2C94C
@@ -176,10 +177,7 @@ local function subtitle_time_to_seconds(t)
 end
 
 local function clean_subtitle_text(text)
-  text = text:gsub("\r\n", "\n"):gsub("\r", "\n")
-  text = text:gsub("<[^>]->", "")
-  text = text:gsub("&amp;", "&"):gsub("&lt;", "<"):gsub("&gt;", ">")
-  return trim(text)
+  return ZP_XLSX.clean_cue_text(text)
 end
 
 local function parse_subtitle_file(path)
@@ -465,12 +463,15 @@ local function choose_srt_for_video(video_path, force_choose)
 
   local ok_srt, srt_path = reaper.GetUserFileNameForRead(
     file_exists(default_sub) and default_sub or dirname(video_path),
-    "Scegli SRT/VTT per " .. basename(video_path),
+    "Scegli SRT/VTT o Excel (.xlsx) per " .. basename(video_path),
     subtitle_dialog_ext()
   )
   if not ok_srt then return nil, "SRT/VTT non trovato:\n" .. default_sub end
   srt_path = trim(srt_path)
   if not file_exists(srt_path) then return nil, "SRT/VTT non trovato:\n" .. srt_path end
+  local xlsx_err
+  srt_path, xlsx_err = ZP_XLSX.resolve_choice(srt_path, reaper, SCRIPT_DIR)
+  if not srt_path then return nil, xlsx_err or "Importazione annullata." end
   if not is_subtitle_file(srt_path) then return nil, "Il file scelto non sembra un SRT/VTT:\n" .. srt_path end
   return srt_path
 end
@@ -741,11 +742,14 @@ end
 local function choose_free_srt(title, start_dir)
   local default_dir = start_dir
   if not default_dir or default_dir == "" then default_dir = reaper.GetResourcePath() end
-  local ok, path = reaper.GetUserFileNameForRead(default_dir, title or "Scegli SRT/VTT", subtitle_dialog_ext())
+  local ok, path = reaper.GetUserFileNameForRead(default_dir, title or "Scegli SRT/VTT o Excel (.xlsx)", subtitle_dialog_ext())
   if not ok then return nil end
   path = trim(path)
   if path == "" then return nil end
   if not file_exists(path) then return nil, "SRT/VTT non trovato:\n" .. path end
+  local xlsx_err
+  path, xlsx_err = ZP_XLSX.resolve_choice(path, reaper, SCRIPT_DIR)
+  if not path then return nil, xlsx_err end
   if not is_subtitle_file(path) then return nil, "Il file scelto non sembra un SRT/VTT:\n" .. path end
   return path
 end

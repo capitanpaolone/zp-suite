@@ -910,7 +910,7 @@ Si apre il Terminale per configurare OpenAI Whisper e il modello.	Opens Terminal
 19 Riposiziona sul player	19 Reposition to playhead
 20 Fascia di lettura si/no	20 Reading focus on/off
 Annulla modifica (Ctrl+Z)	Undo edit (Ctrl+Z)
-Carica file… (.docx, .odt, .rtf, .txt)	Load file… (.docx, .odt, .rtf, .txt)
+Carica file… (.docx, .odt, .rtf, .txt, .xlsx)	Load file… (.docx, .odt, .rtf, .txt, .xlsx)
 Comando non disponibile o documento non leggibile.	Command unavailable or document unreadable.
 Evidenzia	Highlight
 Fascia di lettura	Reading focus
@@ -944,6 +944,15 @@ Aggiungi promemoria su questa parola…	Add reminder on this word…
 Scollega i marker di questo testo	Unlink this text’s markers
 Edita testo…	Edit text…
 Dividi prima di questa parola	Split before this word
+Unisci con la battuta successiva	Join with the next cue
+Unisci le battute selezionate in timeline	Join the cues selected in the timeline
+Unisci battute	Join cues
+Per unire servono almeno due battute di testo sulla stessa traccia.	Joining needs at least two text cues on the same track.
+Una delle battute non è più disponibile.	One of the cues is no longer available.
+Si uniscono solo le battute di testo, non gli item audio o video.	Only text cues can be joined, not audio or video items.
+Queste battute seguono un audio: non si uniscono da qui.	These cues follow an audio item: they cannot be joined from here.
+Le battute da unire devono stare sulla stessa traccia.	The cues to join must be on the same track.
+Unione annullata: impossibile salvare il testo unito.	Join cancelled: the joined text could not be saved.
 Dividi il copione	Split script
 Il testo è cambiato: seleziona di nuovo la parola.	The text has changed: select the word again.
 L’item selezionato non è più disponibile.	The selected item is no longer available.

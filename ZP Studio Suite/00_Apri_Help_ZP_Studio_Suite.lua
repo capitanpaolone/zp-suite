@@ -78,6 +78,7 @@
 --   [main] 34_ZP_Set_Comandi.lua
 --   [main] 35_ZP_Colori.lua
 --   [main] 37_ZP_Consolidate.lua
+--   [main] 38_ZP_Unisci_Battute.lua
 --   [nomain] ZP_SRT_Progetto.lua
 --   [main] render_copy/ZP_RenderCopy.lua
 --   render_copy/assets/zp_render_copy.png
@@ -137,6 +138,7 @@
 --   [nomain] ZP_sincronizza_aggancio.lua
 --   [nomain] ZP_cerca.lua
 --   [nomain] ZP_Testo_Copione.lua
+--   [nomain] ZP_Xlsx_Copione.lua
 --   [nomain] ZP_Editor_Copione.lua
 --   [nomain] ZP_Colori.lua
 --   [nomain] ZP_Agenti.lua

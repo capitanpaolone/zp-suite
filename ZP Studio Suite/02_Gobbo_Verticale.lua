@@ -2525,9 +2525,17 @@ function InlinePaste()
     else reaper.ShowMessageBox(T('Impossibile leggere gli appunti.')..'\n'..T(err),'ZP Studio Suite',0) end
 end
 function InlineLoadFile()
-    local ok,path=reaper.GetUserFileNameForRead('','ZP - '..T('Carica file… (.docx, .odt, .rtf, .txt)'), '')
+    local ok,path=reaper.GetUserFileNameForRead('','ZP - '..T('Carica file… (.docx, .odt, .rtf, .txt, .xlsx)'), '')
     if not ok then return end
-    local text,terms=ZP_TESTO.read_file(path,reaper.GetOS())
+    local text,terms
+    if path:lower():match('%.xlsx$') then
+        -- Copione Excel con i tempi: una battuta per riga, PERSONAGGIO: testo.
+        local xlsx=dofile(SCRIPT_DIR..'ZP_Xlsx_Copione.lua')
+        local cues,info=xlsx.read(function(name) return ZP_TESTO.zip_member(path,name,reaper.GetOS()) end,{choose=xlsx.menu})
+        if cues then text,terms=xlsx.to_text(cues),{} elseif info then terms=info else return end
+    else
+        text,terms=ZP_TESTO.read_file(path,reaper.GetOS())
+    end
     if not text then reaper.ShowMessageBox(T(tostring(terms)),T('Importazione copione'),0); return end
     InitInlineCopione()
     InlineInsertText(text)
@@ -2650,6 +2658,29 @@ function HandleSubtitleEditDoubleClick(item,x,y,w,h)
     end
     return false
 end
+-- Battute da unire: quelle selezionate in timeline e quella che segue l'item indicato sulla stessa traccia.
+function GobboMergeCandidates(item)
+    local selected={}
+    for i=0,reaper.CountSelectedMediaItems(0)-1 do
+        local it=reaper.GetSelectedMediaItem(0,i)
+        if reaper.GetMediaItemNumTakes(it)==0 then selected[#selected+1]=it end
+    end
+    local track=reaper.GetMediaItem_Track(item)
+    local pos=reaper.GetMediaItemInfo_Value(item,'D_POSITION')
+    local following,best
+    for i=0,reaper.CountTrackMediaItems(track)-1 do
+        local it=reaper.GetTrackMediaItem(track,i)
+        local p=reaper.GetMediaItemInfo_Value(it,'D_POSITION')
+        if it~=item and reaper.GetMediaItemNumTakes(it)==0 and p>pos and (not best or p<best) then best=p;following=it end
+    end
+    return selected,following
+end
+function GobboMergeBattute(list)
+    local kept,info=ZP_TESTO.merge_text_items(reaper,list,UpdateSubtitleItemName)
+    if not kept then reaper.ShowMessageBox(T(info),T('Unisci battute'),0);return end
+    gobbo_word_selection=nil
+    UpdateItems()
+end
 function HandleGobboWordAnchorMenu(item,x,y,w,h)
     if inline_edit or search_panel_open or (gfx.mouse_cap&2)==0 or gobbo_word_right_down then return end
     if gfx.mouse_x<x or gfx.mouse_x>x+w or gfx.mouse_y<y or gfx.mouse_y>y+h then return end
@@ -2665,13 +2696,17 @@ function HandleGobboWordAnchorMenu(item,x,y,w,h)
     local can_split=item.timed_scroll and sync_key=='' and reaper.GetMediaItemNumTakes(item.item)==0
     gfx.x,gfx.y=gfx.mouse_x,gfx.mouse_y
     local menu=T('Edita testo…')..'|'..(item.timed_scroll and '' or '#')..T('Aggiungi promemoria su questa parola…')..'|'..(can_split and '' or '#')..T('Dividi prima di questa parola')
+    local merge_selected,merge_next=GobboMergeCandidates(item.item)
+    menu=menu..'||'..(merge_next and '' or '#')..T('Unisci con la battuta successiva')..'|'..(#merge_selected>=2 and '' or '#')..T('Unisci le battute selezionate in timeline')
     if #(item.anchors or {})>0 then menu=menu..'|'..T('Scollega i marker di questo testo') end
     local choice=gfx.showmenu(menu)
     if choice==1 then GobboEditSelectedWord()
     elseif choice==2 and item.timed_scroll then
         if GobboWordSelectionValid() then AddGobboWordAnchor(item,s.first,target) end
     elseif choice==3 and can_split then GobboSplitSelectedWord()
-    elseif choice==4 and #(item.anchors or {})>0 then
+    elseif choice==4 and merge_next then GobboMergeBattute({item.item,merge_next})
+    elseif choice==5 and #merge_selected>=2 then GobboMergeBattute(merge_selected)
+    elseif choice==6 and #(item.anchors or {})>0 then
         reaper.Undo_BeginBlock()
         reaper.GetSetMediaItemInfo_String(item.item,'P_EXT:ZP_GOBBO_ANCHORS','',true)
         reaper.UpdateItemInProject(item.item)

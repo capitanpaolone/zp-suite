@@ -212,6 +212,13 @@ function M.clipboard(api,osname,runner)
     local s,err=capture(cmd,runner); if not s then return nil,err end
     return M.normalize(s)
 end
+function M.zip_member(path,name,osname,runner)
+    local cmd
+    if osname:match('Win') then
+        cmd=powershell("$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; [Console]::OutputEncoding=[System.Text.UTF8Encoding]::new(); $z=[IO.Compression.ZipFile]::OpenRead("..psquote(path).."); try { $e=$z.GetEntry("..psquote(name).."); if (!$e) { exit 2 }; $r=[IO.StreamReader]::new($e.Open()); try { [Console]::Write($r.ReadToEnd()) } finally { $r.Dispose() } } finally { $z.Dispose() }")
+    else cmd='unzip -p '..quote(path)..' '..quote(name)..' 2>/dev/null' end
+    return capture(cmd,runner)
+end
 function M.read_file(path,osname,runner)
     local ext=path:match('%.([^%.]+)$'); ext=ext and ext:lower()
     if ext=='txt' or ext=='rtf' then
@@ -221,14 +228,8 @@ function M.read_file(path,osname,runner)
         if not utf8.len(s) then return nil,'Il file TXT deve essere UTF-8.' end
         return M.normalize(s),{}
     end
-    if ext~='docx' and ext~='odt' then return nil,'Formato supportato: .docx, .odt, .rtf, .txt.' end
-    local function member(name)
-        local cmd
-        if osname:match('Win') then
-            cmd=powershell("$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; [Console]::OutputEncoding=[System.Text.UTF8Encoding]::new(); $z=[IO.Compression.ZipFile]::OpenRead("..psquote(path).."); try { $e=$z.GetEntry("..psquote(name).."); if (!$e) { exit 2 }; $r=[IO.StreamReader]::new($e.Open()); try { [Console]::Write($r.ReadToEnd()) } finally { $r.Dispose() } } finally { $z.Dispose() }")
-        else cmd='unzip -p '..quote(path)..' '..quote(name)..' 2>/dev/null' end
-        return capture(cmd,runner)
-    end
+    if ext~='docx' and ext~='odt' then return nil,'Formato supportato: .docx, .odt, .rtf, .txt, .xlsx.' end
+    local function member(name) return M.zip_member(path,name,osname,runner) end
     local xml,err=member(ext=='docx' and 'word/document.xml' or 'content.xml')
     if not xml or xml=='' then return nil,err or 'XML del documento mancante.' end
     if ext=='docx' then return M.docx(xml) end
@@ -481,6 +482,87 @@ function M.split_timed_item(api,item,offset,expected_text,name_item)
     end
     api.UpdateArrange()
     return right,result
+end
+
+-- Nome dell'item dal testo: una riga, al massimo 160 caratteri.
+function M.name_text_item(api,item,text)
+    local one_line=trim(((text or ''):gsub('[\r\n]+',' / '))):gsub('%s+',' ')
+    if #one_line>160 then
+        local finish=157
+        while finish>0 and one_line:byte(finish+1)>=128 and one_line:byte(finish+1)<192 do finish=finish-1 end
+        one_line=one_line:sub(1,finish)..'...'
+    end
+    api.GetSetMediaItemInfo_String(item,'P_NAME',one_line,true)
+    api.UpdateItemInProject(item)
+end
+-- Unisce più battute di testo della stessa traccia nella prima: i testi in fila, separati da uno spazio,
+-- e la durata fino alla fine dell'ultima. Le altre battute vengono tolte. Un solo passo di Undo.
+function M.merge_text_items(api,items,name_item)
+    if #items<2 then return nil,'Per unire servono almeno due battute di testo sulla stessa traccia.' end
+    local list,track={},nil
+    for _,item in ipairs(items) do
+        if not api.ValidatePtr2(0,item,'MediaItem*') then return nil,'Una delle battute non è più disponibile.' end
+        local function get(key) local _,value=api.GetSetMediaItemInfo_String(item,key,'',false);return value or '' end
+        if api.GetMediaItemNumTakes(item)>0 then return nil,'Si uniscono solo le battute di testo, non gli item audio o video.' end
+        if get('P_EXT:ZP_SYNC_KEY')~='' then return nil,'Queste battute seguono un audio: non si uniscono da qui.' end
+        local tr=api.GetMediaItem_Track(item)
+        if track and tr~=track then return nil,'Le battute da unire devono stare sulla stessa traccia.' end
+        track=tr
+        local pos=api.GetMediaItemInfo_Value(item,'D_POSITION')
+        list[#list+1]={item=item,pos=pos,finish=pos+api.GetMediaItemInfo_Value(item,'D_LENGTH'),order=#list,
+            text=get('P_NOTES'):gsub('\r\n','\n'):gsub('\r','\n'),
+            anchors=M.parse_anchors(get('P_EXT:ZP_GOBBO_ANCHORS')),highlights=get('P_EXT:RythmoBand_HIGHLIGHT')}
+    end
+    table.sort(list,function(a,b) if a.pos~=b.pos then return a.pos<b.pos end return a.order<b.order end)
+    local parts,anchors,terms,seen,finish,size={},{},{},{},list[1].finish,0
+    for _,e in ipairs(list) do
+        local lead=#e.text:match('^%s*')
+        local body=trim(e.text)
+        if e.finish>finish then finish=e.finish end
+        if body~='' then
+            local shift=size+(#parts>0 and 1 or 0)-lead
+            for _,anchor in ipairs(e.anchors) do
+                -- offset 0 = promemoria senza parola: resta tale.
+                anchors[#anchors+1]={guid=anchor.guid,offset=anchor.offset>0 and math.max(1,anchor.offset+shift) or anchor.offset}
+            end
+            size=size+(#parts>0 and 1 or 0)+#body
+            parts[#parts+1]=body
+        end
+        for term in e.highlights:gmatch('[^\r\n]+') do
+            if not seen[term] then seen[term]=true;terms[#terms+1]=term end
+        end
+    end
+    local text=table.concat(parts,' ')
+    local first=list[1]
+    api.Undo_BeginBlock()
+    local ok,failure=pcall(function()
+        local function set(key,value)
+            api.GetSetMediaItemInfo_String(first.item,key,value,true)
+            local _,saved=api.GetSetMediaItemInfo_String(first.item,key,'',false)
+            saved=saved or ''
+            if key=='P_NOTES' then saved=saved:gsub('\r\n','\n'):gsub('\r','\n') end
+            if saved~=value then error('Verifica scrittura: '..key,0) end
+        end
+        set('P_NOTES',text)
+        set('P_EXT:ZP_GOBBO_ANCHORS',M.serialize_anchors(anchors))
+        set('P_EXT:RythmoBand_HIGHLIGHT',table.concat(terms,'\n'))
+        -- I tempi parola per parola valevano per il testo di prima.
+        set('P_EXT:ZP_GOBBO_TIMING','');set('P_EXT:ZP_GOBBO_TIMING_TEXT','')
+        api.SetMediaItemInfo_Value(first.item,'D_LENGTH',finish-first.pos)
+        for i=2,#list do
+            if not api.DeleteTrackMediaItem(track,list[i].item) then error('REAPER non ha tolto una battuta.',0) end
+        end
+        name_item(first.item,text)
+        api.SetMediaItemSelected(first.item,true)
+        api.UpdateItemInProject(first.item)
+    end)
+    api.Undo_EndBlock('ZP Gobbo: unisci battute',-1)
+    if not ok then
+        api.Undo_DoUndo2(0)
+        return nil,'Unione annullata: impossibile salvare il testo unito.'
+    end
+    api.UpdateArrange()
+    return first.item,{count=#list,text=text}
 end
 
 return M

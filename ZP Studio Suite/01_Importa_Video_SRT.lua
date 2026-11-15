@@ -14,6 +14,7 @@ local SUBTITLE_TRACK_NAME = "Rythmo Band Testi"
 local NOTES_TRACK_NAME = "Rythmo Band Note"
 local SRT_TEMPLATE_NAME = "SRT Track.RTrackTemplate"
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
+local ZP_XLSX = dofile(SCRIPT_DIR .. 'ZP_Xlsx_Copione.lua')
 local GOBBO_STATE_SECTION = "RythmoBand_Gobbo_State"
 local ZP_UI = dofile(SCRIPT_DIR .. "ZP_UI.lua")
 local srt_registry_file = SCRIPT_DIR .. "ZP_SRT_Progetto.lua"
@@ -60,6 +61,10 @@ end
 
 local function dirname(path)
   return path:match("^(.*)[/\\][^/\\]+$") or ""
+end
+
+local function basename(path)
+  return path:match("[^/\\]+$") or path
 end
 
 local function basename_without_ext(path)
@@ -169,10 +174,7 @@ local function subtitle_time_to_seconds(t)
 end
 
 local function clean_subtitle_text(text)
-  text = text:gsub("\r\n", "\n"):gsub("\r", "\n")
-  text = text:gsub("<[^>]->", "")
-  text = text:gsub("&amp;", "&"):gsub("&lt;", "<"):gsub("&gt;", ">")
-  return trim(text)
+  return ZP_XLSX.clean_cue_text(text)
 end
 
 local function parse_subtitle_file(path)
@@ -601,10 +603,6 @@ local function fit_text(text, max_w)
   return out .. suffix
 end
 
-local function basename(path)
-  return path:match("[^/\\]+$") or path
-end
-
 local function is_subtitle_file(path)
   local ext = ext_lower(path)
   return ext == "srt" or ext == "vtt"
@@ -901,11 +899,14 @@ local function choose_paths_numeric()
       "\n\nEstensioni supportate: mp4, mov, m4v, avi, mkv"
   end
 
-  local ok_srt, srt_path = reaper.GetUserFileNameForRead(dirname(video_path), "Scegli SRT/VTT", subtitle_dialog_ext())
+  local ok_srt, srt_path = reaper.GetUserFileNameForRead(dirname(video_path), "Scegli SRT/VTT o Excel (.xlsx)", subtitle_dialog_ext())
   if not ok_srt then return nil end
   srt_path = trim(srt_path)
 
   if not file_exists(srt_path) then return nil, "Sottotitolo non trovato:\n" .. srt_path end
+  local xlsx_err
+  srt_path, xlsx_err = ZP_XLSX.resolve_choice(srt_path, reaper, SCRIPT_DIR)
+  if not srt_path then return nil, xlsx_err end
   if not is_srt(srt_path) then return nil, "Il file scelto non sembra un SRT/VTT:\n" .. srt_path end
 
   local fix_overlaps = choose_import_options_numeric()
@@ -989,9 +990,15 @@ local function open_import_bridge(on_done)
   local function choose_srt()
     local start_dir = dirname(srt_path)
     if start_dir == "" then start_dir = dirname(video_path) end
-    local ok, path = reaper.GetUserFileNameForRead(start_dir, "Scegli SRT/VTT", subtitle_dialog_ext())
+    local ok, path = reaper.GetUserFileNameForRead(start_dir, "Scegli SRT/VTT o Excel (.xlsx)", subtitle_dialog_ext())
     if not ok then return end
     path = trim(path)
+    local xlsx_err
+    path, xlsx_err = ZP_XLSX.resolve_choice(path, reaper, SCRIPT_DIR)
+    if not path then
+      warning = xlsx_err and xlsx_err:gsub("%s*\n+%s*", " ") or ""
+      return
+    end
     if not is_srt(path) then
       warning = "Il file scelto non sembra un SRT/VTT."
       return

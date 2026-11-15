@@ -79,6 +79,8 @@ reaper={GetExtState=function() return '1' end,SetExtState=function() end,GetOS=f
  Undo_EndBlock=function() after=clone(items) end,
  Undo_DoUndo2=function() undo_calls=undo_calls+1;items=clone(before) end,Undo_DoRedo2=function() items=clone(after) end,
  UpdateArrange=function() end,UpdateItemInProject=function() end,
+ -- Il menu contestuale guarda anche le battute da unire: qui non ce ne sono.
+ CountSelectedMediaItems=function() return 0 end,GetMediaItem_Track=function() return 'T' end,CountTrackMediaItems=function() return 0 end,
  SetEditCurPos=function() error('non deve spostare la timeline') end,OnStopButton=function() error('non deve fermare il trasporto') end,
  AddProjectMarker2=function() error('il taglio non deve creare o spostare marker') end,
  GetCursorPosition=function() return 500 end,time_precise=function() return now end,

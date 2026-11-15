@@ -9,8 +9,9 @@
 --   una copia di sicurezza del RPP; i riferimenti sono cambiati in un solo blocco Undo.
 --   Una sorgente non raggiungibile (per esempio un file Dropbox non ancora scaricato) non e' data per
 --   mancante: puoi riprovare, scegliere il file corretto, saltarla o annullare tutto.
---   La finestra offre due comandi: «Consolida progetto» e «Pulisci Media» (sposta in una cartella fuori da
---   Media i file che il progetto non usa; non cancella nulla), piu' un pulsante ? con l'aiuto.
+--   La finestra offre tre comandi: «Consolida progetto», «Pulisci Media» (sposta in una cartella fuori da
+--   Media i file che il progetto non usa; non cancella nulla) e «Numera item» (rinomina in sequenza gli item
+--   delle tracce selezionate partendo dal nome della traccia), piu' un pulsante ? con l'aiuto.
 
 local r = reaper
 local TITLE = "ZP Consolidate"
@@ -1216,6 +1217,36 @@ end
 ---------------------------------------------------------------------------
 -- Avvio
 ---------------------------------------------------------------------------
+---------------------------------------------------------------------------
+-- Numera item: nome traccia + numero progressivo, nell'ordine in cui stanno sulla traccia
+---------------------------------------------------------------------------
+function C.number_items()
+  local tracks, renamed = r.CountSelectedTracks(0), 0
+  if tracks == 0 then return nil, "Seleziona le tracce con gli item da numerare." end
+  r.Undo_BeginBlock2(0)
+  for t = 0, tracks - 1 do
+    local track = r.GetSelectedTrack(0, t)
+    local _, name = r.GetTrackName(track)
+    for i = 0, r.CountTrackMediaItems(track) - 1 do
+      local take = r.GetActiveTake(r.GetTrackMediaItem(track, i))
+      if take then
+        r.GetSetMediaItemTakeInfo_String(take, "P_NAME", name .. "#" .. (i + 1), true)
+        renamed = renamed + 1
+      end
+    end
+  end
+  r.Undo_EndBlock2(0, "ZP Consolidate: numera item", -1)
+  r.UpdateArrange()
+  return renamed, tracks
+end
+
+function C.command_number(say, done)
+  local renamed, tracks = C.number_items()
+  if not renamed then say("Numera item: " .. tracks)
+  else say(("Numera item: %d item rinominati su %d %s (Ctrl+Z annulla)."):format(renamed, tracks, tracks == 1 and "traccia" or "tracce")) end
+  done()
+end
+
 if rawget(_G, "ZP_CONSOLIDATE_TEST") then
   C.norm, C.probe_file, C.format_file_line = norm, probe_file, format_file_line
   return C
@@ -1224,7 +1255,7 @@ end
 ---------------------------------------------------------------------------
 -- Finestra (stesso stile degli altri strumenti ZP): due comandi e un aiuto
 ---------------------------------------------------------------------------
-local HELP = [[ZP Consolidate ha due comandi indipendenti. Il progetto deve essere già salvato.
+local HELP = [[ZP Consolidate ha tre comandi indipendenti. Per i primi due il progetto deve essere già salvato.
 
 1. «Consolida progetto» copia in Media, byte per byte, i file usati dal progetto (audio, MIDI esterni, video, sorgenti SECTION/reverse di tutti i take, anche inattivi) e gli SRT/VTT collegati. Poi ricollega i take alle copie. Gli originali non vengono mossi né cancellati. Prima di cambiare i riferimenti salva il progetto e conserva una copia di sicurezza del RPP; i riferimenti cambiano in un solo blocco Undo.
 
@@ -1233,7 +1264,9 @@ Se una sorgente non è raggiungibile (per esempio un file Dropbox non ancora sca
 2. «Pulisci Media» non copia niente. Cerca i file direttamente in Media che nessun take e nessun SRT del progetto usa e mostra l'elenco. Se confermi, salva il progetto e SPOSTA quei file (non li cancella) in «Media non usati <data e ora>», una cartella accanto a Media, fuori da Media. Puoi cancellarla tu quando vuoi.
 La pulizia lascia stare le sottocartelle (peaks, ecc.) e i file nascosti. Non analizza i campioni o le IR dei plug-in né altri progetti che usino la stessa cartella Media. Non viene proposta se ci sono errori, riferimenti lasciati intatti o dipendenze manuali: prima consolida e risolvi.
 
-Dopo il salvataggio, Undo non riporta più il file salvato: per tornare indietro apri la copia di sicurezza indicata nel rapporto. Il rapporto completo è nella Console di REAPER.]]
+3. «Numera item» rinomina gli item delle tracce selezionate con il nome della traccia e un numero progressivo (Voce#1, Voce#2…), nell'ordine in cui stanno sulla traccia. Serve a ritrovare la sequenza dopo un montaggio pesante. Non tocca i file né i testi senza take; Ctrl+Z annulla.
+
+Dopo il salvataggio di Consolida o Pulisci, Undo non riporta più il file salvato: per tornare indietro apri la copia di sicurezza indicata nel rapporto. Il rapporto completo è nella Console di REAPER.]]
 
 local function summarize(res)
   local S = res.summary
@@ -1355,7 +1388,7 @@ local function loop()
   UI.draw_header({
     title = TITLE, title_size = 24, credit_size = 15, description_size = 17,
     fallback_icon = function(x, y, s) UI.draw_logo(x, y, s) end,
-    description = "Raccogli i file del progetto in Media e ripulisci Media",
+    description = "Raccogli i file in Media, ripulisci Media, numera gli item",
   })
   if UI.draw_button({ x = gfx.w - 56, y = 16, w = 34, h = 28 }, "?", false, true, clicked, "tab") or key == 63 then
     r.ShowMessageBox(HELP, TITLE .. " · Aiuto", 0)
@@ -1380,12 +1413,21 @@ local function loop()
     C.command_clean(say, finished)
   end
 
-  local panel_h = math.max(90, gfx.h - 330)
-  local bottom = 308 + panel_h
-  UI.draw_panel({ x = 22, y = 308, w = width, h = panel_h }, "")
-  label("STATO", 34, 313, UI.colors.muted)
+  UI.draw_panel({ x = 22, y = 308, w = width, h = 92 }, "")
+  label("3 · NUMERA ITEM", 34, 314, UI.colors.muted)
+  label("Rinomina gli item delle tracce selezionate: NomeTraccia#1, #2…", 34, 336)
+  if UI.draw_button({ x = 34, y = 360, w = 230, h = 32, font = 17 }, busy and "In corso…" or "Numera item", false, not busy, clicked, "tab") then
+    busy = true
+    last_cap = gfx.mouse_cap
+    C.command_number(say, finished)
+  end
+
+  local panel_h = math.max(90, gfx.h - 432)
+  local bottom = 410 + panel_h
+  UI.draw_panel({ x = 22, y = 410, w = width, h = panel_h }, "")
+  label("STATO", 34, 415, UI.colors.muted)
   gfx.setfont(1, "Arial", 17)
-  local y = 340
+  local y = 442
   for _, entry in ipairs(logs) do
     for _, line in ipairs(UI.wrap_text(entry, width - 24)) do
       if y + 21 > bottom then break end
@@ -1399,5 +1441,5 @@ local function loop()
 end
 
 local d, x, y, w, h = (r.GetExtState("ZP_CONSOLIDATE", "window") .. ","):match("([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)")
-gfx.init(TITLE, tonumber(w) or 650, tonumber(h) or 480, tonumber(d) or 0, tonumber(x) or 200, tonumber(y) or 150)
+gfx.init(TITLE, tonumber(w) or 650, math.max(tonumber(h) or 0, 582), tonumber(d) or 0, tonumber(x) or 200, tonumber(y) or 150)
 loop()

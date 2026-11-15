@@ -23,11 +23,11 @@ local UI = dofile(path_of("ZP_UI.lua"))
 local COLUMNS = {
   { title = "1  Porta dentro", items = {
     { label = "Video + SRT", script = "01_Importa_Video_SRT.lua",
-      hint = "nuovo lavoro video",
-      help = "Importa un video e il suo SRT: crea la traccia video e la traccia testi. Tempi della timeline." },
+      hint = "SRT, VTT o Excel .xlsx",
+      help = "Nuovo lavoro video: importa un video e il suo SRT, VTT o copione Excel (.xlsx con i tempi). Crea la traccia video e la traccia testi. Tempi della timeline." },
     { label = "Sostituisci testi", script = "05_Aggiorna_SRT_Video.lua",
-      hint = "su video, regione o tutti",
-      help = "Cambia i sottotitoli di video gia' in progetto: video selezionati, regione sotto la playhead o tutti gli omonimi. Gli item vecchi vanno su una traccia BKP." },
+      hint = "SRT, VTT o Excel .xlsx",
+      help = "Cambia i sottotitoli (da SRT, VTT o Excel .xlsx) di video gia' in progetto: video selezionati, regione sotto la playhead o tutti gli omonimi. Gli item vecchi vanno su una traccia BKP." },
     { label = "Aggiungi lingua", script = "05_Aggiorna_SRT_Video.lua", op = 2,
       hint = "reference, non sostituisce",
       help = "Aggiunge un secondo flusso (es. ENG o ORIG) al video selezionato, senza toccare il testo principale. Si legge nel Gobbo con < >." },
@@ -36,7 +36,7 @@ local COLUMNS = {
       help = "Apre la strada 29: trascrivi o abbina un SRT (anche tradotto) a un item audio. Tempi del file: il testo segue tagli e spostamenti." },
     { label = "Da testo o traduzione", script = "26_SRT_Tools.lua",
       hint = "crea l'SRT, poi qui sopra",
-      help = "Apre SRT Tools: testo con timecode (es. traduzione da Excel/Word) -> SRT. Poi usalo con Sostituisci, Aggiungi lingua o Collega a un audio." },
+      help = "Apre SRT Tools: testo con timecode (es. traduzione da Word, o Excel con foglio e colonne scelti a mano) -> SRT. Un Excel .xlsx con le intestazioni solite si sceglie direttamente in Video + SRT, Sostituisci testi e Aggiungi lingua." },
   } },
   { title = "2  Controlla", items = {
     { label = "Info item SRT", script = "13_Info_Item_SRT.lua",

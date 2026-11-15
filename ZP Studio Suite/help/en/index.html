@@ -297,6 +297,7 @@
   <p>Clicking a cue selects it without moving the timeline, including when <strong>Moves timeline</strong> is enabled. Double-clicking selects a word; right-click and choose <strong>Edit text…</strong> to open the editor without stopping transport or changing its position. Use the wheel, scrollbar or search to navigate explicitly. This applies to both Teleprompters.</p>
   <h3>Split a script at the selected word</h3>
   <p>In either Teleprompter, double-click the word that should start the next piece, then right-click → <strong>Split before this word</strong>. The left item keeps the preceding text; the right item contains the selected word and the remainder, and is selected for manual movement in the timeline. The full script is not duplicated. The split uses the word’s estimated time in the original reading plan; the REAPER cursor stays in place. Both items remain adjacent and their combined duration is unchanged.</p>
+  <p><strong>Joining split cues</strong>: when one line is spread over several items, right-click the text in the Teleprompter &rarr; <strong>Join with the next cue</strong>, or select the pieces on the text track in the timeline and choose <strong>Join the cues selected in the timeline</strong>. The first item stays, with the texts in a row separated by a space and its length reaching the end of the last one; the others are removed. One Ctrl+Z undoes it. The <em>38 ZP Unisci Battute</em> action does the same on the selected items without opening the Teleprompter (handy with a shortcut and with OSARA).</p>
   <p>The command is available only for standalone timed text, without audio takes or a ZP_SYNC link. Subtitles managed by <strong>Follow cuts</strong> retain their existing workflow. Audio and other items are not split or moved. Use the Teleprompter command for this operation: REAPER’s standard Split does not partition script contents.</p>
   <p>Word and pause timing is preserved across both pieces, including pieces shorter than five seconds; the item boundary adds no pause. Reminders move to the piece containing their word and their text offsets are adjusted, while timeline markers stay where they were. Colors, pace and highlights are retained. One REAPER Undo reverses the operation; Redo restores it. Text is validated again before splitting: if it has changed since selection, select the word again. Subsequent text or pace edits rebuild timing using the editor settings.</p>
 
@@ -536,6 +537,8 @@
 
   <h3 id="zp-import"><span id="tool-01"></span>01 &middot; Video + SRT</h3>
   <p>Imports video and paired subtitle files: sets up video track and <code>Rythmo Band Testi</code> track with one text item per cue. Modes: <em>Single</em>, <em>Folder batch</em>, <em>SRT/VTT only</em>, <em>Empty text track</em>.</p>
+  <p><strong>Excel script</strong>: wherever an SRT/VTT is requested you can pick an <code>.xlsx</code> file with timecodes. Columns are recognised from their headers (Timecode, Role, Reaction Sound, Translation, or Start, End, Text, Character, Reaction); each cue becomes <em>CHARACTER: text</em>, with the reaction appended; without an end column, a cue lasts until the next one. An <code>.srt</code> file with the same name is written next to the Excel file. If more than one sheet qualifies, or a sheet has several text columns (for example one per language), a small menu asks which sheet and which column to import: one at a time. If a filled row has an invalid time, the import stops and tells you which one. To choose sheet and columns by hand, or for legacy <code>.xls</code> files, use SRT Tools (26). In the prompters' free text, <em>Load file…</em> accepts the same <code>.xlsx</code> and inserts one cue per line, without times.</p>
+  <p><strong>VTT and reactions</strong>: a WebVTT voice (<code>&lt;v Name&gt;</code>) becomes <em>Name: text</em>; formatting tags (italic, bold, colour) are removed; reactions written in angle brackets, such as <code>&lt;sospira&gt;</code>, stay in the text.</p>
 
   <h3 id="zp-gestione-srt"><span id="tool-05"></span>05 &middot; SRT Management</h3>
   <p>Replaces or supplements subtitles in existing sessions: <em>Replace SRT</em>, <em>Add language/reference</em>, <em>Batch matching</em>. Archives previous items onto BKP backup tracks.</p>
@@ -572,6 +575,14 @@
   <p>Color palette tool: choose one of six modes, select objects, then click a color. <strong>Auto</strong> colors selected items, markers, and regions together at the time of the click. Other modes target Item, Track, All (tracks and their items), Marker, or Region. One selector stays lit; selection alone never applies color. The tool has twenty colors and <strong>Remove Color</strong>. Fully reversible with Ctrl/Cmd+Z. Available as a floating window or optional toolbar <a href="toolbar.html#colori">ZP Colors</a>.</p>
 
   <!-- ================================================================== -->
+  <h2 id="tool-37">37 &middot; ZP Consolidate</h2>
+  <p>One window with three independent commands, plus <strong>?</strong> for the full explanation.</p>
+  <ul>
+    <li><strong>Consolida progetto</strong> (consolidate project): copies into <em>Media</em>, byte for byte, the files used by the project (audio, video, external MIDI, sources of every take) and its SRT/VTT files, then relinks the takes. It never converts or deletes the originals; it saves the project first and keeps a safety copy.</li>
+    <li><strong>Pulisci Media</strong> (clean Media): finds the files in <em>Media</em> the project does not use and, if you confirm, moves them to a folder next to Media. Nothing is deleted.</li>
+    <li><strong>Numera item</strong> (number items): renames the items on the selected tracks with the track name and a running number (<em>Voice#1</em>, <em>Voice#2</em>&hellip;), in the order they sit on the track. Useful to find the sequence again after heavy editing. Ctrl+Z undoes it.</li>
+  </ul>
+
   <h2 id="azioni">Background Actions</h2>
   <h3 id="tool-09">09-12 &middot; OSARA Cue Reading</h3>
   <p>Designed for voice artists working with screen readers: reads script cues aloud without opening windows or losing REAPER arrange focus.</p>

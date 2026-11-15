@@ -296,6 +296,7 @@
   <!-- ================================================================== -->
   <h3>Dividere un copione dalla parola scelta</h3>
   <p>Nei due Gobbi, doppio clic sulla parola da cui deve cominciare il pezzo successivo, poi clic destro → <strong>Dividi prima di questa parola</strong>. Il primo item conserva il testo precedente; il secondo contiene la parola scelta e tutto il seguito, e viene selezionato per poterlo spostare a mano nella timeline. Non viene duplicato il copione intero. Il taglio usa il tempo stimato della parola nel piano di lettura originale; il cursore di REAPER rimane dov’era. I due item restano contigui e la durata complessiva è invariata.</p>
+  <p><strong>Unire battute spezzate</strong>: quando una battuta &egrave; divisa in pi&ugrave; item, clic destro sul testo nel Gobbo &rarr; <strong>Unisci con la battuta successiva</strong>, oppure seleziona in timeline i pezzi sulla traccia dei testi e scegli <strong>Unisci le battute selezionate in timeline</strong>. Resta il primo item, con i testi in fila separati da uno spazio e la durata fino alla fine dell'ultimo; gli altri vengono tolti. Un solo Ctrl+Z annulla. La stessa cosa, senza aprire il Gobbo, la fa l'azione <em>38 ZP Unisci Battute</em> sugli item selezionati (comoda con una scorciatoia e con OSARA).</p>
   <p>Il comando è disponibile soltanto per testi temporizzati autonomi, senza take audio e senza collegamento ZP_SYNC: i sottotitoli gestiti da <strong>Segui i tagli</strong> continuano a usare il loro flusso. Non vengono tagliati o spostati audio e altri item. Per questa funzione usa il comando del Gobbo: il normale Split di REAPER non spartisce il copione.</p>
   <p>Il piano di parole e pause viene conservato nei due pezzi, anche se uno dura meno di cinque secondi; il confine tra item non aggiunge una pausa. I promemoria passano al pezzo che contiene la loro parola, con posizione testuale aggiornata, ma i marker in timeline non si spostano. Colori, velocità ed evidenziazioni sono conservati. Un solo Undo di REAPER ricompone l’operazione; Redo ripristina la divisione. Il testo viene ricontrollato prima del taglio: se è cambiato dopo la selezione, occorre scegliere di nuovo la parola. Modificare successivamente il testo o la velocità ricostruisce il piano secondo le impostazioni dell’editor.</p>
 
@@ -592,6 +593,8 @@
 
   <h3 id="zp-import"><span id="tool-01"></span>01 &middot; Video + SRT</h3>
   <p>Porta nel progetto un video e i suoi sottotitoli: crea la traccia video e la traccia <code>Rythmo Band Testi</code> con una battuta per ogni cue. Quattro modi: <em>Singolo</em> (un video e il suo SRT/VTT), <em>Cartella</em> (tutte le coppie video+SRT con lo stesso nome, una dopo l'altra con la pausa che scegli), <em>Solo SRT/VTT</em>, <em>Traccia testo</em> vuota. Opzioni: segnalare o correggere le sovrapposizioni tra cue, copiare i file nel progetto, salvare il progetto. Se la posizione è già occupata, chiede se sovrapporre o mettere in fondo.</p>
+  <p><strong>Copione in Excel</strong>: dove ti chiede l'SRT/VTT puoi scegliere direttamente un file <code>.xlsx</code> con i tempi. Le colonne sono riconosciute dalle intestazioni (Timecode, Role, Reaction Sound, Translation, o Inizio, Fine, Testo, Personaggio, Reazione); ogni battuta diventa <em>PERSONAGGIO: testo</em>, con la reazione in coda; senza colonna di fine, la battuta dura fino alla successiva. Accanto all'Excel resta un file <code>.srt</code> con lo stesso nome. Se i fogli adatti sono pi&ugrave; di uno, o se un foglio ha pi&ugrave; colonne di testo (per esempio una per lingua), compare un piccolo menu per scegliere quale foglio e quale colonna importare: se ne importa uno alla volta. Se una riga piena ha il tempo sbagliato, l'importazione si ferma e ti dice quale. Per scegliere foglio e colonne a mano, o per i vecchi <code>.xls</code>, c'&egrave; SRT Tools (26). Nel testo libero dei Gobbi, <em>Carica file…</em> accetta lo stesso <code>.xlsx</code> e mette nel testo una battuta per riga, senza tempi.</p>
+  <p><strong>VTT e reazioni</strong>: la voce di un WebVTT (<code>&lt;v Nome&gt;</code>) diventa <em>Nome: testo</em>; i tag di formato (corsivo, grassetto, colore) spariscono; le reazioni scritte fra parentesi angolari, come <code>&lt;sospira&gt;</code>, restano nel testo.</p>
   <p class="when">Quando: il primo giorno di un lavoro su video.</p>
 
   <h3 id="zp-gestione-srt"><span id="tool-05"></span>05 &middot; Gestione SRT</h3>
@@ -636,6 +639,14 @@
 
   <h2 id="tool-35">35 &middot; ZP Colori (clicca e colora)</h2>
   <p>La finestrella dei colori, dal pulsante tavolozza della toolbar ZP: si apre, si usa, si chiude (o resta agganciata). Scegli uno dei sei modi, seleziona gli oggetti e poi clicca un colore. <strong>Auto</strong> colora insieme item, marker e regioni selezionati al clic; gli altri modi limitano il clic a Item, Traccia, Tutto (tracce e loro item), Marker o Regione. Un solo selettore resta acceso e nessuna selezione viene colorata da sola. Ci sono venti colori e <strong>Togli colore</strong>. Ogni colorazione si annulla con Ctrl/Cmd+Z. La stessa cosa, sempre a vista, è la toolbar facoltativa <a href="toolbar.html#colori">ZP Colori</a>.</p>
+
+  <h2 id="tool-37">37 &middot; ZP Consolidate</h2>
+  <p>Una finestra con tre comandi indipendenti, pi&ugrave; il <strong>?</strong> con la spiegazione completa.</p>
+  <ul>
+    <li><strong>Consolida progetto</strong>: copia in <em>Media</em>, byte per byte, i file usati dal progetto (audio, video, MIDI esterni, sorgenti di tutti i take) e gli SRT/VTT, poi ricollega i take. Non converte e non cancella gli originali; prima salva il progetto e ne tiene una copia di sicurezza.</li>
+    <li><strong>Pulisci Media</strong>: trova i file in <em>Media</em> che il progetto non usa e, se confermi, li sposta in una cartella accanto a Media. Non cancella nulla.</li>
+    <li><strong>Numera item</strong>: rinomina gli item delle tracce selezionate con il nome della traccia e un numero progressivo (<em>Voce#1</em>, <em>Voce#2</em>&hellip;), nell'ordine in cui stanno sulla traccia. Serve a ritrovare la sequenza dopo un montaggio pesante. Ctrl+Z annulla.</li>
+  </ul>
 
   <h2 id="azioni">Azioni senza finestra</h2>
   <p>Si lanciano dall'Action List (cerca <em>ZP Studio Suite</em>) o da una scorciatoia da tastiera.</p>
