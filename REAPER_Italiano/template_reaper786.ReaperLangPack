@@ -119,6 +119,7 @@
 ;D405917E36F95CF8=ID:
 ;472AFB5EEA3489E5=Lane
 ;22930147F74645ED=Lane:
+;8403ACDF3212460C=Marker Manager...
 ;48D899DD92FBC032=Name:
 ;E6B5A6A65044C93D=Reset color
 ;941DEA15C4817EEC=Set color...
@@ -346,10 +347,9 @@
 ;B36DBB640BD652AA=Notes:
 ;200265593F330955=Scale Finder
 ;08328907B4EB71A0=?
-;40734250890FBC24=Combined
-;7B58DF28A5C5EDAE=Do not render hidden regions
 ;87D8D79D63721460=Open render queue...
 ;AAEC9E4F51E61BFA=Render (no files)
+;02823F9BF6E7CCD5=Skip hidden regions
 ;6591A9846B673560=Source:
 ;F84E1DFB577DA637=Stretch markers
 ;212B7E992662BAE7=Take markers
@@ -423,6 +423,7 @@
 ;29982009A22AB713=Fade-in:
 ;ED4DC44C5FB86256=Fade-out:
 ;844680552BC72AF0=Normalize:
+;44C7D9889FEBDAE5=Ignore
 ;91E2929E89C73B1C=Automation Items
 ;E39C26BBF74C7E96=copies
 ;DD491F831B629F78=item
@@ -437,6 +438,8 @@
 ;A43D5AFECAA46489=Preview
 ;E5BECCE8B6372D80=Zoom
 ;BE34D1D1CA3FF8A8=Edit selected
+;6D34089DA0839FD4=Customization list
+;0444991335203938=Analyzing...
 ;6BE8B83EA0A1A15E=&Actions
 ;386DCB7A24A75D67=&Edit
 ;3AF66241CE595B8C=&Envelopes
@@ -603,6 +606,13 @@
 ;3514B1D551F0F24D=LUFS-S (readout=max)
 ;CBED1547C6300197=Latch
 ;C7F67A5666962B47=Latch Preview
+;20D29012CAD3899C=Learn track FX bypass...
+;800BDA9B96FB45E5=Learn track mute...
+;130F9A6016E0BE7B=Learn track pan...
+;EB0F804197628C33=Learn track record arm...
+;100F72E85010E0E3=Learn track solo...
+;E3FBACB3D79F7DB8=Learn track volume...
+;F12A8108E2F4FA9A=Learn track width...
 ;CA47517BDEFA4232=Linear
 ;66E5DC632BAFC67F=Link track volume/pan to MIDI channel
 ;5C6FB2DCFD68EEF7=Link track volume/pan to all MIDI channels
@@ -614,6 +624,7 @@
 ;EC752CC2DB12686D=Loop item source
 ;ADB9958ED73C94F7=Loop section of item source
 ;C524AA04CA044305=MIDI track controls
+;5DDF7EA6834B8030=MIDI/OSC learn
 ;90AF657379F9511D=Marker
 ;DDDBC4B59922776E=Master Track
 ;79D6347556189739=Measures.Beats
@@ -902,6 +913,7 @@
 ;A9712384CADC45EE=FX shortcuts
 ;65450B6CD4D936E5=First priority
 ;4E40374A0C32C501=Fourth priority
+;FE38622FBF1270FB=Hidden FX
 ;EFDD0AC32D858D23=Instruments
 ;D851E3186B3A08B4=JS
 ;7A8F70DCF15158A9=JSFX descriptions
@@ -1109,8 +1121,10 @@
 ;978AC938BDD65877=Track number
 ;D82BC4186B1904CA=Up
 ;8A3F14717826D8D1=Width
+;D459FF8ECD354AD9=Command ID
 ;20AFB48FFE418F4F=Select
 ;6037A596D672320D=Shortcut
+;5B7A5177E1B9CD10=State
 ;B762E77EB85D7B6C=off
 ;D8ADC6186B88361A=on
 ;96C3317B95606339=Clear tempo envelope
@@ -1191,11 +1205,17 @@
 ;30C7CFDF48505E4A=Failed
 ;8CF4F0AFD0B7C40A=Filename
 ;ADE62F1CFD2974B6=Scanning...
+;16021B2387E0B7D6=Size
 ;2A6ED1B48E88BCC9=Status
+;A30211799ECFF867=Create
 ;F0CDBE121A8CBFA9=Batch Converter
+;7FC8C4AE92742E10=Canceled
+;283B45E9974ECF06=Converting
 ;BABD655B2A5AED87=Select a directory:
 ;21D9AFD3561EE5AB=Stereo
 ;7EDD20633162E6FE=channel
+;F761F64742F84B2B=converted
+;6811BD8E9941EEB4=errors
 ;C129889B8F00B0F1=file
 ;3A43A253FE2BECE6=files
 ;1F548D6D0107E049=CPU: 
@@ -1482,10 +1502,7 @@
 ;33A5C54D35029E6F=Note
 ;D790926420BA2EB7=Notice
 ;BBA33ABA3D67B8AA=REAPER Error
-;05A130B04362C768=REAPER Note
 ;88FD5B51957ED670=REAPER Warning
-;E83CE539DBB569A7=Stop recording before rendering...
-;5945AF9182806811=You must stop recording before importing configuration (as configuration import will require a restart)
 ;D96196186C20B90D=: 
 ;BA8A5EA843F33060=Can't redo
 ;99B80DC023AB26F6=Can't undo
@@ -1507,7 +1524,6 @@
 ;4D852D31543F53D5=CC selection follows note selection
 ;50B1DD4586A4B192=Change key signature
 ;BC585B6FF340DD35=Channel Pressure
-;A30211799ECFF867=Create
 ;E78FFFE5EA715BBB=Create tuplet...
 ;9936FD536FA95041=Delete key signature
 ;5FD74DE73CBAB0FA=Display quantization...
@@ -1822,12 +1838,14 @@
 ;1B24743F5F9247BF=Move loop points
 ;190CB66212317849=Move take marker
 ;11C47D5FC9E7E701=Move time selection
+;804FB26B8D7907DE=No action
 ;75F670FBB4C45F43=Razor edit
 ;ED0A4DAC9B52D14C=Region edge
 ;3562EF4D94B23E99=Ruler lane
 ;D2E0086C9A6FE37E=Select razor edit area
 ;966D9CF4724BF1CF=Set loop points to region
 ;5E7FAEE50FD81759=Set sample value to zero
+;E4BD36D8356AED1D=Set take marker color
 ;B3E3EB828D92742C=Set time selection
 ;D2F0819147C55A7C=Stretch
 ;6DC8A5A8ECB1B5F8=Up-rank take marker
@@ -1836,6 +1854,7 @@
 ;0121AF72166A79F7=kbps
 ;C49217B4C723ACA7=Bitrate: %.0fkbps
 ;AEC2E4C118882FAF=Streams: %d
+;4A170FAC1550C1AE=Update
 ;3BEB0AE437FA2F12=center
 ;112BF17E59C1097F=Bus
 ;409F65C60F8CB038=1 semitone
@@ -1850,7 +1869,6 @@
 ;76036DCB216B5D75=Highest
 ;FC0E6CF88C55D677=Time Critical
 ;BE8A32189AE58F83=Edit cursor
-;79B1A901034168FB=Never
 ;A97DAA4FBD1778A5=(default)
 ;37CA03251A2D7A8B=Buffering
 ;08A52B89A26D4975=Device
@@ -2281,8 +2299,8 @@
 ;55272D5AF8EE3E11=Scroll view to edit cursor on stop
 ;2B7FC3F24C522975=Max MIDI playback speed when applying negative media playback offset:
 ;1339F0A0D94DB142=(0=immediate)
-;7C0BC5B15B033895=Flush FX when looping (good for autotune, bad for instruments, etc)
-;1149F742BD0E8658=Run FX when stopped (good for certain VSTi)
+;F9A5F5016DF11A5F=Flush FX when looping
+;F780BB12E7CCF1F9=Run FX when stopped 
 ;926B9B67161D84D0=Flush FX on stop
 ;80EBAA875417D411=Run FX for
 ;F0D4137C641EE9CC=ms after stopping (for reverb tails, etc)
@@ -2606,13 +2624,13 @@
 ;^FBC77126B2213071=Word wrap
 
 [DLG_169] ; IDD_MARKEREDIT
-;8403ACDF3212460C=Marker Manager...
 ;^6AE6A7774B25EDEB=Edit Marker
 ;^48D899DD92FBC032=Name:
 ;^D405917E36F95CF8=ID:
 ;^22930147F74645ED=Lane:
 ;^472AFB5EEA3489E5=Lane
 ;^F9519A70026F7B52=Position:
+;^8403ACDF3212460C=Marker Manager...
 ;^941DEA15C4817EEC=Set color...
 ;^E6B5A6A65044C93D=Reset color
 ;^D840E3186B2B9581=OK
@@ -3066,6 +3084,7 @@
 ;DE1E80DDFDD48B40=Display vertical line at mouse position:
 ;5103D7B3AF96E751=Play cursor width:
 ;5BE54390A5BC8863=Hide docker tabs when single window and smaller than:
+;C7B03E0579D9E466=Use OS-provided color chooser
 ;^649ECB151A2B4705=Slider1
 ;^10EC54E7BB0B3282=pixels
 
@@ -4085,6 +4104,7 @@
 ;10F81FCB58E84836=Use CPU cores:
 ;6212A0F8FDE11DA5=Output format
 ;DE8CE874C1ED9306=Silently increment filenames
+;6ACB47265C620CDA=Show converted file preview
 ;8F4C2B75B44D644C=Notify when finished
 ;FA6AEB4807A3A3BA=Convert
 ;^F33EC3BF0909E19D=Batch File/Item Converter
@@ -4134,6 +4154,7 @@
 ;A5C24439F53E90FE=Envelope point selection follows time selection for the active envelope
 ;CB6F1A1FA9E2367C=First click on unselected envelope can insert a point (depends on mouse modifier settings)
 ;380C326E3C68071C=Prevent mouse edits of single envelope points from moving past other envelope points
+;8D5F71B6A925018A=Moving envelope points through other envelope points deletes the other points
 ;CCA504D42501588F=Automatically show affected envelopes when moving media items across tracks
 ;35A6C3D61C6D0FBF=Changing envelope in lane:
 ;77542B112EC25D31=Automatically add edge points when editing:
@@ -4180,10 +4201,11 @@
 ;7968AEE3F4FE417B=Media with embedded slice information
 ;0E6A4821C2AD49FB=Import files as:
 ;5C0EAD3BA3080616=Slice tails:
-;AB7CCDF9018B0F4E=Media tempo-matching
-;514C3EE1DED9AE6B=Automatically adjust media to project tempo if media contains tempo information
-;C0D1A364502E98E2=Otherwise, prompt to adjust media to project tempo:
-;F45E4211CDD0F701=Prompt to adjust empty project to media tempo:
+;2F27C19D361104B1=Importing in general:
+;47AA835071912B3A=From Media Explorer with tempo-match enabled:
+;C1F802AE7FD2CD1A=Media with embedded tempo:
+;EDDE80002054B940=Media with estimated tempo:
+;DAB0FBC37CF53037=Prompt to adjust empty project to embedded media tempo
 ;1AA4198DCD5FD638=After adjusting tempo, set imported media to auto-stretch at tempo changes
 ;5297592F118C7274=Warn about potential incorrect playback when importing raw PCM audio (.SD2 files, etc)
 ;^7CCEF3446F2CADF7=Create folder tracks for imported directories
@@ -4248,6 +4270,7 @@
 ;065BFFA5161CA18B=Only display peaks for selected tracks
 ;9EC621F00DC94ED1=Only display peaks for tracks and items that are soloed or not muted
 ;FAA4C30CE6E7A158=Sample view:
+;3F6AEB8F4100573E=Highlight sample edits even when zoomed out
 ;29DDC7DE81B9698E=Draw waveform zero-lines above peaks/waveforms
 ;96E49324AD697433=Fill waveforms to zero line
 ;7820232EC08E405F=Scale peaks by pre-fx volume/pan and per-take envelopes
@@ -4366,6 +4389,7 @@
 [DLG_470] ; IDD_MAC_OKCANCEL
 ;^D840E3186B2B9581=OK
 ;^F09E4B5C35AA14B9=Cancel
+;^D7323C887B0A2951=Apply
 
 [DLG_471] ; IDD_GET_LICECAP
 ;4EB31544A2B544C9=LICEcap not found
@@ -4608,7 +4632,6 @@
 ;B96DC62C8DAD2307=Delay queued render to allow samples to load
 ;0903AD556AF759BE=Render to File
 ;DB7A3E191C8F859B=Time bounds
-;058E62675060DE32=Region Matrix...
 ;1AF0BD09D018425D=Tail:
 ;D98A68186C436FF7=..
 ;E557476A23EFCCC5=See all
@@ -4626,11 +4649,10 @@
 ;529A671FEBBC78D0=Metadata...
 ;86C55D176585B2A2=Output formats
 ;C781F39457E72180=Do not render files that are likely silent
-;E99662FCBA2828E7=Save project copy to outfile.wav.RPP
-;A98CD5FFEC7866F9=Save outfile.render_stats.html
-;A7B48DD0872C306B=Per rendered file
 ;AF90DDBE62A73728=Auto-return to this dialog when finished
 ;1C2E2E61B8B106CD=Auto-close all render windows when finished
+;628F3EBF2D23C540=Show track meters while rendering
+;E99662FCBA2828E7=Save project copy to outfile.wav.RPP
 ;CD1596364EF5BF14=Add rendered items to new tracks in project
 ;EF3D50CDFE97A374=Queue...
 ;000A0965A36801DA=Dry run (no output)
@@ -4641,7 +4663,8 @@
 ;^720CB39E31676E27=Start: 
 ;^61B7599A40AF0062=End:
 ;^309B13D6E0AC1A0F=Length:
-;^7B58DF28A5C5EDAE=Do not render hidden regions
+;^7CE6FE4C74542BB2=Region Manager...
+;^02823F9BF6E7CCD5=Skip hidden regions
 ;^D8B3B3186B8C817F=ms
 ;^2555373B75AA89B2=Output
 ;^E0A7E8E6C8588D64=Directory:
@@ -4661,7 +4684,7 @@
 ;^E5C789E4D64D2DCE=Timecode start offset
 ;^EAC3236C52A59642=Metadata
 ;^22F397A203D21C30=Silently increment filenames to avoid overwriting
-;^40734250890FBC24=Combined
+;^BAFCE81B12CE0626=Stats/Charts
 ;^B7D60A549F3AFA0B=Save settings
 ;^AAEC9E4F51E61BFA=Render (no files)
 ;^F09E4B5C35AA14B9=Cancel
@@ -4820,7 +4843,8 @@
 [DLG_519] ; IDD_PREFS_AUTOMATION
 ;2774BF0E396FA6EA=Automation recording return speed:
 ;6A77E58CC1DB4B89=Action transition time:
-;F3407898EA587963=Automatically add envelopes when tweaking parameters in automation write modes
+;74DB5120DBC314F3=Automatically add envelopes in automation write modes
+;B561ED0CC6276704=Allow for mute
 ;A034ABCC948D1990=Hidden envelopes: 
 ;0C24BC2FF418AD7F=Display read automation feedback
 ;60ED6B2EB49A67AF=Allow writing automation
@@ -5423,10 +5447,10 @@
 [DLG_605] ; IDD_IMPORT_RPL_PROMPT
 ;06CF976E1A99D721='%.300s' has preset '%.300s' which already exists.
 ;62DF25CF9DA8F0A1=.RPL Import: Duplicate Preset Name
-;44C7D9889FEBDAE5=Ignore
 ;75FC6C1D19279FFF=Import with new name
 ;1061FD0CF98C9D46=Apply to any remaining duplicates
 ;^F257E1E83F5C7699=Replace
+;^44C7D9889FEBDAE5=Ignore
 
 [DLG_606] ; IDD_CONTAINER_HOST
 ;^08329D07B4EB939C=+
@@ -5688,6 +5712,19 @@
 ;^772CECA01AD73CB4=Value
 ;^D840E3186B2B9581=OK
 ;^F09E4B5C35AA14B9=Cancel
+
+[DLG_631] ; IDD_PREFS_CONFIGCHANGE
+;6E81E0DEA62F5E0F=Reset selected...
+;^6D34089DA0839FD4=Customization list
+;^D43B88702E996ED9=Filter:
+
+[DLG_632] ; IDD_PACKAGE_IMPORT
+;0E64DD48AAF9CCCA=Install Package
+;D5539AE05DD0D5EA=Remove all files in package
+;E2A1F71E95785466=Open Website
+;^0444991335203938=Analyzing...
+;^F09E4B5C35AA14B9=Cancel
+;^D9B12705AD844C62=List1
 
 [MENU_102] ; IDR_MENU1
 ;76AC8A0EF584639A=&New project
@@ -6134,6 +6171,14 @@
 ;^D98001186C3A6C6D=15
 ;^D97FFE186C3A6754=16
 ;^522F483C3BDD4C72=Do not link track volume/pan to MIDI
+;^5DDF7EA6834B8030=MIDI/OSC learn
+;^E3FBACB3D79F7DB8=Learn track volume...
+;^130F9A6016E0BE7B=Learn track pan...
+;^F12A8108E2F4FA9A=Learn track width...
+;^800BDA9B96FB45E5=Learn track mute...
+;^100F72E85010E0E3=Learn track solo...
+;^20D29012CAD3899C=Learn track FX bypass...
+;^EB0F804197628C33=Learn track record arm...
 ;^F96490112D1B162F=Lock track controls
 ;^7D4D6C4CD3A7206A=Lock track height
 ;^72AFE1669A8A3837=Lock track items
@@ -6449,6 +6494,7 @@
 ;^CAC6D9B556053C93=Categories
 ;^83ACA278C2C00834=Developers
 ;^C004CD40F2057E29=FX chains
+;^FE38622FBF1270FB=Hidden FX
 ;^DFE075A0849636D1=Clear cache and re-scan all plugins
 ;^E7D728BB6DC1259F=Show in FX list
 ;^2D4BDC5DCCE1B42E=Default FX presets
@@ -6535,6 +6581,14 @@
 ;^D98001186C3A6C6D=15
 ;^D97FFE186C3A6754=16
 ;^522F483C3BDD4C72=Do not link track volume/pan to MIDI
+;^5DDF7EA6834B8030=MIDI/OSC learn
+;^E3FBACB3D79F7DB8=Learn track volume...
+;^130F9A6016E0BE7B=Learn track pan...
+;^F12A8108E2F4FA9A=Learn track width...
+;^800BDA9B96FB45E5=Learn track mute...
+;^100F72E85010E0E3=Learn track solo...
+;^20D29012CAD3899C=Learn track FX bypass...
+;^EB0F804197628C33=Learn track record arm...
 ;^F96490112D1B162F=Lock track controls
 ;^7D4D6C4CD3A7206A=Lock track height
 ;^72AFE1669A8A3837=Lock track items
@@ -7309,11 +7363,15 @@
 [MENU_315] ; IDR_CONTEXTS_15
 ;AB3A6BCE325A5628=Show send parameters
 ;E42B7D098D9F7AD0=Mute send
+;3CF2F35D14D58F4F=Learn send volume...
+;07CC467D57C8C866=Learn send pan...
+;ABB0DE3BC99AD6AE=Learn send mute...
 ;6F08FD3A4273537C=Mute send slot for selected tracks
 ;C0BF6AE38F5FC824=Mute send slot for all tracks
 ;B19A3615EADF772D=Show track routing window
 ;F0411A69BCF40C1B=Go to send destination track
 ;^476CA46F5CC9791B=Remove send
+;^5DDF7EA6834B8030=MIDI/OSC learn
 
 [MENU_316] ; IDR_CONTEXTS_16
 ;1D2B99D34B81AA37=Jump to marker/region
@@ -7435,6 +7493,7 @@
 ;^CAC6D9B556053C93=Categories
 ;^83ACA278C2C00834=Developers
 ;^C004CD40F2057E29=FX chains
+;^FE38622FBF1270FB=Hidden FX
 ;^DFE075A0849636D1=Clear cache and re-scan all plugins
 ;^E7D728BB6DC1259F=Show in FX list
 ;^2D4BDC5DCCE1B42E=Default FX presets
@@ -8450,8 +8509,6 @@
 ;01792771EC36C8FB=This key is mapped to an unavailable registered action:
 ;C306DC3992BF20C5=This key is mapped to an action which does not exist.
 ;343573884A47DD66=Override mapping?
-;5B7A5177E1B9CD10=State
-;D459FF8ECD354AD9=Command ID
 ;CF845C32713C57C5=ReaScript path
 ;38BD9E8EBB25B104=Select/close
 ;3F0C4A774B49AF33=Run/close
@@ -8465,6 +8522,8 @@
 ;E4850748DBD946C8=Create Custom Action
 ;^6037A596D672320D=Shortcut
 ;^7DA8EA3426CA11D3=Description
+;^5B7A5177E1B9CD10=State
+;^D459FF8ECD354AD9=Command ID
 ;^BAC64C1B2E060EE5=Close
 ;^20AFB48FFE418F4F=Select
 ;^87DB547E0C57B4B8=Run
@@ -8573,13 +8632,16 @@
 ;3673709955FCCF12=Open selected item source media in Media Explorer
 ;E68AEE77D1716E0F=Open selected item source media in explorer/finder
 ;BE5FFB15ABD5DCEF=File: Export configuration...
-;5074E861DD4F4BFA=File: Import configuration...
+;B7D5731B253D8C4B=File: Import configuration/package...
 ;D008FC1B5EBC6C22=File: Render project to disk...
 ;D3871A3C13ED8BDE=File: Render project, using the most recent render settings
 ;6F7E2982ECE48086=File: Dry run render project, using the most recent render settings
 ;8E1795444FEE47D9=File: Render project, using the most recent render settings, with a new target file name...
 ;B3E64A86A52269E4=File: Render project, using the most recent render settings, auto-close render dialog
 ;42CC78B8FDB3DD61=File: Add project to render queue, using the most recent render settings
+;6F492C01FA6F4F78=File: Export per-file statistics to [each_outfile].render_stats.html when rendering
+;880DD0A9145F07FF=File: Export combined statistics to [outfile].render_stats.html when rendering
+;8D7C50A703800EC5=File: Do not export statistics to file when rendering
 ;2CFE1DAEC7CDADE4=File: Open render statistics charts from most recent render in web browser
 ;42FDBDF2FC6D8E99=File: Open render statistics charts from most recent render in web browser (hide file paths)
 ;2181C6BF0C8F0937=File: Open render statistics charts from most recent render in web browser (hide project regions/markers)
@@ -9350,6 +9412,13 @@
 ;65EA5064F6BCB41F=Track: Nudge track volume up
 ;D434A764C0C80D8E=Track: Nudge master track volume down
 ;E8B3E61859BD57BB=Track: Nudge master track volume up
+;336219BC959D4753=Track: MIDI/OSC Learn: Volume...
+;6DB5E67A4CE161DA=Track: MIDI/OSC Learn: Pan...
+;49EDCC02A4449BB2=Track: MIDI/OSC Learn: Mute...
+;3451292731B279E0=Track: MIDI/OSC Learn: Solo...
+;F9D46B2B9D5269BD=Track: MIDI/OSC Learn: FX Bypass...
+;5C9B7EB5B1247BE4=Track: MIDI/OSC Learn: Record Arm...
+;C41F4F36EC773863=Track: MIDI/OSC Learn: Width...
 ;2DADFDC0D69D88DF=Item properties: Reset item pitch
 ;41B21FD0DDECAA43=Item properties: Pitch item up one semitone
 ;3D62CDB59538C8C8=Item properties: Pitch item down one semitone
@@ -11306,6 +11375,7 @@
 ;A651A015379A8C45=Click to use the default color for groups.
 ;C76AC434D83C89F9=Choose Color for Take Marker
 ;04AFF6139014D9D1=Click to use the default color for take markers.
+;CAACFC388AA1D94E=Click to use the default color for take marker.
 ;8CA84E2CBB1CC0FD=Click to use the default color for the selected marker.
 ;8312F16EC665FBBF=Click to use the default color for the selected region.
 ;E6CF0783C43C8C4A=Choose Color for Track Group
@@ -11379,16 +11449,22 @@
 ;BD7CFFF2A0861E1A= and modify %d files
 ;3BC962712055D904= and REMOVE 1 file!
 ;BC15D33B8E7A1967= and REMOVE %d files!
-;18347C10C98CD94D=Importing configuration will require REAPER to restart. You will be prompted to save any open projects, and will get to review the configuration before installing. Proceed?
+;A76EC2C1BFC59545=Importing configuration will require REAPER to restart.\r\n\r\nYou will be prompted to save any open projects, and will get to review the configuration before installing.\r\n\r\nProceed?
 ;5ED4338681DE1E25=Import Configuration?
 ;^C004CD40F2057E29=FX chains
 ;^91E2929E89C73B1C=Automation Items
 ;^8CF4F0AFD0B7C40A=Filename
 ;^2A6ED1B48E88BCC9=Status
+;^16021B2387E0B7D6=Size
 ;^30C7CFDF48505E4A=Failed
 ;^D840E3186B2B9581=OK
 ;^9A6E97866E0A5FC5=Action
 ;^ADE62F1CFD2974B6=Scanning...
+
+[configimport]
+;3B53D42663744CDC=No change
+;^F257E1E83F5C7699=Replace
+;^A30211799ECFF867=Create
 
 [container]
 ;5127EC430BC32336=Reset to empty
@@ -11399,9 +11475,7 @@
 ;9E5495123541931D=Output path
 ;164C3DDC98BB995A=Setting up
 ;3C83074D63B87DEA=Analyzing
-;283B45E9974ECF06=Converting
 ;96B2B5A0A740BA8B=Done
-;7FC8C4AE92742E10=Canceled
 ;37CCB02B0246EA1C=OVERWRITE
 ;592F72004474817D=ERROR: 
 ;FB60F76FF2D51C73=Batch Converter Error
@@ -11416,8 +11490,6 @@
 ;EE98230858002478=item from
 ;3BC400D4D00CE61E=directories
 ;B8344E2118C79696=directory
-;F761F64742F84B2B=converted
-;6811BD8E9941EEB4=errors
 ;AB3F65A93C153DE5=elapsed
 ;A0FF6EEEEFB2BDB0=Explode
 ;68602921BF912A65=Explode pairs
@@ -11492,6 +11564,8 @@
 ;^2A6ED1B48E88BCC9=Status
 ;^5C048676E8CE02CB=Info
 ;^2555373B75AA89B2=Output
+;^283B45E9974ECF06=Converting
+;^7FC8C4AE92742E10=Canceled
 ;^9EC3E20500624AAF=Error
 ;^3A43A253FE2BECE6=files
 ;^7EDD20633162E6FE=channel
@@ -11499,6 +11573,8 @@
 ;^E044BDDEB9333E54=media item
 ;^F0CDBE121A8CBFA9=Batch Converter
 ;^C129889B8F00B0F1=file
+;^F761F64742F84B2B=converted
+;^6811BD8E9941EEB4=errors
 ;^2112CF591DBD3A60=Mono
 ;^21D9AFD3561EE5AB=Stereo
 ;^18C90F7E5DC51FCA=All
@@ -11892,6 +11968,7 @@
 ;9BDDE191AC0845B9=Collapse all parameters
 ;4435A3F9C5093337=Float FX
 ;8BFF6E3E01078E31=Open container envelopes
+;9AA2363A78613A26=Add Learn...
 ;^6DA57D79A0D11798=Envelope Manager
 ;^9A4FC0866DEFF4E1=Active
 ;^6C7C9B94E39DDDA3=Visible
@@ -12022,6 +12099,8 @@
 ;CDA9DE9108D1F50E=ADL: Bad source file index for cut %d
 
 [explorer]
+;D84DF2186B36395A=KB
+;D85B8A186B41C5FE=GB
 ;89440B8014C901E6=My Computer
 ;11456A4D80ECCB83=My Documents
 ;99CB34B0BFFC0115=Desktop
@@ -12041,8 +12120,6 @@
 ;FE6A18EFBAD835C1=Move column to far left
 ;839912BDB876AE43=Move column to far left: %s
 ;1BA8B535C6016EE3=Save Column Preset
-;D84DF2186B36395A=KB
-;D85B8A186B41C5FE=GB
 ;50E0883209C08CF2=<missing disk>
 ;B82238E409966185=<network>
 ;F929ED9B10754F1E=<cdrom>
@@ -12100,13 +12177,13 @@
 ;BD627BDE5F9EBC6D=Cmd+opt+drag selection to render new file
 ;871B26BD632C6F08=Ctrl+alt+drag selection to render new file
 ;290F19666031F9BC=Checking file %d/%d
+;^361AF2206DE0E16A=bytes
+;^D847A2186B3145BC=MB
 ;^A752FB9BC4EC6C8C=Initializing...
 ;^5D3E4AAB7C030AF2=Peak Volume
 ;^CA95C3C55E05662B=Reverse
 ;^7BEA3E437EB3A717=Sort column
 ;^895BB684C276CD93=Preset name:
-;^361AF2206DE0E16A=bytes
-;^D847A2186B3145BC=MB
 ;^09D15F38080A7701=Media
 ;^A2BF58A6DFD853DC=Project
 ;^6037A596D672320D=Shortcut
@@ -12128,7 +12205,7 @@
 ;^5181B7110326CFAB=Add Metadata Column
 ;^2D64A463B95C3074=Media Explorer
 
-[explorer_DLG_101] ; IDD_MAIN
+[explorer_DLG_101] ; IDD_EXPLORER_MAIN
 ;D7F1122F4DDE0EEB=seek
 ;^2D64A463B95C3074=Media Explorer
 ;^D9B12705AD844C62=List1
@@ -12140,7 +12217,7 @@
 ;^D8D27C186BA6D499=dB
 ;^44D502BC3E71FBB7=Channels
 
-[explorer_DLG_134] ; IDD_DBBUILD
+[explorer_DLG_134] ; IDD_EXPLORER_DBBUILD
 ;ED2B6582378E3E60=Updating %d databases
 ;F337D108662369F8=Searching in
 ;9FFD446C2869A48C=subfolders
@@ -12149,14 +12226,14 @@
 ;^ADE62F1CFD2974B6=Scanning...
 ;^F09E4B5C35AA14B9=Cancel
 
-[explorer_DLG_135] ; IDD_GETDATEFORMAT
+[explorer_DLG_135] ; IDD_EXPLORER_GETDATEFORMAT
 ;F5A3743A7F52CBDE=Date Format
 ;DD0EAE222C9E234C=Date format:
 ;5CCF29276707CF11=(wildcard help)
 ;^D840E3186B2B9581=OK
 ;^F09E4B5C35AA14B9=Cancel
 
-[explorer_DLG_136] ; IDD_USERMETADATACOL
+[explorer_DLG_136] ; IDD_EXPLORER_USERMETADATACOL
 ;^5181B7110326CFAB=Add Metadata Column
 ;^AB261865FC58BF54=Key:
 ;^5017DF9DE95C6EEB=Description:
@@ -12164,7 +12241,7 @@
 ;^D840E3186B2B9581=OK
 ;^F09E4B5C35AA14B9=Cancel
 
-[explorer_DLG_137] ; IDD_XFADE_CONFIG
+[explorer_DLG_137] ; IDD_EXPLORER_XFADE_CONFIG
 ;FCDD65E8EFA5A5A0=Fade-in/Fade-out Settings
 ;09B82441504ED0CE=Fade-in on play
 ;E828A02A9BAAF6FB=Fade-out on stop
@@ -12174,7 +12251,7 @@
 ;^D840E3186B2B9581=OK
 ;^F09E4B5C35AA14B9=Cancel
 
-[explorer_DLG_138] ; IDD_MIDI_NOTE
+[explorer_DLG_138] ; IDD_EXPLORER_MIDI_NOTE
 ;6AAAA36830890EE1=Assign MIDI Note
 ;696A412FD4A19F9F=Start note:
 ;1B938F36A67382AD=Low note:
@@ -12182,7 +12259,7 @@
 ;^D840E3186B2B9581=OK
 ;^F09E4B5C35AA14B9=Cancel
 
-[explorer_DLG_139] ; IDD_IMG_METADATA
+[explorer_DLG_139] ; IDD_EXPLORER_IMG_METADATA
 ;0C1AA77FB4ED665B=Image File Metadata
 ;1A41C453655C341A=Image type:
 ;48B17911A89D74AE=Delete image metadata
@@ -12192,7 +12269,7 @@
 ;^D840E3186B2B9581=OK
 ;^F09E4B5C35AA14B9=Cancel
 
-[explorer_MENU_103] ; IDR_CONTEXTMENU
+[explorer_MENU_103] ; IDR_EXPLORER_CONTEXTMENU
 ;02F53425A72D971D=CtxMenu-tree_shortcut
 ;FAC51C984FC55BD7=Remove shortcut
 ;D816316E790561DA=Create new database from folder
@@ -12336,7 +12413,7 @@
 ;^231C15D6AF7233E9=Remove missing files from database
 ;^A281F8F3044B9C7B=Rename folder
 
-[explorer_MENU_104] ; IDR_MENU1
+[explorer_MENU_104] ; IDR_EXPLORER_MENU1
 ;^8B5A889ADCE5D728=&Media Explorer
 ;^2D64A463B95C3074=Media Explorer
 ;^F8A52835BFC72E29=Create new database from current folder
@@ -12461,7 +12538,7 @@
 ;^E321075F38B5E684=+/- 12 semitones
 ;^25CEC9ABF6C6F508=Customize menus...
 
-[explorer_MENU_105] ; IDR_DEFTOOLBAR
+[explorer_MENU_105] ; IDR_EXPLORER_DEFTOOLBAR
 ;AC70BB3427408DC9=Auto-play
 ;38E212B2E5D542C7=Start on bar
 ;AAF6790D36B0FF1F=Tempo match
@@ -12786,7 +12863,6 @@
 ;^A142C6C8FF74C3E6=Fade-in/fade-out settings...
 
 [explorer_col]
-;16021B2387E0B7D6=Size
 ;9DA8FF10F4C4999C=Modified
 ;ED84587E4546A608=Fav
 ;0ECB8159131DEF0A=Mark
@@ -12809,6 +12885,7 @@
 ;4DCE70FF6168B1FE=Load column order preset
 ;D4FA54F3D390BC8D=Delete column order preset
 ;^9A01878F90736611=File
+;^16021B2387E0B7D6=Size
 ;^2D126F1D4BD6B8C7=Type
 ;^FAF92150674645B7=Title
 ;^DB6AFFF8CBB64A68=Artist
@@ -13126,8 +13203,10 @@
 ;F3578A8246587456=Delete shortcut
 ;60BE4F1F06E30407=Set default preset
 ;BF46C6C80B9DB149=Add to folder
+;9282C78B25B5CB12=Hide FX from non-folder views (add to 'Hidden FX' folder)
 ;7EE9C5468B1893E7=Remove from category
 ;694D93F013CA2703=Remove from developer
+;7A9A42D5DBA7EB84=Un-hide FX from non-folder views (remove from this folder)
 ;01F502F307F563C7=Remove from folder
 ;35E3D51B66AA2577=Changes will be reverted if the plugin cache is cleared
 ;72C4EBEA9DDD2213=Separate process
@@ -13185,6 +13264,7 @@
 ;81A344326B839D86=Route MIDI from the %d new tracks to %d MIDI channels of FX?
 ;^83ACA278C2C00834=Developers
 ;^CAC6D9B556053C93=Categories
+;^FE38622FBF1270FB=Hidden FX
 ;^CC9253BC8BC18E8D=Rename FX...
 ;^2A31DB0B5883713A=Edit JS FX...
 ;^11073FEB55862AAF=Duplicate JS FX...
@@ -13435,23 +13515,22 @@
 ;^9A6E97866E0A5FC5=Action
 
 [import]
-;98E246AD5509EF5D=Media suggests %s bpm:
-;337A4424E610EBDF=Media might be %s bpm, but it might not be:
-;A2A4678592D86AEE=This prompt is shown because tempo matching is enabled in the Media Explorer.
+;0690CB215CEA613F=Media contains embedded tempo/slice information, import as:
+;5DEDA3BF1C2D464B=Embedded media tempo is %s bpm:
+;44C83506DBFCB62C=Embedded media tempo is probably %s bpm:
+;2F9DF5BA4E5A2FD9=Estimated media tempo is %s bpm:
+;359A077C0FA0F018=Note: Media Explorer tempo-match is enabled.
 ;75C55F7F18E25742=NINJAM Import Option
 ;9C0CBF91B3A756B8=Concatenate and make gapless media from %d interval files (highly recommended)
 ;F2DB7183BF18E607=Expand %d MIDI tracks to new REAPER tracks
 ;A63D743372B8C12C=Import MIDI tempo map to project tempo map at 
 ;184B87392D910376=Import %d MIDI markers/cues as project markers
 ;11FF08CEEF71210C=Slice import
-;BDAAA56787F6D4F6=Media contains embedded tempo information, import as:
 ;EF71B5637AD40C78=Always prompt (can also be set in Media/Import preferences)
 ;92AFE6E609C2522F=MIDI import
-;7CFBC9A1B0BAA3AC=Import multi-channel MIDI as:
 ;7C1E59694EFA9D8F=Multichannel item on a single track
 ;52EF7F93351DF2F2=Single-channel items on multiple tracks
 ;1652DD9E25786FDC=Always prompt (can also be set in Media/MIDI preferences)
-;E79737BE62385ECF=Media suggests tempo:
 ;A27A438A8DDC1B0B=Stretch media to project tempo
 ;B275EE2F2C7E1256=Set project to media tempo
 ;46D29C562982E20B=Do not stretch media or change project tempo
@@ -13986,7 +14065,10 @@
 ;19BC8EA394A09BD0=Render item error
 ;E15BEEF602EC337E=Apply track FX Error
 ;B7B87EA07036FB51=Error finding an unused filename to render to. Source file:\r\n\t
-;CD17057F9F13E590=View source properties for %d items?\r\n(you will have to view them all sequentially!)
+;C3CCAC5172AB60CB=%d media items selected.
+;0B53ACDBC0E8E7CF=View source properties for the clicked item only?
+;A40F4D28D3BC3069=View source properties for the first selected item only?
+;C98D5B3DE02D8A3B=Click NO to view source properties for all %d items sequentially.
 ;FA76193619885B9B=Multiple Item Properties
 ;CD466664BAC48512=Note: Some media item sources do not have properties available
 ;97E46AF050BD945E=Item Source Properties
@@ -14006,9 +14088,6 @@
 ;15150E9E3A687122=Time selection locked, unlock now and remove?
 ;C3707F61E24A961C=Live output saving completed!
 ;6A5065293C62F448=%d items have media that is offline
-;6CFBE6010F005CD1=Stop recording before rendering to new take
-;85AF1E98BF2F4CFE=Stop recording before apply track FX
-;B5AEE049B9F8FED1=Stop recording before consolidating...
 ;B581897B00F73FF0=Loop/time selections locked, unlock now and remove?
 ;87D8D35B878FD1A0=Open track template:
 ;1013F95E5E56BDAB=The following MIDI inputs could not be opened: 
@@ -14106,6 +14185,7 @@
 ;B883EDDD5949E349=Normalization was not applied.
 ;7FB0C17561F491FB=Item Normalization Error
 ;B2081DC099EE6D13=Item Normalization Note
+;1AC1E2208F6CF412=Install notice
 ;9E9CD33C3F6F73FD=Warning: an alternate peaks path is configured in preferences, but is not able to be created/written.\r\n\r\nThis misconfiguration may prevent peaks from generating properly.\r\n\r\nWould you like to open preferences to the peaks path configuration to resolve this issue?
 ;9DA07B9D28CBD220=One or more MIDI items could not have their timebase converted, due to tempo changes combined with  being looped or pooled, you can manually glue or render as a new take.
 ;57490B7E317D9DB1=Error opening recorded media
@@ -14152,9 +14232,6 @@
 ;^88FD5B51957ED670=REAPER Warning
 ;^E6A55E1F24BD208C=Choose ReaperConfigZip to import
 ;^D726E2A6E8466B26=Create new MIDI file:
-;^E83CE539DBB569A7=Stop recording before rendering...
-;^05A130B04362C768=REAPER Note
-;^5945AF9182806811=You must stop recording before importing configuration (as configuration import will require a restart)
 ;^D790926420BA2EB7=Notice
 ;^D52782E5368E8EA1=Error writing to MIDI file
 ;^043FBD1700F7067B=Render Warning
@@ -17618,6 +17695,8 @@
 ;256887F40C43AF93=Select time ignoring snap
 ;D0254F544B6ACF68=Add spectral edit to all channels
 ;E843DD206C29FBC0=Add spectral edit to one channel
+;BEAFC804F317A49D=Add take marker with length
+;06E29C64DC0DCAF6=Add take marker with length ignoring snap
 ;565B726E6764825B=Move edge
 ;14E0B314C547754C=Move edge ignoring snap
 ;44BFDC5F6022449E=Move edge ignoring selection/grouping
@@ -18230,7 +18309,6 @@
 ;2197CECC8AC337BC=Pass through to item drag context
 ;AB7933CA6DA05B30=Pass through to item click context
 ;A5193527E6752A2E=Pass through to item double-click context
-;804FB26B8D7907DE=No action
 ;^DDDAF906972AD14A=Horizontal zoom
 ;^66E6846A693D7807=Remove from selection
 ;^20F7E9591DA69ED6=Move
@@ -18259,6 +18337,7 @@
 ;^6DC8A5A8ECB1B5F8=Up-rank take marker
 ;^7E3E8B081449867F=Down-rank take marker
 ;^6D15D53E56338DF4=Edit take marker
+;^E4BD36D8356AED1D=Set take marker color
 ;^1018976D4BBAD416=Delete sample edit
 ;^5E7FAEE50FD81759=Set sample value to zero
 ;^689B1F98F86E6198=Insert envelope point
@@ -18290,6 +18369,7 @@
 ;^22F2CC2A38A97EDC=Event properties...
 ;^BE2BA41449E3678C=Add CC event
 ;^5ECA3B6DF8877E70=Adjust
+;^804FB26B8D7907DE=No action
 
 [mp3]
 ;C042633C475B9971=MP3 (encoder by LAME project)
@@ -18471,6 +18551,68 @@
 ;^6355A67DF71FA0FB=VBR
 ;^D9220AE04A08F86B=Error opening file
 
+[packageimport]
+;31F2FC9DF0CBDDAC=Installation in progress, cancel? Partial changes may be left applied.
+;B23298936ACBE8BE=REAPER will take the following actions:
+;D7117F541A6354FD=Remove %d files [%s]
+;A1B3E89D2FDC1AF2=Install %d new files [%s]
+;6E2E59F4EE0A9885=Update %d existing files [%s]
+;9A936DA360C6AC74=NOTE: This will install/update files which contain executable and/or script content, which could harm your computer.\r\nPlease ensure that you have downloaded this package from a source you trust before installing.
+;A179D03D7B621D20=Proceed?
+;5ACE006CF40194A6=Installation may have failed, %d errors occurred
+;5D5D5118559F1D5A=%d files were installed to UserPlugins.
+;A3C8182060002908=You may need to restart REAPER for these changes to take effect.
+;D21C456D0A071895=Restart REAPER now? You will be prompted to save any unsaved projects.
+;^725278CFF3575289=Confirm
+;^BAC64C1B2E060EE5=Close
+
+[packageinstall]
+;D87C6456279A28A6=Install
+;B92EA0CA5D66BCC0=File matches package
+;7A01340F869FC7C9=Package smaller
+;E2838BF934EDF9E8=Package larger
+;3765A2DFB19AF89D=File in package differs
+;4BEC31A979F5330B=New file
+;AB09F1E6EB0D82C4=zip error
+;A7B202DDF4563173=Uninstall
+;4802AC103AE51841=Close [no changes]
+;EC9C3D118AFECC1C=Apply changes
+;289320DC2EDDC30C=Install or update
+;1DF0772024F5D620=Do not install/update
+;D64A6EBA1074F900=Remove / uninstall
+;82C1B932D0D3DA3E=Package name: %s
+;56BFB78C61D0E307=Package name not specified.
+;23F873B6DCD8FE43=Package installs to Profile: %s
+;12EDD72AFEF82A2A=Package author: %s
+;B842C95EDE225FC3=Version: %s
+;D8B38453623AEE72=URL: %s
+;CE921113C91060CA=Package has %d unsupported files which will not be listed here.
+;360FD0746F84432A=Package has %d files over the builtin limit which will not be listed here.
+;046463A487AA7CD0=Package has %d files for a different OS/architecture which will not be listed here.
+;EAE1F115FB7C61F9=Info: 
+;1FFFF75FA9352D37=Note: OS/architecture-specific components are specified, but none matched this system. The package may not install correctly.
+;A1B4A7944AA2BB22=Error CRC .zip corrupted
+;A8175C1E5B5B40A7=Installed
+;35F16B6838394A3E=Updated
+;2AAB634A6660C230=Error finalizing
+;596636D9DC9838FA=Error extracting
+;896CF75BF872DF2D=Skipped
+;AE048E9BFAC20CA5=Removed
+;F268F78000F1890E=Error removing
+;7EFE068627B16E96=Error reading zip file
+;B0118744E8B03F06=Error creating temp file
+;F8C6B9B171D29B93=Error opening:\r\n\r\n%s
+;02AF6BC57AD29BF7=Error reading contents of ReaperPkg
+;^44C7D9889FEBDAE5=Ignore
+;^4A170FAC1550C1AE=Update
+;^F812C7145E261C23=Remove
+;^804FB26B8D7907DE=No action
+;^8CF4F0AFD0B7C40A=Filename
+;^9A6E97866E0A5FC5=Action
+;^5B7A5177E1B9CD10=State
+;^16021B2387E0B7D6=Size
+;^0444991335203938=Analyzing...
+
 [pan]
 ;^08323C07B4EAEEC9=L
 ;^3BEB0AE437FA2F12=center
@@ -18589,12 +18731,12 @@
 ;^B41F2FB851FBE597=Rename Automation Item
 
 [popclick]
-;0444991335203938=Analyzing...
 ;4423859EEFE68261=Sensitivity %
 ;1EF7B08B479D20E0=Frequency cutoff
 ;F828CDE3EA27186F=Floor dB
 ;E8BEC24C14C17016=Repair length
 ;5D1DDD1C7EAB5F63=Preview length
+;^0444991335203938=Analyzing...
 
 [portable]
 ;9AD7B58BCF084FA3=You are running a portable REAPER install.\r\n\r\nWould you like to scan system VST/CLAP/LV2 paths?\r\n\r\nIf you select no, you may need to add these paths manually later on.
@@ -18695,9 +18837,13 @@
 ;3BECE4815452DB14=Re-scan LV2 paths
 ;71B84EAF08228529=Allow project start to be at fractional frame offset
 ;16A177CDBB0BA2F9=Changes will take effect on the next render
-;048EB9368F1CBA37=RMS-M, RMS-S, RMS-I, RMS-RA
 ;30B0BFD703C13478=LUFS-M, LUFS-S, LUFS-I, LRA
+;F5078D8A08BDB019=RMS-M, RMS-S, RMS-I, RMS-RA (faster)
+;8DB3515B5E4C4ACB=No loudness statistics (fastest)
+;8C75BAA9B0F41CF8=Note: statistics are always calculated during dry run render
 ;4645A0C0BE8944CC=Calculate statistics when rendering
+;A9DBE85710F5BBDF=Note: temporary statistics are always available after rendering
+;091E1462A4CAA2FF=Export HTML statistics after rendering
 ;^99FA828F906D3EE4=Find
 ;^10FBF96843F58677=Multichannel peaks
 ;^12EC4ACDA5D3863D=Stereo RMS
@@ -18720,8 +18866,6 @@
 ;^F47146FFAED94D96=New project
 ;^A3FAE16E6B2F9235=Prompt
 ;^E6A55E1F24BD208C=Choose ReaperConfigZip to import
-;^5945AF9182806811=You must stop recording before importing configuration (as configuration import will require a restart)
-;^D790926420BA2EB7=Notice
 ;^A4C0C852A5B25572=Confirmation
 ;^BABD655B2A5AED87=Select a directory:
 ;^D811D5325411DBAD=Smooth
@@ -18780,6 +18924,7 @@
 ;F25183653F5FF069=When drawing vertical text in the theme (for example, track names or meter scale numbers), draw from bottom to top rather than top to bottom.
 ;B77F1269F0A7F0E4=Set the minimum size in pixels where a single tab will be displayed in a docker. Below this size, a minimal handle will be displayed.
 ;A5C6535E860DC8F2=Spacers in the TCP will shrink so that they are not larger than the following track panel's lane size.
+;D1A43EFB72491298=Use OS-native color chooser rather than REAPER's improved color chooser.
 ;59F5531AF53E9022=Region edges and markers appear as vertical lines in the arrange view by default.
 ;7AC58343A1F09128=Time signature changes appear as vertical lines in the arrange view by default.
 ;1FAA4ED76950431D=Draw grid lines in a dotted style.
@@ -18901,6 +19046,7 @@
 
 [prefs_auto_help]
 ;540A61168A6B08AF=When the track automation mode is touch, latch, or write, moving any track control or FX knob will create an automation envelope for it.
+;1364EF4408EDC468=Allow automatically creating mute envelopes when toggling mute in touch/latch/write mode (off by default).
 ;24A7B4635A17AF3A=After recording an automation write pass, automation can automatically switch to a different mode (to avoid overwriting just-written automation).
 ;6A4D25A321A15123=The time it takes for the envelope to return to its previous or default value after the end of recording an automation pass.
 ;6776B9975D1EC19A=The transition time applied when writing envelope ranges via actions.
@@ -18980,6 +19126,27 @@
 ;30685F754D0829AF=Changing the source lane for a comp area using an action like \"Fixed lane comp area: Move up\" can skip empty lanes, or not.
 ;29B2AF5D4BBEC288=Comping MIDI items can create pooled copies, so that edits to the MIDI notes/data in the source media items affect the comping lane.
 
+[prefs_config]
+;360282A7FF9AFA62=Key/action assignment
+;B82743ED9D9ECCAA=OSC/action assignment
+;379173BA98317961=Project default setting
+;A1D2CE69AC2499DD=Secondary configuration
+;0388C6648E9B5648=Mouse map
+;2FE02C2F01FAECCB=Window positioning/sizing info
+;0CBDF022F4A2AE36=Theme customizations
+;9B4111305E9EF5F5=Customized menu/toolbar
+;C661A9797591E519=Note: any unsaved changes in the preferences will be discaraded.
+;5FCEC6DB9BCFA1DD=Reset %d configuration items?\r\n\r\nNote: restarting REAPER after resetting may be necessary for changes to fully take effect.%s%s
+;^D459FF8ECD354AD9=Command ID
+;^725278CFF3575289=Confirm
+
+[prefs_configchange]
+;3F2B3DD45FC021C2=List of configuration items that have been modified
+;341D69E90FAEE679=Key name
+;^772CECA01AD73CB4=Value
+;^AB2A3D4EF1C9D1A8=Default
+;^5C048676E8CE02CB=Info
+
 [prefs_dx_help]
 ;D305F8049C9BA679=Show any already-opened ReWire-aware applications/devices as available FX in the add-FX window.
 ;EE70845A964B23C2=When adding ReWired applications/devices, automatically open the device control panel.
@@ -19042,6 +19209,7 @@
 ;24E09410CBF68226=-inf..+24dB
 ;708F9A0C043B4C2E=Always
 ;8BE3512CC8C47B94=In read/write
+;79B1A901034168FB=Never
 ;6C824C17E0DF5DC7=Add additional point before edit position
 ;0AA767720898062C=Do not add additional points
 ;B652F6590D0C3658=Add points before and after edit position
@@ -19067,7 +19235,6 @@
 ;^C9D51236E5A04162=Write
 ;^CBED1547C6300197=Latch
 ;^C7F67A5666962B47=Latch Preview
-;^79B1A901034168FB=Never
 
 [prefs_env_help]
 ;60E75E1C06143DD2=Display newly created automation envelopes in separate lanes, as opposed to drawing the envelope over the media lane.
@@ -19080,6 +19247,7 @@
 ;B3FAF44B3E38F204=Transition time between envelope points that are automatically added when moving the lane slider with a time selection, moving media items, etc.
 ;6115B93DB8CE3A5A=When mouse modifier preferences are set to insert an envelope point, clicking an inactive envelope can just select the envelope, or insert a point.
 ;FE8EE594477C7178=When editing a single envelope point with the mouse, the edit can be constrained to the the space between adjacent envelope points.
+;C430CE89BC7A2186=When editing envelope points with the mouse, other envelope points that are passed through can be deleted, or preserved.
 ;0F8D0ED7C3445C45=When moving media items across tracks, make sure all envelopes that are modified are made visible so that you are aware of the changes being made.
 ;86A807A735044B6D=Envelope point selection can follow time selection for the currently active envelope.
 ;CE6D0EE9AF534919=Moving or copying items can automatically create edge points for envelopes, preserving the existing envelope shape around the edits.
@@ -19192,9 +19360,6 @@
 [prefs_import_help]
 ;B8209A80E5196B5F=If you expect to continue to modify the project tempo, import as beat slices. If you want to immediately loop the file, import as a single item.
 ;D6B3258358646B98=Each slice may contain tail audio that can play underneath later slices. These tails can be played, or chopped off on import.
-;BE09E0A66690DF1D=Media containing embedded tempo information can be automatically tempo-matched. Media explorer tempo-match settings will override.
-;7701D3DDEF581A62=Media tempo for tempo-matching may be suggested in the filename or metadata, or estimated based on the file length.
-;1DD197CA28C32C5B=When importing media with embedded or suggested tempo information into an empty project, the project tempo can be set from the media.
 ;F8E3EF53B1BDD6A3=Media containing embedded tempo information can be set to automatically stretch when the media item crosses a project tempo change marker.
 ;5C706D7979AC5D7E=Raw PCM files may be imported with best-guess audio parameters (sample rate, etc). When importing, explain how to fix incorrect parameters.
 ;513753DA28E8479B=When inserting multiple media items via action or drag and drop, the items can be added on separate tracks, or sequentially on a single track.
@@ -19206,6 +19371,8 @@
 ;65B453D4A84F260D=If checked, name unnamed tracks after the media on media import.
 ;43427878B9F37531=If auto-naming tracks on import, remove trailing numbers from track names.
 ;7883930B83ED8CF5=When importing or pasting media with ripple editing enabled, existing media items that start earlier can be split, or unaffected.
+;B6B4A93B653C1F03=Imported media can be automatically stretched to the project tempo, depending on the media metadata and Media Explorer tempo-matching.
+;8F614110C9FC0AF1=When importing media with embedded tempo information into an empty project, the project tempo can be set from the media.
 
 [prefs_itemdefs_help]
 ;3FDEB555C3141CBB=The default fade-in/fade-out length.
@@ -19312,6 +19479,7 @@
 ;^6388A67DF74AFA94=VST
 ;^598D95450BED5823=ReWire
 ;^2C626DCBF2E2019A=ReaScript
+;^6D34089DA0839FD4=Customization list
 ;^7E11B9683132FA9E=Keyboard
 
 [prefs_localize]
@@ -19382,8 +19550,9 @@
 ;B1E6855EF0EF358C=Chop all but the final slice tail
 ;316242E10A374B88=Chop only the final slice tail
 ;FC0E08250AD06B61=Chop all slice tails
-;84F755085797E6DC=If media contains tempo information
-;D092CA245595C8CF=If REAPER estimates media tempo
+;CD5C21D1ECD5D247=Always stretch
+;97A1BFEEA97A1C76=Never stretch
+;C8E3BFA67E26CE4B=Prompt to stretch
 ;AAA11519CE4B6D78=Insert on separate tracks
 ;7C780A1AEAE75643=Insert sequentially on a single track
 ;52ED394E44E8AE09=Decide automatically (by looking at lengths)
@@ -19392,7 +19561,6 @@
 ;^0E040CE3B4E6A59F=A single loopable media item that adjusts to project tempo
 ;^F3E8B70013B3D5F0=A single loopable media item with transient markers
 ;^FFFF2ED7AE6E59E1=Ignore slice and embedded tempo information
-;^79B1A901034168FB=Never
 
 [prefs_media_help]
 ;8A58AA14648ACB16=Sets project media inactive when REAPER is inactive, so that other programs can access/modify the media.
@@ -19472,6 +19640,7 @@
 ;3C548054A1EEE90D=Draw a colored edge (defined in the color theme) around media item waveforms. Color theme may override this preference.
 ;6B5AB7081B65AB32=Draw smooth audio peaks and waveforms. Color theme may override this preference.
 ;0C6865DF13D366CA=The method used to draw the most zoomed-in audio view (when the exact location of each sample is drawn).
+;3498399496777A1E=Highlight peak areas where sample edits exist, even when zoomed out too far to see individual samples.
 ;1B84D6F64C4459BF=Draw the zero line overlaid on the audio peaks (otherwise the zero line is hidden behind the audio).
 ;2C182183F1219626=Adjust audio peak drawing to reflect any track or take envelope that will affect the audio item before FX are applied.
 ;EC1D5A533AA78E29=Draw a colored edge (defined in the color theme) around MIDI notes in media items. Color theme may override this preference.
@@ -21242,12 +21411,12 @@
 [reaper_opus_DLG_155] ; IDD_OPUSSINK_CFG
 ;793C59618680CF12=Encode 3-8 channel audio as 2.1-7.1 (LFE)
 ;47ADB9661E5394D9=Per-channel (6-256 kbps)
+;40734250890FBC24=Combined
 ;E78E0DEFF53B4BF3=Complexity:
 ;1947FE678014C0F4=0-10, 10 gives the highest quality but slower encoding
 ;^46F1486DB9B6A7A6=Mode:
 ;^47721B0B3BD6F596=Bitrate:
 ;^0121AF72166A79F7=kbps
-;^40734250890FBC24=Combined
 
 [reaper_rex_DLG_120] ; IDD_REXITEMINFO
 ;0999DE12FA8081A3=Source tempo: %.1f
@@ -21879,9 +22048,9 @@
 ;28E346BB77013ED8=Track pitch
 ;4C83098561FA9AB8=octave shifts
 ;59D315C7F451EBE4=overlapping segments
-;4A170FAC1550C1AE=Update
 ;F1CE0D5759C597B7=Prevent:
 ;^CA2A325DBD0A1A47=Custom1
+;^4A170FAC1550C1AE=Update
 ;^F10F4B1B4D6DC250=Clear
 
 [reatune_DLG_104] ; IDD_CORRECT
@@ -22667,7 +22836,6 @@
 ;FA60ADA2FD0104C9=Selected markers
 ;2F704078E2145B17=outfile
 ;1B341CD2B3DF9AB3=Save project copy to %s%s.RPP
-;689AD6D78707AEEB=Save %s.render_stats.html
 ;6E94EBACB2B7E74E=Render 1 file
 ;0F54E3E0D9AAABFF=Render %d files
 ;1CEAF95AE338E8FC=Replace preset
@@ -22686,6 +22854,8 @@
 ;90A904D1BA53592F=%d regions
 ;328ED36F6CC33939=%d markers
 ;801185B1B5C1BF98=%d razor edit areas
+;058E62675060DE32=Region Matrix...
+;C3DF16C4B373B2CB=Skip hidden markers
 ;126F7A108BA69A3C=Postprocess*
 ;A73F7C0591610B6A=Limit
 ;01DB9A1D33644967=Trim
@@ -22699,7 +22869,7 @@
 ;8648FAB64EA8961B=Render warning
 ;AC21B0286E7A1ABE=Render File Name
 ;6725CDBA1AD49C8F=Parallel postprocess:
-;76208652277E7628=Postprocess all files at the same time, which can greatly increase render speed. This happens automatically in most cases, except when normalizing or limiting each file separately, in which case parallel postprocessing must be enabled manually.
+;B569619AF7D86FD6=Postprocess all files at the same time, which can greatly increase render speed. This happens automatically in some cases, such as when normalizing or limiting as if files play together.
 ;26664BEF929E4F1F=When parallel postprocessing, rendered files are not available outside of REAPER until all files have finished postprocessing. If you want each rendered file to be available outside of REAPER as soon as possible, and don't mind the entire render process taking more time, disable parallel postprocessing.
 ;17604DA0D224B60B=Parallel Render Help
 ;38F381B9BC0CFF41=PERFORMANCE NOTE:
@@ -22759,11 +22929,13 @@
 ;C9C02344D7F08EBA=Selected media items
 ;D71516387A98D7F9=Razor edit areas
 ;EB12981DDB84AAEC=(no secondary output)
-;7C52FAD1998A97D7=Full-speed Offline
-;ECEF5A49F432EB7D=1x Offline
-;0694A6949DB4FAA8=Online Render
-;3EFDB5F495A9454B=Offline Render (Idle)
-;17A9CDE22D90C248=1x Offline Render (Idle)
+;2191D380C65CBDC8=Online render
+;0BDC2BD9FCA2A8FC=Offline render, full speed
+;5E9119B94BA777FA=Offline render, limit 1x
+;5E8E13B94BA537F1=Offline render, limit 2x
+;5FF4C2DD095B4331=Offline render (idle), full speed
+;C011002C9E41DCDF=Offline render (idle), limit 1x
+;C006FE2C9E3984F4=Offline render (idle), limit 2x
 ;9F6D5A5E82166980=Some postprocessing is not supported for video renders.
 ;942DA131FFBCFCF4=Relative volume of rendered files will stay the same.
 ;A10ED063A9520D14=Relative volume of rendered files with different start/end times may change.
@@ -22822,6 +22994,8 @@
 ;D8813A9A9386C02B=Auto-increment suffix must contain at least one non-numerical character, followed by at least one numerical character.
 ;248A14563F32E013=Default suffix: \"%s\"
 ;5EDC668654E009C6=Auto-increment Error
+;5D41B133C9E9AA38=Please stop batch converter first!
+;05A130B04362C768=REAPER Note
 ;F15BBEAE9FE15E1D=Could not open audio device
 ;66A16C1A64B822AB=Could not set sample rate to %.0f, current rate %.0f
 ;E627935037102F9B=Render: could not change audio device sample rate
@@ -22837,15 +23011,15 @@
 ;FDA7DB8BA581BDA9=RMS-M
 ;FDA7D58BA581B377=RMS-S
 ;85DFAE4A3B60A4FF=RMS-RA
-;33B9B14D3513257D=Norm
-;18E4297E5DDC13B0=Adj
+;A29F6016FABEF26E=NormAdj
+;933693B095FA956D=MonoAdj
 ;ACE51CE3A0283976=TruePk
 ;66F75BAC7E91BFD9=Clip
 ;1534F52869A3A6D5=TPClip
-;E3BE01AD62408C33=Pre-render
 ;49EC68EBB394EAF7=Elapsed: 
 ;A6D0F32CC811267B=Remaining: 
 ;A429CCD0AE500AF2=realtime
+;E3BE01AD62408C33=Pre-render
 ;15029CE244526DD2=Trimming
 ;24AACBB929F44FED=Normalizing
 ;B24612B36183EF56=Limiting
@@ -22854,11 +23028,16 @@
 ;E258F1C722C966D2=Postprocessing
 ;0F77EFC9CA96C87E=Open render statistics charts in web browser
 ;6AE543DB1BC66A68=Open render statistics charts from most recent render in web browser
+;A3F51651D5AA458A=Keep render statistics in memory after render finishes
 ;A89994413557ED4B=Hide file paths
 ;2A1F528C353B6513=Hide project regions/markers
 ;10CBE65210551686=Customize render statistics charts
-;5FB66A1E819B9914=Keep render statistics in memory after render finishes (see render statistics help)
+;C8BF8B74C3765BE9=Export combined statistics to [outfile].render_stats.html
+;BEDC9CBBC64B5D14=Export per-file statistics to [each_outfile].render_stats.html
+;14B162708D15890F=Do not export statistics to file
 ;5F312EF9ECD2C065=Render statistics help
+;D3748226F662248A=Display momentary loudness graph (requires loudness statistics enabled)
+;791A053FFD93F2C9=Display short-term loudness graph (requires loudness statistics enabled)
 ;F62F106418C235F2=Shade areas that do not contribute to LUFS-I (requires LUFS statistics enabled)
 ;18F0F0D569009361=Shade areas that do not contribute to LUFS-I
 ;46E12956AE6440D2=Render peaks display settings
@@ -22900,6 +23079,10 @@
 ;AE40A3F4FC301DBA=HTML render statistics can be created automatically by enabling a setting on the render setup window, or created via the Stats/Charts button on the render window. HTML render statistics are complete and self-contained. Once the file has been created, it will remain on disk and can be shared with others.
 ;E6F6E0AD3008E03B=By default, render statistics are cleared from memory when the render window closes. If HTML render statistics have already been created or viewed, those HTML files will persist and can be reopened later. You can also choose to have REAPER store statistics for the most recent render in memory, to enable the action \"Open render statistics charts from most recent render in web browser\".
 ;4DBA0EF4E8B83A32=Processing item %d/%d...
+;DE0DF3C56FFBC1F9=Converting files...
+;A5B16D62A7B66D17=Converted file
+;1E9591B83E3FD028=Finished in
+;0FAC006E97A8A78D=Elapsed:
 ;^0A9476D2DAF58CB5=General
 ;^FAF92150674645B7=Title
 ;^7DA8EA3426CA11D3=Description
@@ -22951,14 +23134,15 @@
 ;^2555373B75AA89B2=Output
 ;^C3EB4B7A6BCD5F3C=New name:
 ;^D722FAC57CDCD58A=%d media items
+;^7CE6FE4C74542BB2=Region Manager...
+;^8403ACDF3212460C=Marker Manager...
+;^02823F9BF6E7CCD5=Skip hidden regions
 ;^CE7CF9C83915B37C=Postprocess...
 ;^88110AB4474F516A=Normalize
 ;^4D5B21719C8D85CE=Browse for file...
 ;^73235A4845CE69AF=Master mix
 ;^844680552BC72AF0=Normalize:
 ;^85C76190B06B4D57=Brickwall limit
-;^E83CE539DBB569A7=Stop recording before rendering...
-;^05A130B04362C768=REAPER Note
 ;^9EC3E20500624AAF=Error
 ;^C0A402815EE4A2E1=LUFS-M
 ;^C0A3EC815EE47D7F=LUFS-S
@@ -22968,6 +23152,11 @@
 ;^898659B24A7C6FB8=Back
 ;^BAC64C1B2E060EE5=Close
 ;^30C7CFDF48505E4A=Failed
+;^283B45E9974ECF06=Converting
+;^2F799723962762C7=Stop
+;^F761F64742F84B2B=converted
+;^6811BD8E9941EEB4=errors
+;^7FC8C4AE92742E10=Canceled
 
 [render_access]
 ;FB146BF654A1D583=Render output directory
@@ -23059,6 +23248,7 @@
 ;CFF834D38DCD4B8C=Computer Information
 ;5DFBB2BCD0E02AD0=input file name
 ;A102825E3888AC4F=project name
+;83C655C0EBCB504A=project name with autoincrement suffix removed
 ;88F48C434F6133C1=project title (from Project Settings/Notes dialog)
 ;C4947C2D374CB35A=project author (from Project Settings/Notes dialog)
 ;C825A7B4B074870C=project notes (from Project Settings/Notes dialog)
@@ -23167,6 +23357,8 @@
 ;ABA8B5A5A8C0EA12=N for the first item or region on the timeline, N+1 for the second...
 ;D4C140F52CCA422B=1 for the first item or region on the timeline on this track, 2 for the second...
 ;DCC9B79985725F8A=N for the first item or region on the timeline on this track, N+1 for the second...
+;98FBEA33850E4F76=free space available on disk for recording
+;46D7CDEB3A084FE7=recording time remaining on disk with current track recording settings
 ;B01E91D37141A0EF=render format (example: wav)
 ;9940C64D3E60497A=sample rate in Hz
 ;F87F9A41A94F25EF=sample rate in kHz
@@ -23403,6 +23595,7 @@
 ;CCB842E771C424B9=Render (force stereo)
 ;60058CCE208E1B25=Render (force multichannel)...
 ;63A7298466E2A945=Select region
+;7B58DF28A5C5EDAE=Do not render hidden regions
 ;9BBBAC2B709017DC=Show individual group details
 ;861A0F93E63BEAE1=Show individual group flags
 ;7FD87D5A648ED19F=Show master/parent as destination
@@ -23493,7 +23686,6 @@
 ;^BB1D7DBC1BA8233C=Routing Matrix
 ;^F441E72B821F90E0=Track Grouping Matrix
 ;^ECD8A7FC74B3A45A=Region Render Matrix
-;^7B58DF28A5C5EDAE=Do not render hidden regions
 ;^82EE5475CB6FCE9F=Close window
 ;^DDDBC4B59922776E=Master Track
 ;^73235A4845CE69AF=Master mix
@@ -23567,18 +23759,17 @@
 ;1D660BB3BCFDAF0F=You have chosen to save to a subdirectory where a file with this name already exists:\r\n\r\n\t%s\r\n\r\nOverwrite this file?
 ;4E0241866EAFE7E7=Overwrite file?
 ;C8A8D1DE39277BF0=Cannot save with copy/move media, no path specified
-;5B0AAD670346064A=Cannot save with copy/move media when recording, stop recording first
 ;5477580BCBC870E7=Save project with media trim/convert
 ;3C8171D7CC0EEFE6=Save project with media move
 ;2DBAD84B57A723EA=Save project with media convert
 ;9BF2862B3B3C90BE=Save project with media copy
 ;8B985B499A6FAF73=Error copying media, user aborted!
 ;8C9E08D02BE5C9E9=Errors saving project with media - REAPER
-;DB773E3D6D958F52=There were errors copying media for this project:
-;515AF746DB344C2B=%d files could not have filenames found that did not exist
-;1572253A9006D7C2=%d files could not be copied/moved
-;A72489997DD870D1=%d files were copied but could not be updated in the project (plug-in doesn't support SetFileName()?)
-;D0BD7075DBCF5BDC=%d files were allegedly copied but could not be imported back into the project
+;B8E810AE2FA9EBE4=Errors copying media for this project!
+;0D49737E7CF3F0FE=%d files could not copied/moved due to collisions with existing filenames:
+;77CD3A82BBA0FA68=%d files could not be copied/moved:
+;468820803B133D55=%d files could not be updated in the project (plug-in doesn't support SetFileName()?):
+;5478049076097B33=%d files could not be imported back into the project:
 ;^FD8C66831553CF14=REAPER
 
 [scale]
@@ -24040,6 +24231,8 @@
 ;DD23A4D9A4DBEC8B=Window list selected text (inactive)
 ;795BBFA101F2686F=Window list highlighted text
 ;B7DBC7F909E0B4F4=Window list highlighted selected text
+;7BBE29E9FFEC218E=Window list highlighted text, dark mode
+;51BC09D78746F22F=Window list highlighted selected text, dark mode
 ;85D05A02599C2A69=Force button background/border:
 ;3221AB37708C9F05=Button background
 ;B6E3CE32B4EAB6D8=Theme overrides normal Windows colors for non-selected track control panels
@@ -24304,6 +24497,8 @@
 ;D9727CD46C7CC76F=Media explorer selection edge
 ;7FCDC97FB9E290CB=Media explorer grid, markers
 ;1E6BC948842542A4=Media explorer pitch detection text
+;1DC9DD8BB2202EC0=Media explorer playing item text
+;422F6F652D55E773=Media explorer playing item text, dark mode
 ;4613C0B0BAEC8191=Tab control shadow
 ;71E39193A98EC5CB=Tab control selected tab
 ;D9C23DF586FBFF00=Tab control unselected tab
@@ -24480,6 +24675,7 @@
 ;64D01A677661C73C=Dark mode tree selection background
 ;3DF18C5FD55C8B2C=Dark mode tree unfocused selection background
 ;085F2F060120A1E2=Dark mode list grid lines color
+;6CB136ADCFF65FB1=Dark mode focused control color
 ;^C93417DD40352E1B=Error saving
 ;^F685FB3A91025549=Browse...
 ;^9F1CC771ED41C58F=Media item take marker
@@ -24843,6 +25039,7 @@
 ;859C820C7390C449=Scale sample values in time selection...
 ;D59ADB79174222EE=Delete all sample edits
 ;9E771A7B5AE601D2=Bypass sample edits
+;253778E7225F896A=Edit take marker...
 ;DA17B00AE0D8421B=Settings will affect %d selected tracks
 ;B1CBBBC86D855EB0=Settings will affect %d tracks selected in track manager
 ;992AE2BDE5FF0A9B=New Track / 
@@ -25490,6 +25687,7 @@
 ;66B0D4D9499B0C73=Remove FX modulation
 ;84062E34D4DC22C1=Toggle FX modulation bypass
 ;05D1C9889426F9FD=Remove FX learn
+;4210112D67D52436=Remove track learn
 ;BD908452B07B1842=Toggle FX parameter in track panel
 ;D3EB34FEF1FFA033=Track envelope active/visible/armed change
 ;AD0889A7FC25B33D=Take envelope active/visible/armed change
@@ -25736,6 +25934,7 @@
 ;407334E653445E90=Audio Hardware Output Pan Automation
 ;EFB8E7F8BF624599=Adjust Send Pan
 ;EC0AE72E28F11FAC=Adjust Audio Hardware Output Pan
+;7771C83AD66FC543=Add send mute envelope
 ;C8BFF814FFBE5349=Send Mute Automation
 ;BA0CF678ECF67A62=Audio Hardware Output Mute Automation
 ;32623D1EEC4B1A60=Toggle Send Mute
@@ -25824,6 +26023,7 @@
 ;C445D6E4121D7CE6=Remove take from MIDI source data pool
 ;56C52E7B2C3596E6=Remove take from ARA edit pool
 ;60765EA0C2276EC3=Copy/move take envelope
+;F113A1C1830EEB9D=Add take marker
 ;BF47E902561E7D0E=Edit take marker ranking
 ;F18514C2CE924755=Adjust Stretch Marker
 ;7C48915E458E76E0=Remove Stretch Marker
@@ -25875,9 +26075,13 @@
 ;E897103931D7BA4D=Change MIDI Output
 ;FC597406443DD3E1=Set Track Sends
 ;12B8CF0099F9B5DD=Move all active envelopes in track to/from lanes
+;9047A5624ADEA371=Remove send learn
+;9A74877861DFB0D2=Add send learn
+;535ED82503802577=Set send learn
 ;4AAB23665B13062B=Toggle Master FX
 ;711A0DFF17875CDE=Toggle Track FX
 ;5A7DF7F7ED5ED240=Change Track Order
+;517BB4800C26111D=Add mute envelope
 ;A3821BE23B457DA2=Delete Hardware Send
 ;C2F3BD0289D46803=Delete Track Send
 ;E6B338A0F899CFC6=Convert envelope volume scale
@@ -25885,6 +26089,8 @@
 ;FAB671E710EBC778=Set Envelope Point Shape
 ;9F180DCCD8B3FD9B=Edit Envelope Point
 ;9F7FB4C6868D8B46=Show/hide envelope in lane
+;5CB2F5D8B2F0B753=Add track learn
+;35C10922B6691D6C=Set track learn
 ;1CADE32FBA3CD627=Reset envelope point bezier
 ;DBD20BCA7B9024A0=Reset envelope point
 ;66814E4EE377310D=Reset item volume
@@ -25978,6 +26184,7 @@
 ;^5FF66B2D1C5E4DA8=Paste Replace FX
 ;^45D48DA7AFD8FF18=Paste FX
 ;^1F4648B684AFA32F=Pin track to top of arrange view
+;^E4BD36D8356AED1D=Set take marker color
 ;^D65885774203EA34=Remove time signature marker
 ;^1D883542B837B976=Multiple changes
 ;^C92094118C504736=Rename Group
@@ -26155,6 +26362,7 @@
 ;10C37E06D4D247A3=AVI Video files
 ;A7F12DBA570C593B=MPG Video files
 ;796FF4026AC3265D=Windows Media Video/Audio files
+;0123AA9668A80448=Advanced Audio Coding files
 ;D2FB2DE99E80ABB8=Matroska Video/Audio files
 ;4A85585A82C0D55E=LCF Capture Video files
 ;1DEB42FBE8D82BE4=Quicktime files

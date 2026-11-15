@@ -2,6 +2,8 @@
 
 ## ZP Studio Suite 2.6.7 — in preparazione
 
+- **Language pack italiano per REAPER 7.86**: in italiano anche le finestre dei pacchetti `.ReaperPkg`, la cartella FX nascosti, il Learn MIDI/OSC di track e send, le nuove opzioni di render e i take marker con durata. Resta completo anche su REAPER 7.82–7.85.
+- **Italian language pack for REAPER 7.86**: package (`.ReaperPkg`) windows, the Hidden FX folder, MIDI/OSC Learn for tracks and sends, the new render options and take markers with length are now in Italian. It stays complete on REAPER 7.82–7.85 too.
 - **Collega marker (28) e SRT dall'audio (31) con REAPER 7.86**: i marker dell'item portano la durata della battuta e l'SRT riscritto dai marker ha la fine esatta. Con REAPER precedenti il comportamento non cambia.
 - **Collega marker (28) and SRT from audio (31) with REAPER 7.86**: item markers carry the cue length and the SRT rewritten from markers has the exact end time. Nothing changes on earlier REAPER versions.
 - **Gobbi: unisci battute**: clic destro sul testo → «Unisci con la battuta successiva» o «Unisci le battute selezionate in timeline». Resta il primo item con i testi in fila e la durata fino alla fine dell'ultimo; promemoria e parole evidenziate seguono il testo. Nuova azione **38 ZP Unisci Battute** per farlo sugli item selezionati senza aprire il Gobbo.

@@ -11778,3 +11778,172 @@ Synchronized: 	Sincronizzato:
 The file should have 1 or more fields per line, separated by commas. 	Il file deve avere 1 o più campi per riga, separati da virgole. 
 %d.%dkHz 	%d.%dkHz 
 Undo History Memory Usage: 	Uso memoria della cronologia di annullamento: 
+# REAPER 7.83-7.86: voci nuove (pacchetti .ReaperPkg, Hidden FX, Learn di track e send, render, take marker con durata)
+Skip hidden regions	Salta le region nascoste
+Customization list	Elenco personalizzazioni
+Learn track FX bypass...	Apprendi bypass FX della track...
+Learn track mute...	Apprendi mute della track...
+Learn track pan...	Apprendi pan della track...
+Learn track record arm...	Apprendi armamento registrazione della track...
+Learn track solo...	Apprendi solo della track...
+Learn track volume...	Apprendi volume della track...
+Learn track width...	Apprendi ampiezza della track...
+MIDI/OSC learn	Apprendimento MIDI/OSC (Learn)
+Hidden FX	FX nascosti
+Command ID	ID comando
+State	Stato
+No action	Nessuna azione
+Set take marker color	Imposta colore del take marker
+Flush FX when looping	Svuota buffer FX durante il loop
+Run FX when stopped 	Esegui FX a riproduzione ferma 
+Use OS-provided color chooser	Usa il selettore colori del sistema operativo
+Show converted file preview	Mostra anteprima del file convertito
+Moving envelope points through other envelope points deletes the other points	Spostare punti envelope attraverso altri punti envelope elimina gli altri punti
+Importing in general:	Importazione in generale:
+From Media Explorer with tempo-match enabled:	Da Media Explorer con adattamento al tempo attivo:
+Media with embedded tempo:	Media con tempo incorporato:
+Media with estimated tempo:	Media con tempo stimato:
+Prompt to adjust empty project to embedded media tempo	Chiedi se adattare il progetto vuoto al tempo incorporato nel media
+Highlight sample edits even when zoomed out	Evidenzia gli edit dei campioni anche con zoom lontano
+Show track meters while rendering	Mostra i meter delle track durante il render
+Automatically add envelopes in automation write modes	Aggiungi automaticamente gli envelope nelle modalità di scrittura dell'automazione
+Allow for mute	Consenti per il mute
+Reset selected...	Ripristina selezionati...
+Install Package	Installa pacchetto
+Remove all files in package	Rimuovi tutti i file del pacchetto
+Open Website	Apri sito web
+Learn send volume...	Apprendi volume del send...
+Learn send pan...	Apprendi pan del send...
+Learn send mute...	Apprendi mute del send...
+Click to use the default color for take marker.	Clicca per usare il colore predefinito del take marker.
+Importing configuration will require REAPER to restart.\r\n\r\nYou will be prompted to save any open projects, and will get to review the configuration before installing.\r\n\r\nProceed?	L'importazione della configurazione richiede il riavvio di REAPER.\r\n\r\nTi verrà chiesto di salvare i progetti aperti e potrai rivedere la configurazione prima di installarla.\r\n\r\nProcedere?
+No change	Nessuna modifica
+Add Learn...	Aggiungi Learn...
+Hide FX from non-folder views (add to 'Hidden FX' folder)	Nascondi FX dalle viste non a cartelle (aggiungi alla cartella 'FX nascosti')
+Un-hide FX from non-folder views (remove from this folder)	Mostra di nuovo FX nelle viste non a cartelle (rimuovi da questa cartella)
+Media contains embedded tempo/slice information, import as:	Il media contiene informazioni incorporate di tempo/slice, importa come:
+Embedded media tempo is %s bpm:	Il tempo incorporato nel media è %s bpm:
+Embedded media tempo is probably %s bpm:	Il tempo incorporato nel media è probabilmente %s bpm:
+Estimated media tempo is %s bpm:	Il tempo stimato del media è %s bpm:
+Note: Media Explorer tempo-match is enabled.	Nota: l'adattamento al tempo di Media Explorer è attivo.
+%d media items selected.	%d media item selezionati.
+View source properties for the clicked item only?	Mostrare le proprietà della sorgente solo per l'item cliccato?
+View source properties for the first selected item only?	Mostrare le proprietà della sorgente solo per il primo item selezionato?
+Click NO to view source properties for all %d items sequentially.	Clicca NO per vedere in sequenza le proprietà della sorgente di tutti i %d item.
+Install notice	Avviso di installazione
+Add take marker with length	Aggiungi take marker con durata
+Add take marker with length ignoring snap	Aggiungi take marker con durata ignorando lo snap
+Installation in progress, cancel? Partial changes may be left applied.	Installazione in corso, annullare? Alcune modifiche parziali potrebbero restare applicate.
+REAPER will take the following actions:	REAPER eseguirà queste operazioni:
+Remove %d files [%s]	Rimozione di %d file [%s]
+Install %d new files [%s]	Installazione di %d file nuovi [%s]
+Update %d existing files [%s]	Aggiornamento di %d file esistenti [%s]
+NOTE: This will install/update files which contain executable and/or script content, which could harm your computer.\r\nPlease ensure that you have downloaded this package from a source you trust before installing.	NOTA: verranno installati/aggiornati file che contengono codice eseguibile e/o script, che potrebbero danneggiare il computer.\r\nPrima di installare assicurati di aver scaricato questo pacchetto da una fonte di cui ti fidi.
+Proceed?	Procedere?
+Installation may have failed, %d errors occurred	L'installazione potrebbe non essere riuscita: %d errori
+%d files were installed to UserPlugins.	%d file installati in UserPlugins.
+You may need to restart REAPER for these changes to take effect.	Potrebbe essere necessario riavviare REAPER per applicare queste modifiche.
+Restart REAPER now? You will be prompted to save any unsaved projects.	Riavviare REAPER adesso? Ti verrà chiesto di salvare i progetti non salvati.
+Install	Installa
+File matches package	Il file coincide con il pacchetto
+Package smaller	Pacchetto più piccolo
+Package larger	Pacchetto più grande
+File in package differs	Il file nel pacchetto è diverso
+New file	File nuovo
+zip error	errore zip
+Uninstall	Disinstalla
+Close [no changes]	Chiudi [nessuna modifica]
+Apply changes	Applica modifiche
+Install or update	Installa o aggiorna
+Do not install/update	Non installare/aggiornare
+Remove / uninstall	Rimuovi / disinstalla
+Package name: %s	Nome del pacchetto: %s
+Package name not specified.	Nome del pacchetto non specificato.
+Package installs to Profile: %s	Il pacchetto si installa nel profilo: %s
+Package author: %s	Autore del pacchetto: %s
+Version: %s	Versione: %s
+URL: %s	URL: %s
+Package has %d unsupported files which will not be listed here.	Il pacchetto contiene %d file non supportati, che qui non vengono elencati.
+Package has %d files over the builtin limit which will not be listed here.	Il pacchetto contiene %d file oltre il limite previsto, che qui non vengono elencati.
+Package has %d files for a different OS/architecture which will not be listed here.	Il pacchetto contiene %d file per un altro sistema operativo/architettura, che qui non vengono elencati.
+Note: OS/architecture-specific components are specified, but none matched this system. The package may not install correctly.	Nota: sono indicati componenti specifici per sistema operativo/architettura, ma nessuno corrisponde a questo sistema. Il pacchetto potrebbe non installarsi correttamente.
+Error CRC .zip corrupted	Errore CRC: .zip danneggiato
+Installed	Installato
+Updated	Aggiornato
+Error finalizing	Errore nella finalizzazione
+Error extracting	Errore nell'estrazione
+Skipped	Saltato
+Removed	Rimosso
+Error removing	Errore nella rimozione
+Error reading zip file	Errore nella lettura del file zip
+Error creating temp file	Errore nella creazione del file temporaneo
+Error opening:\r\n\r\n%s	Errore nell'apertura:\r\n\r\n%s
+Error reading contents of ReaperPkg	Errore nella lettura del contenuto del ReaperPkg
+RMS-M, RMS-S, RMS-I, RMS-RA (faster)	RMS-M, RMS-S, RMS-I, RMS-RA (più veloce)
+No loudness statistics (fastest)	Nessuna statistica di loudness (il più veloce)
+Note: statistics are always calculated during dry run render	Nota: nella prova a vuoto (Dry run) le statistiche vengono sempre calcolate
+Note: temporary statistics are always available after rendering	Nota: dopo il render le statistiche temporanee sono sempre disponibili
+Export HTML statistics after rendering	Esporta le statistiche in HTML dopo il render
+Use OS-native color chooser rather than REAPER's improved color chooser.	Usa il selettore colori del sistema operativo al posto di quello migliorato di REAPER.
+Allow automatically creating mute envelopes when toggling mute in touch/latch/write mode (off by default).	Consente di creare automaticamente gli envelope di mute quando si attiva o disattiva il mute in modalità touch/latch/write (disattivato in origine).
+Key/action assignment	Assegnazione tasto/azione
+OSC/action assignment	Assegnazione OSC/azione
+Project default setting	Impostazione predefinita del progetto
+Secondary configuration	Configurazione secondaria
+Mouse map	Mappa del mouse
+Window positioning/sizing info	Posizione e dimensioni delle finestre
+Theme customizations	Personalizzazioni del tema
+Customized menu/toolbar	Menu/toolbar personalizzati
+Note: any unsaved changes in the preferences will be discaraded.	Nota: le modifiche non salvate nelle preferenze andranno perse.
+Reset %d configuration items?\r\n\r\nNote: restarting REAPER after resetting may be necessary for changes to fully take effect.%s%s	Ripristinare %d voci di configurazione?\r\n\r\nNota: dopo il ripristino può essere necessario riavviare REAPER perché le modifiche abbiano pieno effetto.%s%s
+List of configuration items that have been modified	Elenco delle voci di configurazione modificate
+Key name	Nome della chiave
+When editing envelope points with the mouse, other envelope points that are passed through can be deleted, or preserved.	Modificando i punti envelope con il mouse, gli altri punti envelope attraversati possono essere eliminati oppure conservati.
+Imported media can be automatically stretched to the project tempo, depending on the media metadata and Media Explorer tempo-matching.	I media importati possono essere adattati automaticamente al tempo del progetto, in base ai metadati del media e all'adattamento al tempo di Media Explorer.
+When importing media with embedded tempo information into an empty project, the project tempo can be set from the media.	Importando in un progetto vuoto un media con informazioni di tempo incorporate, il tempo del progetto può essere impostato da quello del media.
+Always stretch	Adatta sempre (stretch)
+Never stretch	Non adattare mai (stretch)
+Prompt to stretch	Chiedi se adattare (stretch)
+Highlight peak areas where sample edits exist, even when zoomed out too far to see individual samples.	Evidenzia le zone dei picchi in cui ci sono edit dei campioni, anche con uno zoom troppo lontano per vedere i singoli campioni.
+Skip hidden markers	Salta i marker nascosti
+Postprocess all files at the same time, which can greatly increase render speed. This happens automatically in some cases, such as when normalizing or limiting as if files play together.	Post-elabora tutti i file insieme, cosa che può velocizzare molto il render. In alcuni casi avviene automaticamente, per esempio normalizzando o limitando come se i file suonassero insieme.
+Online render	Render online
+Offline render, full speed	Render offline, velocità massima
+Offline render, limit 1x	Render offline, limite 1x
+Offline render, limit 2x	Render offline, limite 2x
+Offline render (idle), full speed	Render offline (Idle), velocità massima
+Offline render (idle), limit 1x	Render offline (Idle), limite 1x
+Offline render (idle), limit 2x	Render offline (Idle), limite 2x
+Please stop batch converter first!	Ferma prima il convertitore batch!
+Keep render statistics in memory after render finishes	Mantieni in memoria le statistiche di render al termine del render
+Export combined statistics to [outfile].render_stats.html	Esporta le statistiche complessive in [outfile].render_stats.html
+Export per-file statistics to [each_outfile].render_stats.html	Esporta le statistiche per file in [each_outfile].render_stats.html
+Do not export statistics to file	Non esportare le statistiche su file
+Display momentary loudness graph (requires loudness statistics enabled)	Mostra grafico del loudness momentaneo (richiede le statistiche di loudness attive)
+Display short-term loudness graph (requires loudness statistics enabled)	Mostra grafico del loudness a breve termine (richiede le statistiche di loudness attive)
+Converting files...	Conversione dei file...
+Converted file	File convertito
+project name with autoincrement suffix removed	nome del progetto senza il suffisso di auto-incremento
+free space available on disk for recording	spazio libero su disco per la registrazione
+recording time remaining on disk with current track recording settings	tempo di registrazione rimasto su disco con le impostazioni di registrazione attuali delle track
+Errors copying media for this project!	Errori nella copia dei media di questo progetto!
+%d files could not copied/moved due to collisions with existing filenames:	%d file non copiati/spostati per conflitto con nomi di file esistenti:
+%d files could not be copied/moved:	%d file non copiati/spostati:
+%d files could not be updated in the project (plug-in doesn't support SetFileName()?):	%d file non aggiornati nel progetto (il plug-in non supporta SetFileName()?):
+%d files could not be imported back into the project:	%d file non reimportati nel progetto:
+Window list highlighted text, dark mode	Testo evidenziato nell'elenco finestre, modalità scura
+Window list highlighted selected text, dark mode	Testo selezionato evidenziato nell'elenco finestre, modalità scura
+Media explorer playing item text	Testo dell'elemento in riproduzione in Media Explorer
+Media explorer playing item text, dark mode	Testo dell'elemento in riproduzione in Media Explorer, modalità scura
+Dark mode focused control color	Colore del controllo attivo in modalità scura
+Edit take marker...	Modifica take marker...
+Remove track learn	Rimuovi Learn della track
+Add send mute envelope	Aggiungi envelope mute del send
+Add take marker	Aggiungi take marker
+Remove send learn	Rimuovi Learn del send
+Add send learn	Aggiungi Learn del send
+Set send learn	Imposta Learn del send
+Add mute envelope	Aggiungi envelope mute
+Add track learn	Aggiungi Learn della track
+Set track learn	Imposta Learn della track
+Advanced Audio Coding files	File Advanced Audio Coding

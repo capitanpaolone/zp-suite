@@ -1,16 +1,17 @@
 # REAPER Italiano (ZP) — Memoria di lavoro e stato traduzione
 
-Aggiornata: 2026-10-18
+Aggiornata: 2026-11-15
 
 ## 1. File e architettura del generatore
 
 - **File Language Pack generato**: `REAPER_Italiano/Italiano (ZP).ReaperLangPack`
-  - **SHA-256 corrente**: `dd851a8d886382608ae23e7e537c02404e37743a68a7b570b1a7fbe2d5e38993`
+  - **SHA-256 corrente**: `cab5c3cf96dea9e5d743e95cdf0d7cfbe5d7c7d0ad567d7a54eeaa6b21752308` (2026-11-15, template 7.86)
   - **Installazione REAPER locale**: `/Users/paolob/Library/Application Support/REAPER/LangPack/Italiano (ZP).ReaperLangPack` (o `~/Library/Application Support/REAPER/LangPack/Italiano (ZP).ReaperLangPack`)
-- **Template ufficiale di riferimento**: `REAPER_Italiano/template_reaper782.ReaperLangPack` (REAPER v7.82, 841 sezioni, 25.715 righe chiave=valore)
+- **Template ufficiale di riferimento**: `REAPER_Italiano/template_reaper786.ReaperLangPack` (REAPER v7.86, 848 sezioni, 26.121 chiavi). Scaricato il 2026-11-15 da `http://landoleet.org/old/reaper786.ReaperLangPack`, l'archivio di Justin Frankel a cui rimanda la pagina ufficiale `https://www.reaper.fm/langpack/index.php#langpack_dev`: lì ci sono i template di ogni release (`reaper<versione>.ReaperLangPack`), l'editor LangPackEdit e lo strumento `merge_langpacks`.
+- **Voci dei template precedenti**: `REAPER_Italiano/template_voci_precedenti.txt` raccoglie le 59 chiavi che esistevano nel template 7.82 e che fra 7.83 e 7.86 sono state tolte o riscritte. Il generatore aggiunge in coda alla loro sezione quelle tradotte (58): così il pack resta completo anche su REAPER 7.82–7.85 (REAPER ignora le chiavi che non conosce). A ogni nuovo template: confrontare con il precedente e aggiungere a questo file le chiavi sparite.
 - **Catalogo centrale di traduzione**: `REAPER_Italiano/catalogo_reaper_it.txt`
   - Formato: `<stringa_originale_inglese>\t<traduzione_italiana>` (una voce per riga; righe che iniziano con `#` sono commenti di sezione).
-  - Voci uniche tradotte: **11.753** (con conservazione esatta degli spazi iniziali/finali richiesti dalle concatenazioni UI di REAPER).
+  - Voci uniche tradotte: **11.921** (11.753 fino alla 7.82 + 168 voci nuove 7.83–7.86, in coda al file sotto il commento `# REAPER 7.83-7.86`) (con conservazione esatta degli spazi iniziali/finali richiesti dalle concatenazioni UI di REAPER).
 - **Moduli di traduzione Preferenze (`[prefs_*_help]`)**: `REAPER_Italiano/dati_traduzione/gruppo1..8.py`
 - **Script generatore e validatore**: `gobbo_ricerca_battuta/strumenti/genera_langpack.py`
   - Preserva automaticamente l'intestazione ReaPack (`; @version 1.0`, `; @author Paolo Balestri`, `; @about ...`, `; @changelog ...`, `;`) subito dopo `#NAME:Italiano (ZP)`.
@@ -57,7 +58,7 @@ Aggiornata: 2026-10-18
 
 ---
 
-## 3. Stato di copertura (`REAPER 7.82`)
+## 3. Stato di copertura (`REAPER 7.82`; con il template 7.86 le chiavi attive sono 17.941, di cui 58 di versioni precedenti)
 
 | Categoria | Prima (14/10) | Ora (18/10) | Totale | Copertura | Dettagli |
 | :--- | ---: | ---: | ---: | ---: | :--- |
@@ -98,3 +99,10 @@ Dimostrato dal disassemblato: la Render Queue riconosce un job cercando `.RPP (d
 Il test `test_langpack.py` lo controlla; `strumenti/controlla_langpack.py` fa lo stesso su qualsiasi pack (anche di terzi) e controlla l'ordine dei segnaposto `%d %s`. I pack in `REAPER/LangPack` diversi da Italiano (ZP) non vengono con REAPER: li scarica l'utente (ReaPack, stash, Benvenuto), e al 2026-11-12 sei su sette traducono queste voci.
 
 Per gli script che cercano finestre con `JS_Localize(msgid, sezione)` servono msgid e sezione esatti del template (es. `Render to File` in `DLG_506`, `Rendering to file...` in `DLG_124`, `Finished in ` in `render`).
+
+## 6. Aggiornamento a REAPER 7.86 (2026-11-15)
+
+- Confronto 7.82 → 7.86: 253 chiavi aggiunte (11 nelle sezioni Action, lasciate in inglese), 59 tolte, 7 sezioni nuove (`DLG_631`, `DLG_632`, `configimport`, `packageimport`, `packageinstall`, `prefs_config`, `prefs_configchange`).
+- Tradotte 168 stringhe nuove; lasciate come sono `Info: `, `NormAdj`, `MonoAdj`.
+- Verifica dopo la rigenerazione: nessuna traduzione persa o cambiata rispetto al pack precedente; `renderq` con `(delay %ds)`, `sel_regions`, `sel_markers` ancora in inglese (sezione 5); la sezione `renderq` non ha chiavi nuove.
+- Non provato dentro REAPER 7.86 (sul Mac di Paolo c'era la 7.85): le finestre nuove (Install Package, Customization list) vanno guardate per i troncamenti.

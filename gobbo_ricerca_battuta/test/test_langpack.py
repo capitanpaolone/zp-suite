@@ -16,7 +16,7 @@ ACTION_SECTIONS = {
     "actiondialog", "actionlist_synonyms"
 }
 
-TEMPLATE_PATH = BASE_DIR / "REAPER_Italiano" / "template_reaper782.ReaperLangPack"
+TEMPLATE_PATH = BASE_DIR / "REAPER_Italiano" / "template_reaper786.ReaperLangPack"
 SPEC_RE = re.compile(r"%[-+0-9.]*[a-zA-Z%]")
 
 # Stringhe che REAPER confronta con un letterale inglese (dimostrato dal disassemblato):

@@ -8,7 +8,7 @@ from pathlib import Path
 from collections import Counter, defaultdict
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-TEMPLATE_PATH = BASE_DIR / "REAPER_Italiano" / "template_reaper782.ReaperLangPack"
+TEMPLATE_PATH = BASE_DIR / "REAPER_Italiano" / "template_reaper786.ReaperLangPack"
 CATALOG_PATH = BASE_DIR / "REAPER_Italiano" / "catalogo_reaper_it.txt"
 
 ACTION_SECTIONS = {

@@ -1,0 +1,76 @@
+; Voci del template di REAPER 7.82 che dalla 7.83 alla 7.86 sono state tolte o riscritte.
+; Il generatore le aggiunge in coda alla loro sezione, cosi' il pack resta tradotto anche su REAPER 7.82-7.85.
+; REAPER ignora le chiavi che non conosce.
+[common]
+;40734250890FBC24=Combined
+;7B58DF28A5C5EDAE=Do not render hidden regions
+;05A130B04362C768=REAPER Note
+;E83CE539DBB569A7=Stop recording before rendering...
+;5945AF9182806811=You must stop recording before importing configuration (as configuration import will require a restart)
+;79B1A901034168FB=Never
+[DLG_136]
+;7C0BC5B15B033895=Flush FX when looping (good for autotune, bad for instruments, etc)
+;1149F742BD0E8658=Run FX when stopped (good for certain VSTi)
+[DLG_451]
+;AB7CCDF9018B0F4E=Media tempo-matching
+;514C3EE1DED9AE6B=Automatically adjust media to project tempo if media contains tempo information
+;C0D1A364502E98E2=Otherwise, prompt to adjust media to project tempo:
+;F45E4211CDD0F701=Prompt to adjust empty project to media tempo:
+[DLG_506]
+;058E62675060DE32=Region Matrix...
+;A98CD5FFEC7866F9=Save outfile.render_stats.html
+;A7B48DD0872C306B=Per rendered file
+;^7B58DF28A5C5EDAE=Do not render hidden regions
+;^40734250890FBC24=Combined
+[DLG_519]
+;F3407898EA587963=Automatically add envelopes when tweaking parameters in automation write modes
+[actions]
+;5074E861DD4F4BFA=File: Import configuration...
+[configexport]
+;18347C10C98CD94D=Importing configuration will require REAPER to restart. You will be prompted to save any open projects, and will get to review the configuration before installing. Proceed?
+[import]
+;98E246AD5509EF5D=Media suggests %s bpm:
+;337A4424E610EBDF=Media might be %s bpm, but it might not be:
+;A2A4678592D86AEE=This prompt is shown because tempo matching is enabled in the Media Explorer.
+;BDAAA56787F6D4F6=Media contains embedded tempo information, import as:
+;7CFBC9A1B0BAA3AC=Import multi-channel MIDI as:
+;E79737BE62385ECF=Media suggests tempo:
+[mbox]
+;CD17057F9F13E590=View source properties for %d items?\r\n(you will have to view them all sequentially!)
+;6CFBE6010F005CD1=Stop recording before rendering to new take
+;85AF1E98BF2F4CFE=Stop recording before apply track FX
+;B5AEE049B9F8FED1=Stop recording before consolidating...
+;^E83CE539DBB569A7=Stop recording before rendering...
+;^05A130B04362C768=REAPER Note
+;^5945AF9182806811=You must stop recording before importing configuration (as configuration import will require a restart)
+[prefs]
+;048EB9368F1CBA37=RMS-M, RMS-S, RMS-I, RMS-RA
+;^5945AF9182806811=You must stop recording before importing configuration (as configuration import will require a restart)
+;^D790926420BA2EB7=Notice
+[prefs_import_help]
+;BE09E0A66690DF1D=Media containing embedded tempo information can be automatically tempo-matched. Media explorer tempo-match settings will override.
+;7701D3DDEF581A62=Media tempo for tempo-matching may be suggested in the filename or metadata, or estimated based on the file length.
+;1DD197CA28C32C5B=When importing media with embedded or suggested tempo information into an empty project, the project tempo can be set from the media.
+[prefs_media]
+;84F755085797E6DC=If media contains tempo information
+;D092CA245595C8CF=If REAPER estimates media tempo
+;^79B1A901034168FB=Never
+[render]
+;689AD6D78707AEEB=Save %s.render_stats.html
+;76208652277E7628=Postprocess all files at the same time, which can greatly increase render speed. This happens automatically in most cases, except when normalizing or limiting each file separately, in which case parallel postprocessing must be enabled manually.
+;7C52FAD1998A97D7=Full-speed Offline
+;ECEF5A49F432EB7D=1x Offline
+;0694A6949DB4FAA8=Online Render
+;3EFDB5F495A9454B=Offline Render (Idle)
+;17A9CDE22D90C248=1x Offline Render (Idle)
+;33B9B14D3513257D=Norm
+;18E4297E5DDC13B0=Adj
+;5FB66A1E819B9914=Keep render statistics in memory after render finishes (see render statistics help)
+;^E83CE539DBB569A7=Stop recording before rendering...
+[saveas]
+;5B0AAD670346064A=Cannot save with copy/move media when recording, stop recording first
+;DB773E3D6D958F52=There were errors copying media for this project:
+;515AF746DB344C2B=%d files could not have filenames found that did not exist
+;1572253A9006D7C2=%d files could not be copied/moved
+;A72489997DD870D1=%d files were copied but could not be updated in the project (plug-in doesn't support SetFileName()?)
+;D0BD7075DBCF5BDC=%d files were allegedly copied but could not be imported back into the project
