@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ZP Magic Voice LAB | ZP Studio Suite</title><style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f7f4;
+      --paper: #ffffff;
+      --ink: #202024;
+      --muted: #5e6068;
+      --line: #d9d9d2;
+      --accent: #245ba6;
+      --accent-soft: #eaf1fb;
+      --code: #ecece8;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #101217;
+        --paper: #171a21;
+        --ink: #eceff4;
+        --muted: #adb2bd;
+        --line: #303541;
+        --accent: #77a9ff;
+        --accent-soft: #172236;
+        --code: #232834;
+      }
+    }
+    body {
+      margin: 0;
+      padding: 28px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.48;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    main { max-width: 980px; margin: 0 auto; }
+    h1 { font-size: 28px; margin: 0 0 8px; }
+    h2 { font-size: 21px; margin: 34px 0 10px; border-top: 1px solid var(--line); padding-top: 22px; }
+    h3 { font-size: 17px; margin: 18px 0 6px; }
+    p { margin: 8px 0; }
+    ul, ol { padding-left: 22px; }
+    li { margin: 6px 0; }
+    code {
+      background: var(--code);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.94em;
+    }
+    .lead { color: var(--muted); font-size: 16px; max-width: 760px; }
+    .note {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 10px 14px;
+      margin: 14px 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin: 12px 0;
+    }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+  </style></head><body><main>
+<nav><a href="index.html#plugin-magic-voice-lab">Guida della Suite</a> · <a href="en/magic_voice_lab.html">English</a></nav><h1>ZP Magic Voice LAB</h1><p class="lead">Livella una battuta e attenua le risonanze che sporgono soltanto su certe parole.</p>
+<h2>Parti da una battuta che conosci</h2>
+<p>Nel browser FX di REAPER cerca ZP Magic Voice LAB e inseriscilo sulla traccia voce. Nel pannello scegli MAGIC 1. Metti in loop una frase con una coda bassa, una vocale forte e una consonante netta. Alterna il bypass e l’effetto a volume simile: se la versione trattata è più forte, compensa con OUTPUT.</p>
+<h2>Se una parola rimbomba</h2>
+<p>Scegli FULL e ADVANCED. In MAGIC 1 la banda A copre 20–200 Hz. Premi SOLO A per capire che cosa cade lì dentro. Per stringere la banda, fai doppio clic sulla frequenza LP di A, digita 165 e premi Invio. Esc annulla; se preferisci la manopola, Shift rende il trascinamento più fine. Torna su SOLO OFF e riascolta la frase intera prima di aumentare THR A.</p>
+<h2>Se una consonante salta fuori</h2>
+<p>In MAGIC 1 la banda B copre 1.565–2.261 Hz e la C 3.600–5.734 Hz. Ascoltale una alla volta in Solo, poi torna su SOLO OFF. Alzando THR la banda interviene di più; se perdi l’articolazione, torna indietro. DRC Max Band GR indica la riduzione più forte su una singola banda.</p>
+<h2>Livello, timbro e uscita</h2>
+<p>PEAK RED livella gli sbalzi di voce. DYN EQ interviene quando la voce spinge; TONE SCL dosa la curva timbrica scelta. DYN BAL regola quanto basse, medie e alte si avvicinano al profilo selezionato. MIX miscela voce originale e trattata. Con DELTA ascolti la differenza: disattivalo prima del render. PEAK CEIL limita i picchi dei campioni in dBFS; per una consegna con limite in dBTP serve un misuratore true peak separato.</p>
+<h2>Orientati nella finestra</h2>
+<p>Clicca sul titolo di un modulo per osservarlo nel MONITOR. Passa il puntatore su un controllo per leggere la spiegazione nella riga in basso. MINI lascia in vista il monitor; JSFX mostra l’elenco dei parametri per chi usa la tastiera o uno screen reader.</p>
+</main></body></html>

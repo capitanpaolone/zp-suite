@@ -151,12 +151,14 @@
 --   help/toolbar.html
 --   help/solo_recorder.html
 --   help/voice_cleaner.html
+--   help/magic_voice_lab.html
 --   help/pannello_trascrizione.html
 --   help/collega_marker.html
 --   help/en/index.html
 --   help/en/toolbar.html
 --   help/en/solo_recorder.html
 --   help/en/voice_cleaner.html
+--   help/en/magic_voice_lab.html
 --   help/en/pannello_trascrizione.html
 --   help/en/collega_marker.html
 --   fxchains/ZP_Bus_VoiceChain.RfxChain

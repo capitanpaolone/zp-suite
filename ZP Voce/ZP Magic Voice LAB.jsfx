@@ -1,0 +1,1442 @@
+// @description ZP Magic Voice LAB
+// @version 1.2.0-lab1
+// @author Paolo Balestri
+// @license GPL-3.0-or-later
+// @about
+//   ### ZP Magic Voice
+//   Processore vocale di omogeneizzazione timbrica e controllo dinamico delle risonanze per doppiaggio, voiceover, podcast e sessioni remote.
+//   Uniforma registrazioni provenienti da microfoni e ambienti diversi tramite 7 stadi dedicati:
+//   Preamp & Filter Stage, Opto+RComp Peak Leveler, 4-Band Dynamic Resonance Controller (DRC A/B/C/D con Solo),
+//   Dynamic EQ, Tone Shaper + Mid Bump, Spectral Dynamic Balancer e Sample Peak Safety Limiter.
+//
+//   Vocal homogenization and dynamic resonance control processor for dubbing, voiceover, podcasting and remote sessions.
+//   Unifies recordings from diverse microphones and acoustic spaces through 7 dedicated stages.
+//
+//   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
+// @changelog
+//   LAB 1: frequenze logaritmiche e ingresso numerico; guida e misuratori aggiornati. DSP 1.1.1.
+//   v1.1.1
+//   - Nelle viste FULL e MINI la lista parametri di REAPER resta nascosta (tutta la finestra alla grafica).
+//   - Il MONITOR si allunga e usa tutto lo spazio verticale libero.
+//   - Riduzioni a zero mostrate come 0.0 dB (non piu' -0.0).
+//   - Etichette del monitor DRC/Dyn EQ non piu' sovrapposte alla nota.
+//   v1.1.0
+//   - Interfaccia scalabile: si adatta alla finestra FX (piu' grande e leggibile di default, @gfx 1240x900).
+//   - Spiegazioni solo nella barra in basso (nessuna sovrapposizione nei pannelli).
+//   - Pulsante SUGGERIMENTI in basso a destra: seconda barra con i suggerimenti dell'analisi in tempo reale.
+//   - Frequenze in formato k (1.6k, 18.6k).
+//   - Bande DRC generiche 20 Hz - 20 kHz (nome automatico LOW/BOX/HARSH/PRES/SIB/AIR secondo la frequenza).
+//   - Nuovo preset MAGIC 1 (da Magic1.mfp di Paolo).
+//   - MONITOR: clic su un modulo (titolo, knob, pulsante o scheda) per vederne l'azione reale:
+//     curva dei filtri, riduzione Opto/RComp, bande DRC sullo spettro, Dynamic EQ, curva Tone EQ,
+//     distribuzione spettrale del Dynamic Balance contro il target, livelli di uscita.
+//   - Corretto l'arco dei knob (ora coincide con l'indicatore).
+//   - Maschere slider oltre il 32 calcolate con 2^(n-1).
+//   v1.0.0 Prima release.
+desc:ZP Magic Voice LAB - Vocal Homogenizer & Resonance Controller - Paolo Balestri
+options:gmem=ZPVoiceoverSharedBus
+tags: voiceover dubbing vocal homogenizer resonance deesser dynamic eq multiband paolo balestri zio paolo magic voice
+//author: Paolo Balestri - Zio Paolo
+//variant: v1.2.0-lab1
+// Contatto: social@paolobalestri.com
+
+// ============================================================================
+// MANUALE OPERATIVO — ZP MAGIC VOICE (v1.1.1)
+// ============================================================================
+// Catena (@sample):
+//  1. INPUT & FILTER STAGE + PREAMP : Input, HPF/LPF Butterworth 12 dB/oct, saturazione armonica
+//  2. PEAK LEVELER (Opto + RComp)   : livellatore a doppio stadio, Peak Reduction 0..100%
+//  3. DRC A/B/C/D                   : 4 soppressori dinamici di risonanza (banda HP..LP, 20 Hz - 20 kHz)
+//  4. DYNAMIC EQ (curve A/B/C/D)    : controllo dinamico boominess ~210 Hz e bite ~3.1 kHz
+//  5. TONE EQ (A/B/C/D) + MID BUMP  : curve musicali scalabili + presenza ~1.65 kHz
+//  6. DYNAMIC BALANCE (A/B)         : omogeneizzatore spettrale Low/Mid/High verso una curva target
+//  7. OUTPUT                        : Gain Match, Delta, Parallel Mix, Sample Peak Limiter
+//
+// Il MONITOR e la barra SUGGERIMENTI leggono solo grandezze misurate dal DSP
+// (riduzioni di guadagno, livelli RMS, distribuzione d'energia per banda) e le
+// curve calcolate dai coefficienti reali dei filtri. La GUI non altera il DSP.
+// ============================================================================
+
+slider1:0<-18,18,0.1>-Input Level (dB)
+slider2:75<20,250,1>-Lowcut Freq (Hz)
+slider3:18000<8000,20000,10>-Hicut Freq (Hz)
+slider4:1<0,1,1{Off,On}>-Filter Engage
+slider5:1<0,1,1{Off,On}>-Preamp Engage
+slider6:45<0,100,0.1>-Peak Reduction (%)
+slider7:1<0,1,1{Off,On}>-Peak Level Engage
+
+slider8:1<0,1,1{Off,On}>-Dynamic Resonance Engage
+slider9:1<0,1,1{Off,On}>-DRC A Engage
+slider10:6529<20,20000,1>-DRC A HiPass (Hz)
+slider11:9788<20,20000,1>-DRC A LowPass (Hz)
+slider12:75.0<0,100,0.1>-DRC A Threshold (%)
+
+slider13:1<0,1,1{Off,On}>-DRC B Engage
+slider14:233<20,20000,1>-DRC B HiPass (Hz)
+slider15:384<20,20000,1>-DRC B LowPass (Hz)
+slider16:59.0<0,100,0.1>-DRC B Threshold (%)
+
+slider17:0<0,1,1{Off,On}>-DRC C Engage
+slider18:1456<20,20000,1>-DRC C HiPass (Hz)
+slider19:2641<20,20000,1>-DRC C LowPass (Hz)
+slider20:50.0<0,100,0.1>-DRC C Threshold (%)
+
+slider21:0<0,1,1{Off,On}>-DRC D Engage
+slider22:5884<20,20000,1>-DRC D HiPass (Hz)
+slider23:9200<20,20000,1>-DRC D LowPass (Hz)
+slider24:0.0<0,100,0.1>-DRC D Threshold (%)
+slider25:0<0,4,1{Off,Solo A,Solo B,Solo C,Solo D}>-DRC Band Solo
+
+slider26:1<0,1,1{Off,On}>-Dynamic EQ Engage
+slider27:2<0,3,1{Curve A (Clarity),Curve B (Warm Control),Curve C (Male Focus),Curve D (Smooth Presence)}>-Dynamic EQ Curve
+slider28:52.0<0,100,0.1>-Dynamic EQ Threshold (%)
+
+slider29:1<0,1,1{Off,On}>-Tone EQ Engage
+slider30:3<0,3,1{Tone A (Open Air),Tone B (Rich Body),Tone C (Vocal Forward),Tone D (Male Authority)}>-Tone EQ Curve
+slider31:1.56<0.2,3.5,0.01>-Tone EQ Gain Scale (x)
+slider32:1<0,1,1{Off,On}>-Mid Bump Engage
+
+slider33:1<0,1,1{Off,On}>-Dynamic Balance Engage
+slider34:1<0,1,1{Profile A (Natural Contour),Profile B (Dense Studio Anchor)}>-Dynamic Balance Mode
+slider35:31.0<0,100,0.1>-Dynamic Balance Amount (%)
+
+slider36:100<0,100,1>-Parallel Processing (% Wet)
+slider37:0<-12,12,0.1>-Output Gain (dB)
+slider38:0<0,1,1{Off,On}>-Auto Gain Match
+slider39:0<0,1,1{Off,On}>-Delta (Solo Intervento)
+slider40:1<0,1,1{Off,On}>-Sample Peak Limiter
+slider41:-0.5<-3.0,-0.1,0.1>-Sample Peak Ceiling (dBFS)
+
+slider42:1<0,1,1{Simple,Advanced}>-UI Mode
+slider43:0<0,2,1{Full,Mini,JSFX}>-View Mode
+slider44:1<0,7,1{Custom,VOCALS - MALE LD,VOCALS - FEMALE LD,VOCALS - CLARITY,VOCALS - MID PC,HOME BOOTH FIX,BROADCAST READY,MAGIC 1}>-Preset Voce [OSARA]
+
+slider45:0<0,18,0.1>-[Read] Peak Leveler GR (dB)
+slider46:0<0,18,0.1>-[Read] DRC Max Band GR (dB)
+slider47:0<0,100,0.1>-[Read] DynEQ + DynBal Activity (%)
+slider48:-60<-60,6,0.1>-[Read] RMS In (dBFS)
+slider49:-60<-60,6,0.1>-[Read] RMS Out (dBFS)
+slider50:0<0,18,0.1>-[Read] Peak Limiter GR (dB)
+slider51:0<0,1,1{Off,On}>-Barra Suggerimenti
+slider52:2<0,6,1{Filter,Peak Leveler,DRC 4-Band,Dynamic EQ,Tone EQ,Dynamic Balance,Output}>-Monitor Modulo
+
+@init
+ext_noinit = 1;
+ui_lang = 0;
+help_bridge_last_alive_t = -100;
+
+// ---------------- ZP Shared Bus ----------------
+ZP_BUS_MAGIC = 905026;
+ZP_BUS_VERSION = 220;
+ZP_BUS_ID = 35;
+ZP_BUS_FRESH_SEC = 12;
+
+function zp_bus_boot() (
+  gmem[0] != ZP_BUS_MAGIC || gmem[1] < ZP_BUS_VERSION ? (
+    gmem[0] = ZP_BUS_MAGIC;
+    gmem[1] = ZP_BUS_VERSION;
+    gmem[2] = 1;
+  );
+);
+function zp_bus_read() local(now) (
+  zp_bus_boot();
+  now = time_precise();
+  zp_bus_master_conn = gmem[40] == 905040 ? (now - gmem[41] <= ZP_BUS_FRESH_SEC ? 2 : 1) : 0;
+  zp_bus_probe_conn  = gmem[50] == 905050 ? (now - gmem[51] <= ZP_BUS_FRESH_SEC ? 2 : 1) : 0;
+);
+function zp_bus_refresh(plugin_id) (
+  zp_bus_boot();
+  gmem[plugin_id] = 905000 + plugin_id;
+  gmem[plugin_id + 1] = time_precise();
+  gmem[plugin_id + 2] += 1;
+);
+zp_bus_boot();
+zp_bus_read();
+
+function db2lin(db) ( 10 ^ (db * 0.05); );
+function lin2db(lin) ( 20 * log10(max(lin, 0.0000001)); );
+function clamp(v, mn, mx) ( max(mn, min(mx, v)); );
+
+// ---------------- State ----------------
+opt_env = 0; rcomp_env = 0;
+drcA_env = 0; drcB_env = 0; drcC_env = 0; drcD_env = 0;
+drcA_gr_db = 0; drcB_gr_db = 0; drcC_gr_db = 0; drcD_gr_db = 0;
+deq_low_env = 0; deq_hi_env = 0; deq_gr_db = 0;
+dbal_low_env = 0.01; dbal_mid_env = 0.01; dbal_hi_env = 0.01;
+dbal_act_pct = 0;
+g_lo = 1; g_mid = 1; g_hi = 1;
+t_lo = 0.38; t_mid = 0.42; t_hi = 0.20;
+gm_rms_in = 0.001; gm_rms_out = 0.001; gm_gain = 1.0;
+tp_prevL = 0; tp_prevR = 0; tp_gr = 1.0; tp_gr_smooth = 1.0; tp_meter_peak = 0;
+
+ui_rms_in_sq = 0; ui_rms_out_sq = 0; ui_rms_in_db = -60; ui_rms_out_db = -60;
+ui_peak_gr_db = 0; ui_gr_opt = 0; ui_gr_rc = 0; ui_pk_lvl_db = -90; ui_pk_thr_db = -20;
+ui_drc_gr_db = 0; ui_drcA = 0; ui_drcB = 0; ui_drcC = 0; ui_drcD = 0;
+ui_deq_lo = 0; ui_deq_hi = 0;
+ui_sh_lo = 0.33; ui_sh_mid = 0.44; ui_sh_hi = 0.23;
+ui_tp_gr_db = 0; ui_gm_db = 0;
+
+prev_view_mode = -1;
+prev_osara_preset = -1;
+ui_drag_id = 0;
+ui_last_click_id = -1;
+ui_last_click_frame = -1000;
+ui_gfx_frame = 0;
+last_mouse_cap = 0;
+sug_t = -10;
+
+// ---------------- Slider helpers (masks via 2^(n-1), valid oltre slider 32) ----------------
+function set_param_slider(sl_idx, new_val) local(mask) (
+  slider(sl_idx) = new_val;
+  mask = 2 ^ (sl_idx - 1);
+  sliderchange(mask);
+  slider_automate(mask);
+);
+function set_ui_state(sl_idx, new_val) (
+  slider(sl_idx) = new_val;
+  sliderchange(2 ^ (sl_idx - 1));
+);
+
+function update_view_mode_visibility() local(s) (
+  s = floor(slider43 + 0.5) == 2;
+  slider_show(slider1, s);  slider_show(slider2, s);  slider_show(slider3, s);  slider_show(slider4, s);
+  slider_show(slider5, s);  slider_show(slider6, s);  slider_show(slider7, s);  slider_show(slider8, s);
+  slider_show(slider9, s);  slider_show(slider10, s); slider_show(slider11, s); slider_show(slider12, s);
+  slider_show(slider13, s); slider_show(slider14, s); slider_show(slider15, s); slider_show(slider16, s);
+  slider_show(slider17, s); slider_show(slider18, s); slider_show(slider19, s); slider_show(slider20, s);
+  slider_show(slider21, s); slider_show(slider22, s); slider_show(slider23, s); slider_show(slider24, s);
+  slider_show(slider25, s); slider_show(slider26, s); slider_show(slider27, s); slider_show(slider28, s);
+  slider_show(slider29, s); slider_show(slider30, s); slider_show(slider31, s); slider_show(slider32, s);
+  slider_show(slider33, s); slider_show(slider34, s); slider_show(slider35, s); slider_show(slider36, s);
+  slider_show(slider37, s); slider_show(slider38, s); slider_show(slider39, s); slider_show(slider40, s);
+  slider_show(slider41, s);
+  slider_show(slider42, s); slider_show(slider43, s); slider_show(slider44, s);
+  slider_show(slider45, s); slider_show(slider46, s); slider_show(slider47, s); slider_show(slider48, s);
+  slider_show(slider49, s); slider_show(slider50, s);
+  slider_show(slider51, s); slider_show(slider52, s);
+  prev_view_mode = floor(slider43 + 0.5);
+);
+
+// ---------------- Preset ----------------
+function apply_magic_preset(pid) (
+  pid == 1 ? (
+    // VOCALS - MALE LD (MagicFlow .mfp)
+    set_param_slider(1, -4.7);
+    set_param_slider(2, 130); set_param_slider(3, 18045); set_param_slider(4, 1);
+    set_param_slider(5, 0);
+    set_param_slider(6, 57.4); set_param_slider(7, 1);
+    set_param_slider(8, 1);
+    set_param_slider(9, 1);  set_param_slider(10, 6529); set_param_slider(11, 9788);  set_param_slider(12, 75.9);
+    set_param_slider(13, 1); set_param_slider(14, 233);  set_param_slider(15, 384);   set_param_slider(16, 59.7);
+    set_param_slider(17, 0); set_param_slider(18, 9200); set_param_slider(19, 14000); set_param_slider(20, 0.0);
+    set_param_slider(21, 0); set_param_slider(22, 5884); set_param_slider(23, 9200);  set_param_slider(24, 0.0);
+    set_param_slider(26, 1); set_param_slider(27, 2);    set_param_slider(28, 52.1);
+    set_param_slider(29, 1); set_param_slider(30, 3);    set_param_slider(31, 1.56);  set_param_slider(32, 1);
+    set_param_slider(33, 1); set_param_slider(34, 1);    set_param_slider(35, 31.1);
+    set_param_slider(36, 100); set_param_slider(37, -0.6);
+  ) : pid == 2 ? (
+    // VOCALS - FEMALE LD (MagicFlow .mfp)
+    set_param_slider(1, -2.7);
+    set_param_slider(2, 75); set_param_slider(3, 17962); set_param_slider(4, 1);
+    set_param_slider(5, 1);
+    set_param_slider(6, 39.1); set_param_slider(7, 1);
+    set_param_slider(8, 1);
+    set_param_slider(9, 1);  set_param_slider(10, 9788);  set_param_slider(11, 12720); set_param_slider(12, 63.8);
+    set_param_slider(13, 1); set_param_slider(14, 442);   set_param_slider(15, 575);   set_param_slider(16, 47.1);
+    set_param_slider(17, 1); set_param_slider(18, 1456);  set_param_slider(19, 2641);  set_param_slider(20, 50.0);
+    set_param_slider(21, 1); set_param_slider(22, 15028); set_param_slider(23, 20000); set_param_slider(24, 80.7);
+    set_param_slider(26, 1); set_param_slider(27, 1);     set_param_slider(28, 34.8);
+    set_param_slider(29, 1); set_param_slider(30, 0);     set_param_slider(31, 1.00);  set_param_slider(32, 1);
+    set_param_slider(33, 1); set_param_slider(34, 1);     set_param_slider(35, 45.9);
+    set_param_slider(36, 100); set_param_slider(37, -3.8);
+  ) : pid == 3 ? (
+    // VOCALS - CLARITY (MagicFlow .mfp)
+    set_param_slider(1, -4.7);
+    set_param_slider(2, 75); set_param_slider(3, 15953); set_param_slider(4, 1);
+    set_param_slider(5, 1);
+    set_param_slider(6, 49.3); set_param_slider(7, 1);
+    set_param_slider(8, 1);
+    set_param_slider(9, 1);  set_param_slider(10, 10766); set_param_slider(11, 15761); set_param_slider(12, 73.8);
+    set_param_slider(13, 1); set_param_slider(14, 765);   set_param_slider(15, 1147);  set_param_slider(16, 58.8);
+    set_param_slider(17, 0); set_param_slider(18, 9200);  set_param_slider(19, 14000); set_param_slider(20, 0.0);
+    set_param_slider(21, 0); set_param_slider(22, 5884);  set_param_slider(23, 9200);  set_param_slider(24, 0.0);
+    set_param_slider(26, 1); set_param_slider(27, 0);     set_param_slider(28, 49.1);
+    set_param_slider(29, 1); set_param_slider(30, 2);     set_param_slider(31, 1.00);  set_param_slider(32, 0);
+    set_param_slider(33, 1); set_param_slider(34, 0);     set_param_slider(35, 26.5);
+    set_param_slider(36, 100); set_param_slider(37, 0.0);
+  ) : pid == 4 ? (
+    // VOCALS - MID PC
+    set_param_slider(1, -4.7);
+    set_param_slider(2, 20); set_param_slider(3, 20000); set_param_slider(4, 1);
+    set_param_slider(5, 1);
+    set_param_slider(6, 76.8); set_param_slider(7, 1);
+    set_param_slider(8, 1);
+    set_param_slider(9, 1);  set_param_slider(10, 6529); set_param_slider(11, 9788);  set_param_slider(12, 75.0);
+    set_param_slider(13, 1); set_param_slider(14, 350);  set_param_slider(15, 620);   set_param_slider(16, 83.4);
+    set_param_slider(17, 0); set_param_slider(18, 9200); set_param_slider(19, 14000); set_param_slider(20, 0.0);
+    set_param_slider(21, 0); set_param_slider(22, 5884); set_param_slider(23, 9200);  set_param_slider(24, 0.0);
+    set_param_slider(26, 1); set_param_slider(27, 1);    set_param_slider(28, 63.0);
+    set_param_slider(29, 1); set_param_slider(30, 2);    set_param_slider(31, 2.78);  set_param_slider(32, 1);
+    set_param_slider(33, 1); set_param_slider(34, 0);    set_param_slider(35, 66.9);
+    set_param_slider(36, 49);  set_param_slider(37, -2.1);
+  ) : pid == 5 ? (
+    // HOME BOOTH FIX
+    set_param_slider(1, -3.0);
+    set_param_slider(2, 95); set_param_slider(3, 16800); set_param_slider(4, 1);
+    set_param_slider(5, 1);
+    set_param_slider(6, 55.0); set_param_slider(7, 1);
+    set_param_slider(8, 1);
+    set_param_slider(9, 1);  set_param_slider(10, 6800); set_param_slider(11, 11200); set_param_slider(12, 68.0);
+    set_param_slider(13, 1); set_param_slider(14, 260);  set_param_slider(15, 520);   set_param_slider(16, 66.0);
+    set_param_slider(17, 1); set_param_slider(18, 1600); set_param_slider(19, 2900);  set_param_slider(20, 58.0);
+    set_param_slider(21, 1); set_param_slider(22, 11500);set_param_slider(23, 18500); set_param_slider(24, 62.0);
+    set_param_slider(26, 1); set_param_slider(27, 2);    set_param_slider(28, 56.0);
+    set_param_slider(29, 1); set_param_slider(30, 2);    set_param_slider(31, 1.35);  set_param_slider(32, 1);
+    set_param_slider(33, 1); set_param_slider(34, 1);    set_param_slider(35, 54.0);
+    set_param_slider(36, 85);  set_param_slider(37, -1.0);
+  ) : pid == 6 ? (
+    // BROADCAST READY
+    set_param_slider(1, -2.5);
+    set_param_slider(2, 85); set_param_slider(3, 17500); set_param_slider(4, 1);
+    set_param_slider(5, 1);
+    set_param_slider(6, 62.0); set_param_slider(7, 1);
+    set_param_slider(8, 1);
+    set_param_slider(9, 1);  set_param_slider(10, 6400); set_param_slider(11, 10500); set_param_slider(12, 72.0);
+    set_param_slider(13, 1); set_param_slider(14, 220);  set_param_slider(15, 390);   set_param_slider(16, 54.0);
+    set_param_slider(17, 1); set_param_slider(18, 1800); set_param_slider(19, 3100);  set_param_slider(20, 46.0);
+    set_param_slider(21, 0); set_param_slider(22, 9000); set_param_slider(23, 15000); set_param_slider(24, 0.0);
+    set_param_slider(26, 1); set_param_slider(27, 3);    set_param_slider(28, 48.0);
+    set_param_slider(29, 1); set_param_slider(30, 3);    set_param_slider(31, 1.65);  set_param_slider(32, 1);
+    set_param_slider(33, 1); set_param_slider(34, 1);    set_param_slider(35, 42.0);
+    set_param_slider(36, 92);  set_param_slider(37, -1.2);
+  ) : pid == 7 ? (
+    // MAGIC 1 (da Magic1.mfp di Paolo, 17/11/2026)
+    set_param_slider(1, -3.3);
+    set_param_slider(2, 66); set_param_slider(3, 18561); set_param_slider(4, 1);
+    set_param_slider(5, 0);
+    set_param_slider(6, 39.7); set_param_slider(7, 1);
+    set_param_slider(8, 1);
+    set_param_slider(9, 1);  set_param_slider(10, 20);   set_param_slider(11, 200);   set_param_slider(12, 72.2);
+    set_param_slider(13, 1); set_param_slider(14, 1565); set_param_slider(15, 2261);  set_param_slider(16, 81.0);
+    set_param_slider(17, 1); set_param_slider(18, 3600); set_param_slider(19, 5734);  set_param_slider(20, 88.7);
+    set_param_slider(21, 0); set_param_slider(22, 5024); set_param_slider(23, 8527);  set_param_slider(24, 88.6);
+    set_param_slider(26, 1); set_param_slider(27, 1);    set_param_slider(28, 37.7);
+    set_param_slider(29, 1); set_param_slider(30, 1);    set_param_slider(31, 3.06);  set_param_slider(32, 0);
+    set_param_slider(33, 1); set_param_slider(34, 0);    set_param_slider(35, 39.1);
+    set_param_slider(36, 100); set_param_slider(37, 0.3);
+  );
+  set_param_slider(25, 0);
+);
+
+// ---------------- Filtri ----------------
+function svf_bp_coeff(f_a, f_b, sr) local(lo, hi, fc, bw, w0) (
+  lo = max(20, min(f_a, f_b));
+  hi = max(lo + 20, max(f_a, f_b));
+  fc = min(sqrt(lo * hi), sr * 0.44);
+  bw = max(20, hi - lo);
+  this.q = clamp(fc / bw, 0.5, 12.0);
+  w0 = 2 * $pi * fc / sr;
+  this.g = tan(w0 * 0.5);
+  this.k = 1.0 / this.q;
+  this.a1 = 1.0 / (1.0 + this.g * (this.g + this.k));
+  this.a2 = this.g * this.a1;
+  this.a3 = this.g * this.a2;
+);
+function svf_bp_procL(x) local(v3, v1, v2) (
+  v3 = x - this.ic2L;
+  v1 = this.a1 * this.ic1L + this.a2 * v3;
+  v2 = this.ic2L + this.a2 * this.ic1L + this.a3 * v3;
+  this.ic1L = 2.0 * v1 - this.ic1L;
+  this.ic2L = 2.0 * v2 - this.ic2L;
+  v1 * this.k;
+);
+function svf_bp_procR(x) local(v3, v1, v2) (
+  v3 = x - this.ic2R;
+  v1 = this.a1 * this.ic1R + this.a2 * v3;
+  v2 = this.ic2R + this.a2 * this.ic1R + this.a3 * v3;
+  this.ic1R = 2.0 * v1 - this.ic1R;
+  this.ic2R = 2.0 * v2 - this.ic2R;
+  v1 * this.k;
+);
+function bq_peaking(freq, q_val, gain_db, sr) local(Ag, w0, cw, sw, alpha, a0_inv) (
+  freq = clamp(freq, 20, sr * 0.45);
+  Ag = 10 ^ (gain_db / 40.0);
+  w0 = 2 * $pi * freq / sr;
+  cw = cos(w0); sw = sin(w0);
+  alpha = sw / (2.0 * max(0.2, q_val));
+  a0_inv = 1.0 / (1.0 + alpha / Ag);
+  this.b0 = (1.0 + alpha * Ag) * a0_inv;
+  this.b1 = (-2.0 * cw) * a0_inv;
+  this.b2 = (1.0 - alpha * Ag) * a0_inv;
+  this.a1 = this.b1;
+  this.a2 = (1.0 - alpha / Ag) * a0_inv;
+);
+function bq_procL(x) local(y) (
+  y = this.b0 * x + this.b1 * this.x1L + this.b2 * this.x2L - this.a1 * this.y1L - this.a2 * this.y2L;
+  this.x2L = this.x1L; this.x1L = x; this.y2L = this.y1L; this.y1L = y; y;
+);
+function bq_procR(x) local(y) (
+  y = this.b0 * x + this.b1 * this.x1R + this.b2 * this.x2R - this.a1 * this.y1R - this.a2 * this.y2R;
+  this.x2R = this.x1R; this.x1R = x; this.y2R = this.y1R; this.y1R = y; y;
+);
+
+function update_dsp_params() local(sr, w_hp, cw_hp, sw_hp, al_hp, a0_hp, w_lp, cw_lp, sw_lp, al_lp, a0_lp, eq_curve, eq_scale) (
+  sr = max(22050, srate);
+  in_gain_lin = db2lin(slider1);
+  out_gain_lin = db2lin(slider37);
+  tp_ceiling = db2lin(slider41);
+
+  w_hp = 2 * $pi * clamp(slider2, 20, sr * 0.4) / sr;
+  cw_hp = cos(w_hp); sw_hp = sin(w_hp); al_hp = sw_hp / 1.41421356; a0_hp = 1.0 / (1.0 + al_hp);
+  hp_b0 = (1.0 + cw_hp) * 0.5 * a0_hp; hp_b1 = -(1.0 + cw_hp) * a0_hp; hp_b2 = hp_b0;
+  hp_a1 = -2.0 * cw_hp * a0_hp; hp_a2 = (1.0 - al_hp) * a0_hp;
+
+  w_lp = 2 * $pi * clamp(slider3, 4000, sr * 0.46) / sr;
+  cw_lp = cos(w_lp); sw_lp = sin(w_lp); al_lp = sw_lp / 1.41421356; a0_lp = 1.0 / (1.0 + al_lp);
+  lp_b0 = (1.0 - cw_lp) * 0.5 * a0_lp; lp_b1 = (1.0 - cw_lp) * a0_lp; lp_b2 = lp_b0;
+  lp_a1 = -2.0 * cw_lp * a0_lp; lp_a2 = (1.0 - al_lp) * a0_lp;
+
+  opt_att = exp(-1.0 / (sr * 0.018)); opt_rel = exp(-1.0 / (sr * 0.240));
+  rc_att  = exp(-1.0 / (sr * 0.0035)); rc_rel  = exp(-1.0 / (sr * 0.085));
+
+  drcA.svf_bp_coeff(slider10, slider11, sr);
+  drcB.svf_bp_coeff(slider14, slider15, sr);
+  drcC.svf_bp_coeff(slider18, slider19, sr);
+  drcD.svf_bp_coeff(slider22, slider23, sr);
+  drc_att = exp(-1.0 / (sr * 0.0015)); drc_rel = exp(-1.0 / (sr * 0.045));
+
+  deq_lo_bp.svf_bp_coeff(130, 340, sr);
+  deq_hi_bp.svf_bp_coeff(2100, 4600, sr);
+  deq_att = exp(-1.0 / (sr * 0.004)); deq_rel = exp(-1.0 / (sr * 0.070));
+
+  eq_curve = floor(slider30 + 0.5);
+  eq_scale = slider31;
+  eq_curve == 0 ? (
+    tone_lo.bq_peaking(145, 0.75, 1.2 * eq_scale, sr);
+    tone_mid.bq_peaking(480, 1.1, -1.4 * eq_scale, sr);
+    tone_hi.bq_peaking(9500, 0.65, 2.8 * eq_scale, sr);
+  ) : eq_curve == 1 ? (
+    tone_lo.bq_peaking(165, 0.70, 2.4 * eq_scale, sr);
+    tone_mid.bq_peaking(650, 1.0, -0.8 * eq_scale, sr);
+    tone_hi.bq_peaking(6800, 0.75, 1.4 * eq_scale, sr);
+  ) : eq_curve == 2 ? (
+    tone_lo.bq_peaking(135, 0.85, 0.8 * eq_scale, sr);
+    tone_mid.bq_peaking(380, 1.2, -1.8 * eq_scale, sr);
+    tone_hi.bq_peaking(4200, 0.80, 2.5 * eq_scale, sr);
+  ) : (
+    tone_lo.bq_peaking(125, 0.80, 2.0 * eq_scale, sr);
+    tone_mid.bq_peaking(330, 1.3, -1.6 * eq_scale, sr);
+    tone_hi.bq_peaking(5200, 0.75, 2.2 * eq_scale, sr);
+  );
+  mid_bump_bq.bq_peaking(1650, 0.95, 2.6, sr);
+
+  dbal_c_lo = 1.0 - exp(-2.0 * $pi * 280.0 / sr);
+  dbal_c_hi = 1.0 - exp(-2.0 * $pi * 2800.0 / sr);
+  dbal_env_c = 1.0 - exp(-1.0 / (sr * 0.065));
+  slider34 < 0.5 ? ( t_lo = 0.34; t_mid = 0.44; t_hi = 0.22; ) : ( t_lo = 0.38; t_mid = 0.42; t_hi = 0.20; );
+
+  gm_coeff = 1.0 - exp(-1.0 / (sr * 0.350));
+  meter_decay_ui = exp(-1.0 / (sr * 0.200));
+  tp_rel_coeff = exp(-1.0 / (sr * 0.080));
+);
+
+update_dsp_params();
+
+@slider
+osara_p = floor(slider44 + 0.5);
+osara_p > 0 && osara_p != prev_osara_preset ? (
+  prev_osara_preset = osara_p;
+  apply_magic_preset(osara_p);
+);
+osara_p == 0 ? prev_osara_preset = 0;
+update_dsp_params();
+
+@block
+zp_bus_refresh(ZP_BUS_ID);
+ui_gm_db = lin2db(gm_gain);
+slider45 = floor(ui_peak_gr_db * 10 + 0.5) * 0.1;
+slider46 = floor(ui_drc_gr_db * 10 + 0.5) * 0.1;
+slider47 = floor(dbal_act_pct + 0.5);
+slider48 = floor(ui_rms_in_db * 10 + 0.5) * 0.1;
+slider49 = floor(ui_rms_out_db * 10 + 0.5) * 0.1;
+slider50 = floor(ui_tp_gr_db * 10 + 0.5) * 0.1;
+
+@sample
+dryL = spl0;
+dryR = spl1;
+
+// ---- Stage 1: Input + Filters + Preamp ----
+xL = dryL * in_gain_lin;
+xR = dryR * in_gain_lin;
+
+slider4 >= 0.5 ? (
+  yL = hp_b0*xL + hp_b1*hp_x1L + hp_b2*hp_x2L - hp_a1*hp_y1L - hp_a2*hp_y2L;
+  hp_x2L = hp_x1L; hp_x1L = xL; hp_y2L = hp_y1L; hp_y1L = yL; xL = yL;
+  yR = hp_b0*xR + hp_b1*hp_x1R + hp_b2*hp_x2R - hp_a1*hp_y1R - hp_a2*hp_y2R;
+  hp_x2R = hp_x1R; hp_x1R = xR; hp_y2R = hp_y1R; hp_y1R = yR; xR = yR;
+  yL = lp_b0*xL + lp_b1*lp_x1L + lp_b2*lp_x2L - lp_a1*lp_y1L - lp_a2*lp_y2L;
+  lp_x2L = lp_x1L; lp_x1L = xL; lp_y2L = lp_y1L; lp_y1L = yL; xL = yL;
+  yR = lp_b0*xR + lp_b1*lp_x1R + lp_b2*lp_x2R - lp_a1*lp_y1R - lp_a2*lp_y2R;
+  lp_x2R = lp_x1R; lp_x1R = xR; lp_y2R = lp_y1R; lp_y1R = yR; xR = yR;
+);
+
+slider5 >= 0.5 ? (
+  xL = xL + 0.08 * (xL * xL) - 0.11 * (xL * xL * xL);
+  xR = xR + 0.08 * (xR * xR) - 0.11 * (xR * xR * xR);
+);
+
+// ---- Stage 2: Peak Leveler (Opto + RComp) ----
+slider7 >= 0.5 && slider6 > 0.1 ? (
+  in_abs = max(abs(xL), abs(xR));
+  opt_env = in_abs > opt_env ? (opt_att * opt_env + (1 - opt_att) * in_abs) : (opt_rel * opt_env + (1 - opt_rel) * in_abs);
+  rcomp_env = in_abs > rcomp_env ? (rc_att * rcomp_env + (1 - rc_att) * in_abs) : (rc_rel * rcomp_env + (1 - rc_rel) * in_abs);
+  pk_amt = slider6 * 0.01;
+  pk_thr_db = -6.0 - pk_amt * 22.0;
+  opt_db = lin2db(opt_env);
+  rc_db  = lin2db(rcomp_env);
+  gr_opt_db = opt_db > pk_thr_db ? (opt_db - pk_thr_db) * 0.48 : 0.0;
+  gr_rc_db  = rc_db  > (pk_thr_db + 2.5) ? (rc_db - (pk_thr_db + 2.5)) * 0.62 : 0.0;
+  c_opt = gr_opt_db * 0.55; c_rc = gr_rc_db * 0.45;
+  tot_pk_gr_db = min(16.0, c_opt + c_rc);
+  pk_gain = db2lin(-tot_pk_gr_db + min(4.5, pk_amt * 3.2));
+  xL *= pk_gain; xR *= pk_gain;
+  ui_peak_gr_db = ui_peak_gr_db * 0.995 + tot_pk_gr_db * 0.005;
+  ui_gr_opt = ui_gr_opt * 0.995 + c_opt * 0.005;
+  ui_gr_rc  = ui_gr_rc  * 0.995 + c_rc  * 0.005;
+  ui_pk_lvl_db = rc_db; ui_pk_thr_db = pk_thr_db;
+) : (
+  ui_peak_gr_db *= 0.99; ui_gr_opt *= 0.99; ui_gr_rc *= 0.99; ui_pk_lvl_db = -90;
+);
+
+// ---- Stage 3: DRC A/B/C/D ----
+bAL = drcA.svf_bp_procL(xL); bAR = drcA.svf_bp_procR(xR);
+bBL = drcB.svf_bp_procL(xL); bBR = drcB.svf_bp_procR(xR);
+bCL = drcC.svf_bp_procL(xL); bCR = drcC.svf_bp_procR(xR);
+bDL = drcD.svf_bp_procL(xL); bDR = drcD.svf_bp_procR(xR);
+
+slider8 >= 0.5 ? (
+  slider9 >= 0.5 && slider12 > 0.1 ? (
+    eA = max(abs(bAL), abs(bAR));
+    drcA_env = eA > drcA_env ? (drc_att * drcA_env + (1 - drc_att) * eA) : (drc_rel * drcA_env + (1 - drc_rel) * eA);
+    ovA = lin2db(drcA_env) - (-10.0 - (slider12 * 0.01) * 32.0);
+    drcA_gr_db = ovA > 0 ? min(12.0, ovA * 0.72) : 0;
+    redA = 1.0 - db2lin(-drcA_gr_db);
+    xL -= bAL * redA; xR -= bAR * redA;
+  ) : ( drcA_gr_db = 0; );
+  slider13 >= 0.5 && slider16 > 0.1 ? (
+    eB = max(abs(bBL), abs(bBR));
+    drcB_env = eB > drcB_env ? (drc_att * drcB_env + (1 - drc_att) * eB) : (drc_rel * drcB_env + (1 - drc_rel) * eB);
+    ovB = lin2db(drcB_env) - (-8.0 - (slider16 * 0.01) * 30.0);
+    drcB_gr_db = ovB > 0 ? min(10.0, ovB * 0.65) : 0;
+    redB = 1.0 - db2lin(-drcB_gr_db);
+    xL -= bBL * redB; xR -= bBR * redB;
+  ) : ( drcB_gr_db = 0; );
+  slider17 >= 0.5 && slider20 > 0.1 ? (
+    eC = max(abs(bCL), abs(bCR));
+    drcC_env = eC > drcC_env ? (drc_att * drcC_env + (1 - drc_att) * eC) : (drc_rel * drcC_env + (1 - drc_rel) * eC);
+    ovC = lin2db(drcC_env) - (-10.0 - (slider20 * 0.01) * 30.0);
+    drcC_gr_db = ovC > 0 ? min(10.0, ovC * 0.68) : 0;
+    redC = 1.0 - db2lin(-drcC_gr_db);
+    xL -= bCL * redC; xR -= bCR * redC;
+  ) : ( drcC_gr_db = 0; );
+  slider21 >= 0.5 && slider24 > 0.1 ? (
+    eD = max(abs(bDL), abs(bDR));
+    drcD_env = eD > drcD_env ? (drc_att * drcD_env + (1 - drc_att) * eD) : (drc_rel * drcD_env + (1 - drc_rel) * eD);
+    ovD = lin2db(drcD_env) - (-12.0 - (slider24 * 0.01) * 32.0);
+    drcD_gr_db = ovD > 0 ? min(12.0, ovD * 0.72) : 0;
+    redD = 1.0 - db2lin(-drcD_gr_db);
+    xL -= bDL * redD; xR -= bDR * redD;
+  ) : ( drcD_gr_db = 0; );
+) : (
+  drcA_gr_db = drcB_gr_db = drcC_gr_db = drcD_gr_db = 0;
+);
+ui_drcA = ui_drcA * 0.995 + drcA_gr_db * 0.005;
+ui_drcB = ui_drcB * 0.995 + drcB_gr_db * 0.005;
+ui_drcC = ui_drcC * 0.995 + drcC_gr_db * 0.005;
+ui_drcD = ui_drcD * 0.995 + drcD_gr_db * 0.005;
+ui_drc_gr_db = max(max(ui_drcA, ui_drcB), max(ui_drcC, ui_drcD));
+
+// ---- Stage 4: Dynamic EQ ----
+slider26 >= 0.5 && slider28 > 0.1 ? (
+  dlL = deq_lo_bp.svf_bp_procL(xL); dlR = deq_lo_bp.svf_bp_procR(xR);
+  dhL = deq_hi_bp.svf_bp_procL(xL); dhR = deq_hi_bp.svf_bp_procR(xR);
+  el = max(abs(dlL), abs(dlR));
+  eh = max(abs(dhL), abs(dhR));
+  deq_low_env = el > deq_low_env ? (deq_att * deq_low_env + (1 - deq_att) * el) : (deq_rel * deq_low_env + (1 - deq_rel) * el);
+  deq_hi_env  = eh > deq_hi_env  ? (deq_att * deq_hi_env  + (1 - deq_att) * eh) : (deq_rel * deq_hi_env  + (1 - deq_rel) * eh);
+  deq_thr = -8.0 - (slider28 * 0.01) * 26.0;
+  deq_c = floor(slider27 + 0.5);
+  lo_w = deq_c == 0 ? 0.45 : deq_c == 1 ? 0.75 : deq_c == 2 ? 0.65 : 0.35;
+  hi_w = deq_c == 0 ? 0.75 : deq_c == 1 ? 0.40 : deq_c == 2 ? 0.55 : 0.80;
+  ov_lo = lin2db(deq_low_env) - deq_thr;
+  ov_hi = lin2db(deq_hi_env) - deq_thr;
+  deq_lo_db = ov_lo > 0 ? min(7.0, ov_lo * 0.55 * lo_w) : 0;
+  deq_hi_db = ov_hi > 0 ? min(7.0, ov_hi * 0.55 * hi_w) : 0;
+  cut_lo = 1.0 - db2lin(-deq_lo_db);
+  cut_hi = 1.0 - db2lin(-deq_hi_db);
+  xL = xL - dlL * cut_lo - dhL * cut_hi;
+  xR = xR - dlR * cut_lo - dhR * cut_hi;
+  deq_gr_db = max(deq_lo_db, deq_hi_db);
+) : (
+  deq_lo_db = deq_hi_db = deq_gr_db = 0;
+);
+ui_deq_lo = ui_deq_lo * 0.995 + deq_lo_db * 0.005;
+ui_deq_hi = ui_deq_hi * 0.995 + deq_hi_db * 0.005;
+
+// ---- Stage 5: Tone EQ + Mid Bump ----
+slider29 >= 0.5 ? (
+  xL = tone_lo.bq_procL(xL); xL = tone_mid.bq_procL(xL); xL = tone_hi.bq_procL(xL);
+  xR = tone_lo.bq_procR(xR); xR = tone_mid.bq_procR(xR); xR = tone_hi.bq_procR(xR);
+);
+slider32 >= 0.5 ? (
+  xL = mid_bump_bq.bq_procL(xL);
+  xR = mid_bump_bq.bq_procR(xR);
+);
+
+// ---- Stage 6: Dynamic Balance (analisi sempre attiva, correzione solo se ON) ----
+db_loL += dbal_c_lo * (xL - db_loL);
+db_loR += dbal_c_lo * (xR - db_loR);
+db_top_lpL += dbal_c_hi * (xL - db_top_lpL);
+db_top_lpR += dbal_c_hi * (xR - db_top_lpR);
+band_loL = db_loL;                 band_loR = db_loR;
+band_midL = db_top_lpL - db_loL;   band_midR = db_top_lpR - db_loR;
+band_hiL = xL - db_top_lpL;        band_hiR = xR - db_top_lpR;
+dbal_low_env += dbal_env_c * (0.5*(abs(band_loL)+abs(band_loR)) - dbal_low_env);
+dbal_mid_env += dbal_env_c * (0.5*(abs(band_midL)+abs(band_midR)) - dbal_mid_env);
+dbal_hi_env  += dbal_env_c * (0.5*(abs(band_hiL)+abs(band_hiR)) - dbal_hi_env);
+tot_e = max(0.0005, dbal_low_env + dbal_mid_env + dbal_hi_env);
+ui_sh_lo = dbal_low_env / tot_e; ui_sh_mid = dbal_mid_env / tot_e; ui_sh_hi = dbal_hi_env / tot_e;
+
+slider33 >= 0.5 && slider35 > 0.1 ? (
+  dbal_str = (slider35 * 0.01) * 0.65;
+  g_lo  = clamp(1.0 + ((t_lo  - ui_sh_lo)  * 1.8) * dbal_str, 0.65, 1.45);
+  g_mid = clamp(1.0 + ((t_mid - ui_sh_mid) * 1.5) * dbal_str, 0.72, 1.38);
+  g_hi  = clamp(1.0 + ((t_hi  - ui_sh_hi)  * 2.0) * dbal_str, 0.65, 1.50);
+  s_loL = band_loL * g_lo;    s_loR = band_loR * g_lo;
+  s_midL = band_midL * g_mid; s_midR = band_midR * g_mid;
+  s_hiL = band_hiL * g_hi;    s_hiR = band_hiR * g_hi;
+  sat_dr = 0.12 * dbal_str;
+  xL = (s_loL - sat_dr * s_loL*s_loL*s_loL) + (s_midL - sat_dr * s_midL*s_midL*s_midL) + s_hiL;
+  xR = (s_loR - sat_dr * s_loR*s_loR*s_loR) + (s_midR - sat_dr * s_midR*s_midR*s_midR) + s_hiR;
+  dbal_act_pct = min(100, (abs(g_lo - 1) + abs(g_mid - 1) + abs(g_hi - 1)) * 110 + deq_gr_db * 6);
+) : (
+  g_lo = g_mid = g_hi = 1;
+  dbal_act_pct = min(100, deq_gr_db * 8);
+);
+
+// ---- DRC Solo ----
+solo_mode = floor(slider25 + 0.5);
+solo_mode == 1 ? ( xL = bAL; xR = bAR; ) :
+solo_mode == 2 ? ( xL = bBL; xR = bBR; ) :
+solo_mode == 3 ? ( xL = bCL; xR = bCR; ) :
+solo_mode == 4 ? ( xL = bDL; xR = bDR; );
+
+// ---- Stage 7: Output ----
+in_sq = 0.5 * (dryL*dryL + dryR*dryR);
+out_sq = 0.5 * (xL*xL + xR*xR);
+gm_rms_in  += gm_coeff * (in_sq - gm_rms_in);
+gm_rms_out += gm_coeff * (out_sq - gm_rms_out);
+slider38 >= 0.5 && gm_rms_out > 0.00001 && gm_rms_in > 0.00001 ? (
+  gm_target = clamp(sqrt(gm_rms_in / gm_rms_out), 0.70, 1.45);
+  gm_gain = gm_gain * 0.998 + gm_target * 0.002;
+) : ( gm_gain = 1.0; );
+
+wetL = xL * gm_gain * out_gain_lin;
+wetR = xR * gm_gain * out_gain_lin;
+
+slider39 >= 0.5 ? (
+  spl0 = wetL - dryL;
+  spl1 = wetR - dryR;
+) : (
+  mix_w = slider36 * 0.01;
+  spl0 = wetL * mix_w + dryL * (1.0 - mix_w);
+  spl1 = wetR * mix_w + dryR * (1.0 - mix_w);
+);
+
+slider40 >= 0.5 ? (
+  curL = spl0; curR = spl1;
+  stL = curL - tp_prevL; stR = curR - tp_prevR;
+  pk = max(max(abs(tp_prevL), abs(tp_prevR)), max(abs(curL), abs(curR)));
+  pk = max(pk, max(abs(tp_prevL + stL*0.25), abs(tp_prevR + stR*0.25)));
+  pk = max(pk, max(abs(tp_prevL + stL*0.50), abs(tp_prevR + stR*0.50)));
+  pk = max(pk, max(abs(tp_prevL + stL*0.75), abs(tp_prevR + stR*0.75)));
+  tp_prevL = curL; tp_prevR = curR;
+  tp_meter_peak = max(pk, tp_meter_peak * 0.9995);
+  pk > tp_ceiling ? ( tp_gr = min(tp_gr, tp_ceiling / pk); ) : ( tp_gr = tp_rel_coeff * tp_gr + (1.0 - tp_rel_coeff); );
+  tp_gr = clamp(tp_gr, 0.0, 1.0);
+  spl0 *= tp_gr; spl1 *= tp_gr;
+  post_pk = max(abs(spl0), abs(spl1));
+  post_pk > tp_ceiling ? ( saf = tp_ceiling / post_pk; spl0 *= saf; spl1 *= saf; tp_gr = min(tp_gr, saf); );
+  tp_gr_smooth = tp_gr_smooth * 0.92 + tp_gr * 0.08;
+  ui_tp_gr_db = tp_gr_smooth < 0.999 ? -lin2db(tp_gr_smooth) : 0.0;
+) : (
+  tp_prevL = spl0; tp_prevR = spl1;
+  tp_meter_peak = max(max(abs(spl0), abs(spl1)), tp_meter_peak * 0.9995);
+  ui_tp_gr_db = 0;
+);
+
+ui_rms_in_sq  = ui_rms_in_sq * meter_decay_ui + (1 - meter_decay_ui) * in_sq;
+ui_rms_out_sq = ui_rms_out_sq * meter_decay_ui + (1 - meter_decay_ui) * (0.5 * (spl0*spl0 + spl1*spl1));
+ui_rms_in_db  = ui_rms_in_sq  > 0.000000001 ? 10 * log10(ui_rms_in_sq)  : -60;
+ui_rms_out_db = ui_rms_out_sq > 0.000000001 ? 10 * log10(ui_rms_out_sq) : -60;
+
+@gfx 1240 900
+// ============================================================================
+// GUI — scalabile: layout in unita' di progetto (larghezza 1100), scala sc.
+// La GUI legge soltanto variabili del DSP; non scrive nulla nel percorso audio
+// tranne i parametri (slider) scelti dall'utente.
+// ============================================================================
+zp_hb = gmem[3900]; zp_hb_now = time_precise();
+!zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
+zp_hb_ok = zp_hb > 0 && zp_hb_now - zp_hb_t < 3;
+ui_gfx_frame += 1;
+time_now = time_precise();
+zp_hb_ok ? ( help_bridge_last_alive_t = time_now; ui_lang = gmem[3901] == 1 ? 1 : 0; ) :
+           ( time_now - help_bridge_last_alive_t > 3.0 ? ui_lang = 0; );
+
+show_simple = floor(slider42 + 0.5) == 0;
+view_mode = floor(slider43 + 0.5);
+view_mode != prev_view_mode ? update_view_mode_visibility();
+mon_sel = floor(slider52 + 0.5);
+ana_on = slider51 >= 0.5;
+
+// ---- Scala ----
+HB = 32; AB = 58;
+content_bottom = view_mode == 0 ? 754 : view_mode == 1 ? 384 : 226;
+designH = content_bottom + 10 + HB + (ana_on ? AB : 0);
+sc = max(0.7, min(2.2, min(gfx_w / 1100, gfx_h / designH)));
+ox = max(0, (gfx_w - 1100 * sc) * 0.5);
+view_hd = gfx_h / sc;
+help_yd = view_hd - HB;
+ana_yd = help_yd - AB;
+bars_top_d = ana_on ? ana_yd : help_yd;
+xl_d = -ox / sc;
+xr_d = (gfx_w - ox) / sc;
+
+gfx_setfont(1, "Arial", 22 * sc, 'b');
+gfx_setfont(2, "Arial", 14.5 * sc);
+gfx_setfont(3, "Arial", 14 * sc, 'b');
+gfx_setfont(4, "Arial", 13.5 * sc, 'b');
+gfx_setfont(5, "Arial", 13 * sc);
+gfx_setfont(6, "Arial", 12 * sc, 'b');
+gfx_setfont(7, "Arial", 11.5 * sc);
+
+show_simple ? (
+  bg_r = 0.92; bg_g = 0.94; bg_b = 0.97;
+  panel_r = 0.97; panel_g = 0.98; panel_b = 0.99;
+  panel2_r = 0.89; panel2_g = 0.92; panel2_b = 0.96;
+  text_r = 0.12; text_g = 0.16; text_b = 0.22;
+  sub_r = 0.32; sub_g = 0.39; sub_b = 0.47;
+  line_r = 0.70; line_g = 0.77; line_b = 0.85;
+) : (
+  bg_r = 0.05; bg_g = 0.06; bg_b = 0.08;
+  panel_r = 0.10; panel_g = 0.12; panel_b = 0.15;
+  panel2_r = 0.14; panel2_g = 0.17; panel2_b = 0.21;
+  text_r = 0.90; text_g = 0.92; text_b = 0.95;
+  sub_r = 0.66; sub_g = 0.70; sub_b = 0.76;
+  line_r = 0.26; line_g = 0.30; line_b = 0.36;
+);
+c_cyan_r = 0.15; c_cyan_g = 0.69; c_cyan_b = 0.84;
+c_amber_r = 0.92; c_amber_g = 0.58; c_amber_b = 0.18;
+c_mag_r = 0.82; c_mag_g = 0.34; c_mag_b = 0.56;
+c_grn_r = 0.26; c_grn_g = 0.76; c_grn_b = 0.46;
+
+// ---- Mouse (unita' di progetto) ----
+mxd = (mouse_x - ox) / sc;
+myd = mouse_y / sc;
+mouse_down = mouse_cap & 1;
+mouse_click_raw = mouse_down && !(last_mouse_cap & 1);
+mouse_rclick_raw = (mouse_cap & 2) && !(last_mouse_cap & 2);
+mouse_click = mouse_click_raw && myd < bars_top_d;
+mouse_right_click = mouse_rclick_raw && myd < bars_top_d;
+fine_tune = (mouse_cap & 8) ? 0.08 : 1.0;
+// Edit frequency in place; discard pending input when focus or control changes.
+mouse_click_raw || mouse_rclick_raw ? lab_edit = 0;
+lab_key = gfx_getchar();
+while (lab_key > 0) (
+  lab_edit ? (
+    lab_key >= 48 && lab_key <= 57 && lab_digits < 5 ? (
+      lab_value = lab_value*10 + lab_key-48; lab_digits += 1;
+    ) : lab_key == 8 ? (
+      lab_value = floor(lab_value/10); lab_digits = max(0,lab_digits-1);
+    ) : lab_key == 27 ? lab_edit = 0 :
+    lab_key == 13 && lab_digits && lab_value >= lab_min && lab_value <= lab_max ? (
+      set_param_slider(lab_edit,lab_value); set_param_slider(44,0); prev_osara_preset = 0;
+      update_dsp_params(); lab_edit = 0;
+    );
+  );
+  lab_key = gfx_getchar();
+);
+active_info_id = 0;
+cur_mod = -1;
+
+// ---- Helper di disegno ----
+function gxp(x) ( floor(ox + x * sc + 0.5); );
+function gyp(y) ( floor(y * sc + 0.5); );
+function g_rect(x, y, w, h) ( gfx_rect(gxp(x), gyp(y), max(1, floor(w * sc + 0.5)), max(1, floor(h * sc + 0.5))); );
+function g_frame(x, y, w, h) local(X, Y, W, H) (
+  X = gxp(x); Y = gyp(y); W = max(2, floor(w * sc + 0.5)); H = max(2, floor(h * sc + 0.5));
+  gfx_rect(X, Y, W, 1); gfx_rect(X, Y + H - 1, W, 1); gfx_rect(X, Y, 1, H); gfx_rect(X + W - 1, Y, 1, H);
+);
+function g_line(x1, y1, x2, y2) ( gfx_line(ox + x1 * sc, y1 * sc, ox + x2 * sc, y2 * sc, 1); );
+function g_circ(x, y, r, f) ( gfx_circle(ox + x * sc, y * sc, r * sc, f, 1); );
+function g_arc(x, y, r, a1, a2) ( gfx_arc(ox + x * sc, y * sc, r * sc, a1, a2, 1); );
+function g_txt(x, y, s) ( gfx_x = gxp(x); gfx_y = gyp(y); gfx_drawstr(s); );
+function g_tw(s) local(tw, th) ( gfx_measurestr(s, tw, th); tw / sc; );
+function g_th() local(tw, th) ( gfx_measurestr("Ag", tw, th); th / sc; );
+function g_txtc(cx, y, s) ( g_txt(cx - g_tw(s) * 0.5, y, s); );
+function g_txtr(xr, y, s) ( g_txt(xr - g_tw(s), y, s); );
+function hit(x, y, w, h) ( mxd >= x && mxd <= x + w && myd >= y && myd <= y + h; );
+function msg(it, en) ( ui_lang == 1 ? en : it; );
+function set_text_col() ( gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_a = 1; );
+function set_sub_col() ( gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 1; );
+
+function fmt_freq(dst, v) local(k) (
+  v >= 1000 ? (
+    k = v / 1000;
+    abs(k - floor(k + 0.5)) < 0.05 ? sprintf(dst, "%.0fk", k) : sprintf(dst, "%.1fk", k);
+  ) : sprintf(dst, "%.0f", v);
+  dst;
+);
+function fmt_gr(dst, gr) (
+  gr < 0.05 ? sprintf(dst, "0.0 dB") : sprintf(dst, "-%.1f dB", gr);
+  dst;
+);
+function band_role(fa, fb) local(c) (
+  c = sqrt(max(20, fa) * max(20, fb));
+  c < 250 ? "LOW" : c < 1100 ? "BOX" : c < 3000 ? "HARSH" : c < 5500 ? "PRES" : c < 11000 ? "SIB" : "AIR";
+);
+function set_mon(m) ( m >= 0 ? set_ui_state(52, m); );
+
+function draw_panel(x, y, w, h) (
+  gfx_r = panel_r; gfx_g = panel_g; gfx_b = panel_b; gfx_a = 1; g_rect(x, y, w, h);
+  gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9; g_frame(x, y, w, h);
+);
+// titolo cliccabile: seleziona il modulo nel monitor
+function draw_group_title(x, y, w, lbl, rr, gg, bb, mon) local(hv) (
+  hv = mon >= 0 && hit(x, y, w, 28);
+  hv ? ( active_info_id = 232; mouse_click ? set_mon(mon); );
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95; g_rect(x, y, w, 4);
+  mon >= 0 && mon == mon_sel ? ( gfx_a = 0.16; g_rect(x, y + 4, w, 24); );
+  gfx_setfont(3); set_text_col();
+  g_txt(x + 12, y + 9, lbl);
+  mon >= 0 ? (
+    gfx_setfont(7); gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = hv || mon == mon_sel ? 1 : 0.55;
+    g_txtr(x + w - 10, y + 10, mon == mon_sel ? "MONITOR" : "monitor");
+  );
+);
+function draw_meter_h(x, y, w, h, val_pct, rr, gg, bb) local(fill) (
+  gfx_r = show_simple ? 0.80 : 0.07; gfx_g = show_simple ? 0.84 : 0.09; gfx_b = show_simple ? 0.90 : 0.13; gfx_a = 1;
+  g_rect(x, y, w, h);
+  fill = clamp(w * val_pct * 0.01, 0, w);
+  fill > 0 ? ( gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.98; g_rect(x, y, fill, h); );
+);
+function btn_face(bx, by, bw, bh, label, is_on, is_hover, cr, cg, cb) local(th) (
+  is_on ? ( gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = 0.95; ) :
+          ( gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 1;
+            is_hover ? ( gfx_r += 0.06; gfx_g += 0.06; gfx_b += 0.06; ); );
+  g_rect(bx, by, bw, bh);
+  gfx_r = is_hover ? min(1, cr + 0.2) : line_r; gfx_g = is_hover ? min(1, cg + 0.2) : line_g; gfx_b = is_hover ? min(1, cb + 0.2) : line_b; gfx_a = 0.95;
+  g_frame(bx, by, bw, bh);
+  gfx_setfont(6);
+  is_on ? ( gfx_r = 0.04; gfx_g = 0.05; gfx_b = 0.07; gfx_a = 1; ) : set_text_col();
+  th = g_th();
+  g_txtc(bx + bw * 0.5, by + (bh - th) * 0.5, label);
+);
+function ui_tab_btn(sl_idx, target_val, bx, by, bw, bh, label, info_id, cr, cg, cb, mon) local(is_on, is_hover) (
+  is_on = floor(slider(sl_idx) + 0.5) == target_val;
+  is_hover = hit(bx, by, bw, bh);
+  is_hover ? active_info_id = info_id;
+  is_hover && mouse_click ? (
+    (sl_idx == 52 || sl_idx == 43 || sl_idx == 42) ? set_ui_state(sl_idx, target_val) : set_param_slider(sl_idx, target_val);
+    sl_idx == 44 && target_val > 0 ? ( apply_magic_preset(target_val); prev_osara_preset = target_val; );
+    set_mon(mon);
+    update_dsp_params();
+  );
+  btn_face(bx, by, bw, bh, label, is_on, is_hover, cr, cg, cb);
+);
+function ui_toggle_btn(sl_idx, bx, by, bw, bh, lbl, info_id, cr, cg, cb, mon) local(is_on, is_hover) (
+  is_on = slider(sl_idx) >= 0.5;
+  is_hover = hit(bx, by, bw, bh);
+  is_hover ? active_info_id = info_id;
+  is_hover && mouse_click ? (
+    set_param_slider(sl_idx, is_on ? 0 : 1);
+    set_mon(mon);
+    update_dsp_params();
+    is_on = !is_on;
+  );
+  btn_face(bx, by, bw, bh, lbl, is_on, is_hover, cr, cg, cb);
+);
+// Knob: arco corretto (gfx_arc: 0 = ore 12) allineato all'indicatore (cos/sin: 0 = ore 3)
+function ui_knob(sl_idx, kx, ky, r, min_v, max_v, def_v, label, unit, cr, cg, cb, info_id, ring_pct)
+local(val, norm_val, ang_min, ang_max, ang, is_hover, drag_sens, hover_mul, is_dbl, meter_ang, meter_r, HP, hz) (
+  hz = strcmp(unit, "Hz") == 0;
+  val = slider(sl_idx);
+  HP = $pi * 0.5;
+  is_hover = hit(kx - r - 10, ky - r - 22, (r + 10) * 2, (r + 22) * 2 + 4);
+  is_hover ? (
+    active_info_id = info_id;
+    mouse_click ? (
+      set_mon(cur_mod);
+      is_dbl = (ui_last_click_id == sl_idx) && ((ui_gfx_frame - ui_last_click_frame) <= 18);
+      ui_last_click_id = sl_idx; ui_last_click_frame = ui_gfx_frame;
+      is_dbl && hz ? ( lab_edit = sl_idx; lab_digits = 0; lab_value = 0; lab_min = min_v; lab_max = max_v; ui_drag_id = 0; ui_last_click_id = -1; ) :
+      is_dbl ? ( set_param_slider(sl_idx, def_v); val = def_v; ui_drag_id = 0; update_dsp_params(); ) :
+               ( ui_drag_id = sl_idx; ui_drag_start_y = myd; ui_drag_start_v = val; );
+    );
+    mouse_right_click ? ( set_param_slider(sl_idx, def_v); val = def_v; update_dsp_params(); );
+  );
+  ui_drag_id == sl_idx && mouse_down && (myd != ui_drag_start_y || slider(sl_idx) != ui_drag_start_v) ? (
+    drag_sens = ((max_v - min_v) / 170.0) * fine_tune;
+    hz ? val = floor(clamp(ui_drag_start_v * exp(log(max_v/min_v) * (ui_drag_start_y-myd) * fine_tune / 170), min_v, max_v) + 0.5) :
+    val = clamp(ui_drag_start_v + (ui_drag_start_y - myd) * drag_sens, min_v, max_v);
+    set_param_slider(sl_idx, val);
+    floor(slider44 + 0.5) != 0 ? ( set_param_slider(44, 0); prev_osara_preset = 0; );
+    update_dsp_params();
+  ) : ( ui_drag_id == sl_idx && !mouse_down ? ui_drag_id = 0; );
+
+  hover_mul = (is_hover || ui_drag_id == sl_idx) ? 1.25 : 0.92;
+  ang_min = 2.356; ang_max = 7.068;
+  norm_val = hz ? clamp(log(max(min_v,val)/min_v)/log(max_v/min_v),0,1) : clamp((val - min_v) / max(0.0001, max_v - min_v), 0, 1);
+  ang = ang_min + norm_val * (ang_max - ang_min);
+
+  ring_pct >= 0 ? (
+    meter_r = r + 6;
+    gfx_r = show_simple ? 0.74 : 0.22; gfx_g = show_simple ? 0.77 : 0.24; gfx_b = show_simple ? 0.82 : 0.29; gfx_a = 0.8;
+    g_arc(kx, ky, meter_r, ang_min + HP, ang_max + HP);
+    ring_pct > 1 ? (
+      meter_ang = ang_min + clamp(ring_pct * 0.01, 0, 1) * (ang_max - ang_min);
+      gfx_r = min(1, cr + 0.25); gfx_g = min(1, cg + 0.25); gfx_b = min(1, cb + 0.25); gfx_a = 1;
+      g_arc(kx, ky, meter_r, ang_min + HP, meter_ang + HP);
+      g_arc(kx, ky, meter_r + 1.2, ang_min + HP, meter_ang + HP);
+    );
+  );
+  show_simple ? ( gfx_r = 0.99; gfx_g = 0.99; gfx_b = 1.0; ) : ( gfx_r = 0.17; gfx_g = 0.18; gfx_b = 0.22; );
+  gfx_a = 1; g_circ(kx, ky, r, 1);
+  gfx_r = show_simple ? 0.82 : 0.26; gfx_g = show_simple ? 0.85 : 0.28; gfx_b = show_simple ? 0.90 : 0.33; gfx_a = 1;
+  g_arc(kx, ky, r - 2.5, ang_min + HP, ang_max + HP);
+  gfx_r = min(1, cr * hover_mul); gfx_g = min(1, cg * hover_mul); gfx_b = min(1, cb * hover_mul); gfx_a = 1;
+  g_arc(kx, ky, r - 2, ang_min + HP, ang + HP); g_arc(kx, ky, r - 3, ang_min + HP, ang + HP); g_arc(kx, ky, r - 4, ang_min + HP, ang + HP);
+  show_simple ? ( gfx_r = 0.15; gfx_g = 0.18; gfx_b = 0.24; ) : ( gfx_r = 0.95; gfx_g = 0.95; gfx_b = 0.96; );
+  g_line(kx + cos(ang) * r * 0.25, ky + sin(ang) * r * 0.25, kx + cos(ang) * (r - 3), ky + sin(ang) * (r - 3));
+
+  gfx_setfont(6); set_text_col();
+  g_txtc(kx, ky - r - 19, label);
+  strcmp(unit, "Hz") == 0 ? (
+    fmt_freq(#kv, val); val < 1000 ? strcat(#kv, " Hz");
+  ) : (
+    abs(val - floor(val + 0.5)) < 0.03 ? sprintf(#kv, "%.0f %s", val, unit) : sprintf(#kv, "%.1f %s", val, unit);
+  );
+  gfx_setfont(5);
+  gfx_r = min(1, cr * hover_mul); gfx_g = min(1, cg * hover_mul); gfx_b = min(1, cb * hover_mul); gfx_a = 1;
+  lab_edit == sl_idx ? ( lab_digits ? sprintf(#kv, "%d_", lab_value) : strcpy(#kv, "_ Hz"); );
+  g_txtc(kx, ky + r + 6, #kv);
+);
+
+// ---- Monitor: helper ----
+function bq_mag_db(b0, b1, b2, a1, a2, w) local(c1, c2, num, den) (
+  c1 = cos(w); c2 = cos(2 * w);
+  num = b0*b0 + b1*b1 + b2*b2 + 2*(b0*b1 + b1*b2)*c1 + 2*b0*b2*c2;
+  den = 1 + a1*a1 + a2*a2 + 2*(a1 + a1*a2)*c1 + 2*a2*c2;
+  10 * log10(max(0.000000000001, num) / max(0.000000000001, den));
+);
+function fx_map(f) ( d_x + 36 + (log10(clamp(f, 20, 20000) / 20) / 3) * (d_w - 56); );
+function dbv_map(db, lo, hi) ( d_y + 26 + (1 - (clamp(db, lo, hi) - lo) / (hi - lo)) * (d_h - 54); );
+function mon_frame(cr, cg, cb) (
+  gfx_r = 0.025; gfx_g = 0.04; gfx_b = 0.10; gfx_a = 1; g_rect(d_x, d_y, d_w, d_h);
+  gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = 0.9; g_frame(d_x, d_y, d_w, d_h);
+);
+function draw_freq_grid() local(i, f, x) (
+  gfx_setfont(7);
+  i = 0;
+  loop(10,
+    f = i == 0 ? 20 : i == 1 ? 50 : i == 2 ? 100 : i == 3 ? 200 : i == 4 ? 500 : i == 5 ? 1000 : i == 6 ? 2000 : i == 7 ? 5000 : i == 8 ? 10000 : 20000;
+    x = fx_map(f);
+    gfx_r = 0.35; gfx_g = 0.45; gfx_b = 0.75; gfx_a = 0.22; g_line(x, d_y + 22, x, d_y + d_h - 26);
+    gfx_r = 0.62; gfx_g = 0.70; gfx_b = 0.90; gfx_a = 0.95;
+    fmt_freq(#gl, f); g_txtc(x, d_y + d_h - 20, #gl);
+    i += 1;
+  );
+);
+function draw_db_line(db, lo, hi, lbl) local(y) (
+  y = dbv_map(db, lo, hi);
+  gfx_r = 0.55; gfx_g = 0.62; gfx_b = 0.85; gfx_a = db == 0 ? 0.55 : 0.18;
+  g_line(d_x + 34, y, d_x + d_w - 18, y);
+  gfx_setfont(7); gfx_a = 0.85; g_txtr(d_x + 30, y - 7, lbl);
+);
+function draw_curve(mode, lo, hi, cr, cg, cb) local(i, N, f, w, db, x, y, px, py) (
+  N = 160; i = 0; px = -1;
+  loop(N + 1,
+    f = 20 * 10 ^ (3 * i / N);
+    w = 2 * $pi * f / srate;
+    f < srate * 0.49 ? (
+      db = 0;
+      mode == 0 ? (
+        slider4 >= 0.5 ? db = bq_mag_db(hp_b0, hp_b1, hp_b2, hp_a1, hp_a2, w) + bq_mag_db(lp_b0, lp_b1, lp_b2, lp_a1, lp_a2, w);
+      ) : (
+        slider29 >= 0.5 ? db = bq_mag_db(tone_lo.b0, tone_lo.b1, tone_lo.b2, tone_lo.a1, tone_lo.a2, w)
+                             + bq_mag_db(tone_mid.b0, tone_mid.b1, tone_mid.b2, tone_mid.a1, tone_mid.a2, w)
+                             + bq_mag_db(tone_hi.b0, tone_hi.b1, tone_hi.b2, tone_hi.a1, tone_hi.a2, w);
+        slider32 >= 0.5 ? db += bq_mag_db(mid_bump_bq.b0, mid_bump_bq.b1, mid_bump_bq.b2, mid_bump_bq.a1, mid_bump_bq.a2, w);
+      );
+      x = fx_map(f); y = dbv_map(db, lo, hi);
+      px >= 0 ? (
+        gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = 0.18; g_line(px, py, px, dbv_map(0, lo, hi));
+        gfx_a = 1; g_line(px, py, x, y); g_line(px, py + 1 / sc, x, y + 1 / sc);
+      );
+      px = x; py = y;
+    );
+    i += 1;
+  );
+);
+// barra di riduzione stile Magic: cresce da destra (0 dB) verso sinistra
+function hbar_gr(y, lbl, gr_db, maxdb, cr, cg, cb) local(x0, x1, w, fill) (
+  x0 = d_x + 128; x1 = d_x + d_w - 96; w = x1 - x0;
+  gfx_setfont(5); gfx_r = 0.72; gfx_g = 0.80; gfx_b = 0.96; gfx_a = 1; g_txt(d_x + 18, y - 2, lbl);
+  gfx_r = 0.07; gfx_g = 0.10; gfx_b = 0.22; gfx_a = 1; g_rect(x0, y, w, 13);
+  fill = clamp(gr_db / maxdb, 0, 1) * w;
+  fill > 0 ? ( gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = 0.95; g_rect(x1 - fill, y, fill, 13); );
+  fmt_gr(#hb, gr_db); gfx_r = 0.95; gfx_g = 0.96; gfx_b = 1; g_txtr(d_x + d_w - 16, y - 2, #hb);
+);
+function gr_scale(y, maxdb) local(x0, x1, i, v, x) (
+  x0 = d_x + 128; x1 = d_x + d_w - 96;
+  gfx_setfont(7); gfx_r = 0.62; gfx_g = 0.70; gfx_b = 0.90; gfx_a = 0.95;
+  i = 0;
+  loop(5,
+    v = maxdb * i / 4; x = x1 - (x1 - x0) * i / 4;
+    sprintf(#gs, i == 0 ? "0dB" : "-%.0f", v); g_txtc(x, y, #gs);
+    gfx_a = 0.25; g_line(x, y - 4, x, y - 104 * fy); gfx_a = 0.95;
+    i += 1;
+  );
+);
+// barra di livello sinistra->destra con eventuale marcatore
+function hbar_lvl(y, lbl, db, lo, hi, cr, cg, cb, mark_db) local(x0, x1, w, fill, mx) (
+  x0 = d_x + 128; x1 = d_x + d_w - 96; w = x1 - x0;
+  gfx_setfont(5); gfx_r = 0.72; gfx_g = 0.80; gfx_b = 0.96; gfx_a = 1; g_txt(d_x + 18, y - 2, lbl);
+  gfx_r = 0.07; gfx_g = 0.10; gfx_b = 0.22; gfx_a = 1; g_rect(x0, y, w, 13);
+  fill = clamp((db - lo) / (hi - lo), 0, 1) * w;
+  fill > 0 ? ( gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = 0.95; g_rect(x0, y, fill, 13); );
+  mark_db > lo ? ( mx = x0 + clamp((mark_db - lo) / (hi - lo), 0, 1) * w; gfx_r = 1; gfx_g = 0.85; gfx_b = 0.3; gfx_a = 1; g_rect(mx - 1, y - 3, 2, 19); );
+  sprintf(#hl, "%.1f dB", db); gfx_r = 0.95; gfx_g = 0.96; gfx_b = 1; g_txtr(d_x + d_w - 16, y - 2, #hl);
+);
+// banda su asse frequenze con riduzione verticale (0..maxdb)
+function band_gr(f_a, f_b, gr_db, maxdb, eng, lbl, idx, cr, cg, cb) local(xa, xb, base, hh, h) (
+  xa = fx_map(min(f_a, f_b)); xb = max(xa + 3, fx_map(max(f_a, f_b)));
+  base = d_y + d_h - 30; hh = d_h - 70;
+  gfx_r = cr; gfx_g = cg; gfx_b = cb;
+  gfx_a = eng ? 0.22 : 0.07; g_rect(xa, d_y + 34, xb - xa, base - d_y - 34);
+  gfx_a = eng ? 0.9 : 0.3; g_rect(xa, base - 2, xb - xa, 3);
+  h = clamp(gr_db / maxdb, 0, 1) * hh;
+  eng && h > 0.5 ? ( gfx_a = 0.95; g_rect(xa, base - h, xb - xa, h); );
+  gfx_setfont(6); gfx_a = eng ? 1 : 0.45;
+  gr_db < 0.05 ? sprintf(#bl, "%s 0.0", lbl) : sprintf(#bl, "%s -%.1f", lbl, gr_db);
+  g_txtc((xa + xb) * 0.5, d_y + 26 + idx * 15, #bl);
+);
+
+// ============================================================================
+// SFONDO + HEADER
+// ============================================================================
+gfx_r = bg_r; gfx_g = bg_g; gfx_b = bg_b; gfx_a = 1; gfx_rect(0, 0, gfx_w, gfx_h);
+
+draw_panel(16, 10, 1068, 110);
+gfx_r = c_cyan_r; gfx_g = c_cyan_g; gfx_b = c_cyan_b; gfx_a = 0.95; g_rect(16, 10, 1068, 4);
+gfx_setfont(1); set_text_col();
+g_txt(30, 21, "ZP MAGIC VOICE LAB");
+dot_x = 30 + g_tw("ZP MAGIC VOICE LAB") + 16;
+zp_bus_read();
+zp_bus_master_conn == 2 && zp_bus_probe_conn == 2 ? (gfx_r = 0.30; gfx_g = 0.92; gfx_b = 0.58;) :
+zp_bus_master_conn > 0 && zp_bus_probe_conn > 0 ? (gfx_r = 1.0; gfx_g = 0.72; gfx_b = 0.20;) : (gfx_r = 1.0; gfx_g = 0.34; gfx_b = 0.28;);
+gfx_a = 1; g_circ(dot_x, 32, 5, 1);
+cur_preset = floor(slider44 + 0.5);
+pname = cur_preset == 1 ? "MALE LD" : cur_preset == 2 ? "FEMALE LD" : cur_preset == 3 ? "CLARITY" : cur_preset == 4 ? "MID PC" :
+        cur_preset == 5 ? "HOME BOOTH FIX" : cur_preset == 6 ? "BROADCAST" : cur_preset == 7 ? "MAGIC 1" : "Custom";
+sprintf(#hdr, "LAB 1  ·  Paolo Balestri  ·  Preset: %s", pname);
+gfx_setfont(5); set_sub_col(); g_txt(dot_x + 14, 25, #hdr);
+
+px = 30; py = 50;
+ui_tab_btn(44, 1, px,       py, 100, 25, "MALE LD",    201, c_cyan_r,  c_cyan_g,  c_cyan_b, -1);
+ui_tab_btn(44, 2, px + 106, py, 108, 25, "FEMALE LD",  202, c_mag_r,   c_mag_g,   c_mag_b, -1);
+ui_tab_btn(44, 3, px + 220, py, 96,  25, "CLARITY",    203, c_cyan_r,  c_cyan_g,  c_cyan_b, -1);
+ui_tab_btn(44, 4, px + 322, py, 86,  25, "MID PC",     204, c_amber_r, c_amber_g, c_amber_b, -1);
+ui_tab_btn(44, 5, px + 414, py, 118, 25, "HOME BOOTH", 205, c_grn_r,   c_grn_g,   c_grn_b, -1);
+ui_tab_btn(44, 6, px + 538, py, 106, 25, "BROADCAST",  206, c_amber_r, c_amber_g, c_amber_b, -1);
+ui_tab_btn(44, 7, px + 650, py, 96,  25, "MAGIC 1",    207, c_mag_r,   c_mag_g,   c_mag_b, -1);
+
+sy = 84;
+ui_toggle_btn(4,  px,       sy, 88, 25, "1·FILTERS", 210, c_cyan_r,  c_cyan_g,  c_cyan_b, 0);
+ui_toggle_btn(5,  px + 94,  sy, 88, 25, "2·PREAMP",  211, c_amber_r, c_amber_g, c_amber_b, 0);
+ui_toggle_btn(7,  px + 188, sy, 80, 25, "3·PEAK",    212, c_cyan_r,  c_cyan_g,  c_cyan_b, 1);
+ui_toggle_btn(8,  px + 274, sy, 76, 25, "4·DRC",     213, c_mag_r,   c_mag_g,   c_mag_b, 2);
+ui_toggle_btn(26, px + 356, sy, 88, 25, "5·DYN EQ",  214, c_cyan_r,  c_cyan_g,  c_cyan_b, 3);
+ui_toggle_btn(29, px + 450, sy, 80, 25, "6·TONE",    215, c_amber_r, c_amber_g, c_amber_b, 4);
+ui_toggle_btn(32, px + 536, sy, 96, 25, "MID BUMP",  216, c_mag_r,   c_mag_g,   c_mag_b, 4);
+ui_toggle_btn(33, px + 638, sy, 108,25, "7·DYN BAL", 217, c_grn_r,   c_grn_g,   c_grn_b, 5);
+
+rx = 810;
+ui_tab_btn(43, 0, rx,       20, 82, 24, "FULL", 220, c_grn_r, c_grn_g, c_grn_b, -1);
+ui_tab_btn(43, 1, rx + 89,  20, 82, 24, "MINI", 220, c_grn_r, c_grn_g, c_grn_b, -1);
+ui_tab_btn(43, 2, rx + 178, 20, 82, 24, "JSFX", 220, c_grn_r, c_grn_g, c_grn_b, -1);
+ui_tab_btn(42, 0, rx,       50, 126, 25, "SIMPLE",   221, c_cyan_r,  c_cyan_g,  c_cyan_b, -1);
+ui_tab_btn(42, 1, rx + 134, 50, 126, 25, "ADVANCED", 221, c_amber_r, c_amber_g, c_amber_b, -1);
+ui_toggle_btn(38, rx,       84, 126, 25, "GAIN MATCH", 222, c_grn_r, c_grn_g, c_grn_b, 6);
+ui_toggle_btn(39, rx + 134, 84, 126, 25, "DELTA",      223, c_mag_r, c_mag_g, c_mag_b, 6);
+
+// ============================================================================
+// PANNELLI (vista FULL)
+// ============================================================================
+view_mode == 0 ? (
+  r1y = 132; r1h = 360;
+
+  // ---- 1 · INPUT & PEAK ----
+  draw_panel(16, r1y, 252, r1h);
+  draw_group_title(16, r1y, 252, "1 · INPUT & PEAK", c_cyan_r, c_cyan_g, c_cyan_b, 1);
+  cur_mod = 1;
+  ui_knob(1, 82,  r1y + 90, 30, -18, 18, 0, "INPUT", "dB", c_cyan_r, c_cyan_g, c_cyan_b, 101, -1);
+  ui_knob(6, 202, r1y + 90, 30, 0, 100, 45, "PEAK RED", "%", c_amber_r, c_amber_g, c_amber_b, 102, min(100, ui_peak_gr_db * 8));
+  cur_mod = 0;
+  ui_knob(2, 82,  r1y + 210, 28, 20, 250, 75, "LOWCUT", "Hz", c_cyan_r, c_cyan_g, c_cyan_b, 103, -1);
+  ui_knob(3, 202, r1y + 210, 28, 8000, 20000, 18000, "HICUT", "Hz", c_cyan_r, c_cyan_g, c_cyan_b, 104, -1);
+  gfx_setfont(5); set_sub_col(); g_txt(28, r1y + 280, "Opto+RComp");
+  draw_meter_h(116, r1y + 283, 136, 11, min(100, ui_peak_gr_db * 7), c_amber_r, c_amber_g, c_amber_b);
+  ui_toggle_btn(5, 28,  r1y + 318, 108, 28, "TUBE PREAMP", 105, c_amber_r, c_amber_g, c_amber_b, 0);
+  ui_toggle_btn(4, 144, r1y + 318, 112, 28, "FILTERS",     106, c_cyan_r,  c_cyan_g,  c_cyan_b, 0);
+
+  // ---- 2 · DRC ----
+  draw_panel(280, r1y, 444, r1h);
+  draw_group_title(280, r1y, 444, "2 · DYNAMIC RESONANCE CONTROLLER", c_mag_r, c_mag_g, c_mag_b, 2);
+  cur_mod = 2;
+  sprintf(#lbA, "A · %s", band_role(slider10, slider11));
+  sprintf(#lbB, "B · %s", band_role(slider14, slider15));
+  sprintf(#lbC, "C · %s", band_role(slider18, slider19));
+  sprintf(#lbD, "D · %s", band_role(slider22, slider23));
+  cxA = 288; cxB = 396; cxC = 504; cxD = 612;
+  ui_toggle_btn(9,  cxA + 3, r1y + 38, 100, 25, #lbA, 111, c_cyan_r,  c_cyan_g,  c_cyan_b, 2);
+  ui_toggle_btn(13, cxB + 3, r1y + 38, 100, 25, #lbB, 112, c_amber_r, c_amber_g, c_amber_b, 2);
+  ui_toggle_btn(17, cxC + 3, r1y + 38, 100, 25, #lbC, 113, c_mag_r,   c_mag_g,   c_mag_b, 2);
+  ui_toggle_btn(21, cxD + 3, r1y + 38, 100, 25, #lbD, 114, c_grn_r,   c_grn_g,   c_grn_b, 2);
+
+  ui_knob(12, cxA + 53, r1y + 120, 27, 0, 100, 75, "THR A", "%", c_cyan_r,  c_cyan_g,  c_cyan_b,  121, min(100, ui_drcA * 10));
+  ui_knob(16, cxB + 53, r1y + 120, 27, 0, 100, 59, "THR B", "%", c_amber_r, c_amber_g, c_amber_b, 122, min(100, ui_drcB * 10));
+  ui_knob(20, cxC + 53, r1y + 120, 27, 0, 100, 50, "THR C", "%", c_mag_r,   c_mag_g,   c_mag_b,   123, min(100, ui_drcC * 10));
+  ui_knob(24, cxD + 53, r1y + 120, 27, 0, 100, 0,  "THR D", "%", c_grn_r,   c_grn_g,   c_grn_b,   124, min(100, ui_drcD * 10));
+
+  !show_simple ? (
+    ui_knob(10, cxA + 28, r1y + 222, 18, 20, 20000, 6529, "HP", "Hz", c_cyan_r,  c_cyan_g,  c_cyan_b,  131, -1);
+    ui_knob(11, cxA + 78, r1y + 222, 18, 20, 20000, 9788, "LP", "Hz", c_cyan_r,  c_cyan_g,  c_cyan_b,  131, -1);
+    ui_knob(14, cxB + 28, r1y + 222, 18, 20, 20000, 233,  "HP", "Hz", c_amber_r, c_amber_g, c_amber_b, 132, -1);
+    ui_knob(15, cxB + 78, r1y + 222, 18, 20, 20000, 384,  "LP", "Hz", c_amber_r, c_amber_g, c_amber_b, 132, -1);
+    ui_knob(18, cxC + 28, r1y + 222, 18, 20, 20000, 1456, "HP", "Hz", c_mag_r,   c_mag_g,   c_mag_b,   133, -1);
+    ui_knob(19, cxC + 78, r1y + 222, 18, 20, 20000, 2641, "LP", "Hz", c_mag_r,   c_mag_g,   c_mag_b,   133, -1);
+    ui_knob(22, cxD + 28, r1y + 222, 18, 20, 20000, 5884, "HP", "Hz", c_grn_r,   c_grn_g,   c_grn_b,   134, -1);
+    ui_knob(23, cxD + 78, r1y + 222, 18, 20, 20000, 9200, "LP", "Hz", c_grn_r,   c_grn_g,   c_grn_b,   134, -1);
+  ) : (
+    gfx_setfont(5); set_sub_col();
+    fmt_freq(#fa, min(slider10, slider11)); fmt_freq(#fb, max(slider10, slider11)); sprintf(#rg, "%s-%s", #fa, #fb); g_txtc(cxA + 53, r1y + 214, #rg);
+    fmt_freq(#fa, min(slider14, slider15)); fmt_freq(#fb, max(slider14, slider15)); sprintf(#rg, "%s-%s", #fa, #fb); g_txtc(cxB + 53, r1y + 214, #rg);
+    fmt_freq(#fa, min(slider18, slider19)); fmt_freq(#fb, max(slider18, slider19)); sprintf(#rg, "%s-%s", #fa, #fb); g_txtc(cxC + 53, r1y + 214, #rg);
+    fmt_freq(#fa, min(slider22, slider23)); fmt_freq(#fb, max(slider22, slider23)); sprintf(#rg, "%s-%s", #fa, #fb); g_txtc(cxD + 53, r1y + 214, #rg);
+  );
+
+  draw_meter_h(cxA + 8, r1y + 274, 90, 10, min(100, ui_drcA * 10), c_cyan_r,  c_cyan_g,  c_cyan_b);
+  draw_meter_h(cxB + 8, r1y + 274, 90, 10, min(100, ui_drcB * 10), c_amber_r, c_amber_g, c_amber_b);
+  draw_meter_h(cxC + 8, r1y + 274, 90, 10, min(100, ui_drcC * 10), c_mag_r,   c_mag_g,   c_mag_b);
+  draw_meter_h(cxD + 8, r1y + 274, 90, 10, min(100, ui_drcD * 10), c_grn_r,   c_grn_g,   c_grn_b);
+  gfx_setfont(7); set_sub_col();
+  fmt_gr(#gv, ui_drcA); g_txtc(cxA + 53, r1y + 289, #gv);
+  fmt_gr(#gv, ui_drcB); g_txtc(cxB + 53, r1y + 289, #gv);
+  fmt_gr(#gv, ui_drcC); g_txtc(cxC + 53, r1y + 289, #gv);
+  fmt_gr(#gv, ui_drcD); g_txtc(cxD + 53, r1y + 289, #gv);
+
+  ui_tab_btn(25, 0, 288, r1y + 318, 64, 28, "SOLO OFF", 125, c_grn_r,   c_grn_g,   c_grn_b, 2);
+  ui_tab_btn(25, 1, 358, r1y + 318, 84, 28, "SOLO A",   125, c_cyan_r,  c_cyan_g,  c_cyan_b, 2);
+  ui_tab_btn(25, 2, 448, r1y + 318, 84, 28, "SOLO B",   125, c_amber_r, c_amber_g, c_amber_b, 2);
+  ui_tab_btn(25, 3, 538, r1y + 318, 84, 28, "SOLO C",   125, c_mag_r,   c_mag_g,   c_mag_b, 2);
+  ui_tab_btn(25, 4, 628, r1y + 318, 84, 28, "SOLO D",   125, c_grn_r,   c_grn_g,   c_grn_b, 2);
+
+  // ---- 3 · TONE, DYN EQ & BALANCE ----
+  draw_panel(736, r1y, 348, r1h);
+  draw_group_title(736, r1y, 348, "3 · TONE, DYN EQ & BALANCE", c_grn_r, c_grn_g, c_grn_b, 5);
+  cur_mod = 3; ui_knob(28, 798,  r1y + 88, 27, 0, 100, 52, "DYN EQ", "%", c_cyan_r, c_cyan_g, c_cyan_b, 140, min(100, max(ui_deq_lo, ui_deq_hi) * 14));
+  cur_mod = 4; ui_knob(31, 910,  r1y + 88, 27, 0.2, 3.5, 1.56, "TONE SCL", "x", c_amber_r, c_amber_g, c_amber_b, 142, -1);
+  cur_mod = 5; ui_knob(35, 1022, r1y + 88, 27, 0, 100, 31, "DYN BAL", "%", c_grn_r, c_grn_g, c_grn_b, 144, dbal_act_pct);
+
+  gfx_setfont(5); set_sub_col();
+  g_txt(750, r1y + 154, "Dyn EQ"); g_txt(750, r1y + 186, "Tone"); g_txt(750, r1y + 218, "Balance");
+  ui_tab_btn(27, 0, 812,  r1y + 150, 60, 25, "A", 141, c_cyan_r, c_cyan_g, c_cyan_b, 3);
+  ui_tab_btn(27, 1, 878,  r1y + 150, 60, 25, "B", 141, c_cyan_r, c_cyan_g, c_cyan_b, 3);
+  ui_tab_btn(27, 2, 944,  r1y + 150, 60, 25, "C", 141, c_cyan_r, c_cyan_g, c_cyan_b, 3);
+  ui_tab_btn(27, 3, 1010, r1y + 150, 60, 25, "D", 141, c_cyan_r, c_cyan_g, c_cyan_b, 3);
+  ui_tab_btn(30, 0, 812,  r1y + 182, 60, 25, "A", 143, c_amber_r, c_amber_g, c_amber_b, 4);
+  ui_tab_btn(30, 1, 878,  r1y + 182, 60, 25, "B", 143, c_amber_r, c_amber_g, c_amber_b, 4);
+  ui_tab_btn(30, 2, 944,  r1y + 182, 60, 25, "C", 143, c_amber_r, c_amber_g, c_amber_b, 4);
+  ui_tab_btn(30, 3, 1010, r1y + 182, 60, 25, "D", 143, c_amber_r, c_amber_g, c_amber_b, 4);
+  ui_tab_btn(34, 0, 812,  r1y + 214, 126, 25, "A · NATURAL", 145, c_grn_r, c_grn_g, c_grn_b, 5);
+  ui_tab_btn(34, 1, 944,  r1y + 214, 126, 25, "B · DENSE",   145, c_grn_r, c_grn_g, c_grn_b, 5);
+
+  cur_mod = 6;
+  ui_knob(36, 798,  r1y + 300, 25, 0, 100, 100, "MIX", "%", c_grn_r, c_grn_g, c_grn_b, 146, -1);
+  ui_knob(37, 910,  r1y + 300, 25, -12, 12, 0, "OUTPUT", "dB", c_cyan_r, c_cyan_g, c_cyan_b, 147, -1);
+  ui_knob(41, 1022, r1y + 300, 25, -3.0, -0.1, -0.5, "PEAK CEIL", "dB", c_mag_r, c_mag_g, c_mag_b, 148, clamp(((lin2db(tp_meter_peak) + 18) / 18) * 100, 0, 100));
+);
+
+view_mode == 2 ? (
+  draw_panel(16, 132, 1068, 84);
+  draw_group_title(16, 132, 1068, "JSFX VIEW", c_grn_r, c_grn_g, c_grn_b, -1);
+  gfx_setfont(5); set_sub_col();
+  g_txt(30, 166, msg("Tutti i parametri sono nella lista standard di REAPER (accessibile con OSARA). Se non compaiono, chiudi e riapri la finestra FX.",
+                     "All parameters are in REAPER's standard list (OSARA accessible). If they don't appear, close and reopen the FX window."));
+  g_txt(30, 188, msg("Per tornare alla grafica usa FULL o MINI in alto a destra.", "Use FULL or MINI (top right) to return to the graphic view."));
+);
+
+// ============================================================================
+// MONITOR (FULL e MINI)
+// ============================================================================
+view_mode != 2 ? (
+  mon_y = view_mode == 0 ? 504 : 132;
+  mon_h = max(242, bars_top_d - 10 - mon_y);
+  draw_panel(16, mon_y, 1068, mon_h);
+  mon_name = mon_sel == 0 ? "FILTER STAGE" : mon_sel == 1 ? "PEAK LEVELER (OPTO + RCOMP)" : mon_sel == 2 ? "DYNAMIC RESONANCE CONTROLLER" :
+             mon_sel == 3 ? "DYNAMIC EQ" : mon_sel == 4 ? "TONE EQ + MID BUMP" : mon_sel == 5 ? "DYNAMIC BALANCE" : "OUTPUT";
+  sprintf(#mt, "MONITOR · %s", mon_name);
+  draw_group_title(16, mon_y, 1068, #mt, c_cyan_r, c_cyan_g, c_cyan_b, -1);
+
+  tx = 30; ty = mon_y + 34;
+  ui_tab_btn(52, 0, tx,       ty, 84, 24, "FILTER",  230, c_cyan_r,  c_cyan_g,  c_cyan_b, -1);
+  ui_tab_btn(52, 1, tx + 90,  ty, 84, 24, "PEAK",    230, c_amber_r, c_amber_g, c_amber_b, -1);
+  ui_tab_btn(52, 2, tx + 180, ty, 84, 24, "DRC",     230, c_mag_r,   c_mag_g,   c_mag_b, -1);
+  ui_tab_btn(52, 3, tx + 270, ty, 84, 24, "DYN EQ",  230, c_cyan_r,  c_cyan_g,  c_cyan_b, -1);
+  ui_tab_btn(52, 4, tx + 360, ty, 84, 24, "TONE",    230, c_amber_r, c_amber_g, c_amber_b, -1);
+  ui_tab_btn(52, 5, tx + 450, ty, 84, 24, "DYN BAL", 230, c_grn_r,   c_grn_g,   c_grn_b, -1);
+  ui_tab_btn(52, 6, tx + 540, ty, 84, 24, "OUTPUT",  230, c_grn_r,   c_grn_g,   c_grn_b, -1);
+
+  d_x = 30; d_y = mon_y + 66; d_w = 700; d_h = mon_h - 76; fy = d_h / 166;
+
+  mon_sel == 0 ? (
+    // ---- FILTER: curva reale HPF*LPF ----
+    mon_frame(c_cyan_r, c_cyan_g, c_cyan_b);
+    draw_freq_grid();
+    draw_db_line(0, -24, 6, "0"); draw_db_line(-12, -24, 6, "-12"); draw_db_line(-24, -24, 6, "-24");
+    draw_curve(0, -24, 6, c_cyan_r + 0.2, c_cyan_g + 0.1, 1);
+    gfx_setfont(6); gfx_r = 0.62; gfx_g = 0.82; gfx_b = 1; gfx_a = 1;
+    fmt_freq(#fa, slider2); fmt_freq(#fb, slider3);
+    sprintf(#ft, "LOW CUT %s Hz", #fa); g_txt(d_x + 40, d_y + 8, #ft);
+    gfx_r = slider4 >= 0.5 ? 0.45 : 1; gfx_g = slider4 >= 0.5 ? 0.85 : 0.5; gfx_b = slider4 >= 0.5 ? 1 : 0.4;
+    g_txtc(d_x + d_w * 0.5, d_y + 8, slider4 >= 0.5 ? "FILTERS ENGAGED" : "FILTERS BYPASSED");
+    gfx_r = 0.62; gfx_g = 0.82; gfx_b = 1;
+    sprintf(#ft, "HIGH CUT %s Hz", #fb); g_txtr(d_x + d_w - 20, d_y + 8, #ft);
+  ) : mon_sel == 1 ? (
+    // ---- PEAK: riduzioni Opto / RComp ----
+    mon_frame(c_amber_r, c_amber_g, c_amber_b);
+    gfx_setfont(6); gfx_r = 1; gfx_g = 0.82; gfx_b = 0.5; gfx_a = 1;
+    sprintf(#pt, "SOGLIA %.1f dBFS   ·   PEAK RED %.0f%%   ·   %s", ui_pk_thr_db, slider6, slider7 >= 0.5 ? "ENGAGED" : "BYPASSED");
+    g_txt(d_x + 18, d_y + 10 * fy, #pt);
+    hbar_lvl(d_y + 38 * fy, "LIVELLO", max(-60, ui_pk_lvl_db), -48, 0, 0.45, 0.6, 1.0, ui_pk_thr_db);
+    hbar_gr(d_y + 66 * fy, "OPTO", ui_gr_opt, 12, 0.55, 0.35, 0.95);
+    hbar_gr(d_y + 92 * fy, "RCOMP", ui_gr_rc, 12, 0.90, 0.25, 0.45);
+    hbar_gr(d_y + 118 * fy, "TOTALE", ui_peak_gr_db, 12, c_amber_r, c_amber_g, c_amber_b);
+    gr_scale(d_y + 142 * fy, 12);
+  ) : mon_sel == 2 ? (
+    // ---- DRC: bande sullo spettro con riduzione ----
+    mon_frame(c_mag_r, c_mag_g, c_mag_b);
+    draw_freq_grid();
+    drc_on = slider8 >= 0.5;
+    sprintf(#rA, "A·%s", band_role(slider10, slider11));
+    sprintf(#rB, "B·%s", band_role(slider14, slider15));
+    sprintf(#rC, "C·%s", band_role(slider18, slider19));
+    sprintf(#rD, "D·%s", band_role(slider22, slider23));
+    band_gr(slider10, slider11, ui_drcA, 12, drc_on && slider9 >= 0.5,  #rA, 0, c_cyan_r,  c_cyan_g,  c_cyan_b);
+    band_gr(slider14, slider15, ui_drcB, 12, drc_on && slider13 >= 0.5, #rB, 1, c_amber_r, c_amber_g, c_amber_b);
+    band_gr(slider18, slider19, ui_drcC, 12, drc_on && slider17 >= 0.5, #rC, 2, c_mag_r,   c_mag_g,   c_mag_b);
+    band_gr(slider22, slider23, ui_drcD, 12, drc_on && slider21 >= 0.5, #rD, 3, c_grn_r,   c_grn_g,   c_grn_b);
+    gfx_setfont(7); gfx_r = 0.62; gfx_g = 0.70; gfx_b = 0.9; gfx_a = 0.9;
+    g_txt(d_x + 40, d_y + 7, msg("altezza = riduzione (0..12 dB)", "height = reduction (0..12 dB)"));
+  ) : mon_sel == 3 ? (
+    // ---- DYNAMIC EQ ----
+    mon_frame(c_cyan_r, c_cyan_g, c_cyan_b);
+    draw_freq_grid();
+    deq_on = slider26 >= 0.5;
+    band_gr(130, 340, ui_deq_lo, 8, deq_on, "BOOM", 0, c_amber_r, c_amber_g, c_amber_b);
+    band_gr(2100, 4600, ui_deq_hi, 8, deq_on, "BITE", 0, c_cyan_r, c_cyan_g, c_cyan_b);
+    dq = floor(slider27 + 0.5);
+    sprintf(#dt, "CURVA %s  ·  THR %.0f%%  ·  altezza = taglio dinamico (0..8 dB)", dq == 0 ? "A" : dq == 1 ? "B" : dq == 2 ? "C" : "D", slider28);
+    gfx_setfont(7); gfx_r = 0.62; gfx_g = 0.70; gfx_b = 0.9; gfx_a = 0.9; g_txt(d_x + 40, d_y + 7, #dt);
+  ) : mon_sel == 4 ? (
+    // ---- TONE EQ: curva reale ----
+    mon_frame(c_amber_r, c_amber_g, c_amber_b);
+    draw_freq_grid();
+    draw_db_line(12, -12, 12, "+12"); draw_db_line(6, -12, 12, "+6"); draw_db_line(0, -12, 12, "0");
+    draw_db_line(-6, -12, 12, "-6"); draw_db_line(-12, -12, 12, "-12");
+    draw_curve(1, -12, 12, 1, 0.70, 0.25);
+    tq = floor(slider30 + 0.5);
+    sprintf(#tt, "TONE %s  ·  SCALE %.2fx  ·  MID BUMP %s", tq == 0 ? "A" : tq == 1 ? "B" : tq == 2 ? "C" : "D", slider31, slider32 >= 0.5 ? "ON" : "OFF");
+    gfx_setfont(6); gfx_r = 1; gfx_g = 0.82; gfx_b = 0.5; gfx_a = slider29 >= 0.5 ? 1 : 0.5; g_txt(d_x + 40, d_y + 8, #tt);
+  ) : mon_sel == 5 ? (
+    // ---- DYNAMIC BALANCE: distribuzione misurata vs target ----
+    mon_frame(c_grn_r, c_grn_g, c_grn_b);
+    draw_freq_grid();
+    base = d_y + d_h - 30; hh = d_h - 72;
+    i = 0;
+    loop(3,
+      fa = i == 0 ? 20 : i == 1 ? 280 : 2800;
+      fb = i == 0 ? 280 : i == 1 ? 2800 : 20000;
+      shv = i == 0 ? ui_sh_lo : i == 1 ? ui_sh_mid : ui_sh_hi;
+      tgv = i == 0 ? t_lo : i == 1 ? t_mid : t_hi;
+      gv  = i == 0 ? g_lo : i == 1 ? g_mid : g_hi;
+      xa = fx_map(fa) + 3; xb = fx_map(fb) - 3;
+      gfx_r = c_grn_r; gfx_g = c_grn_g; gfx_b = c_grn_b; gfx_a = 0.10; g_rect(xa, d_y + 34, xb - xa, base - d_y - 34);
+      h = clamp(shv / 0.7, 0, 1) * hh;
+      gfx_a = 0.85; g_rect(xa + 10, base - h, xb - xa - 20, h);
+      ty2 = base - clamp(tgv / 0.7, 0, 1) * hh;
+      gfx_r = 1; gfx_g = 0.85; gfx_b = 0.3; gfx_a = 1; g_rect(xa + 4, ty2 - 1, xb - xa - 8, 2);
+      gfx_setfont(6); gfx_r = 0.9; gfx_g = 1; gfx_b = 0.92;
+      sprintf(#bt, "%s  %.0f%% / target %.0f%%", i == 0 ? "LOW" : i == 1 ? "MID" : "HIGH", shv * 100, tgv * 100);
+      g_txtc((xa + xb) * 0.5, d_y + 22, #bt);
+      gfx_setfont(5); sprintf(#bg, "%+.1f dB", lin2db(gv)); g_txtc((xa + xb) * 0.5, d_y + 40, #bg);
+      i += 1;
+    );
+    gfx_setfont(7); gfx_r = 0.62; gfx_g = 0.70; gfx_b = 0.9; gfx_a = 0.9;
+    g_txtr(d_x + d_w - 12, d_y + 6, slider33 >= 0.5 ? "barra = energia misurata · linea gialla = target" : "BYPASSED: solo analisi");
+  ) : (
+    // ---- OUTPUT ----
+    mon_frame(c_grn_r, c_grn_g, c_grn_b);
+    hbar_lvl(d_y + 22 * fy, "RMS IN", ui_rms_in_db, -60, 0, c_cyan_r, c_cyan_g, c_cyan_b, -100);
+    hbar_lvl(d_y + 48 * fy, "RMS OUT", ui_rms_out_db, -60, 0, c_grn_r, c_grn_g, c_grn_b, -100);
+    hbar_lvl(d_y + 74 * fy, "SAMPLE PEAK", max(-60, lin2db(tp_meter_peak)), -36, 0, c_mag_r, c_mag_g, c_mag_b, slider41);
+    hbar_lvl(d_y + 100 * fy, "GAIN MATCH", ui_gm_db, -6, 6, c_amber_r, c_amber_g, c_amber_b, 0);
+    hbar_gr(d_y + 126 * fy, "LIMITER", ui_tp_gr_db, 12, c_mag_r, c_mag_g, c_mag_b);
+  );
+
+  // ---- Telemetria fissa a destra ----
+  tl = 748; tm = 846; tw2 = 148; tvr = 1070;
+  i = 0;
+  loop(6,
+    yy = mon_y + 40 + i * max(32, (mon_h - 60) / 6);
+    gfx_setfont(5); set_sub_col();
+    lbl_t = i == 0 ? "RMS In" : i == 1 ? "RMS Out" : i == 2 ? "Peak GR" : i == 3 ? "DRC max" : i == 4 ? "DynBal" : "Limit GR";
+    g_txt(tl, yy - 2, lbl_t);
+    i == 0 ? ( pc = clamp((ui_rms_in_db + 60) / 0.66, 0, 100);  sprintf(#tv, "%.1f dB", ui_rms_in_db);  draw_meter_h(tm, yy, tw2, 12, pc, c_cyan_r, c_cyan_g, c_cyan_b); );
+    i == 1 ? ( pc = clamp((ui_rms_out_db + 60) / 0.66, 0, 100); sprintf(#tv, "%.1f dB", ui_rms_out_db); draw_meter_h(tm, yy, tw2, 12, pc, c_grn_r, c_grn_g, c_grn_b); );
+    i == 2 ? ( fmt_gr(#tv, ui_peak_gr_db); draw_meter_h(tm, yy, tw2, 12, min(100, ui_peak_gr_db * 7), c_amber_r, c_amber_g, c_amber_b); );
+    i == 3 ? ( fmt_gr(#tv, ui_drc_gr_db);  draw_meter_h(tm, yy, tw2, 12, min(100, ui_drc_gr_db * 8), c_mag_r, c_mag_g, c_mag_b); );
+    i == 4 ? ( sprintf(#tv, "%.0f%%", dbal_act_pct);     draw_meter_h(tm, yy, tw2, 12, dbal_act_pct, c_grn_r, c_grn_g, c_grn_b); );
+    i == 5 ? ( fmt_gr(#tv, ui_tp_gr_db);   draw_meter_h(tm, yy, tw2, 12, min(100, ui_tp_gr_db * 10), c_mag_r, c_mag_g, c_mag_b); );
+    gfx_setfont(5); set_text_col(); g_txtr(tvr, yy - 2, #tv);
+    i += 1;
+  );
+);
+
+// ============================================================================
+// ANALISI -> SUGGERIMENTI (solo lettura della telemetria)
+// ============================================================================
+function add_sug(s) (
+  sug_n == 0 ? strcpy(#sug1, s) : sug_n == 1 ? strcpy(#sug2, s);
+  sug_n += 1;
+);
+function check_drc_hi(eng, gr, fa, fb, letter) (
+  eng && gr > 6.5 ? (
+    fmt_freq(#sfa, min(fa, fb)); fmt_freq(#sfb, max(fa, fb));
+    sprintf(#sgt, msg("DRC %s (%s-%s Hz) toglie %.1f dB: riduci THR %s o restringi la banda.",
+                      "DRC %s (%s-%s Hz) removes %.1f dB: lower THR %s or narrow the band."), letter, #sfa, #sfb, gr, letter);
+    add_sug(#sgt);
+  );
+);
+function check_drc_idle(eng, gr, thr, letter) (
+  eng && thr > 1 && gr < 0.15 ? (
+    sprintf(#sgt, msg("DRC %s non interviene: se senti quella risonanza alza THR %s.",
+                      "DRC %s is idle: if you hear that resonance raise THR %s."), letter, letter);
+    add_sug(#sgt);
+  );
+);
+function compute_suggestions() local(drc_on) (
+  sug_n = 0; strcpy(#sug1, ""); strcpy(#sug2, "");
+  drc_on = slider8 >= 0.5;
+  ui_rms_in_db < -52 ? (
+    add_sug(msg("In attesa di segnale: l'analisi parte quando arriva la voce.", "Waiting for signal: analysis starts when the voice arrives."));
+  ) : (
+    ui_tp_gr_db > 1.0 ? ( sprintf(#sgt, msg("Limiter finale attivo (-%.1f dB): abbassa OUTPUT o TONE SCL.", "Final limiter active (-%.1f dB): lower OUTPUT or TONE SCL."), ui_tp_gr_db); add_sug(#sgt); );
+    ui_rms_in_db < -38 ? ( sprintf(#sgt, msg("Ingresso basso (%.0f dB RMS): alza INPUT di circa %.0f dB per far lavorare i detector.", "Low input (%.0f dB RMS): raise INPUT by about %.0f dB so detectors can work."), ui_rms_in_db, -26 - ui_rms_in_db); add_sug(#sgt); );
+    ui_rms_in_db > -12 ? ( sprintf(#sgt, msg("Ingresso caldo (%.0f dB RMS): abbassa INPUT di circa %.0f dB.", "Hot input (%.0f dB RMS): lower INPUT by about %.0f dB."), ui_rms_in_db, ui_rms_in_db + 18); add_sug(#sgt); );
+    slider7 >= 0.5 && ui_peak_gr_db > 9 ? ( sprintf(#sgt, msg("Peak Leveler molto spinto (-%.1f dB): porta PEAK RED verso 35-45%%.", "Peak Leveler pushed hard (-%.1f dB): bring PEAK RED toward 35-45%%."), ui_peak_gr_db); add_sug(#sgt); );
+    check_drc_hi(drc_on && slider9 >= 0.5,  ui_drcA, slider10, slider11, "A");
+    check_drc_hi(drc_on && slider13 >= 0.5, ui_drcB, slider14, slider15, "B");
+    check_drc_hi(drc_on && slider17 >= 0.5, ui_drcC, slider18, slider19, "C");
+    check_drc_hi(drc_on && slider21 >= 0.5, ui_drcD, slider22, slider23, "D");
+    ui_sh_lo > t_lo + 0.12 ? add_sug(msg("Molto peso sulle basse (stanza o effetto prossimita'): prova LOWCUT piu' alto o una banda DRC su 200-500 Hz.", "Heavy low end (room or proximity): try a higher LOWCUT or a DRC band on 200-500 Hz."));
+    ui_sh_hi < t_hi - 0.08 ? add_sug(msg("Voce scura rispetto al target: prova TONE A o MID BUMP, oppure alza DYN BAL.", "Dark voice vs target: try TONE A or MID BUMP, or raise DYN BAL."));
+    ui_sh_hi > t_hi + 0.10 ? add_sug(msg("Voce brillante/sibilante: verifica una banda DRC tra 6k e 10k.", "Bright/sibilant voice: check a DRC band between 6k and 10k."));
+    slider33 >= 0.5 && dbal_act_pct > 75 ? add_sug(msg("Dynamic Balance al limite: il microfono e' lontano dalla curva target. Abbassa DYN BAL o cambia A/B.", "Dynamic Balance at its limit: the mic is far from target. Lower DYN BAL or switch A/B."));
+    slider7 >= 0.5 && slider6 > 5 && ui_peak_gr_db < 0.3 ? add_sug(msg("Peak Leveler quasi fermo: alza PEAK RED per livellare le distanze dal microfono.", "Peak Leveler nearly idle: raise PEAK RED to even out mic distance."));
+    check_drc_idle(drc_on && slider9 >= 0.5,  ui_drcA, slider12, "A");
+    check_drc_idle(drc_on && slider13 >= 0.5, ui_drcB, slider16, "B");
+    check_drc_idle(drc_on && slider17 >= 0.5, ui_drcC, slider20, "C");
+    check_drc_idle(drc_on && slider21 >= 0.5, ui_drcD, slider24, "D");
+    sug_n == 0 ? add_sug(msg("Catena in equilibrio: nessun intervento eccessivo rilevato.", "Chain balanced: no excessive processing detected."));
+  );
+);
+
+// ============================================================================
+// BARRE IN BASSO: SUGGERIMENTI (opzionale) + GUIDA
+// ============================================================================
+ana_on ? (
+  time_now - sug_t > 0.6 ? ( compute_suggestions(); sug_t = time_now; );
+  gfx_r = show_simple ? 0.99 : 0.10; gfx_g = show_simple ? 0.95 : 0.09; gfx_b = show_simple ? 0.86 : 0.05; gfx_a = 1;
+  gfx_rect(0, gyp(ana_yd), gfx_w, gyp(AB) + 1);
+  gfx_r = c_amber_r; gfx_g = c_amber_g; gfx_b = c_amber_b; gfx_a = 0.9; gfx_rect(0, gyp(ana_yd), gfx_w, max(1, floor(2 * sc)));
+  gfx_setfont(6); gfx_r = c_amber_r; gfx_g = c_amber_g; gfx_b = c_amber_b;
+  g_txt(30, ana_yd + 9, msg("ANALISI", "ANALYSIS"));
+  gfx_setfont(5); set_text_col();
+  g_txt(110, ana_yd + 9, "•  "); g_txt(126, ana_yd + 9, #sug1);
+  sug_n > 1 ? ( g_txt(110, ana_yd + 31, "•  "); g_txt(126, ana_yd + 31, #sug2); );
+);
+
+gfx_r = show_simple ? 0.86 : 0.11; gfx_g = show_simple ? 0.90 : 0.12; gfx_b = show_simple ? 0.95 : 0.15; gfx_a = 1;
+gfx_rect(0, gyp(help_yd), gfx_w, gfx_h - gyp(help_yd));
+gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_rect(0, gyp(help_yd), gfx_w, 1);
+
+// Pulsante SUGGERIMENTI (in basso a destra)
+sbw = 150; sbx = xr_d - sbw - 12; sby = help_yd + 4;
+s_hover = mxd >= sbx && mxd <= sbx + sbw && myd >= sby && myd <= sby + 24;
+s_hover ? active_info_id = 231;
+s_hover && mouse_click_raw ? ( set_ui_state(51, ana_on ? 0 : 1); sug_t = -10; );
+btn_face(sbx, sby, sbw, 24, msg("SUGGERIMENTI", "SUGGESTIONS"), ana_on, s_hover, c_amber_r, c_amber_g, c_amber_b);
+
+gfx_setfont(4); set_text_col();
+help_s = lab_edit ? msg("Frequenza in Hz: digita il valore. Invio applica, Esc annulla.", "Frequency in Hz: type a value. Enter applies, Esc cancels.") : active_info_id == 101 ? msg("INPUT: livello d'ingresso prima di Preamp e detector (doppio clic = 0 dB).", "INPUT: input level before Preamp and detectors (double click = 0 dB).") :
+active_info_id == 102 ? msg("PEAK RED: livellatore Opto + RComp, uniforma la distanza dal microfono. L'anello mostra la riduzione.", "PEAK RED: Opto + RComp leveler, evens out mic distance. The ring shows gain reduction.") :
+active_info_id == 103 ? msg("LOWCUT: passa-alto 12 dB/oct contro subsoniche, colpi d'aria ed effetto prossimita'.", "LOWCUT: 12 dB/oct high-pass against rumble, plosive air and proximity effect.") :
+active_info_id == 104 ? msg("HICUT: passa-basso morbido, toglie il frizzio digitale fuori banda.", "HICUT: gentle low-pass, removes out-of-band digital fizz.") :
+active_info_id == 105 ? msg("TUBE PREAMP: saturazione armonica leggera per dare densita' ai microfoni poveri.", "TUBE PREAMP: light harmonic saturation to add density to thin mics.") :
+active_info_id == 106 ? msg("FILTERS: attiva/esclude Lowcut e Hicut.", "FILTERS: enable/bypass Lowcut and Hicut.") :
+active_info_id >= 111 && active_info_id <= 114 ? msg("DRC: attiva la banda. Il nome (LOW/BOX/HARSH/PRES/SIB/AIR) segue la frequenza impostata.", "DRC: enable the band. Its name (LOW/BOX/HARSH/PRES/SIB/AIR) follows the set frequency.") :
+active_info_id >= 121 && active_info_id <= 124 ? msg("THR: piu' alto = interviene prima e di piu'. L'anello e la barra mostrano la riduzione reale.", "THR: higher = acts sooner and more. Ring and bar show the actual reduction.") :
+active_info_id >= 131 && active_info_id <= 134 ? msg("HP / LP: limiti della banda DRC (20 Hz - 20 kHz). SHIFT = precisione. Doppio clic = scrivi gli Hz.", "HP / LP: DRC band limits (20 Hz - 20 kHz). SHIFT = fine. Double click to type Hz.") :
+active_info_id == 125 ? msg("SOLO: isola la banda per trovare la risonanza. Torna su OFF per sentire la correzione sulla voce intera.", "SOLO: isolate the band to find the resonance. Return to OFF to hear the correction on the whole voice.") :
+active_info_id == 140 ? msg("DYN EQ: taglio dinamico su boom (~210 Hz) e bite (~3.1 kHz) solo quando la voce spinge.", "DYN EQ: dynamic cut on boom (~210 Hz) and bite (~3.1 kHz) only when the voice pushes.") :
+active_info_id == 141 ? msg("Curve Dynamic EQ: A Clarity, B Warm Control, C Male Focus, D Smooth Presence.", "Dynamic EQ curves: A Clarity, B Warm Control, C Male Focus, D Smooth Presence.") :
+active_info_id == 142 ? msg("TONE SCL: intensita' della curva tonale. Guarda la curva nel MONITOR TONE.", "TONE SCL: tonal curve intensity. See the curve in MONITOR TONE.") :
+active_info_id == 143 ? msg("Curve Tone: A Open Air, B Rich Body, C Vocal Forward, D Male Authority.", "Tone curves: A Open Air, B Rich Body, C Vocal Forward, D Male Authority.") :
+active_info_id == 144 ? msg("DYN BAL: porta il peso di basse/medie/alte verso la curva target. E' il cuore dell'omogeneita' tra microfoni.", "DYN BAL: moves low/mid/high weight toward the target curve. Core of mic-to-mic consistency.") :
+active_info_id == 145 ? msg("Target Balance: A naturale, B denso da studio (piu' corpo).", "Balance target: A natural, B dense studio (more body).") :
+active_info_id == 146 ? msg("MIX: parallelo della catena (0% dry, 100% processato).", "MIX: chain parallel blend (0% dry, 100% processed).") :
+active_info_id == 147 ? msg("OUTPUT: guadagno finale prima del limiter.", "OUTPUT: final gain before the limiter.") :
+active_info_id == 148 ? msg("PEAK CEIL: imposta il tetto del limiter sui picchi dei campioni (dBFS).", "PEAK CEIL: sets the sample peak limiter ceiling (dBFS).") :
+active_info_id == 201 ? msg("MALE LD: taratura MagicFlow per voce maschile.", "MALE LD: MagicFlow calibration for male voice.") :
+active_info_id == 202 ? msg("FEMALE LD: taratura MagicFlow per voce femminile, 4 bande DRC.", "FEMALE LD: MagicFlow calibration for female voice, 4 DRC bands.") :
+active_info_id == 203 ? msg("CLARITY: pulizia medio-bassa e apertura.", "CLARITY: low-mid cleanup and openness.") :
+active_info_id == 204 ? msg("MID PC: parallelo al 49% con spinta sui medi.", "MID PC: 49% parallel with mid push.") :
+active_info_id == 205 ? msg("HOME BOOTH: per cabine domestiche e microfoni eterogenei.", "HOME BOOTH: for home booths and mixed microphones.") :
+active_info_id == 206 ? msg("BROADCAST: voce ferma e autorevole.", "BROADCAST: steady, authoritative voice.") :
+active_info_id == 207 ? msg("MAGIC 1: preset di Paolo (da Magic1.mfp): DRC su 20-200 Hz, 1.6k-2.3k, 3.6k-5.7k.", "MAGIC 1: Paolo's preset (from Magic1.mfp): DRC on 20-200 Hz, 1.6k-2.3k, 3.6k-5.7k.") :
+active_info_id >= 210 && active_info_id <= 217 ? msg("Attiva/esclude lo stadio e lo mostra nel MONITOR.", "Enable/bypass the stage and show it in the MONITOR.") :
+active_info_id == 220 ? msg("FULL tutta la grafica, MINI solo monitor, JSFX lista parametri (OSARA).", "FULL complete GUI, MINI monitor only, JSFX parameter list (OSARA).") :
+active_info_id == 221 ? msg("SIMPLE tema chiaro e bande in sola lettura, ADVANCED tema scuro con HP/LP delle bande.", "SIMPLE light theme, read-only bands; ADVANCED dark theme with band HP/LP.") :
+active_info_id == 222 ? msg("GAIN MATCH: compensa il volume percepito per confronti onesti.", "GAIN MATCH: compensates perceived loudness for fair comparisons.") :
+active_info_id == 223 ? msg("DELTA: ascolta solo cio' che il plugin toglie/aggiunge.", "DELTA: hear only what the plugin removes/adds.") :
+active_info_id == 230 ? msg("MONITOR: scegli il modulo da osservare (anche cliccando titoli, knob o pulsanti).", "MONITOR: pick the module to watch (also by clicking titles, knobs or buttons).") :
+active_info_id == 231 ? msg("SUGGERIMENTI: barra con i consigli dell'analisi in tempo reale.", "SUGGESTIONS: bar with real-time analysis advice.") :
+active_info_id == 232 ? msg("Clic sul titolo: mostra questo modulo nel MONITOR.", "Click the title: show this module in the MONITOR.") :
+msg("ZP MAGIC VOICE LAB  ·  Passa il mouse su un controllo per la guida  ·  SHIFT = precisione  ·  Doppio clic sugli Hz = scrivi",
+            "ZP MAGIC VOICE LAB  ·  Hover a control for help  ·  SHIFT = fine  ·  Double click Hz = type");
+g_txt(30, help_yd + 8, help_s);
+
+last_mouse_cap = mouse_cap;

@@ -105,3 +105,7 @@ Aggiunta l’azione `37_ZP_Consolidate.lua` con helper `ZP_SRT_Progetto.lua`, ic
 Il Lua 33 calcola i limiti prima del disegno e interpola una posizione target dello scroll; così i delta inerziali non disegnano oltre il bordo. Candidato e installazione REAPER hanno lo stesso contenuto per il 33; la copia installata precedente è conservata in `/Users/paolob/Library/Application Support/REAPER/ZP_StudioSuite_Backups/2026-11-12_33_scroll_inertia/`. ZP Consolidate è installato localmente nella beta REAPER 7.85 con backup dei file precedenti in `ZP_StudioSuite_Backups/2026-11-12_ZP_Consolidate_install/`. Non è stata fatta una prova interattiva del nuovo scroll o della raccolta su un progetto reale.
 
 Per la distribuzione, `00_Apri_Help_ZP_Studio_Suite.lua` dichiara l’azione, l’helper non indicizzato e le due icone tramite `@provides`; l’SVG resta sorgente Git esclusa dalla scansione ReaPack. Nessun commit, push, tag o pubblicazione ancora effettuato.
+
+## ZP Magic Voice LAB — 2026-11-18
+
+JSFX 1.2.0-lab1, Paolo Balestri. Copia dal laboratorio zp-jsfx-lab identica a quella ascoltata da Paolo nel suo REAPER su macOS. In candidata come effetto autonomo ZP Voce, distinto dalla 1.1.1 senza LAB. SHA-256: `f72a793a32119dc74345a9fc0c4e59856ce4b887956a83851c0de7f922360fa4`. Guida IT/EN distribuita con il pacchetto ZP Studio Suite.

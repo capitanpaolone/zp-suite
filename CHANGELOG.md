@@ -2,6 +2,8 @@
 
 ## ZP Studio Suite 2.6.7 — in preparazione
 
+- **ZP Magic Voice LAB** (ZP Voce): livellamento del parlato e controllo delle risonanze, con preset MAGIC 1 e guida pratica IT/EN.
+
 - **ZP Render & Copy con più progetti in tab**: stato, messaggi e «Mostra in consegna» seguono il progetto in primo piano; un render in coda viene attribuito al progetto che lo ha accodato. Aiuto, conferma di Sincronizza (con progetto, consegna ed elenco dei file) e richiesta della cartella compaiono dentro la finestra.
 - **ZP Render & Copy: stesso nome in consegna**: quando in consegna c'è già un file con lo stesso nome si può sostituirlo o tenere tutte le versioni; il nuovo viene copiato come «nome (vers 2)», «(vers 3)»… Un pulsante lo decide per la copia automatica, «Sincronizza ora» lo chiede.
 - **ZP Render & Copy: same name in delivery**: when the delivery folder already has a file with the same name you can replace it or keep every version; the new one is copied as "name (vers 2)", "(vers 3)"… A button decides it for automatic copying, "Sync now" asks.
