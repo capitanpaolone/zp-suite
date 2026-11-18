@@ -277,7 +277,7 @@ file_var(0,_sv12); file_var(0,_sv13); file_var(0,_sv14); file_var(0,_sv15);
 file_var(0,_scope_color_mode);
 file_var(0,_mono_return_mode);
 
-@gfx 820 520
+@gfx 980 620
 // Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
 zp_hb = gmem[3900]; zp_hb_now = time_precise();
 !zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
@@ -487,7 +487,7 @@ function panel_row(tx,ty,pw,lh,active)
 help_bridge_alive = zp_hb_ok;
 ui_lang = (gmem[3901] == 1) ? 1 : 0;
 
-rs = gfx_ext_retina > 1 ? gfx_ext_retina : 1;
+rs = (gfx_ext_retina > 1 ? gfx_ext_retina : 1) * max(0.70, min(2.20, min(gfx_w / 820.0, gfx_h / 520.0)));
 gfx_setfont(1,"Arial",12*rs);
 lh = 20*rs;
 HDR_H = max(42*rs, gfx_texth*3.15);

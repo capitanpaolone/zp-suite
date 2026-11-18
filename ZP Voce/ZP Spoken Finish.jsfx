@@ -396,6 +396,61 @@ slider33:1<0,1,1{Off,On}>-TP Limiter
 // La GUI telemetrica e' definita nel blocco @gfx finale.
 
 @init
+// ---- ZP Proportional Zoom Engine (GUI-only, zero DSP impact) ----
+zp_sc = 1.0; zp_ox = 0.0; zp_vw = 900.0; zp_vh = 600.0; zp_gx = 0.0; zp_gy = 0.0; zp_mx = 0.0; zp_my = 0.0;
+function zp_rect(x, y, w, h) (
+  (x <= 0 && y <= 0 && w >= zp_vw && h >= zp_vh - 1) ? gfx_rect(0, 0, gfx_w, gfx_h) :
+  gfx_rect(floor(zp_ox + (x) * zp_sc + 0.5), floor((y) * zp_sc + 0.5), max(1, floor((w) * zp_sc + 0.5)), max(1, floor((h) * zp_sc + 0.5)));
+);
+function zp_rect(x, y, w, h, aa) (
+  gfx_rect(floor(zp_ox + (x) * zp_sc + 0.5), floor((y) * zp_sc + 0.5), max(1, floor((w) * zp_sc + 0.5)), max(1, floor((h) * zp_sc + 0.5)), aa);
+);
+function zp_line(x1, y1, x2, y2) (
+  gfx_line(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, 1);
+);
+function zp_line(x1, y1, x2, y2, aa) (
+  gfx_line(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, aa);
+);
+function zp_circle(x, y, r, fill) (
+  gfx_circle(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), fill, 1);
+);
+function zp_circle(x, y, r, fill, aa) (
+  gfx_circle(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), fill, aa);
+);
+function zp_arc(x, y, r, a1, a2) (
+  gfx_arc(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), a1, a2, 1);
+);
+function zp_arc(x, y, r, a1, a2, aa) (
+  gfx_arc(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), a1, a2, aa);
+);
+function zp_triangle(x1, y1, x2, y2, x3, y3) (
+  gfx_triangle(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, zp_ox + (x3) * zp_sc, (y3) * zp_sc);
+);
+function zp_setfont(idx) ( gfx_setfont(idx); );
+function zp_setfont(idx, fname, sz) ( gfx_setfont(idx, fname, max(7, floor((sz) * zp_sc + 0.5))); );
+function zp_setfont(idx, fname, sz, flg) ( gfx_setfont(idx, fname, max(7, floor((sz) * zp_sc + 0.5)), flg); );
+function zp_drawstr(s) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_drawstr(s);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+function zp_drawnumber(n, dec) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_drawnumber(n, dec);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+function zp_printf(fmt, a1) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_printf(fmt, a1);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+
 help_bridge_alive = 0;
 help_bridge_last_alive_t = -100;
 help_bridge_req_seq = 0;
@@ -1276,7 +1331,9 @@ simple_mode ? (
   _intent_metric < 0.15 ? ( ui_intent_state = 0; ) : _intent_metric < 0.55 ? ( ui_intent_state = 1; ) : ( ui_intent_state = 2; );
 );
 
-@gfx 980 620
+@gfx 1120 760
+zp_dw = 980.0; zp_dh = (floor(slider26 + 0.5) == 1 ? 214.0 : floor(slider26 + 0.5) == 2 ? 430.0 : 692.0); zp_sc = max(0.55, min(2.4, min(gfx_w / zp_dw, gfx_h / zp_dh))); zp_ox = max(0, (gfx_w - zp_dw * zp_sc) * 0.5); zp_vw = zp_dw; zp_vh = max(zp_dh, gfx_h / zp_sc); zp_mx = (mouse_x - zp_ox) / zp_sc; zp_my = mouse_y / zp_sc;
+
 // Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
 zp_hb = gmem[3900]; zp_hb_now = time_precise();
 !zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
@@ -1296,11 +1353,11 @@ zp_hb_ok ? (
     ui_lang = 0;
   );
 );
-gfx_setfont(1, "Arial", 18, 'b');
-gfx_setfont(2, "Arial", 14);
-gfx_setfont(3, "Arial", 13, 'b');
-gfx_setfont(4, "Arial", 13, 'b');
-gfx_setfont(5, "Arial", 12);
+zp_setfont(1, "Arial", 18, 'b');
+zp_setfont(2, "Arial", 14);
+zp_setfont(3, "Arial", 13, 'b');
+zp_setfont(4, "Arial", 13, 'b');
+zp_setfont(5, "Arial", 12);
 
 show_simple = floor(slider14 + 0.5) == 0;
 view_mode = floor(slider26 + 0.5);
@@ -1353,52 +1410,52 @@ function hit(mx, my, x, y, w, h) (
 );
 
 function draw_panel(x, y, w, h, rr, gg, bb, aa) (
-  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = aa; gfx_rect(x, y, w, h);
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = aa; zp_rect(x, y, w, h);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_rect(x, y, w, 1); gfx_rect(x, y + h - 1, w, 1);
-  gfx_rect(x, y, 1, h); gfx_rect(x + w - 1, y, 1, h);
+  zp_rect(x, y, w, 1); zp_rect(x, y + h - 1, w, 1);
+  zp_rect(x, y, 1, h); zp_rect(x + w - 1, y, 1, h);
 );
 
 function draw_group_title(x, y, w, lbl, rr, gg, bb) (
-  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95; gfx_rect(x, y, w, 4);
-  gfx_setfont(3);
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95; zp_rect(x, y, w, 4);
+  zp_setfont(3);
   gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = x + 12; gfx_y = y + 10; gfx_drawstr(lbl);
+  zp_gx = x + 12; zp_gy = y + 10; zp_drawstr(lbl);
 );
 
 function draw_right_text(x_right, y, rr, gg, bb, txt) local(tw, th) (
-  gfx_setfont(2);
+  zp_setfont(2);
   gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 1;
-  gfx_measurestr(txt, tw, th);
-  gfx_x = x_right - tw; gfx_y = y + 2; gfx_drawstr(txt);
+  (gfx_measurestr(txt, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = x_right - tw; zp_gy = y + 2; zp_drawstr(txt);
 );
 
 function ui_scrollbar(sb_x, sb_y, sb_h, max_scroll_amt)
 local(track_w, thumb_h, thumb_y, thumb_range, thumb_hover, click_in_track, target_scroll) (
   track_w = 10;
   gfx_r = show_simple ? 0.82 : 0.12; gfx_g = show_simple ? 0.86 : 0.14; gfx_b = show_simple ? 0.90 : 0.18; gfx_a = show_simple ? 0.95 : 1;
-  gfx_rect(sb_x, sb_y, track_w, sb_h);
+  zp_rect(sb_x, sb_y, track_w, sb_h);
 
   thumb_h = max(34, sb_h * content_view_h / max(content_view_h, content_h));
   thumb_range = max(1, sb_h - thumb_h);
   thumb_y = sb_y + (ui_scroll_y / max(1, max_scroll_amt)) * thumb_range;
-  thumb_hover = hit(mouse_x, mouse_y, sb_x - 2, thumb_y - 1, track_w + 4, thumb_h + 2);
-  click_in_track = hit(mouse_x, mouse_y, sb_x - 2, sb_y, track_w + 4, sb_h);
+  thumb_hover = hit(zp_mx, zp_my, sb_x - 2, thumb_y - 1, track_w + 4, thumb_h + 2);
+  click_in_track = hit(zp_mx, zp_my, sb_x - 2, sb_y, track_w + 4, sb_h);
 
   thumb_hover && mouse_click ? (
     ui_scroll_drag = 1;
-    ui_scroll_drag_start_y = mouse_y;
+    ui_scroll_drag_start_y = zp_my;
     ui_scroll_drag_start_scroll = ui_scroll_y;
   );
 
   !mouse_down ? ui_scroll_drag = 0;
 
   ui_scroll_drag ? (
-    target_scroll = ui_scroll_drag_start_scroll + ((mouse_y - ui_scroll_drag_start_y) / thumb_range) * max_scroll_amt;
+    target_scroll = ui_scroll_drag_start_scroll + ((zp_my - ui_scroll_drag_start_y) / thumb_range) * max_scroll_amt;
     ui_scroll_y = max(0, min(max_scroll_amt, target_scroll));
   ) : (
     click_in_track && mouse_click && !thumb_hover ? (
-      target_scroll = ((mouse_y - sb_y - thumb_h * 0.5) / thumb_range) * max_scroll_amt;
+      target_scroll = ((zp_my - sb_y - thumb_h * 0.5) / thumb_range) * max_scroll_amt;
       ui_scroll_y = max(0, min(max_scroll_amt, target_scroll));
     );
   );
@@ -1408,29 +1465,29 @@ local(track_w, thumb_h, thumb_y, thumb_range, thumb_hover, click_in_track, targe
   ) : (
     gfx_r = show_simple ? 0.56 : 0.32; gfx_g = show_simple ? 0.64 : 0.38; gfx_b = show_simple ? 0.74 : 0.46; gfx_a = 0.95;
   );
-  gfx_rect(sb_x + 1, thumb_y, track_w - 2, thumb_h);
+  zp_rect(sb_x + 1, thumb_y, track_w - 2, thumb_h);
 );
 
 function draw_meter_h(x, y, w, h, val, rr, gg, bb) local(fill) (
   gfx_r = show_simple ? 0.78 : 0.10; gfx_g = show_simple ? 0.82 : 0.12; gfx_b = show_simple ? 0.88 : 0.16; gfx_a = show_simple ? 0.65 : 0.95;
-  gfx_rect(x, y, w, h);
+  zp_rect(x, y, w, h);
   fill = max(0, min(w, w * val / 100));
   fill > 0 ? (
-    gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.98; gfx_rect(x, y, fill, h);
+    gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.98; zp_rect(x, y, fill, h);
   );
 );
 
 function draw_meter_bi(x, y, w, h, sval, pr, pg, pb, nr, ng, nb) local(mid, half, fill) (
   gfx_r = show_simple ? 0.78 : 0.10; gfx_g = show_simple ? 0.82 : 0.12; gfx_b = show_simple ? 0.88 : 0.16; gfx_a = show_simple ? 0.65 : 0.95;
-  gfx_rect(x, y, w, h);
+  zp_rect(x, y, w, h);
   mid = x + w * 0.5;
-  gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9; gfx_rect(mid, y, 1, h);
+  gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9; zp_rect(mid, y, 1, h);
   half = w * 0.5;
   fill = min(half, abs(sval) * half / 100);
   sval >= 0 ? (
-    fill > 0 ? ( gfx_r = pr; gfx_g = pg; gfx_b = pb; gfx_a = 0.98; gfx_rect(mid, y, fill, h); );
+    fill > 0 ? ( gfx_r = pr; gfx_g = pg; gfx_b = pb; gfx_a = 0.98; zp_rect(mid, y, fill, h); );
   ) : (
-    fill > 0 ? ( gfx_r = nr; gfx_g = ng; gfx_b = nb; gfx_a = 0.98; gfx_rect(mid - fill, y, fill, h); );
+    fill > 0 ? ( gfx_r = nr; gfx_g = ng; gfx_b = nb; gfx_a = 0.98; zp_rect(mid - fill, y, fill, h); );
   );
 );
 
@@ -1531,7 +1588,7 @@ function apply_adv_tr_preset(preset_id) (
 
 function ui_help_button(bx, by, bw, bh, plugin_id)
 local(is_hover, clicked, tw, th) (
-  is_hover = hit(mouse_x, mouse_y, bx, by, bw, bh);
+  is_hover = hit(zp_mx, zp_my, bx, by, bw, bh);
   clicked = is_hover && mouse_click;
   is_hover ? active_info_id = 99;
   clicked ? (
@@ -1545,25 +1602,25 @@ local(is_hover, clicked, tw, th) (
   );
   gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 1;
   is_hover ? ( gfx_r += 0.08; gfx_g += 0.08; gfx_b += 0.08; );
-  gfx_rect(bx, by, bw, bh);
+  zp_rect(bx, by, bw, bh);
   gfx_r = is_hover ? 0.95 : line_r;
   gfx_g = is_hover ? 0.65 : line_g;
   gfx_b = is_hover ? 0.20 : line_b;
   gfx_a = 0.95;
-  gfx_rect(bx, by, bw, 1); gfx_rect(bx, by + bh - 1, bw, 1);
-  gfx_rect(bx, by, 1, bh); gfx_rect(bx + bw - 1, by, 1, bh);
-  gfx_setfont(3);
+  zp_rect(bx, by, bw, 1); zp_rect(bx, by + bh - 1, bw, 1);
+  zp_rect(bx, by, 1, bh); zp_rect(bx + bw - 1, by, 1, bh);
+  zp_setfont(3);
   gfx_r = is_hover ? 1 : text_r;
   gfx_g = is_hover ? 0.85 : text_g;
   gfx_b = is_hover ? 0.40 : text_b;
-  gfx_measurestr("?", tw, th);
-  gfx_x = bx + (bw - tw) * 0.5; gfx_y = by + (bh - th) * 0.5; gfx_drawstr("?");
+  (gfx_measurestr("?", tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = bx + (bw - tw) * 0.5; zp_gy = by + (bh - th) * 0.5; zp_drawstr("?");
   clicked;
 );
 
 function ui_action_button(bx, by, bw, bh, label, is_active, info_id, cr, cg, cb)
 local(is_hover, tw, th, clicked) (
-  is_hover = hit(mouse_x, mouse_y, bx, by, bw, bh);
+  is_hover = hit(zp_mx, zp_my, bx, by, bw, bh);
   clicked = is_hover && mouse_click;
   is_hover ? active_info_id = info_id;
 
@@ -1573,18 +1630,18 @@ local(is_hover, tw, th, clicked) (
     gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 1;
     is_hover ? ( gfx_r += 0.05; gfx_g += 0.05; gfx_b += 0.05; );
   );
-  gfx_rect(bx, by, bw, bh);
+  zp_rect(bx, by, bw, bh);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_rect(bx, by, bw, 1); gfx_rect(bx, by + bh - 1, bw, 1); gfx_rect(bx, by, 1, bh); gfx_rect(bx + bw - 1, by, 1, bh);
+  zp_rect(bx, by, bw, 1); zp_rect(bx, by + bh - 1, bw, 1); zp_rect(bx, by, 1, bh); zp_rect(bx + bw - 1, by, 1, bh);
 
-  gfx_setfont(5);
+  zp_setfont(5);
   is_active ? (
     gfx_r = 0.05; gfx_g = 0.06; gfx_b = 0.08;
   ) : (
     gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
   );
-  gfx_measurestr(label, tw, th);
-  gfx_x = bx + (bw - tw) * 0.5; gfx_y = by + (bh - th) * 0.5; gfx_drawstr(label);
+  (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = bx + (bw - tw) * 0.5; zp_gy = by + (bh - th) * 0.5; zp_drawstr(label);
   clicked;
 );
 
@@ -1592,7 +1649,7 @@ function ui_tab_button(sl_idx, target_val, bx, by, bw, bh, label, info_id, cr, c
 local(cur, is_active, is_hover, tw, th) (
   cur = floor(slider(sl_idx) + 0.5);
   is_active = cur == target_val;
-  is_hover = hit(mouse_x, mouse_y, bx, by, bw, bh);
+  is_hover = hit(zp_mx, zp_my, bx, by, bw, bh);
 
   is_hover ? active_info_id = info_id;
   is_hover && mouse_click ? set_ui_slider(sl_idx, target_val);
@@ -1603,25 +1660,25 @@ local(cur, is_active, is_hover, tw, th) (
     gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 1;
     is_hover ? ( gfx_r += 0.05; gfx_g += 0.05; gfx_b += 0.05; );
   );
-  gfx_rect(bx, by, bw, bh);
+  zp_rect(bx, by, bw, bh);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_rect(bx, by, bw, 1); gfx_rect(bx, by + bh - 1, bw, 1); gfx_rect(bx, by, 1, bh); gfx_rect(bx + bw - 1, by, 1, bh);
+  zp_rect(bx, by, bw, 1); zp_rect(bx, by + bh - 1, bw, 1); zp_rect(bx, by, 1, bh); zp_rect(bx + bw - 1, by, 1, bh);
 
-  gfx_setfont(3);
+  zp_setfont(3);
   is_active ? (
     gfx_r = 0.05; gfx_g = 0.06; gfx_b = 0.08;
   ) : (
     gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
   );
-  gfx_measurestr(label, tw, th);
-  gfx_x = bx + (bw - tw) * 0.5; gfx_y = by + (bh - th) * 0.5; gfx_drawstr(label);
+  (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = bx + (bw - tw) * 0.5; zp_gy = by + (bh - th) * 0.5; zp_drawstr(label);
 );
 
 function ui_toggle_button(sl_idx, bx, by, bw, bh, lbl_on, lbl_off, info_id, cr, cg, cb)
 local(val, is_on, is_hover, tw, th) (
   val = slider(sl_idx);
   is_on = val >= 0.5;
-  is_hover = hit(mouse_x, mouse_y, bx, by, bw, bh);
+  is_hover = hit(zp_mx, zp_my, bx, by, bw, bh);
 
   is_hover ? active_info_id = info_id;
   is_hover && mouse_click ? set_ui_slider(sl_idx, 1 - floor(val + 0.5));
@@ -1632,14 +1689,14 @@ local(val, is_on, is_hover, tw, th) (
     gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 1;
     is_hover ? ( gfx_r += 0.04; gfx_g += 0.04; gfx_b += 0.04; );
   );
-  gfx_rect(bx, by, bw, bh);
+  zp_rect(bx, by, bw, bh);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_rect(bx, by, bw, 1); gfx_rect(bx, by + bh - 1, bw, 1); gfx_rect(bx, by, 1, bh); gfx_rect(bx + bw - 1, by, 1, bh);
-  gfx_setfont(3);
+  zp_rect(bx, by, bw, 1); zp_rect(bx, by + bh - 1, bw, 1); zp_rect(bx, by, 1, bh); zp_rect(bx + bw - 1, by, 1, bh);
+  zp_setfont(3);
   is_on ? ( gfx_r = 0.05; gfx_g = 0.06; gfx_b = 0.08; ) : ( gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; );
   is_on ? ( #tg_lbl = lbl_on; ) : ( #tg_lbl = lbl_off; );
-  gfx_measurestr(#tg_lbl, tw, th);
-  gfx_x = bx + (bw - tw) * 0.5; gfx_y = by + (bh - th) * 0.5; gfx_drawstr(#tg_lbl);
+  (gfx_measurestr(#tg_lbl, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = bx + (bw - tw) * 0.5; zp_gy = by + (bh - th) * 0.5; zp_drawstr(#tg_lbl);
 );
 
 function ui_knob(sl_idx, kx, ky, r, min_v, max_v, def_v, label, unit, cr, cg, cb, info_id)
@@ -1648,7 +1705,7 @@ local(val, draw_val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_s
   val = slider(sl_idx);
   is_locked = (sl_idx == 28) && (delta_mode >= 0.5);
   draw_val = is_locked ? 100 : val;
-  is_hover = hit(mouse_x, mouse_y, kx - r - 8, ky - r - 20, (r + 8) * 2, (r + 20) * 2);
+  is_hover = hit(zp_mx, zp_my, kx - r - 8, ky - r - 20, (r + 8) * 2, (r + 20) * 2);
 
   is_hover ? (
     active_info_id = info_id;
@@ -1663,7 +1720,7 @@ local(val, draw_val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_s
         ui_drag_id = 0;
       ) : (
         ui_drag_id = sl_idx;
-        ui_drag_start_y = mouse_y;
+        ui_drag_start_y = zp_my;
         ui_drag_start_v = val;
       );
     );
@@ -1672,7 +1729,7 @@ local(val, draw_val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_s
 
   !is_locked && ui_drag_id == sl_idx && mouse_down ? (
     drag_sens = ((max_v - min_v) / 150.0) * fine_tune;
-    mouse_dy = ui_drag_start_y - mouse_y;
+    mouse_dy = ui_drag_start_y - zp_my;
     val = ui_drag_start_v + mouse_dy * drag_sens;
     val = max(min_v, min(max_v, val));
     set_ui_slider(sl_idx, val);
@@ -1687,7 +1744,7 @@ local(val, draw_val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_s
 
   (is_hover || ui_drag_id == sl_idx) ? (
     gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = show_simple ? 0.15 : 0.10;
-    gfx_circle(kx, ky, r + 8, 1, 1);
+    zp_circle(kx, ky, r + 8, 1, 1);
   );
 
   // Live true-peak detector ring around the limiter ceiling.
@@ -1697,46 +1754,46 @@ local(val, draw_val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_s
     meter_norm = max(0,min(1,(meter_db-min_v)/max(0.0001,max_v-min_v)));
     meter_ang = ang_min + meter_norm*(ang_max-ang_min); meter_r = r+5;
     gfx_r=show_simple?0.70:0.24;gfx_g=show_simple?0.72:0.25;gfx_b=show_simple?0.76:0.29;gfx_a=0.72;
-    gfx_arc(kx,ky,meter_r,ang_min,ang_max,1);gfx_arc(kx,ky,meter_r+1,ang_min,ang_max,1);
+    zp_arc(kx,ky,meter_r,ang_min,ang_max,1);zp_arc(kx,ky,meter_r+1,ang_min,ang_max,1);
     meter_db>=draw_val ? (gfx_r=min(1,cr*0.42+0.58);gfx_g=min(1,cg*0.36+0.60);gfx_b=min(1,cb*0.30+0.66);gfx_a=1;) :
                          (gfx_r=cr*0.52+0.16;gfx_g=cg*0.48+0.16;gfx_b=cb*0.48+0.18;gfx_a=0.72;);
-    gfx_arc(kx,ky,meter_r,ang_min,meter_ang,1);gfx_arc(kx,ky,meter_r+1,ang_min,meter_ang,1);
+    zp_arc(kx,ky,meter_r,ang_min,meter_ang,1);zp_arc(kx,ky,meter_r+1,ang_min,meter_ang,1);
     gfx_r=show_simple?0.18:0.94;gfx_g=show_simple?0.21:0.95;gfx_b=show_simple?0.26:0.98;gfx_a=0.92;
-    gfx_line(kx+cos(ang)*(meter_r-2),ky+sin(ang)*(meter_r-2),
+    zp_line(kx+cos(ang)*(meter_r-2),ky+sin(ang)*(meter_r-2),
              kx+cos(ang)*(meter_r+2),ky+sin(ang)*(meter_r+2),1);
   );
 
   show_simple ? ( gfx_r = 0.98; gfx_g = 0.99; gfx_b = 1.0; ) : ( gfx_r = 0.16; gfx_g = 0.17; gfx_b = 0.20; );
-  gfx_a = 1; gfx_circle(kx, ky, r, 1, 1);
+  gfx_a = 1; zp_circle(kx, ky, r, 1, 1);
 
   gfx_r = min(1, cr * hover_mul); gfx_g = min(1, cg * hover_mul); gfx_b = min(1, cb * hover_mul); gfx_a = 1;
-  gfx_arc(kx, ky, r - 2, ang_min, ang, 3); gfx_arc(kx, ky, r - 3, ang_min, ang, 3);
+  zp_arc(kx, ky, r - 2, ang_min, ang, 3); zp_arc(kx, ky, r - 3, ang_min, ang, 3);
 
   gfx_r = show_simple ? 0.18 : 0.92; gfx_g = show_simple ? 0.21 : 0.92; gfx_b = show_simple ? 0.26 : 0.92;
-  gfx_line(kx, ky, kx + cos(ang) * r, ky + sin(ang) * r);
+  zp_line(kx, ky, kx + cos(ang) * r, ky + sin(ang) * r);
 
-  gfx_setfont(3);
+  zp_setfont(3);
   show_simple ? ( gfx_r = 0.22 * hover_mul; gfx_g = 0.26 * hover_mul; gfx_b = 0.32 * hover_mul; ) :
                 ( gfx_r = 0.83 * hover_mul; gfx_g = 0.83 * hover_mul; gfx_b = 0.86 * hover_mul; );
   is_locked ? ( gfx_r = grp_prof_r; gfx_g = grp_prof_g; gfx_b = grp_prof_b; );
-  gfx_measurestr(label, tw, th); gfx_x = kx - tw * 0.5; gfx_y = ky - r - 16; gfx_drawstr(label);
+  (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = kx - tw * 0.5; zp_gy = ky - r - 16; zp_drawstr(label);
 
   gfx_r = min(1, cr * hover_mul); gfx_g = min(1, cg * hover_mul); gfx_b = min(1, cb * hover_mul);
   abs(draw_val - floor(draw_val + 0.5)) < 0.03 ? sprintf(#knob_val, "%.0f %s", draw_val, unit) : sprintf(#knob_val, "%.1f %s", draw_val, unit);
-  gfx_measurestr(#knob_val, tw, th); gfx_x = kx - tw * 0.5; gfx_y = ky + r + 6; gfx_drawstr(#knob_val);
+  (gfx_measurestr(#knob_val, tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = kx - tw * 0.5; zp_gy = ky + r + 6; zp_drawstr(#knob_val);
   is_locked ? (
-    gfx_setfont(2);
+    zp_setfont(2);
     gfx_r = grp_prof_r; gfx_g = grp_prof_g; gfx_b = grp_prof_b;
-    gfx_measurestr("LOCK", tw, th); gfx_x = kx - tw * 0.5; gfx_y = ky + r + 22; gfx_drawstr("LOCK");
+    (gfx_measurestr("LOCK", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = kx - tw * 0.5; zp_gy = ky + r + 22; zp_drawstr("LOCK");
   );
 );
 
-gfx_r = bg_r; gfx_g = bg_g; gfx_b = bg_b; gfx_a = 1; gfx_rect(0, 0, gfx_w, gfx_h);
-gfx_r = bg2_r; gfx_g = bg2_g; gfx_b = bg2_b; gfx_a = show_simple ? 0.32 : 0.22; gfx_rect(0, 0, gfx_w, 132);
+gfx_r = bg_r; gfx_g = bg_g; gfx_b = bg_b; gfx_a = 1; zp_rect(0, 0, zp_vw, zp_vh);
+gfx_r = bg2_r; gfx_g = bg2_g; gfx_b = bg2_b; gfx_a = show_simple ? 0.32 : 0.22; zp_rect(0, 0, zp_vw, 132);
 
 pad = 18;
 gap = 14;
-head_w_nom = gfx_w - pad * 2;
+head_w_nom = zp_vw - pad * 2;
 head_h_nom = view_mode == 1 ? 62 : 96;
   row_h = 292;
 tele_h_nom = 228;
@@ -1746,7 +1803,7 @@ jsfx_guide_h_nom = 110;
 compact_full = view_mode == 0 && head_w_nom < 860;
 head_compact = head_w_nom < 820;
 head_ultra = head_w_nom < 620;
-content_view_h = gfx_h - (view_mode == 0 ? 28 : 0);
+content_view_h = zp_vh - (view_mode == 0 ? 28 : 0);
 content_h = 12 + head_h_nom + 12;
 view_mode == 0 ? (
   compact_full ? (
@@ -1770,18 +1827,18 @@ ui_scroll_y = max(0, min(max_scroll, ui_scroll_y));
 max_scroll <= 0 ? ui_scroll_drag = 0;
 
 head_x = pad; head_y = 12 - ui_scroll_y; head_w = head_w_nom; head_h = head_h_nom;
-max_scroll > 0 ? ui_scrollbar(gfx_w - 14, 8, content_view_h - 16, max_scroll);
+max_scroll > 0 ? ui_scrollbar(zp_vw - 14, 8, content_view_h - 16, max_scroll);
 draw_panel(head_x, head_y, head_w, head_h, panel_r, panel_g, panel_b, 1);
-gfx_r = grp_eng_r; gfx_g = grp_eng_g; gfx_b = grp_eng_b; gfx_a = 0.95; gfx_rect(head_x, head_y, head_w, 4);
+gfx_r = grp_eng_r; gfx_g = grp_eng_g; gfx_b = grp_eng_b; gfx_a = 0.95; zp_rect(head_x, head_y, head_w, 4);
 
-gfx_setfont(1); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-gfx_x = head_x + 16; gfx_y = head_y + 14; gfx_drawstr("SPOKEN FINISH");
+zp_setfont(1); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+zp_gx = head_x + 16; zp_gy = head_y + 14; zp_drawstr("SPOKEN FINISH");
 zp_bus_read();
 zp_bus_master_conn==2 && zp_bus_probe_conn==2 ? (gfx_r=0.30;gfx_g=0.92;gfx_b=0.58;) : zp_bus_master_conn>0 && zp_bus_probe_conn>0 ? (gfx_r=1.0;gfx_g=0.72;gfx_b=0.20;) : (gfx_r=1.0;gfx_g=0.34;gfx_b=0.28;);
-gfx_circle(head_x+175,head_y+22,5,1); gfx_setfont(5); gfx_x=head_x+185; gfx_y=head_y+15; gfx_drawstr("ZP");
+zp_circle(head_x+175,head_y+22,5,1); zp_setfont(5); zp_gx=head_x+185; zp_gy=head_y+15; zp_drawstr("ZP");
 !head_ultra ? (
-  gfx_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = head_x + 16; gfx_y = head_y + 40; gfx_drawstr("Voice Harmonic Exciter / De-Exciter  |  v3.9.8 - di Paolo Balestri");
+  zp_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+  zp_gx = head_x + 16; zp_gy = head_y + 40; zp_drawstr("Voice Harmonic Exciter / De-Exciter  |  v3.9.8 - di Paolo Balestri");
 );
 
 show_simple ? (
@@ -1798,10 +1855,10 @@ adv_tr_preset_cur = (!show_simple && ui_profile == 1) ? detect_adv_tr_preset() :
 adv_vb_preset_cur >= 0 ? adv_last_vb_preset = adv_vb_preset_cur;
 adv_tr_preset_cur >= 0 ? adv_last_tr_preset = adv_tr_preset_cur;
 view_mode != 1 && !head_compact ? (
-  gfx_x = head_x + 16; gfx_y = head_y + 62;
-  gfx_drawstr(profile_str); gfx_drawstr("  |  "); gfx_drawstr(mode_str); gfx_drawstr("  |  "); gfx_drawstr(view_str); gfx_drawstr(" View");
-  gfx_drawstr("  |  Intent: "); gfx_drawstr(intent_str);
-  gfx_drawstr("  |  Engine: "); gfx_drawstr(speed_str); gfx_drawstr("  |  Out: "); gfx_drawstr(output_str);
+  zp_gx = head_x + 16; zp_gy = head_y + 62;
+  zp_drawstr(profile_str); zp_drawstr("  |  "); zp_drawstr(mode_str); zp_drawstr("  |  "); zp_drawstr(view_str); zp_drawstr(" View");
+  zp_drawstr("  |  Intent: "); zp_drawstr(intent_str);
+  zp_drawstr("  |  Engine: "); zp_drawstr(speed_str); zp_drawstr("  |  Out: "); zp_drawstr(output_str);
 );
 
 ui_help_button(head_x + head_w - 222, head_y + 10, 26, 18, 3);
@@ -1843,12 +1900,12 @@ show_simple ? (
   draw_group_title(left_x, left_y, left_w, "SIMPLE MACRO", grp_eng_r, grp_eng_g, grp_eng_b);
   draw_group_title(right_x, right_y, right_w, "ENGINE TELEMETRY", grp_harm_r, grp_harm_g, grp_harm_b);
 
-  gfx_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = left_x + 14; gfx_y = left_y + 30;
+  zp_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+  zp_gx = left_x + 14; zp_gy = left_y + 30;
   ui_profile == 0 ? (
-    gfx_drawstr("Macro rapida per parlato: Amount governa focus, presenza e controllo dinamico.")
+    zp_drawstr("Macro rapida per parlato: Amount governa focus, presenza e controllo dinamico.")
   ) : (
-    gfx_drawstr("Macro trailer: Amount scala spinta, corpo (Voice of God) e aria cinematica.")
+    zp_drawstr("Macro trailer: Amount scala spinta, corpo (Voice of God) e aria cinematica.")
   );
 
   ui_tab_button(15, 0, left_x + 20,  left_y + 56, 72, 24, "MIN", 150, grp_eng_r, grp_eng_g, grp_eng_b);
@@ -1860,66 +1917,66 @@ show_simple ? (
 	  ui_toggle_button(33, left_x + 494, left_y + 56, 104, 24, "TP LIM ON", "TP LIM OFF", 132, grp_prof_r, grp_prof_g, grp_prof_b);
 	  ui_knob(28, left_x + left_w - 86, left_y + 178, 30, 0, 100, 100, "Dry/Wet", "%", grp_out_r, grp_out_g, grp_out_b, 114);
 
-  gfx_setfont(2);
+  zp_setfont(2);
   delta_mode && !ui_delta_audible ? (
     gfx_r = grp_prof_r; gfx_g = grp_prof_g; gfx_b = grp_prof_b;
   ) : (
     gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
   );
-  gfx_x = left_x + 392; gfx_y = left_y + 86; gfx_drawstr(delta_state_str);
+  zp_gx = left_x + 392; zp_gy = left_y + 86; zp_drawstr(delta_state_str);
 
   ui_knob(4, left_x + 140, left_y + 178, 36, -12, 12, 0, "Output Trim", "dB", grp_out_r, grp_out_g, grp_out_b, 104);
 
-  gfx_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = left_x + 248; gfx_y = left_y + 132; gfx_drawstr("Active Macro");
+  zp_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+  zp_gx = left_x + 248; zp_gy = left_y + 132; zp_drawstr("Active Macro");
   gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = left_x + 248; gfx_y = left_y + 152; slider15 == 0 ? gfx_drawstr("Min") : slider15 == 1 ? gfx_drawstr("Med") : gfx_drawstr("Max");
+  zp_gx = left_x + 248; zp_gy = left_y + 152; slider15 == 0 ? zp_drawstr("Min") : slider15 == 1 ? zp_drawstr("Med") : zp_drawstr("Max");
   gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = left_x + 248; gfx_y = left_y + 184; gfx_drawstr("Auto Match");
+  zp_gx = left_x + 248; zp_gy = left_y + 184; zp_drawstr("Auto Match");
   gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = left_x + 248; gfx_y = left_y + 204; gfx_drawnumber(slider9, 2); gfx_drawstr(" x");
+  zp_gx = left_x + 248; zp_gy = left_y + 204; zp_drawnumber(slider9, 2); zp_drawstr(" x");
   gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = left_x + 408; gfx_y = left_y + 132; gfx_drawstr("Intent");
+  zp_gx = left_x + 408; zp_gy = left_y + 132; zp_drawstr("Intent");
   gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = left_x + 408; gfx_y = left_y + 152; gfx_drawstr(intent_str);
+  zp_gx = left_x + 408; zp_gy = left_y + 152; zp_drawstr(intent_str);
   gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = left_x + 408; gfx_y = left_y + 184; gfx_drawstr("Engine");
+  zp_gx = left_x + 408; zp_gy = left_y + 184; zp_drawstr("Engine");
   gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = left_x + 408; gfx_y = left_y + 204; gfx_drawstr(speed_str);
+  zp_gx = left_x + 408; zp_gy = left_y + 204; zp_drawstr(speed_str);
   gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = left_x + 408; gfx_y = left_y + 236; gfx_drawstr("Crossover");
+  zp_gx = left_x + 408; zp_gy = left_y + 236; zp_drawstr("Crossover");
   gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = left_x + 408; gfx_y = left_y + 256; gfx_drawnumber(proc_crossover, 0); gfx_drawstr(" Hz");
+  zp_gx = left_x + 408; zp_gy = left_y + 256; zp_drawnumber(proc_crossover, 0); zp_drawstr(" Hz");
 
   mx = right_x + 14; my = right_y + 40;
   meter_x = mx + 78; meter_val_right = right_x + right_w - 16; meter_w = meter_val_right - meter_x - 14;
-  gfx_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = mx; gfx_y = my; gfx_drawstr("Activity");
+  zp_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+  zp_gx = mx; zp_gy = my; zp_drawstr("Activity");
   draw_meter_h(meter_x, my + 2, meter_w, 12, ui_engine_activity, grp_eng_r, grp_eng_g, grp_eng_b);
   sprintf(#meter_val, "%.0f%%", ui_engine_activity); draw_right_text(meter_val_right, my, text_r, text_g, text_b, #meter_val);
 
-  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = mx; gfx_y = my + 32; gfx_drawstr("Drive");
+  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = mx; zp_gy = my + 32; zp_drawstr("Drive");
   draw_meter_h(meter_x, my + 34, meter_w, 12, ui_dynamic_drive, grp_prof_r, grp_prof_g, grp_prof_b);
   sprintf(#meter_val, "%.0f%%", ui_dynamic_drive); draw_right_text(meter_val_right, my + 32, text_r, text_g, text_b, #meter_val);
 
-  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = mx; gfx_y = my + 64; gfx_drawstr("Even");
+  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = mx; zp_gy = my + 64; zp_drawstr("Even");
   draw_meter_h(meter_x, my + 66, meter_w, 12, ui_even_active, grp_harm_r, grp_harm_g, grp_harm_b);
   sprintf(#meter_val, "%.0f%%", ui_even_active); draw_right_text(meter_val_right, my + 64, text_r, text_g, text_b, #meter_val);
 
-  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = mx; gfx_y = my + 96; gfx_drawstr("Odd");
+  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = mx; zp_gy = my + 96; zp_drawstr("Odd");
   draw_meter_h(meter_x, my + 98, meter_w, 12, ui_odd_active, grp_harm_r, grp_harm_g, grp_harm_b);
   sprintf(#meter_val, "%.0f%%", ui_odd_active); draw_right_text(meter_val_right, my + 96, text_r, text_g, text_b, #meter_val);
 
   ui_profile == 0 ? (
-    gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = mx; gfx_y = my + 134; gfx_drawstr("Character");
+    gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = mx; zp_gy = my + 134; zp_drawstr("Character");
     draw_meter_h(meter_x, my + 136, meter_w, 12, char_amt * 100, grp_harm_r, grp_harm_g, grp_harm_b);
     sprintf(#meter_val, "%.0f%%", char_amt * 100); draw_right_text(meter_val_right, my + 134, text_r, text_g, text_b, #meter_val);
   ) : (
-    gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = mx; gfx_y = my + 134; gfx_drawstr("Voice of God");
+    gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = mx; zp_gy = my + 134; zp_drawstr("Voice of God");
     meter_x = mx + 96; meter_w = meter_val_right - meter_x - 14;
     draw_meter_h(meter_x, my + 136, meter_w, 12, ui_vog_active, grp_harm_r, grp_harm_g, grp_harm_b);
     sprintf(#meter_val, "%.0f%%", ui_vog_active); draw_right_text(meter_val_right, my + 134, text_r, text_g, text_b, #meter_val);
-    gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = mx; gfx_y = my + 162; gfx_drawstr("Cinema Air");
+    gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = mx; zp_gy = my + 162; zp_drawstr("Cinema Air");
     draw_meter_h(meter_x, my + 164, meter_w, 12, ui_air_active, grp_eng_r, grp_eng_g, grp_eng_b);
     sprintf(#meter_val, "%.0f%%", ui_air_active); draw_right_text(meter_val_right, my + 162, text_r, text_g, text_b, #meter_val);
   );
@@ -1960,7 +2017,7 @@ show_simple ? (
     ui_action_button(pr_x, pr_y + (pr_h + 4) * 2, pr_w, pr_h, "DEEP IMP", adv_vb_preset_cur == 6, 177, grp_eng_r, grp_eng_g, grp_eng_b) ? (apply_adv_vb_preset(6); adv_last_vb_preset = 6;);
     ui_action_button(pr_x + pr_w + pr_gap, pr_y + (pr_h + 4) * 2, pr_w, pr_h, "FOCUS IMP", adv_vb_preset_cur == 7, 178, grp_eng_r, grp_eng_g, grp_eng_b) ? (apply_adv_vb_preset(7); adv_last_vb_preset = 7;);
     ui_action_button(pr_x + (pr_w + pr_gap) * 2, pr_y + (pr_h + 4) * 2, pr_w, pr_h, "TENOR IMP", adv_vb_preset_cur == 8, 179, grp_eng_r, grp_eng_g, grp_eng_b) ? (apply_adv_vb_preset(8); adv_last_vb_preset = 8;);
-    gfx_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+    zp_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
     adv_vb_preset_cur == 0 ? #adv_preset_lbl = "Preset: Clean 1200" :
     adv_vb_preset_cur == 1 ? #adv_preset_lbl = "Preset: Clean+Pres" :
     adv_vb_preset_cur == 2 ? #adv_preset_lbl = "Preset: Stack ST2" :
@@ -1971,7 +2028,7 @@ show_simple ? (
     adv_vb_preset_cur == 7 ? #adv_preset_lbl = "Preset: Focus Impact" :
     adv_vb_preset_cur == 8 ? #adv_preset_lbl = "Preset: Tenor Impact" :
                              #adv_preset_lbl = "Preset: Custom";
-    gfx_x = c1_x + 20; gfx_y = c1_y + 252; gfx_drawstr(#adv_preset_lbl);
+    zp_gx = c1_x + 20; zp_gy = c1_y + 252; zp_drawstr(#adv_preset_lbl);
   ) : (
     ui_toggle_button(7, c1_x + 36, c1_y + 160, col_w - 72, 24, "DYN DRIVE ON", "DYN DRIVE OFF", 107, grp_eng_r, grp_eng_g, grp_eng_b);
     pr_x = c1_x + 20; pr_y = c1_y + 190; pr_gap = 6;
@@ -1982,7 +2039,7 @@ show_simple ? (
     ui_action_button(pr_x, pr_y + pr_h + 4, pr_w, pr_h, "TR M-DEEP", adv_tr_preset_cur == 3, 183, grp_eng_r, grp_eng_g, grp_eng_b) ? (apply_adv_tr_preset(3); adv_last_tr_preset = 3;);
     ui_action_button(pr_x + pr_w + pr_gap, pr_y + pr_h + 4, pr_w, pr_h, "TR M-FOCUS", adv_tr_preset_cur == 4, 184, grp_harm_r, grp_harm_g, grp_harm_b) ? (apply_adv_tr_preset(4); adv_last_tr_preset = 4;);
     ui_action_button(pr_x + (pr_w + pr_gap) * 2, pr_y + pr_h + 4, pr_w, pr_h, "TR F-AIR", adv_tr_preset_cur == 5, 185, grp_prof_r, grp_prof_g, grp_prof_b) ? (apply_adv_tr_preset(5); adv_last_tr_preset = 5;);
-    gfx_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+    zp_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
     adv_tr_preset_cur == 0 ? #adv_preset_lbl = "Preset: BC Clean" :
     adv_tr_preset_cur == 1 ? #adv_preset_lbl = "Preset: BC Impact" :
     adv_tr_preset_cur == 2 ? #adv_preset_lbl = "Preset: BC Dense" :
@@ -1990,8 +2047,8 @@ show_simple ? (
     adv_tr_preset_cur == 4 ? #adv_preset_lbl = "Preset: TR M-Focus" :
     adv_tr_preset_cur == 5 ? #adv_preset_lbl = "Preset: TR F-Air" :
                              #adv_preset_lbl = "Preset: Custom";
-    gfx_x = c1_x + 20; gfx_y = c1_y + 234; gfx_drawstr("Preset trailer: broadcast + varianti voce.");
-    gfx_x = c1_x + 20; gfx_y = c1_y + 252; gfx_drawstr(#adv_preset_lbl);
+    zp_gx = c1_x + 20; zp_gy = c1_y + 234; zp_drawstr("Preset trailer: broadcast + varianti voce.");
+    zp_gx = c1_x + 20; zp_gy = c1_y + 252; zp_drawstr(#adv_preset_lbl);
   );
 
   ui_knob(2, c2_x + 66, c2_y + 96, 22, -100, 100, 0, "Even", "%", grp_harm_r, grp_harm_g, grp_harm_b, 102);
@@ -1999,17 +2056,17 @@ show_simple ? (
 
   ui_profile == 0 ? (
     ui_knob(13, c2_x + 254, c2_y + 96, 22, 0, 100, 35, "Character", "%", grp_prof_r, grp_prof_g, grp_prof_b, 113);
-    gfx_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-    gfx_x = c2_x + 20; gfx_y = c2_y + 154; gfx_drawstr("Even/Odd sono bipolari:");
-    gfx_x = c2_x + 20; gfx_y = c2_y + 172; gfx_drawstr("valori negativi de-excite, positivi excite.");
+    zp_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+    zp_gx = c2_x + 20; zp_gy = c2_y + 154; zp_drawstr("Even/Odd sono bipolari:");
+    zp_gx = c2_x + 20; zp_gy = c2_y + 172; zp_drawstr("valori negativi de-excite, positivi excite.");
     draw_meter_bi(c2_x + 20, c2_y + 198, col_w - 40, 12, max(-100, min(100, _even * 100)), grp_eng_r, grp_eng_g, grp_eng_b, grp_harm_r, grp_harm_g, grp_harm_b);
     draw_meter_bi(c2_x + 20, c2_y + 222, col_w - 40, 12, max(-100, min(100, _odd * 100)), grp_eng_r, grp_eng_g, grp_eng_b, grp_harm_r, grp_harm_g, grp_harm_b);
   ) : (
     ui_knob(11, c2_x + 98, c2_y + 220, 20, 0, 100, 30, "Voice of God", "%", grp_harm_r, grp_harm_g, grp_harm_b, 111);
     ui_knob(12, c2_x + 220, c2_y + 220, 20, 0, 100, 30, "Cinema Air", "%", grp_prof_r, grp_prof_g, grp_prof_b, 112);
-    gfx_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-    gfx_x = c2_x + 20; gfx_y = c2_y + 154; gfx_drawstr("Trailer: controlli dedicati per low body");
-    gfx_x = c2_x + 20; gfx_y = c2_y + 172; gfx_drawstr("e aria cinematica.");
+    zp_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+    zp_gx = c2_x + 20; zp_gy = c2_y + 154; zp_drawstr("Trailer: controlli dedicati per low body");
+    zp_gx = c2_x + 20; zp_gy = c2_y + 172; zp_drawstr("e aria cinematica.");
   );
 
   ui_profile == 0 ? (
@@ -2022,12 +2079,12 @@ show_simple ? (
 
     gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
     delta_mode && !ui_delta_audible ? ( gfx_r = grp_prof_r; gfx_g = grp_prof_g; gfx_b = grp_prof_b; );
-    gfx_x = c3_x + 20; gfx_y = c3_y + 218; gfx_drawstr(delta_state_str);
+    zp_gx = c3_x + 20; zp_gy = c3_y + 218; zp_drawstr(delta_state_str);
     gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-    gfx_x = c3_x + 20; gfx_y = c3_y + 238; gfx_drawstr("Intent: ");
-    gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_drawstr(intent_str);
-    gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_drawstr("  |  Out: ");
-    gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_drawstr(output_str);
+    zp_gx = c3_x + 20; zp_gy = c3_y + 238; zp_drawstr("Intent: ");
+    gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; zp_drawstr(intent_str);
+    gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_drawstr("  |  Out: ");
+    gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; zp_drawstr(output_str);
   ) : (
     aud_x = c3_x + 18; aud_y = c3_y + 40; aud_gap = 6; aud_w = floor((col_w - 36 - aud_gap * 2) / 3);
     ui_tab_button(27, 0, aud_x, aud_y, aud_w, 18, "FULL", 170, grp_out_r, grp_out_g, grp_out_b);
@@ -2043,15 +2100,15 @@ show_simple ? (
 
     gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
     delta_mode && !ui_delta_audible ? ( gfx_r = grp_prof_r; gfx_g = grp_prof_g; gfx_b = grp_prof_b; );
-    gfx_x = c3_x + 20; gfx_y = c3_y + 218; gfx_drawstr(delta_state_str);
+    zp_gx = c3_x + 20; zp_gy = c3_y + 218; zp_drawstr(delta_state_str);
     gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-    gfx_x = c3_x + 20; gfx_y = c3_y + 236; gfx_drawstr("Audition: ");
-    gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_drawstr(audition_str);
+    zp_gx = c3_x + 20; zp_gy = c3_y + 236; zp_drawstr("Audition: ");
+    gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; zp_drawstr(audition_str);
     gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-    gfx_x = c3_x + 20; gfx_y = c3_y + 254; gfx_drawstr("Intent: ");
-    gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_drawstr(intent_str);
-    gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_drawstr("  |  Out: ");
-    gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_drawstr(output_str);
+    zp_gx = c3_x + 20; zp_gy = c3_y + 254; zp_drawstr("Intent: ");
+    gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; zp_drawstr(intent_str);
+    gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_drawstr("  |  Out: ");
+    gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; zp_drawstr(output_str);
   );
 );
 
@@ -2076,79 +2133,79 @@ ctrl_norm = max(0, min(100, 50 + ui_level_db * 4));
 bx = tele_x + 18; by = tele_y + 48; bw = floor((tele_w - 70) / 2);
 meter_x = bx + 82; meter_val_right = bx + bw - 10; meter_w = meter_val_right - meter_x - 14;
 
-gfx_setfont(2);
-gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = bx; gfx_y = by; gfx_drawstr("Activity");
+zp_setfont(2);
+gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = bx; zp_gy = by; zp_drawstr("Activity");
 draw_meter_h(meter_x, by + 2, meter_w, 12, ui_engine_activity, grp_eng_r, grp_eng_g, grp_eng_b);
 sprintf(#meter_val, "%.0f%%", ui_engine_activity); draw_right_text(meter_val_right, by, text_r, text_g, text_b, #meter_val);
 
-gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = bx; gfx_y = by + 28; gfx_drawstr("Drive");
+gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = bx; zp_gy = by + 28; zp_drawstr("Drive");
 draw_meter_h(meter_x, by + 30, meter_w, 12, ui_dynamic_drive, grp_prof_r, grp_prof_g, grp_prof_b);
 sprintf(#meter_val, "%.0f%%", ui_dynamic_drive); draw_right_text(meter_val_right, by + 28, text_r, text_g, text_b, #meter_val);
 
-gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = bx; gfx_y = by + 56; gfx_drawstr("RMS In");
+gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = bx; zp_gy = by + 56; zp_drawstr("RMS In");
 draw_meter_h(meter_x, by + 58, meter_w, 12, rms_in_norm, grp_harm_r, grp_harm_g, grp_harm_b);
 sprintf(#meter_val, "%.1f dBFS", ui_rms_in_db); draw_right_text(meter_val_right, by + 56, text_r, text_g, text_b, #meter_val);
 
-gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = bx; gfx_y = by + 84; gfx_drawstr("RMS Out");
+gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = bx; zp_gy = by + 84; zp_drawstr("RMS Out");
 draw_meter_h(meter_x, by + 86, meter_w, 12, rms_out_norm, grp_harm_r, grp_harm_g, grp_harm_b);
 sprintf(#meter_val, "%.1f dBFS", ui_rms_out_db); draw_right_text(meter_val_right, by + 84, text_r, text_g, text_b, #meter_val);
 
-gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = bx; gfx_y = by + 112; gfx_drawstr("Control");
+gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = bx; zp_gy = by + 112; zp_drawstr("Control");
 draw_meter_h(meter_x, by + 114, meter_w, 12, ctrl_norm, ui_level_db >= 0 ? grp_out_r : grp_eng_r, ui_level_db >= 0 ? grp_out_g : grp_eng_g, ui_level_db >= 0 ? grp_out_b : grp_eng_b);
 sprintf(#meter_val, "%.1f dB", ui_level_db); draw_right_text(meter_val_right, by + 112, text_r, text_g, text_b, #meter_val);
 
-gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = bx; gfx_y = by + 140; gfx_drawstr("TP Limiter");
+gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = bx; zp_gy = by + 140; zp_drawstr("TP Limiter");
 tp_meter_norm = max(0, min(100, ui_tp_gr * 4));
 draw_meter_h(meter_x, by + 142, meter_w, 12, tp_meter_norm, grp_prof_r, grp_prof_g, grp_prof_b);
 sprintf(#meter_val, "%.1f dB", ui_tp_gr); draw_right_text(meter_val_right, by + 140, text_r, text_g, text_b, #meter_val);
 
 bx2 = bx + bw + 20;
-gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = bx2; gfx_y = by; gfx_drawstr("Even");
+gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = bx2; zp_gy = by; zp_drawstr("Even");
 meter_x = bx2 + 70; meter_val_right = bx2 + bw - 10; meter_w = meter_val_right - meter_x - 14;
 draw_meter_bi(meter_x, by + 2, meter_w, 12, max(-100, min(100, _even * 100)), grp_eng_r, grp_eng_g, grp_eng_b, grp_harm_r, grp_harm_g, grp_harm_b);
 sprintf(#meter_val, "%.0f%%", _even * 100); draw_right_text(meter_val_right, by, text_r, text_g, text_b, #meter_val);
 
-gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = bx2; gfx_y = by + 28; gfx_drawstr("Odd");
+gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = bx2; zp_gy = by + 28; zp_drawstr("Odd");
 draw_meter_bi(meter_x, by + 30, meter_w, 12, max(-100, min(100, _odd * 100)), grp_eng_r, grp_eng_g, grp_eng_b, grp_harm_r, grp_harm_g, grp_harm_b);
 sprintf(#meter_val, "%.0f%%", _odd * 100); draw_right_text(meter_val_right, by + 28, text_r, text_g, text_b, #meter_val);
 
-gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = bx2; gfx_y = by + 62; gfx_drawstr("Profile");
-gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_drawstr(" "); gfx_drawstr(profile_str);
-gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_drawstr("  |  Intent ");
-gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_drawstr(intent_str);
+gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = bx2; zp_gy = by + 62; zp_drawstr("Profile");
+gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; zp_drawstr(" "); zp_drawstr(profile_str);
+gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_drawstr("  |  Intent ");
+gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; zp_drawstr(intent_str);
 
-gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = bx2; gfx_y = by + 84; gfx_drawstr("Engine");
-gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_drawstr(" "); gfx_drawstr(speed_str);
-gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_drawstr("  |  Output ");
-gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_drawstr(output_str);
+gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = bx2; zp_gy = by + 84; zp_drawstr("Engine");
+gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; zp_drawstr(" "); zp_drawstr(speed_str);
+gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_drawstr("  |  Output ");
+gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; zp_drawstr(output_str);
 
-gfx_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-gfx_x = bx2; gfx_y = by + 106;
+zp_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+zp_gx = bx2; zp_gy = by + 106;
 show_simple ? (
   ui_profile == 0 ? (
-    gfx_drawstr("Simple Voice Base: Amount guida una curva pronta.")
+    zp_drawstr("Simple Voice Base: Amount guida una curva pronta.")
   ) : (
-    gfx_drawstr("Simple Trailer: Amount apre presenza, corpo e aria.")
+    zp_drawstr("Simple Trailer: Amount apre presenza, corpo e aria.")
   );
 ) : (
   ui_profile == 0 ? (
-    gfx_drawstr("Advanced Voice Base: Character fonde Safe/Controlled.")
+    zp_drawstr("Advanced Voice Base: Character fonde Safe/Controlled.")
   ) : (
-    gfx_drawstr("Advanced Trailer: VOG e AIR separati per fine tuning.")
+    zp_drawstr("Advanced Trailer: VOG e AIR separati per fine tuning.")
   );
 );
-gfx_x = bx2; gfx_y = by + 124;
+zp_gx = bx2; zp_gy = by + 124;
 show_simple ? (
   ui_profile == 0 ? (
-    gfx_drawstr("Da Pull Back a Push, con risposta veloce.")
+    zp_drawstr("Da Pull Back a Push, con risposta veloce.")
   ) : (
-    gfx_drawstr("Bilanciamento rapido, pronto per contesti trailer.")
+    zp_drawstr("Bilanciamento rapido, pronto per contesti trailer.")
   );
 ) : (
   ui_profile == 0 ? (
-    gfx_drawstr("Even/Odd restano indipendenti per calibrazione precisa.")
+    zp_drawstr("Even/Odd restano indipendenti per calibrazione precisa.")
   ) : (
-    gfx_drawstr("Dyn Drive resta il centro del comportamento dinamico.")
+    zp_drawstr("Dyn Drive resta il centro del comportamento dinamico.")
   );
 );
 ) : view_mode == 1 ? (
@@ -2157,123 +2214,123 @@ show_simple ? (
   draw_group_title(head_x, row_y, head_w, "LIVE METERS", grp_out_r, grp_out_g, grp_out_b);
 
   mx = head_x + 18; my = row_y + 24; meter_x = mx + 74; meter_val_right = head_x + head_w - 16; mw = meter_val_right - meter_x - 14;
-  gfx_setfont(2);
+  zp_setfont(2);
 
-  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = mx; gfx_y = my; gfx_drawstr("Activity");
+  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = mx; zp_gy = my; zp_drawstr("Activity");
   draw_meter_h(meter_x, my + 2, mw, 12, ui_engine_activity, grp_eng_r, grp_eng_g, grp_eng_b);
   sprintf(#meter_val, "%.0f%%", ui_engine_activity); draw_right_text(meter_val_right, my, text_r, text_g, text_b, #meter_val);
 
-  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = mx; gfx_y = my + 22; gfx_drawstr("Drive");
+  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = mx; zp_gy = my + 22; zp_drawstr("Drive");
   draw_meter_h(meter_x, my + 24, mw, 12, ui_dynamic_drive, grp_prof_r, grp_prof_g, grp_prof_b);
   sprintf(#meter_val, "%.0f%%", ui_dynamic_drive); draw_right_text(meter_val_right, my + 22, text_r, text_g, text_b, #meter_val);
 
-  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = mx; gfx_y = my + 44; gfx_drawstr("RMS In");
+  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = mx; zp_gy = my + 44; zp_drawstr("RMS In");
   draw_meter_h(meter_x, my + 46, mw, 12, rms_in_norm, grp_harm_r, grp_harm_g, grp_harm_b);
   sprintf(#meter_val, "%.1f dBFS", ui_rms_in_db); draw_right_text(meter_val_right, my + 44, text_r, text_g, text_b, #meter_val);
 
-  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = mx; gfx_y = my + 66; gfx_drawstr("RMS Out");
+  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = mx; zp_gy = my + 66; zp_drawstr("RMS Out");
   draw_meter_h(meter_x, my + 68, mw, 12, rms_out_norm, grp_harm_r, grp_harm_g, grp_harm_b);
   sprintf(#meter_val, "%.1f dBFS", ui_rms_out_db); draw_right_text(meter_val_right, my + 66, text_r, text_g, text_b, #meter_val);
 ) : (
   raw_h = jsfx_h_nom;
   draw_panel(head_x, row_y, head_w, raw_h, panel_r, panel_g, panel_b, 1);
   draw_group_title(head_x, row_y, head_w, "JSFX VIEW TEST", grp_prof_r, grp_prof_g, grp_prof_b);
-  gfx_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = head_x + 18; gfx_y = row_y + 30; gfx_drawstr("Questa vista prova a riattivare i controlli standard JSFX sopra l'area grafica.");
-  gfx_x = head_x + 18; gfx_y = row_y + 52; gfx_drawstr("Se non compaiono subito, chiudi e riapri la finestra FX dopo aver scelto JSFX.");
-  gfx_x = head_x + 18; gfx_y = row_y + 86; gfx_drawstr("Status");
+  zp_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+  zp_gx = head_x + 18; zp_gy = row_y + 30; zp_drawstr("Questa vista prova a riattivare i controlli standard JSFX sopra l'area grafica.");
+  zp_gx = head_x + 18; zp_gy = row_y + 52; zp_drawstr("Se non compaiono subito, chiudi e riapri la finestra FX dopo aver scelto JSFX.");
+  zp_gx = head_x + 18; zp_gy = row_y + 86; zp_drawstr("Status");
   gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_drawstr("  "); gfx_drawstr(profile_str); gfx_drawstr(" | "); gfx_drawstr(mode_str); gfx_drawstr(" | "); gfx_drawstr(output_str);
+  zp_drawstr("  "); zp_drawstr(profile_str); zp_drawstr(" | "); zp_drawstr(mode_str); zp_drawstr(" | "); zp_drawstr(output_str);
 
   mx = head_x + 18; my = row_y + 120; meter_x = mx + 76; meter_val_right = mx + 360; mw = meter_val_right - meter_x - 14;
-  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = mx; gfx_y = my; gfx_drawstr("Activity");
+  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = mx; zp_gy = my; zp_drawstr("Activity");
   draw_meter_h(meter_x, my + 2, mw, 12, ui_engine_activity, grp_eng_r, grp_eng_g, grp_eng_b);
   sprintf(#meter_val, "%.0f%%", ui_engine_activity); draw_right_text(meter_val_right, my, text_r, text_g, text_b, #meter_val);
   mx2 = head_x + 420; meter_x = mx2 + 70; meter_val_right = head_x + head_w - 18; mw = meter_val_right - meter_x - 14;
-  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_x = mx2; gfx_y = my; gfx_drawstr("Drive");
+  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; zp_gx = mx2; zp_gy = my; zp_drawstr("Drive");
   draw_meter_h(meter_x, my + 2, mw, 12, ui_dynamic_drive, grp_prof_r, grp_prof_g, grp_prof_b);
   sprintf(#meter_val, "%.0f%%", ui_dynamic_drive); draw_right_text(meter_val_right, my, text_r, text_g, text_b, #meter_val);
 
   tele_x = head_x; tele_y = row_y + raw_h + 12; tele_w = head_w; tele_h = 110;
   draw_panel(tele_x, tele_y, tele_w, tele_h, panel2_r, panel2_g, panel2_b, 1);
   draw_group_title(tele_x, tele_y, tele_w, "JSFX GUIDE", grp_out_r, grp_out_g, grp_out_b);
-  gfx_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = tele_x + 18; gfx_y = tele_y + 34; gfx_drawstr("JSFX e' pensata per accessibilita' e casi pratici in cui la GUI completa non serve.");
-  gfx_x = tele_x + 18; gfx_y = tele_y + 56; gfx_drawstr("Per tornare indietro usa sempre i pulsanti FULL / MINI / JSFX nell'header.");
+  zp_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+  zp_gx = tele_x + 18; zp_gy = tele_y + 34; zp_drawstr("JSFX e' pensata per accessibilita' e casi pratici in cui la GUI completa non serve.");
+  zp_gx = tele_x + 18; zp_gy = tele_y + 56; zp_drawstr("Per tornare indietro usa sempre i pulsanti FULL / MINI / JSFX nell'header.");
 );
 
 view_mode == 0 ? (
-  info_y = gfx_h - 28;
+  info_y = zp_vh - 28;
   show_simple ? (
     gfx_r = 0.86; gfx_g = 0.90; gfx_b = 0.95; gfx_a = 1;
   ) : (
     gfx_r = 0.11; gfx_g = 0.12; gfx_b = 0.15; gfx_a = 1;
   );
-  gfx_rect(0, info_y, gfx_w, 28);
+  zp_rect(0, info_y, zp_vw, 28);
   show_simple ? ( gfx_r = 0.72; gfx_g = 0.77; gfx_b = 0.83; ) : ( gfx_r = 0.22; gfx_g = 0.23; gfx_b = 0.28; );
-  gfx_line(0, info_y, gfx_w, info_y);
+  zp_line(0, info_y, zp_vw, info_y);
 
-  gfx_setfont(4);
+  zp_setfont(4);
   show_simple ? ( gfx_r = 0.30; gfx_g = 0.35; gfx_b = 0.41; ) : ( gfx_r = 0.72; gfx_g = 0.72; gfx_b = 0.75; );
-  gfx_x = 14; gfx_y = info_y + 7;
+  zp_gx = 14; zp_gy = info_y + 7;
 
   time_now < help_warn_until ? (
     gfx_r = 0.95; gfx_g = 0.65; gfx_b = 0.20;
     ui_lang == 1 ?
-      gfx_drawstr("Guide: open ZP Help > Spoken Finish (start Cue Navigator from 33 Welcome to open it from here)") :
-      gfx_drawstr("Guida: apri Help ZP > Spoken Finish (avvia il Cue Navigator dal 33 Benvenuto per aprirla da qui)");
+      zp_drawstr("Guide: open ZP Help > Spoken Finish (start Cue Navigator from 33 Welcome to open it from here)") :
+      zp_drawstr("Guida: apri Help ZP > Spoken Finish (avvia il Cue Navigator dal 33 Benvenuto per aprirla da qui)");
   ) :
   active_info_id == 99 ? (
-    ui_lang == 1 ? gfx_drawstr("GUIDE: click to open the dedicated HTML guide section in browser.") :
-                   gfx_drawstr("GUIDA: clic per aprire la sezione dedicata della guida HTML nel browser.");
+    ui_lang == 1 ? zp_drawstr("GUIDE: click to open the dedicated HTML guide section in browser.") :
+                   zp_drawstr("GUIDA: clic per aprire la sezione dedicata della guida HTML nel browser.");
   ) :
-  active_info_id == 101 ? (ui_lang == 1 ? gfx_drawstr("CROSSOVER: splits content for harmonic processing. SHIFT = precision, double click = reset.") : gfx_drawstr("CROSSOVER: divide il contenuto per l'intervento armonico. SHIFT = precisione, doppio click = reset.")) :
-  active_info_id == 102 ? (ui_lang == 1 ? gfx_drawstr("EVEN: even harmonics. Negative values de-excite, positive values add warmth.") : gfx_drawstr("EVEN: armoniche pari. Valori negativi de-excite, valori positivi aggiungono calore.")) :
-  active_info_id == 103 ? (ui_lang == 1 ? gfx_drawstr("ODD: odd harmonics. Negative softens, positive increases presence and intelligibility.") : gfx_drawstr("ODD: armoniche dispari. Negativo addolcisce, positivo aumenta presenza e intelligibilita'.")) :
-  active_info_id == 104 ? (ui_lang == 1 ? gfx_drawstr("OUTPUT TRIM: trims plugin final output level.") : gfx_drawstr("OUTPUT TRIM: rifinisce il livello finale del plugin.")) :
-  active_info_id == 105 ? (ui_lang == 1 ? gfx_drawstr("GAIN MATCH: compensates perceived level during processing.") : gfx_drawstr("GAIN MATCH: compensa il livello percepito durante il processing.")) :
-  active_info_id == 106 ? (ui_lang == 1 ? gfx_drawstr("DYNAMIC SENSITIVITY: engine responsiveness to input dynamics.") : gfx_drawstr("DYNAMIC SENSITIVITY: reattivita' del motore rispetto alla dinamica in ingresso.")) :
-  active_info_id == 107 ? (ui_lang == 1 ? gfx_drawstr("DYNAMIC DRIVE: in Voice Base enables guided saturation; in Trailer toggles modulation, VOG duck and AIR gate.") : gfx_drawstr("DYNAMIC DRIVE: in Voice Base abilita la saturazione guidata; in Trailer attiva o bypassa modulazione, duck VOG e gate AIR.")) :
+  active_info_id == 101 ? (ui_lang == 1 ? zp_drawstr("CROSSOVER: splits content for harmonic processing. SHIFT = precision, double click = reset.") : zp_drawstr("CROSSOVER: divide il contenuto per l'intervento armonico. SHIFT = precisione, doppio click = reset.")) :
+  active_info_id == 102 ? (ui_lang == 1 ? zp_drawstr("EVEN: even harmonics. Negative values de-excite, positive values add warmth.") : zp_drawstr("EVEN: armoniche pari. Valori negativi de-excite, valori positivi aggiungono calore.")) :
+  active_info_id == 103 ? (ui_lang == 1 ? zp_drawstr("ODD: odd harmonics. Negative softens, positive increases presence and intelligibility.") : zp_drawstr("ODD: armoniche dispari. Negativo addolcisce, positivo aumenta presenza e intelligibilita'.")) :
+  active_info_id == 104 ? (ui_lang == 1 ? zp_drawstr("OUTPUT TRIM: trims plugin final output level.") : zp_drawstr("OUTPUT TRIM: rifinisce il livello finale del plugin.")) :
+  active_info_id == 105 ? (ui_lang == 1 ? zp_drawstr("GAIN MATCH: compensates perceived level during processing.") : zp_drawstr("GAIN MATCH: compensa il livello percepito durante il processing.")) :
+  active_info_id == 106 ? (ui_lang == 1 ? zp_drawstr("DYNAMIC SENSITIVITY: engine responsiveness to input dynamics.") : zp_drawstr("DYNAMIC SENSITIVITY: reattivita' del motore rispetto alla dinamica in ingresso.")) :
+  active_info_id == 107 ? (ui_lang == 1 ? zp_drawstr("DYNAMIC DRIVE: in Voice Base enables guided saturation; in Trailer toggles modulation, VOG duck and AIR gate.") : zp_drawstr("DYNAMIC DRIVE: in Voice Base abilita la saturazione guidata; in Trailer attiva o bypassa modulazione, duck VOG e gate AIR.")) :
   active_info_id == 108 ? (
     delta_mode && !ui_delta_audible ? (
-      ui_lang == 1 ? gfx_drawstr("DELTA: active but neutral, current processing generates minimal difference from dry.") :
-                     gfx_drawstr("DELTA: attivo ma neutro, il processing corrente genera differenza minima rispetto al dry.");
+      ui_lang == 1 ? zp_drawstr("DELTA: active but neutral, current processing generates minimal difference from dry.") :
+                     zp_drawstr("DELTA: attivo ma neutro, il processing corrente genera differenza minima rispetto al dry.");
     ) : (
-      ui_lang == 1 ? gfx_drawstr("DELTA: audition processing difference only.") :
-                     gfx_drawstr("DELTA: ascolta solo l'intervento del plugin.");
+      ui_lang == 1 ? zp_drawstr("DELTA: audition processing difference only.") :
+                     zp_drawstr("DELTA: ascolta solo l'intervento del plugin.");
     );
   ) :
-  active_info_id == 109 ? (ui_lang == 1 ? gfx_drawstr("GAIN CORR: manual gain match trim for precise monitoring.") : gfx_drawstr("GAIN CORR: correzione manuale del gain match per monitor piu' preciso.")) :
-  active_info_id == 111 ? (ui_lang == 1 ? gfx_drawstr("VOICE OF GOD: trailer low-end reinforcement, great for promos and cinematic voice-over.") : gfx_drawstr("VOICE OF GOD: rinforzo low-end trailer, utile su promo e voice-over cinematici.")) :
-  active_info_id == 112 ? (ui_lang == 1 ? gfx_drawstr("CINEMA AIR: parallel high frequency extension for air and open top end.") : gfx_drawstr("CINEMA AIR: estensione alta parallela per aria e apertura.")) :
-  active_info_id == 113 ? (ui_lang == 1 ? gfx_drawstr("CHARACTER: blend between Voice Base Safe and Controlled.") : gfx_drawstr("CHARACTER: blend tra Voice Base Safe e Controlled.")) :
+  active_info_id == 109 ? (ui_lang == 1 ? zp_drawstr("GAIN CORR: manual gain match trim for precise monitoring.") : zp_drawstr("GAIN CORR: correzione manuale del gain match per monitor piu' preciso.")) :
+  active_info_id == 111 ? (ui_lang == 1 ? zp_drawstr("VOICE OF GOD: trailer low-end reinforcement, great for promos and cinematic voice-over.") : zp_drawstr("VOICE OF GOD: rinforzo low-end trailer, utile su promo e voice-over cinematici.")) :
+  active_info_id == 112 ? (ui_lang == 1 ? zp_drawstr("CINEMA AIR: parallel high frequency extension for air and open top end.") : zp_drawstr("CINEMA AIR: estensione alta parallela per aria e apertura.")) :
+  active_info_id == 113 ? (ui_lang == 1 ? zp_drawstr("CHARACTER: blend between Voice Base Safe and Controlled.") : zp_drawstr("CHARACTER: blend tra Voice Base Safe e Controlled.")) :
   active_info_id == 114 ? (
-    delta_mode ? (ui_lang == 1 ? gfx_drawstr("DRY/WET: LOCKED when Delta is ON (forced to 100% wet for difference monitoring).") : gfx_drawstr("DRY/WET: LOCK quando Delta e' ON (forzato a 100% wet per ascolto intervento).")) :
-                 (ui_lang == 1 ? gfx_drawstr("DRY/WET: internal blend. 100% = wet only, 0% = dry only.") : gfx_drawstr("DRY/WET: mix interno del plugin. 100% = solo processing, 0% = solo dry."));
+    delta_mode ? (ui_lang == 1 ? zp_drawstr("DRY/WET: LOCKED when Delta is ON (forced to 100% wet for difference monitoring).") : zp_drawstr("DRY/WET: LOCK quando Delta e' ON (forzato a 100% wet per ascolto intervento).")) :
+                 (ui_lang == 1 ? zp_drawstr("DRY/WET: internal blend. 100% = wet only, 0% = dry only.") : zp_drawstr("DRY/WET: mix interno del plugin. 100% = solo processing, 0% = solo dry."));
   ) :
-  active_info_id == 140 ? (ui_lang == 1 ? gfx_drawstr("INTERFACE PROFILE: SIMPLE for quick workflow, ADVANCED for full control.") : gfx_drawstr("INTERFACE PROFILE: SIMPLE per workflow rapido, ADVANCED per controllo completo.")) :
-  active_info_id == 141 ? (ui_lang == 1 ? gfx_drawstr("PROCESSING PROFILE: VOICE BASE for natural speech, TRAILER for cinematic impact.") : gfx_drawstr("PROCESSING PROFILE: VOICE BASE per parlato naturale, TRAILER per impatto cinematografico.")) :
-  active_info_id == 160 ? (ui_lang == 1 ? gfx_drawstr("VIEW MODE: FULL shows complete GUI, MINI compacts meters, JSFX reactivates standard sliders.") : gfx_drawstr("VIEW MODE: FULL mostra tutta la GUI, MINI compatta il monitoraggio, JSFX prova a riattivare i controlli standard JSFX.")) :
-  active_info_id == 170 ? (ui_lang == 1 ? gfx_drawstr("TRAILER AUDITION: FULL listens to all, HARM isolates harmonics, VOG+AIR plays cinematic layer over dry.") : gfx_drawstr("TRAILER AUDITION: FULL ascolta tutto, HARM isola le armoniche, VOG+AIR tiene solo il gruppo cinematico sopra al dry.")) :
-  active_info_id == 131 ? (ui_lang == 1 ? gfx_drawstr("TRUE PEAK CEILING: maximum peak ceiling with 4x probe and final sample-peak clamp.") : gfx_drawstr("TRUE PEAK CEILING: limite massimo di picco con probe 4x e clamp finale sample-peak.")) :
-  active_info_id == 132 ? (ui_lang == 1 ? gfx_drawstr("TP LIMITER: safety limiter after Dry/Wet. OFF leaves raw output for creative workflows.") : gfx_drawstr("TP LIMITER: safety finale dopo Dry/Wet. OFF lascia passare l'uscita libera per uso creativo.")) :
-  active_info_id == 171 ? (ui_lang == 1 ? gfx_drawstr("CLEAN 1200: spoken word sweet spot, eases harshness with 1200 Hz crossover.") : gfx_drawstr("CLEAN 1200: sweet spot parlato, alleggerisce harsh con crossover a 1200 Hz.")) :
-  active_info_id == 172 ? (ui_lang == 1 ? gfx_drawstr("CLEAN+PRES: gentler cleaning with a touch of extra intelligibility.") : gfx_drawstr("CLEAN+PRES: pulizia piu' leggera con un filo di intelligibilita' in piu'.")) :
-  active_info_id == 173 ? (ui_lang == 1 ? gfx_drawstr("STACK ST2: designed for a second instance after clean stage.") : gfx_drawstr("STACK ST2: pensato per seconda istanza dopo una fase di clean.")) :
-  active_info_id == 174 ? (ui_lang == 1 ? gfx_drawstr("NAT F: natural foundation for female / alto voices, smooth balance.") : gfx_drawstr("NAT F: base naturale per voci femminili/alto, equilibrio morbido.")) :
-  active_info_id == 175 ? (ui_lang == 1 ? gfx_drawstr("AIRY F/S: opens air and presence on upper-mid and soprano ranges.") : gfx_drawstr("AIRY F/S: apre aria e presenza su registri medio-alti e soprano.")) :
-  active_info_id == 176 ? (ui_lang == 1 ? gfx_drawstr("DE-HARSH: tames perceived harshness and sibilance in a controlled way.") : gfx_drawstr("DE-HARSH: attenua durezza e sibilanza percepita in modo controllato.")) :
-  active_info_id == 177 ? (ui_lang == 1 ? gfx_drawstr("DEEP IMP: warm impact on deep male ranges.") : gfx_drawstr("DEEP IMP: impatto caldo su registri maschili profondi.")) :
-  active_info_id == 178 ? (ui_lang == 1 ? gfx_drawstr("FOCUS IMP: impact and focus on central male / tenor voices.") : gfx_drawstr("FOCUS IMP: impatto e fuoco su voci maschili centrali/tenore.")) :
-  active_info_id == 179 ? (ui_lang == 1 ? gfx_drawstr("TENOR IMP: boosts presence on tenor while keeping body.") : gfx_drawstr("TENOR IMP: spinta presenza su tenore mantenendo corpo.")) :
-  active_info_id == 180 ? (ui_lang == 1 ? gfx_drawstr("BC CLEAN: clean broadcast trailer, legible and non-aggressive.") : gfx_drawstr("BC CLEAN: trailer broadcast pulito, leggibile e poco aggressivo.")) :
-  active_info_id == 181 ? (ui_lang == 1 ? gfx_drawstr("BC IMPACT: trailer balance with punch and clarity.") : gfx_drawstr("BC IMPACT: bilanciamento trailer con punch e chiarezza.")) :
-  active_info_id == 182 ? (ui_lang == 1 ? gfx_drawstr("BC DENSE: dense energetic setting for driving promos.") : gfx_drawstr("BC DENSE: assetto denso ed energico per promo piu' spinti.")) :
-  active_info_id == 183 ? (ui_lang == 1 ? gfx_drawstr("TR M-DEEP: trailer variant for bass/baritone, body and stability.") : gfx_drawstr("TR M-DEEP: variante trailer per basso/baritono, corpo e stabilita'.")) :
-  active_info_id == 184 ? (ui_lang == 1 ? gfx_drawstr("TR M-FOCUS: male trailer variant focused on intelligibility.") : gfx_drawstr("TR M-FOCUS: variante trailer maschile con fuoco su intelligibilita'.")) :
-  active_info_id == 185 ? (ui_lang == 1 ? gfx_drawstr("TR F-AIR: female trailer variant with controlled air and presence.") : gfx_drawstr("TR F-AIR: variante trailer femminile con aria e presenza controllata.")) :
-  active_info_id == 150 ? (ui_lang == 1 ? gfx_drawstr("SC AMOUNT (Simple): Min/Med/Max loads three macro-calibrations of the engine.") : gfx_drawstr("SC AMOUNT (Simple): Min/Med/Max richiama tre macro-calibrazioni del motore.")) :
-  (ui_lang == 1 ? gfx_drawstr("SPOKEN FINISH v3.9.8 - circular TP ceiling meter | SHIFT precision, double click reset.") : gfx_drawstr("SPOKEN FINISH v3.9.8 - circular TP ceiling meter | SHIFT precisione, doppio click reset."));
+  active_info_id == 140 ? (ui_lang == 1 ? zp_drawstr("INTERFACE PROFILE: SIMPLE for quick workflow, ADVANCED for full control.") : zp_drawstr("INTERFACE PROFILE: SIMPLE per workflow rapido, ADVANCED per controllo completo.")) :
+  active_info_id == 141 ? (ui_lang == 1 ? zp_drawstr("PROCESSING PROFILE: VOICE BASE for natural speech, TRAILER for cinematic impact.") : zp_drawstr("PROCESSING PROFILE: VOICE BASE per parlato naturale, TRAILER per impatto cinematografico.")) :
+  active_info_id == 160 ? (ui_lang == 1 ? zp_drawstr("VIEW MODE: FULL shows complete GUI, MINI compacts meters, JSFX reactivates standard sliders.") : zp_drawstr("VIEW MODE: FULL mostra tutta la GUI, MINI compatta il monitoraggio, JSFX prova a riattivare i controlli standard JSFX.")) :
+  active_info_id == 170 ? (ui_lang == 1 ? zp_drawstr("TRAILER AUDITION: FULL listens to all, HARM isolates harmonics, VOG+AIR plays cinematic layer over dry.") : zp_drawstr("TRAILER AUDITION: FULL ascolta tutto, HARM isola le armoniche, VOG+AIR tiene solo il gruppo cinematico sopra al dry.")) :
+  active_info_id == 131 ? (ui_lang == 1 ? zp_drawstr("TRUE PEAK CEILING: maximum peak ceiling with 4x probe and final sample-peak clamp.") : zp_drawstr("TRUE PEAK CEILING: limite massimo di picco con probe 4x e clamp finale sample-peak.")) :
+  active_info_id == 132 ? (ui_lang == 1 ? zp_drawstr("TP LIMITER: safety limiter after Dry/Wet. OFF leaves raw output for creative workflows.") : zp_drawstr("TP LIMITER: safety finale dopo Dry/Wet. OFF lascia passare l'uscita libera per uso creativo.")) :
+  active_info_id == 171 ? (ui_lang == 1 ? zp_drawstr("CLEAN 1200: spoken word sweet spot, eases harshness with 1200 Hz crossover.") : zp_drawstr("CLEAN 1200: sweet spot parlato, alleggerisce harsh con crossover a 1200 Hz.")) :
+  active_info_id == 172 ? (ui_lang == 1 ? zp_drawstr("CLEAN+PRES: gentler cleaning with a touch of extra intelligibility.") : zp_drawstr("CLEAN+PRES: pulizia piu' leggera con un filo di intelligibilita' in piu'.")) :
+  active_info_id == 173 ? (ui_lang == 1 ? zp_drawstr("STACK ST2: designed for a second instance after clean stage.") : zp_drawstr("STACK ST2: pensato per seconda istanza dopo una fase di clean.")) :
+  active_info_id == 174 ? (ui_lang == 1 ? zp_drawstr("NAT F: natural foundation for female / alto voices, smooth balance.") : zp_drawstr("NAT F: base naturale per voci femminili/alto, equilibrio morbido.")) :
+  active_info_id == 175 ? (ui_lang == 1 ? zp_drawstr("AIRY F/S: opens air and presence on upper-mid and soprano ranges.") : zp_drawstr("AIRY F/S: apre aria e presenza su registri medio-alti e soprano.")) :
+  active_info_id == 176 ? (ui_lang == 1 ? zp_drawstr("DE-HARSH: tames perceived harshness and sibilance in a controlled way.") : zp_drawstr("DE-HARSH: attenua durezza e sibilanza percepita in modo controllato.")) :
+  active_info_id == 177 ? (ui_lang == 1 ? zp_drawstr("DEEP IMP: warm impact on deep male ranges.") : zp_drawstr("DEEP IMP: impatto caldo su registri maschili profondi.")) :
+  active_info_id == 178 ? (ui_lang == 1 ? zp_drawstr("FOCUS IMP: impact and focus on central male / tenor voices.") : zp_drawstr("FOCUS IMP: impatto e fuoco su voci maschili centrali/tenore.")) :
+  active_info_id == 179 ? (ui_lang == 1 ? zp_drawstr("TENOR IMP: boosts presence on tenor while keeping body.") : zp_drawstr("TENOR IMP: spinta presenza su tenore mantenendo corpo.")) :
+  active_info_id == 180 ? (ui_lang == 1 ? zp_drawstr("BC CLEAN: clean broadcast trailer, legible and non-aggressive.") : zp_drawstr("BC CLEAN: trailer broadcast pulito, leggibile e poco aggressivo.")) :
+  active_info_id == 181 ? (ui_lang == 1 ? zp_drawstr("BC IMPACT: trailer balance with punch and clarity.") : zp_drawstr("BC IMPACT: bilanciamento trailer con punch e chiarezza.")) :
+  active_info_id == 182 ? (ui_lang == 1 ? zp_drawstr("BC DENSE: dense energetic setting for driving promos.") : zp_drawstr("BC DENSE: assetto denso ed energico per promo piu' spinti.")) :
+  active_info_id == 183 ? (ui_lang == 1 ? zp_drawstr("TR M-DEEP: trailer variant for bass/baritone, body and stability.") : zp_drawstr("TR M-DEEP: variante trailer per basso/baritono, corpo e stabilita'.")) :
+  active_info_id == 184 ? (ui_lang == 1 ? zp_drawstr("TR M-FOCUS: male trailer variant focused on intelligibility.") : zp_drawstr("TR M-FOCUS: variante trailer maschile con fuoco su intelligibilita'.")) :
+  active_info_id == 185 ? (ui_lang == 1 ? zp_drawstr("TR F-AIR: female trailer variant with controlled air and presence.") : zp_drawstr("TR F-AIR: variante trailer femminile con aria e presenza controllata.")) :
+  active_info_id == 150 ? (ui_lang == 1 ? zp_drawstr("SC AMOUNT (Simple): Min/Med/Max loads three macro-calibrations of the engine.") : zp_drawstr("SC AMOUNT (Simple): Min/Med/Max richiama tre macro-calibrazioni del motore.")) :
+  (ui_lang == 1 ? zp_drawstr("SPOKEN FINISH v3.9.8 - circular TP ceiling meter | SHIFT precision, double click reset.") : zp_drawstr("SPOKEN FINISH v3.9.8 - circular TP ceiling meter | SHIFT precisione, doppio click reset."));
 );
 
 last_mouse_cap = mouse_cap;
@@ -2283,7 +2340,7 @@ zp_bus_read();
 zp_bus_profile==1?strcpy(#zp_bus_profile_text,"VOICEOVER"):zp_bus_profile==2?strcpy(#zp_bus_profile_text,"ADR"):zp_bus_profile==3?strcpy(#zp_bus_profile_text,"ELEARNING"):zp_bus_profile==4?strcpy(#zp_bus_profile_text,"PODCAST"):zp_bus_profile==5?strcpy(#zp_bus_profile_text,"SPOT"):strcpy(#zp_bus_profile_text,"RADIO");
 zp_bus_master_conn==0 ? strcpy(#zp_bus_status_text,"MASTER MISSING") : zp_bus_probe_conn==0 ? strcpy(#zp_bus_status_text,"VOICE PROBE MISSING") : zp_bus_master_conn==2 && zp_bus_probe_conn==2 ? strcpy(#zp_bus_status_text,"BUS CONNECTED") : strcpy(#zp_bus_status_text,"BUS DATA OLD");
 sprintf(#zp_bus_line, "%s | %s", #zp_bus_status_text, #zp_bus_profile_text);
-zp_bus_box_w = min(190, gfx_w - 8); zp_bus_box_x = max(4, gfx_w - zp_bus_box_w - 4); zp_bus_box_y=max(4,gfx_h-22);
-gfx_set(0.035,0.045,0.055,0.96); gfx_rect(zp_bus_box_x,zp_bus_box_y,zp_bus_box_w,18);
+zp_bus_box_w = min(190, zp_vw - 8); zp_bus_box_x = max(4, zp_vw - zp_bus_box_w - 4); zp_bus_box_y=max(4,zp_vh-22);
+gfx_set(0.035,0.045,0.055,0.96); zp_rect(zp_bus_box_x,zp_bus_box_y,zp_bus_box_w,18);
 zp_bus_master_conn==2 && zp_bus_probe_conn==2 ? gfx_set(0.34,0.92,0.66,1) : zp_bus_master_conn>0 && zp_bus_probe_conn>0 ? gfx_set(1.0,0.72,0.20,1) : gfx_set(1.0,0.42,0.34,1);
-gfx_setfont(1,"Arial",9,'b'); gfx_x=zp_bus_box_x+7; gfx_y=zp_bus_box_y+4; gfx_drawstr(#zp_bus_line);
+zp_setfont(1,"Arial",9,'b'); zp_gx=zp_bus_box_x+7; zp_gy=zp_bus_box_y+4; zp_drawstr(#zp_bus_line);

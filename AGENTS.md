@@ -785,3 +785,16 @@ Memoria condivisa per entrambi i checkout: `../AGENTS.md`. Consultarla prima di 
 - Dopo la pubblicazione della 2.6.7, conservare il tag `v2.6.6` come riferimento storico; creare il ramo di preparazione 2.6.8 dal nuovo tag `v2.6.7` e importare soltanto le differenze dei componenti modificati. Le versioni dei singoli componenti ReaPack restano indipendenti dalla versione della Suite.
 - Procedura dettagliata per i cicli successivi: `docs/RELEASE_WORKFLOW.md`.
 - Nessun commit, push, tag o aggiornamento ReaPack senza richiesta esplicita di Paolo.
+
+## ZP Magic Voice (v1.2.0 / LAB 3) e Grafica Zoomabile su tutta la Suite JSFX — 2026-11-18
+
+- **`ZP Magic Voice LAB.jsfx` (`1.2.0-lab3`) e `ZP Magic Voice.jsfx` (`1.2.0`)**:
+  - Tarati sulle misure strumentali dirette dell'Audio Unit `MagicFlow` (vedi rapporto e JSON in `../zp-jsfx-lab/misure/2026-11-18_MagicFlow_Dynamic_EQ/` e memoria in `../zp-jsfx-lab/MEMORIA_MAGIC_VOICE_LAB.md`) e validati da Paolo in produzione sul podcast:
+    - `Input Level` (`-24.0 .. 0.0 dB`, default `-18.0 dB`, `MAGIC 1 = -14.7 dB`) auto-compensato sul percorso lineare (pilota il drive dei detector senza cali di volume lineare e senza il picco spurio da +13 dB / 213 ms dell'AU originale).
+    - `Dynamic EQ` a 5 bande coerenti di fase (2 SVF), `Tone EQ` (`A..D`) + `Mid Bump` fittati sull'AU, `Dynamic Balance` (`A/B`) upward/downward leveler multibanda misurato sull'AU.
+    - `DRC` con 4 colonne separate graficamente e `SOLO A..D` a molla (attivo solo su banda accesa, preascolto mentre si toccano i 3 rotori `THR / HP / LP`, sgancio automatico a 10s).
+    - Vista `JSFX` scorrevole dentro `@gfx` con barra `FULL | MINI | JSFX` sempre fissa in alto.
+- **Grafica zoomabile proporzionale (`zp_sc`) su tutti i 15 file JSFX della `ZP Suite 2.6.7` (`ZP Voce`, `ZP Master`, `ZP Misura`, `ZP Lab`)**:
+  - Tutte le sezioni DSP (`@slider`, `@block`, `@sample`) sono rimaste bit-identiche al 100% agli originali pre-zoom.
+  - Allineati i file tra `zp-suite-2.6.7` e `/Users/paolob/Library/Application Support/REAPER/Effects/ZP Suite/`.
+  - Backup pre-zoom, snapshot candidata e `SHA256.txt` archiviati in `/Volumes/DISCO LACIE/Archivio_Storico_ZP/ZP Suite/2026-11-18_MagicVoice_LAB3_e_Zoom_JSFX/`.

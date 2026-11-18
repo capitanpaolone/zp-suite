@@ -119,6 +119,61 @@ slider65:nav_measure_time=20<0,60,1>-Navigator Measure Time [s]
 slider66:nav_measure_mode=0<0,2,1{MANUAL,LIVE,AUTO}>-Navigator Measure Mode
 
 @init
+// ---- ZP Proportional Zoom Engine (GUI-only, zero DSP impact) ----
+zp_sc = 1.0; zp_ox = 0.0; zp_vw = 900.0; zp_vh = 600.0; zp_gx = 0.0; zp_gy = 0.0; zp_mx = 0.0; zp_my = 0.0;
+function zp_rect(x, y, w, h) (
+  (x <= 0 && y <= 0 && w >= zp_vw && h >= zp_vh - 1) ? gfx_rect(0, 0, gfx_w, gfx_h) :
+  gfx_rect(floor(zp_ox + (x) * zp_sc + 0.5), floor((y) * zp_sc + 0.5), max(1, floor((w) * zp_sc + 0.5)), max(1, floor((h) * zp_sc + 0.5)));
+);
+function zp_rect(x, y, w, h, aa) (
+  gfx_rect(floor(zp_ox + (x) * zp_sc + 0.5), floor((y) * zp_sc + 0.5), max(1, floor((w) * zp_sc + 0.5)), max(1, floor((h) * zp_sc + 0.5)), aa);
+);
+function zp_line(x1, y1, x2, y2) (
+  gfx_line(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, 1);
+);
+function zp_line(x1, y1, x2, y2, aa) (
+  gfx_line(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, aa);
+);
+function zp_circle(x, y, r, fill) (
+  gfx_circle(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), fill, 1);
+);
+function zp_circle(x, y, r, fill, aa) (
+  gfx_circle(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), fill, aa);
+);
+function zp_arc(x, y, r, a1, a2) (
+  gfx_arc(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), a1, a2, 1);
+);
+function zp_arc(x, y, r, a1, a2, aa) (
+  gfx_arc(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), a1, a2, aa);
+);
+function zp_triangle(x1, y1, x2, y2, x3, y3) (
+  gfx_triangle(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, zp_ox + (x3) * zp_sc, (y3) * zp_sc);
+);
+function zp_setfont(idx) ( gfx_setfont(idx); );
+function zp_setfont(idx, fname, sz) ( gfx_setfont(idx, fname, max(7, floor((sz) * zp_sc + 0.5))); );
+function zp_setfont(idx, fname, sz, flg) ( gfx_setfont(idx, fname, max(7, floor((sz) * zp_sc + 0.5)), flg); );
+function zp_drawstr(s) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_drawstr(s);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+function zp_drawnumber(n, dec) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_drawnumber(n, dec);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+function zp_printf(fmt, a1) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_printf(fmt, a1);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+
 // ZP Shared Bus supervisor: diagnostica soltanto, nessun cambio DSP.
 ZP_BUS_MAGIC = 905026;
 ZP_BUS_VERSION = 220;
@@ -1634,7 +1689,9 @@ lra_tick_cnt+=1;lra_tick_cnt>=lra_tick_rate?(lra_tick_cnt=0;meter_play_state?(
 );
 ext_gr_meter=mt_gr_db;
 
-@gfx 900 1345
+@gfx 1020 1080
+zp_dw = 900.0; zp_sc = max(0.55, min(2.4, gfx_w / zp_dw)); zp_ox = 0.0; zp_vw = zp_dw; zp_vh = max(320.0, gfx_h / zp_sc); zp_mx = (mouse_x - zp_ox) / zp_sc; zp_my = mouse_y / zp_sc;
+
 // Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
 zp_hb = gmem[3900]; zp_hb_now = time_precise();
 !zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
@@ -1700,7 +1757,7 @@ function request_meter_refresh() local(j)(
   j=0;loop(20,pkh_base[j]=-90;j+=1;);
 );
 function ui_set_hover(id) ( ui_hover_id=id; );
-function hit(x,y,w,h) ( mouse_x>=x&&mouse_x<=(x+w)&&mouse_y>=y&&mouse_y<=(y+h) );
+function hit(x,y,w,h) ( zp_mx>=x&&zp_mx<=(x+w)&&zp_my>=y&&zp_my<=(y+h) );
 
 function show_slider_range(lo,hi) local(j)(
   j=lo;
@@ -1763,7 +1820,7 @@ ui_prev_play_state=play_state;
 help_bridge_alive = zp_hb_ok;
 ui_lang = (gmem[3901] == 1) ? 1 : 0;
 
-gfx_set(0.09,0.08,0.07,1);gfx_rect(0,0,gfx_w,gfx_h);
+gfx_set(0.09,0.08,0.07,1);zp_rect(0,0,zp_vw,zp_vh);
 btn_down=mouse_cap&1;
 mouse_click=btn_down&&!ui_prev_mouse_down;
 mouse_release=!btn_down&&ui_prev_mouse_down;
@@ -1790,7 +1847,7 @@ NAV_LAYOUT_H=320;
 ui_show_engine=ui_show_engine>=0.5;
 ui_show_meter=ui_show_meter>=0.5;
 ui_show_nav=ui_show_nav>=0.5;
-content_w=max(BASE_W,gfx_w);
+content_w=max(BASE_W,zp_vw);
 content_h=HDR_H+8
   +(ui_show_engine?ENGINE_LAYOUT_H+4:0)
   +(ui_show_meter?METER_LAYOUT_H+10:0)
@@ -1799,8 +1856,8 @@ content_h=HDR_H+8
 content_h=max(HDR_H+TIP_H+40,content_h);
 
 // ── Scroll (VUC style): wheel delta + drag bars ────────────────
-  _sc_max_y=max(0,content_h-gfx_h);
-  _sc_max_x=max(0,content_w-gfx_w);
+  _sc_max_y=max(0,content_h-zp_vh);
+  _sc_max_x=max(0,content_w-zp_vw);
 floor(gfx_view+0.5)==0?(
   _wdelta=mouse_wheel-last_mouse_wheel;
   _hwdelta=mouse_hwheel-last_mouse_hwheel;
@@ -1814,19 +1871,19 @@ floor(gfx_view+0.5)==0?(
 
   // drag vertical scrollbar thumb
   (scroll_drag_mode==1)&&btn_down?(
-    _track_h=max(1,gfx_h-TIP_H-HDR_H);
-    _thumb_h=max(22,floor(_track_h*gfx_h/max(1,content_h)));
+    _track_h=max(1,zp_vh-TIP_H-HDR_H);
+    _thumb_h=max(22,floor(_track_h*zp_vh/max(1,content_h)));
     _usable=max(1,_track_h-_thumb_h);
-    _newp=max(0,min(_usable,mouse_y-scroll_drag_off));
+    _newp=max(0,min(_usable,zp_my-scroll_drag_off));
     ui_scroll_y_tgt=(_newp/_usable)*_sc_max_y;
   );
 
   // drag horizontal scrollbar thumb
   (scroll_drag_mode==2)&&btn_down?(
-    _htrack_w=max(1,gfx_w-(_sc_max_y>0?12:2));
-    _hthumb_w=max(22,floor(_htrack_w*gfx_w/max(1,content_w)));
+    _htrack_w=max(1,zp_vw-(_sc_max_y>0?12:2));
+    _hthumb_w=max(22,floor(_htrack_w*zp_vw/max(1,content_w)));
     _husable=max(1,_htrack_w-_hthumb_w);
-    _hnewp=max(0,min(_husable,mouse_x-scroll_drag_off));
+    _hnewp=max(0,min(_husable,zp_mx-scroll_drag_off));
     ui_scroll_x_tgt=(_hnewp/_husable)*_sc_max_x;
   );
 
@@ -1860,10 +1917,10 @@ local(start,span,steps,i,a1,a2,x1,y1,x2,y2,rr)(
     a1=start+(i/steps)*span;a2=start+((i+1)/steps)*span;
     x1=cx+rr*sin(a1);y1=cy-rr*cos(a1);
     x2=cx+rr*sin(a2);y2=cy-rr*cos(a2);
-    gfx_line(x1,y1,x2,y2,1);
+    zp_line(x1,y1,x2,y2,1);
     x1=cx+(rr+1)*sin(a1);y1=cy-(rr+1)*cos(a1);
     x2=cx+(rr+1)*sin(a2);y2=cy-(rr+1)*cos(a2);
-    gfx_line(x1,y1,x2,y2,1);
+    zp_line(x1,y1,x2,y2,1);
     i+=1;
   );
   ena?gfx_set(mod_r*0.50+0.42,mod_g*0.38+0.54,mod_b*0.30+0.60,1.00):gfx_set(0.44,0.44,0.48,0.64);
@@ -1871,10 +1928,10 @@ local(start,span,steps,i,a1,a2,x1,y1,x2,y2,rr)(
     a1=start+(i/steps)*span;a2=start+((i+1)/steps)*span;
     x1=cx+rr*sin(a1);y1=cy-rr*cos(a1);
     x2=cx+rr*sin(a2);y2=cy-rr*cos(a2);
-    gfx_line(x1,y1,x2,y2,1);
+    zp_line(x1,y1,x2,y2,1);
     x1=cx+(rr+1)*sin(a1);y1=cy-(rr+1)*cos(a1);
     x2=cx+(rr+1)*sin(a2);y2=cy-(rr+1)*cos(a2);
-    gfx_line(x1,y1,x2,y2,1);
+    zp_line(x1,y1,x2,y2,1);
     i+=1;
   );
 );
@@ -1885,16 +1942,16 @@ local(val,hover,pct,angle,nx,ny,_tw,_th,new_val,rng,dbl,ena,_vf,_lf,
       meter_on,meter_db,meter_pct,meter_ang,meter_r,tick_ang)(
   val=slider(sl_idx);rng=maxv-minv;ena=(ui_enable>=0.5);
   pct=max(0,min(1,(val-minv)/max(0.0001,rng)));
-  hover=(mouse_x-cx)*(mouse_x-cx)+(mouse_y-cy)*(mouse_y-cy)<=(r+6)*(r+6);
+  hover=(zp_mx-cx)*(zp_mx-cx)+(zp_my-cy)*(zp_my-cy)<=(r+6)*(r+6);
   ena&&hover?ui_set_hover(hover_id);
   ena&&hover&&mouse_click?(
     dbl=(hover_id==last_dbl_id)&&(time_precise()-last_dbl_time<0.38);
     dbl?(set_ui_slider(sl_idx,defv);val=defv;pct=max(0,min(1,(val-minv)/max(0.0001,rng)));knob_active_sl=0;):(
-      knob_active_sl=sl_idx;knob_drag_y0=mouse_y;knob_drag_v0=val;);
+      knob_active_sl=sl_idx;knob_drag_y0=zp_my;knob_drag_v0=val;);
     last_dbl_id=hover_id;last_dbl_time=time_precise();
   );
   ena&&knob_active_sl==sl_idx&&btn_down?(
-    new_val=max(minv,min(maxv,knob_drag_v0+(knob_drag_y0-mouse_y)*fine_tune*rng/160));
+    new_val=max(minv,min(maxv,knob_drag_v0+(knob_drag_y0-zp_my)*fine_tune*rng/160));
     abs(new_val-val)>0.0002?(set_ui_slider(sl_idx,new_val);val=new_val;pct=max(0,min(1,(val-minv)/max(0.0001,rng))););
   );
   // Live detector ring for compressor threshold and limiter ceiling.
@@ -1905,28 +1962,28 @@ local(val,hover,pct,angle,nx,ny,_tw,_th,new_val,rng,dbl,ena,_vf,_lf,
     meter_pct=max(0,min(1,(meter_db-minv)/max(0.0001,rng)));
     meter_ang=2.356+meter_pct*4.712;meter_r=r+5;
     gfx_set(0.24,0.25,0.29,ena?0.72:0.35);
-    gfx_arc(cx,cy,meter_r,2.356,7.068,1);gfx_arc(cx,cy,meter_r+1,2.356,7.068,1);
+    zp_arc(cx,cy,meter_r,2.356,7.068,1);zp_arc(cx,cy,meter_r+1,2.356,7.068,1);
     meter_db>=val?gfx_set(mod_r*0.35+0.60,mod_g*0.30+0.62,mod_b*0.24+0.68,ena?1:0.45):
                   gfx_set(mod_r*0.42+0.18,mod_g*0.38+0.18,mod_b*0.38+0.20,ena?0.72:0.35);
-    gfx_arc(cx,cy,meter_r,2.356,meter_ang,1);gfx_arc(cx,cy,meter_r+1,2.356,meter_ang,1);
+    zp_arc(cx,cy,meter_r,2.356,meter_ang,1);zp_arc(cx,cy,meter_r+1,2.356,meter_ang,1);
     tick_ang=2.356+pct*4.712;gfx_set(0.94,0.95,0.98,ena?0.92:0.40);
-    gfx_line(cx+cos(tick_ang)*(meter_r-2),cy+sin(tick_ang)*(meter_r-2),
+    zp_line(cx+cos(tick_ang)*(meter_r-2),cy+sin(tick_ang)*(meter_r-2),
              cx+cos(tick_ang)*(meter_r+2),cy+sin(tick_ang)*(meter_r+2),1);
   );
   draw_knob_arc(cx,cy,r,pct,ena);
   !ena?gfx_set(0.13,0.13,0.14,1):knob_active_sl==sl_idx?gfx_set(mod_r*0.40+0.02,mod_g*0.30+0.02,mod_b*0.38+0.02,1):gfx_set(mod_r*0.22+0.02,mod_g*0.18+0.02,mod_b*0.22+0.02,1);
-  gfx_circle(cx,cy,r,1,1);
-  !ena?gfx_set(0.34,0.34,0.38,0.75):gfx_set(mod_r*0.82+0.16,mod_g*0.82+0.16,mod_b*0.82+0.16,0.96);gfx_circle(cx,cy,r,0,1);
+  zp_circle(cx,cy,r,1,1);
+  !ena?gfx_set(0.34,0.34,0.38,0.75):gfx_set(mod_r*0.82+0.16,mod_g*0.82+0.16,mod_b*0.82+0.16,0.96);zp_circle(cx,cy,r,0,1);
   angle=-2.356+pct*4.712;nx=cx+(r-2)*sin(angle);ny=cy-(r-2)*cos(angle);
-  !ena?gfx_set(0.45,0.45,0.48,0.85):gfx_set(mod_r*0.45+0.48,mod_g*0.34+0.62,mod_b*0.24+0.72,1);gfx_line(cx,cy,nx,ny,1);
+  !ena?gfx_set(0.45,0.45,0.48,0.85):gfx_set(mod_r*0.45+0.48,mod_g*0.34+0.62,mod_b*0.24+0.72,1);zp_line(cx,cy,nx,ny,1);
   _vf=ui_knob_value_font>0?ui_knob_value_font:12;
   _lf=ui_knob_label_font>0?ui_knob_label_font:12;
-  gfx_setfont(1,"Arial",_vf);gfx_set(0.92,0.92,0.94,1);
+  zp_setfont(1,"Arial",_vf);gfx_set(0.92,0.92,0.94,1);
   abs(val)>=100?sprintf(#_vk,"%.0f",val):abs(val)>=10?sprintf(#_vk,"%.1f",val):sprintf(#_vk,"%.2f",val);
-  gfx_measurestr(#_vk,_tw,_th);gfx_x=cx-_tw*0.5;gfx_y=cy-r-17;gfx_drawstr(#_vk);
+  (gfx_measurestr(#_vk, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=cx-_tw*0.5;zp_gy=cy-r-17;zp_drawstr(#_vk);
   !ena?gfx_set(0.45,0.45,0.48,0.85):gfx_set(mod_r*0.54+0.38,mod_g*0.36+0.44,mod_b*0.32+0.46,1);
-  gfx_setfont(1,"Arial",_lf);
-  gfx_measurestr(label,_tw,_th);gfx_x=cx-_tw*0.5;gfx_y=cy+r+4;gfx_drawstr(label);
+  zp_setfont(1,"Arial",_lf);
+  (gfx_measurestr(label, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=cx-_tw*0.5;zp_gy=cy+r+4;zp_drawstr(label);
 );
 
 // ── ui_opt ─────────────────────────────────────────────────────
@@ -1936,10 +1993,10 @@ local(hover,sel,_tw,_th,_fs,ena)(
   sel=floor(slider(sl_idx)+0.5)==this_val;
   hover=ena&&hit(x,y,w,h);hover?ui_set_hover(hover_id);
   ena&&!ui_render_only&&hover&&mouse_click?set_ui_slider(sl_idx,this_val);
-  !ena?gfx_set(0.09,0.10,0.11,1):sel?gfx_set(mod_r*0.55,mod_g*0.50,mod_b*0.55,1):gfx_set(0.12,0.16,0.22,1);gfx_rect(x,y,w,h);
+  !ena?gfx_set(0.09,0.10,0.11,1):sel?gfx_set(mod_r*0.55,mod_g*0.50,mod_b*0.55,1):gfx_set(0.12,0.16,0.22,1);zp_rect(x,y,w,h);
   _fs=h>=19?11:10;
-  !ena?gfx_set(0.42,0.43,0.46,0.95):gfx_set(0.88,0.92,0.96,1);gfx_setfont(1,"Arial",_fs,'b');
-  gfx_measurestr(label,_tw,_th);gfx_x=x+floor((w-_tw)*0.5);gfx_y=y+floor((h-_th)*0.5);gfx_drawstr(label);
+  !ena?gfx_set(0.42,0.43,0.46,0.95):gfx_set(0.88,0.92,0.96,1);zp_setfont(1,"Arial",_fs,'b');
+  (gfx_measurestr(label, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=x+floor((w-_tw)*0.5);zp_gy=y+floor((h-_th)*0.5);zp_drawstr(label);
 );
 
 function ui_mini_fader(sl_idx,x,y,w,h,minv,maxv,defv,label,hover_id)
@@ -1947,20 +2004,20 @@ local(hover,ena,val,pct,newpct,newv,_tw,_th)(
   ena=(ui_enable>=0.5);val=slider(sl_idx);pct=clamp((val-minv)/max(0.0000001,maxv-minv),0,1);
   hover=ena&&hit(x,y,w,h);hover?ui_set_hover(hover_id);
   !ui_render_only&&hover&&btn_down?(
-    newpct=clamp((mouse_x-x)/max(1,w),0,1);
+    newpct=clamp((zp_mx-x)/max(1,w),0,1);
     (mouse_cap&4)?newpct=clamp((defv-minv)/max(0.0000001,maxv-minv),0,1);
     newv=minv+newpct*(maxv-minv);
     set_ui_slider(sl_idx,newv);
     pct=newpct;val=newv;
   );
-  gfx_set(0.045,0.055,0.060,1);gfx_rect(x,y,w,h);
+  gfx_set(0.045,0.055,0.060,1);zp_rect(x,y,w,h);
   ena?gfx_set(mod_r*0.46+0.12,mod_g*0.46+0.12,mod_b*0.46+0.12,1):gfx_set(0.11,0.11,0.12,1);
-  gfx_rect(x,y,floor(w*pct),h);
+  zp_rect(x,y,floor(w*pct),h);
   hover?gfx_set(mod_r,mod_g,mod_b,1):gfx_set(mod_r,mod_g,mod_b,0.62);
-  gfx_rect(x,y,w,1);gfx_rect(x,y+h-1,w,1);
-  gfx_setfont(1,"Arial",10,'b');gfx_set(0.84,0.88,0.90,0.98);
+  zp_rect(x,y,w,1);zp_rect(x,y+h-1,w,1);
+  zp_setfont(1,"Arial",10,'b');gfx_set(0.84,0.88,0.90,0.98);
   sprintf(#_mf,"%s %.0f",label,val);
-  gfx_measurestr(#_mf,_tw,_th);gfx_x=x+4;gfx_y=y+floor((h-_th)*0.5);gfx_drawstr(#_mf);
+  (gfx_measurestr(#_mf, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=x+4;zp_gy=y+floor((h-_th)*0.5);zp_drawstr(#_mf);
 );
 
 // ── ui_toggle_btn ──────────────────────────────────────────────
@@ -1969,12 +2026,12 @@ local(state,hover,_tw,_th,ena)(
   state=floor(slider(sl_idx)+0.5);ena=(ui_enable>=0.5);
   hover=hit(x,y,w,h);ena&&hover?ui_set_hover(hover_id);
   ena&&!ui_render_only&&hover&&mouse_click?(set_ui_slider(sl_idx,1-state);state=1-state;);
-  !ena?gfx_set(0.11,0.11,0.12,1):state?gfx_set(ar*0.40,ag*0.35,ab*0.40,1):gfx_set(0.10,0.12,0.14,1);gfx_rect(x,y,w,h);
+  !ena?gfx_set(0.11,0.11,0.12,1):state?gfx_set(ar*0.40,ag*0.35,ab*0.40,1):gfx_set(0.10,0.12,0.14,1);zp_rect(x,y,w,h);
   !ena?gfx_set(0.24,0.24,0.27,1):state?gfx_set(ar,ag,ab,1):gfx_set(0.28,0.28,0.32,1);
-  gfx_rect(x,y,w,1);gfx_rect(x,y,1,h);gfx_rect(x+w-1,y,1,h);gfx_rect(x,y+h-1,w,1);
+  zp_rect(x,y,w,1);zp_rect(x,y,1,h);zp_rect(x+w-1,y,1,h);zp_rect(x,y+h-1,w,1);
   !ena?gfx_set(0.48,0.48,0.52,0.85):state?gfx_set(1,1,1,1):gfx_set(0.40,0.40,0.44,1);
-  gfx_setfont(1,"Arial",10,'b');gfx_measurestr(lbl,_tw,_th);
-  gfx_x=x+floor((w-_tw)*0.5);gfx_y=y+floor((h-_th)*0.5);gfx_drawstr(lbl);
+  zp_setfont(1,"Arial",10,'b');(gfx_measurestr(lbl, _tw, _th); _tw /= zp_sc; _th /= zp_sc);
+  zp_gx=x+floor((w-_tw)*0.5);zp_gy=y+floor((h-_th)*0.5);zp_drawstr(lbl);
 );
 
 function ui_tone_din_button(x,y,w,h,hover_id)
@@ -1987,13 +2044,13 @@ local(state,hover,_tw,_th)(
     dsp_needs_update=1;
   );
   state?gfx_set(0.10,0.42,0.34,1):hover?gfx_set(0.16,0.16,0.18,1):gfx_set(0.08,0.08,0.09,1);
-  gfx_rect(x,y,w,h);
+  zp_rect(x,y,w,h);
   state?gfx_set(0.38,0.96,0.78,1):hover?gfx_set(0.70,0.72,0.76,1):gfx_set(0.28,0.30,0.34,0.95);
-  gfx_rect(x,y,w,1);gfx_rect(x,y+h-1,w,1);
-  gfx_rect(x,y,1,h);gfx_rect(x+w-1,y,1,h);
+  zp_rect(x,y,w,1);zp_rect(x,y+h-1,w,1);
+  zp_rect(x,y,1,h);zp_rect(x+w-1,y,1,h);
   state?gfx_set(0.76,1.00,0.92,1):hover?gfx_set(0.88,0.90,0.94,0.96):gfx_set(0.56,0.58,0.62,0.96);
-  gfx_setfont(1,"Arial",9,'b');gfx_measurestr("DIN",_tw,_th);
-  gfx_x=x+floor((w-_tw)*0.5);gfx_y=y+floor((h-_th)*0.5);gfx_drawstr("DIN");
+  zp_setfont(1,"Arial",9,'b');(gfx_measurestr("DIN", _tw, _th); _tw /= zp_sc; _th /= zp_sc);
+  zp_gx=x+floor((w-_tw)*0.5);zp_gy=y+floor((h-_th)*0.5);zp_drawstr("DIN");
 );
 
 function ui_tone_eqdin_button(x,y,w,h,hover_id)
@@ -2006,13 +2063,13 @@ local(state,hover,_tw,_th)(
     dsp_needs_update=1;
   );
   state?gfx_set(0.10,0.42,0.34,1):hover?gfx_set(0.16,0.16,0.18,1):gfx_set(0.08,0.08,0.09,1);
-  gfx_rect(x,y,w,h);
+  zp_rect(x,y,w,h);
   state?gfx_set(0.38,0.96,0.78,1):hover?gfx_set(0.70,0.72,0.76,1):gfx_set(0.28,0.30,0.34,0.95);
-  gfx_rect(x,y,w,1);gfx_rect(x,y+h-1,w,1);
-  gfx_rect(x,y,1,h);gfx_rect(x+w-1,y,1,h);
+  zp_rect(x,y,w,1);zp_rect(x,y+h-1,w,1);
+  zp_rect(x,y,1,h);zp_rect(x+w-1,y,1,h);
   state?gfx_set(0.76,1.00,0.92,1):hover?gfx_set(0.88,0.90,0.94,0.96):gfx_set(0.56,0.58,0.62,0.96);
-  gfx_setfont(1,"Arial",9,'b');gfx_measurestr("EQD",_tw,_th);
-  gfx_x=x+floor((w-_tw)*0.5);gfx_y=y+floor((h-_th)*0.5);gfx_drawstr("EQD");
+  zp_setfont(1,"Arial",9,'b');(gfx_measurestr("EQD", _tw, _th); _tw /= zp_sc; _th /= zp_sc);
+  zp_gx=x+floor((w-_tw)*0.5);zp_gy=y+floor((h-_th)*0.5);zp_drawstr("EQD");
 );
 
 function tone_reset_freqs_gfx()
@@ -2052,13 +2109,13 @@ local(hover,_tw,_th)(
     tone_rst_hold_done=0;
   );
   hover?gfx_set(0.22,0.16,0.16,1):gfx_set(0.08,0.08,0.09,1);
-  gfx_rect(x,y,w,h);
+  zp_rect(x,y,w,h);
   hover?gfx_set(0.86,0.60,0.56,1):gfx_set(0.36,0.32,0.34,0.95);
-  gfx_rect(x,y,w,1);gfx_rect(x,y+h-1,w,1);
-  gfx_rect(x,y,1,h);gfx_rect(x+w-1,y,1,h);
+  zp_rect(x,y,w,1);zp_rect(x,y+h-1,w,1);
+  zp_rect(x,y,1,h);zp_rect(x+w-1,y,1,h);
   hover?gfx_set(1.00,0.86,0.82,1):gfx_set(0.62,0.62,0.66,0.96);
-  gfx_setfont(1,"Arial",9,'b');gfx_measurestr("RST",_tw,_th);
-  gfx_x=x+floor((w-_tw)*0.5);gfx_y=y+floor((h-_th)*0.5);gfx_drawstr("RST");
+  zp_setfont(1,"Arial",9,'b');(gfx_measurestr("RST", _tw, _th); _tw /= zp_sc; _th /= zp_sc);
+  zp_gx=x+floor((w-_tw)*0.5);zp_gy=y+floor((h-_th)*0.5);zp_drawstr("RST");
 );
 
 function apply_tone_manual_flat_gfx()
@@ -2094,42 +2151,42 @@ local(selected,hover,_tw,_th)(
   hover=hit(x,y,w,h);hover?ui_set_hover(hover_id);
   !ui_render_only&&hover&&mouse_click?apply_tone_preset_gfx(val);
   selected?gfx_set(0.10,0.42,0.34,1):hover?gfx_set(0.15,0.42,0.38,1):gfx_set(0.08,0.18,0.17,1);
-  gfx_rect(x,y,w,h);
+  zp_rect(x,y,w,h);
   selected?gfx_set(0.38,0.96,0.78,1):gfx_set(0.26,0.78,0.70,0.95);
-  gfx_rect(x,y,w,1);gfx_rect(x,y+h-1,w,1);
-  gfx_rect(x,y,1,h);gfx_rect(x+w-1,y,1,h);
+  zp_rect(x,y,w,1);zp_rect(x,y+h-1,w,1);
+  zp_rect(x,y,1,h);zp_rect(x+w-1,y,1,h);
   selected?gfx_set(0.76,1.00,0.92,1):gfx_set(0.82,0.96,0.92,0.96);
-  gfx_setfont(1,"Arial",9,'b');gfx_measurestr(label,_tw,_th);
-  gfx_x=x+floor((w-_tw)*0.5);gfx_y=y+floor((h-_th)*0.5);gfx_drawstr(label);
+  zp_setfont(1,"Arial",9,'b');(gfx_measurestr(label, _tw, _th); _tw /= zp_sc; _th /= zp_sc);
+  zp_gx=x+floor((w-_tw)*0.5);zp_gy=y+floor((h-_th)*0.5);zp_drawstr(label);
 );
 
 // ── draw_shell (VUC module panel) ─────────────────────────────
 function draw_shell(px,py,pw,ph,title)
 local(act,_tw,_th)(
-  gfx_set(0.12,0.11,0.09,1);gfx_rect(px,py,pw,ph);
-  gfx_set(mod_r,mod_g,mod_b,1);gfx_rect(px,py,pw,2);gfx_rect(px,py+ph-2,pw,2);
-  gfx_rect(px,py,2,ph);gfx_rect(px+pw-2,py,2,ph);
-  gfx_setfont(1,"Arial",13,'b');gfx_set(mod_r*0.6+0.28,mod_g*0.4+0.36,mod_b*0.2+0.56,1);
-  gfx_x=px+12;gfx_y=py+8;gfx_drawstr(title);
+  gfx_set(0.12,0.11,0.09,1);zp_rect(px,py,pw,ph);
+  gfx_set(mod_r,mod_g,mod_b,1);zp_rect(px,py,pw,2);zp_rect(px,py+ph-2,pw,2);
+  zp_rect(px,py,2,ph);zp_rect(px+pw-2,py,2,ph);
+  zp_setfont(1,"Arial",13,'b');gfx_set(mod_r*0.6+0.28,mod_g*0.4+0.36,mod_b*0.2+0.56,1);
+  zp_gx=px+12;zp_gy=py+8;zp_drawstr(title);
 );
 
 function draw_engine_row_band(x,y,w,h,lbl,rr,gg,bb)
 local(_tw,_th)(
-  gfx_set(0.075+rr*0.055,0.065+gg*0.040,0.058+bb*0.045,0.86);gfx_rect(x,y,w,h);
-  gfx_set(rr*0.50+0.24,gg*0.50+0.24,bb*0.50+0.24,0.22);gfx_rect(x+50,y+5,w-58,h-10);
-  gfx_set(rr*0.62+0.34,gg*0.62+0.34,bb*0.62+0.34,0.78);gfx_rect(x+48,y+h-1,w-50,1);
-  gfx_set(rr*0.62+0.34,gg*0.62+0.34,bb*0.62+0.34,0.34);gfx_rect(x+48,y+4,1,h-8);
-  gfx_setfont(1,"Arial",11,'b');gfx_set(rr*0.76+0.32,gg*0.76+0.32,bb*0.76+0.32,1);
-  gfx_measurestr(lbl,_tw,_th);gfx_x=x+8;gfx_y=y+floor((h-_th)*0.5);gfx_drawstr(lbl);
+  gfx_set(0.075+rr*0.055,0.065+gg*0.040,0.058+bb*0.045,0.86);zp_rect(x,y,w,h);
+  gfx_set(rr*0.50+0.24,gg*0.50+0.24,bb*0.50+0.24,0.22);zp_rect(x+50,y+5,w-58,h-10);
+  gfx_set(rr*0.62+0.34,gg*0.62+0.34,bb*0.62+0.34,0.78);zp_rect(x+48,y+h-1,w-50,1);
+  gfx_set(rr*0.62+0.34,gg*0.62+0.34,bb*0.62+0.34,0.34);zp_rect(x+48,y+4,1,h-8);
+  zp_setfont(1,"Arial",11,'b');gfx_set(rr*0.76+0.32,gg*0.76+0.32,bb*0.76+0.32,1);
+  (gfx_measurestr(lbl, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=x+8;zp_gy=y+floor((h-_th)*0.5);zp_drawstr(lbl);
 );
 
 function draw_output_row_band(x,y,w,h,lbl,rr,gg,bb)
 local(_tw,_th)(
-  gfx_set(0.055+rr*0.022,0.052+gg*0.017,0.050+bb*0.020,0.72);gfx_rect(x,y,w,h);
-  gfx_set(rr*0.55+0.28,gg*0.55+0.28,bb*0.55+0.28,0.54);gfx_rect(x+48,y+h+2,w-50,1);
-  gfx_set(rr,gg,bb,0.18);gfx_rect(x+48,y+4,1,h-8);
-  gfx_setfont(1,"Arial",11,'b');gfx_set(rr*0.70+0.28,gg*0.70+0.28,bb*0.70+0.28,0.98);
-  gfx_measurestr(lbl,_tw,_th);gfx_x=x+8;gfx_y=y+6;gfx_drawstr(lbl);
+  gfx_set(0.055+rr*0.022,0.052+gg*0.017,0.050+bb*0.020,0.72);zp_rect(x,y,w,h);
+  gfx_set(rr*0.55+0.28,gg*0.55+0.28,bb*0.55+0.28,0.54);zp_rect(x+48,y+h+2,w-50,1);
+  gfx_set(rr,gg,bb,0.18);zp_rect(x+48,y+4,1,h-8);
+  zp_setfont(1,"Arial",11,'b');gfx_set(rr*0.70+0.28,gg*0.70+0.28,bb*0.70+0.28,0.98);
+  (gfx_measurestr(lbl, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=x+8;zp_gy=y+6;zp_drawstr(lbl);
 );
 
 // ── draw_hsegs_gr (GR bar meter) ──────────────────────────────
@@ -2138,17 +2195,17 @@ local(ns,gp,sw,i,sg,ip,ph,_tw,_th,_lx,_ly)(
   ns=20;gp=1;sw=max(1,floor((bw-(ns-1)*gp)/ns));
   ph=pkh_base[pkh_slot];
   gr>ph?(ph=gr;):(ph-=PEAK_DECAY*0.5;ph=max(ph,0););pkh_base[pkh_slot]=ph;
-  gfx_set(0.05,0.05,0.07,1);gfx_rect(bx,by,bw,bh);
+  gfx_set(0.05,0.05,0.07,1);zp_rect(bx,by,bw,bh);
   i=0;loop(ns,sg=(i/(ns-1.0))*24.0;
     ip=(!gr>=sg)&&(ph>=sg)&&(ph<sg+24.0/(ns-1.0));
     ip?gfx_set(1.0,1.0,1.0,0.88):gr>=sg?gfx_set(mod_r*0.50+0.12,mod_g*0.22+0.06,mod_b*0.52+0.30,0.88):gfx_set(mod_r*0.06,mod_g*0.04,mod_b*0.08,0.30);
-    gfx_rect(bx+(ns-1-i)*(sw+gp),by,sw,bh);i+=1;);
-  gfx_setfont(1,"Arial",9);gfx_set(0.64,0.72,0.78,1);
+    zp_rect(bx+(ns-1-i)*(sw+gp),by,sw,bh);i+=1;);
+  zp_setfont(1,"Arial",9);gfx_set(0.64,0.72,0.78,1);
   gr>0?sprintf(#_gr,"%s %.1f",label,gr):sprintf(#_gr,"%s --",label);
-  gfx_measurestr(#_gr,_tw,_th);
+  (gfx_measurestr(#_gr, _tw, _th); _tw /= zp_sc; _th /= zp_sc);
   _lx=bx+bw-_tw-2; _lx<bx?(_lx=bx;);
   _ly=by-11;
-  gfx_x=_lx;gfx_y=_ly;gfx_drawstr(#_gr);
+  zp_gx=_lx;zp_gy=_ly;zp_drawstr(#_gr);
 );
 
 // ── draw_vseg (LIVE vertical meter) ───────────────────────────
@@ -2159,12 +2216,12 @@ local(ns,gap,sh,i,sv,ion,sr,sg,sb,_tw,_th)(
     sv>0?(sr=0.92;sg=0.12;sb=0.12;):sv>-9?(sr=0.90;sg=0.76;sb=0.10;):(sr=nr;sg=ng;sb=nb;);
     ion=db>=sv;
     gfx_r=sr*(ion?1.0:0.12);gfx_g=sg*(ion?1.0:0.12);gfx_b=sb*(ion?1.0:0.12);gfx_a=ion?0.95:0.35;
-    gfx_rect(bx,by+bh-(i+1)*(sh+gap)+gap,bw,sh);i+=1;);
-  gfx_setfont(1,"Arial",10);gfx_set(0.52,0.62,0.58,1);
-  gfx_measurestr(label,_tw,_th);gfx_x=bx+(bw-_tw)*0.5;gfx_y=by+bh+5;gfx_drawstr(label);
+    zp_rect(bx,by+bh-(i+1)*(sh+gap)+gap,bw,sh);i+=1;);
+  zp_setfont(1,"Arial",10);gfx_set(0.52,0.62,0.58,1);
+  (gfx_measurestr(label, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx+(bw-_tw)*0.5;zp_gy=by+bh+5;zp_drawstr(label);
   db>-60?sprintf(#_vv,"%.1f",db):sprintf(#_vv,"--");gfx_set(0.90,0.96,0.92,1);
-  gfx_setfont(1,"Arial",15,'b');
-  gfx_measurestr(#_vv,_tw,_th);gfx_x=bx+(bw-_tw)*0.5;gfx_y=by-_th-8;gfx_drawstr(#_vv);
+  zp_setfont(1,"Arial",15,'b');
+  (gfx_measurestr(#_vv, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx+(bw-_tw)*0.5;zp_gy=by-_th-8;zp_drawstr(#_vv);
 );
 
 // ── draw_vseg_dense (compact LIVE meter inspired by ZP Loudness Meter) ──
@@ -2176,7 +2233,7 @@ local(v)(
 
 function draw_meter_db_axis(x,y,h)
 local(i,db,yy,_tw,_th)(
-  gfx_setfont(1,"Arial",9,'b');
+  zp_setfont(1,"Arial",9,'b');
   i=0;
   loop(7,
     i==0?(db=0;);
@@ -2187,9 +2244,9 @@ local(i,db,yy,_tw,_th)(
     i==5?(db=-48;);
     i==6?(db=-60;);
     yy=y+h-floor(zp_meter_db_norm(db)*h);
-    gfx_set(0.58,0.70,0.76,0.90);gfx_rect(x-7,yy,6,1);
-    gfx_set(0.72,0.84,0.88,0.98);sprintf(#_dbax,"%.0f",db);gfx_measurestr(#_dbax,_tw,_th);
-    gfx_x=x;gfx_y=yy-floor(_th*0.5);gfx_drawstr(#_dbax);
+    gfx_set(0.58,0.70,0.76,0.90);zp_rect(x-7,yy,6,1);
+    gfx_set(0.72,0.84,0.88,0.98);sprintf(#_dbax,"%.0f",db);(gfx_measurestr(#_dbax, _tw, _th); _tw /= zp_sc; _th /= zp_sc);
+    zp_gx=x;zp_gy=yy-floor(_th*0.5);zp_drawstr(#_dbax);
     i+=1;
   );
 );
@@ -2197,7 +2254,7 @@ local(i,db,yy,_tw,_th)(
 function draw_vseg_dense(bx,by,bw,bh,db,label,nr,ng,nb)
 local(ns,gap,sh,i,sv,ion,sr,sg,sb,_tw,_th,_yy,_fillh)(
   ns=42;gap=1;sh=max(1,floor((bh-(ns-1)*gap)/ns));
-  gfx_set(0.035,0.040,0.046,1);gfx_rect(bx-1,by-1,bw+2,bh+2);
+  gfx_set(0.035,0.040,0.046,1);zp_rect(bx-1,by-1,bw+2,bh+2);
   i=0;
   loop(ns,
     sv=-60.0+(i/(ns-1.0))*66.0;
@@ -2205,21 +2262,21 @@ local(ns,gap,sh,i,sv,ion,sr,sg,sb,_tw,_th,_yy,_fillh)(
     ion=db>=sv;
     gfx_r=sr*(ion?1.0:0.10);gfx_g=sg*(ion?1.0:0.10);gfx_b=sb*(ion?1.0:0.10);gfx_a=ion?0.96:0.32;
     _yy=by+bh-(i+1)*(sh+gap)+gap;
-    gfx_rect(bx,_yy,bw,sh);
+    zp_rect(bx,_yy,bw,sh);
     i+=1;
   );
   _fillh=floor(zp_meter_db_norm(db)*bh);
-  _fillh>0?(gfx_set(nr,ng,nb,0.12);gfx_rect(bx,by+bh-_fillh,bw,_fillh););
-  gfx_setfont(1,"Arial",9,'b');gfx_set(0.58,0.68,0.64,0.98);
-  gfx_measurestr(label,_tw,_th);gfx_x=bx+floor((bw-_tw)*0.5);gfx_y=by+bh+5;gfx_drawstr(label);
+  _fillh>0?(gfx_set(nr,ng,nb,0.12);zp_rect(bx,by+bh-_fillh,bw,_fillh););
+  zp_setfont(1,"Arial",9,'b');gfx_set(0.58,0.68,0.64,0.98);
+  (gfx_measurestr(label, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx+floor((bw-_tw)*0.5);zp_gy=by+bh+5;zp_drawstr(label);
 );
 
 function draw_vseg_dense_stereo_tp(bx,by,bw,bh,dbL,dbR,label,nr,ng,nb)
 local(ns,gap,sh,i,sv,ionL,ionR,sr,sg,sb,_tw,_th,_yy,_lw,_rw,_rx)(
   ns=42;gap=1;sh=max(1,floor((bh-(ns-1)*gap)/ns));
   _lw=max(3,floor((bw-1)*0.5));_rw=max(3,bw-_lw-1);_rx=bx+_lw+1;
-  gfx_set(0.035,0.040,0.046,1);gfx_rect(bx-1,by-1,bw+2,bh+2);
-  gfx_set(0.18,0.22,0.20,0.90);gfx_rect(bx+_lw,by,1,bh);
+  gfx_set(0.035,0.040,0.046,1);zp_rect(bx-1,by-1,bw+2,bh+2);
+  gfx_set(0.18,0.22,0.20,0.90);zp_rect(bx+_lw,by,1,bh);
   i=0;
   loop(ns,
     sv=-60.0+(i/(ns-1.0))*66.0;
@@ -2227,41 +2284,41 @@ local(ns,gap,sh,i,sv,ionL,ionR,sr,sg,sb,_tw,_th,_yy,_lw,_rw,_rx)(
     _yy=by+bh-(i+1)*(sh+gap)+gap;
     ionL=dbL>=sv;
     gfx_r=sr*(ionL?1.0:0.10);gfx_g=sg*(ionL?1.0:0.10);gfx_b=sb*(ionL?1.0:0.10);gfx_a=ionL?0.96:0.32;
-    gfx_rect(bx,_yy,_lw,sh);
+    zp_rect(bx,_yy,_lw,sh);
     ionR=dbR>=sv;
     gfx_r=sr*(ionR?1.0:0.10);gfx_g=sg*(ionR?1.0:0.10);gfx_b=sb*(ionR?1.0:0.10);gfx_a=ionR?0.96:0.32;
-    gfx_rect(_rx,_yy,_rw,sh);
+    zp_rect(_rx,_yy,_rw,sh);
     i+=1;
   );
-  gfx_setfont(1,"Arial",7,'b');gfx_set(0.76,0.90,0.78,0.95);
-  gfx_measurestr("L",_tw,_th);gfx_x=bx+floor((_lw-_tw)*0.5);gfx_y=by+2;gfx_drawstr("L");
-  gfx_measurestr("R",_tw,_th);gfx_x=_rx+floor((_rw-_tw)*0.5);gfx_y=by+2;gfx_drawstr("R");
-  gfx_setfont(1,"Arial",9,'b');gfx_set(0.58,0.68,0.64,0.98);
-  gfx_measurestr(label,_tw,_th);gfx_x=bx+floor((bw-_tw)*0.5);gfx_y=by+bh+5;gfx_drawstr(label);
+  zp_setfont(1,"Arial",7,'b');gfx_set(0.76,0.90,0.78,0.95);
+  (gfx_measurestr("L", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx+floor((_lw-_tw)*0.5);zp_gy=by+2;zp_drawstr("L");
+  (gfx_measurestr("R", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_rx+floor((_rw-_tw)*0.5);zp_gy=by+2;zp_drawstr("R");
+  zp_setfont(1,"Arial",9,'b');gfx_set(0.58,0.68,0.64,0.98);
+  (gfx_measurestr(label, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx+floor((bw-_tw)*0.5);zp_gy=by+bh+5;zp_drawstr(label);
 );
 
 function draw_live_ms_indicator(x,y,w,h)
 local(cx,half,corr,fill,mid_x,side_x,_tw,_th,width_txt_x)(
   w>120?(
     hit(x,y,w,h)?ui_set_hover(9063);
-    gfx_set(0.040,0.048,0.052,1);gfx_rect(x,y,w,h);
-    gfx_set(0.18,0.50,0.90,0.22);gfx_rect(x,y,w,1);gfx_rect(x,y+h-1,w,1);
-    gfx_setfont(1,"Arial",8,'b');
-    gfx_set(0.72,0.82,0.88,0.95);gfx_x=x+5;gfx_y=y+3;gfx_drawstr("MONO");
-    gfx_measurestr("ST",_tw,_th);gfx_x=x+w-_tw-5;gfx_y=y+3;gfx_drawstr("ST");
+    gfx_set(0.040,0.048,0.052,1);zp_rect(x,y,w,h);
+    gfx_set(0.18,0.50,0.90,0.22);zp_rect(x,y,w,1);zp_rect(x,y+h-1,w,1);
+    zp_setfont(1,"Arial",8,'b');
+    gfx_set(0.72,0.82,0.88,0.95);zp_gx=x+5;zp_gy=y+3;zp_drawstr("MONO");
+    (gfx_measurestr("ST", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=x+w-_tw-5;zp_gy=y+3;zp_drawstr("ST");
     mid_x=x+43;side_x=x+w-43;
     cx=floor((mid_x+side_x)*0.5);half=max(10,floor((side_x-mid_x)*0.5));
-    gfx_set(0.11,0.10,0.10,1);gfx_rect(cx-half,y+6,half,5);
-    gfx_set(0.08,0.14,0.12,1);gfx_rect(cx,y+6,half,5);
+    gfx_set(0.11,0.10,0.10,1);zp_rect(cx-half,y+6,half,5);
+    gfx_set(0.08,0.14,0.12,1);zp_rect(cx,y+6,half,5);
     corr=clamp(ui_phase_corr,-1,1);
     fill=floor(abs(corr)*half);
     corr<0?gfx_set(0.92,0.24,0.24,0.86):corr<0.25?gfx_set(0.92,0.74,0.24,0.86):gfx_set(0.22,0.82,0.42,0.88);
-    corr<0?gfx_rect(cx-fill,y+6,fill,5):gfx_rect(cx,y+6,fill,5);
-    gfx_set(0.86,0.92,0.90,0.90);gfx_rect(cx-1,y+3,2,h-6);
-    gfx_setfont(1,"Arial",8,'b');
+    corr<0?zp_rect(cx-fill,y+6,fill,5):zp_rect(cx,y+6,fill,5);
+    gfx_set(0.86,0.92,0.90,0.90);zp_rect(cx-1,y+3,2,h-6);
+    zp_setfont(1,"Arial",8,'b');
     sprintf(#_msw,"S-M %.1f",ui_ms_width_db);
-    gfx_set(0.72,0.55,1.00,0.95);gfx_measurestr(#_msw,_tw,_th);
-    width_txt_x=x+floor((w-_tw)*0.5);gfx_x=width_txt_x;gfx_y=y+h-11;gfx_drawstr(#_msw);
+    gfx_set(0.72,0.55,1.00,0.95);(gfx_measurestr(#_msw, _tw, _th); _tw /= zp_sc; _th /= zp_sc);
+    width_txt_x=x+floor((w-_tw)*0.5);zp_gx=width_txt_x;zp_gy=y+h-11;zp_drawstr(#_msw);
   );
 );
 
@@ -2290,14 +2347,14 @@ function tone_x_to_freq(mx,x,w) local(lmin,lmax,p)(
 function draw_tone_guard_strip(x,y,w,h)
 local(i,scope_x,scope_w,scope_y,scope_h,actual,target,corr,freq,user,user_eff,px,sy,ty,uy,fill,bar_y,dyn_y,_tw,_th,hover,active_pt,nf,ng,lx,ly,ltx,lty,psx,psy,ptx,pty,label_y,value_y,cr,cg,cb,_dbl)(
   scope_x=x+10;scope_w=w-20;scope_y=y+34;scope_h=h-64;
-  gfx_set(0.045,0.060,0.058,1);gfx_rect(x,y,w,h);
-  gfx_set(0.10,0.34,0.31,0.78);gfx_rect(x,y,w,1);gfx_rect(x,y+h-1,w,1);
-  gfx_setfont(1,"Arial",12,'b');gfx_set(0.62,0.96,0.90,1);
-  gfx_x=x+6;gfx_y=y+5;gfx_drawstr("TONE SLOPE MAP");
-  gfx_setfont(1,"Arial",9,'b');gfx_set(0.66,0.76,0.74,0.90);
-  gfx_x=x+w-78;gfx_y=y+6;gfx_drawstr("FREQ POINTS");
-  gfx_set(0.060,0.078,0.078,1);gfx_rect(scope_x,scope_y,scope_w,scope_h);
-  gfx_set(0.13,0.18,0.18,1);gfx_rect(scope_x+3,scope_y+floor(scope_h*0.52),scope_w-6,1);
+  gfx_set(0.045,0.060,0.058,1);zp_rect(x,y,w,h);
+  gfx_set(0.10,0.34,0.31,0.78);zp_rect(x,y,w,1);zp_rect(x,y+h-1,w,1);
+  zp_setfont(1,"Arial",12,'b');gfx_set(0.62,0.96,0.90,1);
+  zp_gx=x+6;zp_gy=y+5;zp_drawstr("TONE SLOPE MAP");
+  zp_setfont(1,"Arial",9,'b');gfx_set(0.66,0.76,0.74,0.90);
+  zp_gx=x+w-78;zp_gy=y+6;zp_drawstr("FREQ POINTS");
+  gfx_set(0.060,0.078,0.078,1);zp_rect(scope_x,scope_y,scope_w,scope_h);
+  gfx_set(0.13,0.18,0.18,1);zp_rect(scope_x+3,scope_y+floor(scope_h*0.52),scope_w-6,1);
   !btn_down?tone_drag_pt=0;
   i=0;
   loop(4,
@@ -2314,7 +2371,7 @@ local(i,scope_x,scope_w,scope_y,scope_h,actual,target,corr,freq,user,user_eff,px
     sy=tone_scope_y(actual,scope_y,scope_h);
     ty=tone_scope_y(target,scope_y,scope_h);
     uy=tone_user_y(user_eff,scope_y,scope_h);
-    hover=((mouse_x-px)*(mouse_x-px)+(mouse_y-uy)*(mouse_y-uy))<81;
+    hover=((zp_mx-px)*(zp_mx-px)+(zp_my-uy)*(zp_my-uy))<81;
     hover?ui_set_hover(9100+i);
     hover&&mouse_click?(
       _dbl=(9100+i==last_dbl_id)&&(time_precise()-last_dbl_time<0.38);
@@ -2331,12 +2388,12 @@ local(i,scope_x,scope_w,scope_y,scope_h,actual,target,corr,freq,user,user_eff,px
       last_dbl_id=9100+i;last_dbl_time=time_precise();
     );
     tone_drag_pt==i+1&&btn_down?(
-      nf=tone_x_to_freq(mouse_x,scope_x,scope_w);
+      nf=tone_x_to_freq(zp_mx,scope_x,scope_w);
       i==0?set_ui_slider(42,clamp(nf,40,min(250,slider(43)/1.08)));
       i==1?set_ui_slider(43,clamp(nf,max(180,slider(42)*1.08),min(1200,slider(44)/1.08)));
       i==2?set_ui_slider(44,clamp(nf,max(800,slider(43)*1.08),min(15000,slider(45)/1.08)));
       i==3?set_ui_slider(45,clamp(nf,max(4000,slider(44)*1.08),20000));
-      ng=clamp((scope_y+floor(scope_h*0.52)-mouse_y)*(6/(scope_h*0.40)),-6,6);
+      ng=clamp((scope_y+floor(scope_h*0.52)-zp_my)*(6/(scope_h*0.40)),-6,6);
       i==0?set_ui_slider(47,ng);
       i==1?set_ui_slider(48,ng);
       i==2?set_ui_slider(49,ng);
@@ -2345,40 +2402,40 @@ local(i,scope_x,scope_w,scope_y,scope_h,actual,target,corr,freq,user,user_eff,px
     );
     active_pt=hover||tone_drag_pt==i+1;
     i>0?(
-      gfx_set(0.18,0.64,0.58,0.52);gfx_line(ptx,pty,px,ty,1);
-      gfx_set(0.86,0.96,0.92,0.66);gfx_line(psx,psy,px,sy,1);
+      gfx_set(0.18,0.64,0.58,0.52);zp_line(ptx,pty,px,ty,1);
+      gfx_set(0.86,0.96,0.92,0.66);zp_line(psx,psy,px,sy,1);
     );
-    gfx_set(cr*0.65,cg*0.72,cb*0.68,active_pt?1:0.62);gfx_circle(px,ty,active_pt?5:4,1,1);
-    gfx_set(0.86,0.96,0.92,0.95);gfx_circle(px,sy,3,1,1);
-    gfx_set(0.24,0.42,0.38,0.65);gfx_line(px,tone_user_y(0,scope_y,scope_h),px,uy,1);
+    gfx_set(cr*0.65,cg*0.72,cb*0.68,active_pt?1:0.62);zp_circle(px,ty,active_pt?5:4,1,1);
+    gfx_set(0.86,0.96,0.92,0.95);zp_circle(px,sy,3,1,1);
+    gfx_set(0.24,0.42,0.38,0.65);zp_line(px,tone_user_y(0,scope_y,scope_h),px,uy,1);
     active_pt?gfx_set(cr,cg,cb,1):gfx_set(0.78,0.90,0.84,0.62);
-    gfx_circle(px,uy,active_pt?5:4,1,1);
-    gfx_set(0.02,0.03,0.03,0.85);gfx_circle(px,uy,active_pt?5:4,0,1);
+    zp_circle(px,uy,active_pt?5:4,1,1);
+    gfx_set(0.02,0.03,0.03,0.85);zp_circle(px,uy,active_pt?5:4,0,1);
     fill=min(22,abs(corr)*7);
     bar_y=y+h-17;
-    corr< -0.02?(gfx_set(0.92,0.30,0.18,0.90);gfx_rect(px-fill,bar_y,fill,5);):
-    corr> 0.02?(gfx_set(0.20,0.82,0.66,0.90);gfx_rect(px,bar_y,fill,5););
+    corr< -0.02?(gfx_set(0.92,0.30,0.18,0.90);zp_rect(px-fill,bar_y,fill,5);):
+    corr> 0.02?(gfx_set(0.20,0.82,0.66,0.90);zp_rect(px,bar_y,fill,5););
     abs(corr)>0.04?(
-      gfx_setfont(1,"Arial",10,'b');
+      zp_setfont(1,"Arial",10,'b');
       sprintf(#_dyn,"DYN %+.1f",corr);
-      gfx_measurestr(#_dyn,_tw,_th);
+      (gfx_measurestr(#_dyn, _tw, _th); _tw /= zp_sc; _th /= zp_sc);
       dyn_y=y+h-11;
       gfx_set(0.02,0.03,0.03,0.82);
-      gfx_rect(clamp(px-floor(_tw*0.5)-2,scope_x,scope_x+scope_w-_tw-4),dyn_y-1,_tw+4,_th+2);
+      zp_rect(clamp(px-floor(_tw*0.5)-2,scope_x,scope_x+scope_w-_tw-4),dyn_y-1,_tw+4,_th+2);
       corr<0?gfx_set(1.00,0.42,0.30,active_pt?1:0.92):gfx_set(0.36,0.96,0.78,active_pt?1:0.92);
-      gfx_x=clamp(px-floor(_tw*0.5),scope_x,scope_x+scope_w-_tw);
-      gfx_y=dyn_y;
-      gfx_drawstr(#_dyn);
+      zp_gx=clamp(px-floor(_tw*0.5),scope_x,scope_x+scope_w-_tw);
+      zp_gy=dyn_y;
+      zp_drawstr(#_dyn);
     );
     label_y=(i==1||i==3)?y+36:y+27;
     value_y=(i==1||i==3)?y+h-42:y+h-30;
-    gfx_setfont(1,"Arial",10,'b');
+    zp_setfont(1,"Arial",10,'b');
     active_pt?gfx_set(cr,cg,cb,1):gfx_set(0.74,0.84,0.82,0.90);
-    gfx_measurestr(#_tl,_tw,_th);lx=clamp(px-floor(_tw*0.5),scope_x,scope_x+scope_w-_tw);gfx_x=lx;gfx_y=label_y;gfx_drawstr(#_tl);
-    gfx_setfont(1,"Arial",13,'b');
+    (gfx_measurestr(#_tl, _tw, _th); _tw /= zp_sc; _th /= zp_sc);lx=clamp(px-floor(_tw*0.5),scope_x,scope_x+scope_w-_tw);zp_gx=lx;zp_gy=label_y;zp_drawstr(#_tl);
+    zp_setfont(1,"Arial",13,'b');
     sprintf(#_hz,"%.0f  %+.1f",freq,user_eff);
     active_pt?gfx_set(cr,cg,cb,1):gfx_set(0.78,0.86,0.84,0.82);
-    gfx_measurestr(#_hz,_tw,_th);gfx_x=clamp(px-floor(_tw*0.5),scope_x,scope_x+scope_w-_tw);gfx_y=value_y;gfx_drawstr(#_hz);
+    (gfx_measurestr(#_hz, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=clamp(px-floor(_tw*0.5),scope_x,scope_x+scope_w-_tw);zp_gy=value_y;zp_drawstr(#_hz);
     ptx=px;pty=ty;psx=px;psy=sy;
     i+=1;
   );
@@ -2399,11 +2456,11 @@ local(hover,sel,_tw,_th)(
     refresh_out_cal_trim();
     out_preset_sel=pidx;
   );
-  sel?gfx_set(0.14,0.38,0.80,1):gfx_set(0.10,0.14,0.22,1);gfx_rect(x,y,w,h);
-  sel?(gfx_set(0.32,0.64,0.98,1);gfx_rect(x,y,w,1);gfx_rect(x,y+h-1,w,1);gfx_rect(x,y,1,h);gfx_rect(x+w-1,y,1,h););
+  sel?gfx_set(0.14,0.38,0.80,1):gfx_set(0.10,0.14,0.22,1);zp_rect(x,y,w,h);
+  sel?(gfx_set(0.32,0.64,0.98,1);zp_rect(x,y,w,1);zp_rect(x,y+h-1,w,1);zp_rect(x,y,1,h);zp_rect(x+w-1,y,1,h););
   sel?gfx_set(1,1,1,1):gfx_set(0.72,0.84,0.98,0.88);
-  gfx_setfont(1,"Arial",10,'b');gfx_measurestr(label,_tw,_th);
-  gfx_x=x+floor((w-_tw)*0.5);gfx_y=y+floor((h-_th)*0.5);gfx_drawstr(label);
+  zp_setfont(1,"Arial",10,'b');(gfx_measurestr(label, _tw, _th); _tw /= zp_sc; _th /= zp_sc);
+  zp_gx=x+floor((w-_tw)*0.5);zp_gy=y+floor((h-_th)*0.5);zp_drawstr(label);
 );
 
 function reset_output_defaults_gfx()
@@ -2423,158 +2480,158 @@ function reset_output_defaults_gfx()
 floor(gfx_view+0.5)==1?(
   PX=PX0;
 
-  gfx_set(0.11,0.10,0.09,1);gfx_rect(0,0,gfx_w,HDR_H);
-  gfx_set(0.16,0.50,0.92,1);gfx_rect(0,0,gfx_w,3);
-  gfx_set(0.18,0.20,0.24,1);gfx_rect(0,HDR_H-1,gfx_w,1);
-  gfx_setfont(1,"Arial",16,'b');gfx_set(0.90,0.92,0.96,1);
-  gfx_x=PX;gfx_y=11;gfx_drawstr("ZP Master Pro");
-  gfx_setfont(1,"Arial",10);gfx_set(0.38,0.50,0.72,1);
-gfx_x=PX;gfx_y=36;gfx_drawstr("Master Processor | v2.45 Circular Threshold Meters - di Paolo Balestri");
+  gfx_set(0.11,0.10,0.09,1);zp_rect(0,0,zp_vw,HDR_H);
+  gfx_set(0.16,0.50,0.92,1);zp_rect(0,0,zp_vw,3);
+  gfx_set(0.18,0.20,0.24,1);zp_rect(0,HDR_H-1,zp_vw,1);
+  zp_setfont(1,"Arial",16,'b');gfx_set(0.90,0.92,0.96,1);
+  zp_gx=PX;zp_gy=11;zp_drawstr("ZP Master Pro");
+  zp_setfont(1,"Arial",10);gfx_set(0.38,0.50,0.72,1);
+zp_gx=PX;zp_gy=36;zp_drawstr("Master Processor | v2.45 Circular Threshold Meters - di Paolo Balestri");
 
   // View tabs header
   _bx2=PX+PW-63;_byt=12;
-  gfx_set(0.14,0.14,0.18,1);gfx_rect(_bx2,_byt,29,20);
-  gfx_set(0.80,0.84,0.92,1);gfx_setfont(1,"Arial",10);
-  gfx_measurestr("GUI",_tw,_th);gfx_x=_bx2+floor((29-_tw)*0.5);gfx_y=_byt+floor((20-_th)*0.5);gfx_drawstr("GUI");
+  gfx_set(0.14,0.14,0.18,1);zp_rect(_bx2,_byt,29,20);
+  gfx_set(0.80,0.84,0.92,1);zp_setfont(1,"Arial",10);
+  (gfx_measurestr("GUI", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_bx2+floor((29-_tw)*0.5);zp_gy=_byt+floor((20-_th)*0.5);zp_drawstr("GUI");
   hit(_bx2,_byt,29,20)&&mouse_click?set_ui_slider(34,0);
-  gfx_set(0.16,0.44,0.90,1);gfx_rect(_bx2+31,_byt,32,20);
-  gfx_set(1,1,1,1);gfx_measurestr("JSFX",_tw,_th);gfx_x=_bx2+31+floor((32-_tw)*0.5);gfx_y=_byt+floor((20-_th)*0.5);gfx_drawstr("JSFX");
+  gfx_set(0.16,0.44,0.90,1);zp_rect(_bx2+31,_byt,32,20);
+  gfx_set(1,1,1,1);(gfx_measurestr("JSFX", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_bx2+31+floor((32-_tw)*0.5);zp_gy=_byt+floor((20-_th)*0.5);zp_drawstr("JSFX");
   hit(_bx2+31,_byt,32,20)&&mouse_click?set_ui_slider(34,1);
 
   // Parameter table — two columns
-  _cx1=PX+8;_cx2=PX+8+floor(gfx_w*0.5);_rh=20;_voff=182;
+  _cx1=PX+8;_cx2=PX+8+floor(zp_vw*0.5);_rh=20;_voff=182;
   _y=HDR_H+8;
-  gfx_setfont(1,"Arial",10,'b');gfx_set(0.36,0.60,0.92,1);
-  gfx_x=_cx1;gfx_y=_y;gfx_drawstr("PARAMETRO");
-  gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr("VALORE");
-  gfx_x=_cx2;gfx_y=_y;gfx_drawstr("PARAMETRO");
-  gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr("VALORE");
-  _y+=_rh-2;gfx_set(0.20,0.28,0.40,0.70);gfx_rect(PX,_y,PW,1);_y+=4;
+  zp_setfont(1,"Arial",10,'b');gfx_set(0.36,0.60,0.92,1);
+  zp_gx=_cx1;zp_gy=_y;zp_drawstr("PARAMETRO");
+  zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr("VALORE");
+  zp_gx=_cx2;zp_gy=_y;zp_drawstr("PARAMETRO");
+  zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr("VALORE");
+  _y+=_rh-2;gfx_set(0.20,0.28,0.40,0.70);zp_rect(PX,_y,PW,1);_y+=4;
 
-  gfx_setfont(1,"Arial",9);
+  zp_setfont(1,"Arial",9);
 
   // ── Engine section header (col 1)
-  gfx_setfont(1,"Arial",9,'b');gfx_set(0.26,0.72,0.36,0.90);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("ENGINE");
+  zp_setfont(1,"Arial",9,'b');gfx_set(0.26,0.72,0.36,0.90);zp_gx=_cx1;zp_gy=_y;zp_drawstr("ENGINE");
   // Meter section header (col 2): misura IN e OUT.
-  gfx_set(0.20,0.54,0.92,0.90);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("METER");
-  _y+=_rh;gfx_setfont(1,"Arial",9);
+  gfx_set(0.20,0.54,0.92,0.90);zp_gx=_cx2;zp_gy=_y;zp_drawstr("METER");
+  _y+=_rh;zp_setfont(1,"Arial",9);
 
   // Row 1
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("Tape Drive");
-  sprintf(#_jv,"%.2f",slider(1));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr(#_jv);
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("Auto Mode");
-  _am=floor(slider(22)+0.5);sprintf(#_jv,"%s",_am==0?"Off":_am==1?"LUFS":_am==2?"RMS":"L+R");gfx_set(0.92,0.94,0.96,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx1;zp_gy=_y;zp_drawstr("Tape Drive");
+  sprintf(#_jv,"%.2f",slider(1));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx2;zp_gy=_y;zp_drawstr("Auto Mode");
+  _am=floor(slider(22)+0.5);sprintf(#_jv,"%s",_am==0?"Off":_am==1?"LUFS":_am==2?"RMS":"L+R");gfx_set(0.92,0.94,0.96,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr(#_jv);
   _y+=_rh;
 
   // Row 2
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("Ceiling [dBFS]");
-  sprintf(#_jv,"%.2f",slider(2));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr(#_jv);
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("Target LUFS");
-  sprintf(#_jv,"%.1f",slider(23));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx1;zp_gy=_y;zp_drawstr("Ceiling [dBFS]");
+  sprintf(#_jv,"%.2f",slider(2));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx2;zp_gy=_y;zp_drawstr("Target LUFS");
+  sprintf(#_jv,"%.1f",slider(23));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr(#_jv);
   _y+=_rh;
 
   // Row 3
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("Release [ms]");
-  sprintf(#_jv,"%.1f",slider(3));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr(#_jv);
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("Target RMS");
-  sprintf(#_jv,"%.1f",slider(24));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx1;zp_gy=_y;zp_drawstr("Release [ms]");
+  sprintf(#_jv,"%.1f",slider(3));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx2;zp_gy=_y;zp_drawstr("Target RMS");
+  sprintf(#_jv,"%.1f",slider(24));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr(#_jv);
   _y+=_rh;
 
   // Row 4
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("Lookahead [ms]");
-  sprintf(#_jv,"%.1f",slider(4));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr(#_jv);
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("Max Trim [dB]");
-  sprintf(#_jv,"%.1f",slider(25));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx1;zp_gy=_y;zp_drawstr("Lookahead [ms]");
+  sprintf(#_jv,"%.1f",slider(4));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx2;zp_gy=_y;zp_drawstr("Max Trim [dB]");
+  sprintf(#_jv,"%.1f",slider(25));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr(#_jv);
   _y+=_rh;
 
   // Row 5
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("PreGain [dB]");
-  sprintf(#_jv,"%.2f",slider(5));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr(#_jv);
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("Gain Out [dB]");
-  sprintf(#_jv,"%.2f",slider(26));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx1;zp_gy=_y;zp_drawstr("PreGain [dB]");
+  sprintf(#_jv,"%.2f",slider(5));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx2;zp_gy=_y;zp_drawstr("Gain Out [dB]");
+  sprintf(#_jv,"%.2f",slider(26));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr(#_jv);
   _y+=_rh;
 
   // Row 6
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("Tape Tilt");
-  sprintf(#_jv,"%.2f",slider(6));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr(#_jv);
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("Trim Speed [s]");
-  sprintf(#_jv,"%.2f",slider(27));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx1;zp_gy=_y;zp_drawstr("Tape Tilt");
+  sprintf(#_jv,"%.2f",slider(6));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx2;zp_gy=_y;zp_drawstr("Trim Speed [s]");
+  sprintf(#_jv,"%.2f",slider(27));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr(#_jv);
   _y+=_rh;
 
   // Row 7
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("Comp Thresh [dBFS]");
-  sprintf(#_jv,"%.2f",slider(7));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr(#_jv);
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("Gain In [dB]");
-  sprintf(#_jv,"%.2f",slider(28));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx1;zp_gy=_y;zp_drawstr("Comp Thresh [dBFS]");
+  sprintf(#_jv,"%.2f",slider(7));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx2;zp_gy=_y;zp_drawstr("Gain In [dB]");
+  sprintf(#_jv,"%.2f",slider(28));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr(#_jv);
   _y+=_rh;
 
   // Row 8
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("Comp Ratio");
-  sprintf(#_jv,"%.2f",slider(8));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr(#_jv);
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("Target L+R");
-  sprintf(#_jv,"%.1f",slider(29));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx1;zp_gy=_y;zp_drawstr("Comp Ratio");
+  sprintf(#_jv,"%.2f",slider(8));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx2;zp_gy=_y;zp_drawstr("Target L+R");
+  sprintf(#_jv,"%.1f",slider(29));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr(#_jv);
   _y+=_rh;
 
   // Row 9
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("SC HPF [Hz]");
-  sprintf(#_jv,"%.0f",slider(9));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr(#_jv);
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("Final Limiter");
-  floor(slider(30)+0.5)?(gfx_set(0.26,0.92,0.36,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr("ON")):(gfx_set(0.46,0.46,0.50,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr("off"));
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx1;zp_gy=_y;zp_drawstr("SC HPF [Hz]");
+  sprintf(#_jv,"%.0f",slider(9));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx2;zp_gy=_y;zp_drawstr("Final Limiter");
+  floor(slider(30)+0.5)?(gfx_set(0.26,0.92,0.36,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr("ON")):(gfx_set(0.46,0.46,0.50,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr("off"));
   _y+=_rh;
 
   // Row 10
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("Tape Shape");
-  sprintf(#_jv,"%.2f",slider(10));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx1;zp_gy=_y;zp_drawstr("Tape Shape");
+  sprintf(#_jv,"%.2f",slider(10));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr(#_jv);
   // col 2 toggles section
-  gfx_setfont(1,"Arial",9,'b');gfx_set(0.86,0.54,0.14,0.90);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("SWITCH");
-  _y+=_rh;gfx_setfont(1,"Arial",9);
+  zp_setfont(1,"Arial",9,'b');gfx_set(0.86,0.54,0.14,0.90);zp_gx=_cx2;zp_gy=_y;zp_drawstr("SWITCH");
+  _y+=_rh;zp_setfont(1,"Arial",9);
 
   // Row 11
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("Flutter");
-  sprintf(#_jv,"%.2f",slider(11));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr(#_jv);
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("SOFT knee");
-  floor(slider(16)+0.5)?(gfx_set(0.90,0.82,0.22,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr("ON")):(gfx_set(0.46,0.46,0.50,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr("off"));
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx1;zp_gy=_y;zp_drawstr("Flutter");
+  sprintf(#_jv,"%.2f",slider(11));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx2;zp_gy=_y;zp_drawstr("SOFT knee");
+  floor(slider(16)+0.5)?(gfx_set(0.90,0.82,0.22,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr("ON")):(gfx_set(0.46,0.46,0.50,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr("off"));
   _y+=_rh;
 
   // Row 12
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("Head Bump");
-  sprintf(#_jv,"%.2f",slider(12));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr(#_jv);
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("RMS detect");
-  floor(slider(17)+0.5)?(gfx_set(0.62,0.46,0.92,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr("ON")):(gfx_set(0.46,0.46,0.50,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr("off"));
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx1;zp_gy=_y;zp_drawstr("Head Bump");
+  sprintf(#_jv,"%.2f",slider(12));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx2;zp_gy=_y;zp_drawstr("RMS detect");
+  floor(slider(17)+0.5)?(gfx_set(0.62,0.46,0.92,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr("ON")):(gfx_set(0.46,0.46,0.50,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr("off"));
   _y+=_rh;
 
   // Row 13
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("Tape Glue");
-  floor(slider(13)+0.5)?(gfx_set(0.26,0.92,0.36,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr("ON")):(gfx_set(0.46,0.46,0.50,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr("off"));
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("FeedFwd");
-  floor(slider(18)+0.5)?(gfx_set(0.96,0.64,0.14,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr("ON")):(gfx_set(0.46,0.46,0.50,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr("off"));
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx1;zp_gy=_y;zp_drawstr("Tape Glue");
+  floor(slider(13)+0.5)?(gfx_set(0.26,0.92,0.36,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr("ON")):(gfx_set(0.46,0.46,0.50,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr("off"));
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx2;zp_gy=_y;zp_drawstr("FeedFwd");
+  floor(slider(18)+0.5)?(gfx_set(0.96,0.64,0.14,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr("ON")):(gfx_set(0.46,0.46,0.50,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr("off"));
   _y+=_rh;
 
   // Row 14
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("COMP on");
-  floor(slider(14)+0.5)?(gfx_set(0.96,0.64,0.14,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr("ON")):(gfx_set(0.46,0.46,0.50,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr("off"));
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("Auto MU");
-  floor(slider(19)+0.5)?(gfx_set(0.26,0.92,0.36,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr("ON")):(gfx_set(0.46,0.46,0.50,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr("off"));
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx1;zp_gy=_y;zp_drawstr("COMP on");
+  floor(slider(14)+0.5)?(gfx_set(0.96,0.64,0.14,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr("ON")):(gfx_set(0.46,0.46,0.50,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr("off"));
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx2;zp_gy=_y;zp_drawstr("Auto MU");
+  floor(slider(19)+0.5)?(gfx_set(0.26,0.92,0.36,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr("ON")):(gfx_set(0.46,0.46,0.50,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr("off"));
   _y+=_rh;
 
   // Row 15
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("LIM on");
-  floor(slider(15)+0.5)?(gfx_set(0.92,0.24,0.24,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr("ON")):(gfx_set(0.46,0.46,0.50,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr("off"));
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("Tape Bias");
-  sprintf(#_jv,"%.2f",slider(20));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx1;zp_gy=_y;zp_drawstr("LIM on");
+  floor(slider(15)+0.5)?(gfx_set(0.92,0.24,0.24,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr("ON")):(gfx_set(0.46,0.46,0.50,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr("off"));
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx2;zp_gy=_y;zp_drawstr("Tape Bias");
+  sprintf(#_jv,"%.2f",slider(20));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr(#_jv);
   _y+=_rh;
 
   // Row 16
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx1;gfx_y=_y;gfx_drawstr("View mode");
-  floor(gfx_view+0.5)==1?(gfx_set(0.36,0.60,0.92,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr("JSFX")):(gfx_set(0.92,0.94,0.96,1);gfx_x=_cx1+_voff;gfx_y=_y;gfx_drawstr("GUI"));
-  gfx_set(0.62,0.72,0.82,1);gfx_x=_cx2;gfx_y=_y;gfx_drawstr("Head Freq [Hz]");
-  sprintf(#_jv,"%.2f",slider(21));gfx_set(0.92,0.94,0.96,1);gfx_x=_cx2+_voff;gfx_y=_y;gfx_drawstr(#_jv);
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx1;zp_gy=_y;zp_drawstr("View mode");
+  floor(gfx_view+0.5)==1?(gfx_set(0.36,0.60,0.92,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr("JSFX")):(gfx_set(0.92,0.94,0.96,1);zp_gx=_cx1+_voff;zp_gy=_y;zp_drawstr("GUI"));
+  gfx_set(0.62,0.72,0.82,1);zp_gx=_cx2;zp_gy=_y;zp_drawstr("Head Freq [Hz]");
+  sprintf(#_jv,"%.2f",slider(21));gfx_set(0.92,0.94,0.96,1);zp_gx=_cx2+_voff;zp_gy=_y;zp_drawstr(#_jv);
 
   // Tip bar
-  gfx_set(0.09,0.08,0.07,1);gfx_rect(0,gfx_h-TIP_H,gfx_w,TIP_H);
-  gfx_set(0.16,0.44,0.86,0.45);gfx_rect(0,gfx_h-TIP_H,gfx_w,1);
-  gfx_setfont(1,"Arial",11);gfx_set(0.66,0.75,0.80,1);gfx_x=8;gfx_y=gfx_h-17;
-  gfx_drawstr("JSFX mode: parametri visibili per OSARA — clicca GUI per la vista grafica");
+  gfx_set(0.09,0.08,0.07,1);zp_rect(0,zp_vh-TIP_H,zp_vw,TIP_H);
+  gfx_set(0.16,0.44,0.86,0.45);zp_rect(0,zp_vh-TIP_H,zp_vw,1);
+  zp_setfont(1,"Arial",11);gfx_set(0.66,0.75,0.80,1);zp_gx=8;zp_gy=zp_vh-17;
+  zp_drawstr("JSFX mode: parametri visibili per OSARA — clicca GUI per la vista grafica");
 
 ):(  // ══════════════════════════════════════════════════════════════════
 // FULL GUI VIEW
@@ -2584,13 +2641,13 @@ PX=PX0+_sx;
 // ══════════════════════════════════════════════════════════════════
 // HEADER
 // ══════════════════════════════════════════════════════════════════
-gfx_set(0.11,0.10,0.09,1);gfx_rect(0,_sy,gfx_w,HDR_H);
-gfx_set(0.16,0.50,0.92,1);gfx_rect(0,_sy,gfx_w,3);
-gfx_set(0.18,0.20,0.24,1);gfx_rect(0,_sy+HDR_H-1,gfx_w,1);
-gfx_setfont(1,"Arial",21,'b');gfx_set(0.94,0.96,0.98,1);
-gfx_x=PX;gfx_y=8+_sy;gfx_drawstr("ZP Master Pro");
-gfx_setfont(1,"Arial",13,'b');gfx_set(0.50,0.66,0.92,1);
-gfx_x=PX;gfx_y=39+_sy;gfx_drawstr("Master Processor | v2.45 Circular Threshold Meters - di Paolo Balestri");
+gfx_set(0.11,0.10,0.09,1);zp_rect(0,_sy,zp_vw,HDR_H);
+gfx_set(0.16,0.50,0.92,1);zp_rect(0,_sy,zp_vw,3);
+gfx_set(0.18,0.20,0.24,1);zp_rect(0,_sy+HDR_H-1,zp_vw,1);
+zp_setfont(1,"Arial",21,'b');gfx_set(0.94,0.96,0.98,1);
+zp_gx=PX;zp_gy=8+_sy;zp_drawstr("ZP Master Pro");
+zp_setfont(1,"Arial",13,'b');gfx_set(0.50,0.66,0.92,1);
+zp_gx=PX;zp_gy=39+_sy;zp_drawstr("Master Processor | v2.45 Circular Threshold Meters - di Paolo Balestri");
 
 // Header module ON buttons
 ui_enable=1;
@@ -2609,26 +2666,26 @@ mod_r=0.90;mod_g=0.24;mod_b=0.24;
 ui_toggle_btn(15,_bx+240,_by,52,20,"LIM", 0.90,0.24,0.24,503);
 // View tabs
 _bx2=PX+PW-63;
-gfx_setfont(1,"Arial",10);
-floor(gfx_view+0.5)==0?gfx_set(0.16,0.44,0.90,1):gfx_set(0.14,0.14,0.18,1);gfx_rect(_bx2,_by,29,20);
-gfx_set(0.80,0.84,0.92,1);gfx_measurestr("GUI",_tw,_th);gfx_x=_bx2+floor((29-_tw)*0.5);gfx_y=_by+floor((20-_th)*0.5);gfx_drawstr("GUI");
+zp_setfont(1,"Arial",10);
+floor(gfx_view+0.5)==0?gfx_set(0.16,0.44,0.90,1):gfx_set(0.14,0.14,0.18,1);zp_rect(_bx2,_by,29,20);
+gfx_set(0.80,0.84,0.92,1);(gfx_measurestr("GUI", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_bx2+floor((29-_tw)*0.5);zp_gy=_by+floor((20-_th)*0.5);zp_drawstr("GUI");
 hit(_bx2,_by,29,20)&&mouse_click?set_ui_slider(34,0);
-floor(gfx_view+0.5)==1?gfx_set(0.16,0.44,0.90,1):gfx_set(0.14,0.14,0.18,1);gfx_rect(_bx2+31,_by,32,20);
-gfx_set(0.80,0.84,0.92,1);gfx_measurestr("JSFX",_tw,_th);gfx_x=_bx2+31+floor((32-_tw)*0.5);gfx_y=_by+floor((20-_th)*0.5);gfx_drawstr("JSFX");
+floor(gfx_view+0.5)==1?gfx_set(0.16,0.44,0.90,1):gfx_set(0.14,0.14,0.18,1);zp_rect(_bx2+31,_by,32,20);
+gfx_set(0.80,0.84,0.92,1);(gfx_measurestr("JSFX", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_bx2+31+floor((32-_tw)*0.5);zp_gy=_by+floor((20-_th)*0.5);zp_drawstr("JSFX");
 hit(_bx2+31,_by,32,20)&&mouse_click?set_ui_slider(34,1);
 
 // Panel visibility: visual layout only, never changes DSP or metering.
 _vby=39+_sy;_vbw=46;_vbg=4;_vbx=PX+PW-(_vbw*3+_vbg*2+68);
-ui_show_engine?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);gfx_rect(_vbx,_vby,_vbw,18);
-gfx_setfont(1,"Arial",9,'b');gfx_set(0.88,0.92,0.96,1);gfx_x=_vbx+7;gfx_y=_vby+5;gfx_drawstr("ENGINE");
+ui_show_engine?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);zp_rect(_vbx,_vby,_vbw,18);
+zp_setfont(1,"Arial",9,'b');gfx_set(0.88,0.92,0.96,1);zp_gx=_vbx+7;zp_gy=_vby+5;zp_drawstr("ENGINE");
 hit(_vbx,_vby,_vbw,18)&&mouse_click?(ui_show_engine=1-ui_show_engine;ui_scroll_y_tgt=0;ui_scroll_y=0;);
 _vbx2=_vbx+_vbw+_vbg;
-ui_show_meter?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);gfx_rect(_vbx2,_vby,_vbw,18);
-gfx_set(0.88,0.92,0.96,1);gfx_x=_vbx2+8;gfx_y=_vby+5;gfx_drawstr("METER");
+ui_show_meter?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);zp_rect(_vbx2,_vby,_vbw,18);
+gfx_set(0.88,0.92,0.96,1);zp_gx=_vbx2+8;zp_gy=_vby+5;zp_drawstr("METER");
 hit(_vbx2,_vby,_vbw,18)&&mouse_click?(ui_show_meter=1-ui_show_meter;ui_scroll_y_tgt=0;ui_scroll_y=0;);
 _vbx3=_vbx2+_vbw+_vbg;
-ui_show_nav?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);gfx_rect(_vbx3,_vby,_vbw,18);
-gfx_set(0.88,0.92,0.96,1);gfx_x=_vbx3+12;gfx_y=_vby+5;gfx_drawstr("NAV");
+ui_show_nav?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);zp_rect(_vbx3,_vby,_vbw,18);
+gfx_set(0.88,0.92,0.96,1);zp_gx=_vbx3+12;zp_gy=_vby+5;zp_drawstr("NAV");
 hit(_vbx3,_vby,_vbw,18)&&mouse_click?(ui_show_nav=1-ui_show_nav;ui_scroll_y_tgt=0;ui_scroll_y=0;);
 
 // ══════════════════════════════════════════════════════════════════
@@ -2669,10 +2726,10 @@ ui_toggle_btn(17,_cbx+_cbw+_cbg,_cby,_cbw,_cbh,"RMS", 0.62,0.46,0.90,1021);
 ui_toggle_btn(18,_cbx,          _cby+_cbh+_cbg,_cbw,_cbh,"FFW",0.86,0.54,0.14,1022);
 ui_toggle_btn(19,_cbx+_cbw+_cbg,_cby+_cbh+_cbg,_cbw,_cbh,"AMU",0.26,0.72,0.36,1023);
 _cmpgry=ERY0+ERH*2+2;
-gfx_set(0.12,0.09,0.06,1);gfx_rect(ERX+48,_cmpgry-2,ERW-50,14);
+gfx_set(0.12,0.09,0.06,1);zp_rect(ERX+48,_cmpgry-2,ERW-50,14);
 mod_r=0.86;mod_g=0.54;mod_b=0.14;
 draw_hsegs_gr(ERX+58,_cmpgry,ERW-72,9,ui_comp_gr,0,"CMP");
-gfx_set(0.86*0.62+0.34,0.54*0.62+0.34,0.14*0.62+0.34,0.78);gfx_rect(ERX+48,_cmpgry+12,ERW-50,1);
+gfx_set(0.86*0.62+0.34,0.54*0.62+0.34,0.14*0.62+0.34,0.78);zp_rect(ERX+48,_cmpgry+12,ERW-50,1);
 
 // Row 3 (TONE): Tone Guard + Tape Bias
 draw_engine_row_band(ERX,ERY0+ERH*2+COMP_GR_GAP,ERW,ERH,"TONE",0.18,0.78,0.68);
@@ -2693,35 +2750,35 @@ _tonedynpos=(max(0,tone_ui_corr1+tone_ui_eq_corr1)+max(0,tone_ui_corr2+tone_ui_e
 _tonedynneg=(max(0,-tone_ui_corr1-tone_ui_eq_corr1)+max(0,-tone_ui_corr2-tone_ui_eq_corr2)+max(0,-tone_ui_corr3-tone_ui_eq_corr3)+max(0,-tone_ui_corr4-tone_ui_eq_corr4))*_tonedyn_read;
 _tonecx=ERX+48+floor((ERW-50)*0.5);_tonebw=ERW-50;_tonehalfw=floor(_tonebw*0.5);
 _toneeqy=_toneacty;_tonedyny=_toneacty+7;_tonebarh=4;
-gfx_set(0.04,0.07,0.07,1);gfx_rect(_tonecx-_tonehalfw,_toneacty-2,_tonebw,16);
-gfx_set(0.09,0.16,0.14,1);gfx_rect(_tonecx,_toneeqy,_tonehalfw,_tonebarh);gfx_rect(_tonecx,_tonedyny,_tonehalfw,_tonebarh);
-gfx_set(0.16,0.06,0.06,1);gfx_rect(_tonecx-_tonehalfw,_toneeqy,_tonehalfw,_tonebarh);gfx_rect(_tonecx-_tonehalfw,_tonedyny,_tonehalfw,_tonebarh);
-gfx_set(0.18,0.78,0.68,0.50);gfx_rect(_tonecx,_toneeqy,floor(_tonehalfw*clamp(_toneeqpos/18,0,1)),_tonebarh);
-gfx_set(0.92,0.24,0.24,0.48);gfx_rect(_tonecx-floor(_tonehalfw*clamp(_toneeqneg/18,0,1)),_toneeqy,floor(_tonehalfw*clamp(_toneeqneg/18,0,1)),_tonebarh);
-gfx_set(0.18,0.78,0.68,0.92);gfx_rect(_tonecx,_tonedyny,floor(_tonehalfw*clamp(_tonedynpos/12,0,1)),_tonebarh);
-gfx_set(0.92,0.24,0.24,0.88);gfx_rect(_tonecx-floor(_tonehalfw*clamp(_tonedynneg/12,0,1)),_tonedyny,floor(_tonehalfw*clamp(_tonedynneg/12,0,1)),_tonebarh);
-gfx_set(0.86,0.92,0.90,0.86);gfx_rect(_tonecx-1,_toneacty-2,2,15);
-gfx_set(0.18,0.78,0.68,0.62);gfx_rect(_tonecx-_tonehalfw,_toneacty+14,_tonebw,1);
-gfx_setfont(1,"Arial",8,'b');gfx_set(0.82,0.94,0.90,1);
-gfx_x=ERX+52;gfx_y=_toneeqy-1;gfx_drawstr("EQ");
-gfx_x=ERX+52;gfx_y=_tonedyny-1;gfx_drawstr("DYN");
-gfx_set(0.88,0.96,0.94,1);gfx_x=ERX+ERW-76;gfx_y=_toneeqy+3;gfx_drawstr("ACT");
+gfx_set(0.04,0.07,0.07,1);zp_rect(_tonecx-_tonehalfw,_toneacty-2,_tonebw,16);
+gfx_set(0.09,0.16,0.14,1);zp_rect(_tonecx,_toneeqy,_tonehalfw,_tonebarh);zp_rect(_tonecx,_tonedyny,_tonehalfw,_tonebarh);
+gfx_set(0.16,0.06,0.06,1);zp_rect(_tonecx-_tonehalfw,_toneeqy,_tonehalfw,_tonebarh);zp_rect(_tonecx-_tonehalfw,_tonedyny,_tonehalfw,_tonebarh);
+gfx_set(0.18,0.78,0.68,0.50);zp_rect(_tonecx,_toneeqy,floor(_tonehalfw*clamp(_toneeqpos/18,0,1)),_tonebarh);
+gfx_set(0.92,0.24,0.24,0.48);zp_rect(_tonecx-floor(_tonehalfw*clamp(_toneeqneg/18,0,1)),_toneeqy,floor(_tonehalfw*clamp(_toneeqneg/18,0,1)),_tonebarh);
+gfx_set(0.18,0.78,0.68,0.92);zp_rect(_tonecx,_tonedyny,floor(_tonehalfw*clamp(_tonedynpos/12,0,1)),_tonebarh);
+gfx_set(0.92,0.24,0.24,0.88);zp_rect(_tonecx-floor(_tonehalfw*clamp(_tonedynneg/12,0,1)),_tonedyny,floor(_tonehalfw*clamp(_tonedynneg/12,0,1)),_tonebarh);
+gfx_set(0.86,0.92,0.90,0.86);zp_rect(_tonecx-1,_toneacty-2,2,15);
+gfx_set(0.18,0.78,0.68,0.62);zp_rect(_tonecx-_tonehalfw,_toneacty+14,_tonebw,1);
+zp_setfont(1,"Arial",8,'b');gfx_set(0.82,0.94,0.90,1);
+zp_gx=ERX+52;zp_gy=_toneeqy-1;zp_drawstr("EQ");
+zp_gx=ERX+52;zp_gy=_tonedyny-1;zp_drawstr("DYN");
+gfx_set(0.88,0.96,0.94,1);zp_gx=ERX+ERW-76;zp_gy=_toneeqy+3;zp_drawstr("ACT");
 hit(_tonecx-_tonehalfw,_toneacty-2,_tonebw,16)?ui_set_hover(1034);
 
 // Row 4 (LIM): Ceil · PreGain · Look · Rel
 _limy=ERY0+ERH*3+COMP_GR_GAP+TONE_ACT_GAP;
 draw_engine_row_band(ERX,_limy,ERW,ERH,"LIM",0.90,0.34,0.30);
-gfx_set(0.18*0.62+0.34,0.78*0.62+0.34,0.68*0.62+0.34,0.78);gfx_rect(ERX+48,_limy+1,ERW-50,1);
+gfx_set(0.18*0.62+0.34,0.78*0.62+0.34,0.68*0.62+0.34,0.78);zp_rect(ERX+48,_limy+1,ERW-50,1);
 ui_enable=_lim_on;mod_r=0.90;mod_g=0.34;mod_b=0.30;
 ui_knob(2,  ki,      ky4,KR, -9, -0.1,  -1,"CEIL",   1002);
 ui_knob(5,  ki+KS,   ky4,KR,-12,   12,   0,"PREGAIN",1005);
 ui_knob(4,  ki+KS*2, ky4,KR,  0,   60,   8,"LOOK",   1004);
 ui_knob(3,  ki+KS*3, ky4,KR,  5,  500,  90,"REL",    1003);
 _limgry=ERY0+ERH*4+COMP_GR_GAP+TONE_ACT_GAP+2;
-gfx_set(0.12,0.05,0.05,1);gfx_rect(ERX+48,_limgry-2,ERW-50,14);
+gfx_set(0.12,0.05,0.05,1);zp_rect(ERX+48,_limgry-2,ERW-50,14);
 mod_r=0.90;mod_g=0.24;mod_b=0.24;
 draw_hsegs_gr(ERX+58,_limgry,ERW-72,9,ui_lim_gr,1,"LIM");
-gfx_set(0.90*0.62+0.34,0.24*0.62+0.34,0.24*0.62+0.34,0.78);gfx_rect(ERX+48,_limgry+12,ERW-50,1);
+gfx_set(0.90*0.62+0.34,0.24*0.62+0.34,0.24*0.62+0.34,0.78);zp_rect(ERX+48,_limgry+12,ERW-50,1);
 
 // Utility row: Final safety limiter + Engine reset directly under LIM.
 ty=_limgry+20;
@@ -2729,23 +2786,23 @@ ty=_limgry+20;
 _fgx=ERX+58;_fgy=ty;_fgw=112;_fgh=18;
 _flon=floor(slider(30)+0.5);
 hit(_fgx,_fgy,_fgw,_fgh)?gfx_set(0.44,0.16,0.14,1):(_flon?gfx_set(0.30,0.10,0.09,1):gfx_set(0.12,0.12,0.13,1));
-gfx_rect(_fgx,_fgy,_fgw,_fgh);
+zp_rect(_fgx,_fgy,_fgw,_fgh);
 _flon?gfx_set(0.92,0.24,0.24,1):gfx_set(0.42,0.42,0.46,1);
-gfx_rect(_fgx,_fgy,_fgw,1);gfx_rect(_fgx,_fgy,1,_fgh);gfx_rect(_fgx+_fgw-1,_fgy,1,_fgh);gfx_rect(_fgx,_fgy+_fgh-1,_fgw,1);
-gfx_setfont(1,"Arial",9,'b');_flon?gfx_set(1.0,0.86,0.84,1):gfx_set(0.52,0.54,0.58,1);
+zp_rect(_fgx,_fgy,_fgw,1);zp_rect(_fgx,_fgy,1,_fgh);zp_rect(_fgx+_fgw-1,_fgy,1,_fgh);zp_rect(_fgx,_fgy+_fgh-1,_fgw,1);
+zp_setfont(1,"Arial",9,'b');_flon?gfx_set(1.0,0.86,0.84,1):gfx_set(0.52,0.54,0.58,1);
 _flon?strcpy(#_fg,"Final LIM ON"):strcpy(#_fg,"Final LIM OFF");
-gfx_measurestr(#_fg,_tw,_th);gfx_x=_fgx+floor((_fgw-_tw)*0.5);gfx_y=_fgy+floor((_fgh-_th)*0.5);gfx_drawstr(#_fg);
+(gfx_measurestr(#_fg, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_fgx+floor((_fgw-_tw)*0.5);zp_gy=_fgy+floor((_fgh-_th)*0.5);zp_drawstr(#_fg);
 hit(_fgx,_fgy,_fgw,_fgh)?(ui_set_hover(9040);mouse_click?set_ui_slider(30,1-_flon););
 _fmx=_fgx+_fgw+8;_fmw=128;_fmh=8;_fmy=_fgy+5;
-gfx_set(0.06,0.07,0.07,1);gfx_rect(_fmx,_fmy,_fmw,_fmh);
-gfx_set(0.92,0.24,0.24,0.88);gfx_rect(_fmx,_fmy,floor(_fmw*clamp(ui_final_gr/12,0,1)),_fmh);
-gfx_set(0.92,0.24,0.24,0.55);gfx_rect(_fmx,_fmy,_fmw,1);gfx_rect(_fmx,_fmy+_fmh-1,_fmw,1);
+gfx_set(0.06,0.07,0.07,1);zp_rect(_fmx,_fmy,_fmw,_fmh);
+gfx_set(0.92,0.24,0.24,0.88);zp_rect(_fmx,_fmy,floor(_fmw*clamp(ui_final_gr/12,0,1)),_fmh);
+gfx_set(0.92,0.24,0.24,0.55);zp_rect(_fmx,_fmy,_fmw,1);zp_rect(_fmx,_fmy+_fmh-1,_fmw,1);
 
 // Engine reset button, close to LIM and Final LIM.
 _crx=ERX+ERW-58;
-hit(_crx,ty,50,18)?gfx_set(0.34,0.16,0.12,1):gfx_set(0.20,0.10,0.08,1);gfx_rect(_crx,ty,50,18);
-gfx_set(0.92,0.64,0.58,1);gfx_rect(_crx,ty,50,1);gfx_rect(_crx,ty+17,50,1);
-gfx_setfont(1,"Arial",9,'b');gfx_measurestr("C-RST",_tw,_th);gfx_x=_crx+floor((50-_tw)*0.5);gfx_y=ty+floor((18-_th)*0.5);gfx_drawstr("C-RST");
+hit(_crx,ty,50,18)?gfx_set(0.34,0.16,0.12,1):gfx_set(0.20,0.10,0.08,1);zp_rect(_crx,ty,50,18);
+gfx_set(0.92,0.64,0.58,1);zp_rect(_crx,ty,50,1);zp_rect(_crx,ty+17,50,1);
+zp_setfont(1,"Arial",9,'b');(gfx_measurestr("C-RST", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_crx+floor((50-_tw)*0.5);zp_gy=ty+floor((18-_th)*0.5);zp_drawstr("C-RST");
 _hcr=hit(_crx,ty,50,18);_hcr?ui_set_hover(1031);
 _hcr&&mouse_click?(
   // Tape Glue defaults
@@ -2805,22 +2862,22 @@ mod_r=0.20;mod_g=0.54;mod_b=0.92;
 // Right-side processing overview: GLUE sits before Tone Slope in the visible chain.
 ex=ERX+ERW+30;ew=PX+PW-ex-12;
 _gmx=ex;_gmy=ENG_Y+40;_gmw=ew;_gmh=50;
-gfx_set(0.055,0.045,0.035,1);gfx_rect(_gmx,_gmy,_gmw,_gmh);
-gfx_set(0.86,0.54,0.14,0.62);gfx_rect(_gmx,_gmy,_gmw,1);gfx_rect(_gmx,_gmy+_gmh-1,_gmw,1);
+gfx_set(0.055,0.045,0.035,1);zp_rect(_gmx,_gmy,_gmw,_gmh);
+gfx_set(0.86,0.54,0.14,0.62);zp_rect(_gmx,_gmy,_gmw,1);zp_rect(_gmx,_gmy+_gmh-1,_gmw,1);
 _glue_active=_comp_on&&slider(55)>=0.5;
-gfx_setfont(1,"Arial",11,'b');
+zp_setfont(1,"Arial",11,'b');
 _glue_active?gfx_set(0.98,0.74,0.32,1.00):gfx_set(0.42,0.42,0.45,0.95);
-gfx_x=_gmx+7;gfx_y=_gmy+5;_glue_active?gfx_drawstr("GLUE"):gfx_drawstr("GLUE OFF");
+zp_gx=_gmx+7;zp_gy=_gmy+5;_glue_active?zp_drawstr("GLUE"):zp_drawstr("GLUE OFF");
 ui_enable=_glue_active;mod_r=0.86;mod_g=0.54;mod_b=0.14;
 ui_mini_fader(51,_gmx+54,_gmy+5,120,17,0,100,50,"DEP",1051);
 ui_mini_fader(54,_gmx+54,_gmy+28,120,17,0,100,60,"FRG",1054);
-gfx_setfont(1,"Arial",10,'b');_glue_active?gfx_set(0.92,0.86,0.74,1):gfx_set(0.50,0.50,0.54,0.95);gfx_x=_gmx+188;gfx_y=_gmy+3;gfx_drawstr("TEXTURE");
+zp_setfont(1,"Arial",10,'b');_glue_active?gfx_set(0.92,0.86,0.74,1):gfx_set(0.50,0.50,0.54,0.95);zp_gx=_gmx+188;zp_gy=_gmy+3;zp_drawstr("TEXTURE");
 _obw=36;_obh=17;_obg=3;
 ui_opt(52,0,"SM", _gmx+188,_gmy+24,_obw,_obh,10520);
 ui_opt(52,1,"API",_gmx+188+(_obw+_obg),_gmy+24,_obw,_obh,10521);
 ui_opt(52,2,"SSA",_gmx+188+(_obw+_obg)*2,_gmy+24,_obw,_obh,10522);
 ui_enable=1;
-gfx_setfont(1,"Arial",10,'b');gfx_set(0.92,0.86,0.74,1);gfx_x=_gmx+310;gfx_y=_gmy+3;gfx_drawstr("ISP");
+zp_setfont(1,"Arial",10,'b');gfx_set(0.92,0.86,0.74,1);zp_gx=_gmx+310;zp_gy=_gmy+3;zp_drawstr("ISP");
 _ibw=24;
 ui_opt(53,0,"OFF",_gmx+310,_gmy+24,_ibw+8,_obh,10530);
 ui_opt(53,1,"2x", _gmx+310+(_ibw+11),_gmy+24,_ibw,_obh,10531);
@@ -2846,22 +2903,22 @@ _master_left_hover=hit(_mx,_my,_gx-_mx-4,_mh);
 _master_right_hover=hit(_gx-4,_my,_mw-(_gx-_mx)+4,_mh);
 _master_left_hover?ui_set_hover(1033);
 _master_right_hover?ui_set_hover(1032);
-gfx_set(0.10,0.09,0.08,1);gfx_rect(_mx,_my,_mw,_mh);
-gfx_set(0.86,0.78,0.26,0.55);gfx_rect(_mx,_my,_mw,1);gfx_rect(_mx,_my+_mh-1,_mw,1);
+gfx_set(0.10,0.09,0.08,1);zp_rect(_mx,_my,_mw,_mh);
+gfx_set(0.86,0.78,0.26,0.55);zp_rect(_mx,_my,_mw,1);zp_rect(_mx,_my+_mh-1,_mw,1);
 _barx=_mx+10;_barw=_gx-_barx-12;_barh=7;_bary=_my+19;
-gfx_setfont(1,"Arial",10,'b');gfx_set(0.90,0.84,0.36,0.98);gfx_x=_mx+10;gfx_y=_my+4;gfx_drawstr("MASTER ACTIVITY");
-gfx_setfont(1,"Arial",9,'b');
-gfx_set(0.08,0.10,0.08,1);gfx_rect(_barx,_bary,_barw,_barh);gfx_set(0.22,0.74,0.34,0.88);gfx_rect(_barx,_bary,floor(_barw*_drive),_barh);gfx_set(0.72,0.90,0.76,1);gfx_x=_barx;gfx_y=_bary+8;gfx_drawstr("DRIVE");
+zp_setfont(1,"Arial",10,'b');gfx_set(0.90,0.84,0.36,0.98);zp_gx=_mx+10;zp_gy=_my+4;zp_drawstr("MASTER ACTIVITY");
+zp_setfont(1,"Arial",9,'b');
+gfx_set(0.08,0.10,0.08,1);zp_rect(_barx,_bary,_barw,_barh);gfx_set(0.22,0.74,0.34,0.88);zp_rect(_barx,_bary,floor(_barw*_drive),_barh);gfx_set(0.72,0.90,0.76,1);zp_gx=_barx;zp_gy=_bary+8;zp_drawstr("DRIVE");
 _bary+=20;
-gfx_set(0.10,0.08,0.08,1);gfx_rect(_barx,_bary,_barw,_barh);gfx_set(0.84,0.44,0.24,0.90);gfx_rect(_barx,_bary,floor(_barw*_tilt),_barh);gfx_set(0.90,0.76,0.66,1);gfx_x=_barx;gfx_y=_bary+8;gfx_drawstr("TILT");
+gfx_set(0.10,0.08,0.08,1);zp_rect(_barx,_bary,_barw,_barh);gfx_set(0.84,0.44,0.24,0.90);zp_rect(_barx,_bary,floor(_barw*_tilt),_barh);gfx_set(0.90,0.76,0.66,1);zp_gx=_barx;zp_gy=_bary+8;zp_drawstr("TILT");
 _bary+=20;
-gfx_set(0.08,0.10,0.10,1);gfx_rect(_barx,_bary,_barw,_barh);gfx_set(0.18,0.78,0.68,0.90);gfx_rect(_barx,_bary,floor(_barw*_tape_v),_barh);gfx_set(0.70,0.94,0.88,1);gfx_x=_barx;gfx_y=_bary+8;gfx_drawstr("TAPE/TONE");
-gfx_set(0.08,0.08,0.09,1);gfx_rect(_gx,_gy,_gw,_gh);
-gfx_set(0.28,0.20,0.12,1);gfx_rect(_gx+8,_gy+4,10,_gh-8);
-gfx_set(0.20,0.12,0.12,1);gfx_rect(_gx+26,_gy+4,10,_gh-8);
-gfx_set(0.90,0.62,0.20,0.92);gfx_rect(_gx+8,_gy+_gh-4-floor((_gh-8)*_cmp),10,floor((_gh-8)*_cmp));
-gfx_set(0.92,0.24,0.24,0.92);gfx_rect(_gx+26,_gy+_gh-4-floor((_gh-8)*_lim),10,floor((_gh-8)*_lim));
-gfx_setfont(1,"Arial",9,'b');gfx_set(0.72,0.74,0.78,1);gfx_x=_gx+2;gfx_y=_gy+_gh+2;gfx_drawstr("CMP/LIM");
+gfx_set(0.08,0.10,0.10,1);zp_rect(_barx,_bary,_barw,_barh);gfx_set(0.18,0.78,0.68,0.90);zp_rect(_barx,_bary,floor(_barw*_tape_v),_barh);gfx_set(0.70,0.94,0.88,1);zp_gx=_barx;zp_gy=_bary+8;zp_drawstr("TAPE/TONE");
+gfx_set(0.08,0.08,0.09,1);zp_rect(_gx,_gy,_gw,_gh);
+gfx_set(0.28,0.20,0.12,1);zp_rect(_gx+8,_gy+4,10,_gh-8);
+gfx_set(0.20,0.12,0.12,1);zp_rect(_gx+26,_gy+4,10,_gh-8);
+gfx_set(0.90,0.62,0.20,0.92);zp_rect(_gx+8,_gy+_gh-4-floor((_gh-8)*_cmp),10,floor((_gh-8)*_cmp));
+gfx_set(0.92,0.24,0.24,0.92);zp_rect(_gx+26,_gy+_gh-4-floor((_gh-8)*_lim),10,floor((_gh-8)*_lim));
+zp_setfont(1,"Arial",9,'b');gfx_set(0.72,0.74,0.78,1);zp_gx=_gx+2;zp_gy=_gy+_gh+2;zp_drawstr("CMP/LIM");
 
  ); // end ENGINE visibility
 // ══════════════════════════════════════════════════════════════════
@@ -2875,9 +2932,9 @@ mod_r=0.20;mod_g=0.54;mod_b=0.92;
 ui_show_meter ? (
 
 // Shell
-gfx_set(0.15,0.14,0.12,1);gfx_rect(PX,py,PW,oh);
-gfx_set(0.16,0.50,0.96,1);gfx_rect(PX,py,PW,2);gfx_rect(PX,py+oh-2,PW,2);
-gfx_rect(PX,py,2,oh);gfx_rect(PX+PW-2,py,2,oh);
+gfx_set(0.15,0.14,0.12,1);zp_rect(PX,py,PW,oh);
+gfx_set(0.16,0.50,0.96,1);zp_rect(PX,py,PW,2);zp_rect(PX,py+oh-2,PW,2);
+zp_rect(PX,py,2,oh);zp_rect(PX+PW-2,py,2,oh);
 
 // Dynamic layout: Auto dB fixed | IN meter | Target adaptive | Measure compact | LIVE elastic.
 gap=10;right=PX+PW-9;
@@ -2913,30 +2970,30 @@ vy=py+66;vh=oh-66-25;
 bby=py+260;kyref=py+300;
 
 // Title + section labels
-gfx_setfont(1,"Arial",13,'b');gfx_set(0.58,0.80,0.98,1);gfx_x=PX+12;gfx_y=py+8;gfx_drawstr("METER");
-gfx_setfont(1,"Arial",10,'b');
-gfx_set(0.50,0.66,0.88,0.95);gfx_x=ax+6;gfx_y=py+23;gfx_drawstr("AUTO DB");
-gfx_set(0.74,0.56,0.92,0.95);gfx_x=ix+8;gfx_y=py+23;gfx_drawstr("IN");
-gfx_set(0.56,0.72,0.96,0.90);gfx_x=tx+9;gfx_y=py+23;gfx_drawstr("TARGET");
-gfx_set(0.22,0.80,0.36,0.90);gfx_x=live_x+5;gfx_y=py+23;gfx_drawstr("LIVE");
+zp_setfont(1,"Arial",13,'b');gfx_set(0.58,0.80,0.98,1);zp_gx=PX+12;zp_gy=py+8;zp_drawstr("METER");
+zp_setfont(1,"Arial",10,'b');
+gfx_set(0.50,0.66,0.88,0.95);zp_gx=ax+6;zp_gy=py+23;zp_drawstr("AUTO DB");
+gfx_set(0.74,0.56,0.92,0.95);zp_gx=ix+8;zp_gy=py+23;zp_drawstr("IN");
+gfx_set(0.56,0.72,0.96,0.90);zp_gx=tx+9;zp_gy=py+23;zp_drawstr("TARGET");
+gfx_set(0.22,0.80,0.36,0.90);zp_gx=live_x+5;zp_gy=py+23;zp_drawstr("LIVE");
 // Colore carta da zucchero per MEASURE
-gfx_set(0.55,0.70,0.78,1.0);gfx_x=bx_m+7;gfx_y=py+23;gfx_drawstr("MEASURE");
+gfx_set(0.55,0.70,0.78,1.0);zp_gx=bx_m+7;zp_gy=py+23;zp_drawstr("MEASURE");
 
 // Compact MONO ANALYSIS switch. It changes analysis only, never the audio path.
 _mow=52;_moh=18;_mox=bx_m+bw_m-_mow-5;_moy=py+17;
 _mohit=hit(_mox,_moy,_mow,_moh);_mohit?ui_set_hover(9064);
 _mohit&&mouse_click?(ui_mono_analysis=1-ui_mono_analysis;meter_reset_pending=1;nav_reset_measure(););
 ui_mono_analysis>=0.5?gfx_set(0.42,0.27,0.04,1):_mohit?gfx_set(0.18,0.22,0.27,1):gfx_set(0.10,0.12,0.15,1);
-gfx_rect(_mox,_moy,_mow,_moh);
+zp_rect(_mox,_moy,_mow,_moh);
 ui_mono_analysis>=0.5?gfx_set(1.00,0.78,0.16,1):gfx_set(0.42,0.48,0.55,1);
-gfx_rect(_mox,_moy,_mow,1);gfx_rect(_mox,_moy+_moh-1,_mow,1);gfx_rect(_mox,_moy,1,_moh);gfx_rect(_mox+_mow-1,_moy,1,_moh);
-gfx_setfont(1,"Arial",9,'b');ui_mono_analysis>=0.5?gfx_set(1.00,0.92,0.58,1):gfx_set(0.62,0.68,0.74,1);
-gfx_measurestr("MONO",_tw,_th);gfx_x=_mox+floor((_mow-_tw)*0.5);gfx_y=_moy+floor((_moh-_th)*0.5);gfx_drawstr("MONO");
+zp_rect(_mox,_moy,_mow,1);zp_rect(_mox,_moy+_moh-1,_mow,1);zp_rect(_mox,_moy,1,_moh);zp_rect(_mox+_mow-1,_moy,1,_moh);
+zp_setfont(1,"Arial",9,'b');ui_mono_analysis>=0.5?gfx_set(1.00,0.92,0.58,1):gfx_set(0.62,0.68,0.74,1);
+(gfx_measurestr("MONO", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_mox+floor((_mow-_tw)*0.5);zp_gy=_moy+floor((_moh-_th)*0.5);zp_drawstr("MONO");
 
-gfx_set(0.18,0.20,0.24,1);gfx_rect(PX+4,py+36,PW-8,1);
+gfx_set(0.18,0.20,0.24,1);zp_rect(PX+4,py+36,PW-8,1);
 
 // TARGET background
-gfx_set(0.12,0.11,0.10,1);gfx_rect(tx+2,py+37,vx-tx-4,oh-40);
+gfx_set(0.12,0.11,0.10,1);zp_rect(tx+2,py+37,vx-tx-4,oh-40);
 
 // Preset buttons
 pbw=floor((vx-tx-16)/5)-2;
@@ -2946,18 +3003,18 @@ ui_out_preset(3,"MIX",tx+9+(pbw+2)*2, py+40,pbw,16,9022,-14,-16,10,0.8,0,3);
 ui_out_preset(4,"BRD",tx+9+(pbw+2)*3, py+40,pbw,16,9023,-23,-25,12,0.6,0,1);
 ui_out_preset(5,"RAD",tx+9+(pbw+2)*4, py+40,pbw,16,9024,-12,-14,10,0.8,0,3);
 
-gfx_set(0.28,0.36,0.54,0.22);gfx_rect(tx+4,py+63,vx-tx-8,1);
+gfx_set(0.28,0.36,0.54,0.22);zp_rect(tx+4,py+63,vx-tx-8,1);
 
 
 // Knobs row 1: Gain In pre-effects, then Gain Out/max trim before Final Limiter.
 ui_knob_value_font=13;ui_knob_label_font=13;
 draw_output_row_band(tx+5,ky1_o-44,vx-tx-10,80,"GAIN",0.20,0.54,0.92);
-gfx_setfont(1,"Arial",9,'b');gfx_set(1.00,0.58,0.58,1);
-gfx_x=tx+12;gfx_y=ky1_o-22;gfx_drawstr("PRE FX");
+zp_setfont(1,"Arial",9,'b');gfx_set(1.00,0.58,0.58,1);
+zp_gx=tx+12;zp_gy=ky1_o-22;zp_drawstr("PRE FX");
 _divx=ki_o+floor(ks_o*1.45);
 _link_x=_divx-30;_link_y=ky1_o-31;_link_w=40;_link_h=16;
 _pillar_x=_link_x+floor(_link_w*0.5);
-gfx_set(0.44,0.56,0.68,0.70);gfx_rect(_pillar_x,_link_y+_link_h+2,1,ky1_o+38-(_link_y+_link_h+2));
+gfx_set(0.44,0.56,0.68,0.70);zp_rect(_pillar_x,_link_y+_link_h+2,1,ky1_o+38-(_link_y+_link_h+2));
 _link_hit=hit(_link_x,_link_y,_link_w,_link_h);
 _link_hit?ui_set_hover(9041);
 _link_hit&&mouse_click?(
@@ -2970,12 +3027,12 @@ out_link_on>=0.5 ? (
 ) : (
   _link_hit?gfx_set(0.20,0.24,0.28,1):gfx_set(0.12,0.13,0.15,1);
 );
-gfx_rect(_link_x,_link_y,_link_w,_link_h);
+zp_rect(_link_x,_link_y,_link_w,_link_h);
 out_link_on>=0.5 ? gfx_set(0.98,0.58,0.34,1) : gfx_set(0.58,0.64,0.70,0.90);
-gfx_rect(_link_x,_link_y,_link_w,1);gfx_rect(_link_x,_link_y+_link_h-1,_link_w,1);
-gfx_rect(_link_x,_link_y,1,_link_h);gfx_rect(_link_x+_link_w-1,_link_y,1,_link_h);
-gfx_setfont(1,"Arial",8,'b');gfx_measurestr("LINK",_tw,_th);
-gfx_x=_link_x+floor((_link_w-_tw)*0.5);gfx_y=_link_y+floor((_link_h-_th)*0.5);gfx_drawstr("LINK");
+zp_rect(_link_x,_link_y,_link_w,1);zp_rect(_link_x,_link_y+_link_h-1,_link_w,1);
+zp_rect(_link_x,_link_y,1,_link_h);zp_rect(_link_x+_link_w-1,_link_y,1,_link_h);
+zp_setfont(1,"Arial",8,'b');(gfx_measurestr("LINK", _tw, _th); _tw /= zp_sc; _th /= zp_sc);
+zp_gx=_link_x+floor((_link_w-_tw)*0.5);zp_gy=_link_y+floor((_link_h-_th)*0.5);zp_drawstr("LINK");
 ui_enable=1;
 mod_r=0.92;mod_g=0.22;mod_b=0.22;
 _link_in_before=slider(28);
@@ -3010,7 +3067,7 @@ mod_r=0.20;mod_g=0.54;mod_b=0.92;
 
 // Auto dB + target buttons + RST
 bbg=3;bbw=floor((vx-tx-18-(bbg*5))/6);bbh=20;
-gfx_setfont(1,"Arial",10,'b');gfx_set(0.58,0.70,0.92,0.95);gfx_x=tx+7;gfx_y=bby-16;gfx_drawstr("AUTO DB / TARGET");
+zp_setfont(1,"Arial",10,'b');gfx_set(0.58,0.70,0.92,0.95);zp_gx=tx+7;zp_gy=bby-16;zp_drawstr("AUTO DB / TARGET");
 mod_r=0.20;mod_g=0.54;mod_b=0.92;
 _target_btn_x=tx+7;
 _auto_btn_x=tx+7+(bbw+bbg);
@@ -3024,72 +3081,72 @@ ui_opt(22,1,"LUFS",tx+7+(bbw+bbg)*2, bby,bbw,bbh,9011);
 ui_opt(22,2,"RMS", tx+7+(bbw+bbg)*3, bby,bbw,bbh,9012);
 ui_opt(22,3,"L+R", tx+7+(bbw+bbg)*4, bby,bbw,bbh,9013);
 _rstx=tx+7+(bbw+bbg)*5;
-hit(_rstx,bby,bbw,bbh)?gfx_set(0.52,0.18,0.18,1):gfx_set(0.26,0.12,0.12,1);gfx_rect(_rstx,bby,bbw,bbh);
-gfx_setfont(1,"Arial",10,'b');gfx_set(0.88,0.56,0.56,1);gfx_measurestr("RST",_tw,_th);
-gfx_x=_rstx+floor((bbw-_tw)*0.5);gfx_y=bby+floor((bbh-_th)*0.5);gfx_drawstr("RST");
+hit(_rstx,bby,bbw,bbh)?gfx_set(0.52,0.18,0.18,1):gfx_set(0.26,0.12,0.12,1);zp_rect(_rstx,bby,bbw,bbh);
+zp_setfont(1,"Arial",10,'b');gfx_set(0.88,0.56,0.56,1);(gfx_measurestr("RST", _tw, _th); _tw /= zp_sc; _th /= zp_sc);
+zp_gx=_rstx+floor((bbw-_tw)*0.5);zp_gy=bby+floor((bbh-_th)*0.5);zp_drawstr("RST");
 hit(_rstx,bby,bbw,bbh)&&mouse_click?(
   reset_output_defaults_gfx();
 );
 _tbx=tx+7;_tby=bby+24;_tbw=vx-tx-18;_tbh=11;
 hit(_tbx,_tby,_tbw,_tbh+12)?ui_set_hover(9018);
-gfx_set(0.065,0.075,0.080,1);gfx_rect(_tbx,_tby,_tbw,_tbh);
+gfx_set(0.065,0.075,0.080,1);zp_rect(_tbx,_tby,_tbw,_tbh);
 _tcx=_tbx+floor(_tbw*0.5);_thalf=floor((_tbw-14)*0.5);
 _okdb=0.8;_softdb=1.6;
 _okhalf=max(8,floor(_okdb/6*_thalf));
 _softhalf=max(_okhalf+4,floor(_softdb/6*_thalf));
-gfx_set(0.20,0.10,0.10,0.62);gfx_rect(_tbx+7,_tby+3,_thalf-_softhalf,5);
-gfx_set(0.20,0.10,0.10,0.62);gfx_rect(_tcx+_softhalf,_tby+3,_thalf-_softhalf,5);
-gfx_set(0.46,0.34,0.10,0.72);gfx_rect(_tcx-_softhalf,_tby+2,_softhalf-_okhalf,7);
-gfx_set(0.46,0.34,0.10,0.72);gfx_rect(_tcx+_okhalf,_tby+2,_softhalf-_okhalf,7);
+gfx_set(0.20,0.10,0.10,0.62);zp_rect(_tbx+7,_tby+3,_thalf-_softhalf,5);
+gfx_set(0.20,0.10,0.10,0.62);zp_rect(_tcx+_softhalf,_tby+3,_thalf-_softhalf,5);
+gfx_set(0.46,0.34,0.10,0.72);zp_rect(_tcx-_softhalf,_tby+2,_softhalf-_okhalf,7);
+gfx_set(0.46,0.34,0.10,0.72);zp_rect(_tcx+_okhalf,_tby+2,_softhalf-_okhalf,7);
 ui_target_valid&&auto_tm>0?(
   _terr=clamp(ui_target_err_db,-6,6);
   _dist=abs(_terr);
   _dist<=_okdb?gfx_set(0.16,0.58,0.28,0.96):gfx_set(0.12,0.42,0.22,0.82);
-  gfx_rect(_tcx-_okhalf,_tby+1,_okhalf*2,8);
-  gfx_set(0.62,1.00,0.68,_dist<=_okdb?1:0.80);gfx_rect(_tcx-_okhalf,_tby,1,_tbh);gfx_rect(_tcx+_okhalf,_tby,1,_tbh);
+  zp_rect(_tcx-_okhalf,_tby+1,_okhalf*2,8);
+  gfx_set(0.62,1.00,0.68,_dist<=_okdb?1:0.80);zp_rect(_tcx-_okhalf,_tby,1,_tbh);zp_rect(_tcx+_okhalf,_tby,1,_tbh);
   _dist>_okdb?(
     _tf=floor((_dist-_okdb)/(6-_okdb)*(_thalf-_okhalf));
     _tf=min(_thalf-_okhalf,_tf);
     _dist<=_softdb?gfx_set(0.92,0.76,0.24,0.92):gfx_set(0.92,0.30,0.22,0.92);
-    _terr>=0?gfx_rect(_tcx+_okhalf,_tby+3,_tf,5):gfx_rect(_tcx-_okhalf-_tf,_tby+3,_tf,5);
+    _terr>=0?zp_rect(_tcx+_okhalf,_tby+3,_tf,5):zp_rect(_tcx-_okhalf-_tf,_tby+3,_tf,5);
   );
-  gfx_setfont(1,"Arial",10,'b');
+  zp_setfont(1,"Arial",10,'b');
   gfx_set(0.74,0.78,0.70,0.92);
-  gfx_measurestr("MATCH",_mlw,_mlh);
-  gfx_x=_tcx-floor(_mlw*0.5);gfx_y=_tby+12;gfx_drawstr("MATCH");
-  gfx_setfont(1,"Arial",18,'b');
+  (gfx_measurestr("MATCH", _mlw, _mlh); _mlw /= zp_sc; _mlh /= zp_sc);
+  zp_gx=_tcx-floor(_mlw*0.5);zp_gy=_tby+12;zp_drawstr("MATCH");
+  zp_setfont(1,"Arial",18,'b');
   _dist<=_okdb?gfx_set(0.72,1.00,0.76,1):_dist<=_softdb?gfx_set(1.00,0.88,0.34,1):gfx_set(1.00,0.52,0.42,1);
   sprintf(#_tgt,"%+.1f",ui_target_err_db);
-  gfx_measurestr(#_tgt,_tw,_th);gfx_x=_tcx-floor(_tw*0.5);gfx_y=_tby+22;gfx_drawstr(#_tgt);
+  (gfx_measurestr(#_tgt, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_tcx-floor(_tw*0.5);zp_gy=_tby+22;zp_drawstr(#_tgt);
 ):(
-  gfx_set(0.12,0.42,0.22,0.58);gfx_rect(_tcx-_okhalf,_tby+2,_okhalf*2,7);
-  gfx_set(0.50,0.92,0.56,0.62);gfx_rect(_tcx-_okhalf,_tby,1,_tbh);gfx_rect(_tcx+_okhalf,_tby,1,_tbh);
-  gfx_setfont(1,"Arial",10,'b');gfx_set(0.44,0.48,0.52,0.78);
-  gfx_measurestr("MATCH",_mlw,_mlh);gfx_x=_tcx-floor(_mlw*0.5);gfx_y=_tby+12;gfx_drawstr("MATCH");
-  gfx_setfont(1,"Arial",18,'b');gfx_set(0.50,0.56,0.60,0.90);
-  gfx_measurestr("--",_tw,_th);gfx_x=_tcx-floor(_tw*0.5);gfx_y=_tby+22;gfx_drawstr("--");
+  gfx_set(0.12,0.42,0.22,0.58);zp_rect(_tcx-_okhalf,_tby+2,_okhalf*2,7);
+  gfx_set(0.50,0.92,0.56,0.62);zp_rect(_tcx-_okhalf,_tby,1,_tbh);zp_rect(_tcx+_okhalf,_tby,1,_tbh);
+  zp_setfont(1,"Arial",10,'b');gfx_set(0.44,0.48,0.52,0.78);
+  (gfx_measurestr("MATCH", _mlw, _mlh); _mlw /= zp_sc; _mlh /= zp_sc);zp_gx=_tcx-floor(_mlw*0.5);zp_gy=_tby+12;zp_drawstr("MATCH");
+  zp_setfont(1,"Arial",18,'b');gfx_set(0.50,0.56,0.60,0.90);
+  (gfx_measurestr("--", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_tcx-floor(_tw*0.5);zp_gy=_tby+22;zp_drawstr("--");
 );
 
 // PHASE detector lives under the Auto dB / Target distance meter.
 _phx=tx+7;_phy=_tby+48;_phw=_tbw;_phh=20;
 hit(_phx,_phy,_phw,_phh)?ui_set_hover(9061);
-gfx_set(0.07,0.08,0.08,1);gfx_rect(_phx,_phy,_phw,_phh);
-gfx_set(0.18,0.50,0.90,0.18);gfx_rect(_phx,_phy,_phw,1);gfx_rect(_phx,_phy+_phh-1,_phw,1);
+gfx_set(0.07,0.08,0.08,1);zp_rect(_phx,_phy,_phw,_phh);
+gfx_set(0.18,0.50,0.90,0.18);zp_rect(_phx,_phy,_phw,1);zp_rect(_phx,_phy+_phh-1,_phw,1);
 _phcx=_phx+floor(_phw*0.5);_phusable=_phw-62;_phhalf=floor(_phusable*0.5);
-gfx_set(0.13,0.12,0.12,1);gfx_rect(_phcx-_phhalf,_phy+7,_phhalf,5);
-gfx_set(0.09,0.14,0.12,1);gfx_rect(_phcx,_phy+7,_phhalf,5);
+gfx_set(0.13,0.12,0.12,1);zp_rect(_phcx-_phhalf,_phy+7,_phhalf,5);
+gfx_set(0.09,0.14,0.12,1);zp_rect(_phcx,_phy+7,_phhalf,5);
 _phv=clamp(ui_phase_corr,-1,1);
 _phfill=floor(abs(_phv)*_phhalf);
 _phv<0?gfx_set(0.92,0.24,0.24,0.88):_phv<0.20?gfx_set(0.92,0.76,0.24,0.86):gfx_set(0.22,0.82,0.42,0.88);
-_phv<0?gfx_rect(_phcx-_phfill,_phy+7,_phfill,5):gfx_rect(_phcx,_phy+7,_phfill,5);
-gfx_set(0.86,0.92,0.90,0.88);gfx_rect(_phcx-1,_phy+2,2,_phh-4);
-gfx_setfont(1,"Arial",9,'b');gfx_set(0.78,0.88,0.92,1);gfx_x=_phx+4;gfx_y=_phy+2;gfx_drawstr("PHASE");
+_phv<0?zp_rect(_phcx-_phfill,_phy+7,_phfill,5):zp_rect(_phcx,_phy+7,_phfill,5);
+gfx_set(0.86,0.92,0.90,0.88);zp_rect(_phcx-1,_phy+2,2,_phh-4);
+zp_setfont(1,"Arial",9,'b');gfx_set(0.78,0.88,0.92,1);zp_gx=_phx+4;zp_gy=_phy+2;zp_drawstr("PHASE");
 ui_phase_level_db>-80?sprintf(#_phs,"%+.2f",_phv):strcpy(#_phs,"--");
-gfx_setfont(1,"Arial",18,'b');
+zp_setfont(1,"Arial",18,'b');
 ui_phase_level_db>-80?(
   _phv<0?gfx_set(1.00,0.44,0.42,1):_phv<0.20?gfx_set(1.00,0.84,0.32,1):gfx_set(0.72,1.00,0.78,1);
 ):gfx_set(0.50,0.56,0.60,0.90);
-gfx_measurestr(#_phs,_tw,_th);gfx_x=_phx+_phw-_tw-4;gfx_y=_phy+1;gfx_drawstr(#_phs);
+(gfx_measurestr(#_phs, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_phx+_phw-_tw-4;zp_gy=_phy+1;zp_drawstr(#_phs);
 
 // LIVE meters: elastic area, centered group, right-side dB scale.
 draw_live_ms_indicator(live_x+8,py+36,max(60,live_area_w-16),24);
@@ -3101,41 +3158,41 @@ draw_vseg_dense_stereo_tp(_lmx+mi*4+meter_gap*4,            vy,tp_w,vh,ui_out_pe
 draw_meter_db_axis(live_axis_x,vy,vh);
 
 // IN meter: post Gain In, before Tape/Comp/Tone/Limiter.
-gfx_set(0.09,0.08,0.07,1);gfx_rect(ix,bx_y,in_w,bx_h);
-gfx_set(0.42,0.26,0.70,0.34);gfx_rect(ix,bx_y,in_w,1);gfx_rect(ix,bx_y+bx_h-1,in_w,1);
-gfx_rect(ix,bx_y,1,bx_h);gfx_rect(ix+in_w-1,bx_y,1,bx_h);
+gfx_set(0.09,0.08,0.07,1);zp_rect(ix,bx_y,in_w,bx_h);
+gfx_set(0.42,0.26,0.70,0.34);zp_rect(ix,bx_y,in_w,1);zp_rect(ix,bx_y+bx_h-1,in_w,1);
+zp_rect(ix,bx_y,1,bx_h);zp_rect(ix+in_w-1,bx_y,1,bx_h);
 hit(ix,bx_y,in_w,bx_h)?ui_set_hover(9071);
-gfx_setfont(1,"Arial",10,'b');gfx_set(0.78,0.66,0.94,0.96);gfx_x=ix+8;gfx_y=bx_y+6;gfx_drawstr("IN");
+zp_setfont(1,"Arial",10,'b');gfx_set(0.78,0.66,0.94,0.96);zp_gx=ix+8;zp_gy=bx_y+6;zp_drawstr("IN");
 _in_meter_x=ix+8;_in_meter_w=18;
 _in_meter_y=vy;_in_meter_h=vh;
 draw_vseg_dense(_in_meter_x,_in_meter_y,_in_meter_w,_in_meter_h,ui_in_db,"IN",0.58,0.34,0.92);
 draw_meter_db_axis(ix+34,_in_meter_y,_in_meter_h);
 ui_in_db>-60?sprintf(#_inv,"%.1f",ui_in_db):strcpy(#_inv,"--");
-gfx_setfont(1,"Arial",10,'b');gfx_set(0.90,0.86,0.98,0.95);
-gfx_measurestr(#_inv,_tw,_th);gfx_x=ix+floor((in_w-_tw)*0.5);gfx_y=bx_y+24;gfx_drawstr(#_inv);
+zp_setfont(1,"Arial",10,'b');gfx_set(0.90,0.86,0.98,0.95);
+(gfx_measurestr(#_inv, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=ix+floor((in_w-_tw)*0.5);zp_gy=bx_y+24;zp_drawstr(#_inv);
 
 // AUTO TRIM indicator
 aw>44?(
-  gfx_set(0.09,0.08,0.07,1);gfx_rect(ax,bx_y,aw,bx_h);
-  gfx_set(0.18,0.50,0.90,0.20);gfx_rect(ax,bx_y,aw,1);
-  gfx_setfont(1,"Arial",10,'b');auto_apply?gfx_set(0.58,0.72,0.94,0.98):gfx_set(0.46,0.62,0.54,0.95);gfx_x=ax+6;gfx_y=bx_y+6;
-  auto_apply?gfx_drawstr("AUTO DB"):gfx_drawstr("TARGET");
+  gfx_set(0.09,0.08,0.07,1);zp_rect(ax,bx_y,aw,bx_h);
+  gfx_set(0.18,0.50,0.90,0.20);zp_rect(ax,bx_y,aw,1);
+  zp_setfont(1,"Arial",10,'b');auto_apply?gfx_set(0.58,0.72,0.94,0.98):gfx_set(0.46,0.62,0.54,0.95);zp_gx=ax+6;zp_gy=bx_y+6;
+  auto_apply?zp_drawstr("AUTO DB"):zp_drawstr("TARGET");
   _td=ui_out_trim_db;_tn=clamp(_td/max(0.1,out_trim_max),-1,1);
   _tm=ax+floor(aw*0.5);_ty=bx_y+46;
-  gfx_set(0.12,0.14,0.17,1);gfx_rect(ax+7,_ty,aw-14,13);
-  gfx_set(0.34,0.38,0.44,1);gfx_rect(_tm,_ty-2,1,17);
+  gfx_set(0.12,0.14,0.17,1);zp_rect(ax+7,_ty,aw-14,13);
+  gfx_set(0.34,0.38,0.44,1);zp_rect(_tm,_ty-2,1,17);
   _tf=floor(abs(_tn)*(aw*0.5-9));
   _td>=0?gfx_set(0.20,0.72,0.34,0.90):gfx_set(0.90,0.32,0.26,0.90);
-  _td>=0?gfx_rect(_tm,_ty+3,_tf,7):gfx_rect(_tm-_tf,_ty+3,_tf,7);
-  gfx_setfont(1,"Arial",15,'b');
+  _td>=0?zp_rect(_tm,_ty+3,_tf,7):zp_rect(_tm-_tf,_ty+3,_tf,7);
+  zp_setfont(1,"Arial",15,'b');
   _td>=0?gfx_set(0.58,0.96,0.66,1):gfx_set(1.0,0.58,0.50,1);
-  sprintf(#_ot,"%+.1f",_td);gfx_measurestr(#_ot,_tw,_th);gfx_x=ax+floor((aw-_tw)*0.5);gfx_y=bx_y+23;gfx_drawstr(#_ot);
-  gfx_setfont(1,"Arial",10,'b');gfx_set(0.78,0.86,0.90,1);
-  gfx_x=ax+6;gfx_y=bx_y+71;gfx_drawstr("NO A");
-  sprintf(#_op,"%.1f",ui_out_pre_auto_dbfs);gfx_measurestr(#_op,_tw,_th);gfx_x=ax+aw-_tw-6;gfx_y=bx_y+71;gfx_drawstr(#_op);
-  gfx_x=ax+6;gfx_y=bx_y+94;gfx_drawstr("AUTO");
-  sprintf(#_oa,"%.1f",ui_out_peak_dbfs);gfx_measurestr(#_oa,_tw,_th);gfx_x=ax+aw-_tw-6;gfx_y=bx_y+94;gfx_drawstr(#_oa);
-  gfx_setfont(1,"Arial",9);gfx_set(0.40,0.48,0.54,0.80);gfx_x=ax+6;gfx_y=bx_y+116;gfx_drawstr("dBTP hold");
+  sprintf(#_ot,"%+.1f",_td);(gfx_measurestr(#_ot, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=ax+floor((aw-_tw)*0.5);zp_gy=bx_y+23;zp_drawstr(#_ot);
+  zp_setfont(1,"Arial",10,'b');gfx_set(0.78,0.86,0.90,1);
+  zp_gx=ax+6;zp_gy=bx_y+71;zp_drawstr("NO A");
+  sprintf(#_op,"%.1f",ui_out_pre_auto_dbfs);(gfx_measurestr(#_op, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=ax+aw-_tw-6;zp_gy=bx_y+71;zp_drawstr(#_op);
+  zp_gx=ax+6;zp_gy=bx_y+94;zp_drawstr("AUTO");
+  sprintf(#_oa,"%.1f",ui_out_peak_dbfs);(gfx_measurestr(#_oa, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=ax+aw-_tw-6;zp_gy=bx_y+94;zp_drawstr(#_oa);
+  zp_setfont(1,"Arial",9);gfx_set(0.40,0.48,0.54,0.80);zp_gx=ax+6;zp_gy=bx_y+116;zp_drawstr("dBTP hold");
 
   // GLUE tachometer (psycho-visual guardrail)
   _lra_n=clamp((6.0-ui_lra)/6.0,0,1);
@@ -3145,16 +3202,16 @@ aw>44?(
   // Posizionato più in alto per lasciare spazio a LOCK box
   _tx=ax+6;_ty=bx_y+115;_tw=max(20,aw-12);_th=9;
   hit(_tx,_ty,_tw,_th+24)?ui_set_hover(9062);
-  gfx_set(0.07,0.07,0.08,1);gfx_rect(_tx,_ty,_tw,_th);
+  gfx_set(0.07,0.07,0.08,1);zp_rect(_tx,_ty,_tw,_th);
   _gw=floor(_tw*0.60);_yw=floor(_tw*0.25);_rw=_tw-_gw-_yw;
-  gfx_set(0.18,0.58,0.26,0.50);gfx_rect(_tx,_ty,_gw,_th);
-  gfx_set(0.86,0.66,0.12,0.50);gfx_rect(_tx+_gw,_ty,_yw,_th);
-  gfx_set(0.90,0.26,0.22,0.55);gfx_rect(_tx+_gw+_yw,_ty,_rw,_th);
+  gfx_set(0.18,0.58,0.26,0.50);zp_rect(_tx,_ty,_gw,_th);
+  gfx_set(0.86,0.66,0.12,0.50);zp_rect(_tx+_gw,_ty,_yw,_th);
+  gfx_set(0.90,0.26,0.22,0.55);zp_rect(_tx+_gw+_yw,_ty,_rw,_th);
   _px=_tx+floor(_glue*(_tw-1));
-  gfx_set(0.95,0.95,0.98,0.95);gfx_rect(_px,_ty-2,1,_th+4);
-  gfx_setfont(1,"Arial",9,'b');
+  gfx_set(0.95,0.95,0.98,0.95);zp_rect(_px,_ty-2,1,_th+4);
+  zp_setfont(1,"Arial",9,'b');
   _glue<0.60?(gfx_set(0.52,0.88,0.58,0.95);strcpy(#_st,"LOW")):_glue<0.85?(gfx_set(0.98,0.84,0.32,0.95);strcpy(#_st,"MID")):(gfx_set(1.0,0.50,0.42,0.95);strcpy(#_st,"HIGH"));
-  sprintf(#_dn,"GLUE %s",#_st);gfx_x=_tx;gfx_y=_ty+12;gfx_drawstr(#_dn);
+  sprintf(#_dn,"GLUE %s",#_st);zp_gx=_tx;zp_gy=_ty+12;zp_drawstr(#_dn);
 );
 
 // LOCK box (Smart Cap) - angolo inferiore sinistro, sotto AUTO dB
@@ -3166,64 +3223,64 @@ _scap_w=aw;
 _scap_h=bx_h-floor(bx_h*0.55)-5;
 out_cal_state_i==0?(
   // OFF - Capture mode
-  gfx_set(0.08,0.10,0.12,1);gfx_rect(_scap_x,_scap_y,_scap_w,_scap_h);
-  gfx_set(0.18,0.50,0.90,0.30);gfx_rect(_scap_x,_scap_y,_scap_w,1);gfx_rect(_scap_x,_scap_y+_scap_h-1,_scap_w,1);
+  gfx_set(0.08,0.10,0.12,1);zp_rect(_scap_x,_scap_y,_scap_w,_scap_h);
+  gfx_set(0.18,0.50,0.90,0.30);zp_rect(_scap_x,_scap_y,_scap_w,1);zp_rect(_scap_x,_scap_y+_scap_h-1,_scap_w,1);
   // Titolo
-  gfx_setfont(1,"Arial",9,'b');gfx_set(0.50,0.66,0.88,0.95);gfx_x=_scap_x+6;gfx_y=_scap_y+4;
-  (auto_apply==0||auto_tm==0)?gfx_drawstr("MANUAL"):gfx_drawstr("CAPTURE");
+  zp_setfont(1,"Arial",9,'b');gfx_set(0.50,0.66,0.88,0.95);zp_gx=_scap_x+6;zp_gy=_scap_y+4;
+  (auto_apply==0||auto_tm==0)?zp_drawstr("MANUAL"):zp_drawstr("CAPTURE");
   (auto_apply==0||auto_tm==0)?(
-    gfx_setfont(1,"Arial",16,'b');gfx_set(0.72,0.78,0.84,0.95);
+    zp_setfont(1,"Arial",16,'b');gfx_set(0.72,0.78,0.84,0.95);
     auto_tm>0?strcpy(#_capoff,"TARGET"):strcpy(#_capoff,"AUTO OFF");
-    gfx_measurestr(#_capoff,_tw,_th);gfx_x=_scap_x+floor((_scap_w-_tw)*0.5);gfx_y=_scap_y+31;gfx_drawstr(#_capoff);
+    (gfx_measurestr(#_capoff, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_scap_x+floor((_scap_w-_tw)*0.5);zp_gy=_scap_y+31;zp_drawstr(#_capoff);
   ):(
     ui_enable=1;mod_r=0.20;mod_g=0.54;mod_b=0.92;
     ui_knob(31,_scap_x+38,_scap_y+55,12,20,90,30,"SEC",9016);
     // Valore
-    gfx_setfont(1,"Arial",18,'b');gfx_set(0.58,0.96,0.66,1);
-    sprintf(#_scap_val,"%+.1f",0.0);gfx_measurestr(#_scap_val,_tw,_th);
-    gfx_x=_scap_x+floor(_scap_w*0.45);gfx_y=_scap_y+28;gfx_drawstr(#_scap_val);
+    zp_setfont(1,"Arial",18,'b');gfx_set(0.58,0.96,0.66,1);
+    sprintf(#_scap_val,"%+.1f",0.0);(gfx_measurestr(#_scap_val, _tw, _th); _tw /= zp_sc; _th /= zp_sc);
+    zp_gx=_scap_x+floor(_scap_w*0.45);zp_gy=_scap_y+28;zp_drawstr(#_scap_val);
     // Pulsante CAP
     _cap_btn_w=46;_cap_btn_h=18;
     _cap_btn_x=_scap_x+_scap_w-_cap_btn_w-6;
     _cap_btn_y=_scap_y+floor(_scap_h*0.5)-floor(_cap_btn_h*0.5);
     hit(_cap_btn_x,_cap_btn_y,_cap_btn_w,_cap_btn_h)?gfx_set(0.22,0.52,0.92,1):gfx_set(0.16,0.36,0.72,1);
-    gfx_rect(_cap_btn_x,_cap_btn_y,_cap_btn_w,_cap_btn_h);
-    gfx_setfont(1,"Arial",9,'b');gfx_set(1,1,1,0.95);
-    gfx_measurestr("CAP",_tw,_th);gfx_x=_cap_btn_x+floor((_cap_btn_w-_tw)*0.5);gfx_y=_cap_btn_y+floor((_cap_btn_h-_th)*0.5);gfx_drawstr("CAP");
+    zp_rect(_cap_btn_x,_cap_btn_y,_cap_btn_w,_cap_btn_h);
+    zp_setfont(1,"Arial",9,'b');gfx_set(1,1,1,0.95);
+    (gfx_measurestr("CAP", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_cap_btn_x+floor((_cap_btn_w-_tw)*0.5);zp_gy=_cap_btn_y+floor((_cap_btn_h-_th)*0.5);zp_drawstr("CAP");
     hit(_cap_btn_x,_cap_btn_y,_cap_btn_w,_cap_btn_h)?(ui_set_hover(9050);mouse_click?prime_out_cal(););
   );
 ):out_cal_state_i==1?(
   // CAPTURING
-  gfx_set(0.12,0.10,0.06,1);gfx_rect(_scap_x,_scap_y,_scap_w,_scap_h);
-  gfx_set(0.92,0.76,0.28,0.50);gfx_rect(_scap_x,_scap_y,_scap_w,1);gfx_rect(_scap_x,_scap_y+_scap_h-1,_scap_w,1);
-  gfx_setfont(1,"Arial",9,'b');gfx_set(0.92,0.76,0.28,0.95);gfx_x=_scap_x+6;gfx_y=_scap_y+4;gfx_drawstr("CAPTURING...");
+  gfx_set(0.12,0.10,0.06,1);zp_rect(_scap_x,_scap_y,_scap_w,_scap_h);
+  gfx_set(0.92,0.76,0.28,0.50);zp_rect(_scap_x,_scap_y,_scap_w,1);zp_rect(_scap_x,_scap_y+_scap_h-1,_scap_w,1);
+  zp_setfont(1,"Arial",9,'b');gfx_set(0.92,0.76,0.28,0.95);zp_gx=_scap_x+6;zp_gy=_scap_y+4;zp_drawstr("CAPTURING...");
   ui_enable=1;mod_r=0.92;mod_g=0.76;mod_b=0.28;
   ui_knob(31,_scap_x+38,_scap_y+55,12,20,90,30,"SEC",9016);
-  gfx_setfont(1,"Arial",16,'b');gfx_set(0.92,0.76,0.28,1);
-  sprintf(#_scap_val,"%+.1f",out_cal_lufs_avg);gfx_measurestr(#_scap_val,_tw,_th);
-  gfx_x=_scap_x+floor(_scap_w*0.45);gfx_y=_scap_y+28;gfx_drawstr(#_scap_val);
+  zp_setfont(1,"Arial",16,'b');gfx_set(0.92,0.76,0.28,1);
+  sprintf(#_scap_val,"%+.1f",out_cal_lufs_avg);(gfx_measurestr(#_scap_val, _tw, _th); _tw /= zp_sc; _th /= zp_sc);
+  zp_gx=_scap_x+floor(_scap_w*0.45);zp_gy=_scap_y+28;zp_drawstr(#_scap_val);
   // Progress bar
   _prog_w=floor((_scap_w-12)*out_cal_progress*0.01);
-  gfx_set(0.10,0.14,0.20,1);gfx_rect(_scap_x+6,_scap_y+_scap_h-14,_scap_w-12,6);
-  gfx_set(0.92,0.76,0.28,1);gfx_rect(_scap_x+6,_scap_y+_scap_h-14,_prog_w,6);
+  gfx_set(0.10,0.14,0.20,1);zp_rect(_scap_x+6,_scap_y+_scap_h-14,_scap_w-12,6);
+  gfx_set(0.92,0.76,0.28,1);zp_rect(_scap_x+6,_scap_y+_scap_h-14,_prog_w,6);
 ):(
   // LOCK
-  gfx_set(0.06,0.14,0.10,1);gfx_rect(_scap_x,_scap_y,_scap_w,_scap_h);
-  gfx_set(0.28,0.82,0.48,0.50);gfx_rect(_scap_x,_scap_y,_scap_w,1);gfx_rect(_scap_x,_scap_y+_scap_h-1,_scap_w,1);
-  gfx_setfont(1,"Arial",9,'b');gfx_set(0.34,0.90,0.48,0.95);gfx_x=_scap_x+6;gfx_y=_scap_y+4;gfx_drawstr("LOCK");
+  gfx_set(0.06,0.14,0.10,1);zp_rect(_scap_x,_scap_y,_scap_w,_scap_h);
+  gfx_set(0.28,0.82,0.48,0.50);zp_rect(_scap_x,_scap_y,_scap_w,1);zp_rect(_scap_x,_scap_y+_scap_h-1,_scap_w,1);
+  zp_setfont(1,"Arial",9,'b');gfx_set(0.34,0.90,0.48,0.95);zp_gx=_scap_x+6;zp_gy=_scap_y+4;zp_drawstr("LOCK");
   ui_enable=1;mod_r=0.28;mod_g=0.82;mod_b=0.48;
   ui_knob(31,_scap_x+38,_scap_y+55,12,20,90,30,"SEC",9016);
-  gfx_setfont(1,"Arial",18,'b');out_cal_trim>=0?gfx_set(0.58,0.96,0.66,1):gfx_set(1.0,0.58,0.50,1);
-  sprintf(#_scap_val,"%+.1f",out_cal_trim);gfx_measurestr(#_scap_val,_tw,_th);
-  gfx_x=_scap_x+floor(_scap_w*0.45);gfx_y=_scap_y+28;gfx_drawstr(#_scap_val);
+  zp_setfont(1,"Arial",18,'b');out_cal_trim>=0?gfx_set(0.58,0.96,0.66,1):gfx_set(1.0,0.58,0.50,1);
+  sprintf(#_scap_val,"%+.1f",out_cal_trim);(gfx_measurestr(#_scap_val, _tw, _th); _tw /= zp_sc; _th /= zp_sc);
+  zp_gx=_scap_x+floor(_scap_w*0.45);zp_gy=_scap_y+28;zp_drawstr(#_scap_val);
   // Pulsante NEW
   _new_btn_w=38;_new_btn_h=16;
   _new_btn_x=_scap_x+_scap_w-_new_btn_w-6;
   _new_btn_y=_scap_y+floor(_scap_h*0.5)-floor(_new_btn_h*0.5);
   hit(_new_btn_x,_new_btn_y,_new_btn_w,_new_btn_h)?gfx_set(0.28,0.82,0.48,1):gfx_set(0.18,0.62,0.38,1);
-  gfx_rect(_new_btn_x,_new_btn_y,_new_btn_w,_new_btn_h);
-  gfx_setfont(1,"Arial",8,'b');gfx_set(1,1,1,0.95);
-  gfx_measurestr("NEW",_tw,_th);gfx_x=_new_btn_x+floor((_new_btn_w-_tw)*0.5);gfx_y=_new_btn_y+floor((_new_btn_h-_th)*0.5);gfx_drawstr("NEW");
+  zp_rect(_new_btn_x,_new_btn_y,_new_btn_w,_new_btn_h);
+  zp_setfont(1,"Arial",8,'b');gfx_set(1,1,1,0.95);
+  (gfx_measurestr("NEW", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_new_btn_x+floor((_new_btn_w-_tw)*0.5);zp_gy=_new_btn_y+floor((_new_btn_h-_th)*0.5);zp_drawstr("NEW");
   hit(_new_btn_x,_new_btn_y,_new_btn_w,_new_btn_h)?(
     ui_set_hover(9051);mouse_click?(out_cal_confirm_time=time_precise(););
     btn_down&&out_cal_confirm_time>0&&(time_precise()-out_cal_confirm_time)>0.8?(reset_out_cal();out_cal_confirm_time=0;);
@@ -3231,10 +3288,10 @@ out_cal_state_i==0?(
 );
 
 // MEASURE box
-gfx_set(0.10,0.09,0.08,1);gfx_rect(bx_m,bx_y,bw_m,bx_h);
-gfx_set(0.18,0.50,0.90,0.35);gfx_rect(bx_m,bx_y,bw_m,1);gfx_rect(bx_m,bx_y+bx_h-1,bw_m,1);
-gfx_set(0.18,0.50,0.90,0.18);gfx_rect(bx_m,bx_y,1,bx_h);gfx_rect(bx_m+bw_m-1,bx_y,1,bx_h);
-play_state>0?gfx_set(0.22,0.82,0.28,1):gfx_set(0.36,0.36,0.40,1);gfx_circle(bx_m+bw_m-12,bx_y+9,4,1,1);
+gfx_set(0.10,0.09,0.08,1);zp_rect(bx_m,bx_y,bw_m,bx_h);
+gfx_set(0.18,0.50,0.90,0.35);zp_rect(bx_m,bx_y,bw_m,1);zp_rect(bx_m,bx_y+bx_h-1,bw_m,1);
+gfx_set(0.18,0.50,0.90,0.18);zp_rect(bx_m,bx_y,1,bx_h);zp_rect(bx_m+bw_m-1,bx_y,1,bx_h);
+play_state>0?gfx_set(0.22,0.82,0.28,1):gfx_set(0.36,0.36,0.40,1);zp_circle(bx_m+bw_m-12,bx_y+9,4,1,1);
 _mhit=hit(bx_m,bx_y,bw_m,bx_h);
 _mhit?ui_set_hover(9060);
 _mhit&&mouse_click?(
@@ -3242,8 +3299,8 @@ _mhit&&mouse_click?(
   _mdbl?request_meter_refresh();
   last_dbl_id=9060;last_dbl_time=time_precise();
 );
-gfx_setfont(1,"Arial",10,'b');gfx_set(0.78,0.88,0.92,1);gfx_x=bx_m+7;gfx_y=bx_y+4;gfx_drawstr("LUFS/RMS/PK");
-gfx_set(0.18,0.50,0.90,0.22);gfx_rect(bx_m,bx_y+21,bw_m,1);
+zp_setfont(1,"Arial",10,'b');gfx_set(0.78,0.88,0.92,1);zp_gx=bx_m+7;zp_gy=bx_y+4;zp_drawstr("LUFS/RMS/PK");
+gfx_set(0.18,0.50,0.90,0.22);zp_rect(bx_m,bx_y+21,bw_m,1);
 
 measure_header_h=25;
 measure_rows=6;
@@ -3252,38 +3309,38 @@ _mr0=bx_y+measure_header_h;
 
 // M
 _ry=_mr0;disp_lufs_m>-998?sprintf(#_d1,"%.1f",disp_lufs_m):sprintf(#_d1,"--");
-gfx_setfont(1,"Arial",12,'b');gfx_set(0.50,0.64,0.60,1);gfx_x=bx_m+9;gfx_y=_ry+floor(measure_row_h*0.34);gfx_drawstr("M");
-gfx_setfont(1,"Arial",17,'b');gfx_set(0.88,0.94,0.90,1);gfx_measurestr(#_d1,_tw,_th);gfx_x=bx_m+bw_m-_tw-9;gfx_y=_ry+floor((measure_row_h-_th)*0.5);gfx_drawstr(#_d1);
-gfx_set(0.18,0.50,0.90,0.18);gfx_rect(bx_m,_ry+measure_row_h,bw_m,1);
+zp_setfont(1,"Arial",12,'b');gfx_set(0.50,0.64,0.60,1);zp_gx=bx_m+9;zp_gy=_ry+floor(measure_row_h*0.34);zp_drawstr("M");
+zp_setfont(1,"Arial",17,'b');gfx_set(0.88,0.94,0.90,1);(gfx_measurestr(#_d1, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx_m+bw_m-_tw-9;zp_gy=_ry+floor((measure_row_h-_th)*0.5);zp_drawstr(#_d1);
+gfx_set(0.18,0.50,0.90,0.18);zp_rect(bx_m,_ry+measure_row_h,bw_m,1);
 
 // S
 _ry+=measure_row_h;disp_lufs_s>-998?sprintf(#_d2,"%.1f",disp_lufs_s):sprintf(#_d2,"--");
-gfx_setfont(1,"Arial",12,'b');gfx_set(0.50,0.64,0.60,1);gfx_x=bx_m+9;gfx_y=_ry+floor(measure_row_h*0.34);gfx_drawstr("S");
-gfx_setfont(1,"Arial",17,'b');gfx_set(0.88,0.94,0.90,1);gfx_measurestr(#_d2,_tw,_th);gfx_x=bx_m+bw_m-_tw-9;gfx_y=_ry+floor((measure_row_h-_th)*0.5);gfx_drawstr(#_d2);
-gfx_set(0.18,0.50,0.90,0.18);gfx_rect(bx_m,_ry+measure_row_h,bw_m,1);
+zp_setfont(1,"Arial",12,'b');gfx_set(0.50,0.64,0.60,1);zp_gx=bx_m+9;zp_gy=_ry+floor(measure_row_h*0.34);zp_drawstr("S");
+zp_setfont(1,"Arial",17,'b');gfx_set(0.88,0.94,0.90,1);(gfx_measurestr(#_d2, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx_m+bw_m-_tw-9;zp_gy=_ry+floor((measure_row_h-_th)*0.5);zp_drawstr(#_d2);
+gfx_set(0.18,0.50,0.90,0.18);zp_rect(bx_m,_ry+measure_row_h,bw_m,1);
 
 // I
 _ry+=measure_row_h;avg_lufs_disp>-998?sprintf(#_d3,"%.1f",avg_lufs_disp):sprintf(#_d3,"--");
-gfx_setfont(1,"Arial",12,'b');gfx_set(0.50,0.64,0.60,1);gfx_x=bx_m+9;gfx_y=_ry+floor(measure_row_h*0.34);gfx_drawstr("I");
-gfx_setfont(1,"Arial",min(21,max(17,floor(measure_row_h*0.48))),'b');gfx_set(0.22,0.72,0.98,1);gfx_measurestr(#_d3,_tw,_th);gfx_x=bx_m+bw_m-_tw-9;gfx_y=_ry+floor((measure_row_h-_th)*0.5);gfx_drawstr(#_d3);
-gfx_set(0.18,0.50,0.90,0.18);gfx_rect(bx_m,_ry+measure_row_h,bw_m,1);
+zp_setfont(1,"Arial",12,'b');gfx_set(0.50,0.64,0.60,1);zp_gx=bx_m+9;zp_gy=_ry+floor(measure_row_h*0.34);zp_drawstr("I");
+zp_setfont(1,"Arial",min(21,max(17,floor(measure_row_h*0.48))),'b');gfx_set(0.22,0.72,0.98,1);(gfx_measurestr(#_d3, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx_m+bw_m-_tw-9;zp_gy=_ry+floor((measure_row_h-_th)*0.5);zp_drawstr(#_d3);
+gfx_set(0.18,0.50,0.90,0.18);zp_rect(bx_m,_ry+measure_row_h,bw_m,1);
 
 // LRA
 _ry+=measure_row_h;disp_lra>-998?sprintf(#_d4,"%.1f",disp_lra):sprintf(#_d4,"--");
-gfx_setfont(1,"Arial",12,'b');gfx_set(0.50,0.64,0.60,1);gfx_x=bx_m+9;gfx_y=_ry+floor(measure_row_h*0.34);gfx_drawstr("LRA");
-gfx_setfont(1,"Arial",16,'b');gfx_set(0.92,0.78,0.26,1);gfx_measurestr(#_d4,_tw,_th);gfx_x=bx_m+bw_m-_tw-9;gfx_y=_ry+floor((measure_row_h-_th)*0.5);gfx_drawstr(#_d4);
-gfx_set(0.18,0.50,0.90,0.18);gfx_rect(bx_m,_ry+measure_row_h,bw_m,1);
+zp_setfont(1,"Arial",12,'b');gfx_set(0.50,0.64,0.60,1);zp_gx=bx_m+9;zp_gy=_ry+floor(measure_row_h*0.34);zp_drawstr("LRA");
+zp_setfont(1,"Arial",16,'b');gfx_set(0.92,0.78,0.26,1);(gfx_measurestr(#_d4, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx_m+bw_m-_tw-9;zp_gy=_ry+floor((measure_row_h-_th)*0.5);zp_drawstr(#_d4);
+gfx_set(0.18,0.50,0.90,0.18);zp_rect(bx_m,_ry+measure_row_h,bw_m,1);
 
 // RMS
 _ry+=measure_row_h;avg_rms_disp>-998?sprintf(#_d5,"%.1f",avg_rms_disp):sprintf(#_d5,"--");
-gfx_setfont(1,"Arial",12,'b');gfx_set(0.50,0.64,0.60,1);gfx_x=bx_m+9;gfx_y=_ry+floor(measure_row_h*0.34);gfx_drawstr("RMS");
-gfx_setfont(1,"Arial",16,'b');gfx_set(0.88,0.94,0.90,1);gfx_measurestr(#_d5,_tw,_th);gfx_x=bx_m+bw_m-_tw-9;gfx_y=_ry+floor((measure_row_h-_th)*0.5);gfx_drawstr(#_d5);
-gfx_set(0.18,0.50,0.90,0.18);gfx_rect(bx_m,_ry+measure_row_h,bw_m,1);
+zp_setfont(1,"Arial",12,'b');gfx_set(0.50,0.64,0.60,1);zp_gx=bx_m+9;zp_gy=_ry+floor(measure_row_h*0.34);zp_drawstr("RMS");
+zp_setfont(1,"Arial",16,'b');gfx_set(0.88,0.94,0.90,1);(gfx_measurestr(#_d5, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx_m+bw_m-_tw-9;zp_gy=_ry+floor((measure_row_h-_th)*0.5);zp_drawstr(#_d5);
+gfx_set(0.18,0.50,0.90,0.18);zp_rect(bx_m,_ry+measure_row_h,bw_m,1);
 
 // PK
 _ry+=measure_row_h;avg_peak_disp>-998?sprintf(#_d6,"%.1f",avg_peak_disp):sprintf(#_d6,"--");
-gfx_setfont(1,"Arial",12,'b');gfx_set(0.50,0.64,0.60,1);gfx_x=bx_m+9;gfx_y=_ry+floor(measure_row_h*0.34);gfx_drawstr("PK");
-gfx_setfont(1,"Arial",min(21,max(17,floor(measure_row_h*0.48))),'b');gfx_set(0.88,0.94,0.90,1);gfx_measurestr(#_d6,_tw,_th);gfx_x=bx_m+bw_m-_tw-9;gfx_y=_ry+floor((measure_row_h-_th)*0.5);gfx_drawstr(#_d6);
+zp_setfont(1,"Arial",12,'b');gfx_set(0.50,0.64,0.60,1);zp_gx=bx_m+9;zp_gy=_ry+floor(measure_row_h*0.34);zp_drawstr("PK");
+zp_setfont(1,"Arial",min(21,max(17,floor(measure_row_h*0.48))),'b');gfx_set(0.88,0.94,0.90,1);(gfx_measurestr(#_d6, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx_m+bw_m-_tw-9;zp_gy=_ry+floor((measure_row_h-_th)*0.5);zp_drawstr(#_d6);
 
 ); // end METER visibility
 
@@ -3377,188 +3434,188 @@ nav_lufs_available?sprintf(#nav_data,"LUFS %.1f/%.1f | RMS %.1f | C %.1f | D %.0
 // lo scroll della GUI porta al pannello completo e a tutti i suoi comandi.
 nav_x=PX;nav_y=py+(ui_show_meter?oh+10:0);nav_w=PW;nav_h=320;
 ui_show_nav ? (
-  gfx_set(0.045,0.05,0.06,0.98); gfx_rect(nav_x,nav_y,nav_w,nav_h);
-  gfx_set(0.18,0.50,0.90,0.85);gfx_rect(nav_x,nav_y,nav_w,2);gfx_rect(nav_x,nav_y+nav_h-2,nav_w,2);gfx_rect(nav_x,nav_y,2,nav_h);gfx_rect(nav_x+nav_w-2,nav_y,2,nav_h);
-  gfx_setfont(1,"Arial",15,'b');gfx_set(0.68,0.84,0.98,1);gfx_x=nav_x+12;gfx_y=nav_y+6;gfx_drawstr("NAVIGATOR / TARGET ENGINE");
+  gfx_set(0.045,0.05,0.06,0.98); zp_rect(nav_x,nav_y,nav_w,nav_h);
+  gfx_set(0.18,0.50,0.90,0.85);zp_rect(nav_x,nav_y,nav_w,2);zp_rect(nav_x,nav_y+nav_h-2,nav_w,2);zp_rect(nav_x,nav_y,2,nav_h);zp_rect(nav_x+nav_w-2,nav_y,2,nav_h);
+  zp_setfont(1,"Arial",15,'b');gfx_set(0.68,0.84,0.98,1);zp_gx=nav_x+12;zp_gy=nav_y+6;zp_drawstr("NAVIGATOR / TARGET ENGINE");
   _nbh=30;_ny=nav_y+27;
-  gfx_setfont(1,"Arial",14,'b');gfx_set(0.58,0.66,0.74,1);gfx_x=nav_x+12;gfx_y=_ny+7;gfx_drawstr("MEASURE TIME");
+  zp_setfont(1,"Arial",14,'b');gfx_set(0.58,0.66,0.74,1);zp_gx=nav_x+12;zp_gy=_ny+7;zp_drawstr("MEASURE TIME");
   _time_x=nav_x+125;_time_y=_ny+8;_time_w=150;_time_h=16;
-  gfx_set(0.10,0.12,0.16,1);gfx_rect(_time_x,_time_y,_time_w,_time_h);
-  gfx_set(0.18,0.50,0.90,0.85);gfx_rect(_time_x,_time_y,floor(_time_w*nav_measure_time/60),_time_h);
+  gfx_set(0.10,0.12,0.16,1);zp_rect(_time_x,_time_y,_time_w,_time_h);
+  gfx_set(0.18,0.50,0.90,0.85);zp_rect(_time_x,_time_y,floor(_time_w*nav_measure_time/60),_time_h);
   _time_knob_x=_time_x+floor(_time_w*nav_measure_time/60);
-  gfx_set(0.92,0.95,0.98,1);gfx_rect(_time_knob_x-2,_time_y-2,4,_time_h+4);
+  gfx_set(0.92,0.95,0.98,1);zp_rect(_time_knob_x-2,_time_y-2,4,_time_h+4);
   _time_hit=hit(_time_x-4,_time_y-5,_time_w+8,_time_h+10);
   _time_hit&&mouse_click?nav_time_drag=1;
-  nav_time_drag&&btn_down?set_nav_time((mouse_x-_time_x)/max(1,_time_w)*60);
+  nav_time_drag&&btn_down?set_nav_time((zp_mx-_time_x)/max(1,_time_w)*60);
   !btn_down?nav_time_drag=0;
-  sprintf(#nav_time_text,"%.0f s",nav_measure_time);gfx_setfont(1,"Arial",15,'b');gfx_set(0.90,0.94,0.98,1);gfx_x=nav_x+284;gfx_y=_ny+7;gfx_drawstr(#nav_time_text);
+  sprintf(#nav_time_text,"%.0f s",nav_measure_time);zp_setfont(1,"Arial",15,'b');gfx_set(0.90,0.94,0.98,1);zp_gx=nav_x+284;zp_gy=_ny+7;zp_drawstr(#nav_time_text);
   _mode_x=nav_x+400;
-  gfx_setfont(1,"Arial",14,'b');gfx_set(0.58,0.66,0.74,1);gfx_x=nav_x+340;gfx_y=_ny+7;gfx_drawstr("MODE");
+  zp_setfont(1,"Arial",14,'b');gfx_set(0.58,0.66,0.74,1);zp_gx=nav_x+340;zp_gy=_ny+7;zp_drawstr("MODE");
   _m0w=94;_m1w=76;_m2w=76;_mg=5;
-  nav_draw_mode==0?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);gfx_rect(_mode_x,_ny,_m0w,_nbh);gfx_setfont(1,"Arial",14,'b');gfx_set(0.92,0.95,0.98,1);gfx_x=_mode_x+12;gfx_y=_ny+8;gfx_drawstr("MANUAL");hit(_mode_x,_ny,_m0w,_nbh)&&mouse_click?set_nav_mode(0);
-  _m1x=_mode_x+_m0w+_mg;nav_draw_mode==1?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);gfx_rect(_m1x,_ny,_m1w,_nbh);gfx_setfont(1,"Arial",14,'b');gfx_set(0.92,0.95,0.98,1);gfx_x=_m1x+18;gfx_y=_ny+8;gfx_drawstr("LIVE");hit(_m1x,_ny,_m1w,_nbh)&&mouse_click?set_nav_mode(1);
-  _m2x=_m1x+_m1w+_mg;nav_draw_mode==2?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);gfx_rect(_m2x,_ny,_m2w,_nbh);gfx_setfont(1,"Arial",14,'b');gfx_set(0.92,0.95,0.98,1);gfx_x=_m2x+17;gfx_y=_ny+8;gfx_drawstr("AUTO");hit(_m2x,_ny,_m2w,_nbh)&&mouse_click?set_nav_mode(2);
+  nav_draw_mode==0?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);zp_rect(_mode_x,_ny,_m0w,_nbh);zp_setfont(1,"Arial",14,'b');gfx_set(0.92,0.95,0.98,1);zp_gx=_mode_x+12;zp_gy=_ny+8;zp_drawstr("MANUAL");hit(_mode_x,_ny,_m0w,_nbh)&&mouse_click?set_nav_mode(0);
+  _m1x=_mode_x+_m0w+_mg;nav_draw_mode==1?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);zp_rect(_m1x,_ny,_m1w,_nbh);zp_setfont(1,"Arial",14,'b');gfx_set(0.92,0.95,0.98,1);zp_gx=_m1x+18;zp_gy=_ny+8;zp_drawstr("LIVE");hit(_m1x,_ny,_m1w,_nbh)&&mouse_click?set_nav_mode(1);
+  _m2x=_m1x+_m1w+_mg;nav_draw_mode==2?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);zp_rect(_m2x,_ny,_m2w,_nbh);zp_setfont(1,"Arial",14,'b');gfx_set(0.92,0.95,0.98,1);zp_gx=_m2x+17;zp_gy=_ny+8;zp_drawstr("AUTO");hit(_m2x,_ny,_m2w,_nbh)&&mouse_click?set_nav_mode(2);
   _rx=nav_x+nav_w-138; _rw=126;
-  hit(_rx,_ny,_rw,_nbh)?gfx_set(0.62,0.18,0.16,1):gfx_set(0.30,0.12,0.12,1);gfx_rect(_rx,_ny,_rw,_nbh);
-  gfx_set(0.98,0.86,0.84,1);gfx_setfont(1,"Arial",14,'b');gfx_x=_rx+7;gfx_y=_ny+8;gfx_drawstr("RESET MEASURE");
+  hit(_rx,_ny,_rw,_nbh)?gfx_set(0.62,0.18,0.16,1):gfx_set(0.30,0.12,0.12,1);zp_rect(_rx,_ny,_rw,_nbh);
+  gfx_set(0.98,0.86,0.84,1);zp_setfont(1,"Arial",14,'b');zp_gx=_rx+7;zp_gy=_ny+8;zp_drawstr("RESET MEASURE");
   hit(_rx,_ny,_rw,_nbh)&&mouse_click?(
     nav_reset_measure();
     meter_reset_pending=1;
   );
 
   // Riga compatta: stato misura, avanzamento e connessione.
-  gfx_setfont(1,"Arial",14,'b');nav_measure_state==3?gfx_set(0.30,0.92,0.58,1):nav_measure_state==4?gfx_set(0.62,0.74,0.84,1):gfx_set(1.0,0.72,0.20,1);
-  gfx_x=nav_x+12;gfx_y=nav_y+66;gfx_drawstr(#nav_state_text);
-  gfx_setfont(1,"Arial",13,'b');gfx_set(0.72,0.82,0.90,1);gfx_x=nav_x+205;gfx_y=nav_y+67;gfx_drawstr(#nav_progress_text);
-  gfx_setfont(1,"Arial",12,'b');gfx_set(0.62,0.72,0.82,1);gfx_x=nav_x+440;gfx_y=nav_y+68;gfx_drawstr("CONNESSIONE: ");gfx_drawstr(#nav_connection_label);
+  zp_setfont(1,"Arial",14,'b');nav_measure_state==3?gfx_set(0.30,0.92,0.58,1):nav_measure_state==4?gfx_set(0.62,0.74,0.84,1):gfx_set(1.0,0.72,0.20,1);
+  zp_gx=nav_x+12;zp_gy=nav_y+66;zp_drawstr(#nav_state_text);
+  zp_setfont(1,"Arial",13,'b');gfx_set(0.72,0.82,0.90,1);zp_gx=nav_x+205;zp_gy=nav_y+67;zp_drawstr(#nav_progress_text);
+  zp_setfont(1,"Arial",12,'b');gfx_set(0.62,0.72,0.82,1);zp_gx=nav_x+440;zp_gy=nav_y+68;zp_drawstr("CONNESSIONE: ");zp_drawstr(#nav_connection_label);
 
   // Corpo compatto. CAUSA e STATO TARGET sono assorbiti nella riga STATO.
   _ly=nav_y+94;_lh=25;_label_x=nav_x+14;_body_x=nav_x+150;_measure_x=nav_x+470;
-  gfx_setfont(1,"Arial",15,'b');gfx_set(0.48,0.68,0.92,1);gfx_x=_label_x;gfx_y=_ly;gfx_drawstr("STATO");
-  gfx_setfont(1,"Arial",16,'b');nav_target_state==1?gfx_set(0.30,0.92,0.58,1):nav_target_state>=2?gfx_set(1.0,0.30,0.25,1):gfx_set(0.94,0.95,0.98,1);gfx_x=_body_x;gfx_drawstr(#nav_status);
-  gfx_setfont(1,"Arial",14);gfx_set(0.82,0.86,0.90,1);gfx_x=_measure_x;gfx_drawstr(#nav_cause);
+  zp_setfont(1,"Arial",15,'b');gfx_set(0.48,0.68,0.92,1);zp_gx=_label_x;zp_gy=_ly;zp_drawstr("STATO");
+  zp_setfont(1,"Arial",16,'b');nav_target_state==1?gfx_set(0.30,0.92,0.58,1):nav_target_state>=2?gfx_set(1.0,0.30,0.25,1):gfx_set(0.94,0.95,0.98,1);zp_gx=_body_x;zp_drawstr(#nav_status);
+  zp_setfont(1,"Arial",14);gfx_set(0.82,0.86,0.90,1);zp_gx=_measure_x;zp_drawstr(#nav_cause);
 
-  _ly+=_lh;gfx_setfont(1,"Arial",15,'b');gfx_set(0.48,0.68,0.92,1);gfx_x=_label_x;gfx_y=_ly;gfx_drawstr("CONTRIBUTI");
-  gfx_setfont(1,"Arial",14);gfx_set(0.72,0.80,0.86,1);gfx_x=_body_x;gfx_y=_ly;gfx_drawstr("DINAMICA: ");gfx_drawstr(#nav_dyn_line);
-  gfx_x=_body_x;gfx_y=_ly+19;gfx_drawstr("TONO: ");gfx_drawstr(#nav_tone_line);
-  gfx_x=_body_x;gfx_y=_ly+38;gfx_drawstr("DENSITA': ");gfx_drawstr(#nav_density_line);
+  _ly+=_lh;zp_setfont(1,"Arial",15,'b');gfx_set(0.48,0.68,0.92,1);zp_gx=_label_x;zp_gy=_ly;zp_drawstr("CONTRIBUTI");
+  zp_setfont(1,"Arial",14);gfx_set(0.72,0.80,0.86,1);zp_gx=_body_x;zp_gy=_ly;zp_drawstr("DINAMICA: ");zp_drawstr(#nav_dyn_line);
+  zp_gx=_body_x;zp_gy=_ly+19;zp_drawstr("TONO: ");zp_drawstr(#nav_tone_line);
+  zp_gx=_body_x;zp_gy=_ly+38;zp_drawstr("DENSITA': ");zp_drawstr(#nav_density_line);
 
   // Triplo meter compatto: dove si costruisce la densita' finale.
-  _ly+=61;gfx_setfont(1,"Arial",13,'b');gfx_set(0.48,0.68,0.92,1);gfx_x=_label_x;gfx_y=_ly+8;gfx_drawstr("DENSITY FLOW");
+  _ly+=61;zp_setfont(1,"Arial",13,'b');gfx_set(0.48,0.68,0.92,1);zp_gx=_label_x;zp_gy=_ly+8;zp_drawstr("DENSITY FLOW");
   _dfx=_body_x+58;_dfw=max(180,nav_w-(_dfx-nav_x)-190);_dfh=6;_dfgap=11;
-  gfx_setfont(1,"Arial",11,'b');
-  gfx_set(0.68,0.76,0.84,1);gfx_x=_body_x;gfx_y=_ly;gfx_drawstr("BUS");
-  gfx_set(0.08,0.10,0.13,1);gfx_rect(_dfx,_ly+3,_dfw,_dfh);gfx_set(0.20,0.54,0.86,0.95);gfx_rect(_dfx,_ly+3,_dfw*nav_flow_bus/100,_dfh);
-  gfx_set(0.68,0.76,0.84,1);gfx_x=_body_x;gfx_y=_ly+_dfgap;gfx_drawstr("MASTER");
-  gfx_set(0.08,0.10,0.13,1);gfx_rect(_dfx,_ly+_dfgap+3,_dfw,_dfh);gfx_set(0.92,0.58,0.18,0.95);gfx_rect(_dfx,_ly+_dfgap+3,_dfw*nav_flow_master/100,_dfh);
-  gfx_set(0.68,0.76,0.84,1);gfx_x=_body_x;gfx_y=_ly+_dfgap*2;gfx_drawstr("FINAL");
-  gfx_set(0.08,0.10,0.13,1);gfx_rect(_dfx,_ly+_dfgap*2+3,_dfw,_dfh);gfx_set(0.30,0.82,0.52,0.95);gfx_rect(_dfx,_ly+_dfgap*2+3,_dfw*nav_flow_final/100,_dfh);
+  zp_setfont(1,"Arial",11,'b');
+  gfx_set(0.68,0.76,0.84,1);zp_gx=_body_x;zp_gy=_ly;zp_drawstr("BUS");
+  gfx_set(0.08,0.10,0.13,1);zp_rect(_dfx,_ly+3,_dfw,_dfh);gfx_set(0.20,0.54,0.86,0.95);zp_rect(_dfx,_ly+3,_dfw*nav_flow_bus/100,_dfh);
+  gfx_set(0.68,0.76,0.84,1);zp_gx=_body_x;zp_gy=_ly+_dfgap;zp_drawstr("MASTER");
+  gfx_set(0.08,0.10,0.13,1);zp_rect(_dfx,_ly+_dfgap+3,_dfw,_dfh);gfx_set(0.92,0.58,0.18,0.95);zp_rect(_dfx,_ly+_dfgap+3,_dfw*nav_flow_master/100,_dfh);
+  gfx_set(0.68,0.76,0.84,1);zp_gx=_body_x;zp_gy=_ly+_dfgap*2;zp_drawstr("FINAL");
+  gfx_set(0.08,0.10,0.13,1);zp_rect(_dfx,_ly+_dfgap*2+3,_dfw,_dfh);gfx_set(0.30,0.82,0.52,0.95);zp_rect(_dfx,_ly+_dfgap*2+3,_dfw*nav_flow_final/100,_dfh);
   _df_hover=hit(_body_x-4,_ly-2,_dfw+120,_dfgap*2+13);
-  _df_hover?(sprintf(#nav_df_values,"BUS %.0f%%   MASTER %.0f%%   FINAL %.0f%%",nav_flow_bus,nav_flow_master,nav_flow_final);gfx_setfont(1,"Arial",11);gfx_set(0.82,0.88,0.94,1);gfx_x=_dfx+_dfw+10;gfx_y=_ly+11;gfx_drawstr(#nav_df_values););
+  _df_hover?(sprintf(#nav_df_values,"BUS %.0f%%   MASTER %.0f%%   FINAL %.0f%%",nav_flow_bus,nav_flow_master,nav_flow_final);zp_setfont(1,"Arial",11);gfx_set(0.82,0.88,0.94,1);zp_gx=_dfx+_dfw+10;zp_gy=_ly+11;zp_drawstr(#nav_df_values););
 
-  _ly+=38;gfx_setfont(1,"Arial",15,'b');gfx_set(0.48,0.68,0.92,1);gfx_x=_label_x;gfx_y=_ly;gfx_drawstr("SUGGERIMENTO");gfx_setfont(1,"Arial",15);gfx_set(0.86,0.90,0.94,1);gfx_x=_body_x;gfx_drawstr(#nav_suggest);
-  _ly+=25;gfx_setfont(1,"Arial",15,'b');gfx_set(0.48,0.68,0.92,1);gfx_x=_label_x;gfx_y=_ly;gfx_drawstr("DATI");gfx_setfont(1,"Arial",13);gfx_set(0.70,0.76,0.82,1);gfx_x=_body_x;gfx_drawstr(#nav_data);
-  nav_module_alert_on?(_ly+=24;gfx_setfont(1,"Arial",13,'b');gfx_set(1.0,0.64,0.24,1);gfx_x=_label_x;gfx_y=_ly;gfx_drawstr("MODULO");gfx_x=_body_x;gfx_drawstr(#nav_module_alert););
+  _ly+=38;zp_setfont(1,"Arial",15,'b');gfx_set(0.48,0.68,0.92,1);zp_gx=_label_x;zp_gy=_ly;zp_drawstr("SUGGERIMENTO");zp_setfont(1,"Arial",15);gfx_set(0.86,0.90,0.94,1);zp_gx=_body_x;zp_drawstr(#nav_suggest);
+  _ly+=25;zp_setfont(1,"Arial",15,'b');gfx_set(0.48,0.68,0.92,1);zp_gx=_label_x;zp_gy=_ly;zp_drawstr("DATI");zp_setfont(1,"Arial",13);gfx_set(0.70,0.76,0.82,1);zp_gx=_body_x;zp_drawstr(#nav_data);
+  nav_module_alert_on?(_ly+=24;zp_setfont(1,"Arial",13,'b');gfx_set(1.0,0.64,0.24,1);zp_gx=_label_x;zp_gy=_ly;zp_drawstr("MODULO");zp_gx=_body_x;zp_drawstr(#nav_module_alert););
 
 ); // end NAV visibility
 
 // Glue Matrix help overlay.
 glue_help_open>=0.5?(
-  _hpw=min(820,max(520,gfx_w-48));
-  _hpx=floor((gfx_w-_hpw)*0.5);
+  _hpw=min(820,max(520,zp_vw-48));
+  _hpx=floor((zp_vw-_hpw)*0.5);
   _hpy=78;
-  _hph=min(500,gfx_h-130);
-  gfx_set(0.025,0.027,0.030,0.96);gfx_rect(_hpx,_hpy,_hpw,_hph);
-  gfx_set(0.16,0.44,0.86,1);gfx_rect(_hpx,_hpy,_hpw,2);gfx_rect(_hpx,_hpy+_hph-2,_hpw,2);gfx_rect(_hpx,_hpy,2,_hph);gfx_rect(_hpx+_hpw-2,_hpy,2,_hph);
-  gfx_set(0.86,0.54,0.14,0.70);gfx_rect(_hpx+22,_hpy+62,_hpw-44,1);
+  _hph=min(500,zp_vh-130);
+  gfx_set(0.025,0.027,0.030,0.96);zp_rect(_hpx,_hpy,_hpw,_hph);
+  gfx_set(0.16,0.44,0.86,1);zp_rect(_hpx,_hpy,_hpw,2);zp_rect(_hpx,_hpy+_hph-2,_hpw,2);zp_rect(_hpx,_hpy,2,_hph);zp_rect(_hpx+_hpw-2,_hpy,2,_hph);
+  gfx_set(0.86,0.54,0.14,0.70);zp_rect(_hpx+22,_hpy+62,_hpw-44,1);
 
-  gfx_setfont(1,"Arial",26,'b');gfx_set(0.94,0.96,0.98,1);
-  gfx_x=_hpx+24;gfx_y=_hpy+18;gfx_drawstr("Glue Matrix");
+  zp_setfont(1,"Arial",26,'b');gfx_set(0.94,0.96,0.98,1);
+  zp_gx=_hpx+24;zp_gy=_hpy+18;zp_drawstr("Glue Matrix");
 
   _hcx=_hpx+_hpw-44;_hcy=_hpy+18;_hcw=28;_hch=28;
   _hclose=hit(_hcx,_hcy,_hcw,_hch);
   _hclose?gfx_set(0.28,0.12,0.10,1):gfx_set(0.14,0.12,0.12,1);
-  gfx_rect(_hcx,_hcy,_hcw,_hch);
-  gfx_setfont(1,"Arial",17,'b');gfx_set(0.94,0.80,0.78,1);
-  gfx_measurestr("X",_tw,_th);gfx_x=_hcx+floor((_hcw-_tw)*0.5);gfx_y=_hcy+floor((_hch-_th)*0.5);gfx_drawstr("X");
+  zp_rect(_hcx,_hcy,_hcw,_hch);
+  zp_setfont(1,"Arial",17,'b');gfx_set(0.94,0.80,0.78,1);
+  (gfx_measurestr("X", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_hcx+floor((_hcw-_tw)*0.5);zp_gy=_hcy+floor((_hch-_th)*0.5);zp_drawstr("X");
   _hclose&&mouse_click?(glue_help_open=0;);
 
-  gfx_setfont(1,"Arial",17,'b');
-  gfx_set(0.78,0.88,0.94,1);gfx_x=_hpx+24;gfx_y=_hpy+82;gfx_drawstr("Percorso: Tape -> Compressor/Glue -> Tone -> Limiter -> Output safety.");
-  gfx_setfont(1,"Arial",16);
-  gfx_set(0.84,0.86,0.86,1);gfx_x=_hpx+34;gfx_y=_hpy+118;gfx_drawstr("COMP accende il compressore principale: soglia, ratio, knee, RMS/Peak e AMU.");
-  gfx_x=_hpx+34;gfx_y=_hpy+150;gfx_drawstr("GLUE aggiunge macro lento, micro picchi e crest transienti.");
-  gfx_x=_hpx+34;gfx_y=_hpy+182;gfx_drawstr("Con GLUE OFF resta il compressore base, senza DEP/FRG/micro/crest.");
-  gfx_set(0.98,0.74,0.32,1);gfx_x=_hpx+24;gfx_y=_hpy+226;gfx_drawstr("DEP = quantita' di glue. FRG = piu' lavoro verso micro e crest.");
-  gfx_set(0.72,0.82,0.92,1);gfx_x=_hpx+24;gfx_y=_hpy+258;gfx_drawstr("Texture: SM morbido, API punch, SSA piu' compatto.");
-  gfx_set(0.72,0.92,0.82,1);gfx_x=_hpx+24;gfx_y=_hpy+290;gfx_drawstr("ISP OFF/2x/4x e' detection interpolata globale, non uno stadio audio.");
-  gfx_set(0.88,0.78,0.62,1);gfx_x=_hpx+24;gfx_y=_hpy+334;gfx_drawstr("A/B: AMU e Glue possono alzare la loudness percepita.");
+  zp_setfont(1,"Arial",17,'b');
+  gfx_set(0.78,0.88,0.94,1);zp_gx=_hpx+24;zp_gy=_hpy+82;zp_drawstr("Percorso: Tape -> Compressor/Glue -> Tone -> Limiter -> Output safety.");
+  zp_setfont(1,"Arial",16);
+  gfx_set(0.84,0.86,0.86,1);zp_gx=_hpx+34;zp_gy=_hpy+118;zp_drawstr("COMP accende il compressore principale: soglia, ratio, knee, RMS/Peak e AMU.");
+  zp_gx=_hpx+34;zp_gy=_hpy+150;zp_drawstr("GLUE aggiunge macro lento, micro picchi e crest transienti.");
+  zp_gx=_hpx+34;zp_gy=_hpy+182;zp_drawstr("Con GLUE OFF resta il compressore base, senza DEP/FRG/micro/crest.");
+  gfx_set(0.98,0.74,0.32,1);zp_gx=_hpx+24;zp_gy=_hpy+226;zp_drawstr("DEP = quantita' di glue. FRG = piu' lavoro verso micro e crest.");
+  gfx_set(0.72,0.82,0.92,1);zp_gx=_hpx+24;zp_gy=_hpy+258;zp_drawstr("Texture: SM morbido, API punch, SSA piu' compatto.");
+  gfx_set(0.72,0.92,0.82,1);zp_gx=_hpx+24;zp_gy=_hpy+290;zp_drawstr("ISP OFF/2x/4x e' detection interpolata globale, non uno stadio audio.");
+  gfx_set(0.88,0.78,0.62,1);zp_gx=_hpx+24;zp_gy=_hpy+334;zp_drawstr("A/B: AMU e Glue possono alzare la loudness percepita.");
 
   // Pulsante Guida Completa HTML
   _og_w = 150; _og_h = 24; _og_x = _hpx + 24; _og_y = _hpy + _hph - 38;
   _og_hover = hit(_og_x, _og_y, _og_w, _og_h);
   _og_hover ? gfx_set(0.24,0.48,0.88,0.95) : gfx_set(0.14,0.22,0.36,0.9);
-  gfx_rect(_og_x, _og_y, _og_w, _og_h);
+  zp_rect(_og_x, _og_y, _og_w, _og_h);
   gfx_set(0.40,0.65,0.95,0.95);
-  gfx_rect(_og_x, _og_y, _og_w, 1); gfx_rect(_og_x, _og_y+_og_h-1, _og_w, 1);
-  gfx_rect(_og_x, _og_y, 1, _og_h); gfx_rect(_og_x+_og_w-1, _og_y, 1, _og_h);
-  gfx_setfont(1,"Arial",12,'b'); gfx_set(0.92,0.96,1,1);
+  zp_rect(_og_x, _og_y, _og_w, 1); zp_rect(_og_x, _og_y+_og_h-1, _og_w, 1);
+  zp_rect(_og_x, _og_y, 1, _og_h); zp_rect(_og_x+_og_w-1, _og_y, 1, _og_h);
+  zp_setfont(1,"Arial",12,'b'); gfx_set(0.92,0.96,1,1);
   _og_lbl = ui_lang == 0 ? "GUIDA COMPLETA ↗" : "FULL GUIDE ↗";
-  gfx_measurestr(_og_lbl, _og_tw, _og_th);
-  gfx_x = _og_x + floor((_og_w - _og_tw)*0.5); gfx_y = _og_y + floor((_og_h - _og_th)*0.5);
-  gfx_drawstr(_og_lbl);
+  (gfx_measurestr(_og_lbl, _og_tw, _og_th); _og_tw /= zp_sc; _og_th /= zp_sc);
+  zp_gx = _og_x + floor((_og_w - _og_tw)*0.5); zp_gy = _og_y + floor((_og_h - _og_th)*0.5);
+  zp_drawstr(_og_lbl);
   _og_hover && mouse_click ? ( help_bridge_open(7); );
 );
 
 // Auto dB / Target help overlay.
 auto_help_open>=0.5?(
-  _hpw=min(820,max(520,gfx_w-48));
-  _hpx=floor((gfx_w-_hpw)*0.5);
+  _hpw=min(820,max(520,zp_vw-48));
+  _hpx=floor((zp_vw-_hpw)*0.5);
   _hpy=78;
-  _hph=min(500,gfx_h-130);
-  gfx_set(0.025,0.027,0.030,0.97);gfx_rect(_hpx,_hpy,_hpw,_hph);
-  gfx_set(0.16,0.44,0.86,1);gfx_rect(_hpx,_hpy,_hpw,2);gfx_rect(_hpx,_hpy+_hph-2,_hpw,2);gfx_rect(_hpx,_hpy,2,_hph);gfx_rect(_hpx+_hpw-2,_hpy,2,_hph);
-  gfx_set(0.20,0.54,0.92,0.72);gfx_rect(_hpx+22,_hpy+62,_hpw-44,1);
+  _hph=min(500,zp_vh-130);
+  gfx_set(0.025,0.027,0.030,0.97);zp_rect(_hpx,_hpy,_hpw,_hph);
+  gfx_set(0.16,0.44,0.86,1);zp_rect(_hpx,_hpy,_hpw,2);zp_rect(_hpx,_hpy+_hph-2,_hpw,2);zp_rect(_hpx,_hpy,2,_hph);zp_rect(_hpx+_hpw-2,_hpy,2,_hph);
+  gfx_set(0.20,0.54,0.92,0.72);zp_rect(_hpx+22,_hpy+62,_hpw-44,1);
 
-  gfx_setfont(1,"Arial",26,'b');gfx_set(0.94,0.96,0.98,1);
-  gfx_x=_hpx+24;gfx_y=_hpy+18;gfx_drawstr("Auto dB / Target");
+  zp_setfont(1,"Arial",26,'b');gfx_set(0.94,0.96,0.98,1);
+  zp_gx=_hpx+24;zp_gy=_hpy+18;zp_drawstr("Auto dB / Target");
 
   _hcx=_hpx+_hpw-44;_hcy=_hpy+18;_hcw=28;_hch=28;
   _hclose=hit(_hcx,_hcy,_hcw,_hch);
   _hclose?gfx_set(0.28,0.12,0.10,1):gfx_set(0.14,0.12,0.12,1);
-  gfx_rect(_hcx,_hcy,_hcw,_hch);
-  gfx_setfont(1,"Arial",17,'b');gfx_set(0.94,0.80,0.78,1);
-  gfx_measurestr("X",_tw,_th);gfx_x=_hcx+floor((_hcw-_tw)*0.5);gfx_y=_hcy+floor((_hch-_th)*0.5);gfx_drawstr("X");
+  zp_rect(_hcx,_hcy,_hcw,_hch);
+  zp_setfont(1,"Arial",17,'b');gfx_set(0.94,0.80,0.78,1);
+  (gfx_measurestr("X", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_hcx+floor((_hcw-_tw)*0.5);zp_gy=_hcy+floor((_hch-_th)*0.5);zp_drawstr("X");
   _hclose&&mouse_click?(auto_help_open=0;);
 
-  gfx_setfont(1,"Arial",17,'b');
-  gfx_set(0.78,0.88,0.94,1);gfx_x=_hpx+24;gfx_y=_hpy+82;gfx_drawstr("TARGET non cambia gain: mostra solo la distanza dal riferimento.");
-  gfx_setfont(1,"Arial",16);
-  gfx_set(0.84,0.86,0.86,1);gfx_x=_hpx+34;gfx_y=_hpy+118;gfx_drawstr("Il nuovo MATCH e' lento: media LUFS/RMS circa 4.5 secondi.");
-  gfx_x=_hpx+34;gfx_y=_hpy+150;gfx_drawstr("Cosi' ignora molti transienti e segnala l'energia reale del passaggio.");
-  gfx_set(0.98,0.74,0.32,1);gfx_x=_hpx+24;gfx_y=_hpy+194;gfx_drawstr("MATCH negativo: sei sotto target. MATCH positivo: sei sopra target.");
-  gfx_set(0.72,0.92,0.82,1);gfx_x=_hpx+24;gfx_y=_hpy+238;gfx_drawstr("AUTO usa lo stesso riferimento, ma applica gain entro MAXTRM.");
-  gfx_x=_hpx+24;gfx_y=_hpy+270;gfx_drawstr("Il numero grande a sinistra e' il gain che Auto dB sta applicando.");
-  gfx_set(0.72,0.82,0.92,1);gfx_x=_hpx+24;gfx_y=_hpy+314;gfx_drawstr("SPEED regola la velocita' del movimento di gain, non il target.");
-  gfx_set(0.88,0.78,0.62,1);gfx_x=_hpx+24;gfx_y=_hpy+358;gfx_drawstr("La visuale puo' sembrare opposta: MATCH descrive l'errore, AUTO mostra la correzione.");
+  zp_setfont(1,"Arial",17,'b');
+  gfx_set(0.78,0.88,0.94,1);zp_gx=_hpx+24;zp_gy=_hpy+82;zp_drawstr("TARGET non cambia gain: mostra solo la distanza dal riferimento.");
+  zp_setfont(1,"Arial",16);
+  gfx_set(0.84,0.86,0.86,1);zp_gx=_hpx+34;zp_gy=_hpy+118;zp_drawstr("Il nuovo MATCH e' lento: media LUFS/RMS circa 4.5 secondi.");
+  zp_gx=_hpx+34;zp_gy=_hpy+150;zp_drawstr("Cosi' ignora molti transienti e segnala l'energia reale del passaggio.");
+  gfx_set(0.98,0.74,0.32,1);zp_gx=_hpx+24;zp_gy=_hpy+194;zp_drawstr("MATCH negativo: sei sotto target. MATCH positivo: sei sopra target.");
+  gfx_set(0.72,0.92,0.82,1);zp_gx=_hpx+24;zp_gy=_hpy+238;zp_drawstr("AUTO usa lo stesso riferimento, ma applica gain entro MAXTRM.");
+  zp_gx=_hpx+24;zp_gy=_hpy+270;zp_drawstr("Il numero grande a sinistra e' il gain che Auto dB sta applicando.");
+  gfx_set(0.72,0.82,0.92,1);zp_gx=_hpx+24;zp_gy=_hpy+314;zp_drawstr("SPEED regola la velocita' del movimento di gain, non il target.");
+  gfx_set(0.88,0.78,0.62,1);zp_gx=_hpx+24;zp_gy=_hpy+358;zp_drawstr("La visuale puo' sembrare opposta: MATCH descrive l'errore, AUTO mostra la correzione.");
 );
 
 // ── Scrollbar indicators (GUI mode) ──────────────────────────────
-(_sc_max_y>0||_sc_max_x>0)&&gfx_h>100?(
+(_sc_max_y>0||_sc_max_x>0)&&zp_vh>100?(
   // Vertical bar
-  _sb_w=8;_sb_x=gfx_w-_sb_w-2;
-  _sb_h=gfx_h-TIP_H-HDR_H;
+  _sb_w=8;_sb_x=zp_vw-_sb_w-2;
+  _sb_h=zp_vh-TIP_H-HDR_H;
   _sb_h>20&&_sc_max_y>0?(
-    gfx_set(0.10,0.09,0.08,0.60);gfx_rect(_sb_x,HDR_H,_sb_w,_sb_h);
+    gfx_set(0.10,0.09,0.08,0.60);zp_rect(_sb_x,HDR_H,_sb_w,_sb_h);
     _sb_pct=ui_scroll_y/max(1,_sc_max_y);
-    _sb_th=max(22,floor(_sb_h*gfx_h/max(1,content_h)));
+    _sb_th=max(22,floor(_sb_h*zp_vh/max(1,content_h)));
     _sb_py=HDR_H+floor(_sb_pct*(_sb_h-_sb_th));
     _sb_over=hit(_sb_x,HDR_H,_sb_w,_sb_h);
     _sb_thumb_over=hit(_sb_x,_sb_py,_sb_w,_sb_th);
-    mouse_click&&_sb_thumb_over?(scroll_drag_mode=1;scroll_drag_off=mouse_y-_sb_py;);
+    mouse_click&&_sb_thumb_over?(scroll_drag_mode=1;scroll_drag_off=zp_my-_sb_py;);
     mouse_click&&_sb_over&&!_sb_thumb_over?(
       _page=floor(_sb_th*0.85);
-      mouse_y<_sb_py?(ui_scroll_y_tgt-=_page):(ui_scroll_y_tgt+=_page);
+      zp_my<_sb_py?(ui_scroll_y_tgt-=_page):(ui_scroll_y_tgt+=_page);
     );
     _sb_thumb_over||scroll_drag_mode==1?gfx_set(0.38,0.50,0.72,0.85):gfx_set(0.30,0.40,0.58,0.65);
-    gfx_rect(_sb_x,_sb_py,_sb_w,_sb_th);
+    zp_rect(_sb_x,_sb_py,_sb_w,_sb_th);
   );
   // Horizontal bar
-  _sh_h=8;_sh_x=0;_sh_y=gfx_h-TIP_H-_sh_h-1;_sh_w=gfx_w-(_sc_max_y>0?12:2);
+  _sh_h=8;_sh_x=0;_sh_y=zp_vh-TIP_H-_sh_h-1;_sh_w=zp_vw-(_sc_max_y>0?12:2);
   _sh_w>20&&_sc_max_x>0?(
-    gfx_set(0.10,0.09,0.08,0.60);gfx_rect(_sh_x,_sh_y,_sh_w,_sh_h);
+    gfx_set(0.10,0.09,0.08,0.60);zp_rect(_sh_x,_sh_y,_sh_w,_sh_h);
     _sh_pct=ui_scroll_x/max(1,_sc_max_x);
-    _sh_tw=max(22,floor(_sh_w*gfx_w/max(1,content_w)));
+    _sh_tw=max(22,floor(_sh_w*zp_vw/max(1,content_w)));
     _sh_px=_sh_x+floor(_sh_pct*(_sh_w-_sh_tw));
     _sh_over=hit(_sh_x,_sh_y,_sh_w,_sh_h);
     _sh_thumb_over=hit(_sh_px,_sh_y,_sh_tw,_sh_h);
-    mouse_click&&_sh_thumb_over?(scroll_drag_mode=2;scroll_drag_off=mouse_x-_sh_px;);
+    mouse_click&&_sh_thumb_over?(scroll_drag_mode=2;scroll_drag_off=zp_mx-_sh_px;);
     mouse_click&&_sh_over&&!_sh_thumb_over?(
       _hpage=floor(_sh_tw*0.85);
-      mouse_x<_sh_px?(ui_scroll_x_tgt-=_hpage):(ui_scroll_x_tgt+=_hpage);
+      zp_mx<_sh_px?(ui_scroll_x_tgt-=_hpage):(ui_scroll_x_tgt+=_hpage);
     );
     _sh_thumb_over||scroll_drag_mode==2?gfx_set(0.38,0.50,0.72,0.85):gfx_set(0.30,0.40,0.58,0.65);
-    gfx_rect(_sh_px,_sh_y,_sh_tw,_sh_h);
+    zp_rect(_sh_px,_sh_y,_sh_tw,_sh_h);
   );
 );
 
@@ -3567,97 +3624,97 @@ auto_help_open>=0.5?(
 // ══════════════════════════════════════════════════════════════════
 _master_left_hover?ui_set_hover(1033);
 _master_right_hover?ui_set_hover(1032);
-gfx_set(0.09,0.08,0.07,1);gfx_rect(0,gfx_h-TIP_H,gfx_w,TIP_H);
-gfx_set(0.16,0.44,0.86,0.45);gfx_rect(0,gfx_h-TIP_H,gfx_w,1);
+gfx_set(0.09,0.08,0.07,1);zp_rect(0,zp_vh-TIP_H,zp_vw,TIP_H);
+gfx_set(0.16,0.44,0.86,0.45);zp_rect(0,zp_vh-TIP_H,zp_vw,1);
 // Glue Matrix quick help.
-_ghw=24;_ghh=22;_ghx=gfx_w-_ghw-10;_ghy=gfx_h-TIP_H+5;
+_ghw=24;_ghh=22;_ghx=zp_vw-_ghw-10;_ghy=zp_vh-TIP_H+5;
 _ghover=hit(_ghx,_ghy,_ghw,_ghh);
 _ghover?ui_set_hover(1060);
 _ghover&&mouse_click?(glue_help_open=1-glue_help_open;auto_help_open=0;help_bridge_open(7););
 glue_help_open>=0.5?gfx_set(0.18,0.36,0.58,1):_ghover?gfx_set(0.18,0.22,0.28,1):gfx_set(0.12,0.14,0.17,1);
-gfx_rect(_ghx,_ghy,_ghw,_ghh);
-gfx_set(0.34,0.56,0.82,0.92);gfx_rect(_ghx,_ghy,_ghw,1);gfx_rect(_ghx,_ghy+_ghh-1,_ghw,1);
-gfx_setfont(1,"Arial",14,'b');gfx_set(0.88,0.94,1.00,1);
-gfx_measurestr("?",_tw,_th);gfx_x=_ghx+floor((_ghw-_tw)*0.5);gfx_y=_ghy+floor((_ghh-_th)*0.5);gfx_drawstr("?");
-gfx_setfont(1,"Arial",14,'b');gfx_set(0.74,0.84,0.90,1);gfx_x=10;gfx_y=gfx_h-23;
-time_precise() < help_warn_until ? gfx_drawstr(ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Studio Suite" : "Open Cue Navigator or ZP Suite help") :
-ui_hover_id==1060?gfx_drawstr(ui_lang == 0 ? "?: apre la guida rapida e la documentazione nel browser" : "?: opens quick help and documentation in browser"):
-ui_hover_id==1001?gfx_drawstr("Drive: ingresso del Tape Glue; 0.50 e' unity, sopra spinge la saturazione"):
-ui_hover_id==1002?gfx_drawstr("Ceil: tetto brickwall del limiter (dBFS)"):
-ui_hover_id==1003?gfx_drawstr("Rel: rilascio limiter (ms)"):
-ui_hover_id==1004?gfx_drawstr("Look: lookahead (ms) — anticipa i transienti, zero clipping"):
-ui_hover_id==1005?gfx_drawstr("PreGain: gain prima del limiter (dB)"):
-ui_hover_id==1006?gfx_drawstr("Tilt: bilanciamento encode/decode del tape, da piu' scuro a piu' aperto"):
-ui_hover_id==1007?gfx_drawstr("C.Thr: soglia compressore (dBFS)"):
-ui_hover_id==1008?gfx_drawstr("C.Rat: rapporto di compressione"):
-ui_hover_id==1009?gfx_drawstr("SC HPF: high-pass sidechain compressore — isola la detection dalle basse frequenze"):
-ui_hover_id==1010?gfx_drawstr("Shape: punto di lavoro del Tape Glue; 0.50 resta neutro e gestibile sul master"):
-ui_hover_id==1011?gfx_drawstr("Flutter: instabilita' tape; default zero per mastering pulito"):
-ui_hover_id==1012?gfx_drawstr("Bump: head bump sulle basse, da usare poco sul master"):
-ui_hover_id==1020?gfx_drawstr("SOFT: knee morbida attorno alla soglia del compressore"):
-ui_hover_id==1021?gfx_drawstr("RMS: detection RMS (piu' musicale) invece di Peak (piu' reattivo)"):
-ui_hover_id==1022?gfx_drawstr("FFW: feed-forward — rileva prima della compressione"):
-ui_hover_id==1023?gfx_drawstr("AMU: auto make-up gain compressore"):
-ui_hover_id==1024?gfx_drawstr("Bias: asimmetria e slew del Tape Glue; 0.50 e' neutro"):
-ui_hover_id==1025?gfx_drawstr("Head Frequency: centro del bump tape sulle basse"):
-ui_hover_id==1031?gfx_drawstr("C-RST: reset generale Engine + Tone + Output ai default"):
-ui_hover_id==1032?gfx_drawstr("GR SUM: riassunto gain reduction; sinistra=CMP, destra=LIM Engine + Final Limiter"):
-ui_hover_id==1033?gfx_drawstr("MASTER ACTIVITY: Drive=Tape input, Tilt=colore tape, Tape/Tone=attivita' Tape + Tone Guard"):
-ui_hover_id==1034?gfx_drawstr("TONE ACTIVITY: EQ=manuale/statico, DYN=DIN globale + EQD mirata; rosso=toglie, verde=aggiunge"):
-ui_hover_id==501?gfx_drawstr("TAPE on/off: attiva o bypassa il Tape Glue, unico glue/saturatore del master"):
-ui_hover_id==502?gfx_drawstr("COMP on/off: compressore principale; GLUE aggiunge o toglie la matrice multistadio"):
-ui_hover_id==503?gfx_drawstr("LIM on/off: attiva o bypassa il limiter lookahead"):
-ui_hover_id==504?gfx_drawstr("TONE on/off: attiva Tone; DIN=guard globale, EQD=dinamica mirata sui punti EQ"):
-ui_hover_id==505?gfx_drawstr("GLUE on/off: attiva DEP/FRG/micro/crest senza spegnere il compressore principale"):
-ui_hover_id==1060?gfx_drawstr("?: apre una guida rapida su DEP, FRG, Texture e ISP della Glue Matrix"):
-ui_hover_id==1041?gfx_drawstr("Slope: tilt chiaro/scuro statico con DIN OFF; target dinamico con DIN ON"):
-ui_hover_id==1042?gfx_drawstr("AMT: quantita' di correzione dinamica, attiva con DIN o EQD"):
-ui_hover_id==1043?gfx_drawstr("Atk: tempo di intervento dinamico, attivo con DIN o EQD"):
-ui_hover_id==1044?gfx_drawstr("Rel: ritorno dinamico verso neutro, attivo con DIN o EQD"):
-ui_hover_id==1045?gfx_drawstr("Tape Output: uscita del Tape Glue; 0.50 e' unity"):
-ui_hover_id==1046?gfx_drawstr("Tone manuale: nessun preset, Slope e punti EQ sono liberi"):
-ui_hover_id==1047?gfx_drawstr("Tone manuale: usa Slope e punti EQ; DIN aggiunge la parte dinamica"):
-ui_hover_id==1048?gfx_drawstr("Tone manuale: usa Slope e punti EQ; DIN aggiunge la parte dinamica"):
-ui_hover_id==1049?gfx_drawstr("Tone manuale: usa Slope e punti EQ; DIN aggiunge la parte dinamica"):
-ui_hover_id==1051?gfx_drawstr("Glue DEP: profondita' della Glue Matrix; piu' alto = piu' compressione distribuita prima del limiter"):
-ui_hover_id==1054?gfx_drawstr("Glue FRG: frammentazione; sposta lavoro verso micro/crest glue per non squadrare i transienti"):
-ui_hover_id>=10520&&ui_hover_id<=10522?gfx_drawstr("Glue Texture: SM morbido, API piu' punch, SSA piu' compatto e levigato"):
-ui_hover_id>=10530&&ui_hover_id<=10532?gfx_drawstr("ISP Guard: Off/2x/4x usa picchi interpolati per tenere limiter e final safety lontani dal soffitto"):
-ui_hover_id==9001?gfx_drawstr("LUFS: target integrato; in TARGET imposta il riferimento, in AUTO guida Auto dB"):
-ui_hover_id==9002?gfx_drawstr("MaxTrm: tetto correzione Auto dB [dB]; spento quando Auto dB e' Off"):
-ui_hover_id==9003?gfx_drawstr("GAIN OUT: make-up finale dopo Auto dB/Capture e prima del Final Limiter [-12..+12 dB]"):
-ui_hover_id==9004?gfx_drawstr("RMS: target RMS; in TARGET imposta il riferimento, in AUTO guida Auto dB"):
-ui_hover_id==9005?gfx_drawstr("Speed: velocita' Auto dB; attivo solo in AUTO"):
-ui_hover_id==9006?gfx_drawstr("GAIN IN: trim ingresso rosso [-12..+12 dB], prima di Tape/Comp/Tone/Limiter"):
-ui_hover_id==9010?gfx_drawstr("TARGET: spegne Auto dB, lascia vivi i target e mostra quanto manca al livello scelto"):
-ui_hover_id==9017?gfx_drawstr("Auto: abilita Auto dB sul target selezionato senza cambiare preset"):
-ui_hover_id==9011?gfx_drawstr("LUFS: seleziona LUFS come target; AUTO corregge, TARGET visualizza soltanto"):
-ui_hover_id==9012?gfx_drawstr("RMS: seleziona RMS come target; AUTO corregge, TARGET visualizza soltanto"):
-ui_hover_id==9013?gfx_drawstr("L+R: seleziona il target combinato; il Navigator continua comunque a calcolare RMS, LUFS, crest e density"):
-ui_hover_id==9014?gfx_drawstr("L+R: target unico combinato; internamente LUFS=L+R+1 e RMS=L+R-1"):
-ui_hover_id==9018?gfx_drawstr("MATCH: errore lento su energia media ~4.5s; + sopra target, - sotto target"):
-ui_hover_id==9071?gfx_drawstr("IN: livello post GAIN IN, prima di Tape/Comp/Glue/Tone/Limiter; utile per tarare l'ingresso"):
-ui_hover_id==9020?gfx_drawstr("POD — Podcast/Streaming: LUFS -16, Auto LUFS"):
-ui_hover_id==9021?gfx_drawstr("AUD — Audiolibro/ACX: LUFS -19, Auto LUFS"):
-ui_hover_id==9022?gfx_drawstr("MIX — Mix Ready: LUFS -14, Auto L+R"):
-ui_hover_id==9023?gfx_drawstr("BRD — Broadcast EBU R128: LUFS -23, Auto LUFS"):
-ui_hover_id==9024?gfx_drawstr("RAD — Radio Spot: LUFS -12, Auto L+R"):
-ui_hover_id==9040?gfx_drawstr("Final LIM: limiter finale di sicurezza post-output; ON/OFF nel pulsante, GR nel mini meter"):
-ui_hover_id==9041?gfx_drawstr("LINK: aggancia GAIN IN e GAIN OUT in opposizione dal punto corrente; guida da GAIN IN"):
-ui_hover_id==9016?gfx_drawstr("Sec: durata della cattura Output, da 20 a 90 secondi"):
-ui_hover_id==9050?gfx_drawstr("Smart Cap: CAP=avvia cattura 20-90s, LOCK=trim fisso; i preset ricalcolano il trim senza nuova cattura"):
-ui_hover_id==9051?gfx_drawstr("NEW: tieni premuto 0.8s per una nuova cattura — rilascia subito per annullare"):
-ui_hover_id==9060?gfx_drawstr("MEASURE: doppio click per azzerare LUFS, LRA e PK senza fermare il playback"):
-ui_hover_id==9061?gfx_drawstr("PHASE: correlazione stereo L/R in uscita; +1 mono/centrato, 0 largo, negativo rischio cancellazione mono"):
-ui_hover_id==9062?gfx_drawstr("GLUE LOW: stima densita' da LRA, GR Comp/Lim e Auto Trim; HIGH = rischio master troppo compatto"):
-ui_hover_id==9063?gfx_drawstr("MONO/ST + S-M: compatibilita' mono/stereo in uscita e rapporto Side-Mid; TP e' diviso in L/R"):
-ui_hover_id==9064?gfx_drawstr("MONO ANALYSIS: sottrae 3 dB a LUFS, RMS e Peak di analisi; audio, gain, Auto dB e limiter restano stereo e invariati"):
-ui_hover_id==9104?gfx_drawstr("DIN: attiva la dinamica globale dello Slope; OFF lascia Slope + EQ manuale statici"):
-ui_hover_id==9105?gfx_drawstr("EQD: dynamic EQ mirata sui punti; comprime le zone scelte in base ai pallini EQ"):
-ui_hover_id==9106?gfx_drawstr("RST Tone: click reset punti EQ/frequenze; tieni 0.5s per reset completo Tone"):
-ui_hover_id>=9100&&ui_hover_id<=9103?gfx_drawstr("Tone point: numero=freq+EQ fisso; barra DYN=correzione DIN+EQD (+ verde / - rosso)"):
-ui_hover_id==9015?gfx_drawstr("RST: azzera tutti i parametri Output ai valori di default"):
-gfx_drawstr(ui_lang == 0 ? "ZP MASTER PRO · Processore di Mastering Integrato" : "ZP MASTER PRO · Integrated Mastering Processor");
+zp_rect(_ghx,_ghy,_ghw,_ghh);
+gfx_set(0.34,0.56,0.82,0.92);zp_rect(_ghx,_ghy,_ghw,1);zp_rect(_ghx,_ghy+_ghh-1,_ghw,1);
+zp_setfont(1,"Arial",14,'b');gfx_set(0.88,0.94,1.00,1);
+(gfx_measurestr("?", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_ghx+floor((_ghw-_tw)*0.5);zp_gy=_ghy+floor((_ghh-_th)*0.5);zp_drawstr("?");
+zp_setfont(1,"Arial",14,'b');gfx_set(0.74,0.84,0.90,1);zp_gx=10;zp_gy=zp_vh-23;
+time_precise() < help_warn_until ? zp_drawstr(ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Studio Suite" : "Open Cue Navigator or ZP Suite help") :
+ui_hover_id==1060?zp_drawstr(ui_lang == 0 ? "?: apre la guida rapida e la documentazione nel browser" : "?: opens quick help and documentation in browser"):
+ui_hover_id==1001?zp_drawstr("Drive: ingresso del Tape Glue; 0.50 e' unity, sopra spinge la saturazione"):
+ui_hover_id==1002?zp_drawstr("Ceil: tetto brickwall del limiter (dBFS)"):
+ui_hover_id==1003?zp_drawstr("Rel: rilascio limiter (ms)"):
+ui_hover_id==1004?zp_drawstr("Look: lookahead (ms) — anticipa i transienti, zero clipping"):
+ui_hover_id==1005?zp_drawstr("PreGain: gain prima del limiter (dB)"):
+ui_hover_id==1006?zp_drawstr("Tilt: bilanciamento encode/decode del tape, da piu' scuro a piu' aperto"):
+ui_hover_id==1007?zp_drawstr("C.Thr: soglia compressore (dBFS)"):
+ui_hover_id==1008?zp_drawstr("C.Rat: rapporto di compressione"):
+ui_hover_id==1009?zp_drawstr("SC HPF: high-pass sidechain compressore — isola la detection dalle basse frequenze"):
+ui_hover_id==1010?zp_drawstr("Shape: punto di lavoro del Tape Glue; 0.50 resta neutro e gestibile sul master"):
+ui_hover_id==1011?zp_drawstr("Flutter: instabilita' tape; default zero per mastering pulito"):
+ui_hover_id==1012?zp_drawstr("Bump: head bump sulle basse, da usare poco sul master"):
+ui_hover_id==1020?zp_drawstr("SOFT: knee morbida attorno alla soglia del compressore"):
+ui_hover_id==1021?zp_drawstr("RMS: detection RMS (piu' musicale) invece di Peak (piu' reattivo)"):
+ui_hover_id==1022?zp_drawstr("FFW: feed-forward — rileva prima della compressione"):
+ui_hover_id==1023?zp_drawstr("AMU: auto make-up gain compressore"):
+ui_hover_id==1024?zp_drawstr("Bias: asimmetria e slew del Tape Glue; 0.50 e' neutro"):
+ui_hover_id==1025?zp_drawstr("Head Frequency: centro del bump tape sulle basse"):
+ui_hover_id==1031?zp_drawstr("C-RST: reset generale Engine + Tone + Output ai default"):
+ui_hover_id==1032?zp_drawstr("GR SUM: riassunto gain reduction; sinistra=CMP, destra=LIM Engine + Final Limiter"):
+ui_hover_id==1033?zp_drawstr("MASTER ACTIVITY: Drive=Tape input, Tilt=colore tape, Tape/Tone=attivita' Tape + Tone Guard"):
+ui_hover_id==1034?zp_drawstr("TONE ACTIVITY: EQ=manuale/statico, DYN=DIN globale + EQD mirata; rosso=toglie, verde=aggiunge"):
+ui_hover_id==501?zp_drawstr("TAPE on/off: attiva o bypassa il Tape Glue, unico glue/saturatore del master"):
+ui_hover_id==502?zp_drawstr("COMP on/off: compressore principale; GLUE aggiunge o toglie la matrice multistadio"):
+ui_hover_id==503?zp_drawstr("LIM on/off: attiva o bypassa il limiter lookahead"):
+ui_hover_id==504?zp_drawstr("TONE on/off: attiva Tone; DIN=guard globale, EQD=dinamica mirata sui punti EQ"):
+ui_hover_id==505?zp_drawstr("GLUE on/off: attiva DEP/FRG/micro/crest senza spegnere il compressore principale"):
+ui_hover_id==1060?zp_drawstr("?: apre una guida rapida su DEP, FRG, Texture e ISP della Glue Matrix"):
+ui_hover_id==1041?zp_drawstr("Slope: tilt chiaro/scuro statico con DIN OFF; target dinamico con DIN ON"):
+ui_hover_id==1042?zp_drawstr("AMT: quantita' di correzione dinamica, attiva con DIN o EQD"):
+ui_hover_id==1043?zp_drawstr("Atk: tempo di intervento dinamico, attivo con DIN o EQD"):
+ui_hover_id==1044?zp_drawstr("Rel: ritorno dinamico verso neutro, attivo con DIN o EQD"):
+ui_hover_id==1045?zp_drawstr("Tape Output: uscita del Tape Glue; 0.50 e' unity"):
+ui_hover_id==1046?zp_drawstr("Tone manuale: nessun preset, Slope e punti EQ sono liberi"):
+ui_hover_id==1047?zp_drawstr("Tone manuale: usa Slope e punti EQ; DIN aggiunge la parte dinamica"):
+ui_hover_id==1048?zp_drawstr("Tone manuale: usa Slope e punti EQ; DIN aggiunge la parte dinamica"):
+ui_hover_id==1049?zp_drawstr("Tone manuale: usa Slope e punti EQ; DIN aggiunge la parte dinamica"):
+ui_hover_id==1051?zp_drawstr("Glue DEP: profondita' della Glue Matrix; piu' alto = piu' compressione distribuita prima del limiter"):
+ui_hover_id==1054?zp_drawstr("Glue FRG: frammentazione; sposta lavoro verso micro/crest glue per non squadrare i transienti"):
+ui_hover_id>=10520&&ui_hover_id<=10522?zp_drawstr("Glue Texture: SM morbido, API piu' punch, SSA piu' compatto e levigato"):
+ui_hover_id>=10530&&ui_hover_id<=10532?zp_drawstr("ISP Guard: Off/2x/4x usa picchi interpolati per tenere limiter e final safety lontani dal soffitto"):
+ui_hover_id==9001?zp_drawstr("LUFS: target integrato; in TARGET imposta il riferimento, in AUTO guida Auto dB"):
+ui_hover_id==9002?zp_drawstr("MaxTrm: tetto correzione Auto dB [dB]; spento quando Auto dB e' Off"):
+ui_hover_id==9003?zp_drawstr("GAIN OUT: make-up finale dopo Auto dB/Capture e prima del Final Limiter [-12..+12 dB]"):
+ui_hover_id==9004?zp_drawstr("RMS: target RMS; in TARGET imposta il riferimento, in AUTO guida Auto dB"):
+ui_hover_id==9005?zp_drawstr("Speed: velocita' Auto dB; attivo solo in AUTO"):
+ui_hover_id==9006?zp_drawstr("GAIN IN: trim ingresso rosso [-12..+12 dB], prima di Tape/Comp/Tone/Limiter"):
+ui_hover_id==9010?zp_drawstr("TARGET: spegne Auto dB, lascia vivi i target e mostra quanto manca al livello scelto"):
+ui_hover_id==9017?zp_drawstr("Auto: abilita Auto dB sul target selezionato senza cambiare preset"):
+ui_hover_id==9011?zp_drawstr("LUFS: seleziona LUFS come target; AUTO corregge, TARGET visualizza soltanto"):
+ui_hover_id==9012?zp_drawstr("RMS: seleziona RMS come target; AUTO corregge, TARGET visualizza soltanto"):
+ui_hover_id==9013?zp_drawstr("L+R: seleziona il target combinato; il Navigator continua comunque a calcolare RMS, LUFS, crest e density"):
+ui_hover_id==9014?zp_drawstr("L+R: target unico combinato; internamente LUFS=L+R+1 e RMS=L+R-1"):
+ui_hover_id==9018?zp_drawstr("MATCH: errore lento su energia media ~4.5s; + sopra target, - sotto target"):
+ui_hover_id==9071?zp_drawstr("IN: livello post GAIN IN, prima di Tape/Comp/Glue/Tone/Limiter; utile per tarare l'ingresso"):
+ui_hover_id==9020?zp_drawstr("POD — Podcast/Streaming: LUFS -16, Auto LUFS"):
+ui_hover_id==9021?zp_drawstr("AUD — Audiolibro/ACX: LUFS -19, Auto LUFS"):
+ui_hover_id==9022?zp_drawstr("MIX — Mix Ready: LUFS -14, Auto L+R"):
+ui_hover_id==9023?zp_drawstr("BRD — Broadcast EBU R128: LUFS -23, Auto LUFS"):
+ui_hover_id==9024?zp_drawstr("RAD — Radio Spot: LUFS -12, Auto L+R"):
+ui_hover_id==9040?zp_drawstr("Final LIM: limiter finale di sicurezza post-output; ON/OFF nel pulsante, GR nel mini meter"):
+ui_hover_id==9041?zp_drawstr("LINK: aggancia GAIN IN e GAIN OUT in opposizione dal punto corrente; guida da GAIN IN"):
+ui_hover_id==9016?zp_drawstr("Sec: durata della cattura Output, da 20 a 90 secondi"):
+ui_hover_id==9050?zp_drawstr("Smart Cap: CAP=avvia cattura 20-90s, LOCK=trim fisso; i preset ricalcolano il trim senza nuova cattura"):
+ui_hover_id==9051?zp_drawstr("NEW: tieni premuto 0.8s per una nuova cattura — rilascia subito per annullare"):
+ui_hover_id==9060?zp_drawstr("MEASURE: doppio click per azzerare LUFS, LRA e PK senza fermare il playback"):
+ui_hover_id==9061?zp_drawstr("PHASE: correlazione stereo L/R in uscita; +1 mono/centrato, 0 largo, negativo rischio cancellazione mono"):
+ui_hover_id==9062?zp_drawstr("GLUE LOW: stima densita' da LRA, GR Comp/Lim e Auto Trim; HIGH = rischio master troppo compatto"):
+ui_hover_id==9063?zp_drawstr("MONO/ST + S-M: compatibilita' mono/stereo in uscita e rapporto Side-Mid; TP e' diviso in L/R"):
+ui_hover_id==9064?zp_drawstr("MONO ANALYSIS: sottrae 3 dB a LUFS, RMS e Peak di analisi; audio, gain, Auto dB e limiter restano stereo e invariati"):
+ui_hover_id==9104?zp_drawstr("DIN: attiva la dinamica globale dello Slope; OFF lascia Slope + EQ manuale statici"):
+ui_hover_id==9105?zp_drawstr("EQD: dynamic EQ mirata sui punti; comprime le zone scelte in base ai pallini EQ"):
+ui_hover_id==9106?zp_drawstr("RST Tone: click reset punti EQ/frequenze; tieni 0.5s per reset completo Tone"):
+ui_hover_id>=9100&&ui_hover_id<=9103?zp_drawstr("Tone point: numero=freq+EQ fisso; barra DYN=correzione DIN+EQD (+ verde / - rosso)"):
+ui_hover_id==9015?zp_drawstr("RST: azzera tutti i parametri Output ai valori di default"):
+zp_drawstr(ui_lang == 0 ? "ZP MASTER PRO · Processore di Mastering Integrato" : "ZP MASTER PRO · Integrated Mastering Processor");
 
 // ZP Target Engine: il LED indica solo connessione, mai livello audio.
 // In @gfx si legge il bus ma non si pubblica heartbeat: nessuna dipendenza dalla GUI.
@@ -3686,7 +3743,7 @@ strcpy(#zp_bus_detail,"Target rispettato: intenzione e risultato sono coerenti")
 // LED: rosso solo se manca BUS Chain; giallo per Probe/dati/stabilita'; verde completo.
 nav_led_state=zp_bus_unified_conn==0?0:(zp_bus_unified_conn==2 && zp_bus_voice_conn==2 && zp_bus_spoken_conn==2?2:1);
 nav_led_state==2 ? gfx_set(0.30,0.92,0.58,1) : nav_led_state==1 ? gfx_set(1.0,0.72,0.20,1) : gfx_set(1.0,0.30,0.25,1);
-gfx_circle(PX+164,18,5,1); gfx_setfont(1,"Arial",9,'b'); gfx_x=PX+174; gfx_y=12; gfx_drawstr("ZP");
+zp_circle(PX+164,18,5,1); zp_setfont(1,"Arial",9,'b'); zp_gx=PX+174; zp_gy=12; zp_drawstr("ZP");
 // Lo stato connessione vive nel Navigator. Il footer resta dedicato all'help.
 
 ); // end GUI view

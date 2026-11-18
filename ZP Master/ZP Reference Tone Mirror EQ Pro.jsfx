@@ -210,6 +210,61 @@ out_pin:Output R
 // Meter: IN L/R su pin 0/1, OUT L/R su pin 4/5 (Reference L/R su 2/3 non meterizzati)
 
 @init
+// ---- ZP Proportional Zoom Engine (GUI-only, zero DSP impact) ----
+zp_sc = 1.0; zp_ox = 0.0; zp_vw = 900.0; zp_vh = 600.0; zp_gx = 0.0; zp_gy = 0.0; zp_mx = 0.0; zp_my = 0.0;
+function zp_rect(x, y, w, h) (
+  (x <= 0 && y <= 0 && w >= zp_vw && h >= zp_vh - 1) ? gfx_rect(0, 0, gfx_w, gfx_h) :
+  gfx_rect(floor(zp_ox + (x) * zp_sc + 0.5), floor((y) * zp_sc + 0.5), max(1, floor((w) * zp_sc + 0.5)), max(1, floor((h) * zp_sc + 0.5)));
+);
+function zp_rect(x, y, w, h, aa) (
+  gfx_rect(floor(zp_ox + (x) * zp_sc + 0.5), floor((y) * zp_sc + 0.5), max(1, floor((w) * zp_sc + 0.5)), max(1, floor((h) * zp_sc + 0.5)), aa);
+);
+function zp_line(x1, y1, x2, y2) (
+  gfx_line(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, 1);
+);
+function zp_line(x1, y1, x2, y2, aa) (
+  gfx_line(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, aa);
+);
+function zp_circle(x, y, r, fill) (
+  gfx_circle(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), fill, 1);
+);
+function zp_circle(x, y, r, fill, aa) (
+  gfx_circle(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), fill, aa);
+);
+function zp_arc(x, y, r, a1, a2) (
+  gfx_arc(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), a1, a2, 1);
+);
+function zp_arc(x, y, r, a1, a2, aa) (
+  gfx_arc(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), a1, a2, aa);
+);
+function zp_triangle(x1, y1, x2, y2, x3, y3) (
+  gfx_triangle(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, zp_ox + (x3) * zp_sc, (y3) * zp_sc);
+);
+function zp_setfont(idx) ( gfx_setfont(idx); );
+function zp_setfont(idx, fname, sz) ( gfx_setfont(idx, fname, max(7, floor((sz) * zp_sc + 0.5))); );
+function zp_setfont(idx, fname, sz, flg) ( gfx_setfont(idx, fname, max(7, floor((sz) * zp_sc + 0.5)), flg); );
+function zp_drawstr(s) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_drawstr(s);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+function zp_drawnumber(n, dec) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_drawnumber(n, dec);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+function zp_printf(fmt, a1) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_printf(fmt, a1);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+
 ext_noinit = 1;
 ext_nodenorm = 1;
 gfx_ext_retina = 1;
@@ -1085,14 +1140,14 @@ local(minf, maxf, lmin, lmax) (
 
 function ui_bar(x, y, w, h, val, r, g, b)
 local(fillw) (
-  gfx_r = 0.10; gfx_g = 0.11; gfx_b = 0.13; gfx_a = 1; gfx_rect(x, y, w, h);
+  gfx_r = 0.10; gfx_g = 0.11; gfx_b = 0.13; gfx_a = 1; zp_rect(x, y, w, h);
   fillw = clamp(val, 0, 1) * (w - 2);
-  gfx_r = r; gfx_g = g; gfx_b = b; gfx_a = 0.95; gfx_rect(x + 1, y + 1, fillw, h - 2);
+  gfx_r = r; gfx_g = g; gfx_b = b; gfx_a = 0.95; zp_rect(x + 1, y + 1, fillw, h - 2);
 );
 
 function ui_button(id, x, y, w, h, txt, active)
 local(over, clicked, tw, th) (
-  over = mouse_x >= x && mouse_x < x + w && mouse_y >= y && mouse_y < y + h;
+  over = zp_mx >= x && zp_mx < x + w && zp_my >= y && zp_my < y + h;
   clicked = over && (mouse_cap & 1) && !last_mouse_cap;
   active ? (
     gfx_r = 0.16; gfx_g = 0.49; gfx_b = 0.85;
@@ -1101,13 +1156,13 @@ local(over, clicked, tw, th) (
   ) : (
     gfx_r = 0.15; gfx_g = 0.16; gfx_b = 0.19;
   );
-  gfx_a = 1; gfx_rect(x, y, w, h);
+  gfx_a = 1; zp_rect(x, y, w, h);
   gfx_r = active ? 0.95 : 0.78; gfx_g = active ? 0.98 : 0.80; gfx_b = active ? 1.00 : 0.84;
-  gfx_setfont(1, "Arial", 15);
-  gfx_measurestr(txt, tw, th);
-  gfx_x = x + (w - tw) * 0.5;
-  gfx_y = y + (h - th) * 0.5 - 1;
-  gfx_drawstr(txt);
+  zp_setfont(1, "Arial", 15);
+  (gfx_measurestr(txt, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = x + (w - tw) * 0.5;
+  zp_gy = y + (h - th) * 0.5 - 1;
+  zp_drawstr(txt);
   clicked ? (
     set_ui_mode(id);
   );
@@ -1115,7 +1170,7 @@ local(over, clicked, tw, th) (
 
 function ui_profile_button(id, x, y, w, h, txt, state)
 local(over, clicked, tw, th) (
-  over = mouse_x >= x && mouse_x < x + w && mouse_y >= y && mouse_y < y + h;
+  over = zp_mx >= x && zp_mx < x + w && zp_my >= y && zp_my < y + h;
   clicked = over && (mouse_cap & 1) && !last_mouse_cap;
   // state: 0=off, 1=in progress (capture running), 2=active/complete
   state == 2 ? (
@@ -1127,13 +1182,13 @@ local(over, clicked, tw, th) (
   ) : (
     gfx_r = 0.15; gfx_g = 0.16; gfx_b = 0.19;  // Grigio spento
   );
-  gfx_a = 1; gfx_rect(x, y, w, h);
+  gfx_a = 1; zp_rect(x, y, w, h);
   gfx_r = state >= 1 ? 0.96 : 0.80; gfx_g = state >= 1 ? 0.98 : 0.82; gfx_b = state >= 1 ? 0.96 : 0.86;
-  gfx_setfont(1, "Arial", 13);
-  gfx_measurestr(txt, tw, th);
-  gfx_x = x + (w - tw) * 0.5;
-  gfx_y = y + (h - th) * 0.5 - 1;
-  gfx_drawstr(txt);
+  zp_setfont(1, "Arial", 13);
+  (gfx_measurestr(txt, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = x + (w - tw) * 0.5;
+  zp_gy = y + (h - th) * 0.5 - 1;
+  zp_drawstr(txt);
   clicked ? (
     set_profile_mode(id);
   );
@@ -1142,7 +1197,7 @@ local(over, clicked, tw, th) (
 function ui_action_button(x, y, w, h, txt)
 local(over, clicked, tw, th, disabled) (
   disabled = 0;
-  over = mouse_x >= x && mouse_x < x + w && mouse_y >= y && mouse_y < y + h;
+  over = zp_mx >= x && zp_mx < x + w && zp_my >= y && zp_my < y + h;
   clicked = over && (mouse_cap & 1) && !last_mouse_cap && !disabled;
   disabled ? (
     gfx_r = 0.35; gfx_g = 0.35; gfx_b = 0.35;
@@ -1151,15 +1206,15 @@ local(over, clicked, tw, th, disabled) (
   ) : (
     gfx_r = 0.56; gfx_g = 0.27; gfx_b = 0.19;
   );
-  gfx_a = 1; gfx_rect(x, y, w, h);
+  gfx_a = 1; zp_rect(x, y, w, h);
   gfx_r = disabled ? 0.60 : 0.96; 
   gfx_g = disabled ? 0.60 : 0.90; 
   gfx_b = disabled ? 0.60 : 0.86;
-  gfx_setfont(1, "Arial", 13);
-  gfx_measurestr(txt, tw, th);
-  gfx_x = x + (w - tw) * 0.5;
-  gfx_y = y + (h - th) * 0.5 - 1;
-  gfx_drawstr(txt);
+  zp_setfont(1, "Arial", 13);
+  (gfx_measurestr(txt, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = x + (w - tw) * 0.5;
+  zp_gy = y + (h - th) * 0.5 - 1;
+  zp_drawstr(txt);
   clicked ? (
     dbg_clear_count += 1;
     reset_capture_profile();
@@ -1176,7 +1231,7 @@ local(over, clicked, tw, th, disabled) (
 
 function ui_toggle_button(x, y, w, h, txt, active)
 local(over, clicked, tw, th) (
-  over = mouse_x >= x && mouse_x < x + w && mouse_y >= y && mouse_y < y + h;
+  over = zp_mx >= x && zp_mx < x + w && zp_my >= y && zp_my < y + h;
   clicked = over && (mouse_cap & 1) && !last_mouse_cap;
   active ? (
     gfx_r = 0.18; gfx_g = 0.56; gfx_b = 0.34;
@@ -1185,13 +1240,13 @@ local(over, clicked, tw, th) (
   ) : (
     gfx_r = 0.15; gfx_g = 0.16; gfx_b = 0.19;
   );
-  gfx_a = 1; gfx_rect(x, y, w, h);
+  gfx_a = 1; zp_rect(x, y, w, h);
   gfx_r = active ? 0.96 : 0.82; gfx_g = active ? 0.98 : 0.84; gfx_b = active ? 0.96 : 0.88;
-  gfx_setfont(1, "Arial", 12);
-  gfx_measurestr(txt, tw, th);
-  gfx_x = x + (w - tw) * 0.5;
-  gfx_y = y + (h - th) * 0.5 - 1;
-  gfx_drawstr(txt);
+  zp_setfont(1, "Arial", 12);
+  (gfx_measurestr(txt, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = x + (w - tw) * 0.5;
+  zp_gy = y + (h - th) * 0.5 - 1;
+  zp_drawstr(txt);
   clicked;
 );
 
@@ -2745,7 +2800,9 @@ spl1 = outR;
 spl2 = 0;
 spl3 = 0;
 
-@gfx 760 470
+@gfx 980 606
+zp_dw = 760.0; zp_dh = 470.0; zp_sc = max(0.55, min(2.5, min(gfx_w / zp_dw, gfx_h / zp_dh))); zp_ox = max(0, (gfx_w - zp_dw * zp_sc) * 0.5); zp_vw = zp_dw; zp_vh = max(zp_dh, gfx_h / zp_sc); zp_mx = (mouse_x - zp_ox) / zp_sc; zp_my = mouse_y / zp_sc;
+
 // Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
 zp_hb = gmem[3900]; zp_hb_now = time_precise();
 !zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
@@ -2755,7 +2812,7 @@ ui_lang = (gmem[3901] == 1) ? 1 : 0;
 help_mouse_click = (mouse_cap & 1) && !(last_mouse_cap & 1);
 
 gfx_set(0.08, 0.09, 0.11, 1);
-gfx_rect(0, 0, gfx_w, gfx_h);
+zp_rect(0, 0, zp_vw, zp_vh);
 
 ui_mode = clamp(floor(slider19 + 0.5), 0, 1);
 mouse_down = mouse_cap & 1;
@@ -2764,51 +2821,51 @@ strict_eq_on = slider97 >= 0.5;
 diag_mode = clamp(floor(slider107 + 0.5), 0, 3);
 listen_mode = floor(slider104);
 
-gfx_setfont(1, "Arial", 18);
+zp_setfont(1, "Arial", 18);
 gfx_r = 0.93; gfx_g = 0.95; gfx_b = 0.98; gfx_a = 1;
-gfx_x = 22; gfx_y = 18;
-gfx_drawstr("Tone Mirror EQ Pro");
-gfx_setfont(1, "Arial", 13);
+zp_gx = 22; zp_gy = 18;
+zp_drawstr("Tone Mirror EQ Pro");
+zp_setfont(1, "Arial", 13);
 gfx_r = 0.60; gfx_g = 0.66; gfx_b = 0.74;
-gfx_x = 24; gfx_y = 42;
-gfx_drawstr("Profilo medio sidechain + broad EQ + harmonics + level match");
+zp_gx = 24; zp_gy = 42;
+zp_drawstr("Profilo medio sidechain + broad EQ + harmonics + level match");
 
-gfx_setfont(1, "Arial", 12);
+zp_setfont(1, "Arial", 12);
 routing_state == 0 ? (
   gfx_r = 0.36; gfx_g = 0.84; gfx_b = 0.56;
-  gfx_x = 24; gfx_y = 60;
-  gfx_drawstr("Routing: Reference sidechain OK");
+  zp_gx = 24; zp_gy = 60;
+  zp_drawstr("Routing: Reference sidechain OK");
 ) : routing_state == 3 ? (
   gfx_r = 0.96; gfx_g = 0.72; gfx_b = 0.26;
-  gfx_x = 24; gfx_y = 60;
-  gfx_drawstr("Routing: la traccia deve avere 4 canali");
+  zp_gx = 24; zp_gy = 60;
+  zp_drawstr("Routing: la traccia deve avere 4 canali");
 ) : routing_state == 1 ? (
   gfx_r = 0.96; gfx_g = 0.72; gfx_b = 0.26;
-  gfx_x = 24; gfx_y = 60;
-  gfx_drawstr("Routing: nessun segnale su Reference 3/4");
+  zp_gx = 24; zp_gy = 60;
+  zp_drawstr("Routing: nessun segnale su Reference 3/4");
 ) : (
   gfx_r = 0.96; gfx_g = 0.64; gfx_b = 0.26;
-  gfx_x = 24; gfx_y = 60;
-  gfx_drawstr("Routing: Reference sta leggendo lo stesso segnale di Input");
+  zp_gx = 24; zp_gy = 60;
+  zp_drawstr("Routing: Reference sta leggendo lo stesso segnale di Input");
 );
 
-gfx_setfont(1, "Arial", 11);
+zp_setfont(1, "Arial", 11);
 routing_state == 0 ? (
   gfx_r = 0.54; gfx_g = 0.60; gfx_b = 0.68;
-  gfx_x = 24; gfx_y = 76;
-  gfx_drawstr("Ingresso audio su 1/2, reference su 3/4, uscita misurata su 1/2.");
+  zp_gx = 24; zp_gy = 76;
+  zp_drawstr("Ingresso audio su 1/2, reference su 3/4, uscita misurata su 1/2.");
 ) : routing_state == 3 ? (
   gfx_r = 0.82; gfx_g = 0.84; gfx_b = 0.88;
-  gfx_x = 24; gfx_y = 76;
-  gfx_drawstr("Quick fix: imposta Track channels = 4, poi assegna Reference L/R ai canali 3/4.");
+  zp_gx = 24; zp_gy = 76;
+  zp_drawstr("Quick fix: imposta Track channels = 4, poi assegna Reference L/R ai canali 3/4.");
 ) : routing_state == 1 ? (
   gfx_r = 0.82; gfx_g = 0.84; gfx_b = 0.88;
-  gfx_x = 24; gfx_y = 76;
-  gfx_drawstr("Quick fix: send della sorgente verso 3/4, non 1/2. In Keep puoi ancora usare il profilo catturato.");
+  zp_gx = 24; zp_gy = 76;
+  zp_drawstr("Quick fix: send della sorgente verso 3/4, non 1/2. In Keep puoi ancora usare il profilo catturato.");
 ) : (
   gfx_r = 0.82; gfx_g = 0.84; gfx_b = 0.88;
-  gfx_x = 24; gfx_y = 76;
-  gfx_drawstr("Quick fix: lascia il programma su 1/2 e manda il reference solo su 3/4.");
+  zp_gx = 24; zp_gy = 76;
+  zp_drawstr("Quick fix: lascia il programma su 1/2 e manda il reference solo su 3/4.");
 );
 
   jsfx_btn_w = 80;
@@ -2847,7 +2904,7 @@ routing_state == 0 ? (
   preset_diag_w = 118;
 
   help_btn_w = 26;
-  help_btn_x = gfx_w - right_margin - help_btn_w;
+  help_btn_x = zp_vw - right_margin - help_btn_w;
   jsfx_btn_x = help_btn_x - top_gap - jsfx_btn_w;
   strict_btn_x = jsfx_btn_x - top_gap - strict_btn_w;
   ab_btn_x = strict_btn_x - top_gap - ab_btn_w;
@@ -2874,46 +2931,46 @@ routing_state == 0 ? (
   ui_button(0, lite_btn_x, mode_btn_y, lite_btn_w, 28, "Lite", ui_mode == 0);
   ui_button(1, jsfx_btn_x, mode_btn_y, jsfx_btn_w, 28, "JSFX", ui_mode == 1);
 
-  help_btn_hover = mouse_x >= help_btn_x && mouse_x <= help_btn_x + help_btn_w &&
-                   mouse_y >= mode_btn_y && mouse_y <= mode_btn_y + 28;
+  help_btn_hover = zp_mx >= help_btn_x && zp_mx <= help_btn_x + help_btn_w &&
+                   zp_my >= mode_btn_y && zp_my <= mode_btn_y + 28;
   help_btn_hover ? (
     gfx_r = 0.22; gfx_g = 0.38; gfx_b = 0.58; gfx_a = 1;
   ) : (
     gfx_r = 0.16; gfx_g = 0.18; gfx_b = 0.22; gfx_a = 1;
   );
-  gfx_rect(help_btn_x, mode_btn_y, help_btn_w, 28);
+  zp_rect(help_btn_x, mode_btn_y, help_btn_w, 28);
   gfx_r = 0.34; gfx_g = 0.52; gfx_b = 0.82; gfx_a = 0.9;
-  gfx_rect(help_btn_x, mode_btn_y, help_btn_w, 1); gfx_rect(help_btn_x, mode_btn_y + 27, help_btn_w, 1);
-  gfx_rect(help_btn_x, mode_btn_y, 1, 28); gfx_rect(help_btn_x + help_btn_w - 1, mode_btn_y, 1, 28);
-  gfx_setfont(1, "Arial", 14, 'b');
+  zp_rect(help_btn_x, mode_btn_y, help_btn_w, 1); zp_rect(help_btn_x, mode_btn_y + 27, help_btn_w, 1);
+  zp_rect(help_btn_x, mode_btn_y, 1, 28); zp_rect(help_btn_x + help_btn_w - 1, mode_btn_y, 1, 28);
+  zp_setfont(1, "Arial", 14, 'b');
   gfx_r = 0.92; gfx_g = 0.95; gfx_b = 0.98; gfx_a = 1;
-  gfx_measurestr("?", h_tw, h_th);
-  gfx_x = help_btn_x + floor((help_btn_w - h_tw) * 0.5);
-  gfx_y = mode_btn_y + floor((28 - h_th) * 0.5);
-  gfx_drawstr("?");
+  (gfx_measurestr("?", h_tw, h_th); h_tw /= zp_sc; h_th /= zp_sc);
+  zp_gx = help_btn_x + floor((help_btn_w - h_tw) * 0.5);
+  zp_gy = mode_btn_y + floor((28 - h_th) * 0.5);
+  zp_drawstr("?");
   help_btn_hover && help_mouse_click ? ( help_bridge_open(8); );
 
-  gfx_setfont(1, "Arial", 22);
+  zp_setfont(1, "Arial", 22);
   gfx_r = 0.93; gfx_g = 0.95; gfx_b = 0.98;
-  gfx_x = 28; gfx_y = lite_title_y;
-  gfx_drawstr("Lite Mode");
-  gfx_setfont(1, "Arial", 15);
+  zp_gx = 28; zp_gy = lite_title_y;
+  zp_drawstr("Lite Mode");
+  zp_setfont(1, "Arial", 15);
   gfx_r = 0.68; gfx_g = 0.72; gfx_b = 0.78;
-  gfx_x = 30; gfx_y = lite_text_y1;
-  gfx_drawstr("I controlli nativi dei slider sono visibili.");
-  gfx_x = 30; gfx_y = lite_text_y2;
-  gfx_drawstr("GUI pesante disattivata: usiamo solo il pannello leggero per stabilizzare il DSP.");
-  gfx_x = 30; gfx_y = lite_text_y3;
-  routing_state == 0 ? gfx_drawstr("Routing sidechain OK.") : routing_state == 3 ? gfx_drawstr("La traccia deve avere 4 canali per usare il sidechain.") : routing_state == 1 ? gfx_drawstr("Manca segnale su Reference 3/4.") : gfx_drawstr("Reference e Input stanno leggendo la stessa sorgente.");
-  gfx_x = 30; gfx_y = lite_text_y4;
-  idle_mode ? gfx_drawstr("Profile memory: Idle") : profile_mode == 0 ? gfx_drawstr("Profile memory: Follow") : profile_mode == 1 ? gfx_drawstr(sprintf(#,"Profile memory: Capture %.0f%%", slider21)) : gfx_drawstr("Profile memory: Keep");
-  gfx_x = 30; gfx_y = lite_text_y5;
-  gfx_drawstr("Capture: Timed");
+  zp_gx = 30; zp_gy = lite_text_y1;
+  zp_drawstr("I controlli nativi dei slider sono visibili.");
+  zp_gx = 30; zp_gy = lite_text_y2;
+  zp_drawstr("GUI pesante disattivata: usiamo solo il pannello leggero per stabilizzare il DSP.");
+  zp_gx = 30; zp_gy = lite_text_y3;
+  routing_state == 0 ? zp_drawstr("Routing sidechain OK.") : routing_state == 3 ? zp_drawstr("La traccia deve avere 4 canali per usare il sidechain.") : routing_state == 1 ? zp_drawstr("Manca segnale su Reference 3/4.") : zp_drawstr("Reference e Input stanno leggendo la stessa sorgente.");
+  zp_gx = 30; zp_gy = lite_text_y4;
+  idle_mode ? zp_drawstr("Profile memory: Idle") : profile_mode == 0 ? zp_drawstr("Profile memory: Follow") : profile_mode == 1 ? zp_drawstr(sprintf(#,"Profile memory: Capture %.0f%%", slider21)) : zp_drawstr("Profile memory: Keep");
+  zp_gx = 30; zp_gy = lite_text_y5;
+  zp_drawstr("Capture: Timed");
 
-  gfx_setfont(1, "Arial", 11);
+  zp_setfont(1, "Arial", 11);
   gfx_r = 0.58; gfx_g = 0.64; gfx_b = 0.72;
-  gfx_x = 30; gfx_y = preset_btn_y - 18;
-  gfx_drawstr("Preset guida");
+  zp_gx = 30; zp_gy = preset_btn_y - 18;
+  zp_drawstr("Preset guida");
   ui_toggle_button(preset_1_x, preset_btn_y, preset_btn_w, preset_btn_h, "Vicino", safe_preset_last == 1) ? (
     apply_safe_preset(1);
   );
@@ -2934,36 +2991,36 @@ routing_state == 0 ? (
     slider107 = (diag_mode + 1) % 4;
   );
   preset_hover = 0;
-  mouse_y >= preset_btn_y && mouse_y < preset_btn_y + preset_btn_h ? (
-    mouse_x >= preset_1_x && mouse_x < preset_1_x + preset_btn_w ? preset_hover = 1;
-    mouse_x >= preset_2_x && mouse_x < preset_2_x + preset_btn_w ? preset_hover = 2;
-    mouse_x >= preset_3_x && mouse_x < preset_3_x + preset_btn_w ? preset_hover = 3;
+  zp_my >= preset_btn_y && zp_my < preset_btn_y + preset_btn_h ? (
+    zp_mx >= preset_1_x && zp_mx < preset_1_x + preset_btn_w ? preset_hover = 1;
+    zp_mx >= preset_2_x && zp_mx < preset_2_x + preset_btn_w ? preset_hover = 2;
+    zp_mx >= preset_3_x && zp_mx < preset_3_x + preset_btn_w ? preset_hover = 3;
   );
-  mouse_y >= preset_row2_y && mouse_y < preset_row2_y + preset_btn_h ? (
-    mouse_x >= preset_4_x && mouse_x < preset_4_x + preset_btn_w ? preset_hover = 4;
-    mouse_x >= preset_5_x && mouse_x < preset_5_x + preset_btn_w ? preset_hover = 5;
-    mouse_x >= preset_diag_x && mouse_x < preset_diag_x + preset_diag_w ? preset_hover = 6;
+  zp_my >= preset_row2_y && zp_my < preset_row2_y + preset_btn_h ? (
+    zp_mx >= preset_4_x && zp_mx < preset_4_x + preset_btn_w ? preset_hover = 4;
+    zp_mx >= preset_5_x && zp_mx < preset_5_x + preset_btn_w ? preset_hover = 5;
+    zp_mx >= preset_diag_x && zp_mx < preset_diag_x + preset_diag_w ? preset_hover = 6;
   );
   preset_hover > 0 ? (
-    overlay_y = gfx_h - 96;
+    overlay_y = zp_vh - 96;
     gfx_r = 0.15; gfx_g = 0.16; gfx_b = 0.19; gfx_a = 0.98;
-    gfx_rect(22, overlay_y, gfx_w - 44, 18);
-    gfx_setfont(1, "Arial", 10);
+    zp_rect(22, overlay_y, zp_vw - 44, 18);
+    zp_setfont(1, "Arial", 10);
     gfx_r = 0.74; gfx_g = 0.80; gfx_b = 0.88; gfx_a = 1;
-    gfx_x = 30; gfx_y = overlay_y + 2;
-    preset_hover == 1 ? gfx_drawstr("Vicino: correzione morbida per materiali gia' simili.");
-    preset_hover == 2 ? gfx_drawstr("Distante: piu' spazio di correzione per mismatch evidente.");
-    preset_hover == 3 ? gfx_drawstr("Voce Stabile: meno inseguimento dell'articolazione in Follow.");
-    preset_hover == 4 ? gfx_drawstr("Basse Controllate: limita gonfiore low-end durante il match.");
-    preset_hover == 5 ? gfx_drawstr("Aria Controllata: attenua 10k+ e riduce altissime/sibilanti.");
-    preset_hover == 6 ? gfx_drawstr("Diag Match: clic per ciclare Off/RMS/Perceptual/Null Hunter.");
+    zp_gx = 30; zp_gy = overlay_y + 2;
+    preset_hover == 1 ? zp_drawstr("Vicino: correzione morbida per materiali gia' simili.");
+    preset_hover == 2 ? zp_drawstr("Distante: piu' spazio di correzione per mismatch evidente.");
+    preset_hover == 3 ? zp_drawstr("Voce Stabile: meno inseguimento dell'articolazione in Follow.");
+    preset_hover == 4 ? zp_drawstr("Basse Controllate: limita gonfiore low-end durante il match.");
+    preset_hover == 5 ? zp_drawstr("Aria Controllata: attenua 10k+ e riduce altissime/sibilanti.");
+    preset_hover == 6 ? zp_drawstr("Diag Match: clic per ciclare Off/RMS/Perceptual/Null Hunter.");
   );
 
-  status_x = gfx_w - 190;
-  gfx_setfont(1, "Arial", 13);
+  status_x = zp_vw - 190;
+  zp_setfont(1, "Arial", 13);
   gfx_r = 0.72; gfx_g = 0.76; gfx_b = 0.82;
-  gfx_x = status_x + 26; gfx_y = status_y - 2;
-  gfx_drawstr("Stato Preascolto");
+  zp_gx = status_x + 26; zp_gy = status_y - 2;
+  zp_drawstr("Stato Preascolto");
   gfx_status_state == 0 ? (
     gfx_r = 0.94; gfx_g = 0.30; gfx_b = 0.24;
     strcpy(#status_txt, "Rosso: aspetta");
@@ -2979,16 +3036,16 @@ routing_state == 0 ? (
     );
   );
   gfx_a = 1;
-  gfx_circle(status_x + 10, status_y + 8, 8, 1, 1);
+  zp_circle(status_x + 10, status_y + 8, 8, 1, 1);
   gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96;
-  gfx_x = status_x + 26; gfx_y = status_y + 12;
-  gfx_drawstr(#status_txt);
-  gfx_setfont(1, "Arial", 11);
+  zp_gx = status_x + 26; zp_gy = status_y + 12;
+  zp_drawstr(#status_txt);
+  zp_setfont(1, "Arial", 11);
   gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70;
-  gfx_x = status_x + 26; gfx_y = status_y + 32;
-  sprintf(#st1, "Fill %.0f%% | EQ %.2f dB", gfx_follow_fill * 100, gfx_match_settle); gfx_drawstr(#st1);
-  gfx_x = status_x + 26; gfx_y = status_y + 48;
-  sprintf(#st2, "Harm %.2f", gfx_harm_settle); gfx_drawstr(#st2);
+  zp_gx = status_x + 26; zp_gy = status_y + 32;
+  sprintf(#st1, "Fill %.0f%% | EQ %.2f dB", gfx_follow_fill * 100, gfx_match_settle); zp_drawstr(#st1);
+  zp_gx = status_x + 26; zp_gy = status_y + 48;
+  sprintf(#st2, "Harm %.2f", gfx_harm_settle); zp_drawstr(#st2);
   // Controlli rapidi tono (piu' spaziosi): Air / LP / HP
   ctrl_x = status_x + 26;
   ctrl_y = status_y + 62;
@@ -2997,43 +3054,43 @@ routing_state == 0 ? (
   ctrl_btn_h = 22;
   ctrl_plus_x = ctrl_x + 76;
   // Air
-  air_minus_over = mouse_x >= ctrl_x && mouse_x < ctrl_x + ctrl_btn_w && mouse_y >= ctrl_y && mouse_y < ctrl_y + ctrl_btn_h;
-  air_plus_over = mouse_x >= ctrl_plus_x && mouse_x < ctrl_plus_x + ctrl_btn_w && mouse_y >= ctrl_y && mouse_y < ctrl_y + ctrl_btn_h;
+  air_minus_over = zp_mx >= ctrl_x && zp_mx < ctrl_x + ctrl_btn_w && zp_my >= ctrl_y && zp_my < ctrl_y + ctrl_btn_h;
+  air_plus_over = zp_mx >= ctrl_plus_x && zp_mx < ctrl_plus_x + ctrl_btn_w && zp_my >= ctrl_y && zp_my < ctrl_y + ctrl_btn_h;
   air_minus_click = air_minus_over && (mouse_cap & 1) && !last_mouse_cap;
   air_plus_click = air_plus_over && (mouse_cap & 1) && !last_mouse_cap;
   air_minus_click ? (slider102 = max(-12, slider102 - 0.5); air_params_dirty = 1;);
   air_plus_click ? (slider102 = min(6, slider102 + 0.5); air_params_dirty = 1;);
-  gfx_r = air_minus_over ? 0.24 : 0.18; gfx_g = air_minus_over ? 0.28 : 0.22; gfx_b = air_minus_over ? 0.34 : 0.28; gfx_a = 1; gfx_rect(ctrl_x, ctrl_y, ctrl_btn_w, ctrl_btn_h);
-  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; gfx_setfont(1, "Arial", 15); gfx_x = ctrl_x + 9; gfx_y = ctrl_y + 2; gfx_drawstr("-");
-  gfx_r = air_plus_over ? 0.24 : 0.18; gfx_g = air_plus_over ? 0.28 : 0.22; gfx_b = air_plus_over ? 0.34 : 0.28; gfx_a = 1; gfx_rect(ctrl_plus_x, ctrl_y, ctrl_btn_w, ctrl_btn_h);
-  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; gfx_setfont(1, "Arial", 15); gfx_x = ctrl_plus_x + 8; gfx_y = ctrl_y + 2; gfx_drawstr("+");
-  gfx_setfont(1, "Arial", 11); gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70; gfx_x = ctrl_x + 32; gfx_y = ctrl_y + 4; sprintf(#airtxt, "Air %+.1f dB", slider102); gfx_drawstr(#airtxt);
+  gfx_r = air_minus_over ? 0.24 : 0.18; gfx_g = air_minus_over ? 0.28 : 0.22; gfx_b = air_minus_over ? 0.34 : 0.28; gfx_a = 1; zp_rect(ctrl_x, ctrl_y, ctrl_btn_w, ctrl_btn_h);
+  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; zp_setfont(1, "Arial", 15); zp_gx = ctrl_x + 9; zp_gy = ctrl_y + 2; zp_drawstr("-");
+  gfx_r = air_plus_over ? 0.24 : 0.18; gfx_g = air_plus_over ? 0.28 : 0.22; gfx_b = air_plus_over ? 0.34 : 0.28; gfx_a = 1; zp_rect(ctrl_plus_x, ctrl_y, ctrl_btn_w, ctrl_btn_h);
+  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; zp_setfont(1, "Arial", 15); zp_gx = ctrl_plus_x + 8; zp_gy = ctrl_y + 2; zp_drawstr("+");
+  zp_setfont(1, "Arial", 11); gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70; zp_gx = ctrl_x + 32; zp_gy = ctrl_y + 4; sprintf(#airtxt, "Air %+.1f dB", slider102); zp_drawstr(#airtxt);
   // LP
   lp_y = ctrl_y + ctrl_gap;
-  lp_minus_over = mouse_x >= ctrl_x && mouse_x < ctrl_x + ctrl_btn_w && mouse_y >= lp_y && mouse_y < lp_y + ctrl_btn_h;
-  lp_plus_over = mouse_x >= ctrl_plus_x && mouse_x < ctrl_plus_x + ctrl_btn_w && mouse_y >= lp_y && mouse_y < lp_y + ctrl_btn_h;
+  lp_minus_over = zp_mx >= ctrl_x && zp_mx < ctrl_x + ctrl_btn_w && zp_my >= lp_y && zp_my < lp_y + ctrl_btn_h;
+  lp_plus_over = zp_mx >= ctrl_plus_x && zp_mx < ctrl_plus_x + ctrl_btn_w && zp_my >= lp_y && zp_my < lp_y + ctrl_btn_h;
   lp_minus_click = lp_minus_over && (mouse_cap & 1) && !last_mouse_cap;
   lp_plus_click = lp_plus_over && (mouse_cap & 1) && !last_mouse_cap;
   lp_minus_click ? (slider103 = max(5000, slider103 - 500); air_params_dirty = 1;);
   lp_plus_click ? (slider103 = min(20000, slider103 + 500); air_params_dirty = 1;);
-  gfx_r = lp_minus_over ? 0.24 : 0.18; gfx_g = lp_minus_over ? 0.28 : 0.22; gfx_b = lp_minus_over ? 0.34 : 0.28; gfx_a = 1; gfx_rect(ctrl_x, lp_y, ctrl_btn_w, ctrl_btn_h);
-  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; gfx_setfont(1, "Arial", 15); gfx_x = ctrl_x + 9; gfx_y = lp_y + 2; gfx_drawstr("-");
-  gfx_r = lp_plus_over ? 0.24 : 0.18; gfx_g = lp_plus_over ? 0.28 : 0.22; gfx_b = lp_plus_over ? 0.34 : 0.28; gfx_a = 1; gfx_rect(ctrl_plus_x, lp_y, ctrl_btn_w, ctrl_btn_h);
-  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; gfx_setfont(1, "Arial", 15); gfx_x = ctrl_plus_x + 8; gfx_y = lp_y + 2; gfx_drawstr("+");
-  gfx_setfont(1, "Arial", 11); gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70; gfx_x = ctrl_x + 32; gfx_y = lp_y + 4; sprintf(#lptxt, "LP %.1fk", slider103 * 0.001); gfx_drawstr(#lptxt);
+  gfx_r = lp_minus_over ? 0.24 : 0.18; gfx_g = lp_minus_over ? 0.28 : 0.22; gfx_b = lp_minus_over ? 0.34 : 0.28; gfx_a = 1; zp_rect(ctrl_x, lp_y, ctrl_btn_w, ctrl_btn_h);
+  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; zp_setfont(1, "Arial", 15); zp_gx = ctrl_x + 9; zp_gy = lp_y + 2; zp_drawstr("-");
+  gfx_r = lp_plus_over ? 0.24 : 0.18; gfx_g = lp_plus_over ? 0.28 : 0.22; gfx_b = lp_plus_over ? 0.34 : 0.28; gfx_a = 1; zp_rect(ctrl_plus_x, lp_y, ctrl_btn_w, ctrl_btn_h);
+  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; zp_setfont(1, "Arial", 15); zp_gx = ctrl_plus_x + 8; zp_gy = lp_y + 2; zp_drawstr("+");
+  zp_setfont(1, "Arial", 11); gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70; zp_gx = ctrl_x + 32; zp_gy = lp_y + 4; sprintf(#lptxt, "LP %.1fk", slider103 * 0.001); zp_drawstr(#lptxt);
   // HP
   hp_y = lp_y + ctrl_gap;
-  hp_minus_over = mouse_x >= ctrl_x && mouse_x < ctrl_x + ctrl_btn_w && mouse_y >= hp_y && mouse_y < hp_y + ctrl_btn_h;
-  hp_plus_over = mouse_x >= ctrl_plus_x && mouse_x < ctrl_plus_x + ctrl_btn_w && mouse_y >= hp_y && mouse_y < hp_y + ctrl_btn_h;
+  hp_minus_over = zp_mx >= ctrl_x && zp_mx < ctrl_x + ctrl_btn_w && zp_my >= hp_y && zp_my < hp_y + ctrl_btn_h;
+  hp_plus_over = zp_mx >= ctrl_plus_x && zp_mx < ctrl_plus_x + ctrl_btn_w && zp_my >= hp_y && zp_my < hp_y + ctrl_btn_h;
   hp_minus_click = hp_minus_over && (mouse_cap & 1) && !last_mouse_cap;
   hp_plus_click = hp_plus_over && (mouse_cap & 1) && !last_mouse_cap;
   hp_minus_click ? (slider106 = max(20, slider106 - 5); air_params_dirty = 1;);
   hp_plus_click ? (slider106 = min(240, slider106 + 5); air_params_dirty = 1;);
-  gfx_r = hp_minus_over ? 0.24 : 0.18; gfx_g = hp_minus_over ? 0.28 : 0.22; gfx_b = hp_minus_over ? 0.34 : 0.28; gfx_a = 1; gfx_rect(ctrl_x, hp_y, ctrl_btn_w, ctrl_btn_h);
-  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; gfx_setfont(1, "Arial", 15); gfx_x = ctrl_x + 9; gfx_y = hp_y + 2; gfx_drawstr("-");
-  gfx_r = hp_plus_over ? 0.24 : 0.18; gfx_g = hp_plus_over ? 0.28 : 0.22; gfx_b = hp_plus_over ? 0.34 : 0.28; gfx_a = 1; gfx_rect(ctrl_plus_x, hp_y, ctrl_btn_w, ctrl_btn_h);
-  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; gfx_setfont(1, "Arial", 15); gfx_x = ctrl_plus_x + 8; gfx_y = hp_y + 2; gfx_drawstr("+");
-  gfx_setfont(1, "Arial", 11); gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70; gfx_x = ctrl_x + 32; gfx_y = hp_y + 4; sprintf(#hptxt, "HP %.0f Hz", slider106); gfx_drawstr(#hptxt);
+  gfx_r = hp_minus_over ? 0.24 : 0.18; gfx_g = hp_minus_over ? 0.28 : 0.22; gfx_b = hp_minus_over ? 0.34 : 0.28; gfx_a = 1; zp_rect(ctrl_x, hp_y, ctrl_btn_w, ctrl_btn_h);
+  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; zp_setfont(1, "Arial", 15); zp_gx = ctrl_x + 9; zp_gy = hp_y + 2; zp_drawstr("-");
+  gfx_r = hp_plus_over ? 0.24 : 0.18; gfx_g = hp_plus_over ? 0.28 : 0.22; gfx_b = hp_plus_over ? 0.34 : 0.28; gfx_a = 1; zp_rect(ctrl_plus_x, hp_y, ctrl_btn_w, ctrl_btn_h);
+  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; zp_setfont(1, "Arial", 15); zp_gx = ctrl_plus_x + 8; zp_gy = hp_y + 2; zp_drawstr("+");
+  zp_setfont(1, "Arial", 11); gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70; zp_gx = ctrl_x + 32; zp_gy = hp_y + 4; sprintf(#hptxt, "HP %.0f Hz", slider106); zp_drawstr(#hptxt);
   
   // Indicatore di Stabilità Profilo (disabilitato - usare per debug se necessario)
   // gfx_x = status_x + 26; gfx_y = status_y + 64;
@@ -3054,10 +3111,10 @@ routing_state == 0 ? (
   // sprintf(#st3, "%.0f%%", gfx_stability_ratio * 100); gfx_drawstr(#st3);
 
   gfx_r = 0.12; gfx_g = 0.13; gfx_b = 0.16; gfx_a = 1;
-  gfx_rect(26, metrics_box_y, gfx_w - 52, metrics_box_h);
-  gfx_setfont(1, "Arial", 13);
+  zp_rect(26, metrics_box_y, zp_vw - 52, metrics_box_h);
+  zp_setfont(1, "Arial", 13);
   gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96;
-  gfx_x = 42; gfx_y = metrics_y1; sprintf(#js1, "Match %.0f%%  |  Harm %.0f%%  |  Air %+.1f dB  |  LP %.1fk  |  HP %.0f Hz  |  Win %.0fs", slider4, slider7, slider102, slider103 * 0.001, slider106, slider3); gfx_drawstr(#js1);
+  zp_gx = 42; zp_gy = metrics_y1; sprintf(#js1, "Match %.0f%%  |  Harm %.0f%%  |  Air %+.1f dB  |  LP %.1fk  |  HP %.0f Hz  |  Win %.0fs", slider4, slider7, slider102, slider103 * 0.001, slider106, slider3); zp_drawstr(#js1);
   slider2 >= 0.5 ? (
     strcpy(#lvl1, "AutoLvl:ON");
   ) : (
@@ -3084,74 +3141,74 @@ routing_state == 0 ? (
       strcpy(#diag_state_lbl, "Diag Da regolare");
     );
   );
-  gfx_x = 42; gfx_y = metrics_y2; sprintf(#js2, "Ref %.1f dB  |  Out %.1f dB  |  %s | %s | %s | %s", slider17, slider18, #lvl1, #lvl2, #strict_lbl, #listen_lbl); gfx_drawstr(#js2);
-  gfx_x = 42; gfx_y = metrics_y3; level_target_mode == 0 ? sprintf(#js3, "Mem %d  |  Cap %.0f%%  |  Curv %.1f dB  |  Diag:%s Off %+0.1f dB N %+0.1f dB | %s", slider20, slider21, slider15, #diag_mode_lbl, slider108, slider109, #diag_state_lbl) : sprintf(#js3, "Mem %d  |  Cap %.0f%%  |  Delta %+0.1f dB  |  Diag:%s Off %+0.1f dB N %+0.1f dB | %s", slider20, slider21, slider24 + slider94, #diag_mode_lbl, slider108, slider109, #diag_state_lbl); gfx_drawstr(#js3);
+  zp_gx = 42; zp_gy = metrics_y2; sprintf(#js2, "Ref %.1f dB  |  Out %.1f dB  |  %s | %s | %s | %s", slider17, slider18, #lvl1, #lvl2, #strict_lbl, #listen_lbl); zp_drawstr(#js2);
+  zp_gx = 42; zp_gy = metrics_y3; level_target_mode == 0 ? sprintf(#js3, "Mem %d  |  Cap %.0f%%  |  Curv %.1f dB  |  Diag:%s Off %+0.1f dB N %+0.1f dB | %s", slider20, slider21, slider15, #diag_mode_lbl, slider108, slider109, #diag_state_lbl) : sprintf(#js3, "Mem %d  |  Cap %.0f%%  |  Delta %+0.1f dB  |  Diag:%s Off %+0.1f dB N %+0.1f dB | %s", slider20, slider21, slider24 + slider94, #diag_mode_lbl, slider108, slider109, #diag_state_lbl); zp_drawstr(#js3);
   recover_flash_counter > 0 ? (
     gfx_r = 0.98; gfx_g = 0.78; gfx_b = 0.30;
-    gfx_x = 42; gfx_y = metrics_warn_y; sprintf(#js4, "DSP Recover rilevato x%d", recover_count); gfx_drawstr(#js4);
+    zp_gx = 42; zp_gy = metrics_warn_y; sprintf(#js4, "DSP Recover rilevato x%d", recover_count); zp_drawstr(#js4);
   ) : panic_flash_counter > 0 ? (
     gfx_r = 0.96; gfx_g = 0.64; gfx_b = 0.30;
-    gfx_x = 42; gfx_y = metrics_warn_y; sprintf(#js4, "Safety Reset rilevato x%d", panic_count); gfx_drawstr(#js4);
+    zp_gx = 42; zp_gy = metrics_warn_y; sprintf(#js4, "Safety Reset rilevato x%d", panic_count); zp_drawstr(#js4);
   );
 
 gfx_r = 0.12; gfx_g = 0.13; gfx_b = 0.16; gfx_a = 1;
-gfx_rect(22, gfx_h - 72, gfx_w - 44, 52);
-gfx_setfont(1, "Arial", 12);
+zp_rect(22, zp_vh - 72, zp_vw - 44, 52);
+zp_setfont(1, "Arial", 12);
 routing_state == 0 ? (
   gfx_r = 0.82; gfx_g = 0.88; gfx_b = 0.84;
-  gfx_x = 34; gfx_y = gfx_h - 58;
-  gfx_drawstr("SC pronto. Per un workflow semplice: traccia a 4 canali, programma su 1/2, reference su 3/4.");
+  zp_gx = 34; zp_gy = zp_vh - 58;
+  zp_drawstr("SC pronto. Per un workflow semplice: traccia a 4 canali, programma su 1/2, reference su 3/4.");
   gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70;
-  gfx_x = 34; gfx_y = gfx_h - 38;
-  gfx_drawstr("Se il routing cambia per colpa delle automazioni di REAPER, guarda subito il messaggio colorato in alto.");
+  zp_gx = 34; zp_gy = zp_vh - 38;
+  zp_drawstr("Se il routing cambia per colpa delle automazioni di REAPER, guarda subito il messaggio colorato in alto.");
 ) : routing_state == 3 ? (
   gfx_r = 0.94; gfx_g = 0.80; gfx_b = 0.44;
-  gfx_x = 34; gfx_y = gfx_h - 58;
-  gfx_drawstr("1. Apri il pin connector del plugin e porta la traccia a 4 canali.");
+  zp_gx = 34; zp_gy = zp_vh - 58;
+  zp_drawstr("1. Apri il pin connector del plugin e porta la traccia a 4 canali.");
   gfx_r = 0.78; gfx_g = 0.82; gfx_b = 0.88;
-  gfx_x = 34; gfx_y = gfx_h - 38;
-  gfx_drawstr("2. Mappa Reference L/R su 3/4. 3. Invia la sorgente sidechain verso 3/4.");
+  zp_gx = 34; zp_gy = zp_vh - 38;
+  zp_drawstr("2. Mappa Reference L/R su 3/4. 3. Invia la sorgente sidechain verso 3/4.");
 ) : routing_state == 1 ? (
   gfx_r = 0.94; gfx_g = 0.80; gfx_b = 0.44;
-  gfx_x = 34; gfx_y = gfx_h - 58;
-  gfx_drawstr("1. Verifica che il send della sorgente arrivi su 3/4.");
+  zp_gx = 34; zp_gy = zp_vh - 58;
+  zp_drawstr("1. Verifica che il send della sorgente arrivi su 3/4.");
   gfx_r = 0.78; gfx_g = 0.82; gfx_b = 0.88;
-  gfx_x = 34; gfx_y = gfx_h - 38;
-  gfx_drawstr("2. Se sei in Keep puoi continuare a usare il profilo gia' catturato anche senza SC live.");
+  zp_gx = 34; zp_gy = zp_vh - 38;
+  zp_drawstr("2. Se sei in Keep puoi continuare a usare il profilo gia' catturato anche senza SC live.");
 ) : (
   gfx_r = 0.94; gfx_g = 0.80; gfx_b = 0.44;
-  gfx_x = 34; gfx_y = gfx_h - 58;
-  gfx_drawstr("1. Il reference sta entrando anche su 1/2 insieme al programma.");
+  zp_gx = 34; zp_gy = zp_vh - 58;
+  zp_drawstr("1. Il reference sta entrando anche su 1/2 insieme al programma.");
   gfx_r = 0.78; gfx_g = 0.82; gfx_b = 0.88;
-  gfx_x = 34; gfx_y = gfx_h - 38;
-  gfx_drawstr("2. Sposta il reference solo su 3/4, lasciando il materiale da trattare su 1/2.");
+  zp_gx = 34; zp_gy = zp_vh - 38;
+  zp_drawstr("2. Sposta il reference solo su 3/4, lasciando il materiale da trattare su 1/2.");
 );
 
 debug_overlay_on ? (
   dbg_h = 34;
-  dbg_y = gfx_h - dbg_h - 4;
+  dbg_y = zp_vh - dbg_h - 4;
   gfx_r = 0.10; gfx_g = 0.11; gfx_b = 0.14; gfx_a = 0.96;
-  gfx_rect(22, dbg_y, gfx_w - 44, dbg_h);
-  gfx_setfont(1, "Arial", 10);
+  zp_rect(22, dbg_y, zp_vw - 44, dbg_h);
+  zp_setfont(1, "Arial", 10);
   gfx_r = 0.64; gfx_g = 0.86; gfx_b = 0.98; gfx_a = 1;
-  gfx_x = 30; gfx_y = dbg_y + 4;
+  zp_gx = 30; zp_gy = dbg_y + 4;
   sprintf(#dbg, "DBG m:%d p:%d fill:%d%% cap:%d/%d keep:%d live:%d rd:%d rt:%d strict:%d clr:%d sw:%d cdone:%d em:%.2f me:%.2f re:%.2f ct:%.2fs",
     profile_mode, profile_mode_prev, follow_fill_ratio * 100,
     capture_count, capture_target_samples, keep_ready, live_follow_mode, follow_profile_ready, routing_state, strict_eq_on,
     dbg_clear_count, dbg_mode_switch_count, dbg_capture_done_count, slider98, slider99, slider101, slider100);
-  gfx_drawstr(#dbg);
+  zp_drawstr(#dbg);
   gfx_r = 0.84; gfx_g = 0.88; gfx_b = 0.96; gfx_a = 1;
-  gfx_x = 30; gfx_y = dbg_y + 17;
+  zp_gx = 30; zp_gy = dbg_y + 17;
   sprintf(#dbg2, "HF ug:%.2f sh:%.2f rl:%.2f cap10:%+.2f cap12:%+.2f lpEff:%.1fk air:%+.1f hs:%+.2f",
     ultrahigh_guard, ultra_shoulder_guard, ultra_roll_need, dbg_ultrah_cap10_db, dbg_ultrah_cap12_db, air_lp_eff_hz * 0.001, air_trim_db, high_shape_applied);
-  gfx_drawstr(#dbg2);
+  zp_drawstr(#dbg2);
 );
 
 time_precise() < help_warn_until ? (
-  gfx_setfont(1, "Arial", 11);
+  zp_setfont(1, "Arial", 11);
   gfx_r = 1.0; gfx_g = 0.72; gfx_b = 0.24; gfx_a = 0.96;
-  gfx_x = 30; gfx_y = gfx_h - 18;
-  gfx_drawstr(ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Studio Suite" : "Open Cue Navigator or ZP Suite help");
+  zp_gx = 30; zp_gy = zp_vh - 18;
+  zp_drawstr(ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Studio Suite" : "Open Cue Navigator or ZP Suite help");
 );
 
 last_mouse_cap = mouse_down;

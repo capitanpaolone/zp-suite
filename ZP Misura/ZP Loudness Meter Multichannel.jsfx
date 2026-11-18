@@ -641,7 +641,7 @@ rval=lval=0;
 );
 
 
-@gfx 420 400
+@gfx 560 520
 // Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
 zp_hb = gmem[3900]; zp_hb_now = time_precise();
 !zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
@@ -665,7 +665,7 @@ ui_lang = (gmem[3901] == 1) ? 1 : 0;
 gfx_clear=((BG_COLOR&$xff)<<16)|(BG_COLOR&$xff00)|((BG_COLOR&$xff0000)>>16);
 
 zoom_i=floor(cfg_zoom+0.5);
-zoom_mul = zoom_i <= 0 ? 1.17 : zoom_i == 2 ? 1.47 : zoom_i >= 3 ? 1.67 : 1.32;
+zoom_mul = (zoom_i <= 0 ? 1.17 : zoom_i == 2 ? 1.47 : zoom_i >= 3 ? 1.67 : 1.32) * (gfx_w >= 260 && gfx_h >= 200 ? max(0.85, min(1.85, min(gfx_w / 520.0, gfx_h / 420.0))) : 1.0);
 
 fsz=FONT_SZ_MIN+min(gfx_w/100,FONT_SZ_MAX-FONT_SZ_MIN);
 fsz *= (1.0+cfg_textsize/10) * zoom_mul;

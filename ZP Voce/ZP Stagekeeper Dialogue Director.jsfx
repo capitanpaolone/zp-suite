@@ -155,6 +155,61 @@ out_pin:left output
 out_pin:right output
 
 @init
+// ---- ZP Proportional Zoom Engine (GUI-only, zero DSP impact) ----
+zp_sc = 1.0; zp_ox = 0.0; zp_vw = 900.0; zp_vh = 600.0; zp_gx = 0.0; zp_gy = 0.0; zp_mx = 0.0; zp_my = 0.0;
+function zp_rect(x, y, w, h) (
+  (x <= 0 && y <= 0 && w >= zp_vw && h >= zp_vh - 1) ? gfx_rect(0, 0, gfx_w, gfx_h) :
+  gfx_rect(floor(zp_ox + (x) * zp_sc + 0.5), floor((y) * zp_sc + 0.5), max(1, floor((w) * zp_sc + 0.5)), max(1, floor((h) * zp_sc + 0.5)));
+);
+function zp_rect(x, y, w, h, aa) (
+  gfx_rect(floor(zp_ox + (x) * zp_sc + 0.5), floor((y) * zp_sc + 0.5), max(1, floor((w) * zp_sc + 0.5)), max(1, floor((h) * zp_sc + 0.5)), aa);
+);
+function zp_line(x1, y1, x2, y2) (
+  gfx_line(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, 1);
+);
+function zp_line(x1, y1, x2, y2, aa) (
+  gfx_line(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, aa);
+);
+function zp_circle(x, y, r, fill) (
+  gfx_circle(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), fill, 1);
+);
+function zp_circle(x, y, r, fill, aa) (
+  gfx_circle(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), fill, aa);
+);
+function zp_arc(x, y, r, a1, a2) (
+  gfx_arc(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), a1, a2, 1);
+);
+function zp_arc(x, y, r, a1, a2, aa) (
+  gfx_arc(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), a1, a2, aa);
+);
+function zp_triangle(x1, y1, x2, y2, x3, y3) (
+  gfx_triangle(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, zp_ox + (x3) * zp_sc, (y3) * zp_sc);
+);
+function zp_setfont(idx) ( gfx_setfont(idx); );
+function zp_setfont(idx, fname, sz) ( gfx_setfont(idx, fname, max(7, floor((sz) * zp_sc + 0.5))); );
+function zp_setfont(idx, fname, sz, flg) ( gfx_setfont(idx, fname, max(7, floor((sz) * zp_sc + 0.5)), flg); );
+function zp_drawstr(s) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_drawstr(s);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+function zp_drawnumber(n, dec) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_drawnumber(n, dec);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+function zp_printf(fmt, a1) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_printf(fmt, a1);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+
 help_bridge_alive = 0;
 help_bridge_last_alive_t = -100;
 help_bridge_req_seq = 0;
@@ -431,7 +486,7 @@ local(db_r, db_p, sy, num_segs, gap, seg_h, i, seg_val, is_on, is_peak, sr, sg, 
 (
   sy = by - ui_scroll_y;
   gfx_r = 0.06; gfx_g = 0.06; gfx_b = 0.09; gfx_a = 1;
-  gfx_rect(bx, sy, bw, bh);
+  zp_rect(bx, sy, bw, bh);
 
   db_r = max(min(lin2db(rms_val), 6), -60);
   db_p = max(min(lin2db(peak_val), 6), -60);
@@ -459,13 +514,13 @@ local(db_r, db_p, sy, num_segs, gap, seg_h, i, seg_val, is_on, is_peak, sr, sg, 
       gfx_r = sr * 0.15 + 0.02; gfx_g = sg * 0.15 + 0.02; gfx_b = sb * 0.15 + 0.02; gfx_a = 0.35;
     );
 
-    gfx_rect(bx, sy + bh - (i + 1) * (seg_h + gap) + gap, bw, seg_h);
+    zp_rect(bx, sy + bh - (i + 1) * (seg_h + gap) + gap, bw, seg_h);
     i += 1;
   );
 
   gfx_r = 0.18; gfx_g = 0.20; gfx_b = 0.26; gfx_a = 0.8;
-  gfx_rect(bx, sy, bw, 1); gfx_rect(bx, sy + bh - 1, bw, 1);
-  gfx_rect(bx, sy, 1, bh); gfx_rect(bx + bw - 1, sy, 1, bh);
+  zp_rect(bx, sy, bw, 1); zp_rect(bx, sy + bh - 1, bw, 1);
+  zp_rect(bx, sy, 1, bh); zp_rect(bx + bw - 1, sy, 1, bh);
 );
 
 // Barra PEAK solida (riempie fino al picco, colore freddo)
@@ -473,20 +528,20 @@ function draw_peak_bar(bx, by, bw, bh, peak_val)
 local(db_p, ph, seg_h, sy)(
   sy = by - ui_scroll_y;
   gfx_r=0.06; gfx_g=0.06; gfx_b=0.09;
-  gfx_rect(bx, sy, bw, bh);
+  zp_rect(bx, sy, bw, bh);
   db_p = max(min(lin2db(peak_val), 6), -60);
   ph = (db_p + 60) / 66 * bh;
   seg_h = min(ph, (54/66)*bh);
-  seg_h > 0 ? (gfx_r=0.25; gfx_g=0.6; gfx_b=0.85; gfx_rect(bx, sy+bh-seg_h, bw, seg_h));
+  seg_h > 0 ? (gfx_r=0.25; gfx_g=0.6; gfx_b=0.85; zp_rect(bx, sy+bh-seg_h, bw, seg_h));
   ph > (54/66)*bh ? (
     seg_h = min(ph-(54/66)*bh, (6/66)*bh);
     gfx_r=0.85; gfx_g=0.75; gfx_b=0.1;
-    gfx_rect(bx, sy+bh-(54/66)*bh-seg_h, bw, seg_h);
+    zp_rect(bx, sy+bh-(54/66)*bh-seg_h, bw, seg_h);
   );
   ph > (60/66)*bh ? (
     seg_h = ph-(60/66)*bh;
     gfx_r=0.95; gfx_g=0.2; gfx_b=0.1;
-    gfx_rect(bx, sy+bh-(60/66)*bh-seg_h, bw, seg_h);
+    zp_rect(bx, sy+bh-(60/66)*bh-seg_h, bw, seg_h);
   );
 );
 
@@ -496,7 +551,7 @@ local(db_r, sy, num_segs, gap, seg_h, i, seg_val, is_on, sr, sg, sb, thresh_norm
 (
   sy = by - ui_scroll_y;
   gfx_r = 0.06; gfx_g = 0.06; gfx_b = 0.09; gfx_a = 1;
-  gfx_rect(bx, sy, bw, bh);
+  zp_rect(bx, sy, bw, bh);
 
   db_r = max(min(lin2db(rms_val), 0), -80);
 
@@ -521,13 +576,13 @@ local(db_r, sy, num_segs, gap, seg_h, i, seg_val, is_on, sr, sg, sb, thresh_norm
       gfx_r = sr * 0.15 + 0.02; gfx_g = sg * 0.15 + 0.02; gfx_b = sb * 0.15 + 0.02; gfx_a = 0.35;
     );
 
-    gfx_rect(bx, sy + bh - (i + 1) * (seg_h + gap) + gap, bw, seg_h);
+    zp_rect(bx, sy + bh - (i + 1) * (seg_h + gap) + gap, bw, seg_h);
     i += 1;
   );
 
   gfx_r = 0.18; gfx_g = 0.20; gfx_b = 0.26; gfx_a = 0.8;
-  gfx_rect(bx, sy, bw, 1); gfx_rect(bx, sy + bh - 1, bw, 1);
-  gfx_rect(bx, sy, 1, bh); gfx_rect(bx + bw - 1, sy, 1, bh);
+  zp_rect(bx, sy, bw, 1); zp_rect(bx, sy + bh - 1, bw, 1);
+  zp_rect(bx, sy, 1, bh); zp_rect(bx + bw - 1, sy, 1, bh);
 
   // Soglia Speech Detect: mapping matematico identico al knob (-80..0 dB)
   thresh_norm = max(0, min(1, (thresh_val - (-80.0)) / 80.0));
@@ -538,11 +593,11 @@ local(db_r, sy, num_segs, gap, seg_h, i, seg_val, is_on, sr, sg, sb, thresh_norm
   ) : (
     gfx_r = 1.0; gfx_g = 0.78; gfx_b = 0.18; gfx_a = 0.95;
   );
-  gfx_rect(bx - 3, max(sy, min(sy + bh - 2, thresh_y - 1)), bw + 6, 2);
+  zp_rect(bx - 3, max(sy, min(sy + bh - 2, thresh_y - 1)), bw + 6, 2);
 
   // Ticks freccia ai lati
-  gfx_triangle(bx - 4, thresh_y, bx - 1, thresh_y - 3, bx - 1, thresh_y + 3);
-  gfx_triangle(bx + bw + 4, thresh_y, bx + bw + 1, thresh_y - 3, bx + bw + 1, thresh_y + 3);
+  zp_triangle(bx - 4, thresh_y, bx - 1, thresh_y - 3, bx - 1, thresh_y + 3);
+  zp_triangle(bx + bw + 4, thresh_y, bx + bw + 1, thresh_y - 3, bx + bw + 1, thresh_y + 3);
 );
 
 // Mappatura non lineare per il knob Background: t in [0,1] e' la posizione
@@ -575,10 +630,10 @@ local(sy, red_db, target_db, is_transitioning, is_open_now, num_segs, gap, seg_w
 (
   sy = by - ui_scroll_y;
   gfx_r = 0.06; gfx_g = 0.07; gfx_b = 0.10; gfx_a = 0.95;
-  gfx_rect(bx, sy, bw, bh);
+  zp_rect(bx, sy, bw, bh);
   gfx_r = 0.18; gfx_g = 0.20; gfx_b = 0.26; gfx_a = 0.8;
-  gfx_rect(bx, sy, bw, 1); gfx_rect(bx, sy + bh - 1, bw, 1);
-  gfx_rect(bx, sy, 1, bh); gfx_rect(bx + bw - 1, sy, 1, bh);
+  zp_rect(bx, sy, bw, 1); zp_rect(bx, sy + bh - 1, bw, 1);
+  zp_rect(bx, sy, 1, bh); zp_rect(bx + bw - 1, sy, 1, bh);
 
   red_db = lin2db(gate_val);
   target_db = tgt_val > 0.5 ? depth_db : 0;
@@ -595,11 +650,11 @@ local(sy, red_db, target_db, is_transitioning, is_open_now, num_segs, gap, seg_w
   target_norm = max(0, min(1, bg_db_to_t(max(bg_db_min, min(bg_db_max, target_db)))));
 
   is_open_now && !is_transitioning ? (
-    gfx_setfont(5);
+    zp_setfont(5);
     gfx_r = sem_open_r; gfx_g = sem_open_g; gfx_b = sem_open_b; gfx_a = 1.0;
-    gfx_measurestr("SCENE: OPEN (0.0 dB)", tw, th);
-    gfx_x = bx + (bw - tw) * 0.5; gfx_y = sy + (bh - th) * 0.5;
-    gfx_drawstr("SCENE: OPEN (0.0 dB)");
+    (gfx_measurestr("SCENE: OPEN (0.0 dB)", tw, th); tw /= zp_sc; th /= zp_sc);
+    zp_gx = bx + (bw - tw) * 0.5; zp_gy = sy + (bh - th) * 0.5;
+    zp_drawstr("SCENE: OPEN (0.0 dB)");
   ) : (
     num_segs = 16; gap = 1;
     seg_w = max(2, floor((bw - 4 - (num_segs - 1) * gap) / num_segs));
@@ -615,7 +670,7 @@ local(sy, red_db, target_db, is_transitioning, is_open_now, num_segs, gap, seg_w
       ) : (
         gfx_r = sr * 0.15 + 0.02; gfx_g = sg * 0.15 + 0.02; gfx_b = sb * 0.15 + 0.02; gfx_a = 0.35;
       );
-      gfx_rect(bx + 2 + i * (seg_w + gap), sy + 2, seg_w, bh - 4);
+      zp_rect(bx + 2 + i * (seg_w + gap), sy + 2, seg_w, bh - 4);
       i += 1;
     );
 
@@ -623,10 +678,10 @@ local(sy, red_db, target_db, is_transitioning, is_open_now, num_segs, gap, seg_w
     is_transitioning ? (
       target_x = bx + 2 + min(num_segs - 1, target_norm * num_segs) * (seg_w + gap);
       gfx_r = 1.0; gfx_g = 1.0; gfx_b = 1.0; gfx_a = 0.9;
-      gfx_rect(min(bx + bw - 3, target_x), sy + 1, 2, bh - 2);
+      zp_rect(min(bx + bw - 3, target_x), sy + 1, 2, bh - 2);
     );
 
-    gfx_setfont(5);
+    zp_setfont(5);
     is_transitioning ? (
       gfx_r = sem_trans_r; gfx_g = sem_trans_g; gfx_b = sem_trans_b; gfx_a = 1.0;
       sprintf(#_red_txt, "%.1f -> %.1f dB", red_db, target_db);
@@ -634,9 +689,9 @@ local(sy, red_db, target_db, is_transitioning, is_open_now, num_segs, gap, seg_w
       gfx_r = 1.0; gfx_g = 0.97; gfx_b = 0.90; gfx_a = 1.0;
       sprintf(#_red_txt, "BACKGRD: %.1f dB", red_db);
     );
-    gfx_measurestr(#_red_txt, tw, th);
-    gfx_x = bx + (bw - tw) * 0.5; gfx_y = sy + (bh - th) * 0.5;
-    gfx_drawstr(#_red_txt);
+    (gfx_measurestr(#_red_txt, tw, th); tw /= zp_sc; th /= zp_sc);
+    zp_gx = bx + (bw - tw) * 0.5; zp_gy = sy + (bh - th) * 0.5;
+    zp_drawstr(#_red_txt);
   );
 );
 
@@ -647,14 +702,14 @@ local(sy, tw, th)
 (
   sy = by - ui_scroll_y;
   gfx_r = 0.08; gfx_g = 0.23; gfx_b = 0.20; gfx_a = 1.0;
-  gfx_rect(bx, sy, bw, bh);
+  zp_rect(bx, sy, bw, bh);
   gfx_r = sem_open_r; gfx_g = sem_open_g; gfx_b = sem_open_b; gfx_a = 1.0;
-  gfx_rect(bx, sy, bw, 2); gfx_rect(bx, sy + bh - 2, bw, 2);
-  gfx_rect(bx, sy, 2, bh); gfx_rect(bx + bw - 2, sy, 2, bh);
-  gfx_setfont(3);
-  gfx_measurestr(label, tw, th);
-  gfx_x = bx + (bw - tw) * 0.5; gfx_y = sy + (bh - th) * 0.5;
-  gfx_drawstr(label);
+  zp_rect(bx, sy, bw, 2); zp_rect(bx, sy + bh - 2, bw, 2);
+  zp_rect(bx, sy, 2, bh); zp_rect(bx + bw - 2, sy, 2, bh);
+  zp_setfont(3);
+  (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = bx + (bw - tw) * 0.5; zp_gy = sy + (bh - th) * 0.5;
+  zp_drawstr(label);
 );
 
 // Stato GAIN sintetico di un canale (sola lettura, non e' una nuova decisione DSP):
@@ -681,29 +736,29 @@ local(sy, hold_norm, tw, th)
 (
   sy = by - ui_scroll_y;
   gfx_r = 0.06; gfx_g = 0.07; gfx_b = 0.10; gfx_a = 0.95;
-  gfx_rect(bx, sy, bw, bh);
+  zp_rect(bx, sy, bw, bh);
   gfx_r = 0.18; gfx_g = 0.20; gfx_b = 0.26; gfx_a = 0.8;
-  gfx_rect(bx, sy, bw, 1); gfx_rect(bx, sy + bh - 1, bw, 1);
-  gfx_rect(bx, sy, 1, bh); gfx_rect(bx + bw - 1, sy, 1, bh);
+  zp_rect(bx, sy, bw, 1); zp_rect(bx, sy + bh - 1, bw, 1);
+  zp_rect(bx, sy, 1, bh); zp_rect(bx + bw - 1, sy, 1, bh);
 
   hold_norm = max_hold_samples > 0 ? max(0, min(1, hold_samples / max_hold_samples)) : 0;
 
   hold_samples > 0 ? (
     gfx_r = 0.95; gfx_g = 0.74; gfx_b = 0.18; gfx_a = 0.85;
-    gfx_rect(bx + 1, sy + 1, (bw - 2) * hold_norm, bh - 2);
+    zp_rect(bx + 1, sy + 1, (bw - 2) * hold_norm, bh - 2);
 
-    gfx_setfont(5);
+    zp_setfont(5);
     gfx_r = 0.08; gfx_g = 0.09; gfx_b = 0.12; gfx_a = 1.0;
     sprintf(#_hld_txt, "HOLD ACTIVE: %.0f ms", (hold_samples / srate) * 1000);
-    gfx_measurestr(#_hld_txt, tw, th);
-    gfx_x = bx + (bw - tw) * 0.5; gfx_y = sy + (bh - th) * 0.5;
-    gfx_drawstr(#_hld_txt);
+    (gfx_measurestr(#_hld_txt, tw, th); tw /= zp_sc; th /= zp_sc);
+    zp_gx = bx + (bw - tw) * 0.5; zp_gy = sy + (bh - th) * 0.5;
+    zp_drawstr(#_hld_txt);
   ) : (
-    gfx_setfont(5);
+    zp_setfont(5);
     gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 0.75;
-    gfx_measurestr("HOLD IDLE", tw, th);
-    gfx_x = bx + (bw - tw) * 0.5; gfx_y = sy + (bh - th) * 0.5;
-    gfx_drawstr("HOLD IDLE");
+    (gfx_measurestr("HOLD IDLE", tw, th); tw /= zp_sc; th /= zp_sc);
+    zp_gx = bx + (bw - tw) * 0.5; zp_gy = sy + (bh - th) * 0.5;
+    zp_drawstr("HOLD IDLE");
   );
 );
 
@@ -723,52 +778,52 @@ local(sy, cx, px_per_db, dead_w, diff_clamped, ptr_x, tw, th, pill_w, pill_h, pi
   cx = bx + bw * 0.5;
 
   gfx_r = 0.07; gfx_g = 0.08; gfx_b = 0.11; gfx_a = 0.95;
-  gfx_rect(bx, sy, bw, bh);
+  zp_rect(bx, sy, bw, bh);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.85;
-  gfx_rect(bx, sy, bw, 1); gfx_rect(bx, sy + bh - 1, bw, 1);
-  gfx_rect(bx, sy, 1, bh); gfx_rect(bx + bw - 1, sy, 1, bh);
+  zp_rect(bx, sy, bw, 1); zp_rect(bx, sy + bh - 1, bw, 1);
+  zp_rect(bx, sy, 1, bh); zp_rect(bx + bw - 1, sy, 1, bh);
 
   px_per_db = (bw * 0.44) / 20.0;
   dead_w = max(4, delta_thresh * px_per_db);
 
   // Zona neutra / deadband al centro
   gfx_r = 0.13; gfx_g = 0.16; gfx_b = 0.22; gfx_a = 0.95;
-  gfx_rect(cx - dead_w, sy + 2, dead_w * 2, bh - 4);
+  zp_rect(cx - dead_w, sy + 2, dead_w * 2, bh - 4);
   gfx_r = 0.28; gfx_g = 0.34; gfx_b = 0.44; gfx_a = 0.85;
-  gfx_line(cx - dead_w, sy + 2, cx - dead_w, sy + bh - 3);
-  gfx_line(cx + dead_w, sy + 2, cx + dead_w, sy + bh - 3);
+  zp_line(cx - dead_w, sy + 2, cx - dead_w, sy + bh - 3);
+  zp_line(cx + dead_w, sy + 2, cx + dead_w, sy + bh - 3);
 
   // Tacca centrale 0 dB
   gfx_r = 0.35; gfx_g = 0.40; gfx_b = 0.50; gfx_a = 0.7;
-  gfx_line(cx, sy + 2, cx, sy + bh - 3);
+  zp_line(cx, sy + 2, cx, sy + bh - 3);
 
   // Indicatori L / R agli estremi
-  gfx_setfont(3);
+  zp_setfont(3);
   gfx_r = grp_in_r; gfx_g = grp_in_g; gfx_b = grp_in_b;
-  gfx_x = bx + 10; gfx_y = sy + (bh - 14) * 0.5; gfx_drawstr("L");
+  zp_gx = bx + 10; zp_gy = sy + (bh - 14) * 0.5; zp_drawstr("L");
   gfx_r = grp_lim_r; gfx_g = grp_lim_g; gfx_b = grp_lim_b;
-  gfx_x = bx + bw - 20; gfx_y = sy + (bh - 14) * 0.5; gfx_drawstr("R");
+  zp_gx = bx + bw - 20; zp_gy = sy + (bh - 14) * 0.5; zp_drawstr("R");
 
   // Etichetta zona neutra (NO SWITCH ±X dB)
-  gfx_setfont(5);
+  zp_setfont(5);
   abs(delta_thresh - floor(delta_thresh + 0.5)) < 0.05 ? (
     sprintf(#_dz_txt, "NO SWITCH ±%.0f dB", delta_thresh);
   ) : (
     sprintf(#_dz_txt, "NO SWITCH ±%.1f dB", delta_thresh);
   );
-  gfx_measurestr(#_dz_txt, tw, th);
+  (gfx_measurestr(#_dz_txt, tw, th); tw /= zp_sc; th /= zp_sc);
 
   pill_w = tw + 10; pill_h = th + 4;
   pill_x = cx - pill_w * 0.5; pill_y = sy + (bh - pill_h) * 0.5;
   gfx_r = 0.08; gfx_g = 0.10; gfx_b = 0.14; gfx_a = 0.90;
-  gfx_rect(pill_x, pill_y, pill_w, pill_h);
+  zp_rect(pill_x, pill_y, pill_w, pill_h);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.55;
-  gfx_rect(pill_x, pill_y, pill_w, 1); gfx_rect(pill_x, pill_y + pill_h - 1, pill_w, 1);
-  gfx_rect(pill_x, pill_y, 1, pill_h); gfx_rect(pill_x + pill_w - 1, pill_y, 1, pill_h);
+  zp_rect(pill_x, pill_y, pill_w, 1); zp_rect(pill_x, pill_y + pill_h - 1, pill_w, 1);
+  zp_rect(pill_x, pill_y, 1, pill_h); zp_rect(pill_x + pill_w - 1, pill_y, 1, pill_h);
 
   gfx_r = 0.76; gfx_g = 0.80; gfx_b = 0.88; gfx_a = 0.95;
-  gfx_x = cx - tw * 0.5; gfx_y = sy + (bh - th) * 0.5;
-  gfx_drawstr(#_dz_txt);
+  zp_gx = cx - tw * 0.5; zp_gy = sy + (bh - th) * 0.5;
+  zp_drawstr(#_dz_txt);
 
   // Cursore posizione dominance (L verso sinistra, R verso destra)
   gate_on ? (
@@ -783,9 +838,9 @@ local(sy, cx, px_per_db, dead_w, diff_clamped, ptr_x, tw, th, pill_w, pill_h, pi
       gfx_r = 0.24; gfx_g = 0.78; gfx_b = 0.48; gfx_a = 0.95;
     );
 
-    gfx_rect(ptr_x - 3, sy + 2, 6, bh - 4);
+    zp_rect(ptr_x - 3, sy + 2, 6, bh - 4);
     gfx_r = 1.0; gfx_g = 1.0; gfx_b = 1.0; gfx_a = 0.95;
-    gfx_rect(ptr_x - 1, sy + 2, 2, bh - 4);
+    zp_rect(ptr_x - 1, sy + 2, 2, bh - 4);
   );
 );
 
@@ -794,7 +849,7 @@ local(sy, num_segs, gap, seg_h, i, seg_val, is_on, sr, sg, sb)
 (
   sy = by - ui_scroll_y;
   gfx_r = 0.06; gfx_g = 0.06; gfx_b = 0.09; gfx_a = 1;
-  gfx_rect(bx, sy, bw, bh);
+  zp_rect(bx, sy, bw, bh);
 
   gr_db = max(min(gr_db, 0), -20);
 
@@ -815,13 +870,13 @@ local(sy, num_segs, gap, seg_h, i, seg_val, is_on, sr, sg, sb)
       gfx_r = sr * 0.14 + 0.02; gfx_g = sg * 0.14 + 0.02; gfx_b = sb * 0.14 + 0.02; gfx_a = 0.35;
     );
 
-    gfx_rect(bx, sy + i * (seg_h + gap), bw, seg_h);
+    zp_rect(bx, sy + i * (seg_h + gap), bw, seg_h);
     i += 1;
   );
 
   gfx_r = 0.18; gfx_g = 0.20; gfx_b = 0.26; gfx_a = 0.8;
-  gfx_rect(bx, sy, bw, 1); gfx_rect(bx, sy + bh - 1, bw, 1);
-  gfx_rect(bx, sy, 1, bh); gfx_rect(bx + bw - 1, sy, 1, bh);
+  zp_rect(bx, sy, bw, 1); zp_rect(bx, sy + bh - 1, bw, 1);
+  zp_rect(bx, sy, 1, bh); zp_rect(bx + bw - 1, sy, 1, bh);
 );
 
 function hit(mx, my, x, y, w, h) (
@@ -1051,82 +1106,82 @@ local(slot_base, slot_used, slot_val, store_idx)(
 function draw_panel(x, y, w, h, rr, gg, bb, aa)
 local(sy) (
   sy = y - ui_scroll_y;
-  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = aa; gfx_rect(x, sy, w, h);
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = aa; zp_rect(x, sy, w, h);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_rect(x, sy, w, 1); gfx_rect(x, sy + h - 1, w, 1);
-  gfx_rect(x, sy, 1, h); gfx_rect(x + w - 1, sy, 1, h);
+  zp_rect(x, sy, w, 1); zp_rect(x, sy + h - 1, w, 1);
+  zp_rect(x, sy, 1, h); zp_rect(x + w - 1, sy, 1, h);
 );
 
 function draw_group_title(x, y, w, lbl, rr, gg, bb)
 local(sy) (
   sy = y - ui_scroll_y;
-  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95; gfx_rect(x, sy, w, 4);
-  gfx_setfont(3);
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95; zp_rect(x, sy, w, 4);
+  zp_setfont(3);
   gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = x + 12; gfx_y = sy + 10; gfx_drawstr(lbl);
+  zp_gx = x + 12; zp_gy = sy + 10; zp_drawstr(lbl);
 );
 
 function draw_status_readout(x, y, w, h, title, value, rr, gg, bb, active)
 local(tw, th, sy)(
   sy = y - ui_scroll_y;
   gfx_r = panel_r; gfx_g = panel_g; gfx_b = panel_b; gfx_a = 1;
-  gfx_rect(x, sy, w, h);
+  zp_rect(x, sy, w, h);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.85;
-  gfx_rect(x, sy, w, 1); gfx_rect(x, sy + h - 1, w, 1);
-  gfx_rect(x, sy, 1, h); gfx_rect(x + w - 1, sy, 1, h);
+  zp_rect(x, sy, w, 1); zp_rect(x, sy + h - 1, w, 1);
+  zp_rect(x, sy, 1, h); zp_rect(x + w - 1, sy, 1, h);
 
   active ? (
     gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95;
   ) : (
     gfx_r = 0.30; gfx_g = 0.33; gfx_b = 0.39; gfx_a = 0.9;
   );
-  gfx_rect(x, sy, 4, h);
+  zp_rect(x, sy, 4, h);
 
-  gfx_setfont(5);
+  zp_setfont(5);
   gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = x + 12; gfx_y = sy + 8; gfx_drawstr(title);
+  zp_gx = x + 12; zp_gy = sy + 8; zp_drawstr(title);
 
-  gfx_setfont(3);
+  zp_setfont(3);
   active ? (
     gfx_r = rr; gfx_g = gg; gfx_b = bb;
   ) : (
     gfx_r = 0.84; gfx_g = 0.87; gfx_b = 0.92;
   );
-  gfx_measurestr(value, tw, th);
-  gfx_x = x + 12; gfx_y = sy + h - th - 8; gfx_drawstr(value);
+  (gfx_measurestr(value, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = x + 12; zp_gy = sy + h - th - 8; zp_drawstr(value);
 );
 
 function draw_inline_readout(x, y, w, h, title, value, rr, gg, bb, active)
 local(tw, th, vw, vh, sy)(
   sy = y - ui_scroll_y;
   gfx_r = panel_r; gfx_g = panel_g; gfx_b = panel_b; gfx_a = 1;
-  gfx_rect(x, sy, w, h);
+  zp_rect(x, sy, w, h);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.85;
-  gfx_rect(x, sy, w, 1); gfx_rect(x, sy + h - 1, w, 1);
-  gfx_rect(x, sy, 1, h); gfx_rect(x + w - 1, sy, 1, h);
+  zp_rect(x, sy, w, 1); zp_rect(x, sy + h - 1, w, 1);
+  zp_rect(x, sy, 1, h); zp_rect(x + w - 1, sy, 1, h);
 
   active ? (
     gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95;
   ) : (
     gfx_r = 0.30; gfx_g = 0.33; gfx_b = 0.39; gfx_a = 0.9;
   );
-  gfx_rect(x, sy, 3, h);
+  zp_rect(x, sy, 3, h);
 
-  gfx_setfont(5);
+  zp_setfont(5);
   gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_measurestr(title, tw, th);
-  gfx_x = x + 8; gfx_y = sy + (h - th) * 0.5; gfx_drawstr(title);
+  (gfx_measurestr(title, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = x + 8; zp_gy = sy + (h - th) * 0.5; zp_drawstr(title);
 
-  h <= 24 ? gfx_setfont(5) : gfx_setfont(3);
+  h <= 24 ? zp_setfont(5) : zp_setfont(3);
   active ? (
     gfx_r = rr; gfx_g = gg; gfx_b = bb;
   ) : (
     gfx_r = 0.84; gfx_g = 0.87; gfx_b = 0.92;
   );
-  gfx_measurestr(value, vw, vh);
-  gfx_x = max(x + 8 + tw + 6, x + w - vw - 8);
-  gfx_y = sy + (h - vh) * 0.5;
-  gfx_drawstr(value);
+  (gfx_measurestr(value, vw, vh); vw /= zp_sc; vh /= zp_sc);
+  zp_gx = max(x + 8 + tw + 6, x + w - vw - 8);
+  zp_gy = sy + (h - vh) * 0.5;
+  zp_drawstr(value);
 );
 
 function ui_disabled_knob(sl_idx, kx, ky, r, label, unit, info_id)
@@ -1134,47 +1189,47 @@ local(val, norm_val, ang_min, ang_max, ang, sy, tw, th, is_hover)(
   r = max(r, 13);
   val = slider(sl_idx);
   sy = ky - ui_scroll_y;
-  is_hover = hit(mouse_x, mouse_y, kx - r - 8, ky - r - 20, (r + 8) * 2, (r + 20) * 2);
+  is_hover = hit(zp_mx, zp_my, kx - r - 8, ky - r - 20, (r + 8) * 2, (r + 20) * 2);
   is_hover ? active_info_id = info_id;
 
   ang_min = 2.356; ang_max = 7.068;
   norm_val = max(0, min(1, val / 20.0));
   ang = ang_min + norm_val * (ang_max - ang_min);
 
-  gfx_r = 0.10; gfx_g = 0.11; gfx_b = 0.14; gfx_a = 0.95; gfx_circle(kx, sy, r, 1, 1);
+  gfx_r = 0.10; gfx_g = 0.11; gfx_b = 0.14; gfx_a = 0.95; zp_circle(kx, sy, r, 1, 1);
   gfx_r = 0.22; gfx_g = 0.24; gfx_b = 0.28; gfx_a = 0.85;
-  gfx_arc(kx, sy, r - 2, ang_min, ang, 3);
-  gfx_arc(kx, sy, r - 3, ang_min, ang, 3);
+  zp_arc(kx, sy, r - 2, ang_min, ang, 3);
+  zp_arc(kx, sy, r - 3, ang_min, ang, 3);
   gfx_r = 0.38; gfx_g = 0.42; gfx_b = 0.48; gfx_a = 0.85;
-  gfx_line(kx, sy, kx + cos(ang) * r, sy + sin(ang) * r);
+  zp_line(kx, sy, kx + cos(ang) * r, sy + sin(ang) * r);
 
-  gfx_setfont(3);
+  zp_setfont(3);
   gfx_r = 0.42; gfx_g = 0.46; gfx_b = 0.52;
-  gfx_measurestr(label, tw, th);
-  gfx_x = kx - tw * 0.5; gfx_y = sy - r - 16; gfx_drawstr(label);
+  (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = kx - tw * 0.5; zp_gy = sy - r - 16; zp_drawstr(label);
 
   abs(val - floor(val + 0.5)) < 0.03 ? sprintf(#knob_val, "%.0f %s", val, unit) : sprintf(#knob_val, "%.1f %s", val, unit);
-  gfx_measurestr(#knob_val, tw, th);
-  gfx_x = kx - tw * 0.5; gfx_y = sy + r + 6; gfx_drawstr(#knob_val);
+  (gfx_measurestr(#knob_val, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = kx - tw * 0.5; zp_gy = sy + r + 6; zp_drawstr(#knob_val);
 );
 
 function draw_state_chip(x, y, w, h, lbl, rr, gg, bb, dark_text)
 local(tw, th, sy)(
   sy = y - ui_scroll_y;
-  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95; gfx_rect(x, sy, w, h);
+  gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.95; zp_rect(x, sy, w, h);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.75;
-  gfx_rect(x, sy, w, 1); gfx_rect(x, sy + h - 1, w, 1);
-  gfx_rect(x, sy, 1, h); gfx_rect(x + w - 1, sy, 1, h);
-  gfx_setfont(3);
+  zp_rect(x, sy, w, 1); zp_rect(x, sy + h - 1, w, 1);
+  zp_rect(x, sy, 1, h); zp_rect(x + w - 1, sy, 1, h);
+  zp_setfont(3);
   dark_text ? (
     gfx_r = 0.07; gfx_g = 0.08; gfx_b = 0.10;
   ) : (
     gfx_r = 0.95; gfx_g = 0.96; gfx_b = 1.0;
   );
-  gfx_measurestr(lbl, tw, th);
-  gfx_x = x + (w - tw) * 0.5;
-  gfx_y = sy + (h - th) * 0.5;
-  gfx_drawstr(lbl);
+  (gfx_measurestr(lbl, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = x + (w - tw) * 0.5;
+  zp_gy = sy + (h - th) * 0.5;
+  zp_drawstr(lbl);
 );
 
 function ui_tab_button(sl_idx, target_val, bx, by, bw, bh, label, info_id, cr, cg, cb)
@@ -1182,7 +1237,7 @@ local(cur, is_active, is_hover, tw, th, sy) (
   bh = max(bh, 30);
   cur = floor(slider(sl_idx) + 0.5);
   is_active = cur == target_val;
-  is_hover = hit(mouse_x, mouse_y, bx, by, bw, bh);
+  is_hover = hit(zp_mx, zp_my, bx, by, bw, bh);
   sy = by - ui_scroll_y;
 
   is_hover ? active_info_id = info_id;
@@ -1194,21 +1249,21 @@ local(cur, is_active, is_hover, tw, th, sy) (
     gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 1;
     is_hover ? ( gfx_r += 0.05; gfx_g += 0.05; gfx_b += 0.05; );
   );
-  gfx_rect(bx, sy, bw, bh);
+  zp_rect(bx, sy, bw, bh);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_rect(bx, sy, bw, 1); gfx_rect(bx, sy + bh - 1, bw, 1);
-  gfx_rect(bx, sy, 1, bh); gfx_rect(bx + bw - 1, sy, 1, bh);
+  zp_rect(bx, sy, bw, 1); zp_rect(bx, sy + bh - 1, bw, 1);
+  zp_rect(bx, sy, 1, bh); zp_rect(bx + bw - 1, sy, 1, bh);
 
-  gfx_setfont(3);
+  zp_setfont(3);
   is_active ? (
     gfx_r = 0.06; gfx_g = 0.07; gfx_b = 0.08;
   ) : (
     gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
   );
-  gfx_measurestr(label, tw, th);
-  gfx_x = bx + (bw - tw) * 0.5;
-  gfx_y = sy + (bh - th) * 0.5;
-  gfx_drawstr(label);
+  (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = bx + (bw - tw) * 0.5;
+  zp_gy = sy + (bh - th) * 0.5;
+  zp_drawstr(label);
 );
 
 function ui_toggle_button(sl_idx, bx, by, bw, bh, lbl_on, lbl_off, info_id, cr, cg, cb)
@@ -1216,7 +1271,7 @@ local(val, is_on, is_hover, tw, th, sy) (
   bh = max(bh, 30);
   val = slider(sl_idx);
   is_on = val >= 0.5;
-  is_hover = hit(mouse_x, mouse_y, bx, by, bw, bh);
+  is_hover = hit(zp_mx, zp_my, bx, by, bw, bh);
   sy = by - ui_scroll_y;
 
   is_hover ? active_info_id = info_id;
@@ -1228,12 +1283,12 @@ local(val, is_on, is_hover, tw, th, sy) (
     gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 1;
     is_hover ? ( gfx_r += 0.04; gfx_g += 0.04; gfx_b += 0.04; );
   );
-  gfx_rect(bx, sy, bw, bh);
+  zp_rect(bx, sy, bw, bh);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_rect(bx, sy, bw, 1); gfx_rect(bx, sy + bh - 1, bw, 1);
-  gfx_rect(bx, sy, 1, bh); gfx_rect(bx + bw - 1, sy, 1, bh);
+  zp_rect(bx, sy, bw, 1); zp_rect(bx, sy + bh - 1, bw, 1);
+  zp_rect(bx, sy, 1, bh); zp_rect(bx + bw - 1, sy, 1, bh);
 
-  gfx_setfont(3);
+  zp_setfont(3);
   is_on ? (
     gfx_r = 0.06; gfx_g = 0.07; gfx_b = 0.08;
     #tg_lbl = lbl_on;
@@ -1241,10 +1296,10 @@ local(val, is_on, is_hover, tw, th, sy) (
     gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
     #tg_lbl = lbl_off;
   );
-  gfx_measurestr(#tg_lbl, tw, th);
-  gfx_x = bx + (bw - tw) * 0.5;
-  gfx_y = sy + (bh - th) * 0.5;
-  gfx_drawstr(#tg_lbl);
+  (gfx_measurestr(#tg_lbl, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = bx + (bw - tw) * 0.5;
+  zp_gy = sy + (bh - th) * 0.5;
+  zp_drawstr(#tg_lbl);
 );
 
 // Single symbolic phase button: filled circle (highlighted when inverted) with a
@@ -1254,8 +1309,8 @@ local(val, is_on, is_hover, sx, sy) (
   val = slider(sl_idx);
   is_on = val >= 0.5;
   sx = cx; sy = cy - ui_scroll_y;
-  is_hover = mouse_x >= (sx - r - 4) && mouse_x <= (sx + r + 4) &&
-             (mouse_y + ui_scroll_y) >= (cy - r - 4) && (mouse_y + ui_scroll_y) <= (cy + r + 4);
+  is_hover = zp_mx >= (sx - r - 4) && zp_mx <= (sx + r + 4) &&
+             (zp_my + ui_scroll_y) >= (cy - r - 4) && (zp_my + ui_scroll_y) <= (cy + r + 4);
 
   is_hover ? active_info_id = info_id;
   is_hover && mouse_click ? set_ui_slider(sl_idx, 1 - floor(val + 0.5));
@@ -1266,9 +1321,9 @@ local(val, is_on, is_hover, sx, sy) (
     gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 1;
     is_hover ? ( gfx_r += 0.04; gfx_g += 0.04; gfx_b += 0.04; );
   );
-  gfx_circle(sx, sy, r, 1, 1);
+  zp_circle(sx, sy, r, 1, 1);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_circle(sx, sy, r, 0, 1);
+  zp_circle(sx, sy, r, 0, 1);
 
   gfx_a = 1;
   is_on ? (
@@ -1276,8 +1331,8 @@ local(val, is_on, is_hover, sx, sy) (
   ) : (
     gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
   );
-  gfx_circle(sx, sy, r * 0.55, 0, 1);
-  gfx_line(sx - r * 0.62, sy + r * 0.62, sx + r * 0.62, sy - r * 0.62, 1);
+  zp_circle(sx, sy, r * 0.55, 0, 1);
+  zp_line(sx - r * 0.62, sy + r * 0.62, sx + r * 0.62, sy - r * 0.62, 1);
 );
 
 // Engine power: vero toggle inequivocabile. Icona power disegnata a primitive
@@ -1288,8 +1343,8 @@ local(val, is_on, is_hover, sy, icon_r) (
   val = slider(sl_idx);
   is_on = val >= 0.5;
   sy = cy - ui_scroll_y;
-  is_hover = mouse_x >= (cx - r - 6) && mouse_x <= (cx + r + 6) &&
-             (mouse_y + ui_scroll_y) >= (cy - r - 6) && (mouse_y + ui_scroll_y) <= (cy + r + 6);
+  is_hover = zp_mx >= (cx - r - 6) && zp_mx <= (cx + r + 6) &&
+             (zp_my + ui_scroll_y) >= (cy - r - 6) && (zp_my + ui_scroll_y) <= (cy + r + 6);
 
   is_hover ? active_info_id = info_id;
   is_hover && mouse_click ? set_ui_slider(sl_idx, 1 - floor(val + 0.5));
@@ -1300,15 +1355,15 @@ local(val, is_on, is_hover, sy, icon_r) (
     gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 1;
     is_hover ? ( gfx_r += 0.04; gfx_g += 0.04; gfx_b += 0.04; );
   );
-  gfx_circle(cx, sy, r, 1, 1);
+  zp_circle(cx, sy, r, 1, 1);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_circle(cx, sy, r, 0, 1);
+  zp_circle(cx, sy, r, 0, 1);
 
   icon_r = r * 0.5;
   is_on ? ( gfx_r = 0.06; gfx_g = 0.07; gfx_b = 0.08; ) : ( gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; );
   gfx_a = 1;
-  gfx_arc(cx, sy, icon_r, 5.312, 10.395, 1);
-  gfx_line(cx, sy - icon_r - 2, cx, sy - icon_r * 0.15, 1);
+  zp_arc(cx, sy, icon_r, 5.312, 10.395, 1);
+  zp_line(cx, sy - icon_r - 2, cx, sy - icon_r * 0.15, 1);
 );
 
 // Link Output L/R: piccolo simbolo a catena (due anelli), disegnato a
@@ -1319,8 +1374,8 @@ local(val, is_on, is_hover, sy, ring_r, ring_off) (
   val = slider(sl_idx);
   is_on = val >= 0.5;
   sy = cy - ui_scroll_y;
-  is_hover = mouse_x >= (cx - r - 6) && mouse_x <= (cx + r + 6) &&
-             (mouse_y + ui_scroll_y) >= (cy - r - 6) && (mouse_y + ui_scroll_y) <= (cy + r + 6);
+  is_hover = zp_mx >= (cx - r - 6) && zp_mx <= (cx + r + 6) &&
+             (zp_my + ui_scroll_y) >= (cy - r - 6) && (zp_my + ui_scroll_y) <= (cy + r + 6);
 
   is_hover ? active_info_id = info_id;
   is_hover && mouse_click ? set_ui_slider(sl_idx, 1 - floor(val + 0.5));
@@ -1331,22 +1386,22 @@ local(val, is_on, is_hover, sy, ring_r, ring_off) (
     gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 1;
     is_hover ? ( gfx_r += 0.04; gfx_g += 0.04; gfx_b += 0.04; );
   );
-  gfx_circle(cx, sy, r, 1, 1);
+  zp_circle(cx, sy, r, 1, 1);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_circle(cx, sy, r, 0, 1);
+  zp_circle(cx, sy, r, 0, 1);
 
   gfx_a = 1;
   is_on ? ( gfx_r = 0.06; gfx_g = 0.07; gfx_b = 0.08; ) : ( gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; );
   ring_r = r * 0.34; ring_off = ring_r * 0.85;
-  gfx_circle(cx - ring_off, sy, ring_r, 0, 1);
-  gfx_circle(cx + ring_off, sy, ring_r, 0, 1);
+  zp_circle(cx - ring_off, sy, ring_r, 0, 1);
+  zp_circle(cx + ring_off, sy, ring_r, 0, 1);
 );
 
 function ui_solo_button(sl_idx, other_idx, bx, by, bw, bh, label, info_id, cr, cg, cb)
 local(val, is_on, is_hover, tw, th, sy, other_on) (
   val = slider(sl_idx);
   is_on = val >= 0.5;
-  is_hover = hit(mouse_x, mouse_y, bx, by, bw, bh);
+  is_hover = hit(zp_mx, zp_my, bx, by, bw, bh);
   sy = by - ui_scroll_y;
 
   is_hover ? active_info_id = info_id;
@@ -1373,28 +1428,28 @@ local(val, is_on, is_hover, tw, th, sy, other_on) (
     gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 1;
     is_hover ? ( gfx_r += 0.04; gfx_g += 0.04; gfx_b += 0.04; );
   );
-  gfx_rect(bx, sy, bw, bh);
+  zp_rect(bx, sy, bw, bh);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_rect(bx, sy, bw, 1); gfx_rect(bx, sy + bh - 1, bw, 1);
-  gfx_rect(bx, sy, 1, bh); gfx_rect(bx + bw - 1, sy, 1, bh);
+  zp_rect(bx, sy, bw, 1); zp_rect(bx, sy + bh - 1, bw, 1);
+  zp_rect(bx, sy, 1, bh); zp_rect(bx + bw - 1, sy, 1, bh);
 
-  gfx_setfont(3);
+  zp_setfont(3);
   is_on ? (
     gfx_r = 0.06; gfx_g = 0.07; gfx_b = 0.08;
   ) : (
     gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
   );
-  gfx_measurestr(label, tw, th);
-  gfx_x = bx + (bw - tw) * 0.5;
-  gfx_y = sy + (bh - th) * 0.5;
-  gfx_drawstr(label);
+  (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = bx + (bw - tw) * 0.5;
+  zp_gy = sy + (bh - th) * 0.5;
+  zp_drawstr(label);
 );
 
 function ui_mode_button(mode_id, bx, by, bw, bh, label, info_id, cr, cg, cb)
 local(is_active, is_hover, tw, th)(
   bh = max(bh, 30);
   is_active = ui_view_mode == mode_id;
-  is_hover = mouse_x >= bx && mouse_x <= (bx + bw) && (mouse_y + ui_scroll_y) >= by && (mouse_y + ui_scroll_y) <= (by + bh);
+  is_hover = zp_mx >= bx && zp_mx <= (bx + bw) && (zp_my + ui_scroll_y) >= by && (zp_my + ui_scroll_y) <= (by + bh);
 
   is_hover ? active_info_id = info_id;
   is_hover && mouse_click ? (
@@ -1409,21 +1464,21 @@ local(is_active, is_hover, tw, th)(
     gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 0.96;
     is_hover ? ( gfx_r += 0.04; gfx_g += 0.04; gfx_b += 0.04; );
   );
-  gfx_rect(bx, by - ui_scroll_y, bw, bh);
+  zp_rect(bx, by - ui_scroll_y, bw, bh);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_rect(bx, by - ui_scroll_y, bw, 1); gfx_rect(bx, by + bh - 1 - ui_scroll_y, bw, 1);
-  gfx_rect(bx, by - ui_scroll_y, 1, bh); gfx_rect(bx + bw - 1, by - ui_scroll_y, 1, bh);
+  zp_rect(bx, by - ui_scroll_y, bw, 1); zp_rect(bx, by + bh - 1 - ui_scroll_y, bw, 1);
+  zp_rect(bx, by - ui_scroll_y, 1, bh); zp_rect(bx + bw - 1, by - ui_scroll_y, 1, bh);
 
-  gfx_setfont(3);
+  zp_setfont(3);
   is_active ? (
     gfx_r = 0.06; gfx_g = 0.07; gfx_b = 0.08;
   ) : (
     gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
   );
-  gfx_measurestr(label, tw, th);
-  gfx_x = bx + (bw - tw) * 0.5;
-  gfx_y = by + (bh - th) * 0.5 - ui_scroll_y;
-  gfx_drawstr(label);
+  (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = bx + (bw - tw) * 0.5;
+  zp_gy = by + (bh - th) * 0.5 - ui_scroll_y;
+  zp_drawstr(label);
 );
 
 function ui_knob(sl_idx, kx, ky, r, min_v, max_v, def_v, label, unit, cr, cg, cb, info_id)
@@ -1431,7 +1486,7 @@ local(val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_sens, tw, t
       meter_on, meter_db, meter_norm, meter_ang, meter_r) (
   r = max(r, 15);
   val = slider(sl_idx);
-  is_hover = hit(mouse_x, mouse_y, kx - r - 8, ky - r - 20, (r + 8) * 2, (r + 20) * 2);
+  is_hover = hit(zp_mx, zp_my, kx - r - 8, ky - r - 20, (r + 8) * 2, (r + 20) * 2);
   sy = ky - ui_scroll_y;
 
   is_hover ? (
@@ -1448,7 +1503,7 @@ local(val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_sens, tw, t
         last_knob_click_time = 0;
       ) : (
         ui_drag_id = sl_idx;
-        ui_drag_start_y = mouse_y;
+        ui_drag_start_y = zp_my;
         ui_drag_start_v = val;
         last_knob_click_slider = sl_idx;
         last_knob_click_time = click_t;
@@ -1463,7 +1518,7 @@ local(val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_sens, tw, t
 
   ui_drag_id == sl_idx && mouse_down ? (
     drag_sens = ((max_v - min_v) / 150.0) * fine_tune;
-    mouse_dy = ui_drag_start_y - mouse_y;
+    mouse_dy = ui_drag_start_y - zp_my;
     val = ui_drag_start_v + mouse_dy * drag_sens;
     val = max(min_v, min(max_v, val));
     set_ui_slider(sl_idx, val);
@@ -1479,7 +1534,7 @@ local(val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_sens, tw, t
 
   (is_hover || ui_drag_id == sl_idx) ? (
     gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = 0.10;
-    gfx_circle(kx, sy, r + 8, 1, 1);
+    zp_circle(kx, sy, r + 8, 1, 1);
   );
 
   // Live detector ring for the gate/delta and limiter thresholds.
@@ -1493,31 +1548,31 @@ local(val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_sens, tw, t
     meter_norm = max(0,min(1,(meter_db-min_v)/max(0.0001,max_v-min_v)));
     meter_ang = ang_min + meter_norm*(ang_max-ang_min); meter_r = r+5;
     gfx_r=0.24;gfx_g=0.25;gfx_b=0.29;gfx_a=0.72;
-    gfx_arc(kx,sy,meter_r,ang_min,ang_max,1);gfx_arc(kx,sy,meter_r+1,ang_min,ang_max,1);
+    zp_arc(kx,sy,meter_r,ang_min,ang_max,1);zp_arc(kx,sy,meter_r+1,ang_min,ang_max,1);
     meter_db>=val ? (gfx_r=min(1,cr*0.42+0.58);gfx_g=min(1,cg*0.36+0.60);gfx_b=min(1,cb*0.30+0.66);gfx_a=1;) :
                     (gfx_r=cr*0.52+0.16;gfx_g=cg*0.48+0.16;gfx_b=cb*0.48+0.18;gfx_a=0.72;);
-    gfx_arc(kx,sy,meter_r,ang_min,meter_ang,1);gfx_arc(kx,sy,meter_r+1,ang_min,meter_ang,1);
+    zp_arc(kx,sy,meter_r,ang_min,meter_ang,1);zp_arc(kx,sy,meter_r+1,ang_min,meter_ang,1);
     gfx_r=0.94;gfx_g=0.95;gfx_b=0.98;gfx_a=0.92;
-    gfx_line(kx+cos(ang)*(meter_r-2),sy+sin(ang)*(meter_r-2),
+    zp_line(kx+cos(ang)*(meter_r-2),sy+sin(ang)*(meter_r-2),
              kx+cos(ang)*(meter_r+2),sy+sin(ang)*(meter_r+2),1);
   );
 
-  gfx_r = 0.16; gfx_g = 0.18; gfx_b = 0.22; gfx_a = 1; gfx_circle(kx, sy, r, 1, 1);
+  gfx_r = 0.16; gfx_g = 0.18; gfx_b = 0.22; gfx_a = 1; zp_circle(kx, sy, r, 1, 1);
   gfx_r = min(1, cr * hover_mul); gfx_g = min(1, cg * hover_mul); gfx_b = min(1, cb * hover_mul); gfx_a = 1;
-  gfx_arc(kx, sy, r - 2, ang_min, ang, 3);
-  gfx_arc(kx, sy, r - 3, ang_min, ang, 3);
+  zp_arc(kx, sy, r - 2, ang_min, ang, 3);
+  zp_arc(kx, sy, r - 3, ang_min, ang, 3);
   gfx_r = 0.92; gfx_g = 0.93; gfx_b = 0.96;
-  gfx_line(kx, sy, kx + cos(ang) * r, sy + sin(ang) * r);
+  zp_line(kx, sy, kx + cos(ang) * r, sy + sin(ang) * r);
 
-  gfx_setfont(3);
+  zp_setfont(3);
   gfx_r = 0.82 * hover_mul; gfx_g = 0.84 * hover_mul; gfx_b = 0.90 * hover_mul;
-  gfx_measurestr(label, tw, th);
-  gfx_x = kx - tw * 0.5; gfx_y = sy - r - 16; gfx_drawstr(label);
+  (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = kx - tw * 0.5; zp_gy = sy - r - 16; zp_drawstr(label);
 
   gfx_r = min(1, cr * hover_mul); gfx_g = min(1, cg * hover_mul); gfx_b = min(1, cb * hover_mul);
   abs(val - floor(val + 0.5)) < 0.03 ? sprintf(#knob_val, "%.0f %s", val, unit) : sprintf(#knob_val, "%.1f %s", val, unit);
-  gfx_measurestr(#knob_val, tw, th);
-  gfx_x = kx - tw * 0.5; gfx_y = sy + r + 6; gfx_drawstr(#knob_val);
+  (gfx_measurestr(#knob_val, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = kx - tw * 0.5; zp_gy = sy + r + 6; zp_drawstr(#knob_val);
 );
 
 // Knob Background dedicato: stessa interazione/disegno di ui_knob, ma con
@@ -1529,7 +1584,7 @@ local(val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_sens, tw, t
       t_start, t_new, bg_pct) (
   r = max(r, 15);
   val = slider(sl_idx);
-  is_hover = hit(mouse_x, mouse_y, kx - r - 8, ky - r - 20, (r + 8) * 2, (r + 20) * 2);
+  is_hover = hit(zp_mx, zp_my, kx - r - 8, ky - r - 20, (r + 8) * 2, (r + 20) * 2);
   sy = ky - ui_scroll_y;
 
   is_hover ? (
@@ -1546,7 +1601,7 @@ local(val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_sens, tw, t
         last_knob_click_time = 0;
       ) : (
         ui_drag_id = sl_idx;
-        ui_drag_start_y = mouse_y;
+        ui_drag_start_y = zp_my;
         ui_drag_start_v = val;
         last_knob_click_slider = sl_idx;
         last_knob_click_time = click_t;
@@ -1561,7 +1616,7 @@ local(val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_sens, tw, t
 
   ui_drag_id == sl_idx && mouse_down ? (
     drag_sens = (1.0 / 150.0) * fine_tune;
-    mouse_dy = ui_drag_start_y - mouse_y;
+    mouse_dy = ui_drag_start_y - zp_my;
     t_start = bg_db_to_t(ui_drag_start_v);
     t_new = max(0, min(1, t_start + mouse_dy * drag_sens));
     val = bg_t_to_db(t_new);
@@ -1577,26 +1632,26 @@ local(val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_sens, tw, t
 
   (is_hover || ui_drag_id == sl_idx) ? (
     gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = 0.10;
-    gfx_circle(kx, sy, r + 8, 1, 1);
+    zp_circle(kx, sy, r + 8, 1, 1);
   );
 
-  gfx_r = 0.16; gfx_g = 0.18; gfx_b = 0.22; gfx_a = 1; gfx_circle(kx, sy, r, 1, 1);
+  gfx_r = 0.16; gfx_g = 0.18; gfx_b = 0.22; gfx_a = 1; zp_circle(kx, sy, r, 1, 1);
   gfx_r = min(1, cr * hover_mul); gfx_g = min(1, cg * hover_mul); gfx_b = min(1, cb * hover_mul); gfx_a = 1;
-  gfx_arc(kx, sy, r - 2, ang_min, ang, 3);
-  gfx_arc(kx, sy, r - 3, ang_min, ang, 3);
+  zp_arc(kx, sy, r - 2, ang_min, ang, 3);
+  zp_arc(kx, sy, r - 3, ang_min, ang, 3);
   gfx_r = 0.92; gfx_g = 0.93; gfx_b = 0.96;
-  gfx_line(kx, sy, kx + cos(ang) * r, sy + sin(ang) * r);
+  zp_line(kx, sy, kx + cos(ang) * r, sy + sin(ang) * r);
 
-  gfx_setfont(3);
+  zp_setfont(3);
   gfx_r = 0.82 * hover_mul; gfx_g = 0.84 * hover_mul; gfx_b = 0.90 * hover_mul;
-  gfx_measurestr(label, tw, th);
-  gfx_x = kx - tw * 0.5; gfx_y = sy - r - 16; gfx_drawstr(label);
+  (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = kx - tw * 0.5; zp_gy = sy - r - 16; zp_drawstr(label);
 
   gfx_r = min(1, cr * hover_mul); gfx_g = min(1, cg * hover_mul); gfx_b = min(1, cb * hover_mul);
   bg_pct = floor(norm_val * 100 + 0.5);
   abs(val - floor(val + 0.5)) < 0.03 ? sprintf(#knob_val, "%.0f dB  (%.0f%%)", val, bg_pct) : sprintf(#knob_val, "%.1f dB  (%.0f%%)", val, bg_pct);
-  gfx_measurestr(#knob_val, tw, th);
-  gfx_x = kx - tw * 0.5; gfx_y = sy + r + 6; gfx_drawstr(#knob_val);
+  (gfx_measurestr(#knob_val, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = kx - tw * 0.5; zp_gy = sy + r + 6; zp_drawstr(#knob_val);
 );
 
 // Knob per Output Trim L/R: identico a ui_knob (stesso range lineare, stesso
@@ -1608,7 +1663,7 @@ local(val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_sens, tw, t
       old_val, delta, other_new) (
   r = max(r, 15);
   val = slider(sl_idx);
-  is_hover = hit(mouse_x, mouse_y, kx - r - 8, ky - r - 20, (r + 8) * 2, (r + 20) * 2);
+  is_hover = hit(zp_mx, zp_my, kx - r - 8, ky - r - 20, (r + 8) * 2, (r + 20) * 2);
   sy = ky - ui_scroll_y;
 
   is_hover ? (
@@ -1631,7 +1686,7 @@ local(val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_sens, tw, t
         last_knob_click_time = 0;
       ) : (
         ui_drag_id = sl_idx;
-        ui_drag_start_y = mouse_y;
+        ui_drag_start_y = zp_my;
         ui_drag_start_v = val;
         last_knob_click_slider = sl_idx;
         last_knob_click_time = click_t;
@@ -1651,7 +1706,7 @@ local(val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_sens, tw, t
 
   ui_drag_id == sl_idx && mouse_down ? (
     drag_sens = ((max_v - min_v) / 150.0) * fine_tune;
-    mouse_dy = ui_drag_start_y - mouse_y;
+    mouse_dy = ui_drag_start_y - zp_my;
     old_val = val;
     val = ui_drag_start_v + mouse_dy * drag_sens;
     val = max(min_v, min(max_v, val));
@@ -1673,25 +1728,25 @@ local(val, norm_val, ang_min, ang_max, ang, is_hover, mouse_dy, drag_sens, tw, t
 
   (is_hover || ui_drag_id == sl_idx) ? (
     gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = 0.10;
-    gfx_circle(kx, sy, r + 8, 1, 1);
+    zp_circle(kx, sy, r + 8, 1, 1);
   );
 
-  gfx_r = 0.16; gfx_g = 0.18; gfx_b = 0.22; gfx_a = 1; gfx_circle(kx, sy, r, 1, 1);
+  gfx_r = 0.16; gfx_g = 0.18; gfx_b = 0.22; gfx_a = 1; zp_circle(kx, sy, r, 1, 1);
   gfx_r = min(1, cr * hover_mul); gfx_g = min(1, cg * hover_mul); gfx_b = min(1, cb * hover_mul); gfx_a = 1;
-  gfx_arc(kx, sy, r - 2, ang_min, ang, 3);
-  gfx_arc(kx, sy, r - 3, ang_min, ang, 3);
+  zp_arc(kx, sy, r - 2, ang_min, ang, 3);
+  zp_arc(kx, sy, r - 3, ang_min, ang, 3);
   gfx_r = 0.92; gfx_g = 0.93; gfx_b = 0.96;
-  gfx_line(kx, sy, kx + cos(ang) * r, sy + sin(ang) * r);
+  zp_line(kx, sy, kx + cos(ang) * r, sy + sin(ang) * r);
 
-  gfx_setfont(3);
+  zp_setfont(3);
   gfx_r = 0.82 * hover_mul; gfx_g = 0.84 * hover_mul; gfx_b = 0.90 * hover_mul;
-  gfx_measurestr(label, tw, th);
-  gfx_x = kx - tw * 0.5; gfx_y = sy - r - 16; gfx_drawstr(label);
+  (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = kx - tw * 0.5; zp_gy = sy - r - 16; zp_drawstr(label);
 
   gfx_r = min(1, cr * hover_mul); gfx_g = min(1, cg * hover_mul); gfx_b = min(1, cb * hover_mul);
   abs(val - floor(val + 0.5)) < 0.03 ? sprintf(#knob_val, "%.0f %s", val, unit) : sprintf(#knob_val, "%.1f %s", val, unit);
-  gfx_measurestr(#knob_val, tw, th);
-  gfx_x = kx - tw * 0.5; gfx_y = sy + r + 6; gfx_drawstr(#knob_val);
+  (gfx_measurestr(#knob_val, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = kx - tw * 0.5; zp_gy = sy + r + 6; zp_drawstr(#knob_val);
 );
 
 @serialize
@@ -2449,7 +2504,9 @@ peak_out_r = max(abs(s1), peak_out_r*meter_decay);
 vu_out_l = vu_out_l*rms_tc + (1-rms_tc)*s0*s0;
 vu_out_r = vu_out_r*rms_tc + (1-rms_tc)*s1*s1;
 
-@gfx 980 920
+@gfx 1080 960
+zp_dw = 980.0; zp_sc = max(0.55, min(2.4, gfx_w / zp_dw)); zp_ox = 0.0; zp_vw = zp_dw; zp_vh = max(320.0, gfx_h / zp_sc); zp_mx = (mouse_x - zp_ox) / zp_sc; zp_my = mouse_y / zp_sc;
+
 // Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
 zp_hb = gmem[3900]; zp_hb_now = time_precise();
 !zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
@@ -2533,14 +2590,14 @@ sem_neutral_r= 0.55; sem_neutral_g= 0.58; sem_neutral_b= 0.64;  // NEUTRAL (ness
 sem_off_r    = 0.35; sem_off_g    = 0.38; sem_off_b    = 0.44;  // GATE OFF / BYPASS
 sem_lim_r    = grp_lim_r; sem_lim_g = grp_lim_g; sem_lim_b = grp_lim_b; // LIMITER (riusa l'accento gia' esistente)
 
-ui_room_scale = min(1.08, max(1.0, gfx_w / 980.0));
+ui_room_scale = min(1.08, max(1.0, zp_vw / 980.0));
 ui_font_base = max(15, min(17, 15 * ui_room_scale));
 ui_font_title = max(18, min(20, 18 * ui_room_scale));
-gfx_setfont(1, "Arial", ui_font_title, 'b');
-gfx_setfont(2, "Arial", ui_font_base);
-gfx_setfont(3, "Arial", ui_font_base, 'b');
-gfx_setfont(4, "Arial", ui_font_base, 'b');
-gfx_setfont(5, "Arial", ui_font_base);
+zp_setfont(1, "Arial", ui_font_title, 'b');
+zp_setfont(2, "Arial", ui_font_base);
+zp_setfont(3, "Arial", ui_font_base, 'b');
+zp_setfont(4, "Arial", ui_font_base, 'b');
+zp_setfont(5, "Arial", ui_font_base);
 
 ui_view_mode == 2 ? (
   show_preset_sliders(1);
@@ -2567,9 +2624,9 @@ ui_view_mode == 0 ? (
 
 pad = 16;
 gap = 14;
-footer_h = 44; footer_y = gfx_h - footer_h;
+footer_h = 44; footer_y = zp_vh - footer_h;
 
-header_x = pad; header_y = 14; header_w = gfx_w - pad * 2; header_h = 132;
+header_x = pad; header_y = 14; header_w = zp_vw - pad * 2; header_h = 132;
 
 input_w = 428; input_h = 264;
 output_w = 360; output_h = 264;
@@ -2602,34 +2659,34 @@ content_bottom = shadow_y + shadow_h;
 ui_max_scroll = max(0, content_bottom + 12 - footer_y);
 ui_scroll_y > ui_max_scroll ? ui_scroll_y = ui_max_scroll;
 
-gfx_r = bg_r; gfx_g = bg_g; gfx_b = bg_b; gfx_a = 1; gfx_rect(0, 0, gfx_w, gfx_h);
-gfx_r = bg2_r; gfx_g = bg2_g; gfx_b = bg2_b; gfx_a = 0.55; gfx_rect(0, 0, gfx_w, 124);
-gfx_r = 0.10; gfx_g = 0.11; gfx_b = 0.15; gfx_a = 1; gfx_rect(0, gfx_h - 196, gfx_w, 168);
+gfx_r = bg_r; gfx_g = bg_g; gfx_b = bg_b; gfx_a = 1; zp_rect(0, 0, zp_vw, zp_vh);
+gfx_r = bg2_r; gfx_g = bg2_g; gfx_b = bg2_b; gfx_a = 0.55; zp_rect(0, 0, zp_vw, 124);
+gfx_r = 0.10; gfx_g = 0.11; gfx_b = 0.15; gfx_a = 1; zp_rect(0, zp_vh - 196, zp_vw, 168);
 header_sy = header_y - ui_scroll_y;
-gfx_r = panel_r; gfx_g = panel_g; gfx_b = panel_b; gfx_a = 1; gfx_rect(header_x, header_sy, header_w, header_h);
+gfx_r = panel_r; gfx_g = panel_g; gfx_b = panel_b; gfx_a = 1; zp_rect(header_x, header_sy, header_w, header_h);
 gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-gfx_rect(header_x, header_sy, header_w, 1); gfx_rect(header_x, header_sy + header_h - 1, header_w, 1);
-gfx_rect(header_x, header_sy, 1, header_h); gfx_rect(header_x + header_w - 1, header_sy, 1, header_h);
-gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b; gfx_a = 0.95; gfx_rect(header_x, header_sy, header_w, 4);
+zp_rect(header_x, header_sy, header_w, 1); zp_rect(header_x, header_sy + header_h - 1, header_w, 1);
+zp_rect(header_x, header_sy, 1, header_h); zp_rect(header_x + header_w - 1, header_sy, 1, header_h);
+gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b; gfx_a = 0.95; zp_rect(header_x, header_sy, header_w, 4);
 
-gfx_setfont(1); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-gfx_x = header_x + 16; gfx_y = header_sy + 14; gfx_drawstr("STAGEKEEPER");
-gfx_setfont(4); gfx_r = grp_in_r; gfx_g = grp_in_g; gfx_b = grp_in_b;
-gfx_x = header_x + 182; gfx_y = header_sy + 20; gfx_drawstr("Dialogue Director");
-gfx_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-gfx_x = header_x + 16; gfx_y = header_sy + 44;
-gfx_drawstr("Dual-mic dialogue control: dominance gate, scene hold and output safety in one console.");
-gfx_setfont(5); gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b;
-gfx_x = header_x + 16; gfx_y = header_sy + 68; gfx_drawstr("v2.5.0");
+zp_setfont(1); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+zp_gx = header_x + 16; zp_gy = header_sy + 14; zp_drawstr("STAGEKEEPER");
+zp_setfont(4); gfx_r = grp_in_r; gfx_g = grp_in_g; gfx_b = grp_in_b;
+zp_gx = header_x + 182; zp_gy = header_sy + 20; zp_drawstr("Dialogue Director");
+zp_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+zp_gx = header_x + 16; zp_gy = header_sy + 44;
+zp_drawstr("Dual-mic dialogue control: dominance gate, scene hold and output safety in one console.");
+zp_setfont(5); gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b;
+zp_gx = header_x + 16; zp_gy = header_sy + 68; zp_drawstr("v2.5.0");
 gfx_r = grp_out_r; gfx_g = grp_out_g; gfx_b = grp_out_b;
-gfx_x = header_x + 82; gfx_y = header_sy + 68; gfx_drawstr("Paolo Balestri");
+zp_gx = header_x + 82; zp_gy = header_sy + 68; zp_drawstr("Paolo Balestri");
 
 view_box_w = 244; view_box_h = 28;
 view_box_x = header_x + header_w - view_box_w - 14; view_box_y = header_y + 10;
-gfx_r = 0.08; gfx_g = 0.09; gfx_b = 0.12; gfx_a = 0.96; gfx_rect(view_box_x, view_box_y - ui_scroll_y, view_box_w, view_box_h);
+gfx_r = 0.08; gfx_g = 0.09; gfx_b = 0.12; gfx_a = 0.96; zp_rect(view_box_x, view_box_y - ui_scroll_y, view_box_w, view_box_h);
 gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-gfx_rect(view_box_x, view_box_y - ui_scroll_y, view_box_w, 1); gfx_rect(view_box_x, view_box_y + view_box_h - 1 - ui_scroll_y, view_box_w, 1);
-gfx_rect(view_box_x, view_box_y - ui_scroll_y, 1, view_box_h); gfx_rect(view_box_x + view_box_w - 1, view_box_y - ui_scroll_y, 1, view_box_h);
+zp_rect(view_box_x, view_box_y - ui_scroll_y, view_box_w, 1); zp_rect(view_box_x, view_box_y + view_box_h - 1 - ui_scroll_y, view_box_w, 1);
+zp_rect(view_box_x, view_box_y - ui_scroll_y, 1, view_box_h); zp_rect(view_box_x + view_box_w - 1, view_box_y - ui_scroll_y, 1, view_box_h);
 ui_mode_button(0, view_box_x + 4,   view_box_y + 3, 70, 22, "FULL",    230, grp_gate_r, grp_gate_g, grp_gate_b);
 ui_mode_button(1, view_box_x + 80,  view_box_y + 3, 86, 22, "COMPACT", 231, grp_out_r, grp_out_g, grp_out_b);
 ui_mode_button(2, view_box_x + 172, view_box_y + 3, 68, 22, "JSFX",    232, grp_in_r, grp_in_g, grp_in_b);
@@ -2637,8 +2694,8 @@ ui_mode_button(2, view_box_x + 172, view_box_y + 3, 68, 22, "JSFX",    232, grp_
 // HELP button: small "?" left of the view-mode box. Pure UI, no slider, no persistent state.
 help_btn_w = 28; help_btn_h = 28;
 help_btn_x = view_box_x - help_btn_w - 10; help_btn_y = view_box_y;
-help_btn_hover = mouse_x >= help_btn_x && mouse_x <= (help_btn_x + help_btn_w) &&
-                 (mouse_y + ui_scroll_y) >= help_btn_y && (mouse_y + ui_scroll_y) <= (help_btn_y + help_btn_h);
+help_btn_hover = zp_mx >= help_btn_x && zp_mx <= (help_btn_x + help_btn_w) &&
+                 (zp_my + ui_scroll_y) >= help_btn_y && (zp_my + ui_scroll_y) <= (help_btn_y + help_btn_h);
 help_btn_hover ? active_info_id = 250;
 help_btn_hover && help_real_click ? ( help_bridge_open(4); help_overlay_open = !help_overlay_open; help_page = 0; );
 
@@ -2648,39 +2705,39 @@ help_overlay_open ? (
   gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 0.96;
   help_btn_hover ? ( gfx_r += 0.04; gfx_g += 0.04; gfx_b += 0.04; );
 );
-gfx_rect(help_btn_x, help_btn_y - ui_scroll_y, help_btn_w, help_btn_h);
+zp_rect(help_btn_x, help_btn_y - ui_scroll_y, help_btn_w, help_btn_h);
 gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-gfx_rect(help_btn_x, help_btn_y - ui_scroll_y, help_btn_w, 1);
-gfx_rect(help_btn_x, help_btn_y + help_btn_h - 1 - ui_scroll_y, help_btn_w, 1);
-gfx_rect(help_btn_x, help_btn_y - ui_scroll_y, 1, help_btn_h);
-gfx_rect(help_btn_x + help_btn_w - 1, help_btn_y - ui_scroll_y, 1, help_btn_h);
-gfx_setfont(3);
+zp_rect(help_btn_x, help_btn_y - ui_scroll_y, help_btn_w, 1);
+zp_rect(help_btn_x, help_btn_y + help_btn_h - 1 - ui_scroll_y, help_btn_w, 1);
+zp_rect(help_btn_x, help_btn_y - ui_scroll_y, 1, help_btn_h);
+zp_rect(help_btn_x + help_btn_w - 1, help_btn_y - ui_scroll_y, 1, help_btn_h);
+zp_setfont(3);
 help_overlay_open ? (
   gfx_r = 0.06; gfx_g = 0.07; gfx_b = 0.08;
 ) : (
   gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
 );
-gfx_measurestr("?", help_btn_tw, help_btn_th);
-gfx_x = help_btn_x + (help_btn_w - help_btn_tw) * 0.5;
-gfx_y = help_btn_y + (help_btn_h - help_btn_th) * 0.5 - ui_scroll_y;
-gfx_drawstr("?");
+(gfx_measurestr("?", help_btn_tw, help_btn_th); help_btn_tw /= zp_sc; help_btn_th /= zp_sc);
+zp_gx = help_btn_x + (help_btn_w - help_btn_tw) * 0.5;
+zp_gy = help_btn_y + (help_btn_h - help_btn_th) * 0.5 - ui_scroll_y;
+zp_drawstr("?");
 
 mon_ctl_x = header_x + header_w - 376;
-gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-gfx_x = mon_ctl_x - 92; gfx_y = header_sy + 61; gfx_drawstr("MONITOR");
+zp_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+zp_gx = mon_ctl_x - 92; zp_gy = header_sy + 61; zp_drawstr("MONITOR");
 ui_tab_button(34, 0, mon_ctl_x,       header_y + 54, 92, 30, "MIX",     239, grp_out_r, grp_out_g, grp_out_b);
 ui_tab_button(34, 1, mon_ctl_x + 98,  header_y + 54, 130, 30, "CHECK L", 239, grp_lim_r, grp_lim_g, grp_lim_b);
 ui_tab_button(34, 2, mon_ctl_x + 234, header_y + 54, 130, 30, "CHECK R", 239, grp_lim_r, grp_lim_g, grp_lim_b);
 
 monitor_active ? (
   gfx_r = 0.82; gfx_g = 0.15; gfx_b = 0.08; gfx_a = 1;
-  gfx_rect(header_x + 8, header_sy + 94, header_w - 16, 30);
-  gfx_setfont(3); gfx_r = 1; gfx_g = 0.97; gfx_b = 0.90;
+  zp_rect(header_x + 8, header_sy + 94, header_w - 16, 30);
+  zp_setfont(3); gfx_r = 1; gfx_g = 0.97; gfx_b = 0.90;
   monitor_mode == 1 ? strcpy(#monitor_warning, "ATTENZIONE - CHECK MIC L - GATE AUDITION - PREMI MIX PER USCIRE") :
                       strcpy(#monitor_warning, "ATTENZIONE - CHECK MIC R - GATE AUDITION - PREMI MIX PER USCIRE");
-  gfx_measurestr(#monitor_warning, mon_tw, mon_th);
-  gfx_x = header_x + (header_w - mon_tw) * 0.5; gfx_y = header_sy + 94 + (30 - mon_th) * 0.5;
-  gfx_drawstr(#monitor_warning);
+  (gfx_measurestr(#monitor_warning, mon_tw, mon_th); mon_tw /= zp_sc; mon_th /= zp_sc);
+  zp_gx = header_x + (header_w - mon_tw) * 0.5; zp_gy = header_sy + 94 + (30 - mon_th) * 0.5;
+  zp_drawstr(#monitor_warning);
 );
 
 gate_on ? (
@@ -2728,10 +2785,10 @@ ui_view_mode == 1 ? (
   draw_vbar(cmx, cmy, 18, cmh, sqrt(max(vu_out_l, 0)), peak_out_l);
   draw_vbar(cmx + 24, cmy, 18, cmh, sqrt(max(vu_out_r, 0)), peak_out_r);
   draw_gr_bar(cmx + 48, cmy, 14, cmh, limiter_on ? slider26 : 0);
-  gfx_setfont(5); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = cmx + 3; gfx_y = cmy + cmh + 4; monitor_active ? gfx_drawstr("ML") : gfx_drawstr("L");
-  gfx_x = cmx + 27; gfx_y = cmy + cmh + 4; monitor_active ? gfx_drawstr("MR") : gfx_drawstr("R");
-  gfx_x = cmx + 48; gfx_y = cmy + cmh + 4; gfx_drawstr("GR");
+  zp_setfont(5); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+  zp_gx = cmx + 3; zp_gy = cmy + cmh + 4; monitor_active ? zp_drawstr("ML") : zp_drawstr("L");
+  zp_gx = cmx + 27; zp_gy = cmy + cmh + 4; monitor_active ? zp_drawstr("MR") : zp_drawstr("R");
+  zp_gx = cmx + 48; zp_gy = cmy + cmh + 4; zp_drawstr("GR");
 
   cx0 = compact_x + 98; cgap = 10; cbox_w = floor((compact_w - 112 - cgap * 2) / 3); cbox_h = 22;
   draw_inline_readout(cx0, compact_y + 18, cbox_w, cbox_h, "GATE", #gate_lbl, grp_gate_r, grp_gate_g, grp_gate_b, gate_on);
@@ -2749,8 +2806,8 @@ ui_view_mode == 1 ? (
                       monitor_active ? grp_lim_b : grp_out_b, 1);
 ) : ui_view_mode == 2 ? (
   ui_max_scroll = 0;
-  gfx_setfont(5); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = header_x + 16; gfx_y = header_sy + 86; gfx_drawstr("JSFX raw view active - MONITOR remains visible and available as a standard slider.");
+  zp_setfont(5); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+  zp_gx = header_x + 16; zp_gy = header_sy + 86; zp_drawstr("JSFX raw view active - MONITOR remains visible and available as a standard slider.");
 ) : (
   draw_panel(dom_x, dom_y, dom_w, dom_h, panel_r, panel_g, panel_b, 1);
   draw_panel(input_x, input_y, input_w, input_h, panel_r, panel_g, panel_b, 1);
@@ -2766,28 +2823,28 @@ ui_view_mode == 1 ? (
   draw_group_title(live_x, live_y, live_w, "LIVE STATE", grp_out_r, grp_out_g, grp_out_b);
   draw_group_title(shadow_x, shadow_y, shadow_w, "SHADOW CONTROL + AUTHORITY TELEMETRY", grp_lim_r, grp_lim_g, grp_lim_b);
 
-  gfx_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = dom_x + 14; gfx_y = dom_y + 22 - ui_scroll_y; gfx_drawstr("Dialogue detection, background control and response");
-  gfx_x = input_x + 14; gfx_y = input_y + 22 - ui_scroll_y; gfx_drawstr("Input meters, tone, trim and polarity");
-  gfx_x = output_x + 14; gfx_y = output_y + 22 - ui_scroll_y; gfx_drawstr("Master level, output mode and limiter");
-  gfx_x = bank_x + 14; gfx_y = bottom_y + 22 - ui_scroll_y; gfx_drawstr("Load, save and recall working scenes.");
-  gfx_x = live_x + 14; gfx_y = live_y + 22 - ui_scroll_y; gfx_drawstr("Runtime state, meter summary and limiter telemetry.");
+  zp_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+  zp_gx = dom_x + 14; zp_gy = dom_y + 22 - ui_scroll_y; zp_drawstr("Dialogue detection, background control and response");
+  zp_gx = input_x + 14; zp_gy = input_y + 22 - ui_scroll_y; zp_drawstr("Input meters, tone, trim and polarity");
+  zp_gx = output_x + 14; zp_gy = output_y + 22 - ui_scroll_y; zp_drawstr("Master level, output mode and limiter");
+  zp_gx = bank_x + 14; zp_gy = bottom_y + 22 - ui_scroll_y; zp_drawstr("Load, save and recall working scenes.");
+  zp_gx = live_x + 14; zp_gy = live_y + 22 - ui_scroll_y; zp_drawstr("Runtime state, meter summary and limiter telemetry.");
   gfx_r = grp_lim_r; gfx_g = grp_lim_g; gfx_b = grp_lim_b;
-  gfx_x = shadow_x + 14; gfx_y = shadow_y + 22 - ui_scroll_y; gfx_drawstr("DIAGNOSTIC ONLY - NO AUDIO CONTROL");
+  zp_gx = shadow_x + 14; zp_gy = shadow_y + 22 - ui_scroll_y; zp_drawstr("DIAGNOSTIC ONLY - NO AUDIO CONTROL");
 
   // Input panel
   mt = input_y + 48; mh = 110; mw = 22; mg = 12;
   draw_vbar(input_x + 22, mt, mw, mh, sqrt(max(vu_in_l, 0)), peak_in_l);
   draw_vbar(input_x + 22 + mw + mg, mt, mw, mh, sqrt(max(vu_in_r, 0)), peak_in_r);
-  gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = input_x + 27; gfx_y = mt + mh + 4 - ui_scroll_y; gfx_drawstr("L");
-  gfx_x = input_x + 27 + mw + mg; gfx_y = mt + mh + 4 - ui_scroll_y; gfx_drawstr("R");
+  zp_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+  zp_gx = input_x + 27; zp_gy = mt + mh + 4 - ui_scroll_y; zp_drawstr("L");
+  zp_gx = input_x + 27 + mw + mg; zp_gy = mt + mh + 4 - ui_scroll_y; zp_drawstr("R");
 
   // Un solo readout alla volta nello spazio accanto ai meter: RMS lento oppure Peak Hold.
   // Doppio click sui meter azzera il peak hold; doppio click sul readout cambia modalita'.
-  input_meter_hover = hit(mouse_x, mouse_y, input_x + 18, mt, 66, mh + 22);
+  input_meter_hover = hit(zp_mx, zp_my, input_x + 18, mt, 66, mh + 22);
   metric_x = input_x + 90; metric_y = input_y + 48; metric_w = 58; metric_h = 110;
-  input_value_hover = hit(mouse_x, mouse_y, metric_x, metric_y, metric_w, metric_h);
+  input_value_hover = hit(zp_mx, zp_my, metric_x, metric_y, metric_w, metric_h);
   input_meter_hover ? active_info_id = 241;
   input_value_hover ? active_info_id = 242;
 
@@ -2811,7 +2868,7 @@ ui_view_mode == 1 ? (
   draw_panel(metric_x, metric_y, metric_w, metric_h, 0.07, 0.08, 0.11, 0.98);
   input_value_hover ? (
     gfx_r = grp_in_r; gfx_g = grp_in_g; gfx_b = grp_in_b; gfx_a = 0.85;
-    gfx_rect(metric_x, metric_y - ui_scroll_y, metric_w, 2);
+    zp_rect(metric_x, metric_y - ui_scroll_y, metric_w, 2);
   );
   input_value_mode < 0.5 ? (
     #_input_mode_txt = "RMS";
@@ -2822,18 +2879,18 @@ ui_view_mode == 1 ? (
     sprintf(#_input_l_txt, "%.1f", pk_disp_l_db);
     sprintf(#_input_r_txt, "%.1f", pk_disp_r_db);
   );
-  gfx_setfont(5); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_measurestr(#_input_mode_txt, tw, th);
-  gfx_x = metric_x + (metric_w - tw) * 0.5; gfx_y = metric_y + 8 - ui_scroll_y; gfx_drawstr(#_input_mode_txt);
+  zp_setfont(5); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+  (gfx_measurestr(#_input_mode_txt, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = metric_x + (metric_w - tw) * 0.5; zp_gy = metric_y + 8 - ui_scroll_y; zp_drawstr(#_input_mode_txt);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.7;
-  gfx_line(metric_x + 8, metric_y + 28 - ui_scroll_y, metric_x + metric_w - 8, metric_y + 28 - ui_scroll_y);
-  gfx_setfont(3);
+  zp_line(metric_x + 8, metric_y + 28 - ui_scroll_y, metric_x + metric_w - 8, metric_y + 28 - ui_scroll_y);
+  zp_setfont(3);
   gfx_r = grp_in_r; gfx_g = grp_in_g; gfx_b = grp_in_b;
-  gfx_x = metric_x + 8; gfx_y = metric_y + 38 - ui_scroll_y; gfx_drawstr("L");
-  gfx_measurestr(#_input_l_txt, tw, th); gfx_x = metric_x + metric_w - tw - 8; gfx_drawstr(#_input_l_txt);
+  zp_gx = metric_x + 8; zp_gy = metric_y + 38 - ui_scroll_y; zp_drawstr("L");
+  (gfx_measurestr(#_input_l_txt, tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = metric_x + metric_w - tw - 8; zp_drawstr(#_input_l_txt);
   gfx_r = grp_out_r; gfx_g = grp_out_g; gfx_b = grp_out_b;
-  gfx_x = metric_x + 8; gfx_y = metric_y + 72 - ui_scroll_y; gfx_drawstr("R");
-  gfx_measurestr(#_input_r_txt, tw, th); gfx_x = metric_x + metric_w - tw - 8; gfx_drawstr(#_input_r_txt);
+  zp_gx = metric_x + 8; zp_gy = metric_y + 72 - ui_scroll_y; zp_drawstr("R");
+  (gfx_measurestr(#_input_r_txt, tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = metric_x + metric_w - tw - 8; zp_drawstr(#_input_r_txt);
 
   ui_knob(27, input_x + 174, input_y + 68, 11, -12, 12, 0, "Low L", "dB", grp_lim_r, grp_lim_g, grp_lim_b, 233);
   ui_knob(28, input_x + 226, input_y + 68, 11, -12, 12, 0, "Hi L", "dB", grp_in_r, grp_in_g, grp_in_b, 234);
@@ -2852,14 +2909,14 @@ ui_view_mode == 1 ? (
   top_bar_y = dom_y + 44;
   ui_engine_button(5, dom_x + 30, top_bar_y + 13, 14, 205, grp_gate_r, grp_gate_g, grp_gate_b);
 
-  gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = dom_x + dom_w - 336; gfx_y = top_bar_y + 5 - ui_scroll_y;
-  gfx_drawstr("DETECTION");
+  zp_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+  zp_gx = dom_x + dom_w - 336; zp_gy = top_bar_y + 5 - ui_scroll_y;
+  zp_drawstr("DETECTION");
   ui_tab_button(6, 0, dom_x + dom_w - 232, top_bar_y, 104, 26, "ABSOLUTE", 206, grp_gate_r, grp_gate_g, grp_gate_b);
   ui_tab_button(6, 1, dom_x + dom_w - 122, top_bar_y, 104, 26, "DELTA", 206, grp_gate_r, grp_gate_g, grp_gate_b);
 
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_line(dom_x + 16, dom_y + 78 - ui_scroll_y, dom_x + dom_w - 16, dom_y + 78 - ui_scroll_y);
+  zp_line(dom_x + 16, dom_y + 78 - ui_scroll_y, dom_x + dom_w - 16, dom_y + 78 - ui_scroll_y);
 
   // DUAL MIC CHANNEL STRIPS (MIC L & MIC R)
   strips_y = dom_y + 84;
@@ -2871,16 +2928,16 @@ ui_view_mode == 1 ? (
   // --- MIC L STRIP ---
   draw_panel(strip_l_x, strips_y, strip_w, strip_h, 0.09, 0.10, 0.14, 0.95);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.85;
-  gfx_rect(strip_l_x, strips_y - ui_scroll_y, strip_w, 1);
-  gfx_rect(strip_l_x, strips_y + strip_h - 1 - ui_scroll_y, strip_w, 1);
-  gfx_rect(strip_l_x, strips_y - ui_scroll_y, 1, strip_h);
-  gfx_rect(strip_l_x + strip_w - 1, strips_y - ui_scroll_y, 1, strip_h);
+  zp_rect(strip_l_x, strips_y - ui_scroll_y, strip_w, 1);
+  zp_rect(strip_l_x, strips_y + strip_h - 1 - ui_scroll_y, strip_w, 1);
+  zp_rect(strip_l_x, strips_y - ui_scroll_y, 1, strip_h);
+  zp_rect(strip_l_x + strip_w - 1, strips_y - ui_scroll_y, 1, strip_h);
   gfx_r = grp_in_r; gfx_g = grp_in_g; gfx_b = grp_in_b; gfx_a = 0.95;
-  gfx_rect(strip_l_x, strips_y - ui_scroll_y, strip_w, 3);
+  zp_rect(strip_l_x, strips_y - ui_scroll_y, strip_w, 3);
 
-  gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = strip_l_x + 12; gfx_y = strips_y + 8 - ui_scroll_y;
-  gfx_drawstr("MIC L");
+  zp_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+  zp_gx = strip_l_x + 12; zp_gy = strips_y + 8 - ui_scroll_y;
+  zp_drawstr("MIC L");
 
   badge_w = 118; badge_h = 18;
   badge_x = strip_l_x + strip_w - badge_w - 10; badge_y = strips_y + 7;
@@ -2901,12 +2958,12 @@ ui_view_mode == 1 ? (
   mic_l_active = gate_on && (det_la || hold_l > 0);
   draw_speech_ladder(lm_x, lm_y, lm_w, lm_h, rms_l_v, slider7, mic_l_active);
 
-  gfx_setfont(5); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = lm_x + lm_w + 4; gfx_y = lm_y - 2 - ui_scroll_y; gfx_drawstr("0");
-  gfx_x = lm_x + lm_w + 4; gfx_y = lm_y + floor(lm_h * 0.25) - 6 - ui_scroll_y; gfx_drawstr("-20");
-  gfx_x = lm_x + lm_w + 4; gfx_y = lm_y + floor(lm_h * 0.50) - 6 - ui_scroll_y; gfx_drawstr("-40");
-  gfx_x = lm_x + lm_w + 4; gfx_y = lm_y + floor(lm_h * 0.75) - 6 - ui_scroll_y; gfx_drawstr("-60");
-  gfx_x = lm_x + lm_w + 4; gfx_y = lm_y + lm_h - 10 - ui_scroll_y; gfx_drawstr("-80");
+  zp_setfont(5); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+  zp_gx = lm_x + lm_w + 4; zp_gy = lm_y - 2 - ui_scroll_y; zp_drawstr("0");
+  zp_gx = lm_x + lm_w + 4; zp_gy = lm_y + floor(lm_h * 0.25) - 6 - ui_scroll_y; zp_drawstr("-20");
+  zp_gx = lm_x + lm_w + 4; zp_gy = lm_y + floor(lm_h * 0.50) - 6 - ui_scroll_y; zp_drawstr("-40");
+  zp_gx = lm_x + lm_w + 4; zp_gy = lm_y + floor(lm_h * 0.75) - 6 - ui_scroll_y; zp_drawstr("-60");
+  zp_gx = lm_x + lm_w + 4; zp_gy = lm_y + lm_h - 10 - ui_scroll_y; zp_drawstr("-80");
 
   knob_col_x = strip_l_x + 64;
   ui_knob(7,  knob_col_x + 64,  strips_y + 72, 14, -80, 0, -40, "Speech Detect", "dB", grp_gate_r, grp_gate_g, grp_gate_b, 207);
@@ -2918,16 +2975,16 @@ ui_view_mode == 1 ? (
   // --- MIC R STRIP ---
   draw_panel(strip_r_x, strips_y, strip_w, strip_h, 0.09, 0.10, 0.14, 0.95);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.85;
-  gfx_rect(strip_r_x, strips_y - ui_scroll_y, strip_w, 1);
-  gfx_rect(strip_r_x, strips_y + strip_h - 1 - ui_scroll_y, strip_w, 1);
-  gfx_rect(strip_r_x, strips_y - ui_scroll_y, 1, strip_h);
-  gfx_rect(strip_r_x + strip_w - 1, strips_y - ui_scroll_y, 1, strip_h);
+  zp_rect(strip_r_x, strips_y - ui_scroll_y, strip_w, 1);
+  zp_rect(strip_r_x, strips_y + strip_h - 1 - ui_scroll_y, strip_w, 1);
+  zp_rect(strip_r_x, strips_y - ui_scroll_y, 1, strip_h);
+  zp_rect(strip_r_x + strip_w - 1, strips_y - ui_scroll_y, 1, strip_h);
   gfx_r = grp_out_r; gfx_g = grp_out_g; gfx_b = grp_out_b; gfx_a = 0.95;
-  gfx_rect(strip_r_x, strips_y - ui_scroll_y, strip_w, 3);
+  zp_rect(strip_r_x, strips_y - ui_scroll_y, strip_w, 3);
 
-  gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = strip_r_x + 12; gfx_y = strips_y + 8 - ui_scroll_y;
-  gfx_drawstr("MIC R");
+  zp_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+  zp_gx = strip_r_x + 12; zp_gy = strips_y + 8 - ui_scroll_y;
+  zp_drawstr("MIC R");
 
   badge_x_r = strip_r_x + strip_w - badge_w - 10;
   !gate_on ? (
@@ -2947,12 +3004,12 @@ ui_view_mode == 1 ? (
   mic_r_active = gate_on && (det_ra || hold_r > 0);
   draw_speech_ladder(rm_x, lm_y, lm_w, lm_h, rms_r_v, slider8, mic_r_active);
 
-  gfx_setfont(5); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = rm_x + lm_w + 4; gfx_y = lm_y - 2 - ui_scroll_y; gfx_drawstr("0");
-  gfx_x = rm_x + lm_w + 4; gfx_y = lm_y + floor(lm_h * 0.25) - 6 - ui_scroll_y; gfx_drawstr("-20");
-  gfx_x = rm_x + lm_w + 4; gfx_y = lm_y + floor(lm_h * 0.50) - 6 - ui_scroll_y; gfx_drawstr("-40");
-  gfx_x = rm_x + lm_w + 4; gfx_y = lm_y + floor(lm_h * 0.75) - 6 - ui_scroll_y; gfx_drawstr("-60");
-  gfx_x = rm_x + lm_w + 4; gfx_y = lm_y + lm_h - 10 - ui_scroll_y; gfx_drawstr("-80");
+  zp_setfont(5); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+  zp_gx = rm_x + lm_w + 4; zp_gy = lm_y - 2 - ui_scroll_y; zp_drawstr("0");
+  zp_gx = rm_x + lm_w + 4; zp_gy = lm_y + floor(lm_h * 0.25) - 6 - ui_scroll_y; zp_drawstr("-20");
+  zp_gx = rm_x + lm_w + 4; zp_gy = lm_y + floor(lm_h * 0.50) - 6 - ui_scroll_y; zp_drawstr("-40");
+  zp_gx = rm_x + lm_w + 4; zp_gy = lm_y + floor(lm_h * 0.75) - 6 - ui_scroll_y; zp_drawstr("-60");
+  zp_gx = rm_x + lm_w + 4; zp_gy = lm_y + lm_h - 10 - ui_scroll_y; zp_drawstr("-80");
 
   knob_col_r_x = strip_r_x + 64;
   ui_knob(8,  knob_col_r_x + 64,  strips_y + 72, 14, -80, 0, -40, "Speech Detect", "dB", grp_gate_r, grp_gate_g, grp_gate_b, 208);
@@ -2976,14 +3033,14 @@ ui_view_mode == 1 ? (
   // Fascia appena piu' chiara del pannello principale: enfasi sottile,
   // senza introdurre un secondo pannello visivamente pesante.
   gfx_r = 0.125; gfx_g = 0.145; gfx_b = 0.185; gfx_a = 1.0;
-  gfx_rect(dom_x + 8, dec_y - 2 - ui_scroll_y, dom_w - 16, dec_h + 4);
+  zp_rect(dom_x + 8, dec_y - 2 - ui_scroll_y, dom_w - 16, dec_h + 4);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.5;
-  gfx_rect(dom_x + 8, dec_y - 2 - ui_scroll_y, dom_w - 16, 1);
-  gfx_rect(dom_x + 8, dec_y + dec_h + 1 - ui_scroll_y, dom_w - 16, 1);
+  zp_rect(dom_x + 8, dec_y - 2 - ui_scroll_y, dom_w - 16, 1);
+  zp_rect(dom_x + 8, dec_y + dec_h + 1 - ui_scroll_y, dom_w - 16, 1);
 
-  gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = dom_x + 16; gfx_y = dec_y + 4 - ui_scroll_y;
-  trigger_delta ? gfx_drawstr("DOMINANCE DECISION") : gfx_drawstr("DETECTION DECISION");
+  zp_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+  zp_gx = dom_x + 16; zp_gy = dec_y + 4 - ui_scroll_y;
+  trigger_delta ? zp_drawstr("DOMINANCE DECISION") : zp_drawstr("DETECTION DECISION");
 
   shadow_ctrl_l ? (
     #_dom_state = "MIC L";
@@ -2995,12 +3052,12 @@ ui_view_mode == 1 ? (
     #_dom_state = "OPEN BOTH";
     ds_r = sem_open_r; ds_g = sem_open_g; ds_b = sem_open_b;
   );
-  gfx_setfont(3); gfx_r = ds_r; gfx_g = ds_g; gfx_b = ds_b;
-  gfx_x = dom_x + 16; gfx_y = dec_y + 24 - ui_scroll_y;
-  gfx_drawstr(#_dom_state);
+  zp_setfont(3); gfx_r = ds_r; gfx_g = ds_g; gfx_b = ds_b;
+  zp_gx = dom_x + 16; zp_gy = dec_y + 24 - ui_scroll_y;
+  zp_drawstr(#_dom_state);
 
-  gfx_setfont(5); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = dom_x + 16; gfx_y = dec_y + 47 - ui_scroll_y;
+  zp_setfont(5); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+  zp_gx = dom_x + 16; zp_gy = dec_y + 47 - ui_scroll_y;
   trigger_delta ? (
     gate_diff_db >= slider9 ? (
       gfx_r = grp_in_r; gfx_g = grp_in_g; gfx_b = grp_in_b;
@@ -3018,9 +3075,9 @@ ui_view_mode == 1 ? (
         sprintf(#_dom_dir, "Neutral · R +%.1f dB", -gate_diff_db);
       );
     );
-    gfx_drawstr(#_dom_dir);
+    zp_drawstr(#_dom_dir);
   ) : (
-    gfx_drawstr("Independent thresholds");
+    zp_drawstr("Independent thresholds");
   );
 
   bal_x = dom_x + 224; bal_y = dec_y + 14; bal_w = 420; bal_h = 44;
@@ -3032,8 +3089,8 @@ ui_view_mode == 1 ? (
     abs_h = bal_h;
     draw_panel(bal_x, bal_y, bal_w, abs_h, 0.08, 0.09, 0.12, 0.95);
     gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.7;
-    gfx_rect(bal_x, bal_y - ui_scroll_y, bal_w, 1); gfx_rect(bal_x, bal_y + abs_h - 1 - ui_scroll_y, bal_w, 1);
-    gfx_rect(bal_x, bal_y - ui_scroll_y, 1, abs_h); gfx_rect(bal_x + bal_w - 1, bal_y - ui_scroll_y, 1, abs_h);
+    zp_rect(bal_x, bal_y - ui_scroll_y, bal_w, 1); zp_rect(bal_x, bal_y + abs_h - 1 - ui_scroll_y, bal_w, 1);
+    zp_rect(bal_x, bal_y - ui_scroll_y, 1, abs_h); zp_rect(bal_x + bal_w - 1, bal_y - ui_scroll_y, 1, abs_h);
 
     abs_col_w = floor((bal_w - 24) * 0.5);
 
@@ -3042,23 +3099,23 @@ ui_view_mode == 1 ? (
            : ( #_abs_det_l = "L: BELOW";    ad_r=sem_neutral_r; ad_g=sem_neutral_g; ad_b=sem_neutral_b; );
     set_gain_state(x_l, tgt_l, hold_l, det_la, det_ra);
     sprintf(#_abs_gain_l, "GAIN L: %s", #_gs_txt);
-    gfx_setfont(3); gfx_r = ad_r; gfx_g = ad_g; gfx_b = ad_b;
-    gfx_x = bal_x + 12; gfx_y = bal_y + 6 - ui_scroll_y; gfx_drawstr(#_abs_det_l);
-    gfx_setfont(5); gfx_r = gs_r; gfx_g = gs_g; gfx_b = gs_b;
-    gfx_x = bal_x + 12; gfx_y = bal_y + 23 - ui_scroll_y; gfx_drawstr(#_abs_gain_l);
+    zp_setfont(3); gfx_r = ad_r; gfx_g = ad_g; gfx_b = ad_b;
+    zp_gx = bal_x + 12; zp_gy = bal_y + 6 - ui_scroll_y; zp_drawstr(#_abs_det_l);
+    zp_setfont(5); gfx_r = gs_r; gfx_g = gs_g; gfx_b = gs_b;
+    zp_gx = bal_x + 12; zp_gy = bal_y + 23 - ui_scroll_y; zp_drawstr(#_abs_gain_l);
 
     // Riga R
     det_ra ? ( #_abs_det_r = "R: DETECTED"; ad_r=sem_detect_r; ad_g=sem_detect_g; ad_b=sem_detect_b; )
            : ( #_abs_det_r = "R: BELOW";    ad_r=sem_neutral_r; ad_g=sem_neutral_g; ad_b=sem_neutral_b; );
     set_gain_state(x_r, tgt_r, hold_r, det_ra, det_la);
     sprintf(#_abs_gain_r, "GAIN R: %s", #_gs_txt);
-    gfx_setfont(3); gfx_r = ad_r; gfx_g = ad_g; gfx_b = ad_b;
-    gfx_x = bal_x + 12 + abs_col_w + 24; gfx_y = bal_y + 6 - ui_scroll_y; gfx_drawstr(#_abs_det_r);
-    gfx_setfont(5); gfx_r = gs_r; gfx_g = gs_g; gfx_b = gs_b;
-    gfx_x = bal_x + 12 + abs_col_w + 24; gfx_y = bal_y + 23 - ui_scroll_y; gfx_drawstr(#_abs_gain_r);
+    zp_setfont(3); gfx_r = ad_r; gfx_g = ad_g; gfx_b = ad_b;
+    zp_gx = bal_x + 12 + abs_col_w + 24; zp_gy = bal_y + 6 - ui_scroll_y; zp_drawstr(#_abs_det_r);
+    zp_setfont(5); gfx_r = gs_r; gfx_g = gs_g; gfx_b = gs_b;
+    zp_gx = bal_x + 12 + abs_col_w + 24; zp_gy = bal_y + 23 - ui_scroll_y; zp_drawstr(#_abs_gain_r);
 
     gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.55;
-    gfx_line(bal_x + 12 + abs_col_w + 10, bal_y + 4 - ui_scroll_y, bal_x + 12 + abs_col_w + 10, bal_y + abs_h - 4 - ui_scroll_y);
+    zp_line(bal_x + 12 + abs_col_w + 10, bal_y + 4 - ui_scroll_y, bal_x + 12 + abs_col_w + 10, bal_y + abs_h - 4 - ui_scroll_y);
 
     ui_disabled_knob(9, dom_x + dom_w - 60, dec_y + 34, 13, "Delta", "dB", 209);
   );
@@ -3066,18 +3123,18 @@ ui_view_mode == 1 ? (
   // --- SECTION 4: RESPONSE & TIMING ---
   resp_y = dec_y + dec_h + 10;
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_line(dom_x + 16, resp_y - 5 - ui_scroll_y, dom_x + dom_w - 16, resp_y - 5 - ui_scroll_y);
+  zp_line(dom_x + 16, resp_y - 5 - ui_scroll_y, dom_x + dom_w - 16, resp_y - 5 - ui_scroll_y);
 
-  gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = dom_x + 16; gfx_y = resp_y - ui_scroll_y;
-  gfx_drawstr("RESPONSE");
+  zp_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+  zp_gx = dom_x + 16; zp_gy = resp_y - ui_scroll_y;
+  zp_drawstr("RESPONSE");
 
   ui_tab_button(10, 0, dom_x + 120, resp_y - 4, 96, 24, "AUTO", 210, grp_gate_r, grp_gate_g, grp_gate_b);
   ui_tab_button(10, 1, dom_x + 224, resp_y - 4, 104, 24, "MANUAL", 210, grp_gate_r, grp_gate_g, grp_gate_b);
 
-  gfx_setfont(5); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  gfx_x = dom_x + 344; gfx_y = resp_y + 3 - ui_scroll_y;
-  !reaction_manual ? gfx_drawstr("AUTO: 12 / 200 ms");
+  zp_setfont(5); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
+  zp_gx = dom_x + 344; zp_gy = resp_y + 3 - ui_scroll_y;
+  !reaction_manual ? zp_drawstr("AUTO: 12 / 200 ms");
 
   timing_y = resp_y + 60; // aria fra AUTO/MANUAL e controlli, restando dentro il pannello compatto
   k_spacing = floor((dom_w - 48) / 5);
@@ -3089,33 +3146,33 @@ ui_view_mode == 1 ? (
   ui_knob(14, kx_base + k_spacing * 3, timing_y, 13, 0, 50, 5,     "Lookahead", "ms", grp_gate_r, grp_gate_g, grp_gate_b, 214);
   ui_knob(35, kx_base + k_spacing * 4, timing_y, 13, 0, 100, 50,   "Softness",  "%",  grp_gate_r, grp_gate_g, grp_gate_b, 240);
 
-  gfx_setfont(5);
+  zp_setfont(5);
   k_sy = timing_y - ui_scroll_y + 36;
   gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 0.85;
 
-  gfx_measurestr("OPEN", tw, th);
-  gfx_x = kx_base - tw * 0.5; gfx_y = k_sy; gfx_drawstr("OPEN");
+  (gfx_measurestr("OPEN", tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = kx_base - tw * 0.5; zp_gy = k_sy; zp_drawstr("OPEN");
 
-  gfx_measurestr("WAIT", tw, th);
-  gfx_x = (kx_base + k_spacing) - tw * 0.5; gfx_y = k_sy; gfx_drawstr("WAIT");
+  (gfx_measurestr("WAIT", tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = (kx_base + k_spacing) - tw * 0.5; zp_gy = k_sy; zp_drawstr("WAIT");
 
-  gfx_measurestr("TO BKG", tw, th);
-  gfx_x = (kx_base + k_spacing * 2) - tw * 0.5; gfx_y = k_sy; gfx_drawstr("TO BKG");
+  (gfx_measurestr("TO BKG", tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = (kx_base + k_spacing * 2) - tw * 0.5; zp_gy = k_sy; zp_drawstr("TO BKG");
 
-  gfx_measurestr("PRE-DET", tw, th);
-  gfx_x = (kx_base + k_spacing * 3) - tw * 0.5; gfx_y = k_sy; gfx_drawstr("PRE-DET");
+  (gfx_measurestr("PRE-DET", tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = (kx_base + k_spacing * 3) - tw * 0.5; zp_gy = k_sy; zp_drawstr("PRE-DET");
 
   soft_kx = kx_base + k_spacing * 4;
-  gfx_measurestr("HARD", tw, th);
-  gfx_x = soft_kx - 46; gfx_y = k_sy; gfx_drawstr("HARD");
-  gfx_measurestr("SMOOTH", tw, th);
-  gfx_x = soft_kx + 46 - tw; gfx_y = k_sy; gfx_drawstr("SMOOTH");
+  (gfx_measurestr("HARD", tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = soft_kx - 46; zp_gy = k_sy; zp_drawstr("HARD");
+  (gfx_measurestr("SMOOTH", tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = soft_kx + 46 - tw; zp_gy = k_sy; zp_drawstr("SMOOTH");
   _bar_l = soft_kx - 14; _bar_r = soft_kx + 14; _bar_y = k_sy + 16;
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.8;
-  gfx_line(_bar_l, _bar_y, _bar_r, _bar_y);
+  zp_line(_bar_l, _bar_y, _bar_r, _bar_y);
   _dot_x = _bar_l + (slider35 * 0.01) * (_bar_r - _bar_l);
   gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b; gfx_a = 0.95;
-  gfx_circle(_dot_x, _bar_y, 2, 1);
+  zp_circle(_dot_x, _bar_y, 2, 1);
 
   // Output panel
   ui_tab_button(17, 0, output_x + 18, output_y + 44, 102, 22, "STEREO", 217, grp_out_r, grp_out_g, grp_out_b);
@@ -3123,16 +3180,16 @@ ui_view_mode == 1 ? (
   ui_toggle_button(19, output_x + 18, output_y + 72, 264, 22, "Limiter On", "Limiter Off", 219, grp_lim_r, grp_lim_g, grp_lim_b);
 
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.7;
-  gfx_line(output_x + 18, output_y + 100 - ui_scroll_y, output_x + output_w - 18, output_y + 100 - ui_scroll_y);
+  zp_line(output_x + 18, output_y + 100 - ui_scroll_y, output_x + output_w - 18, output_y + 100 - ui_scroll_y);
 
   out_mt = output_y + 108; out_mh = 100;
   draw_vbar(output_x + 18, out_mt, 20, out_mh, sqrt(max(vu_out_l, 0)), peak_out_l);
   draw_vbar(output_x + 46, out_mt, 20, out_mh, sqrt(max(vu_out_r, 0)), peak_out_r);
   draw_gr_bar(output_x + 74, out_mt, 16, out_mh, limiter_on ? slider26 : 0);
-  gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_x = output_x + 21; gfx_y = out_mt + out_mh + 6 - ui_scroll_y; monitor_active ? gfx_drawstr("ML") : gfx_drawstr("L");
-  gfx_x = output_x + 49; gfx_y = out_mt + out_mh + 6 - ui_scroll_y; monitor_active ? gfx_drawstr("MR") : gfx_drawstr("R");
-  gfx_x = output_x + 72; gfx_y = out_mt + out_mh + 6 - ui_scroll_y; gfx_drawstr("GR");
+  zp_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+  zp_gx = output_x + 21; zp_gy = out_mt + out_mh + 6 - ui_scroll_y; monitor_active ? zp_drawstr("ML") : zp_drawstr("L");
+  zp_gx = output_x + 49; zp_gy = out_mt + out_mh + 6 - ui_scroll_y; monitor_active ? zp_drawstr("MR") : zp_drawstr("R");
+  zp_gx = output_x + 72; zp_gy = out_mt + out_mh + 6 - ui_scroll_y; zp_drawstr("GR");
 
   // Output L/R + Link: piccoli, subito a sinistra del Master (UI CLEANUP PASS).
   // Stessi slider/logica della Fase A (36/37/38), solo riposizionati; DSP invariato.
@@ -3184,7 +3241,7 @@ ui_view_mode == 1 ? (
   py = py0 + p_row * (pbh + preset_gap_y);
   p_base = p_i * preset_size;
   p_used = preset_mem[p_base + preset_used_offset];
-  p_hit = hit(mouse_x, mouse_y, p_bx, py, pbw, pbh);
+  p_hit = hit(zp_mx, zp_my, p_bx, py, pbw, pbh);
 
   p_hit ? active_info_id = 222;
   p_i == active_preset ? (
@@ -3197,43 +3254,43 @@ ui_view_mode == 1 ? (
   p_hit && p_i != active_preset ? (
     p_r += 0.03; p_g += 0.03; p_b += 0.03;
   );
-  gfx_r = p_r; gfx_g = p_g; gfx_b = p_b; gfx_a = 1; gfx_rect(p_bx, py - ui_scroll_y, pbw, pbh);
+  gfx_r = p_r; gfx_g = p_g; gfx_b = p_b; gfx_a = 1; zp_rect(p_bx, py - ui_scroll_y, pbw, pbh);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_rect(p_bx, py - ui_scroll_y, pbw, 1); gfx_rect(p_bx, py + pbh - 1 - ui_scroll_y, pbw, 1);
-  gfx_rect(p_bx, py - ui_scroll_y, 1, pbh); gfx_rect(p_bx + pbw - 1, py - ui_scroll_y, 1, pbh);
+  zp_rect(p_bx, py - ui_scroll_y, pbw, 1); zp_rect(p_bx, py + pbh - 1 - ui_scroll_y, pbw, 1);
+  zp_rect(p_bx, py - ui_scroll_y, 1, pbh); zp_rect(p_bx + pbw - 1, py - ui_scroll_y, 1, pbh);
 
   p_i == active_preset ? (
     gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b; gfx_a = 0.95;
-    gfx_rect(p_bx, py - ui_scroll_y, pbw, 3);
+    zp_rect(p_bx, py - ui_scroll_y, pbw, 3);
   );
 
-  gfx_setfont(3);
+  zp_setfont(3);
   p_used ? ( gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; ) : ( gfx_r = 0.45; gfx_g = 0.48; gfx_b = 0.54; );
-  gfx_x = p_bx + 10; gfx_y = py + 6 - ui_scroll_y; gfx_drawstr("P"); gfx_drawnumber(p_i + 1, 0);
+  zp_gx = p_bx + 10; zp_gy = py + 6 - ui_scroll_y; zp_drawstr("P"); zp_drawnumber(p_i + 1, 0);
 
-  gfx_setfont(5);
+  zp_setfont(5);
   p_used ? (
     gfx_r = grp_in_r; gfx_g = grp_in_g; gfx_b = grp_in_b;
     sprintf(#p_delta, "d %.1f", preset_mem[p_base + 7]);
-    gfx_measurestr(#p_delta, _pdw, _pdh);
-    gfx_x = p_bx + pbw - _pdw - 8; gfx_y = py + 6 - ui_scroll_y; gfx_drawstr(#p_delta);
+    (gfx_measurestr(#p_delta, _pdw, _pdh); _pdw /= zp_sc; _pdh /= zp_sc);
+    zp_gx = p_bx + pbw - _pdw - 8; zp_gy = py + 6 - ui_scroll_y; zp_drawstr(#p_delta);
 
     gfx_r = 0.82; gfx_g = 0.86; gfx_b = 0.92;
-    gfx_x = p_bx + 10; gfx_y = py + 23 - ui_scroll_y;
+    zp_gx = p_bx + 10; zp_gy = py + 23 - ui_scroll_y;
     p_i == 0 ? (
-      gfx_drawstr("Hard mono");
+      zp_drawstr("Hard mono");
     ) : p_i == 1 ? (
-      gfx_drawstr("Mono soft");
+      zp_drawstr("Mono soft");
     ) : p_i == 2 ? (
-      gfx_drawstr("Stereo manual");
+      zp_drawstr("Stereo manual");
     ) : (
       // FASE A: idx 4 e' ora Trigger Mode (slider6), non piu' Engine
       // (slider5, escluso dai preset). Engine resta quello impostato dall'utente.
-      preset_mem[p_base + 4] >= 0.5 ? gfx_drawstr("Delta mode") : gfx_drawstr("Absolute mode");
+      preset_mem[p_base + 4] >= 0.5 ? zp_drawstr("Delta mode") : zp_drawstr("Absolute mode");
     );
   ) : (
     gfx_r = 0.45; gfx_g = 0.48; gfx_b = 0.54;
-    gfx_x = p_bx + 10; gfx_y = py + 22 - ui_scroll_y; gfx_drawstr("Empty slot");
+    zp_gx = p_bx + 10; zp_gy = py + 22 - ui_scroll_y; zp_drawstr("Empty slot");
   );
 
   mouse_click && p_hit && p_used ? load_preset_slot(p_i);
@@ -3322,9 +3379,9 @@ ui_view_mode == 1 ? (
 
   auth_sep_y = sh_y3 + sh_row_h + 9;
   gfx_r = 0.24; gfx_g = 0.27; gfx_b = 0.34; gfx_a = 0.9;
-  gfx_rect(sh_x0, auth_sep_y - ui_scroll_y, shadow_w - 28, 1);
-  gfx_setfont(5); gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b;
-  gfx_x = sh_x0; gfx_y = auth_sep_y + 5 - ui_scroll_y; gfx_drawstr("AUTHORITY B.1 - TELEMETRY ONLY / ZERO AUDIO CONTROL");
+  zp_rect(sh_x0, auth_sep_y - ui_scroll_y, shadow_w - 28, 1);
+  zp_setfont(5); gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b;
+  zp_gx = sh_x0; zp_gy = auth_sep_y + 5 - ui_scroll_y; zp_drawstr("AUTHORITY B.1 - TELEMETRY ONLY / ZERO AUDIO CONTROL");
 
   auth_y0 = auth_sep_y + 22;
   draw_inline_readout(sh_x0, auth_y0, sh_col_w, sh_row_h, "AUTH", #auth_state_txt, grp_gate_r, grp_gate_g, grp_gate_b, 1);
@@ -3343,55 +3400,55 @@ ui_view_mode == 1 ? (
 );
 
 // Footer guide
-gfx_r = 0.10; gfx_g = 0.11; gfx_b = 0.14; gfx_a = 1; gfx_rect(0, footer_y, gfx_w, footer_h);
-gfx_r = 0.20; gfx_g = 0.22; gfx_b = 0.28; gfx_a = 1; gfx_line(0, footer_y, gfx_w, footer_y);
-gfx_setfont(4); gfx_r = 0.72; gfx_g = 0.75; gfx_b = 0.81;
-gfx_x = 14; gfx_y = footer_y + 7;
+gfx_r = 0.10; gfx_g = 0.11; gfx_b = 0.14; gfx_a = 1; zp_rect(0, footer_y, zp_vw, footer_h);
+gfx_r = 0.20; gfx_g = 0.22; gfx_b = 0.28; gfx_a = 1; zp_line(0, footer_y, zp_vw, footer_y);
+zp_setfont(4); gfx_r = 0.72; gfx_g = 0.75; gfx_b = 0.81;
+zp_gx = 14; zp_gy = footer_y + 7;
 ui_view_mode == 0 ? (
   time_now < help_warn_until ? (
     gfx_r = 0.95; gfx_g = 0.65; gfx_b = 0.20;
     ui_lang == 1 ?
-      gfx_drawstr("Guide: open ZP Help > Stagekeeper (start Cue Navigator from 33 Welcome to open it from here)") :
-      gfx_drawstr("Guida: apri Help ZP > Stagekeeper (avvia il Cue Navigator dal 33 Benvenuto per aprirla da qui)");
+      zp_drawstr("Guide: open ZP Help > Stagekeeper (start Cue Navigator from 33 Welcome to open it from here)") :
+      zp_drawstr("Guida: apri Help ZP > Stagekeeper (avvia il Cue Navigator dal 33 Benvenuto per aprirla da qui)");
   ) :
-  active_info_id == 201 ? (ui_lang == 1 ? gfx_drawstr("TRIM L: input gain balancing for left microphone before detector and gate.") : gfx_drawstr("TRIM L: bilanciamento del livello di ingresso del microfono sinistro prima di detector e gate.")) :
-  active_info_id == 202 ? gfx_drawstr(slider2 >= 0.5 ? "PHASE L - Inverted" : "PHASE L - Normal") :
-  active_info_id == 203 ? (ui_lang == 1 ? gfx_drawstr("TRIM R: input gain balancing for right microphone before detector and gate.") : gfx_drawstr("TRIM R: bilanciamento del livello di ingresso del microfono destro prima di detector e gate.")) :
-  active_info_id == 204 ? gfx_drawstr(slider4 >= 0.5 ? "PHASE R - Inverted" : "PHASE R - Normal") :
-  active_info_id == 205 ? (ui_lang == 1 ? gfx_drawstr("ENGINE: ON = automixer active. OFF = both mics open, rest of chain active; telemetry continues. Not saved in presets.") : gfx_drawstr("ENGINE: ON = controllo dialogo attivo. OFF = entrambi i mic aperti, resto del plugin attivo; Shadow/Authority continuano a calcolare telemetria. Non e' salvato nei preset.")) :
-  active_info_id == 206 ? (ui_lang == 1 ? gfx_drawstr("TRIGGER MODE: ABS uses independent thresholds, DELTA tracks difference between microphones.") : gfx_drawstr("TRIGGER MODE: ABS usa soglie indipendenti, DELTA segue la differenza tra i due microfoni.")) :
-  active_info_id == 207 ? (ui_lang == 1 ? gfx_drawstr("SPEECH DETECT L: minimum RMS voice threshold on left microphone.") : gfx_drawstr("SPEECH DETECT L: soglia minima RMS di attivazione della voce sul microfono sinistro.")) :
-  active_info_id == 208 ? (ui_lang == 1 ? gfx_drawstr("SPEECH DETECT R: minimum RMS voice threshold on right microphone.") : gfx_drawstr("SPEECH DETECT R: soglia minima RMS di attivazione della voce sul microfono destro.")) :
-  active_info_id == 209 ? (ui_lang == 1 ? gfx_drawstr("DELTA: minimum level difference between microphones to declare dominance. Neutral deadband prevents chatter.") : gfx_drawstr("DELTA: differenza minima tra i due microfoni necessaria per dichiarare una dominance. Nella zona neutra non avviene alcuno switch.")) :
-  active_info_id == 210 ? (ui_lang == 1 ? gfx_drawstr("REACTION: AUTO uses 12/200 ms, MANUAL uses custom Attack and Release.") : gfx_drawstr("REACTION: AUTO usa 12/200 ms, MANUAL usa Attack e Release personalizzati.")) :
-  active_info_id == 211 ? (ui_lang == 1 ? gfx_drawstr("ATTACK: opening speed when a voice takes dominance.") : gfx_drawstr("ATTACK: tempo di apertura del microfono quando la voce prende la dominance.")) :
-  active_info_id == 212 ? (ui_lang == 1 ? gfx_drawstr("RELEASE: after Hold, determines how smoothly the microphone drops to Background level.") : gfx_drawstr("RELEASE: dopo l'Hold, determina quanto rapidamente il microfono scende verso il livello Background.")) :
-  active_info_id == 213 ? (ui_lang == 1 ? gfx_drawstr("HOLD: holds the mic open after voice ceases before Release begins.") : gfx_drawstr("HOLD: dopo che la voce perde la dominance, mantiene il microfono aperto per questo tempo prima di iniziare il Release.")) :
-  active_info_id == 214 ? (ui_lang == 1 ? gfx_drawstr("LOOKAHEAD: detector lookahead on delayed audio, prevents initial consonant clipping.") : gfx_drawstr("LOOKAHEAD: anticipo del detector sull'audio ritardato, evita troncamenti sulle consonanti iniziali.")) :
-  active_info_id == 215 ? (ui_lang == 1 ? gfx_drawstr("BACKGROUND L: attenuation level of left microphone when non-dominant.") : gfx_drawstr("BACKGROUND L: livello di attenuazione del microfono sinistro quando non e' dominante.")) :
-  active_info_id == 216 ? (ui_lang == 1 ? gfx_drawstr("BACKGROUND R: attenuation level of right microphone when non-dominant.") : gfx_drawstr("BACKGROUND R: livello di attenuazione del microfono destro quando non e' dominante.")) :
-  active_info_id == 217 ? (ui_lang == 1 ? gfx_drawstr("OUTPUT MODE: Stereo preserves channels, Dual Mono sums them for consistent feeds.") : gfx_drawstr("OUTPUT MODE: Stereo mantiene i canali, Dual Mono li somma per feed coerenti.")) :
-  active_info_id == 218 ? (ui_lang == 1 ? gfx_drawstr("MASTER: final output gain after gate and before limiter.") : gfx_drawstr("MASTER: guadagno finale dopo il gate e prima del limiter.")) :
-  active_info_id == 251 ? (ui_lang == 1 ? gfx_drawstr("OUTPUT L: post-Engine trim for left mic, before Dual Mono and Limiter. Does not affect detector.") : gfx_drawstr("OUTPUT L: correzione del microfono sinistro dopo l'Engine, prima di Dual Mono e Limiter. Non influenza il detector.")) :
-  active_info_id == 252 ? (ui_lang == 1 ? gfx_drawstr("OUTPUT R: post-Engine trim for right mic, before Dual Mono and Limiter. Does not affect detector.") : gfx_drawstr("OUTPUT R: correzione del microfono destro dopo l'Engine, prima di Dual Mono e Limiter. Non influenza il detector.")) :
-  active_info_id == 253 ? (ui_lang == 1 ? gfx_drawstr("LINK: when active, moving Output L or R links both by the same delta. Not saved in presets.") : gfx_drawstr("LINK: quando attivo, muovere Output L o R sposta entrambi dello stesso delta, mantenendo l'offset. Non e' salvato nei preset.")) :
-  active_info_id == 219 ? (ui_lang == 1 ? gfx_drawstr("LIMITER: safety output protection against clipping.") : gfx_drawstr("LIMITER: sicurezza finale per evitare overs e livellare i picchi di scena.")) :
-  active_info_id == 220 ? (ui_lang == 1 ? gfx_drawstr("LIM THR: limiter threshold; arc shows detector level.") : gfx_drawstr("LIM THR: soglia d'intervento; l'arco mostra il detector reale del limiter.")) :
-  active_info_id == 221 ? (ui_lang == 1 ? gfx_drawstr("CEILING: ceiling limit; arc shows pre-clip level compared to ceiling.") : gfx_drawstr("CEILING: limite massimo; l'arco mostra il livello pre-clip confrontato col tetto.")) :
-  active_info_id == 222 ? (ui_lang == 1 ? gfx_drawstr("PRESET BANK: click loads, right click saves; click active preset to clear.") : gfx_drawstr("PRESET BANK: click carica, click destro salva; sul preset attivo lo elimina.")) :
-  active_info_id == 230 ? (ui_lang == 1 ? gfx_drawstr("FULL VIEW: complete interface with all controls, meters, presets and telemetry.") : gfx_drawstr("FULL VIEW: interfaccia completa con tutti i controlli, meter, preset e telemetria.")) :
-  active_info_id == 231 ? (ui_lang == 1 ? gfx_drawstr("COMPACT VIEW: reduced strip with output meters and runtime state.") : gfx_drawstr("COMPACT VIEW: strip ridotta con soli meter uscita e stato runtime, utile quando la grafica completa non serve.")) :
-  active_info_id == 232 ? (ui_lang == 1 ? gfx_drawstr("JSFX VIEW: shows standard sliders and minimizes custom graphics.") : gfx_drawstr("JSFX VIEW: mostra gli slider standard del plugin e riduce al minimo la grafica custom.")) :
-  active_info_id == 233 ? (ui_lang == 1 ? gfx_drawstr("LOW L: low shelf tilt on left mic, post input and pre detection.") : gfx_drawstr("LOW L: correzione semplice delle basse sul canale sinistro, post input e pre detection.")) :
-  active_info_id == 234 ? (ui_lang == 1 ? gfx_drawstr("HI L: high shelf tilt on left mic, useful if mic is dark or sibilant.") : gfx_drawstr("HI L: correzione semplice delle alte sul canale sinistro, utile se il microfono suona cupo o frizzante.")) :
-  active_info_id == 235 ? (ui_lang == 1 ? gfx_drawstr("LOW R: low shelf tilt on right mic, post input and pre detection.") : gfx_drawstr("LOW R: correzione semplice delle basse sul canale destro, post input e pre detection.")) :
-  active_info_id == 236 ? (ui_lang == 1 ? gfx_drawstr("HI R: high shelf tilt on right mic, post input and pre detection.") : gfx_drawstr("HI R: correzione semplice delle alte sul canale destro, post input e pre detection.")) :
-  active_info_id == 239 ? (ui_lang == 1 ? gfx_drawstr("MONITOR: CHECK isolates channel POST-GATE. Gate Off = clean; Gate On = audition attenuation from other mic.") : gfx_drawstr("MONITOR: CHECK isola il canale POST-GATE. Gate Off = integro; Gate On = senti quando l'altro mic lo attenua.")) :
-  active_info_id == 240 ? (ui_lang == 1 ? gfx_drawstr("SOFTNESS: fader smoothing curve (0% Hard, 100% Smooth). Does not alter nominal timing.") : gfx_drawstr("SOFTNESS: morbidezza della curva di fader (0% Hard, 100% Smooth). Non altera i tempi nominali.")) :
-  active_info_id == 241 ? (ui_lang == 1 ? gfx_drawstr("INPUT METER: double click to reset Peak Hold on both channels.") : gfx_drawstr("INPUT METER: doppio click per azzerare il Peak Hold di entrambi i canali.")) :
-  active_info_id == 242 ? (ui_lang == 1 ? gfx_drawstr("INPUT READOUT: double click to toggle Display RMS and Peak Hold dBFS.") : gfx_drawstr("INPUT READOUT: doppio click per alternare Display RMS e Peak Hold dBFS.")) :
-  active_info_id == 250 ? (ui_lang == 1 ? gfx_drawstr("HELP: opens/closes plugin quick guide and HTML guide. Does not alter audio parameters.") : gfx_drawstr("HELP: apre/chiude la guida rapida del plugin. Non modifica alcun parametro.")) :
-  gfx_drawstr("STAGEKEEPER v2.5.0");
+  active_info_id == 201 ? (ui_lang == 1 ? zp_drawstr("TRIM L: input gain balancing for left microphone before detector and gate.") : zp_drawstr("TRIM L: bilanciamento del livello di ingresso del microfono sinistro prima di detector e gate.")) :
+  active_info_id == 202 ? zp_drawstr(slider2 >= 0.5 ? "PHASE L - Inverted" : "PHASE L - Normal") :
+  active_info_id == 203 ? (ui_lang == 1 ? zp_drawstr("TRIM R: input gain balancing for right microphone before detector and gate.") : zp_drawstr("TRIM R: bilanciamento del livello di ingresso del microfono destro prima di detector e gate.")) :
+  active_info_id == 204 ? zp_drawstr(slider4 >= 0.5 ? "PHASE R - Inverted" : "PHASE R - Normal") :
+  active_info_id == 205 ? (ui_lang == 1 ? zp_drawstr("ENGINE: ON = automixer active. OFF = both mics open, rest of chain active; telemetry continues. Not saved in presets.") : zp_drawstr("ENGINE: ON = controllo dialogo attivo. OFF = entrambi i mic aperti, resto del plugin attivo; Shadow/Authority continuano a calcolare telemetria. Non e' salvato nei preset.")) :
+  active_info_id == 206 ? (ui_lang == 1 ? zp_drawstr("TRIGGER MODE: ABS uses independent thresholds, DELTA tracks difference between microphones.") : zp_drawstr("TRIGGER MODE: ABS usa soglie indipendenti, DELTA segue la differenza tra i due microfoni.")) :
+  active_info_id == 207 ? (ui_lang == 1 ? zp_drawstr("SPEECH DETECT L: minimum RMS voice threshold on left microphone.") : zp_drawstr("SPEECH DETECT L: soglia minima RMS di attivazione della voce sul microfono sinistro.")) :
+  active_info_id == 208 ? (ui_lang == 1 ? zp_drawstr("SPEECH DETECT R: minimum RMS voice threshold on right microphone.") : zp_drawstr("SPEECH DETECT R: soglia minima RMS di attivazione della voce sul microfono destro.")) :
+  active_info_id == 209 ? (ui_lang == 1 ? zp_drawstr("DELTA: minimum level difference between microphones to declare dominance. Neutral deadband prevents chatter.") : zp_drawstr("DELTA: differenza minima tra i due microfoni necessaria per dichiarare una dominance. Nella zona neutra non avviene alcuno switch.")) :
+  active_info_id == 210 ? (ui_lang == 1 ? zp_drawstr("REACTION: AUTO uses 12/200 ms, MANUAL uses custom Attack and Release.") : zp_drawstr("REACTION: AUTO usa 12/200 ms, MANUAL usa Attack e Release personalizzati.")) :
+  active_info_id == 211 ? (ui_lang == 1 ? zp_drawstr("ATTACK: opening speed when a voice takes dominance.") : zp_drawstr("ATTACK: tempo di apertura del microfono quando la voce prende la dominance.")) :
+  active_info_id == 212 ? (ui_lang == 1 ? zp_drawstr("RELEASE: after Hold, determines how smoothly the microphone drops to Background level.") : zp_drawstr("RELEASE: dopo l'Hold, determina quanto rapidamente il microfono scende verso il livello Background.")) :
+  active_info_id == 213 ? (ui_lang == 1 ? zp_drawstr("HOLD: holds the mic open after voice ceases before Release begins.") : zp_drawstr("HOLD: dopo che la voce perde la dominance, mantiene il microfono aperto per questo tempo prima di iniziare il Release.")) :
+  active_info_id == 214 ? (ui_lang == 1 ? zp_drawstr("LOOKAHEAD: detector lookahead on delayed audio, prevents initial consonant clipping.") : zp_drawstr("LOOKAHEAD: anticipo del detector sull'audio ritardato, evita troncamenti sulle consonanti iniziali.")) :
+  active_info_id == 215 ? (ui_lang == 1 ? zp_drawstr("BACKGROUND L: attenuation level of left microphone when non-dominant.") : zp_drawstr("BACKGROUND L: livello di attenuazione del microfono sinistro quando non e' dominante.")) :
+  active_info_id == 216 ? (ui_lang == 1 ? zp_drawstr("BACKGROUND R: attenuation level of right microphone when non-dominant.") : zp_drawstr("BACKGROUND R: livello di attenuazione del microfono destro quando non e' dominante.")) :
+  active_info_id == 217 ? (ui_lang == 1 ? zp_drawstr("OUTPUT MODE: Stereo preserves channels, Dual Mono sums them for consistent feeds.") : zp_drawstr("OUTPUT MODE: Stereo mantiene i canali, Dual Mono li somma per feed coerenti.")) :
+  active_info_id == 218 ? (ui_lang == 1 ? zp_drawstr("MASTER: final output gain after gate and before limiter.") : zp_drawstr("MASTER: guadagno finale dopo il gate e prima del limiter.")) :
+  active_info_id == 251 ? (ui_lang == 1 ? zp_drawstr("OUTPUT L: post-Engine trim for left mic, before Dual Mono and Limiter. Does not affect detector.") : zp_drawstr("OUTPUT L: correzione del microfono sinistro dopo l'Engine, prima di Dual Mono e Limiter. Non influenza il detector.")) :
+  active_info_id == 252 ? (ui_lang == 1 ? zp_drawstr("OUTPUT R: post-Engine trim for right mic, before Dual Mono and Limiter. Does not affect detector.") : zp_drawstr("OUTPUT R: correzione del microfono destro dopo l'Engine, prima di Dual Mono e Limiter. Non influenza il detector.")) :
+  active_info_id == 253 ? (ui_lang == 1 ? zp_drawstr("LINK: when active, moving Output L or R links both by the same delta. Not saved in presets.") : zp_drawstr("LINK: quando attivo, muovere Output L o R sposta entrambi dello stesso delta, mantenendo l'offset. Non e' salvato nei preset.")) :
+  active_info_id == 219 ? (ui_lang == 1 ? zp_drawstr("LIMITER: safety output protection against clipping.") : zp_drawstr("LIMITER: sicurezza finale per evitare overs e livellare i picchi di scena.")) :
+  active_info_id == 220 ? (ui_lang == 1 ? zp_drawstr("LIM THR: limiter threshold; arc shows detector level.") : zp_drawstr("LIM THR: soglia d'intervento; l'arco mostra il detector reale del limiter.")) :
+  active_info_id == 221 ? (ui_lang == 1 ? zp_drawstr("CEILING: ceiling limit; arc shows pre-clip level compared to ceiling.") : zp_drawstr("CEILING: limite massimo; l'arco mostra il livello pre-clip confrontato col tetto.")) :
+  active_info_id == 222 ? (ui_lang == 1 ? zp_drawstr("PRESET BANK: click loads, right click saves; click active preset to clear.") : zp_drawstr("PRESET BANK: click carica, click destro salva; sul preset attivo lo elimina.")) :
+  active_info_id == 230 ? (ui_lang == 1 ? zp_drawstr("FULL VIEW: complete interface with all controls, meters, presets and telemetry.") : zp_drawstr("FULL VIEW: interfaccia completa con tutti i controlli, meter, preset e telemetria.")) :
+  active_info_id == 231 ? (ui_lang == 1 ? zp_drawstr("COMPACT VIEW: reduced strip with output meters and runtime state.") : zp_drawstr("COMPACT VIEW: strip ridotta con soli meter uscita e stato runtime, utile quando la grafica completa non serve.")) :
+  active_info_id == 232 ? (ui_lang == 1 ? zp_drawstr("JSFX VIEW: shows standard sliders and minimizes custom graphics.") : zp_drawstr("JSFX VIEW: mostra gli slider standard del plugin e riduce al minimo la grafica custom.")) :
+  active_info_id == 233 ? (ui_lang == 1 ? zp_drawstr("LOW L: low shelf tilt on left mic, post input and pre detection.") : zp_drawstr("LOW L: correzione semplice delle basse sul canale sinistro, post input e pre detection.")) :
+  active_info_id == 234 ? (ui_lang == 1 ? zp_drawstr("HI L: high shelf tilt on left mic, useful if mic is dark or sibilant.") : zp_drawstr("HI L: correzione semplice delle alte sul canale sinistro, utile se il microfono suona cupo o frizzante.")) :
+  active_info_id == 235 ? (ui_lang == 1 ? zp_drawstr("LOW R: low shelf tilt on right mic, post input and pre detection.") : zp_drawstr("LOW R: correzione semplice delle basse sul canale destro, post input e pre detection.")) :
+  active_info_id == 236 ? (ui_lang == 1 ? zp_drawstr("HI R: high shelf tilt on right mic, post input and pre detection.") : zp_drawstr("HI R: correzione semplice delle alte sul canale destro, post input e pre detection.")) :
+  active_info_id == 239 ? (ui_lang == 1 ? zp_drawstr("MONITOR: CHECK isolates channel POST-GATE. Gate Off = clean; Gate On = audition attenuation from other mic.") : zp_drawstr("MONITOR: CHECK isola il canale POST-GATE. Gate Off = integro; Gate On = senti quando l'altro mic lo attenua.")) :
+  active_info_id == 240 ? (ui_lang == 1 ? zp_drawstr("SOFTNESS: fader smoothing curve (0% Hard, 100% Smooth). Does not alter nominal timing.") : zp_drawstr("SOFTNESS: morbidezza della curva di fader (0% Hard, 100% Smooth). Non altera i tempi nominali.")) :
+  active_info_id == 241 ? (ui_lang == 1 ? zp_drawstr("INPUT METER: double click to reset Peak Hold on both channels.") : zp_drawstr("INPUT METER: doppio click per azzerare il Peak Hold di entrambi i canali.")) :
+  active_info_id == 242 ? (ui_lang == 1 ? zp_drawstr("INPUT READOUT: double click to toggle Display RMS and Peak Hold dBFS.") : zp_drawstr("INPUT READOUT: doppio click per alternare Display RMS e Peak Hold dBFS.")) :
+  active_info_id == 250 ? (ui_lang == 1 ? zp_drawstr("HELP: opens/closes plugin quick guide and HTML guide. Does not alter audio parameters.") : zp_drawstr("HELP: apre/chiude la guida rapida del plugin. Non modifica alcun parametro.")) :
+  zp_drawstr("STAGEKEEPER v2.5.0");
 );
 
 // ---------------------------------------------------------------------------
@@ -3406,30 +3463,30 @@ help_overlay_open ? (
 
   // Scrim
   gfx_r = 0; gfx_g = 0; gfx_b = 0; gfx_a = 0.62;
-  gfx_rect(0, 0, gfx_w, gfx_h);
+  zp_rect(0, 0, zp_vw, zp_vh);
 
-  help_panel_w = min(700, gfx_w - 40);
-  help_panel_h = min(660, gfx_h - 40);
-  help_panel_x = (gfx_w - help_panel_w) * 0.5;
-  help_panel_y = (gfx_h - help_panel_h) * 0.5;
+  help_panel_w = min(700, zp_vw - 40);
+  help_panel_h = min(660, zp_vh - 40);
+  help_panel_x = (zp_vw - help_panel_w) * 0.5;
+  help_panel_y = (zp_vh - help_panel_h) * 0.5;
 
   gfx_r = panel_r; gfx_g = panel_g; gfx_b = panel_b; gfx_a = 0.98;
-  gfx_rect(help_panel_x, help_panel_y, help_panel_w, help_panel_h);
+  zp_rect(help_panel_x, help_panel_y, help_panel_w, help_panel_h);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_rect(help_panel_x, help_panel_y, help_panel_w, 1);
-  gfx_rect(help_panel_x, help_panel_y + help_panel_h - 1, help_panel_w, 1);
-  gfx_rect(help_panel_x, help_panel_y, 1, help_panel_h);
-  gfx_rect(help_panel_x + help_panel_w - 1, help_panel_y, 1, help_panel_h);
+  zp_rect(help_panel_x, help_panel_y, help_panel_w, 1);
+  zp_rect(help_panel_x, help_panel_y + help_panel_h - 1, help_panel_w, 1);
+  zp_rect(help_panel_x, help_panel_y, 1, help_panel_h);
+  zp_rect(help_panel_x + help_panel_w - 1, help_panel_y, 1, help_panel_h);
   gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b; gfx_a = 0.95;
-  gfx_rect(help_panel_x, help_panel_y, help_panel_w, 4);
+  zp_rect(help_panel_x, help_panel_y, help_panel_w, 4);
 
   // Title + page label
-  gfx_setfont(1); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_a = 1;
-  gfx_x = help_panel_x + 20; gfx_y = help_panel_y + 16;
-  gfx_drawstr(ui_lang == 0 ? "STAGEKEEPER - GUIDA RAPIDA" : "STAGEKEEPER - QUICK HELP");
-  gfx_setfont(5); gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b;
-  gfx_x = help_panel_x + 20; gfx_y = help_panel_y + 42;
-  gfx_drawstr(help_page == 0 ?
+  zp_setfont(1); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_a = 1;
+  zp_gx = help_panel_x + 20; zp_gy = help_panel_y + 16;
+  zp_drawstr(ui_lang == 0 ? "STAGEKEEPER - GUIDA RAPIDA" : "STAGEKEEPER - QUICK HELP");
+  zp_setfont(5); gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b;
+  zp_gx = help_panel_x + 20; zp_gy = help_panel_y + 42;
+  zp_drawstr(help_page == 0 ?
     (ui_lang == 0 ? "1/2  CONTROLLO" : "1/2  CONTROL") :
     (ui_lang == 0 ? "2/2  USCITA E MONITOR" : "2/2  OUTPUT & MONITOR"));
 
@@ -3437,20 +3494,20 @@ help_overlay_open ? (
   help_close_w = 26; help_close_h = 26;
   help_close_x = help_panel_x + help_panel_w - help_close_w - 12;
   help_close_y = help_panel_y + 12;
-  help_close_hover = mouse_x >= help_close_x && mouse_x <= (help_close_x + help_close_w) &&
-                     mouse_y >= help_close_y && mouse_y <= (help_close_y + help_close_h);
+  help_close_hover = zp_mx >= help_close_x && zp_mx <= (help_close_x + help_close_w) &&
+                     zp_my >= help_close_y && zp_my <= (help_close_y + help_close_h);
   help_close_hover ? ( gfx_r = panel2_r + 0.06; gfx_g = panel2_g + 0.06; gfx_b = panel2_b + 0.06; ) :
                      ( gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; );
   gfx_a = 0.96;
-  gfx_rect(help_close_x, help_close_y, help_close_w, help_close_h);
+  zp_rect(help_close_x, help_close_y, help_close_w, help_close_h);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_rect(help_close_x, help_close_y, help_close_w, 1); gfx_rect(help_close_x, help_close_y + help_close_h - 1, help_close_w, 1);
-  gfx_rect(help_close_x, help_close_y, 1, help_close_h); gfx_rect(help_close_x + help_close_w - 1, help_close_y, 1, help_close_h);
-  gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
-  gfx_measurestr("X", help_close_tw, help_close_th);
-  gfx_x = help_close_x + (help_close_w - help_close_tw) * 0.5;
-  gfx_y = help_close_y + (help_close_h - help_close_th) * 0.5;
-  gfx_drawstr("X");
+  zp_rect(help_close_x, help_close_y, help_close_w, 1); zp_rect(help_close_x, help_close_y + help_close_h - 1, help_close_w, 1);
+  zp_rect(help_close_x, help_close_y, 1, help_close_h); zp_rect(help_close_x + help_close_w - 1, help_close_y, 1, help_close_h);
+  zp_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+  (gfx_measurestr("X", help_close_tw, help_close_th); help_close_tw /= zp_sc; help_close_th /= zp_sc);
+  zp_gx = help_close_x + (help_close_w - help_close_tw) * 0.5;
+  zp_gy = help_close_y + (help_close_h - help_close_th) * 0.5;
+  zp_drawstr("X");
   help_close_hover && help_real_click ? ( help_overlay_open = 0; );
 
   // Body
@@ -3459,175 +3516,175 @@ help_overlay_open ? (
   help_line_h = 19;
   help_body_w = help_panel_w - 40;
 
-  gfx_setfont(2);
+  zp_setfont(2);
 
   help_page == 0 ? (
 
-    gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_a = 1;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("ENGINE"); help_y += help_line_h;
-    gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_a = 1;
+    zp_gx = help_x; zp_gy = help_y; zp_drawstr("ENGINE"); help_y += help_line_h;
+    zp_setfont(2); gfx_a = 0.9;
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "ON: Stagekeeper controlla la scena. OFF: entrambi i mic restano aperti;" :
       "ON: Stagekeeper controls the scene. OFF: both mics stay open;");
     help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "Input, Output, Monitor e Limiter restano comunque attivi." :
       "Input, Output, Monitor and Limiter remain active.");
     help_y += help_line_h + 6;
 
-    gfx_setfont(3); gfx_a = 1;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("SPEECH DETECT"); help_y += help_line_h;
-    gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_setfont(3); gfx_a = 1;
+    zp_gx = help_x; zp_gy = help_y; zp_drawstr("SPEECH DETECT"); help_y += help_line_h;
+    zp_setfont(2); gfx_a = 0.9;
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "Definisce quando ciascun microfono viene considerato sufficientemente" :
       "Defines when each microphone is considered active enough");
     help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "presente per partecipare alla decisione." :
       "to take part in the dominance decision.");
     help_y += help_line_h + 6;
 
-    gfx_setfont(3); gfx_a = 1;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("BACKGROUND"); help_y += help_line_h;
-    gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_setfont(3); gfx_a = 1;
+    zp_gx = help_x; zp_gy = help_y; zp_drawstr("BACKGROUND"); help_y += help_line_h;
+    zp_setfont(2); gfx_a = 0.9;
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "Livello del microfono non dominante: 100% = nessuna attenuazione," :
       "Level of the non-dominant mic: 100% = no attenuation,");
     help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "0% = gate profondo. Il valore in dB resta mostrato per precisione." :
       "0% = deep gate. The dB value remains shown for precision.");
     help_y += help_line_h + 6;
 
-    gfx_setfont(3); gfx_a = 1;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("ABSOLUTE"); help_y += help_line_h;
-    gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_setfont(3); gfx_a = 1;
+    zp_gx = help_x; zp_gy = help_y; zp_drawstr("ABSOLUTE"); help_y += help_line_h;
+    zp_setfont(2); gfx_a = 0.9;
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "Ogni microfono viene valutato rispetto alla propria soglia." :
       "Each microphone is evaluated against its own threshold.");
     help_y += help_line_h + 6;
 
-    gfx_setfont(3); gfx_a = 1;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("DELTA"); help_y += help_line_h;
-    gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_setfont(3); gfx_a = 1;
+    zp_gx = help_x; zp_gy = help_y; zp_drawstr("DELTA"); help_y += help_line_h;
+    zp_setfont(2); gfx_a = 0.9;
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "La decisione dipende dalla differenza fra L e R." :
       "The decision depends on the level difference between L and R.");
     help_y += help_line_h + 6;
 
-    gfx_setfont(3); gfx_a = 1;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr(ui_lang == 0 ? "DECISIONE DOMINANZA" : "DOMINANCE DECISION"); help_y += help_line_h;
-    gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_setfont(3); gfx_a = 1;
+    zp_gx = help_x; zp_gy = help_y; zp_drawstr(ui_lang == 0 ? "DECISIONE DOMINANZA" : "DOMINANCE DECISION"); help_y += help_line_h;
+    zp_setfont(2); gfx_a = 0.9;
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "MIC L / MIC R: uno dei due microfoni e' dominante." :
       "MIC L / MIC R: one of the two microphones is dominant.");
     help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "OPEN BOTH: nessuna dominanza sufficientemente sicura; entrambi restano aperti." :
       "OPEN BOTH: no confident dominance; both stay open.");
     help_y += help_line_h + 6;
 
-    gfx_setfont(3); gfx_a = 1;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr(ui_lang == 0 ? "RISPOSTA" : "RESPONSE"); help_y += help_line_h;
-    gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ? "Attack: velocita' di apertura." : "Attack: opening speed.");
+    zp_setfont(3); gfx_a = 1;
+    zp_gx = help_x; zp_gy = help_y; zp_drawstr(ui_lang == 0 ? "RISPOSTA" : "RESPONSE"); help_y += help_line_h;
+    zp_setfont(2); gfx_a = 0.9;
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ? "Attack: velocita' di apertura." : "Attack: opening speed.");
     help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ? "Hold: tempo di mantenimento della scena." : "Hold: hold duration for the scene.");
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ? "Hold: tempo di mantenimento della scena." : "Hold: hold duration for the scene.");
     help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ? "Release: ritorno graduale dopo la fine della scena." : "Release: gradual return to background.");
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ? "Release: ritorno graduale dopo la fine della scena." : "Release: gradual return to background.");
     help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ? "Lookahead: anticipa la decisione rispetto all'audio." : "Lookahead: decision lead time.");
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ? "Lookahead: anticipa la decisione rispetto all'audio." : "Lookahead: decision lead time.");
     help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ? "Softness: ammorbidisce la forma della transizione." : "Softness: transition curve shape.");
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ? "Softness: ammorbidisce la forma della transizione." : "Softness: transition curve shape.");
     help_y += help_line_h + 6;
 
-    gfx_setfont(3); gfx_a = 1;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("INPUT"); help_y += help_line_h;
-    gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ? "Trim: livello pre-detection del microfono." : "Trim: pre-detection gain.");
+    zp_setfont(3); gfx_a = 1;
+    zp_gx = help_x; zp_gy = help_y; zp_drawstr("INPUT"); help_y += help_line_h;
+    zp_setfont(2); gfx_a = 0.9;
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ? "Trim: livello pre-detection del microfono." : "Trim: pre-detection gain.");
     help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ? "Low/Hi: correzione tonale." : "Low/Hi: tonal balance tilt.");
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ? "Low/Hi: correzione tonale." : "Low/Hi: tonal balance tilt.");
     help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "Fase (icona O barrata): inversione di polarita' del canale." :
       "Phase (slashed O icon): polarity inversion.");
     help_y += help_line_h;
 
   ) : (
 
-    gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_a = 1;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr("MONITOR"); help_y += help_line_h;
-    gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ? "MIX: ascolto normale." : "MIX: normal listening.");
+    zp_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b; gfx_a = 1;
+    zp_gx = help_x; zp_gy = help_y; zp_drawstr("MONITOR"); help_y += help_line_h;
+    zp_setfont(2); gfx_a = 0.9;
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ? "MIX: ascolto normale." : "MIX: normal listening.");
     help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "CHECK L / CHECK R: ascolto diagnostico del singolo canale." :
       "CHECK L / CHECK R: diagnostic audition of the single channel.");
     help_y += help_line_h + 6;
 
-    gfx_setfont(3); gfx_a = 1;
-    gfx_x = help_x; gfx_y = help_y; gfx_drawstr(ui_lang == 0 ? "USCITA" : "OUTPUT"); help_y += help_line_h;
-    gfx_setfont(2); gfx_a = 0.9;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_setfont(3); gfx_a = 1;
+    zp_gx = help_x; zp_gy = help_y; zp_drawstr(ui_lang == 0 ? "USCITA" : "OUTPUT"); help_y += help_line_h;
+    zp_setfont(2); gfx_a = 0.9;
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "Stereo / Dual Mono: modalita' di uscita." :
       "Stereo / Dual Mono: output mode.");
     help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "Output L / R: trim dei due canali dopo l'Engine, prima di Dual Mono e Limiter." :
       "Output L / R: per-channel trim post-Engine, before Dual Mono and Limiter.");
     help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "Link: mantiene l'offset fra L e R; muovendo uno, l'altro segue dello stesso delta." :
       "Link: preserves L/R offset; moving one moves the other by the same delta.");
     help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "Master: livello globale del mix, prima del Limiter." :
       "Master: global mix level, before the Limiter.");
     help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "Limiter: protezione finale di livello." :
       "Limiter: final peak level protection.");
     help_y += help_line_h + 24;
 
-    gfx_setfont(3); gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b; gfx_a = 1;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_setfont(3); gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b; gfx_a = 1;
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "Quando la decisione non e' abbastanza sicura," :
       "When the decision is not confident enough,");
     help_y += help_line_h;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "Stagekeeper lascia entrambi i microfoni aperti." :
       "Stagekeeper keeps both microphones open.");
     help_y += help_line_h + 4;
-    gfx_setfont(5); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 0.85;
-    gfx_x = help_x; gfx_y = help_y;
-    gfx_drawstr(ui_lang == 0 ?
+    zp_setfont(5); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 0.85;
+    zp_gx = help_x; zp_gy = help_y;
+    zp_drawstr(ui_lang == 0 ?
       "(In caso di incertezza, la protezione del dialogo e' prioritaria)" :
       "(When uncertain, dialogue safety takes priority)");
     help_y += help_line_h;
@@ -3638,19 +3695,19 @@ help_overlay_open ? (
   help_nav_y = help_panel_y + help_panel_h - 40;
   help_guide_x = help_panel_x + 20;
   help_guide_w = 146; help_guide_h = 26;
-  help_guide_hover = mouse_x >= help_guide_x && mouse_x <= (help_guide_x + help_guide_w) &&
-                     mouse_y >= help_nav_y && mouse_y <= (help_nav_y + help_guide_h);
+  help_guide_hover = zp_mx >= help_guide_x && zp_mx <= (help_guide_x + help_guide_w) &&
+                     zp_my >= help_nav_y && zp_my <= (help_nav_y + help_guide_h);
   help_guide_hover ? ( gfx_r = panel2_r + 0.08; gfx_g = panel2_g + 0.08; gfx_b = panel2_b + 0.08; ) :
                      ( gfx_r = panel2_r + 0.02; gfx_g = panel2_g + 0.02; gfx_b = panel2_b + 0.02; );
-  gfx_a = 0.96; gfx_rect(help_guide_x, help_nav_y, help_guide_w, help_guide_h);
+  gfx_a = 0.96; zp_rect(help_guide_x, help_nav_y, help_guide_w, help_guide_h);
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_rect(help_guide_x, help_nav_y, help_guide_w, 1); gfx_rect(help_guide_x, help_nav_y + help_guide_h - 1, help_guide_w, 1);
-  gfx_rect(help_guide_x, help_nav_y, 1, help_guide_h); gfx_rect(help_guide_x + help_guide_w - 1, help_nav_y, 1, help_guide_h);
-  gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+  zp_rect(help_guide_x, help_nav_y, help_guide_w, 1); zp_rect(help_guide_x, help_nav_y + help_guide_h - 1, help_guide_w, 1);
+  zp_rect(help_guide_x, help_nav_y, 1, help_guide_h); zp_rect(help_guide_x + help_guide_w - 1, help_nav_y, 1, help_guide_h);
+  zp_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
   help_g_lbl = ui_lang == 0 ? "GUIDA COMPLETA ↗" : "FULL GUIDE ↗";
-  gfx_measurestr(help_g_lbl, help_g_tw, help_g_th);
-  gfx_x = help_guide_x + (help_guide_w - help_g_tw) * 0.5; gfx_y = help_nav_y + (help_guide_h - help_g_th) * 0.5;
-  gfx_drawstr(help_g_lbl);
+  (gfx_measurestr(help_g_lbl, help_g_tw, help_g_th); help_g_tw /= zp_sc; help_g_th /= zp_sc);
+  zp_gx = help_guide_x + (help_guide_w - help_g_tw) * 0.5; zp_gy = help_nav_y + (help_guide_h - help_g_th) * 0.5;
+  zp_drawstr(help_g_lbl);
   help_guide_hover && help_real_click ? ( help_bridge_open(4); );
 
   // Page nav (bottom-right of panel)
@@ -3658,33 +3715,33 @@ help_overlay_open ? (
   help_next_x = help_panel_x + help_panel_w - 20 - 70;
   help_nav_w = 70; help_nav_h = 26;
 
-  help_prev_hover = mouse_x >= help_prev_x && mouse_x <= (help_prev_x + help_nav_w) &&
-                    mouse_y >= help_nav_y && mouse_y <= (help_nav_y + help_nav_h);
-  help_next_hover = mouse_x >= help_next_x && mouse_x <= (help_next_x + help_nav_w) &&
-                    mouse_y >= help_nav_y && mouse_y <= (help_nav_y + help_nav_h);
+  help_prev_hover = zp_mx >= help_prev_x && zp_mx <= (help_prev_x + help_nav_w) &&
+                    zp_my >= help_nav_y && zp_my <= (help_nav_y + help_nav_h);
+  help_next_hover = zp_mx >= help_next_x && zp_mx <= (help_next_x + help_nav_w) &&
+                    zp_my >= help_nav_y && zp_my <= (help_nav_y + help_nav_h);
 
   help_prev_hover ? ( gfx_r = panel2_r + 0.04; gfx_g = panel2_g + 0.04; gfx_b = panel2_b + 0.04; ) :
                     ( gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; );
-  gfx_a = 0.96; gfx_rect(help_prev_x, help_nav_y, help_nav_w, help_nav_h);
+  gfx_a = 0.96; zp_rect(help_prev_x, help_nav_y, help_nav_w, help_nav_h);
   help_next_hover ? ( gfx_r = panel2_r + 0.04; gfx_g = panel2_g + 0.04; gfx_b = panel2_b + 0.04; ) :
                     ( gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; );
-  gfx_a = 0.96; gfx_rect(help_next_x, help_nav_y, help_nav_w, help_nav_h);
+  gfx_a = 0.96; zp_rect(help_next_x, help_nav_y, help_nav_w, help_nav_h);
 
   gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.9;
-  gfx_rect(help_prev_x, help_nav_y, help_nav_w, 1); gfx_rect(help_prev_x, help_nav_y + help_nav_h - 1, help_nav_w, 1);
-  gfx_rect(help_prev_x, help_nav_y, 1, help_nav_h); gfx_rect(help_prev_x + help_nav_w - 1, help_nav_y, 1, help_nav_h);
-  gfx_rect(help_next_x, help_nav_y, help_nav_w, 1); gfx_rect(help_next_x, help_nav_y + help_nav_h - 1, help_nav_w, 1);
-  gfx_rect(help_next_x, help_nav_y, 1, help_nav_h); gfx_rect(help_next_x + help_nav_w - 1, help_nav_y, 1, help_nav_h);
+  zp_rect(help_prev_x, help_nav_y, help_nav_w, 1); zp_rect(help_prev_x, help_nav_y + help_nav_h - 1, help_nav_w, 1);
+  zp_rect(help_prev_x, help_nav_y, 1, help_nav_h); zp_rect(help_prev_x + help_nav_w - 1, help_nav_y, 1, help_nav_h);
+  zp_rect(help_next_x, help_nav_y, help_nav_w, 1); zp_rect(help_next_x, help_nav_y + help_nav_h - 1, help_nav_w, 1);
+  zp_rect(help_next_x, help_nav_y, 1, help_nav_h); zp_rect(help_next_x + help_nav_w - 1, help_nav_y, 1, help_nav_h);
 
-  gfx_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
+  zp_setfont(3); gfx_r = text_r; gfx_g = text_g; gfx_b = text_b;
   help_p_lbl = ui_lang == 0 ? "< PREC" : "< PREV";
   help_n_lbl = ui_lang == 0 ? "SUCC >" : "NEXT >";
-  gfx_measurestr(help_p_lbl, help_nav_tw, help_nav_th);
-  gfx_x = help_prev_x + (help_nav_w - help_nav_tw) * 0.5; gfx_y = help_nav_y + (help_nav_h - help_nav_th) * 0.5;
-  gfx_drawstr(help_p_lbl);
-  gfx_measurestr(help_n_lbl, help_nav_tw, help_nav_th);
-  gfx_x = help_next_x + (help_nav_w - help_nav_tw) * 0.5; gfx_y = help_nav_y + (help_nav_h - help_nav_th) * 0.5;
-  gfx_drawstr(help_n_lbl);
+  (gfx_measurestr(help_p_lbl, help_nav_tw, help_nav_th); help_nav_tw /= zp_sc; help_nav_th /= zp_sc);
+  zp_gx = help_prev_x + (help_nav_w - help_nav_tw) * 0.5; zp_gy = help_nav_y + (help_nav_h - help_nav_th) * 0.5;
+  zp_drawstr(help_p_lbl);
+  (gfx_measurestr(help_n_lbl, help_nav_tw, help_nav_th); help_nav_tw /= zp_sc; help_nav_th /= zp_sc);
+  zp_gx = help_next_x + (help_nav_w - help_nav_tw) * 0.5; zp_gy = help_nav_y + (help_nav_h - help_nav_th) * 0.5;
+  zp_drawstr(help_n_lbl);
 
   help_prev_hover && help_real_click ? ( help_page = max(0, help_page - 1); );
   help_next_hover && help_real_click ? ( help_page = min(1, help_page + 1); );

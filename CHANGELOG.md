@@ -2,7 +2,11 @@
 
 ## ZP Studio Suite 2.6.7 — in preparazione
 
-- **ZP Magic Voice LAB** (ZP Voce): livellamento del parlato e controllo delle risonanze, con preset MAGIC 1 e guida pratica IT/EN.
+- **ZP Magic Voice 1.2.0 e ZP Magic Voice LAB 1.2.0-lab3** (ZP Voce): taratura strumentale completa di `Input Level` (`-24..0 dB` auto-compensato), `Dynamic EQ` a 5 bande coerenti di fase (`A/B/C/D`), `Tone EQ` (`A/B/C/D`) + `Mid Bump`, leveler multibanda `Dynamic Balance` (`A/B`), `DRC` con `SOLO A/B/C/D` a molla sui 3 rotori di banda, preset `MAGIC 1`, monitor per stadio, barra suggerimenti e vista parametri `JSFX` scorrevole.
+- **Grafica JSFX interamente zoomabile su tutta la Suite**: tutti i plugin JSFX di `ZP Voce`, `ZP Master`, `ZP Misura` e `ZP Lab` scalano proporzionalmente disegni, testi e pomelli ridimensionando la finestra FX di REAPER (con DSP invariato al 100%).
+
+- **Project Viewer e Gestore Progetto**: controlli e icone più grandi, funzioni spiegate al passaggio del puntatore; Spazio fra item distingue item adiacenti da item sovrapposti e offre ripple globale o spostamento dei soli selezionati. Play/Stop del Project Viewer usano i pulsanti tondi del SOLO Recorder; nel Gestore Progetto Sel, Play, Stop e Salva hanno icona con didascalia leggibile anche con Sel attivo. Nel SOLO Recorder le frecce navigano marker, regioni e item con selettori a icone.
+- **Project Viewer and Project Manager**: larger controls and icons, hover explanations; Space between items distinguishes adjacent from overlapping items and offers global ripple or selected-only movement. Project Viewer Play/Stop use the SOLO Recorder's round buttons; Project Manager Sel, Play, Stop, and Save use icons with captions that remain readable when Sel is active. SOLO Recorder arrows navigate markers, regions, and items using icon selectors.
 
 - **ZP Render & Copy con più progetti in tab**: stato, messaggi e «Mostra in consegna» seguono il progetto in primo piano; un render in coda viene attribuito al progetto che lo ha accodato. Aiuto, conferma di Sincronizza (con progetto, consegna ed elenco dei file) e richiesta della cartella compaiono dentro la finestra.
 - **ZP Render & Copy: stesso nome in consegna**: quando in consegna c'è già un file con lo stesso nome si può sostituirlo o tenere tutte le versioni; il nuovo viene copiato come «nome (vers 2)», «(vers 3)»… Un pulsante lo decide per la copia automatica, «Sincronizza ora» lo chiede.

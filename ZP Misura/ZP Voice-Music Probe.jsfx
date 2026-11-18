@@ -26,6 +26,61 @@ slider1:probe_mode=0<0,1,1{Voice Probe,Music Probe}>Probe role
 // ZP Probe misura il risultato reale del bus. Non modifica audio, gain o latenza.
 
 @init
+// ---- ZP Proportional Zoom Engine (GUI-only, zero DSP impact) ----
+zp_sc = 1.0; zp_ox = 0.0; zp_vw = 900.0; zp_vh = 600.0; zp_gx = 0.0; zp_gy = 0.0; zp_mx = 0.0; zp_my = 0.0;
+function zp_rect(x, y, w, h) (
+  (x <= 0 && y <= 0 && w >= zp_vw && h >= zp_vh - 1) ? gfx_rect(0, 0, gfx_w, gfx_h) :
+  gfx_rect(floor(zp_ox + (x) * zp_sc + 0.5), floor((y) * zp_sc + 0.5), max(1, floor((w) * zp_sc + 0.5)), max(1, floor((h) * zp_sc + 0.5)));
+);
+function zp_rect(x, y, w, h, aa) (
+  gfx_rect(floor(zp_ox + (x) * zp_sc + 0.5), floor((y) * zp_sc + 0.5), max(1, floor((w) * zp_sc + 0.5)), max(1, floor((h) * zp_sc + 0.5)), aa);
+);
+function zp_line(x1, y1, x2, y2) (
+  gfx_line(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, 1);
+);
+function zp_line(x1, y1, x2, y2, aa) (
+  gfx_line(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, aa);
+);
+function zp_circle(x, y, r, fill) (
+  gfx_circle(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), fill, 1);
+);
+function zp_circle(x, y, r, fill, aa) (
+  gfx_circle(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), fill, aa);
+);
+function zp_arc(x, y, r, a1, a2) (
+  gfx_arc(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), a1, a2, 1);
+);
+function zp_arc(x, y, r, a1, a2, aa) (
+  gfx_arc(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), a1, a2, aa);
+);
+function zp_triangle(x1, y1, x2, y2, x3, y3) (
+  gfx_triangle(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, zp_ox + (x3) * zp_sc, (y3) * zp_sc);
+);
+function zp_setfont(idx) ( gfx_setfont(idx); );
+function zp_setfont(idx, fname, sz) ( gfx_setfont(idx, fname, max(7, floor((sz) * zp_sc + 0.5))); );
+function zp_setfont(idx, fname, sz, flg) ( gfx_setfont(idx, fname, max(7, floor((sz) * zp_sc + 0.5)), flg); );
+function zp_drawstr(s) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_drawstr(s);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+function zp_drawnumber(n, dec) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_drawnumber(n, dec);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+function zp_printf(fmt, a1) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_printf(fmt, a1);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+
 help_bridge_alive = 0;
 help_warn_until = 0;
 ui_lang = 0;
@@ -141,7 +196,9 @@ speech_target=probe_rms_db>-48 && fast_env>0.00000001 ? 1 : 0;
 speech_env=speech_target+(speech_env-speech_target)*speech_c;
 probe_speech=clamp(speech_env*100,0,100);
 
-@gfx 520 250
+@gfx 680 326
+zp_dw = 520.0; zp_dh = 250.0; zp_sc = max(0.55, min(2.8, min(gfx_w / zp_dw, gfx_h / zp_dh))); zp_ox = max(0, (gfx_w - zp_dw * zp_sc) * 0.5); zp_vw = zp_dw; zp_vh = max(zp_dh, gfx_h / zp_sc); zp_mx = (mouse_x - zp_ox) / zp_sc; zp_my = mouse_y / zp_sc;
+
 // Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
 zp_hb = gmem[3900]; zp_hb_now = time_precise();
 !zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
@@ -153,56 +210,56 @@ ui_lang = (gmem[3901] == 1) ? 1 : 0;
 _role_now=max(0,min(1,floor(slider1+0.5)));
 _role_now!=probe_mode ? set_probe_role(_role_now);
 
-gfx_set(0.055,0.06,0.075,1); gfx_rect(0,0,gfx_w,gfx_h);
-gfx_setfont(1,"Arial",20,'b'); gfx_set(0.86,0.89,0.94,1); gfx_x=18; gfx_y=16;
-probe_mode<0.5 ? gfx_drawstr("ZP VOICE PROBE") : gfx_drawstr("ZP MUSIC PROBE");
+gfx_set(0.055,0.06,0.075,1); zp_rect(0,0,zp_vw,zp_vh);
+zp_setfont(1,"Arial",20,'b'); gfx_set(0.86,0.89,0.94,1); zp_gx=18; zp_gy=16;
+probe_mode<0.5 ? zp_drawstr("ZP VOICE PROBE") : zp_drawstr("ZP MUSIC PROBE");
 
 // Real role controls: clickable and visible to REAPER/Chain Builder.
 _mouse_click=(mouse_cap&1)&&!(last_mouse_cap&1);
-_btn_y=47; _btn_w=76; _btn_h=22; _btn_gap=6; _voice_x=gfx_w-176; _music_x=_voice_x+_btn_w+_btn_gap;
-probe_mode<0.5 ? gfx_set(0.18,0.52,0.88,1) : gfx_set(0.12,0.14,0.18,1); gfx_rect(_voice_x,_btn_y,_btn_w,_btn_h);
-probe_mode>=0.5 ? gfx_set(0.42,0.28,0.72,1) : gfx_set(0.12,0.14,0.18,1); gfx_rect(_music_x,_btn_y,_btn_w,_btn_h);
-gfx_setfont(1,"Arial",10,'b'); gfx_set(0.92,0.94,0.98,1);
-gfx_x=_voice_x+18; gfx_y=_btn_y+6; gfx_drawstr("VOICE");
-gfx_x=_music_x+17; gfx_y=_btn_y+6; gfx_drawstr("MUSIC");
-_voice_hit=mouse_x>=_voice_x&&mouse_x<=_voice_x+_btn_w&&mouse_y>=_btn_y&&mouse_y<=_btn_y+_btn_h;
-_music_hit=mouse_x>=_music_x&&mouse_x<=_music_x+_btn_w&&mouse_y>=_btn_y&&mouse_y<=_btn_y+_btn_h;
+_btn_y=47; _btn_w=76; _btn_h=22; _btn_gap=6; _voice_x=zp_vw-176; _music_x=_voice_x+_btn_w+_btn_gap;
+probe_mode<0.5 ? gfx_set(0.18,0.52,0.88,1) : gfx_set(0.12,0.14,0.18,1); zp_rect(_voice_x,_btn_y,_btn_w,_btn_h);
+probe_mode>=0.5 ? gfx_set(0.42,0.28,0.72,1) : gfx_set(0.12,0.14,0.18,1); zp_rect(_music_x,_btn_y,_btn_w,_btn_h);
+zp_setfont(1,"Arial",10,'b'); gfx_set(0.92,0.94,0.98,1);
+zp_gx=_voice_x+18; zp_gy=_btn_y+6; zp_drawstr("VOICE");
+zp_gx=_music_x+17; zp_gy=_btn_y+6; zp_drawstr("MUSIC");
+_voice_hit=zp_mx>=_voice_x&&zp_mx<=_voice_x+_btn_w&&zp_my>=_btn_y&&zp_my<=_btn_y+_btn_h;
+_music_hit=zp_mx>=_music_x&&zp_mx<=_music_x+_btn_w&&zp_my>=_btn_y&&zp_my<=_btn_y+_btn_h;
 _mouse_click&&_voice_hit&&probe_mode!=0 ? (set_probe_role(0); sliderchange(slider1););
 _mouse_click&&_music_hit&&probe_mode!=1 ? (set_probe_role(1); sliderchange(slider1););
 
 // Help button (?)
-_help_w=22; _help_h=22; _help_x=gfx_w-32; _help_y=16;
-_help_hit=mouse_x>=_help_x && mouse_x<=_help_x+_help_w && mouse_y>=_help_y && mouse_y<=_help_y+_help_h;
+_help_w=22; _help_h=22; _help_x=zp_vw-32; _help_y=16;
+_help_hit=zp_mx>=_help_x && zp_mx<=_help_x+_help_w && zp_my>=_help_y && zp_my<=_help_y+_help_h;
 _help_hit ? (
-  gfx_set(0.18,0.52,0.88,0.35); gfx_circle(_help_x+11,_help_y+11,11,1);
+  gfx_set(0.18,0.52,0.88,0.35); zp_circle(_help_x+11,_help_y+11,11,1);
   gfx_set(1,1,1,0.95);
 ) : (
-  gfx_set(0.25,0.28,0.35,0.4); gfx_circle(_help_x+11,_help_y+11,11,1);
+  gfx_set(0.25,0.28,0.35,0.4); zp_circle(_help_x+11,_help_y+11,11,1);
   gfx_set(0.72,0.76,0.82,0.85);
 );
-gfx_circle(_help_x+11,_help_y+11,11,0);
-gfx_setfont(1,"Arial",12,'b');
-gfx_measurestr("?",_htw,_hth);
-gfx_x=_help_x+(_help_w-_htw)*0.5; gfx_y=_help_y+(_help_h-_hth)*0.5;
-gfx_drawstr("?");
+zp_circle(_help_x+11,_help_y+11,11,0);
+zp_setfont(1,"Arial",12,'b');
+(gfx_measurestr("?", _htw, _hth); _htw /= zp_sc; _hth /= zp_sc);
+zp_gx=_help_x+(_help_w-_htw)*0.5; zp_gy=_help_y+(_help_h-_hth)*0.5;
+zp_drawstr("?");
 _mouse_click && _help_hit ? ( help_bridge_open(11); );
 
 last_mouse_cap=mouse_cap;
 
 bus_read();
 bus_connection_state==2 ? gfx_set(0.25,0.90,0.58,1) : bus_connection_state==1 ? gfx_set(1.0,0.72,0.20,1) : gfx_set(1.0,0.30,0.25,1);
-gfx_circle(220,27,5,1); gfx_setfont(1,"Arial",10,'b'); gfx_x=232; gfx_y=20;
-bus_connection_state==2 ? gfx_drawstr(ui_lang == 0 ? "BUS COLLEGATO" : "BUS CONNECTED") :
-bus_connection_state==1 ? gfx_drawstr(ui_lang == 0 ? "DATI BUS VECCHI" : "BUS DATA OLD") :
-                          gfx_drawstr(ui_lang == 0 ? "BUS NON ATTIVO" : "BUS OFFLINE");
-gfx_setfont(1,"Arial",13);
-gfx_set(0.62,0.68,0.78,1); gfx_x=18; gfx_y=54;
-gfx_drawstr(ui_lang == 0 ? "Misura passiva post-catena." : "Passive post-chain measurement.");
+zp_circle(220,27,5,1); zp_setfont(1,"Arial",10,'b'); zp_gx=232; zp_gy=20;
+bus_connection_state==2 ? zp_drawstr(ui_lang == 0 ? "BUS COLLEGATO" : "BUS CONNECTED") :
+bus_connection_state==1 ? zp_drawstr(ui_lang == 0 ? "DATI BUS VECCHI" : "BUS DATA OLD") :
+                          zp_drawstr(ui_lang == 0 ? "BUS NON ATTIVO" : "BUS OFFLINE");
+zp_setfont(1,"Arial",13);
+gfx_set(0.62,0.68,0.78,1); zp_gx=18; zp_gy=54;
+zp_drawstr(ui_lang == 0 ? "Misura passiva post-catena." : "Passive post-chain measurement.");
 
 function metric(label,val,unit,x,y) (
-  gfx_set(0.22,0.25,0.31,1); gfx_rect(x,y,150,52);
-  gfx_set(0.56,0.64,0.76,1); gfx_setfont(1,"Arial",10,'b'); gfx_x=x+10; gfx_y=y+7; gfx_drawstr(label);
-  gfx_set(0.92,0.93,0.96,1); gfx_setfont(1,"Arial",15,'b'); gfx_x=x+10; gfx_y=y+25; gfx_drawnumber(val,1); gfx_drawstr(unit);
+  gfx_set(0.22,0.25,0.31,1); zp_rect(x,y,150,52);
+  gfx_set(0.56,0.64,0.76,1); zp_setfont(1,"Arial",10,'b'); zp_gx=x+10; zp_gy=y+7; zp_drawstr(label);
+  gfx_set(0.92,0.93,0.96,1); zp_setfont(1,"Arial",15,'b'); zp_gx=x+10; zp_gy=y+25; zp_drawnumber(val,1); zp_drawstr(unit);
 );
 metric("RMS",probe_rms_db," dBFS",18,82);
 metric("PEAK",probe_peak_db," dBFS",178,82);
@@ -212,10 +269,10 @@ metric("BRIGHTNESS",probe_brightness_db," dB",178,144);
 probe_mode<0.5 ? metric("SPEECH",probe_speech," %",338,144) : metric("ROLE",1," MUSIC",338,144);
 
 time_precise() < help_warn_until ? (
-  gfx_set(1.0,0.72,0.20,0.96); gfx_setfont(1,"Arial",10,'b');
-  gfx_x=18; gfx_y=gfx_h-38;
-  gfx_drawstr(ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Studio Suite" : "Open Cue Navigator or ZP Suite help");
+  gfx_set(1.0,0.72,0.20,0.96); zp_setfont(1,"Arial",10,'b');
+  zp_gx=18; zp_gy=zp_vh-38;
+  zp_drawstr(ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Studio Suite" : "Open Cue Navigator or ZP Suite help");
 );
 
-gfx_set(0.40,0.44,0.52,1); gfx_setfont(1,"Arial",10); gfx_x=18; gfx_y=gfx_h-20;
-gfx_drawstr(ui_lang == 0 ? "ZP Shared Bus v2 | La Probe deve essere l'ultimo FX del bus." : "ZP Shared Bus v2 | Probe must be the last FX in the bus.");
+gfx_set(0.40,0.44,0.52,1); zp_setfont(1,"Arial",10); zp_gx=18; zp_gy=zp_vh-20;
+zp_drawstr(ui_lang == 0 ? "ZP Shared Bus v2 | La Probe deve essere l'ultimo FX del bus." : "ZP Shared Bus v2 | Probe must be the last FX in the bus.");

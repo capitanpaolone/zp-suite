@@ -56,6 +56,61 @@ out_pin:left output
 out_pin:right output
 
 @init
+// ---- ZP Proportional Zoom Engine (GUI-only, zero DSP impact) ----
+zp_sc = 1.0; zp_ox = 0.0; zp_vw = 900.0; zp_vh = 600.0; zp_gx = 0.0; zp_gy = 0.0; zp_mx = 0.0; zp_my = 0.0;
+function zp_rect(x, y, w, h) (
+  (x <= 0 && y <= 0 && w >= zp_vw && h >= zp_vh - 1) ? gfx_rect(0, 0, gfx_w, gfx_h) :
+  gfx_rect(floor(zp_ox + (x) * zp_sc + 0.5), floor((y) * zp_sc + 0.5), max(1, floor((w) * zp_sc + 0.5)), max(1, floor((h) * zp_sc + 0.5)));
+);
+function zp_rect(x, y, w, h, aa) (
+  gfx_rect(floor(zp_ox + (x) * zp_sc + 0.5), floor((y) * zp_sc + 0.5), max(1, floor((w) * zp_sc + 0.5)), max(1, floor((h) * zp_sc + 0.5)), aa);
+);
+function zp_line(x1, y1, x2, y2) (
+  gfx_line(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, 1);
+);
+function zp_line(x1, y1, x2, y2, aa) (
+  gfx_line(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, aa);
+);
+function zp_circle(x, y, r, fill) (
+  gfx_circle(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), fill, 1);
+);
+function zp_circle(x, y, r, fill, aa) (
+  gfx_circle(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), fill, aa);
+);
+function zp_arc(x, y, r, a1, a2) (
+  gfx_arc(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), a1, a2, 1);
+);
+function zp_arc(x, y, r, a1, a2, aa) (
+  gfx_arc(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), a1, a2, aa);
+);
+function zp_triangle(x1, y1, x2, y2, x3, y3) (
+  gfx_triangle(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, zp_ox + (x3) * zp_sc, (y3) * zp_sc);
+);
+function zp_setfont(idx) ( gfx_setfont(idx); );
+function zp_setfont(idx, fname, sz) ( gfx_setfont(idx, fname, max(7, floor((sz) * zp_sc + 0.5))); );
+function zp_setfont(idx, fname, sz, flg) ( gfx_setfont(idx, fname, max(7, floor((sz) * zp_sc + 0.5)), flg); );
+function zp_drawstr(s) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_drawstr(s);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+function zp_drawnumber(n, dec) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_drawnumber(n, dec);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+function zp_printf(fmt, a1) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_printf(fmt, a1);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+
 ext_noinit = 1;   // la media lunga non si azzera a ogni Play
 
 // Ponte guida (gmem ZPVoiceoverSharedBus 3900-3905, Cue Navigator): "?" apre la sezione HTML del plugin.
@@ -72,11 +127,11 @@ function help_bridge_open(plugin_id) (
 );
 function help_bridge_warn() local(tw2, th2) (
   time_precise() < help_warn_until ? (
-    gfx_setfont(9, "Arial", 14);
-    gfx_measurestr("Guida: avvia il Cue Navigator (33 Benvenuto) per aprirla da qui, oppure apri l'Help ZP.", tw2, th2);
-    gfx_set(0.10, 0.08, 0.04, 0.95); gfx_rect(16, gfx_h - th2 - 22, tw2 + 20, th2 + 12);
-    gfx_set(1.0, 0.78, 0.35, 1); gfx_x = 26; gfx_y = gfx_h - th2 - 16;
-    gfx_drawstr("Guida: avvia il Cue Navigator (33 Benvenuto) per aprirla da qui, oppure apri l'Help ZP.");
+    zp_setfont(9, "Arial", 14);
+    (gfx_measurestr("Guida: avvia il Cue Navigator (33 Benvenuto) per aprirla da qui, oppure apri l'Help ZP.", tw2, th2); tw2 /= zp_sc; th2 /= zp_sc);
+    gfx_set(0.10, 0.08, 0.04, 0.95); zp_rect(16, zp_vh - th2 - 22, tw2 + 20, th2 + 12);
+    gfx_set(1.0, 0.78, 0.35, 1); zp_gx = 26; zp_gy = zp_vh - th2 - 16;
+    zp_drawstr("Guida: avvia il Cue Navigator (33 Benvenuto) per aprirla da qui, oppure apri l'Help ZP.");
   );
 );
 // JSFX non accetta la notazione scientifica (1e-30): costanti calcolate qui
@@ -219,16 +274,16 @@ function set_param(idx, v) local(m) (
 
 // pulsante stile Suite: restituisce 1 al clic (btn_click decide se i clic valgono)
 function ui_button(x, y, w, h, label, on, hint) local(hov) (
-  hov = mouse_x >= x && mouse_x <= x + w && mouse_y >= y && mouse_y <= y + h;
+  hov = zp_mx >= x && zp_mx <= x + w && zp_my >= y && zp_my <= y + h;
   hov ? strcpy(#hint, hint);
   on ? gfx_set(0.16, 0.40, 0.34, 1) : hov ? gfx_set(0.18, 0.20, 0.25, 1) : gfx_set(0.12, 0.13, 0.16, 1);
-  gfx_rect(x, y, w, h);
+  zp_rect(x, y, w, h);
   on ? gfx_set(0.40, 0.88, 0.60, 1) : hov ? gfx_set(0.75, 0.80, 0.88, 1) : gfx_set(0.32, 0.33, 0.40, 1);
-  gfx_line(x, y, x + w - 1, y); gfx_line(x, y + h - 1, x + w - 1, y + h - 1);
-  gfx_line(x, y, x, y + h - 1); gfx_line(x + w - 1, y, x + w - 1, y + h - 1);
-  gfx_setfont(1, "Arial", 14); gfx_measurestr(label, tw, th);
-  gfx_x = x + (w - tw) / 2; gfx_y = y + (h - th) / 2;
-  gfx_set(0.92, 0.94, 0.96, 1); gfx_drawstr(label);
+  zp_line(x, y, x + w - 1, y); zp_line(x, y + h - 1, x + w - 1, y + h - 1);
+  zp_line(x, y, x, y + h - 1); zp_line(x + w - 1, y, x + w - 1, y + h - 1);
+  zp_setfont(1, "Arial", 14); (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = x + (w - tw) / 2; zp_gy = y + (h - th) / 2;
+  gfx_set(0.92, 0.94, 0.96, 1); zp_drawstr(label);
   hov && btn_click;
 );
 
@@ -237,17 +292,17 @@ function ui_button(x, y, w, h, label, on, hint) local(hov) (
 function ui_knob(idx, cx, cy, r, minv, maxv, defv, steps, label, valstr, hint) local(v, hov, n, a, a0, a1, k, x1, y1, x2, y2, now)
 (
   v = slider(idx);
-  hov = mouse_x >= cx - r - 8 && mouse_x <= cx + r + 8 && mouse_y >= cy - r - 8 && mouse_y <= cy + r + 30;
+  hov = zp_mx >= cx - r - 8 && zp_mx <= cx + r + 8 && zp_my >= cy - r - 8 && zp_my <= cy + r + 30;
   hov ? strcpy(#hint, hint);
   hov && btn_click ? (
     now = time_precise();
-    kn_last == idx && now - kn_last_t < 0.35 ? (set_param(idx, defv); kn_drag = 0;) : (kn_drag = idx; kn_y = mouse_y; kn_v = v;);
+    kn_last == idx && now - kn_last_t < 0.35 ? (set_param(idx, defv); kn_drag = 0;) : (kn_drag = idx; kn_y = zp_my; kn_v = v;);
     kn_last = idx; kn_last_t = now;
   );
   hov && rclick && !help_open ? set_param(idx, defv);
   kn_drag == idx ? (
     mouse_cap & 1 ? (
-      n = kn_v + (kn_y - mouse_y) * (maxv - minv) / (steps > 0 ? 70 : 160);
+      n = kn_v + (kn_y - zp_my) * (maxv - minv) / (steps > 0 ? 70 : 160);
       n = max(minv, min(maxv, n));
       steps > 0 ? (n = floor(n + 0.5));
       n != slider(idx) ? set_param(idx, n);
@@ -256,59 +311,59 @@ function ui_knob(idx, cx, cy, r, minv, maxv, defv, steps, label, valstr, hint) l
   v = slider(idx);
   a0 = 0.75 * $pi; a1 = 2.25 * $pi;
   a = a0 + (v - minv) / max(maxv - minv, 0.0001) * (a1 - a0);
-  (hov || kn_drag == idx) ? (gfx_set(0.40, 0.88, 0.60, 0.12); gfx_circle(cx, cy, r + 7, 1, 1););
-  gfx_set(0.16, 0.17, 0.20, 1); gfx_circle(cx, cy, r, 1, 1);
-  gfx_set(0.30, 0.31, 0.36, 1); gfx_circle(cx, cy, r, 0, 1);
+  (hov || kn_drag == idx) ? (gfx_set(0.40, 0.88, 0.60, 0.12); zp_circle(cx, cy, r + 7, 1, 1););
+  gfx_set(0.16, 0.17, 0.20, 1); zp_circle(cx, cy, r, 1, 1);
+  gfx_set(0.30, 0.31, 0.36, 1); zp_circle(cx, cy, r, 0, 1);
   k = 0;   // arco del valore, a segmenti
   loop(40,
     x1 = a0 + (a - a0) * k / 40; x2 = a0 + (a - a0) * (k + 1) / 40;
     gfx_set(0.40, 0.88, 0.60, 1);
-    gfx_line(cx + cos(x1) * (r - 3), cy + sin(x1) * (r - 3), cx + cos(x2) * (r - 3), cy + sin(x2) * (r - 3), 1);
-    gfx_line(cx + cos(x1) * (r - 4), cy + sin(x1) * (r - 4), cx + cos(x2) * (r - 4), cy + sin(x2) * (r - 4), 1);
+    zp_line(cx + cos(x1) * (r - 3), cy + sin(x1) * (r - 3), cx + cos(x2) * (r - 3), cy + sin(x2) * (r - 3), 1);
+    zp_line(cx + cos(x1) * (r - 4), cy + sin(x1) * (r - 4), cx + cos(x2) * (r - 4), cy + sin(x2) * (r - 4), 1);
     k += 1;
   );
   gfx_set(0.92, 0.92, 0.92, 1);
-  gfx_line(cx + cos(a) * (r * 0.25), cy + sin(a) * (r * 0.25), cx + cos(a) * (r - 6), cy + sin(a) * (r - 6), 1);
-  gfx_setfont(1, "Arial", 12); gfx_set(0.62, 0.66, 0.72, 1);
-  gfx_measurestr(label, tw, th); gfx_x = cx - tw / 2; gfx_y = cy + r + 4; gfx_drawstr(label);
+  zp_line(cx + cos(a) * (r * 0.25), cy + sin(a) * (r * 0.25), cx + cos(a) * (r - 6), cy + sin(a) * (r - 6), 1);
+  zp_setfont(1, "Arial", 12); gfx_set(0.62, 0.66, 0.72, 1);
+  (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = cx - tw / 2; zp_gy = cy + r + 4; zp_drawstr(label);
   gfx_set(0.92, 0.94, 0.96, 1);
-  gfx_measurestr(valstr, tw, th); gfx_x = cx - tw / 2; gfx_y = cy + r + 17; gfx_drawstr(valstr);
+  (gfx_measurestr(valstr, tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = cx - tw / 2; zp_gy = cy + r + 17; zp_drawstr(valstr);
 );
 
 // guida sovrapposta, come nei pannelli di Master Pro
 function help_overlay() local(px, py, pw, ph, cx, cy, hc, ly) (
-  pw = min(820, max(520, gfx_w - 48)); px = floor((gfx_w - pw) / 2); py = 60; ph = min(470, gfx_h - 90);
-  gfx_set(0.025, 0.027, 0.030, 0.96); gfx_rect(px, py, pw, ph);
-  gfx_set(0.40, 0.88, 0.60, 1); gfx_rect(px, py, pw, 2); gfx_rect(px, py + ph - 2, pw, 2); gfx_rect(px, py, 2, ph); gfx_rect(px + pw - 2, py, 2, ph);
-  gfx_setfont(2, "Arial", 22, 'b'); gfx_set(0.94, 0.96, 0.98, 1); gfx_x = px + 24; gfx_y = py + 16; gfx_drawstr("BrownSlope Prism - come si legge");
+  pw = min(820, max(520, zp_vw - 48)); px = floor((zp_vw - pw) / 2); py = 60; ph = min(470, zp_vh - 90);
+  gfx_set(0.025, 0.027, 0.030, 0.96); zp_rect(px, py, pw, ph);
+  gfx_set(0.40, 0.88, 0.60, 1); zp_rect(px, py, pw, 2); zp_rect(px, py + ph - 2, pw, 2); zp_rect(px, py, 2, ph); zp_rect(px + pw - 2, py, 2, ph);
+  zp_setfont(2, "Arial", 22, 'b'); gfx_set(0.94, 0.96, 0.98, 1); zp_gx = px + 24; zp_gy = py + 16; zp_drawstr("BrownSlope Prism - come si legge");
   cx = px + pw - 44; cy = py + 16;
-  hc = mouse_x >= cx && mouse_x <= cx + 28 && mouse_y >= cy && mouse_y <= cy + 28;
-  hc ? gfx_set(0.28, 0.12, 0.10, 1) : gfx_set(0.14, 0.12, 0.12, 1); gfx_rect(cx, cy, 28, 28);
-  gfx_setfont(1, "Arial", 16, 'b'); gfx_set(0.94, 0.80, 0.78, 1); gfx_measurestr("X", tw, th); gfx_x = cx + (28 - tw) / 2; gfx_y = cy + (28 - th) / 2; gfx_drawstr("X");
+  hc = zp_mx >= cx && zp_mx <= cx + 28 && zp_my >= cy && zp_my <= cy + 28;
+  hc ? gfx_set(0.28, 0.12, 0.10, 1) : gfx_set(0.14, 0.12, 0.12, 1); zp_rect(cx, cy, 28, 28);
+  zp_setfont(1, "Arial", 16, 'b'); gfx_set(0.94, 0.80, 0.78, 1); (gfx_measurestr("X", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = cx + (28 - tw) / 2; zp_gy = cy + (28 - th) / 2; zp_drawstr("X");
   hc && click ? (help_open = 0);
   // GUIDA COMPLETA: apre la sezione del plugin nella guida HTML (ponte del Cue Navigator)
-  hc = mouse_x >= cx - 188 && mouse_x <= cx - 8 && mouse_y >= cy && mouse_y <= cy + 28;
-  hc ? gfx_set(0.16, 0.40, 0.34, 1) : gfx_set(0.12, 0.13, 0.16, 1); gfx_rect(cx - 188, cy, 180, 28);
-  gfx_setfont(9, "Arial", 14, 'b'); gfx_set(0.72, 0.92, 0.82, 1); gfx_measurestr("GUIDA COMPLETA", tw, th);
-  gfx_x = cx - 188 + (180 - tw) / 2; gfx_y = cy + (28 - th) / 2; gfx_drawstr("GUIDA COMPLETA");
+  hc = zp_mx >= cx - 188 && zp_mx <= cx - 8 && zp_my >= cy && zp_my <= cy + 28;
+  hc ? gfx_set(0.16, 0.40, 0.34, 1) : gfx_set(0.12, 0.13, 0.16, 1); zp_rect(cx - 188, cy, 180, 28);
+  zp_setfont(9, "Arial", 14, 'b'); gfx_set(0.72, 0.92, 0.82, 1); (gfx_measurestr("GUIDA COMPLETA", tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = cx - 188 + (180 - tw) / 2; zp_gy = cy + (28 - th) / 2; zp_drawstr("GUIDA COMPLETA");
   hc && click ? help_bridge_open(12);
-  ly = py + 58; gfx_setfont(1, "Arial", 15);
+  ly = py + 58; zp_setfont(1, "Arial", 15);
   gfx_set(0.84, 0.86, 0.86, 1);
-  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Il grafico compensa 4,5 dB per ottava: un rumore brown diventa una linea piatta."); ly += 24;
-  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Verde: i riferimenti -18 e -24 LUFS (misurati dai loop brown). Arancio: il tuo audio."); ly += 24;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Il grafico compensa 4,5 dB per ottava: un rumore brown diventa una linea piatta."); ly += 24;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Verde: i riferimenti -18 e -24 LUFS (misurati dai loop brown). Arancio: il tuo audio."); ly += 24;
   gfx_set(0.98, 0.74, 0.32, 1);
-  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Sei pareggiato quando l'arancio e' piatto e sta sulla linea scelta."); ly += 34;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Sei pareggiato quando l'arancio e' piatto e sta sulla linea scelta."); ly += 34;
   gfx_set(0.84, 0.86, 0.86, 1);
-  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Zone: scarto medio in dB. Verde entro 1,5 - giallo entro 3 - rosso oltre."); ly += 24;
-  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Pendenza residua: + = piu' brillante del brown, - = piu' scuro."); ly += 24;
-  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Forma: toglie la differenza di livello e confronta solo l'EQ. Livello: conta anche il volume."); ly += 34;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Zone: scarto medio in dB. Verde entro 1,5 - giallo entro 3 - rosso oltre."); ly += 24;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Pendenza residua: + = piu' brillante del brown, - = piu' scuro."); ly += 24;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Forma: toglie la differenza di livello e confronta solo l'EQ. Livello: conta anche il volume."); ly += 34;
   gfx_set(0.72, 0.92, 0.82, 1);
-  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Media lunga: misura tutto il brano finche' non premi Reset; nei silenzi si ferma."); ly += 24;
-  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Pomelli: trascina in verticale; doppio clic o clic destro = valore di partenza."); ly += 24;
-  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Calibra: suona il loop di riferimento con media lunga e premi Calibra. Default la toglie."); ly += 34;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Media lunga: misura tutto il brano finche' non premi Reset; nei silenzi si ferma."); ly += 24;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Pomelli: trascina in verticale; doppio clic o clic destro = valore di partenza."); ly += 24;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Calibra: suona il loop di riferimento con media lunga e premi Calibra. Default la toglie."); ly += 34;
   gfx_set(0.62, 0.72, 0.82, 1);
-  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Vista JSFX: riporta la lista parametri di REAPER, letture comprese, per OSARA."); ly += 24;
-  gfx_x = px + 24; gfx_y = ly; gfx_drawstr("Passivo: l'audio passa intatto.");
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Vista JSFX: riporta la lista parametri di REAPER, letture comprese, per OSARA."); ly += 24;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Passivo: l'audio passa intatto.");
 );
 
 update_visibility();
@@ -318,12 +373,12 @@ function xf(f) ( gx0 + (log(f / 15) / log(20000 / 15)) * (gx1 - gx0); );
 function yv(v) ( gy0 + (RANGE - (v - ymid)) / (2 * RANGE) * (gy1 - gy0); );
 function zone_box(x, y, w, label, v) local(c) (
   c = abs(v) <= 1.5 ? 0 : abs(v) <= 3 ? 1 : 2;
-  gfx_set(0.12, 0.13, 0.15, 1); gfx_rect(x, y, w, 52);
-  gfx_set(0.62, 0.66, 0.72, 1); gfx_x = x + 10; gfx_y = y + 6; gfx_setfont(1, "Arial", 13); gfx_drawstr(label);
+  gfx_set(0.12, 0.13, 0.15, 1); zp_rect(x, y, w, 52);
+  gfx_set(0.62, 0.66, 0.72, 1); zp_gx = x + 10; zp_gy = y + 6; zp_setfont(1, "Arial", 13); zp_drawstr(label);
   c == 0 ? gfx_set(0.40, 0.88, 0.60, 1) : c == 1 ? gfx_set(0.95, 0.78, 0.35, 1) : gfx_set(0.98, 0.45, 0.35, 1);
-  gfx_setfont(2, "Arial", 22, 'b'); gfx_x = x + 10; gfx_y = y + 24;
+  zp_setfont(2, "Arial", 22, 'b'); zp_gx = x + 10; zp_gy = y + 24;
   have_data ? sprintf(#zs, "%+.1f dB", v) : (#zs = "--");
-  gfx_drawstr(#zs);
+  zp_drawstr(#zs);
 );
 
 
@@ -354,20 +409,22 @@ file_mem(0, cal18, NB);
 file_mem(0, cal24, NB);
 cal_init = 1;
 
-@gfx 900 600
+@gfx 1050 700
+zp_dw = 900.0; zp_dh = 600.0; zp_sc = max(0.55, min(2.5, min(gfx_w / zp_dw, gfx_h / zp_dh))); zp_ox = max(0, (gfx_w - zp_dw * zp_sc) * 0.5); zp_vw = zp_dw; zp_vh = max(zp_dh, gfx_h / zp_sc); zp_mx = (mouse_x - zp_ox) / zp_sc; zp_my = mouse_y / zp_sc;
+
 help_bridge_alive();   // battito del ponte guida, a ogni giro
 click = (mouse_cap & 1) && !last_cap; last_cap = mouse_cap & 1;
 rclick = (mouse_cap & 2) && !last_rcap; last_rcap = mouse_cap & 2;
-gfx_set(0.07, 0.08, 0.09, 1); gfx_rect(0, 0, gfx_w, gfx_h);
+gfx_set(0.07, 0.08, 0.09, 1); zp_rect(0, 0, zp_vw, zp_vh);
 #hint = "";
 btn_click = click && !help_open;
 
 // testata
-gfx_setfont(2, "Arial", 18, 'b'); gfx_set(0.92, 0.88, 0.78, 1); gfx_x = 16; gfx_y = 12;
-gfx_drawstr("ZP BrownSlope Prism");
+zp_setfont(2, "Arial", 18, 'b'); gfx_set(0.92, 0.88, 0.78, 1); zp_gx = 16; zp_gy = 12;
+zp_drawstr("ZP BrownSlope Prism");
 
 // pulsanti in alto a destra
-bx = gfx_w - 16;
+bx = zp_vw - 16;
 bx -= 34; btn_click = click;
 ui_button(bx, 12, 30, 28, "?", help_open, "Guida: come leggere il grafico e come usarlo.") ? (help_open = !help_open);
 btn_click = click && !help_open;
@@ -376,7 +433,7 @@ bx -= 116; ui_button(bx, 12, 112, 28, slider6 >= 0.5 ? "Vista: JSFX" : "Vista: G
 
 // striscia comandi: pulsanti e pomelli
 cy0 = 52;
-gfx_set(0.10, 0.11, 0.13, 1); gfx_rect(12, cy0, gfx_w - 24, 74);
+gfx_set(0.10, 0.11, 0.13, 1); zp_rect(12, cy0, zp_vw - 24, 74);
 x = 24;
 ui_button(x, cy0 + 10, 96, 26, target == 0 ? "Rif. -18" : "Rif. -24", 1,
   "Riferimento: brown a -18 o -24 LUFS. Clic per cambiare.") ? set_param(1, !target);
@@ -406,35 +463,35 @@ sprintf(#scala, "+/- %d dB", RANGE);
 ui_knob(7, x, cy0 + 26, 17, 6, 30, 18, 1, "Scala", #scala, "Quanti dB mostra il grafico sopra e sotto il riferimento.");
 
 // riga di stato: il suggerimento del comando sotto il mouse, altrimenti lo stato
-gfx_setfont(1, "Arial", 13); gfx_x = 220; gfx_y = 18;
-strlen(#hint) ? (gfx_set(0.62, 0.78, 0.92, 1); gfx_drawstr(#hint);) : (
+zp_setfont(1, "Arial", 13); zp_gx = 220; zp_gy = 18;
+strlen(#hint) ? (gfx_set(0.62, 0.78, 0.92, 1); zp_drawstr(#hint);) : (
   gfx_set(0.56, 0.72, 0.86, 1);
   sprintf(#st, "passivo - analizzati %.0f s%s", seconds, cal18_ok || cal24_ok ? " - calibrato" : "");
-  gfx_drawstr(#st);
+  zp_drawstr(#st);
 );
 
 // grafico
-gx0 = 56; gx1 = gfx_w - 18; gy0 = 138; gy1 = gfx_h - 96;
+gx0 = 56; gx1 = zp_vw - 18; gy0 = 138; gy1 = zp_vh - 96;
 // centro verticale: la media del riferimento scelto
 i = 0; ymid = 0; loop(NB, ymid += ref_at(i, target); i += 1;); ymid /= NB;
-gfx_set(0.10, 0.11, 0.12, 1); gfx_rect(gx0, gy0, gx1 - gx0, gy1 - gy0);
-gfx_setfont(1, "Arial", 12);
+gfx_set(0.10, 0.11, 0.12, 1); zp_rect(gx0, gy0, gx1 - gx0, gy1 - gy0);
+zp_setfont(1, "Arial", 12);
 v = -RANGE;
 loop(7,
-  y = yv(ymid + v); gfx_set(0.20, 0.21, 0.23, 1); gfx_line(gx0, y, gx1, y);
-  gfx_set(0.55, 0.58, 0.62, 1); gfx_x = 8; gfx_y = y - 6; sprintf(#lb, "%+d", v); v == 0 ? (#lb = "0"); gfx_drawstr(#lb);
+  y = yv(ymid + v); gfx_set(0.20, 0.21, 0.23, 1); zp_line(gx0, y, gx1, y);
+  gfx_set(0.55, 0.58, 0.62, 1); zp_gx = 8; zp_gy = y - 6; sprintf(#lb, "%+d", v); v == 0 ? (#lb = "0"); zp_drawstr(#lb);
   v += 6;
 );
 f = 20;
 loop(10,
-  x = xf(f); gfx_set(0.20, 0.21, 0.23, 1); gfx_line(x, gy0, x, gy1);
-  gfx_set(0.55, 0.58, 0.62, 1); gfx_x = x - 10; gfx_y = gy1 + 4;
-  f >= 1000 ? sprintf(#lb, "%dk", f / 1000) : sprintf(#lb, "%d", f); gfx_drawstr(#lb);
+  x = xf(f); gfx_set(0.20, 0.21, 0.23, 1); zp_line(x, gy0, x, gy1);
+  gfx_set(0.55, 0.58, 0.62, 1); zp_gx = x - 10; zp_gy = gy1 + 4;
+  f >= 1000 ? sprintf(#lb, "%dk", f / 1000) : sprintf(#lb, "%d", f); zp_drawstr(#lb);
   f = f == 20 ? 50 : f == 50 ? 100 : f == 100 ? 200 : f == 200 ? 500 : f == 500 ? 1000 : f == 1000 ? 2000 : f == 2000 ? 5000 : f == 5000 ? 10000 : 20000;
 );
 // zone
 gfx_set(0.16, 0.17, 0.19, 1);
-gfx_line(xf(160), gy0, xf(160), gy1); gfx_line(xf(800), gy0, xf(800), gy1); gfx_line(xf(4000), gy0, xf(4000), gy1);
+zp_line(xf(160), gy0, xf(160), gy1); zp_line(xf(800), gy0, xf(800), gy1); zp_line(xf(4000), gy0, xf(4000), gy1);
 
 // riferimenti: quello scelto pieno, l'altro tenue
 w2 = 0;
@@ -443,12 +500,12 @@ loop(2,
   which == target ? gfx_set(0.40, 0.88, 0.60, 1) : gfx_set(0.40, 0.88, 0.60, 0.35);
   i = 1;
   loop(NB - 1,
-    gfx_line(xf(bfc[i - 1]), yv(ref_at(i - 1, which)), xf(bfc[i]), yv(ref_at(i, which)), 1);
-    which == target ? gfx_line(xf(bfc[i - 1]), yv(ref_at(i - 1, which)) + 1, xf(bfc[i]), yv(ref_at(i, which)) + 1, 1);
+    zp_line(xf(bfc[i - 1]), yv(ref_at(i - 1, which)), xf(bfc[i]), yv(ref_at(i, which)), 1);
+    which == target ? zp_line(xf(bfc[i - 1]), yv(ref_at(i - 1, which)) + 1, xf(bfc[i]), yv(ref_at(i, which)) + 1, 1);
     i += 1;
   );
-  gfx_x = gx1 - 70; gfx_y = yv(ref_at(NB - 1, which)) - 16;
-  gfx_drawstr(which == 0 ? "-18 LUFS" : "-24 LUFS");
+  zp_gx = gx1 - 70; zp_gy = yv(ref_at(NB - 1, which)) - 16;
+  zp_drawstr(which == 0 ? "-18 LUFS" : "-24 LUFS");
   w2 += 1;
 );
 
@@ -458,38 +515,38 @@ have_data ? (
   i = 0;
   loop(NB,
     y = max(gy0, min(gy1, yv(bdb[i] + shift)));
-    gfx_set(1.0, 0.72, 0.45, 0.10); gfx_line(xf(bfc[i]), y, xf(bfc[i]), gy1);
+    gfx_set(1.0, 0.72, 0.45, 0.10); zp_line(xf(bfc[i]), y, xf(bfc[i]), gy1);
     i > 0 ? (
       gfx_set(1.0, 0.72, 0.45, 1);
-      gfx_line(xf(bfc[i - 1]), max(gy0, min(gy1, yv(bdb[i - 1] + shift))), xf(bfc[i]), y, 1);
-      gfx_line(xf(bfc[i - 1]), max(gy0, min(gy1, yv(bdb[i - 1] + shift))) + 1, xf(bfc[i]), y + 1, 1);
+      zp_line(xf(bfc[i - 1]), max(gy0, min(gy1, yv(bdb[i - 1] + shift))), xf(bfc[i]), y, 1);
+      zp_line(xf(bfc[i - 1]), max(gy0, min(gy1, yv(bdb[i - 1] + shift))) + 1, xf(bfc[i]), y + 1, 1);
     );
     i += 1;
   );
 ) : (
-  gfx_set(0.62, 0.66, 0.72, 1); gfx_setfont(1, "Arial", 15);
-  gfx_x = gx0 + 20; gfx_y = (gy0 + gy1) / 2 - 8;
-  gfx_drawstr("In attesa di segnale (sotto -80 dB la misura resta ferma)");
+  gfx_set(0.62, 0.66, 0.72, 1); zp_setfont(1, "Arial", 15);
+  zp_gx = gx0 + 20; zp_gy = (gy0 + gy1) / 2 - 8;
+  zp_drawstr("In attesa di segnale (sotto -80 dB la misura resta ferma)");
 );
 
 // letture
-zw = (gfx_w - 32 - 3 * 8 - 250) / 4; zy = gfx_h - 70;
+zw = (zp_vw - 32 - 3 * 8 - 250) / 4; zy = zp_vh - 70;
 zone_box(16, zy, zw, "Bassi 40-160", zb);
 zone_box(16 + (zw + 8), zy, zw, "Medio-bassi 160-800", zlm);
 zone_box(16 + 2 * (zw + 8), zy, zw, "Medio-alti 800-4k", zmh);
 zone_box(16 + 3 * (zw + 8), zy, zw, "Alti 4k-14k", zh);
 rx = 16 + 4 * (zw + 8);
-gfx_set(0.12, 0.13, 0.15, 1); gfx_rect(rx, zy, gfx_w - 16 - rx, 52);
-gfx_setfont(1, "Arial", 13); gfx_set(0.62, 0.66, 0.72, 1); gfx_x = rx + 10; gfx_y = zy + 6;
+gfx_set(0.12, 0.13, 0.15, 1); zp_rect(rx, zy, zp_vw - 16 - rx, 52);
+zp_setfont(1, "Arial", 13); gfx_set(0.62, 0.66, 0.72, 1); zp_gx = rx + 10; zp_gy = zy + 6;
 have_data ? sprintf(#t1, "Pendenza residua %+.2f dB/oct", tilt) : (#t1 = "Pendenza residua --");
-gfx_drawstr(#t1);
-gfx_x = rx + 10; gfx_y = zy + 21;
+zp_drawstr(#t1);
+zp_gx = rx + 10; zp_gy = zy + 21;
 have_data ? sprintf(#t2, "Livello vs rif. %+.1f dB%s", level, compare == 1 ? " (ignorato)" : "") : (#t2 = "Livello --");
-gfx_drawstr(#t2);
-gfx_setfont(2, "Arial", 16, 'b'); gfx_x = rx + 10; gfx_y = zy + 35;
-verdict == 2 ? (gfx_set(0.40, 0.88, 0.60, 1); gfx_drawstr("PAREGGIATO");)
-: verdict == 1 ? (gfx_set(0.95, 0.78, 0.35, 1); gfx_drawstr("QUASI");)
-: (gfx_set(0.98, 0.45, 0.35, 1); gfx_drawstr(have_data ? (tilt > 0.5 ? "PIU' BRILLANTE" : tilt < -0.5 ? "PIU' SCURO" : "NON PAREGGIATO") : "--"););
+zp_drawstr(#t2);
+zp_setfont(2, "Arial", 16, 'b'); zp_gx = rx + 10; zp_gy = zy + 35;
+verdict == 2 ? (gfx_set(0.40, 0.88, 0.60, 1); zp_drawstr("PAREGGIATO");)
+: verdict == 1 ? (gfx_set(0.95, 0.78, 0.35, 1); zp_drawstr("QUASI");)
+: (gfx_set(0.98, 0.45, 0.35, 1); zp_drawstr(have_data ? (tilt > 0.5 ? "PIU' BRILLANTE" : tilt < -0.5 ? "PIU' SCURO" : "NON PAREGGIATO") : "--"););
 
 help_open ? help_overlay();
 help_bridge_warn();
