@@ -330,6 +330,19 @@ Marker ALT: qui c'e' una versione alternativa.	Marker ALT: alternative version h
 Marker BAD: questo punto e' da rifare.	Marker BAD: this spot needs to be redone.
 Marker NOISE: c'e' un rumore da sistemare.	Marker NOISE: noise to fix here.
 Marker OK: questo punto e' buono.	Marker OK: this spot is good.
+Marker più vicino	Nearest marker
+Marker navigazione	Marker navigation
+Navigazione item: Precedente e Successivo portano all'inizio dell'item prima o dopo il cursore sulla traccia di destinazione; se non ci sono item su quella traccia, usano tutti gli item del progetto. Il pulsante centrale raggiunge l'inizio dell'item sotto il cursore.	Item navigation: Previous and Next move to the start of the item before or after the cursor on the destination track; if that track has no items, they use all project items. The center button moves to the start of the item under the cursor.
+Navigazione marker: Precedente e Successivo portano al marker di progetto prima o dopo il cursore; il pulsante centrale raggiunge il marker piu' vicino.	Marker navigation: Previous and Next move to the project marker before or after the cursor; the center button moves to the nearest marker.
+Navigazione regioni: Precedente e Successivo portano all'inizio della regione prima o dopo il cursore; il pulsante centrale raggiunge l'inizio della regione che contiene il cursore.	Region navigation: Previous and Next move to the start of the region before or after the cursor; the center button moves to the start of the region containing the cursor.
+Porta il cursore al marker di progetto precedente; se non ce n'e' uno prima, raggiunge il primo marker.	Moves the cursor to the previous project marker; if there is none before it, moves to the first marker.
+Porta il cursore al marker di progetto successivo; se non ce n'e' uno dopo, raggiunge l'ultimo marker.	Moves the cursor to the next project marker; if there is none after it, moves to the last marker.
+Porta il cursore all'inizio della regione precedente; se non ce n'e' una prima, raggiunge la prima regione.	Moves the cursor to the start of the previous region; if there is none before it, moves to the first region.
+Porta il cursore all'inizio della regione successiva; se non ce n'e' una dopo, raggiunge l'ultima regione.	Moves the cursor to the start of the next region; if there is none after it, moves to the last region.
+Porta il cursore all'inizio dell'item precedente sulla traccia di destinazione; se non contiene item, considera tutti gli item del progetto.	Moves the cursor to the start of the previous item on the destination track; if it has no items, considers all project items.
+Porta il cursore all'inizio dell'item successivo sulla traccia di destinazione; se non contiene item, considera tutti gli item del progetto.	Moves the cursor to the start of the next item on the destination track; if it has no items, considers all project items.
+Porta il cursore all'inizio della regione che lo contiene. Se non sei dentro una regione, non si sposta.	Moves the cursor to the start of the region containing it. If the cursor is not inside a region, it does not move.
+Porta il cursore all'inizio dell'item che lo contiene, sulla traccia di destinazione o, se vuota, nel progetto. Se non sei dentro un item, non si sposta.	Moves the cursor to the start of the item containing it, on the destination track or, if empty, in the project. If the cursor is not inside an item, it does not move.
 Marker degli item	Item markers
 Marker degli item protetti: trascini l'item, Shift+trascina sposta il marker.	Item markers protected: drag moves item, Shift+drag moves marker.
 Marker degli item: comandi di serie di REAPER (trascinare sposta il marker).	Item markers: REAPER default behavior (drag moves marker).
@@ -616,6 +629,7 @@ Spiega con l'AI usa ZP Speech (macOS): non e' installato qui.	Explain with AI us
 Spiegazione pronta per "	Explanation ready for "
 Sposta il cursore indietro di cinque secondi.	Moves cursor back five seconds.
 Spostamenti tra gli item della traccia di destinazione	Move between target track items
+Spostamenti tra i marker	Move between markers
 Spostamenti tra le regioni	Move between regions
 Stato gobbo.	Teleprompter status.
 Stereo In %d/%d	Stereo In %d/%d

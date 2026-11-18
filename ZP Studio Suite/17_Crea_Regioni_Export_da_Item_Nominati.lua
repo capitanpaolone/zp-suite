@@ -2310,6 +2310,41 @@ local function draw_button(rect, label, active, enabled, clicked, style, help_te
   return ZP_UI.draw_button(rect, label, active, enabled, clicked, style)
 end
 
+local function draw_icon_label_button(rect, caption, active, enabled, clicked, style, help_key, icon_kind)
+  rect.no_icon = true
+  rect.font = math.floor(15 * 1.15 + 0.5)
+  local hit = draw_button(rect, "", active, enabled, clicked, style, BUTTON_HELP[help_key] or help_key)
+  local k = rect.h / 30
+  local cx, cy = rect.x + rect.w / 2, rect.y + 11 * k
+  gfx.set(0.94, 0.97, 1.00, enabled and 1 or 0.50)
+  if icon_kind == "play" then
+    ZP_UI.draw_symbol("play", cx, cy, 14 * k)
+  elseif icon_kind == "stop" then
+    ZP_UI.draw_symbol("stop", cx, cy, 14 * k)
+  elseif icon_kind == "save" then
+    local w, h = 15 * k, 15 * k
+    gfx.rect(cx - w / 2, cy - h / 2, w, h, false)
+    gfx.rect(cx - 4 * k, cy - 7 * k, 8 * k, 5 * k, true)
+    gfx.rect(cx - 4 * k, cy + 2 * k, 8 * k, 4 * k, false)
+  elseif icon_kind == "select" then
+    gfx.set(1.00, 0.78, 0.28, enabled and 1 or 0.5)
+    gfx.line(cx - 7 * k, cy - 7 * k, cx - 7 * k, cy + 7 * k)
+    gfx.triangle(cx - 6 * k, cy - 7 * k, cx + 1 * k, cy - 5 * k, cx - 6 * k, cy - 1 * k)
+    gfx.set(0.90, 0.98, 1.00, enabled and 1 or 0.5)
+    ZP_UI.draw_symbol("play", cx + 4 * k, cy, 12 * k)
+  end
+  local band_y = rect.y + math.floor(rect.h * 0.59)
+  gfx.set(0.015, 0.025, 0.04, 0.88)
+  gfx.rect(rect.x + 1, band_y, rect.w - 2, rect.y + rect.h - band_y - 1, true)
+  gfx.setfont(1, "Arial", math.floor(12 * 1.15 + 0.5), "b")
+  gfx.set(0.98, 0.99, 1.00, enabled and 1 or 0.72)
+  local text = fit_text(caption, rect.w - 8)
+  local tw = gfx.measurestr(text)
+  gfx.x, gfx.y = rect.x + (rect.w - tw) / 2, band_y + 1
+  gfx.drawstr(text)
+  return hit
+end
+
 local function draw_export_icon(x, y, size)
   gfx.set(0.10, 0.42, 0.48, 1)
   gfx.rect(x, y, size, size, true)
@@ -3717,7 +3752,7 @@ local function open_window()
     local set_btn = { x = render_panel_x + 260, y = 98, w = 42, h = 24 }
     local open_queue_btn = { x = render_panel_x + 310, y = 98, w = 82, h = 24 }
     local selection_active = selected_row_count(groups) > 0
-    if draw_button(choose_btn, "Selezione", selection_active, region_count > 0, clicked, "tab") then
+    if draw_button(choose_btn, "Selezione", selection_active, region_count > 0, clicked, "tab_contrast") then
       if edit_name_index and active_field == "inline_name" then commit_name_edit(groups) end
       save_draft_state()
       local group = groups[selected_preview]
@@ -3938,20 +3973,24 @@ local function open_window()
     if draw_button({ x = 300, y = action_y, w = 105, h = 30 }, "N. + nome", state.number_names, true, clicked) then
       state.number_names = not state.number_names
     end
-    local transport_x = 420
-    if draw_button({ x = transport_x, y = transport_y, w = 86, h = 30 }, "Sel", play_row, region_count > 0, clicked, "play_select") then
+    local transport_x, transport_h = 420, math.floor(30 * 1.15 + 0.5)
+    local sel_w, play_w, stop_w, save_w, gap = 99, 94, 67, 101, 9
+    if draw_icon_label_button({ x = transport_x, y = transport_y, w = sel_w, h = transport_h }, play_row and "SEL ON" or "SEL OFF", play_row, region_count > 0, clicked, "play_select_contrast", "Sel", "select") then
       play_row = not play_row
       reaper.SetExtState(EXT_SECTION, "play_row", play_row and "1" or "0", true)
     end
-    if draw_button({ x = transport_x + 94, y = transport_y, w = 82, h = 30 }, "Play", false, region_count > 0, clicked, "play_now") then
+    local play_x = transport_x + sel_w + gap
+    if draw_icon_label_button({ x = play_x, y = transport_y, w = play_w, h = transport_h }, "Play", false, region_count > 0, clicked, "play_now", "Play", "play") then
       local group = groups[selected_preview]
       if is_region_row(group) then start_region_play(group) end
     end
-    if draw_button({ x = transport_x + 184, y = transport_y, w = 58, h = 30 }, "", false, true, clicked, "stop") then
+    local stop_x = play_x + play_w + gap
+    if draw_icon_label_button({ x = stop_x, y = transport_y, w = stop_w, h = transport_h }, "Stop", false, true, clicked, "stop", "Ferma la riproduzione della regione.", "stop") then
       stop_region_play()
     end
+    local save_x = stop_x + stop_w + gap
     local saved_recently = (reaper.time_precise() - last_saved_time) < 1.3
-    if draw_button({ x = transport_x + 250, y = transport_y, w = 88, h = 30 }, saved_recently and "OK" or "Salva", saved_recently, true, clicked, "save") then
+    if draw_icon_label_button({ x = save_x, y = transport_y, w = save_w, h = transport_h }, saved_recently and "OK" or "Salva", saved_recently, true, clicked, "save", "Salva", "save") then
       if edit_name_index and active_field == "inline_name" then commit_name_edit(groups) end
       save_draft_state()
       local _, save_groups, save_names = rebuild()
@@ -3965,7 +4004,8 @@ local function open_window()
       mark_saved()
     end
     local log_enabled = bool_from_state(reaper.GetExtState(EXT_SECTION, "mixdown_log_enabled"), false)
-    if draw_button({ x = transport_x + 346, y = transport_y, w = 76, h = 30 }, "Log", log_enabled, region_count > 0, clicked, log_enabled and "save" or "tab") then
+    local log_x = save_x + save_w + 8
+    if draw_button({ x = log_x, y = transport_y, w = 50, h = 30 }, "Log", log_enabled, region_count > 0, clicked, log_enabled and "save" or "tab") then
       local next_log = not log_enabled
       reaper.SetExtState(EXT_SECTION, "mixdown_log_enabled", tostring(next_log), true)
       save_draft_state()

@@ -8,9 +8,10 @@
 
 local SCRIPT_TITLE = "ZP Studio Suite v1.0.5 - Project"
 local EXT_SECTION = "ZP_RythmoBand_ProjectViewer"
-local ROW_H = 29
-local HEADER_H = 86
-local FOOTER_H = 52
+local UI_SCALE = 1.15
+local ROW_H = math.floor(29 * UI_SCALE + 0.5)
+local HEADER_H = math.floor(86 * UI_SCALE + 0.5) + 20
+local FOOTER_H = math.floor(52 * UI_SCALE + 0.5)
 local PLAY_PREROLL = 0.10
 local TABLE_W = 900
 local ACTION_RENDER_PROJECT = 40015
@@ -77,6 +78,198 @@ local function draw_button(rect, label, active, enabled, clicked, style)
   return ZP_UI.draw_button(rect, label, active, enabled, clicked, style)
 end
 
+local function draw_compact_tool(rect, label, active, enabled, clicked, kind)
+  local hit = ZP_UI.draw_button(rect, "", active, enabled, clicked, "tab")
+  local k = UI_SCALE
+  local cx, cy = rect.x + rect.w / 2, rect.y + 8 * k
+  gfx.set(0.82, 0.90, 0.94, enabled and 1 or 0.38)
+  if kind == "refresh" then
+    gfx.circle(cx, cy, 5 * k, false, true)
+    gfx.triangle(cx + 2 * k, cy - 6 * k, cx + 7 * k, cy - 5 * k, cx + 4 * k, cy - 1 * k)
+  elseif kind == "dock" then
+    gfx.rect(cx - 6 * k, cy - 5 * k, 12 * k, 10 * k, false)
+    gfx.line(cx - 6 * k, cy - 1 * k, cx + 6 * k, cy - 1 * k)
+  elseif kind == "scroll" then
+    gfx.triangle(cx - 7 * k, cy, cx - 2 * k, cy - 4 * k, cx - 2 * k, cy + 4 * k)
+    gfx.triangle(cx + 7 * k, cy, cx + 2 * k, cy - 4 * k, cx + 2 * k, cy + 4 * k)
+  elseif kind == "play" then
+    ZP_UI.draw_symbol("play", cx, cy, 12 * k)
+  elseif kind == "marker" then
+    gfx.line(cx - 4 * k, cy - 6 * k, cx - 4 * k, cy + 6 * k)
+    gfx.triangle(cx - 3 * k, cy - 6 * k, cx + 5 * k, cy - 4 * k, cx - 3 * k, cy)
+  elseif kind == "region" then
+    gfx.line(cx - 6 * k, cy - 5 * k, cx - 6 * k, cy + 5 * k)
+    gfx.line(cx + 6 * k, cy - 5 * k, cx + 6 * k, cy + 5 * k)
+    gfx.line(cx - 6 * k, cy - 5 * k, cx + 6 * k, cy - 5 * k)
+    gfx.line(cx - 6 * k, cy + 5 * k, cx + 6 * k, cy + 5 * k)
+  elseif kind == "gap" then
+    gfx.rect(cx - 8 * k, cy - 4 * k, 5 * k, 8 * k, true)
+    gfx.rect(cx + 3 * k, cy - 4 * k, 5 * k, 8 * k, true)
+    gfx.line(cx - 1 * k, cy, cx + 1 * k, cy)
+  end
+  local overlay_y = rect.y + 16 * k
+  gfx.set(0.03, 0.04, 0.06, 0.80)
+  gfx.rect(rect.x + 1, overlay_y, rect.w - 2, rect.y + rect.h - overlay_y - 1, true)
+  gfx.setfont(1, "Arial", math.floor(9 * k + 0.5), "b")
+  gfx.set(0.97, 0.98, 1.00, enabled and 1 or 0.82)
+  local caption = fit_text(label, rect.w - 3)
+  local tw = gfx.measurestr(caption)
+  gfx.x, gfx.y = rect.x + (rect.w - tw) / 2, overlay_y + 1
+  gfx.drawstr(caption)
+  local hover = point_in_rect(gfx.mouse_x, gfx.mouse_y, rect.x, rect.y, rect.w, rect.h)
+  return hit, hover
+end
+
+local function collect_selected_item_blocks()
+  local items = {}
+  for i = 0, reaper.CountSelectedMediaItems(0) - 1 do
+    local item = reaper.GetSelectedMediaItem(0, i)
+    if item then
+      local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+      local len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+      if len > 0 then items[#items + 1] = { item = item, pos = pos, finish = pos + len } end
+    end
+  end
+  table.sort(items, function(a, b)
+    if math.abs(a.pos - b.pos) > 0.000000001 then return a.pos < b.pos end
+    return a.finish < b.finish
+  end)
+  local blocks = {}
+  for _, entry in ipairs(items) do
+    local block = blocks[#blocks]
+    if block and entry.pos < block.finish - 0.000000001 then
+      block.finish = math.max(block.finish, entry.finish)
+      block.items[#block.items + 1] = entry.item
+    else
+      blocks[#blocks + 1] = { pos = entry.pos, finish = entry.finish, items = { entry.item } }
+    end
+  end
+  return blocks, #items
+end
+
+local function insert_selected_item_gaps()
+  local previous_gap = reaper.GetExtState(EXT_SECTION, "item_gap_seconds")
+  if previous_gap == "" then previous_gap = "1" end
+  local ok, raw = reaper.GetUserInputs("ZP Project — Spazio fra item", 1,
+    "Gap in secondi (es. 1.5),extrawidth=220", previous_gap)
+  if not ok then return end
+  local gap_text = (raw or ""):gsub(",", ".")
+  local seconds = tonumber(gap_text)
+  if not seconds or seconds <= 0 or seconds > 3600 then
+    reaper.ShowMessageBox("Inserisci una durata maggiore di zero e non superiore a 3600 secondi.", "ZP Project", 0)
+    return
+  end
+  local blocks, item_count = collect_selected_item_blocks()
+  if item_count == 0 then
+    reaper.ShowMessageBox("REAPER non rileva item media selezionati nella timeline. Seleziona gli item nell'Arrange e riprova.", "ZP Project", 0)
+    return
+  end
+  if item_count < 2 then
+    reaper.ShowMessageBox(string.format("REAPER rileva %d item selezionato/i. Seleziona almeno due item nella timeline.", item_count), "ZP Project", 0)
+    return
+  end
+  if #blocks < 2 then
+    reaper.ShowMessageBox(string.format("REAPER rileva %d item selezionati, ma si sovrappongono e formano un solo gruppo. Servono almeno due gruppi temporali. Item che si toccano senza sovrapporsi contano come gruppi distinti.", item_count), "ZP Project", 0)
+    return
+  end
+  local mode = reaper.ShowMessageBox(
+    string.format("Inserire %.3g secondi in ciascuno dei %d varchi fra i gruppi selezionati?\n\nSì: ripple globale, inserisce spazio e sposta gli item successivi su tutte le tracce.\nNo: sposta solo i gruppi selezionati successivi.\nAnnulla: non fare nulla.", seconds, #blocks - 1),
+    "ZP Project — Modalità", 3)
+  if mode == 3 then return end
+  local global = mode == 1
+  if not global then
+    local selected = {}
+    for _, block in ipairs(blocks) do for _, item in ipairs(block.items) do selected[item] = true end end
+    local collisions = {}
+    for block_index = 2, #blocks do
+      local shift = seconds * (block_index - 1)
+      for _, item in ipairs(blocks[block_index].items) do
+        local track = reaper.GetMediaItemTrack(item)
+        local moved_start = reaper.GetMediaItemInfo_Value(item, "D_POSITION") + shift
+        local moved_end = moved_start + reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+        if track then
+          for j = 0, reaper.CountTrackMediaItems(track) - 1 do
+            local other = reaper.GetTrackMediaItem(track, j)
+            if other and not selected[other] then
+              local other_start = reaper.GetMediaItemInfo_Value(other, "D_POSITION")
+              local other_end = other_start + reaper.GetMediaItemInfo_Value(other, "D_LENGTH")
+              if moved_start < other_end - 0.000000001 and moved_end > other_start + 0.000000001 then collisions[other] = true end
+            end
+          end
+        end
+      end
+    end
+    local collision_count = 0
+    for _ in pairs(collisions) do collision_count = collision_count + 1 end
+    if collision_count > 0 then
+      local proceed = reaper.ShowMessageBox(string.format(
+        "Spostando solo i selezionati, %d item non selezionati sulla stessa traccia potrebbero sovrapporsi ai gruppi spostati. Gli altri item resteranno fermi. Continuare?", collision_count),
+        "ZP Project — Controllo", 3)
+      if proceed ~= 1 then return end
+    end
+  end
+  local boundaries = {}
+  for i = 2, #blocks do boundaries[#boundaries + 1] = blocks[i].pos end
+
+  if global then
+    if not reaper.GetSet_LoopTimeRange2 or not reaper.Main_OnCommand then
+      reaper.ShowMessageBox("REAPER non espone le funzioni necessarie per il ripple globale.", "ZP Project", 0)
+      return
+    end
+    local crossing_items, locked_items = {}, {}
+    for _, boundary in ipairs(boundaries) do
+      for i = 0, reaper.CountMediaItems(0) - 1 do
+        local item = reaper.GetMediaItem(0, i)
+        local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+        local finish = pos + reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+        local lock = reaper.GetMediaItemInfo_Value(item, "C_LOCK") or 0
+        if pos < boundary - 0.000000001 and finish > boundary + 0.000000001 then crossing_items[item] = true end
+        if pos >= boundary - 0.000000001 and lock ~= 0 then locked_items[item] = true end
+      end
+    end
+    local crossing, locked = 0, 0
+    for _ in pairs(crossing_items) do crossing = crossing + 1 end
+    for _ in pairs(locked_items) do locked = locked + 1 end
+    if crossing > 0 or locked > 0 then
+      reaper.ShowMessageBox(string.format(
+        "Ripple globale non avviato: %d item attraversano un punto d'inserimento e %d item successivi sono bloccati.\n\nRisolvi questi casi oppure usa Solo selezionati.", crossing, locked),
+        "ZP Project — Controllo", 0)
+      return
+    end
+  end
+
+  reaper.SetExtState(EXT_SECTION, "item_gap_seconds", tostring(seconds), true)
+  local old_cursor = reaper.GetCursorPosition()
+  local old_start, old_end = reaper.GetSet_LoopTimeRange2(0, false, false, 0, 0, false)
+  reaper.Undo_BeginBlock2(0)
+  local success, err = pcall(function()
+    if global then
+      -- Inserendo dal piu' tardo al piu' vicino si conservano i confini ancora da processare.
+      for i = #boundaries, 1, -1 do
+        local at = boundaries[i]
+        reaper.GetSet_LoopTimeRange2(0, true, false, at, at + seconds, false)
+        reaper.Main_OnCommand(40200, 0) -- Time selection: Insert empty space at time selection (moving later items)
+      end
+    else
+      for i = 2, #blocks do
+        local shift = seconds * (i - 1)
+        for _, item in ipairs(blocks[i].items) do
+          local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+          reaper.SetMediaItemInfo_Value(item, "D_POSITION", pos + shift)
+        end
+      end
+    end
+  end)
+  reaper.GetSet_LoopTimeRange2(0, true, false, old_start, old_end, false)
+  reaper.SetEditCurPos(old_cursor, false, false)
+  reaper.Undo_EndBlock2(0, global and "ZP Project: spazio fra item (ripple globale)" or "ZP Project: spazio fra item selezionati", -1)
+  if not success then
+    reaper.ShowMessageBox("Operazione interrotta: " .. tostring(err) .. "\nUsa Annulla se il progetto risulta modificato.", "ZP Project", 0)
+    return
+  end
+  reaper.UpdateArrange()
+end
+
 local function is_render_shortcut(ch)
   local cmd_or_ctrl = has_bit(gfx.mouse_cap, 32) or has_bit(gfx.mouse_cap, 4)
   local option_or_alt = has_bit(gfx.mouse_cap, 16)
@@ -89,17 +282,18 @@ local function draw_project_icon(x, y, size)
   gfx.set(0.05, 0.18, 0.22, 1)
   gfx.rect(x, y, size, size, false)
   gfx.set(0.92, 0.88, 0.70, 1)
-  local dot = math.max(4, math.floor(size * 0.14))
-  local line_w = size - dot - 14
+  local k = size / 28
+  local dot = math.max(4 * k, math.floor(size * 0.14))
+  local line_w = size - dot - 14 * k
   local y1 = y + math.floor(size * 0.28)
   local y2 = y + math.floor(size * 0.52)
   local y3 = y + math.floor(size * 0.76)
-  gfx.rect(x + 7, y1 - 2, dot, dot, true)
-  gfx.rect(x + 7, y2 - 2, dot, dot, true)
-  gfx.rect(x + 7, y3 - 2, dot, dot, true)
-  gfx.rect(x + 15 + dot, y1, line_w, 3, true)
-  gfx.rect(x + 15 + dot, y2, line_w, 3, true)
-  gfx.rect(x + 15 + dot, y3, line_w, 3, true)
+  gfx.rect(x + 7 * k, y1 - 2 * k, dot, dot, true)
+  gfx.rect(x + 7 * k, y2 - 2 * k, dot, dot, true)
+  gfx.rect(x + 7 * k, y3 - 2 * k, dot, dot, true)
+  gfx.rect(x + 15 * k + dot, y1, line_w, 3 * k, true)
+  gfx.rect(x + 15 * k + dot, y2, line_w, 3 * k, true)
+  gfx.rect(x + 15 * k + dot, y3, line_w, 3 * k, true)
 end
 
 local function native_color_to_rgb(color)
@@ -424,7 +618,7 @@ local function draw_project_window()
   -- toolbar: icona accesa finche' la finestra e' aperta; un altro clic sull'icona la chiude (REAPER 7.03+)
   if reaper.set_action_options then reaper.set_action_options(1 | 4); reaper.atexit(function() reaper.set_action_options(8) end) end
   gfx.init(SCRIPT_TITLE, 920, 620, dock_state)
-  gfx.setfont(1, "Arial", 15)
+  gfx.setfont(1, "Arial", math.floor(15 * UI_SCALE + 0.5))
 
   local function filtered_rows()
     local out = {}
@@ -989,59 +1183,70 @@ local function draw_project_window()
     ZP_UI.draw_header({
       x = 12,
       y = 18,
-      icon_size = 28,
+      icon_size = math.floor(28 * UI_SCALE + 0.5),
       fallback_icon = draw_project_icon,
       title = "Project",
-      title_size = 20,
-      credit_offset = 46,
+      title_size = math.floor(20 * UI_SCALE + 0.5),
+      credit_offset = math.floor(46 * UI_SCALE + 0.5),
       description = ""
     })
 
-    ZP_UI.draw_help_button({ x = gfx.w - 54, y = 18, w = 34, h = 28 }, clicked, "zp-project-viewer")
+    local help_rect = { x = gfx.w - 58, y = 16, w = 39, h = 32, font = math.floor(15 * UI_SCALE + 0.5) }
+    ZP_UI.draw_help_button(help_rect, clicked, "zp-project-viewer")
 
-    gfx.setfont(1, "Arial", 13)
+    gfx.setfont(1, "Arial", math.floor(13 * UI_SCALE + 0.5))
 
-    local b_y1, b_y2 = 8, 38
-    local b_h = 24
-    local button_x = 128
-    local b1 = { x = button_x, y = b_y1, w = 76, h = b_h }
-    local b2 = { x = button_x + 84, y = b_y1, w = 64, h = b_h }
-    local b3 = { x = button_x + 156, y = b_y1, w = 92, h = b_h }
-    local b4 = { x = button_x, y = b_y2, w = 76, h = b_h }
-    local b5 = { x = button_x + 84, y = b_y2, w = 74, h = b_h }
-    local b6 = { x = button_x + 166, y = b_y2, w = 82, h = b_h }
-
-    if draw_button(b1, "Refresh", false, true, clicked) then
-      refresh(true)
+    local b_y1, b_y2, b_h, button_x = 8, 47, math.floor(28 * UI_SCALE + 0.5), 128
+    local compact_hover = nil
+    local function compact_rect(row, col)
+      return { x = button_x + col * math.floor(46 * UI_SCALE + 0.5), y = row == 1 and b_y1 or b_y2,
+        w = math.floor(42 * UI_SCALE + 0.5), h = b_h }
     end
-    local docked = (dock_state & 1) == 1
-    if draw_button(b2, docked and "Float" or "Dock", docked, true, clicked) then
-      local target_dock = docked and 0 or 1
-      if gfx.dock then
-        gfx.dock(target_dock)
-        dock_state = gfx.dock(-1)
-      else
-        dock_state = target_dock
+    local lang = ZP_UI.get_lingua and ZP_UI.get_lingua() or "it"
+    local help_text = {
+      refresh = {"Aggiorna la lista", "Reload the list", "Rilegge marker e regioni del progetto.", "Reloads project markers and regions."},
+      dock = {"Aggancia / sgancia", "Dock / float", "Aggancia la finestra o la rende libera.", "Docks the window or makes it float."},
+      scroll = {"Inverte lo scorrimento", "Invert scrolling", "Cambia la direzione della rotella orizzontale.", "Reverses horizontal wheel direction."},
+      gap = {"Spazio fra item", "Space between items", "Imposta i secondi; scegli ripple globale su tutte le tracce o solo selezionati.", "Set the gap, then choose global ripple on all tracks or selected items only."},
+      play = {"Click per ascoltare", "Click to audition", "Attiva o disattiva l'ascolto automatico della riga selezionata.", "Toggles automatic audition of the selected row."},
+      marker = {"Mostra / nasconde marker", "Show / hide markers", "Filtra le righe marker nella lista.", "Filters marker rows in the list."},
+      region = {"Mostra / nasconde regioni", "Show / hide regions", "Filtra le righe regione nella lista.", "Filters region rows in the list."},
+      row_play = {"Play", "Play", "Riproduce la regione della riga selezionata.", "Plays the region on the selected row."},
+      row_stop = {"Stop", "Stop", "Ferma la riproduzione della regione.", "Stops region playback."},
+    }
+    local function tool(row, col, label, active, kind, key, action)
+      local rect = compact_rect(row, col)
+      local hit, hovering = draw_compact_tool(rect, label, active, true, clicked, kind)
+      if hovering then
+        local t = help_text[key]
+        compact_hover = { title = t[lang == "en" and 2 or 1], body = t[lang == "en" and 4 or 3] }
       end
-      reaper.SetExtState(EXT_SECTION, "dock_state", tostring(dock_state), true)
+      if hit then action() end
     end
-    if draw_button(b3, "Scroll inv", invert_h_scroll, true, clicked) then
+    tool(1, 0, "Refresh", false, "refresh", "refresh", function() refresh(true) end)
+    local docked = (dock_state & 1) == 1
+    tool(1, 1, docked and "Float" or "Dock", docked, "dock", "dock", function()
+      local target_dock = docked and 0 or 1
+      if gfx.dock then gfx.dock(target_dock); dock_state = gfx.dock(-1) else dock_state = target_dock end
+      reaper.SetExtState(EXT_SECTION, "dock_state", tostring(dock_state), true)
+    end)
+    tool(1, 2, "Scroll", invert_h_scroll, "scroll", "scroll", function()
       invert_h_scroll = not invert_h_scroll
       reaper.SetExtState(EXT_SECTION, "invert_h_scroll", invert_h_scroll and "1" or "0", true)
-    end
-    if draw_button(b4, "Click", auto_play, true, clicked, "play_click") then
+    end)
+    tool(1, 3, "Spazio", false, "gap", "gap", insert_selected_item_gaps)
+    tool(2, 0, "Click", auto_play, "play", "play", function()
       auto_play = not auto_play
       reaper.SetExtState(EXT_SECTION, "auto_play", auto_play and "1" or "0", true)
-    end
-    if draw_button(b5, "Marker", show_markers, true, clicked) then
+    end)
+    tool(2, 1, "Marker", show_markers, "marker", "marker", function()
       show_markers = not show_markers
       reaper.SetExtState(EXT_SECTION, "show_markers", show_markers and "1" or "0", true)
-    end
-    if draw_button(b6, "Regioni", show_regions, true, clicked) then
+    end)
+    tool(2, 2, "Regioni", show_regions, "region", "region", function()
       show_regions = not show_regions
       reaper.SetExtState(EXT_SECTION, "show_regions", show_regions and "1" or "0", true)
-    end
-
+    end)
     local list = { x = 8, y = HEADER_H, w = gfx.w - 16, h = gfx.h - HEADER_H - FOOTER_H }
     local table_w = math.max(TABLE_W, list.w)
     local max_h_scroll = math.max(0, table_w - list.w)
@@ -1082,13 +1287,13 @@ local function draw_project_window()
     local table_clip = { x = list.x + 1, y = list.y + 1, w = list.w - 2, h = list.h - 20 }
     if gfx.setclip then gfx.setclip(table_clip.x, table_clip.y, table_clip.w, table_clip.h) end
 
-    gfx.setfont(1, "Arial", 14)
+    gfx.setfont(1, "Arial", math.floor(14 * UI_SCALE + 0.5))
     gfx.set(0.64, 0.64, 0.72, 1)
-    draw_text_clipped("Tipo", vx(col_type), list.y + 8, 70)
-    draw_text_clipped("Nome", vx(col_name), list.y + 8, col_start - col_name - 16)
-    draw_text_clipped("Start", vx(col_start), list.y + 8, 94)
-    draw_text_clipped("End", vx(col_end), list.y + 8, 94)
-    draw_text_clipped("Durata", vx(col_len), list.y + 8, 94)
+    draw_text_clipped("Tipo", vx(col_type), list.y + math.floor(8 * UI_SCALE), 70)
+    draw_text_clipped("Nome", vx(col_name), list.y + math.floor(8 * UI_SCALE), col_start - col_name - 16)
+    draw_text_clipped("Start", vx(col_start), list.y + math.floor(8 * UI_SCALE), 94)
+    draw_text_clipped("End", vx(col_end), list.y + math.floor(8 * UI_SCALE), 94)
+    draw_text_clipped("Durata", vx(col_len), list.y + math.floor(8 * UI_SCALE), 94)
 
     local max_rows = math.max(1, math.floor((list.h - 48) / ROW_H))
     if #visible == 0 then
@@ -1122,7 +1327,7 @@ local function draw_project_window()
       local idx = scroll + row_i
       local row = visible[idx]
       if not row then break end
-      local y = list.y + 34 + ((row_i - 1) * ROW_H)
+      local y = list.y + math.floor(34 * UI_SCALE) + ((row_i - 1) * ROW_H)
       local row_rect = { x = list.x + 6, y = y - 4, w = list.w - 12, h = ROW_H }
       local text_y = y + 2
       local hovered = point_in_rect(gfx.mouse_x, gfx.mouse_y, row_rect.x, row_rect.y, row_rect.w, row_rect.h)
@@ -1194,12 +1399,12 @@ local function draw_project_window()
       local r, g, b = native_color_to_rgb(row.color)
       if row.kind == "marker" then
         if r then gfx.set(r, g, b, 1) else gfx.set(0.90, 0.42, 0.16, 1) end
-        draw_rect_clipped(vx(col_type - 6), y + 2, 22, 13, true)
+        draw_rect_clipped(vx(col_type - 6), y + 2, 25, 15, true)
         if r then gfx.set(math.min(1, r + 0.12), math.min(1, g + 0.12), math.min(1, b + 0.12), 1) else gfx.set(1.0, 0.62, 0.25, 1) end
-        draw_rect_clipped(vx(col_type - 6), y + 2, 5, ROW_H - 8, true)
+        draw_rect_clipped(vx(col_type - 6), y + 2, 6, ROW_H - 8, true)
       else
         if r then gfx.set(r, g, b, 1) else gfx.set(0.20, 0.66, 0.86, 1) end
-        draw_rect_clipped(vx(col_type - 3), y + 4, 10, 10, true)
+        draw_rect_clipped(vx(col_type - 3), y + 4, 12, 12, true)
       end
 
       gfx.set(row.kind == "marker" and 1.0 or 0.75, row.kind == "marker" and 0.87 or 0.84, row.kind == "marker" and 0.68 or 0.94, 1)
@@ -1208,30 +1413,30 @@ local function draw_project_window()
 
       if edit_row == idx then
         gfx.set(0.13, 0.17, 0.24, 1)
-        draw_rect_clipped(name_x - 4, y - 2, name_w, 23, true)
+        draw_rect_clipped(name_x - 4, y - 2, name_w, 26, true)
         gfx.set(1.0, 0.78, 0.18, 1)
-        draw_rect_clipped(name_x - 4, y - 2, name_w, 23, false)
+        draw_rect_clipped(name_x - 4, y - 2, name_w, 26, false)
         local sel_a, sel_b = edit_selection_range()
         if sel_a then
           local before_w = gfx.measurestr(edit_text:sub(1, sel_a - 1))
           local text_w = math.min(gfx.measurestr(edit_text:sub(sel_a, sel_b - 1)), name_w - 10)
           gfx.set(0.22, 0.48, 0.70, 0.95)
-          draw_rect_clipped(name_x + math.min(before_w, name_w - 10), text_y - 1, text_w + 4, 18, true)
+          draw_rect_clipped(name_x + math.min(before_w, name_w - 10), text_y - 1, text_w + 4, 21, true)
         end
         gfx.set(0.92, 0.92, 0.96, 1)
         draw_text_clipped(edit_text ~= "" and edit_text or "(nome)", name_x, text_y, name_w - 10)
         if not sel_a and math.floor(reaper.time_precise() * 2) % 2 == 0 then
           local tw = gfx.measurestr(edit_text:sub(1, edit_cursor - 1))
           gfx.set(1.0, 0.78, 0.18, 1)
-          draw_rect_clipped(name_x + math.min(tw, name_w - 14), text_y - 2, 2, 17, true)
+          draw_rect_clipped(name_x + math.min(tw, name_w - 14), text_y - 2, 2, 20, true)
         end
       else
-        gfx.setfont(1, "Arial", row.kind == "marker" and 15 or 14)
+        gfx.setfont(1, "Arial", math.floor((row.kind == "marker" and 15 or 14) * UI_SCALE + 0.5))
         gfx.set(row.kind == "marker" and 0.96 or 0.86, row.kind == "marker" and 0.94 or 0.86, row.kind == "marker" and 0.90 or 0.90, 1)
         draw_text_clipped(row.label, name_x, text_y, name_w - 10)
       end
 
-      gfx.setfont(1, "Arial", 14)
+      gfx.setfont(1, "Arial", math.floor(14 * UI_SCALE + 0.5))
       gfx.set(0.82, 0.82, 0.86, 1)
       draw_text_clipped(format_time(row.pos), vx(col_start), text_y, 106)
       draw_text_clipped(row.kind == "region" and row.end_pos and format_time(row.end_pos) or "-", vx(col_end), text_y, 106)
@@ -1285,14 +1490,17 @@ local function draw_project_window()
 
     local selected_row = visible[selected]
     local footer_y = gfx.h - FOOTER_H + 8
-    if draw_button({ x = 8, y = footer_y, w = 70, h = 22 }, "Play", is_playing, selected_row ~= nil, clicked, "play_now") then
-      play_entry(selected_row)
-    end
-    if draw_button({ x = 84, y = footer_y, w = 56, h = 22 }, "", is_playing, true, clicked, "stop") then
-      stop_play()
+    local play_rect = { x = 8, y = footer_y - 3, w = math.floor(48 * UI_SCALE + 0.5), h = math.floor(44 * UI_SCALE + 0.5) }
+    local stop_rect = { x = math.floor(62 * UI_SCALE + 0.5), y = footer_y - 3, w = math.floor(48 * UI_SCALE + 0.5), h = math.floor(44 * UI_SCALE + 0.5) }
+    if ZP_UI.draw_round_button(play_rect, "play", is_playing, selected_row ~= nil, clicked, { caption = "Play", caption_size = math.floor(11 * UI_SCALE + 0.5) }) then play_entry(selected_row) end
+    if ZP_UI.draw_round_button(stop_rect, "stop", false, true, clicked, { caption = "Stop", caption_size = math.floor(11 * UI_SCALE + 0.5) }) then stop_play() end
+    if point_in_rect(gfx.mouse_x, gfx.mouse_y, play_rect.x, play_rect.y, play_rect.w, play_rect.h) then
+      local t = help_text.row_play; compact_hover = { title = t[lang == "en" and 2 or 1], body = t[lang == "en" and 4 or 3] }
+    elseif point_in_rect(gfx.mouse_x, gfx.mouse_y, stop_rect.x, stop_rect.y, stop_rect.w, stop_rect.h) then
+      local t = help_text.row_stop; compact_hover = { title = t[lang == "en" and 2 or 1], body = t[lang == "en" and 4 or 3] }
     end
 
-    gfx.setfont(1, "Arial", 13)
+    gfx.setfont(1, "Arial", math.floor(13 * UI_SCALE + 0.5))
     gfx.set(0.84, 0.82, 0.88, 1)
     gfx.x = 154
     gfx.y = footer_y - 2
@@ -1303,6 +1511,25 @@ local function draw_project_window()
     local render_count = count_render_selected()
     local native_note = render_count > 0 and (native_render_selection and "native OK" or "Project") or "-"
     gfx.drawstr(fit_text(string.format("Render selezionate: %d (%s)   Totale: %d marker, %d regioni", render_count, native_note, marker_count, region_count), gfx.w - 170))
+    local help_y = HEADER_H - 22
+    gfx.set(0.025, 0.035, 0.055, 0.98)
+    gfx.rect(8, help_y, gfx.w - 16, 18, true)
+    gfx.set(0.30, 0.70, 0.88, 1)
+    gfx.rect(8, help_y, gfx.w - 16, 18, false)
+    gfx.set(0.35, 0.78, 0.94, 1)
+    gfx.rect(8, help_y + 2, 3, 14, true)
+    gfx.setfont(1, "Arial", math.floor(11 * UI_SCALE + 0.5), compact_hover and "b" or "")
+    gfx.set(0.91, 0.95, 0.98, 1)
+    local info_text
+    if compact_hover then
+      info_text = compact_hover.title .. " — " .. compact_hover.body
+    elseif lang == "en" then
+      info_text = "Hover over a button to read what it does."
+    else
+      info_text = "Passa il puntatore su un pulsante per leggerne la funzione."
+    end
+    gfx.x, gfx.y = 18, help_y + 1
+    gfx.drawstr(fit_text(info_text, gfx.w - 34))
 
     gfx.update()
     reaper.defer(loop)

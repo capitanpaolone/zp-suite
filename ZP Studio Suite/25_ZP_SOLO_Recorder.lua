@@ -183,7 +183,8 @@ local function load_state()
   state.preroll_s = math.max(PREROLL_MIN, math.min(PREROLL_MAX, tonumber(ext_get("preroll_s", "")) or state.preroll_s))
   state.folder_mode = bool_from_state(ext_get("folder_mode", ""), state.folder_mode)
   state.auto_regions = bool_from_state(ext_get("auto_regions", ""), state.auto_regions)
-  state.nav = ext_get("nav", state.nav) == "item" and "item" or "regioni"
+  local nav = ext_get("nav", state.nav)
+  state.nav = (nav == "item" or nav == "marker") and nav or "regioni"
   state.nav_zoom = tonumber(ext_get("nav_zoom", "")) or state.nav_zoom
   state.nav_focus = ext_get("nav_focus", state.nav_focus) == "centro" and "centro" or "terzo"
   state.fx_session = bool_from_state(ext_get("fx_session", ""), state.fx_session)
@@ -333,11 +334,18 @@ local AIUTI = {
   ["ALT"] = "Registra sulla traccia delle versioni alternative.",
   ["Telecomando"] = "Telecomando: registra sulle tracce del tuo progetto, non crea le tracce SOLO. Azzurro = in uso.",
   ["Sessione"] = "Cartella: sessione SOLO, la cartella ZP SOLO SESSION con le sue tracce voce. Azzurro = in uso.",
-  ["Regioni"] = "Precedente / inizio / successivo si muovono tra le regioni.",
-  ["Item"] = "Precedente / inizio / successivo si muovono tra gli item della traccia di destinazione.",
-  ["Precedente"] = "Cursore alla regione (o all'item) precedente.",
-  ["Inizio"] = "Cursore all'inizio della regione (o dell'item) in cui ti trovi.",
-  ["Successivo"] = "Cursore alla regione (o all'item) successiva.",
+  ["Regioni"] = "Navigazione regioni: Precedente e Successivo portano all'inizio della regione prima o dopo il cursore; il pulsante centrale raggiunge l'inizio della regione che contiene il cursore.",
+  ["Item"] = "Navigazione item: Precedente e Successivo portano all'inizio dell'item prima o dopo il cursore sulla traccia di destinazione; se non ci sono item su quella traccia, usano tutti gli item del progetto. Il pulsante centrale raggiunge l'inizio dell'item sotto il cursore.",
+  ["Marker navigazione"] = "Navigazione marker: Precedente e Successivo portano al marker di progetto prima o dopo il cursore; il pulsante centrale raggiunge il marker piu' vicino.",
+  ["Marker precedente"] = "Porta il cursore al marker di progetto precedente; se non ce n'e' uno prima, raggiunge il primo marker.",
+  ["Regione precedente"] = "Porta il cursore all'inizio della regione precedente; se non ce n'e' una prima, raggiunge la prima regione.",
+  ["Item precedente"] = "Porta il cursore all'inizio dell'item precedente sulla traccia di destinazione; se non contiene item, considera tutti gli item del progetto.",
+  ["Inizio regione"] = "Porta il cursore all'inizio della regione che lo contiene. Se non sei dentro una regione, non si sposta.",
+  ["Inizio item"] = "Porta il cursore all'inizio dell'item che lo contiene, sulla traccia di destinazione o, se vuota, nel progetto. Se non sei dentro un item, non si sposta.",
+  ["Marker più vicino"] = "Porta il cursore al marker di progetto piu' vicino alla posizione corrente.",
+  ["Marker successivo"] = "Porta il cursore al marker di progetto successivo; se non ce n'e' uno dopo, raggiunge l'ultimo marker.",
+  ["Regione successiva"] = "Porta il cursore all'inizio della regione successiva; se non ce n'e' una dopo, raggiunge l'ultima regione.",
+  ["Item successivo"] = "Porta il cursore all'inizio dell'item successivo sulla traccia di destinazione; se non contiene item, considera tutti gli item del progetto.",
   ["Mark"] = "Mette un marker qui: col nome scritto nella casella accanto, se c'e', altrimenti numerato.",
   ["Nome marker"] = "Scrivi il nome del marker e premi Invio (o il pulsante marker). Esc lascia perdere.",
   ["Nome / nota"] = "Rinomina l'ultima regione take, per annotarci com'e' andata.",
@@ -400,7 +408,7 @@ local ZONE_AIUTO = {
   trasporto = "I comandi di ogni secondo. REC e' il piu' grande; sul bordo PRE accende il pre-roll, il lucchetto protegge la registrazione e il piccolo S in basso a sinistra mette in solo la traccia di registrazione.",
   ingresso = "Cosa entra e cosa senti: meter dell'ingresso e del ritorno, da dove pesca la traccia, monitor. Il pomello regola il ritorno.",
   traccia = "Solo nella sessione SOLO: su quale delle sue tracce registri (MAIN, INSERTS, RETAKES, ALT), con il loro ingresso. In Telecomando la traccia si arma dal menu dell'ingresso.",
-  vai = "Muoversi tra regioni o item, e mettere marker: il pulsante col simbolo marker, e accanto la casella per dargli un nome.",
+  vai = "Muoversi tra marker, regioni o item con i selettori a icona; il pulsante col simbolo marker ne mette uno, e accanto c'e la casella per dargli un nome.",
   take = "In alto i comandi che registrano (pallino rosso): Next take, Retake, Insert, Alt take. Sotto quelli che gestiscono il take appena fatto: Nome / nota e Togli take.",
   etichette = "Marker di giudizio nel punto in cui sei: OK, BAD, ALT, NOISE.",
   navigatore = "Il progetto in una striscia, con lo spazio che resta (in Compact piu' basso). Lo zoom e la posizione della testina sono in alto a destra.",
@@ -1138,6 +1146,52 @@ local function goto_region_start()
   if not r then warn("Il cursore non e' dentro una regione."); return end
   reaper.SetEditCurPos(r.pos, true, false)
   state.status = "Inizio regione"
+end
+
+local function collect_project_markers()
+  local markers = {}
+  local _, marker_count, region_count = reaper.CountProjectMarkers(0)
+  for i = 0, marker_count + region_count - 1 do
+    local ok, is_region, pos, _, name, idx = reaper.EnumProjectMarkers3(0, i)
+    if ok and not is_region then
+      markers[#markers + 1] = { pos = pos or 0, name = trim(name or ""), idx = idx }
+    end
+  end
+  table.sort(markers, function(a, b) return a.pos < b.pos end)
+  return markers
+end
+
+local function goto_marker(delta)
+  if not can_click("marker_" .. tostring(delta)) then return end
+  local markers = collect_project_markers()
+  if #markers == 0 then warn("Nessun marker nel progetto."); return end
+  local pos, target = current_position(), nil
+  if delta < 0 then
+    for i = #markers, 1, -1 do
+      if markers[i].pos < pos - 0.05 then target = markers[i]; break end
+    end
+    target = target or markers[1]
+  else
+    for _, marker in ipairs(markers) do
+      if marker.pos > pos + 0.05 then target = marker; break end
+    end
+    target = target or markers[#markers]
+  end
+  reaper.SetEditCurPos(target.pos, true, false)
+  state.status = "Marker: " .. (target.name ~= "" and target.name or tostring(target.idx))
+end
+
+local function goto_nearest_marker()
+  if not can_click("marker_nearest") then return end
+  local markers = collect_project_markers()
+  if #markers == 0 then warn("Nessun marker nel progetto."); return end
+  local pos, target, distance = current_position(), nil, math.huge
+  for _, marker in ipairs(markers) do
+    local d = math.abs(marker.pos - pos)
+    if d < distance then target, distance = marker, d end
+  end
+  reaper.SetEditCurPos(target.pos, true, false)
+  state.status = "Marker: " .. (target.name ~= "" and target.name or tostring(target.idx))
 end
 
 -- Navigazione per item: quelli della traccia di destinazione; se non ce ne sono, tutti.
@@ -2409,30 +2463,61 @@ end
 Z.vai = { id = "vai", n = 5, title = "Vai a e segna", min_w = 420, weight = 1,
   h = function() return 62 end }
 function Z.vai.draw(c, clicked)
-  local by_item = state.nav == "item"
-  local x, h = c.x, 32
-  if btn({x=x, y=c.y, w=66, h=h}, _G.T and _G.T("Regioni") or "Regioni", not by_item, true, clicked, "tab") then
-    state.nav = "regioni"; save_state(); state.status = _G.T and _G.T("Spostamenti tra le regioni") or "Spostamenti tra le regioni"
+  local mode = state.nav
+  local x, h, scale = c.x, math.floor(32 * 1.15 + 0.5), 1.15
+  local mode_defs = {
+    { id = "marker", key = "Marker navigazione" },
+    { id = "regioni", key = "Regioni" },
+    { id = "item", key = "Item" },
+  }
+  local nav_help = {
+    marker = { previous = "Marker precedente", center = "Marker più vicino", next = "Marker successivo" },
+    regioni = { previous = "Regione precedente", center = "Inizio regione", next = "Regione successiva" },
+    item = { previous = "Item precedente", center = "Inizio item", next = "Item successivo" },
+  }
+  for _, def in ipairs(mode_defs) do
+    local r = {x=x, y=c.y, w=math.floor(34 * scale + 0.5), h=h}
+    local tip = aiuto_per(def.key)
+    local hit = btn(r, "", mode == def.id, true, clicked, "tab", def.key, tip)
+    gfx.set(mode == def.id and 0.88 or 0.58, mode == def.id and 0.96 or 0.66, mode == def.id and 1 or 0.76, 1)
+    if def.id == "marker" then
+      draw_marker_symbol(r.x + r.w / 2, r.y + r.h / 2, h * 0.75)
+    elseif def.id == "regioni" then
+      local cx, cy = r.x + r.w / 2, r.y + r.h / 2
+      gfx.line(cx - 8 * scale, cy - 7 * scale, cx - 8 * scale, cy + 7 * scale); gfx.line(cx + 8 * scale, cy - 7 * scale, cx + 8 * scale, cy + 7 * scale)
+      gfx.line(cx - 8 * scale, cy - 7 * scale, cx + 8 * scale, cy - 7 * scale); gfx.line(cx - 8 * scale, cy + 7 * scale, cx + 8 * scale, cy + 7 * scale)
+    else
+      local cx, cy = r.x + r.w / 2, r.y + r.h / 2
+      gfx.rect(cx - 9 * scale, cy - 6 * scale, 18 * scale, 12 * scale, false)
+      gfx.line(cx - 7 * scale, cy + 2 * scale, cx - 4 * scale, cy - 2 * scale); gfx.line(cx - 4 * scale, cy - 2 * scale, cx - 1 * scale, cy + 1 * scale)
+      gfx.line(cx - 1 * scale, cy + 1 * scale, cx + 2 * scale, cy - 3 * scale); gfx.line(cx + 2 * scale, cy - 3 * scale, cx + 6 * scale, cy + 2 * scale)
+    end
+    if hit then
+      state.nav = def.id; save_state()
+      if def.id == "marker" then state.status = _G.T and _G.T("Spostamenti tra i marker") or "Spostamenti tra i marker"
+      elseif def.id == "item" then state.status = _G.T and _G.T("Spostamenti tra gli item della traccia di destinazione") or "Spostamenti tra gli item della traccia di destinazione"
+      else state.status = _G.T and _G.T("Spostamenti tra le regioni") or "Spostamenti tra le regioni" end
+    end
+    x = x + math.floor(38 * scale + 0.5)
   end
-  x = x + 68
-  if btn({x=x, y=c.y, w=54, h=h}, "Item", by_item, true, clicked, "tab") then
-    state.nav = "item"; save_state(); state.status = _G.T and _G.T("Spostamenti tra gli item della traccia di destinazione") or "Spostamenti tra gli item della traccia di destinazione"
+  local function navigate(delta)
+    if mode == "marker" then goto_marker(delta)
+    elseif mode == "item" then goto_item(delta)
+    else goto_region(delta) end
   end
-  x = x + 54 + 12
-  if sbtn({x=x, y=c.y, w=34, h=h}, _G.T and _G.T("Precedente") or "Precedente", "left", false, true, clicked) then
-    if by_item then goto_item(-1) else goto_region(-1) end
+  if sbtn({x=x, y=c.y, w=math.floor(30 * scale + 0.5), h=h}, nav_help[mode].previous, "left", false, true, clicked) then navigate(-1) end
+  x = x + math.floor(34 * scale + 0.5)
+  local center_key = nav_help[mode].center
+  if sbtn({x=x, y=c.y, w=math.floor(30 * scale + 0.5), h=h}, center_key, "start", false, true, clicked) then
+    if mode == "marker" then goto_nearest_marker()
+    elseif mode == "item" then goto_item_start()
+    else goto_region_start() end
   end
-  x = x + 38
-  if sbtn({x=x, y=c.y, w=34, h=h}, _G.T and _G.T("Inizio") or "Inizio", "start", false, true, clicked) then
-    if by_item then goto_item_start() else goto_region_start() end
-  end
-  x = x + 38
-  if sbtn({x=x, y=c.y, w=34, h=h}, _G.T and _G.T("Successivo") or "Successivo", "right", false, true, clicked) then
-    if by_item then goto_item(1) else goto_region(1) end
-  end
-  x = x + 34 + 12
+  x = x + math.floor(34 * scale + 0.5)
+  if sbtn({x=x, y=c.y, w=math.floor(30 * scale + 0.5), h=h}, nav_help[mode].next, "right", false, true, clicked) then navigate(1) end
+  x = x + math.floor(42 * scale + 0.5)
   local rest = c.x + c.w - x
-  local w1 = math.max(36, math.floor((rest - 6) * 0.42 / 3))
+  local w1 = math.max(34, math.floor((rest - 6) * 0.42 / 3))
   local mr = {x=x, y=c.y, w=w1, h=h}
   local hit = btn(mr, "", false, true, clicked, nil, "Mark")
   gfx.set(0.42, 0.74, 0.92, 1)

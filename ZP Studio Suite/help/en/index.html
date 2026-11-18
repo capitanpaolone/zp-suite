@@ -389,7 +389,7 @@
 
   <!-- ================================================================== -->
   <h2 id="tool-17">Project Manager</h2>
-  <p><strong>Overview.</strong> Delivery manager: creates export regions (one per take/file) and routes batch renders to correct destinations without altering original audio takes.</p>
+  <p><strong>Overview.</strong> Delivery manager: creates export regions (one per take/file) and routes batch renders to correct destinations without altering original audio takes. In the transport row, Sel, Play, Stop, and Save use icons with overlaid captions; hover a button to read its function in the bottom help bar. Active Sel keeps a dark caption band for contrast.</p>
   <p class="when">When: delivering numerous files requiring strict naming conventions and directory structures.</p>
   <h3>Create Regions</h3>
   <ul>
@@ -410,6 +410,7 @@
   <!-- ================================================================== -->
   <h2 id="zp-project-viewer">Project Viewer</h2>
   <p><strong>Overview.</strong> Project table of contents: displays all markers and regions chronologically on separate rows. Click to navigate, double-click to rename, spacebar to audition. Selecting regions sets render bounds for Ctrl/⌘+Alt+R, and <a href="#zp-report-minuti">Minutes Report</a> counts selections.</p>
+  <p><strong>Space between items.</strong> The two-block icon asks for a gap in seconds and then a mode. <em>Global ripple</em> inserts space and moves later items on all tracks; <em>Selected only</em> moves later selected groups and leaves other content where it is; if items would overlap on the same track, the button asks for confirmation. Overlapping selected items are handled as one group to preserve their sync. Global ripple stops if locked items lie downstream or an item crosses an insertion point: resolve the case or choose Selected only. Play and Stop use the SOLO Recorder's round transport buttons.</p>
   <p class="when">When: verifying section and region names prior to final render, or navigating large multi-hour timelines. Can be docked beside the arrange window.</p>
 
   <!-- ================================================================== -->

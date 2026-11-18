@@ -143,6 +143,16 @@ local function button_colors(style)
     colors.hover = {0.20, 0.54, 0.82, 1}
     colors.active = {0.20, 0.76, 1.00, 1}
     colors.border = {0.54, 0.90, 1.00, 1}
+  elseif style == "play_select_contrast" then
+    colors.normal = {0.10, 0.22, 0.34, 1}
+    colors.hover = {0.16, 0.44, 0.64, 1}
+    colors.active = {0.08, 0.39, 0.56, 1}
+    colors.border = {0.48, 0.86, 1.00, 1}
+  elseif style == "tab_contrast" then
+    colors.normal = {0.10, 0.22, 0.34, 1}
+    colors.hover = {0.16, 0.44, 0.64, 1}
+    colors.active = {0.08, 0.39, 0.56, 1}
+    colors.border = {0.48, 0.86, 1.00, 1}
   elseif style == "stop" or style == "danger" then
     colors.normal = {0.48, 0.10, 0.10, 1}
     colors.hover = {0.76, 0.16, 0.14, 1}
@@ -179,7 +189,7 @@ function UI.draw_button(rect, label, active, enabled, clicked, style)
     gfx.set(math.min(1, fill[1] + 0.30), math.min(1, fill[2] + 0.30), math.min(1, fill[3] + 0.34), 0.34)
     gfx.rect(rect.x + 2, rect.y + math.floor(rect.h * 0.48), rect.w - 4, math.max(2, math.floor(rect.h * 0.35)), true)
   end
-  if active and enabled then
+  if active and enabled and style ~= "play_select_contrast" and style ~= "tab_contrast" then
     gfx.set(math.min(1, fill[1] + 0.34), math.min(1, fill[2] + 0.34), math.min(1, fill[3] + 0.38), 0.34)
     gfx.rect(rect.x + 2, rect.y + 2, rect.w - 4, rect.h - 4, true)
   end
@@ -198,7 +208,10 @@ function UI.draw_button(rect, label, active, enabled, clicked, style)
   local text_x = rect.x + 10
   local text_w = rect.w - 20
   local cy = rect.y + math.floor(rect.h * 0.5)
-  if style == "copy" then
+  if rect.no_icon then
+    text_x = rect.x + 4
+    text_w = rect.w - 8
+  elseif style == "copy" then
     gfx.set(enabled and 0.86 or 0.42, enabled and 0.94 or 0.42, enabled and 1.0 or 0.42, 1)
     gfx.rect(rect.x + 10, cy - 7, 10, 12, false)
     gfx.rect(rect.x + 14, cy - 3, 10, 12, false)
@@ -497,7 +510,7 @@ function UI.draw_round_button(rect, kind, active, enabled, clicked, opts)
   set_color(ic)
   UI.draw_symbol(kind, cx, cy, d * 0.62)
   if opts.caption then
-    gfx.setfont(1, "Arial", 11, "b")
+    gfx.setfont(1, "Arial", opts.caption_size or 11, "b")
     gfx.set(0.70, 0.73, 0.80, 1)
     local t = UI.fit_text(opts.caption, rect.w + 16)
     local tw = gfx.measurestr(t)
