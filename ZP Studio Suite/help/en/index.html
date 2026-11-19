@@ -409,7 +409,7 @@
 
   <!-- ================================================================== -->
   <h2 id="zp-project-viewer">Project Viewer</h2>
-  <p><strong>Overview.</strong> Project table of contents: displays all markers and regions chronologically on separate rows. Click to navigate, double-click to rename, spacebar to audition. Selecting regions sets render bounds for Ctrl/⌘+Alt+R, and <a href="#zp-report-minuti">Minutes Report</a> counts selections.</p>
+  <p><strong>Overview.</strong> Project table of contents: displays all markers and regions chronologically on separate rows. Click to navigate, double-click to rename, spacebar to audition. The <em>Tipo</em> (Type) column stays pinned on the left while <em>Nome</em>, <em>Start</em>, <em>End</em> and <em>Durata</em> scroll horizontally; columns auto-fit to content and can be resized by dragging the header dividers (double-click a divider to reset to auto). Resizing the Suite's graphical windows scales controls and text proportionally. Selecting regions sets render bounds for Ctrl/⌘+Alt+R, and <a href="#zp-report-minuti">Minutes Report</a> counts selections.</p>
   <p><strong>Space between items.</strong> The two-block icon asks for a gap in seconds and then a mode. <em>Global ripple</em> inserts space and moves later items on all tracks; <em>Selected only</em> moves later selected groups and leaves other content where it is; if items would overlap on the same track, the button asks for confirmation. Overlapping selected items are handled as one group to preserve their sync. Global ripple stops if locked items lie downstream or an item crosses an insertion point: resolve the case or choose Selected only. Play and Stop use the SOLO Recorder's round transport buttons.</p>
   <p class="when">When: verifying section and region names prior to final render, or navigating large multi-hour timelines. Can be docked beside the arrange window.</p>
 
@@ -476,8 +476,8 @@
       <p><strong>Key controls:</strong> Harmonic Amount (Even/Odd), Body, Air/Presence, VOG Sub-bass, Dynamic Drive. Reports telemetry for Master Pro comparison.</p>
     </div>
     <div class="card" id="plugin-magic-voice-lab">
-      <h3>ZP Magic Voice LAB</h3>
-      <p>Level a spoken take and tame resonances that stand out on particular words. <a href="magic_voice_lab.html">Open the operating guide: ZP Magic Voice LAB</a>.</p>
+      <h3>ZP Magic Voice / ZP Magic Voice LAB</h3>
+      <p>Levels a spoken take, drives detectors with auto-compensated Input Level and tames resonances that stand out on particular words (4-band DRC with spring-loaded SOLO, 5-band Dynamic EQ, Tone EQ + Mid Bump, Dynamic Balance and scrollable JSFX view). <a href="magic_voice_lab.html">Open the operating guide: ZP Magic Voice / LAB</a>.</p>
     </div>
     <div class="card" id="plugin-stagekeeper">
       <h3>ZP Stagekeeper Dialogue Director</h3>
@@ -535,6 +535,7 @@
       <p><strong>Readings:</strong> Deviation in dB per zone (Lows, Low-mids, High-mids, Highs), residual slope (+ = brighter than brown, - = darker), level against the reference, result Matched / Close / No. JSFX view brings back REAPER's parameter list, readings included, for OSARA and screen readers.</p>
     </div>
   </div>
+  <p>All Suite JSFX plugins scale proportionally when you resize REAPER's FX window.</p>
 
   <!-- ================================================================== -->
   <h2 id="strumenti-srt">Standalone SRT Tools</h2>

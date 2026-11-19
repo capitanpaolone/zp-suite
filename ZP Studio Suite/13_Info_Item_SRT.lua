@@ -10,6 +10,16 @@
 -- Resta aperta e si aggiorna da sola quando selezioni un altro item: si esplora la
 -- timeline senza riaprirla. La chiudi tu (Chiudi, Esc o la X). Non modifica niente.
 
+-- Zoom proporzionale (ZP_GfxScale.lua): finestra di partenza 620x520; ingrandendola cresce tutto insieme.
+local gfx = gfx
+do
+  local zp_dir = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+  local zp_chunk = loadfile(zp_dir .. package.config:sub(1, 1) .. "ZP_GfxScale.lua")
+  if zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h) return math.max(0.6, math.min(3.0, math.min(w / 620, h / 520))) end
+    gfx = zp_chunk().wrap(gfx)
+  end
+end
 local TITLE = "ZP Studio Suite - Info item SRT"
 local sep = package.config:sub(1, 1)
 local here = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\][^/\\]+$") or ".")

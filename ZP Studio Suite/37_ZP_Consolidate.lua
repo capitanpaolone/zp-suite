@@ -13,6 +13,16 @@
 --   Media i file che il progetto non usa; non cancella nulla) e «Numera item» (rinomina in sequenza gli item
 --   delle tracce selezionate partendo dal nome della traccia), piu' un pulsante ? con l'aiuto.
 
+-- Zoom proporzionale (ZP_GfxScale.lua): finestra di partenza 650x582; ingrandendola cresce tutto insieme.
+local gfx = gfx
+do
+  local zp_dir = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+  local zp_chunk = loadfile(zp_dir .. package.config:sub(1, 1) .. "ZP_GfxScale.lua")
+  if zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h) return math.max(0.6, math.min(3.0, math.min(w / 650, h / 582))) end
+    gfx = zp_chunk().wrap(gfx)
+  end
+end
 local r = reaper
 local TITLE = "ZP Consolidate"
 local C = {}                      -- interfaccia interna, usata dai collaudi

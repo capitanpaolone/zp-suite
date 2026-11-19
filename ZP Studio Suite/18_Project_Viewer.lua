@@ -6,14 +6,28 @@
 -- Distribuzione gratuita.
 -- Vista cronologica editoriale di marker e regioni.
 
+-- Zoom proporzionale (ZP_GfxScale.lua): base 920x620; libera scala [0.8..3.0], agganciata (dock) non scende sotto 1.0 per restare leggibile anche stretta o bassa.
+local gfx = gfx
+local zp_docked = false
+do
+  local zp_dir = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+  local zp_chunk = loadfile(zp_dir .. package.config:sub(1, 1) .. "ZP_GfxScale.lua")
+  if gfx and zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h)
+      local lo = zp_docked and 1.0 or 0.8
+      return math.max(lo, math.min(3.0, math.min(w / 920, h / 620)))
+    end
+    gfx = zp_chunk().wrap(gfx)
+  end
+end
+
 local SCRIPT_TITLE = "ZP Studio Suite v1.0.5 - Project"
 local EXT_SECTION = "ZP_RythmoBand_ProjectViewer"
 local UI_SCALE = 1.15
 local ROW_H = math.floor(29 * UI_SCALE + 0.5)
-local HEADER_H = math.floor(86 * UI_SCALE + 0.5) + 20
+local HEADER_H = math.floor(86 * UI_SCALE + 0.5) + 34
 local FOOTER_H = math.floor(52 * UI_SCALE + 0.5)
 local PLAY_PREROLL = 0.10
-local TABLE_W = 900
 local ACTION_RENDER_PROJECT = 40015
 
 reaper.atexit(function()
@@ -89,9 +103,6 @@ local function draw_compact_tool(rect, label, active, enabled, clicked, kind)
   elseif kind == "dock" then
     gfx.rect(cx - 6 * k, cy - 5 * k, 12 * k, 10 * k, false)
     gfx.line(cx - 6 * k, cy - 1 * k, cx + 6 * k, cy - 1 * k)
-  elseif kind == "scroll" then
-    gfx.triangle(cx - 7 * k, cy, cx - 2 * k, cy - 4 * k, cx - 2 * k, cy + 4 * k)
-    gfx.triangle(cx + 7 * k, cy, cx + 2 * k, cy - 4 * k, cx + 2 * k, cy + 4 * k)
   elseif kind == "play" then
     ZP_UI.draw_symbol("play", cx, cy, 12 * k)
   elseif kind == "marker" then
@@ -585,8 +596,8 @@ local function draw_project_window()
   local show_markers = bool_from_state(reaper.GetExtState(EXT_SECTION, "show_markers"), true)
   local show_regions = bool_from_state(reaper.GetExtState(EXT_SECTION, "show_regions"), true)
   local auto_play = bool_from_state(reaper.GetExtState(EXT_SECTION, "auto_play"), false)
-  local invert_h_scroll = bool_from_state(reaper.GetExtState(EXT_SECTION, "invert_h_scroll"), false)
   local dock_state = tonumber(reaper.GetExtState(EXT_SECTION, "dock_state")) or 0
+  zp_docked = (dock_state & 1) == 1
   local scroll = 0
   local h_scroll = 0
   local selected = 1
@@ -614,6 +625,13 @@ local function draw_project_window()
   local h_dragging = false
   local h_drag_start_x = 0
   local h_drag_start_scroll = 0
+  local custom_name_w = tonumber(reaper.GetExtState(EXT_SECTION, "col_name_w"))
+  local custom_start_w = tonumber(reaper.GetExtState(EXT_SECTION, "col_start_w"))
+  local custom_end_w = tonumber(reaper.GetExtState(EXT_SECTION, "col_end_w"))
+  local custom_len_w = tonumber(reaper.GetExtState(EXT_SECTION, "col_len_w"))
+  local col_drag = nil
+  local last_div_click_time = 0
+  local last_div_click_which = nil
 
   -- toolbar: icona accesa finche' la finestra e' aperta; un altro clic sull'icona la chiude (REAPER 7.03+)
   if reaper.set_action_options then reaper.set_action_options(1 | 4); reaper.atexit(function() reaper.set_action_options(8) end) end
@@ -1090,6 +1108,7 @@ local function draw_project_window()
     local ch = gfx.getchar()
     if ch < 0 then gfx.quit() return end
     local current_dock = gfx.dock and gfx.dock(-1) or dock_state
+    zp_docked = (current_dock & 1) == 1
     if current_dock ~= dock_state then
       dock_state = current_dock
       reaper.SetExtState(EXT_SECTION, "dock_state", tostring(dock_state), true)
@@ -1177,7 +1196,16 @@ local function draw_project_window()
     gfx.mouse_wheel = 0
     local h_wheel = gfx.mouse_hwheel or 0
     if gfx.mouse_hwheel then gfx.mouse_hwheel = 0 end
-    if released then h_dragging = false end
+    if released then
+      h_dragging = false
+      if col_drag then
+        if col_drag.which == "name" and custom_name_w then reaper.SetExtState(EXT_SECTION, "col_name_w", tostring(math.floor(custom_name_w + 0.5)), true)
+        elseif col_drag.which == "start" and custom_start_w then reaper.SetExtState(EXT_SECTION, "col_start_w", tostring(math.floor(custom_start_w + 0.5)), true)
+        elseif col_drag.which == "end" and custom_end_w then reaper.SetExtState(EXT_SECTION, "col_end_w", tostring(math.floor(custom_end_w + 0.5)), true)
+        elseif col_drag.which == "len" and custom_len_w then reaper.SetExtState(EXT_SECTION, "col_len_w", tostring(math.floor(custom_len_w + 0.5)), true) end
+        col_drag = nil
+      end
+    end
 
     ZP_UI.fill_background()
     ZP_UI.draw_header({
@@ -1187,32 +1215,35 @@ local function draw_project_window()
       fallback_icon = draw_project_icon,
       title = "Project",
       title_size = math.floor(20 * UI_SCALE + 0.5),
-      credit_offset = math.floor(46 * UI_SCALE + 0.5),
+      credit_offset = 65,
       description = ""
     })
 
-    local help_rect = { x = gfx.w - 58, y = 16, w = 39, h = 32, font = math.floor(15 * UI_SCALE + 0.5) }
+    local b_y1, b_y2, b_h, button_x = 8, 47, math.floor(28 * UI_SCALE + 0.5), 128
+    local b_w, col_step = math.floor(42 * UI_SCALE + 0.5), math.floor(46 * UI_SCALE + 0.5)
+    local tools_right = button_x + 2 * col_step + b_w
+    local help_rect = (gfx.w >= tools_right + 68)
+      and { x = gfx.w - 58, y = 16, w = 39, h = 32, font = math.floor(15 * UI_SCALE + 0.5) }
+      or  { x = math.max(tools_right + 6, gfx.w - 45), y = b_y1, w = math.min(39, math.max(24, gfx.w - tools_right - 12)), h = b_h, font = math.floor(15 * UI_SCALE + 0.5) }
     ZP_UI.draw_help_button(help_rect, clicked, "zp-project-viewer")
 
     gfx.setfont(1, "Arial", math.floor(13 * UI_SCALE + 0.5))
 
-    local b_y1, b_y2, b_h, button_x = 8, 47, math.floor(28 * UI_SCALE + 0.5), 128
     local compact_hover = nil
     local function compact_rect(row, col)
-      return { x = button_x + col * math.floor(46 * UI_SCALE + 0.5), y = row == 1 and b_y1 or b_y2,
-        w = math.floor(42 * UI_SCALE + 0.5), h = b_h }
+      return { x = button_x + col * col_step, y = row == 1 and b_y1 or b_y2, w = b_w, h = b_h }
     end
     local lang = ZP_UI.get_lingua and ZP_UI.get_lingua() or "it"
     local help_text = {
       refresh = {"Aggiorna la lista", "Reload the list", "Rilegge marker e regioni del progetto.", "Reloads project markers and regions."},
       dock = {"Aggancia / sgancia", "Dock / float", "Aggancia la finestra o la rende libera.", "Docks the window or makes it float."},
-      scroll = {"Inverte lo scorrimento", "Invert scrolling", "Cambia la direzione della rotella orizzontale.", "Reverses horizontal wheel direction."},
       gap = {"Spazio fra item", "Space between items", "Imposta i secondi; scegli ripple globale su tutte le tracce o solo selezionati.", "Set the gap, then choose global ripple on all tracks or selected items only."},
       play = {"Click per ascoltare", "Click to audition", "Attiva o disattiva l'ascolto automatico della riga selezionata.", "Toggles automatic audition of the selected row."},
       marker = {"Mostra / nasconde marker", "Show / hide markers", "Filtra le righe marker nella lista.", "Filters marker rows in the list."},
       region = {"Mostra / nasconde regioni", "Show / hide regions", "Filtra le righe regione nella lista.", "Filters region rows in the list."},
       row_play = {"Play", "Play", "Riproduce la regione della riga selezionata.", "Plays the region on the selected row."},
       row_stop = {"Stop", "Stop", "Ferma la riproduzione della regione.", "Stops region playback."},
+      resize_col = {"Ridimensiona colonna", "Resize column", "Trascina per regolare la larghezza; doppio clic per tornare ad auto.", "Drag to resize column width; double-click to reset to auto."},
     }
     local function tool(row, col, label, active, kind, key, action)
       local rect = compact_rect(row, col)
@@ -1228,13 +1259,10 @@ local function draw_project_window()
     tool(1, 1, docked and "Float" or "Dock", docked, "dock", "dock", function()
       local target_dock = docked and 0 or 1
       if gfx.dock then gfx.dock(target_dock); dock_state = gfx.dock(-1) else dock_state = target_dock end
+      zp_docked = (dock_state & 1) == 1
       reaper.SetExtState(EXT_SECTION, "dock_state", tostring(dock_state), true)
     end)
-    tool(1, 2, "Scroll", invert_h_scroll, "scroll", "scroll", function()
-      invert_h_scroll = not invert_h_scroll
-      reaper.SetExtState(EXT_SECTION, "invert_h_scroll", invert_h_scroll and "1" or "0", true)
-    end)
-    tool(1, 3, "Spazio", false, "gap", "gap", insert_selected_item_gaps)
+    tool(1, 2, "Spazio", false, "gap", "gap", insert_selected_item_gaps)
     tool(2, 0, "Click", auto_play, "play", "play", function()
       auto_play = not auto_play
       reaper.SetExtState(EXT_SECTION, "auto_play", auto_play and "1" or "0", true)
@@ -1248,36 +1276,69 @@ local function draw_project_window()
       reaper.SetExtState(EXT_SECTION, "show_regions", show_regions and "1" or "0", true)
     end)
     local list = { x = 8, y = HEADER_H, w = gfx.w - 16, h = gfx.h - HEADER_H - FOOTER_H }
-    local table_w = math.max(TABLE_W, list.w)
-    local max_h_scroll = math.max(0, table_w - list.w)
-    h_scroll = math.max(0, math.min(max_h_scroll, h_scroll))
-    local function vx(x) return list.x + x - h_scroll end
-    local col_type = 12
-    local col_name = 100
-    local col_region_name = 128
-    local col_start = 640
-    local col_end = 760
-    local col_len = 880
-    local clip_left = list.x + 8
+    local type_col_w = math.floor(82 * UI_SCALE + 0.5)
+    local scroll_x0 = list.x + type_col_w
+    local scroll_clip_left = scroll_x0 + 6
     local clip_right = list.x + list.w - 16
-    local function draw_text_clipped(text, x, y, max_w)
-      if x >= clip_right or x + 8 < clip_left then return end
-      local visible_w = math.max(0, math.min(max_w or 120, clip_right - x))
-      if visible_w < 8 then return end
-      gfx.x = x
-      gfx.y = y
-      gfx.drawstr(fit_text(text, visible_w))
+    local scroll_view_w = math.max(40, clip_right - scroll_clip_left)
+    local rel_region_indent = 22
+    local row_font_px = math.floor(15 * UI_SCALE + 0.5)
+    local name_col_w
+    if custom_name_w then
+      name_col_w = math.max(110, math.min(800, custom_name_w))
+    else
+      gfx.setfont(1, "Arial", row_font_px)
+      local max_lw = gfx.measurestr("Nome") + 8
+      for i = 1, #visible do
+        local r = visible[i]
+        local lw = gfx.measurestr(r.label or "") + (r.kind == "region" and rel_region_indent or 0)
+        if lw > max_lw then max_lw = lw end
+      end
+      name_col_w = math.max(140, math.min(440, math.ceil(max_lw + 28)))
+      if edit_row then name_col_w = math.max(name_col_w, 200) end
     end
-    local function draw_rect_clipped(x, y, w, h, filled)
-      local x1 = math.max(x, clip_left)
+    local start_col_w = custom_start_w and math.max(76, math.min(220, custom_start_w)) or math.floor(96 * UI_SCALE + 0.5)
+    local end_col_w = custom_end_w and math.max(76, math.min(220, custom_end_w)) or math.floor(96 * UI_SCALE + 0.5)
+    local len_col_w = custom_len_w and math.max(72, math.min(220, custom_len_w)) or math.floor(88 * UI_SCALE + 0.5)
+    local rel_name = 0
+    local rel_start = name_col_w
+    local rel_end = rel_start + start_col_w
+    local rel_len = rel_end + end_col_w
+    local scroll_content_w = rel_len + len_col_w
+    local max_h_scroll = math.max(0, scroll_content_w - scroll_view_w)
+    h_scroll = math.max(0, math.min(max_h_scroll, h_scroll))
+    local function sx(rel_x) return scroll_clip_left + rel_x - h_scroll end
+    local function draw_scroll_text(text, x, y, col_w)
+      if col_w <= 6 or x >= clip_right then return end
+      local s = fit_text(text, col_w)
+      if x + gfx.measurestr(s) <= scroll_clip_left then return end
+      if x < scroll_clip_left then
+        local cut, advance = 0, 0
+        for i = 1, #s do
+          local nb = s:byte(i + 1)
+          if not nb or nb < 128 or nb >= 192 then
+            local w = gfx.measurestr(s:sub(1, i))
+            if x + w >= scroll_clip_left then cut, advance = i, w; break end
+          end
+        end
+        if cut == 0 then return end
+        x = x + advance
+        s = s:sub(cut + 1)
+        if s == "" or x >= clip_right then return end
+      end
+      local avail = clip_right - x
+      if avail < 6 then return end
+      gfx.x, gfx.y = x, y
+      gfx.drawstr(fit_text(s, avail))
+    end
+    local function draw_scroll_rect(x, y, w, h, filled)
+      local x1 = math.max(x, scroll_clip_left)
       local x2 = math.min(x + w, clip_right)
       if x2 <= x1 then return end
       gfx.rect(x1, y, x2 - x1, h, filled)
     end
     local function hscroll_step(raw)
-      local dir = raw > 0 and 1 or -1
-      if invert_h_scroll then dir = -dir end
-      return dir * 42
+      return (raw > 0 and 1 or -1) * 42
     end
     gfx.set(0.10, 0.10, 0.13, 1)
     gfx.rect(list.x, list.y, list.w, list.h, true)
@@ -1287,13 +1348,68 @@ local function draw_project_window()
     local table_clip = { x = list.x + 1, y = list.y + 1, w = list.w - 2, h = list.h - 20 }
     if gfx.setclip then gfx.setclip(table_clip.x, table_clip.y, table_clip.w, table_clip.h) end
 
+    local head_h_px = math.floor(30 * UI_SCALE + 0.5)
+    local div_defs = {
+      { which = "name", x = sx(rel_start) - 4, min_w = 110, max_w = 800, cur = name_col_w },
+      { which = "start", x = sx(rel_end) - 4, min_w = 76, max_w = 220, cur = start_col_w },
+      { which = "end", x = sx(rel_len) - 4, min_w = 76, max_w = 220, cur = end_col_w },
+      { which = "len", x = sx(scroll_content_w) - 4, min_w = 72, max_w = 220, cur = len_col_w },
+    }
+    local hovered_div = nil
+    for _, d in ipairs(div_defs) do
+      if d.x >= scroll_clip_left + 4 and d.x <= clip_right then
+        if point_in_rect(gfx.mouse_x, gfx.mouse_y, d.x - 5, list.y, 10, head_h_px) then
+          hovered_div = d.which
+        end
+      end
+    end
+    if hovered_div and not col_drag then
+      local t = help_text.resize_col
+      compact_hover = { title = t[lang == "en" and 2 or 1], body = t[lang == "en" and 4 or 3] }
+      if clicked then
+        local now = reaper.time_precise()
+        if last_div_click_which == hovered_div and (now - last_div_click_time) < 0.35 then
+          if hovered_div == "name" then custom_name_w = nil; reaper.SetExtState(EXT_SECTION, "col_name_w", "", true)
+          elseif hovered_div == "start" then custom_start_w = nil; reaper.SetExtState(EXT_SECTION, "col_start_w", "", true)
+          elseif hovered_div == "end" then custom_end_w = nil; reaper.SetExtState(EXT_SECTION, "col_end_w", "", true)
+          elseif hovered_div == "len" then custom_len_w = nil; reaper.SetExtState(EXT_SECTION, "col_len_w", "", true) end
+          last_div_click_time = 0; last_div_click_which = nil
+        else
+          for _, d in ipairs(div_defs) do
+            if d.which == hovered_div then col_drag = { which = d.which, start_mx = gfx.mouse_x, start_w = d.cur }; break end
+          end
+          last_div_click_time = now; last_div_click_which = hovered_div
+        end
+      end
+    end
+    if col_drag and mouse_down then
+      local delta = gfx.mouse_x - col_drag.start_mx
+      if col_drag.which == "name" then custom_name_w = math.max(110, math.min(800, col_drag.start_w + delta))
+      elseif col_drag.which == "start" then custom_start_w = math.max(76, math.min(220, col_drag.start_w + delta))
+      elseif col_drag.which == "end" then custom_end_w = math.max(76, math.min(220, col_drag.start_w + delta))
+      elseif col_drag.which == "len" then custom_len_w = math.max(72, math.min(220, col_drag.start_w + delta)) end
+    end
+
     gfx.setfont(1, "Arial", math.floor(14 * UI_SCALE + 0.5))
     gfx.set(0.64, 0.64, 0.72, 1)
-    draw_text_clipped("Tipo", vx(col_type), list.y + math.floor(8 * UI_SCALE), 70)
-    draw_text_clipped("Nome", vx(col_name), list.y + math.floor(8 * UI_SCALE), col_start - col_name - 16)
-    draw_text_clipped("Start", vx(col_start), list.y + math.floor(8 * UI_SCALE), 94)
-    draw_text_clipped("End", vx(col_end), list.y + math.floor(8 * UI_SCALE), 94)
-    draw_text_clipped("Durata", vx(col_len), list.y + math.floor(8 * UI_SCALE), 94)
+    gfx.x, gfx.y = list.x + 12, list.y + math.floor(8 * UI_SCALE)
+    gfx.drawstr(fit_text("Tipo", math.max(20, type_col_w - 16)))
+    draw_scroll_text("Nome", sx(rel_name), list.y + math.floor(8 * UI_SCALE), name_col_w - 10)
+    draw_scroll_text("Start", sx(rel_start), list.y + math.floor(8 * UI_SCALE), start_col_w - 8)
+    draw_scroll_text("End", sx(rel_end), list.y + math.floor(8 * UI_SCALE), end_col_w - 8)
+    draw_scroll_text("Durata", sx(rel_len), list.y + math.floor(8 * UI_SCALE), len_col_w - 8)
+    gfx.set(0.26, 0.28, 0.36, 1)
+    gfx.line(scroll_x0, list.y + 4, scroll_x0, list.y + list.h - (max_h_scroll > 0 and 18 or 4))
+    for _, d in ipairs(div_defs) do
+      if d.x >= scroll_clip_left + 4 and d.x <= clip_right then
+        if hovered_div == d.which or (col_drag and col_drag.which == d.which) then
+          gfx.set(0.35, 0.78, 0.94, 1)
+        else
+          gfx.set(0.24, 0.25, 0.32, 0.9)
+        end
+        gfx.line(d.x, list.y + 6, d.x, list.y + head_h_px - 4)
+      end
+    end
 
     local max_rows = math.max(1, math.floor((list.h - 48) / ROW_H))
     if #visible == 0 then
@@ -1313,7 +1429,6 @@ local function draw_project_window()
         h_scroll = math.max(0, math.min(max_h_scroll, h_scroll - hscroll_step(wheel)))
       else
         local step = wheel > 0 and -2 or 2
-        if invert_h_scroll then step = -step end
         scroll = math.max(0, math.min(math.max(0, #visible - max_rows), scroll + step))
         scrolled_vertically = true
       end
@@ -1344,11 +1459,12 @@ local function draw_project_window()
         gfx.rect(row_rect.x + 1, row_rect.y + 1, row_rect.w - 2, row_rect.h - 2, false)
       end
 
-      local name_x = vx(row.kind == "region" and col_region_name or col_name)
-      local name_w = math.max(80, col_start - (row.kind == "region" and col_region_name or col_name) - 16)
-      local in_name_field = point_in_rect(gfx.mouse_x, gfx.mouse_y, name_x - 4, y - 2, name_w, 23)
+      local name_x = sx(row.kind == "region" and rel_region_indent or rel_name)
+      local name_w = math.max(60, name_col_w - (row.kind == "region" and rel_region_indent or 0) - 10)
+      local in_name_field = gfx.mouse_x >= scroll_clip_left and gfx.mouse_x <= clip_right
+        and point_in_rect(gfx.mouse_x, gfx.mouse_y, name_x - 4, y - 2, name_w, 23)
 
-      if clicked and hovered then
+      if clicked and hovered and not col_drag then
         local now = reaper.time_precise()
         local same = last_click_row == idx and (now - last_click_time) < 0.35
         local previous_selected = selected
@@ -1399,48 +1515,49 @@ local function draw_project_window()
       local r, g, b = native_color_to_rgb(row.color)
       if row.kind == "marker" then
         if r then gfx.set(r, g, b, 1) else gfx.set(0.90, 0.42, 0.16, 1) end
-        draw_rect_clipped(vx(col_type - 6), y + 2, 25, 15, true)
+        gfx.rect(list.x + 10, y + 2, 25, 15, true)
         if r then gfx.set(math.min(1, r + 0.12), math.min(1, g + 0.12), math.min(1, b + 0.12), 1) else gfx.set(1.0, 0.62, 0.25, 1) end
-        draw_rect_clipped(vx(col_type - 6), y + 2, 6, ROW_H - 8, true)
+        gfx.rect(list.x + 10, y + 2, 6, ROW_H - 8, true)
       else
         if r then gfx.set(r, g, b, 1) else gfx.set(0.20, 0.66, 0.86, 1) end
-        draw_rect_clipped(vx(col_type - 3), y + 4, 12, 12, true)
+        gfx.rect(list.x + 13, y + 4, 12, 12, true)
       end
 
       gfx.set(row.kind == "marker" and 1.0 or 0.75, row.kind == "marker" and 0.87 or 0.84, row.kind == "marker" and 0.68 or 0.94, 1)
       local type_label = row.kind == "marker" and (row.synthetic and "--" or "M" .. tostring(row.idx)) or "R" .. tostring(row.idx)
-      draw_text_clipped(type_label, vx(col_type + 25), text_y, 64)
+      gfx.x, gfx.y = list.x + 40, text_y
+      gfx.drawstr(fit_text(type_label, math.max(16, type_col_w - 44)))
 
       if edit_row == idx then
         gfx.set(0.13, 0.17, 0.24, 1)
-        draw_rect_clipped(name_x - 4, y - 2, name_w, 26, true)
+        draw_scroll_rect(name_x - 4, y - 2, name_w, 26, true)
         gfx.set(1.0, 0.78, 0.18, 1)
-        draw_rect_clipped(name_x - 4, y - 2, name_w, 26, false)
+        draw_scroll_rect(name_x - 4, y - 2, name_w, 26, false)
         local sel_a, sel_b = edit_selection_range()
         if sel_a then
           local before_w = gfx.measurestr(edit_text:sub(1, sel_a - 1))
           local text_w = math.min(gfx.measurestr(edit_text:sub(sel_a, sel_b - 1)), name_w - 10)
           gfx.set(0.22, 0.48, 0.70, 0.95)
-          draw_rect_clipped(name_x + math.min(before_w, name_w - 10), text_y - 1, text_w + 4, 21, true)
+          draw_scroll_rect(name_x + math.min(before_w, name_w - 10), text_y - 1, text_w + 4, 21, true)
         end
         gfx.set(0.92, 0.92, 0.96, 1)
-        draw_text_clipped(edit_text ~= "" and edit_text or "(nome)", name_x, text_y, name_w - 10)
+        draw_scroll_text(edit_text ~= "" and edit_text or "(nome)", name_x, text_y, name_w - 10)
         if not sel_a and math.floor(reaper.time_precise() * 2) % 2 == 0 then
           local tw = gfx.measurestr(edit_text:sub(1, edit_cursor - 1))
           gfx.set(1.0, 0.78, 0.18, 1)
-          draw_rect_clipped(name_x + math.min(tw, name_w - 14), text_y - 2, 2, 20, true)
+          draw_scroll_rect(name_x + math.min(tw, name_w - 14), text_y - 2, 2, 20, true)
         end
       else
         gfx.setfont(1, "Arial", math.floor((row.kind == "marker" and 15 or 14) * UI_SCALE + 0.5))
         gfx.set(row.kind == "marker" and 0.96 or 0.86, row.kind == "marker" and 0.94 or 0.86, row.kind == "marker" and 0.90 or 0.90, 1)
-        draw_text_clipped(row.label, name_x, text_y, name_w - 10)
+        draw_scroll_text(row.label, name_x, text_y, name_w - 10)
       end
 
       gfx.setfont(1, "Arial", math.floor(14 * UI_SCALE + 0.5))
       gfx.set(0.82, 0.82, 0.86, 1)
-      draw_text_clipped(format_time(row.pos), vx(col_start), text_y, 106)
-      draw_text_clipped(row.kind == "region" and row.end_pos and format_time(row.end_pos) or "-", vx(col_end), text_y, 106)
-      draw_text_clipped(row.kind == "region" and row.end_pos and format_time(row.end_pos - row.pos) or "-", vx(col_len), text_y, 106)
+      draw_scroll_text(format_time(row.pos), sx(rel_start), text_y, start_col_w - 8)
+      draw_scroll_text(row.kind == "region" and row.end_pos and format_time(row.end_pos) or "-", sx(rel_end), text_y, end_col_w - 8)
+      draw_scroll_text(row.kind == "region" and row.end_pos and format_time(row.end_pos - row.pos) or "-", sx(rel_len), text_y, len_col_w - 8)
     end
 
     if #visible == 0 then
@@ -1462,8 +1579,9 @@ local function draw_project_window()
     end
 
     if max_h_scroll > 0 then
-      local hbar = { x = list.x + 8, y = list.y + list.h - 14, w = list.w - 16, h = 8 }
-      local thumb_w = math.max(36, (list.w / table_w) * hbar.w)
+      local hbar_x = scroll_x0 + 4
+      local hbar = { x = hbar_x, y = list.y + list.h - 14, w = math.max(40, (list.x + list.w - 16) - hbar_x), h = 8 }
+      local thumb_w = math.max(36, math.min(hbar.w, (scroll_view_w / scroll_content_w) * hbar.w))
       local thumb_x = hbar.x + (h_scroll / max_h_scroll) * (hbar.w - thumb_w)
       local hover_h = point_in_rect(gfx.mouse_x, gfx.mouse_y, hbar.x, hbar.y - 5, hbar.w, hbar.h + 10)
       local hover_thumb = point_in_rect(gfx.mouse_x, gfx.mouse_y, thumb_x, hbar.y - 5, thumb_w, hbar.h + 10)

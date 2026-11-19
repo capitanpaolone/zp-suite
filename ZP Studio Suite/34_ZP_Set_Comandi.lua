@@ -13,6 +13,16 @@
 -- che aspetta la chiusura di REAPER, fa un backup di reaper-kb.ini, sostituisce le righe KEY e,
 -- se richiesto, riapre REAPER. Prima di ogni cambio i tasti in uso vanno in "Backup automatico".
 
+-- Zoom proporzionale (ZP_GfxScale.lua): scala con la larghezza (base 660); l'altezza resta a scorrimento/adattamento.
+local gfx = gfx
+do
+  local zp_dir = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+  local zp_chunk = loadfile(zp_dir .. package.config:sub(1, 1) .. "ZP_GfxScale.lua")
+  if zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h) return math.max(0.8, math.min(3.0, w / 660)) end
+    gfx = zp_chunk().wrap(gfx)
+  end
+end
 local M = {}
 
 M.PENDING = "ZP_Set_in_attesa.txt"

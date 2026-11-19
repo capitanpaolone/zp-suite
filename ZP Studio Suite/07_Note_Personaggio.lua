@@ -10,6 +10,16 @@
 -- La traccia voce resta una traccia normale. La traccia note e' disarmata,
 -- nascosta dal mixer e figlia/folder child della traccia voce.
 
+-- Zoom proporzionale (ZP_GfxScale.lua): finestra di partenza 660x310; ingrandendola cresce tutto insieme.
+local gfx = gfx
+do
+  local zp_dir = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+  local zp_chunk = loadfile(zp_dir .. package.config:sub(1, 1) .. "ZP_GfxScale.lua")
+  if zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h) return math.max(0.6, math.min(3.0, math.min(w / 660, h / 310))) end
+    gfx = zp_chunk().wrap(gfx)
+  end
+end
 local SECTION = "RythmoBand_NP"
 local KEY_ENABLED = "enabled"
 local KEY_LAST_INDEX = "last_index"
@@ -345,7 +355,7 @@ local function prompt_roles_visual(default_role, on_done)
     last_mouse_down = mouse_down
 
     if clicked then
-      local input_rect = { x = 34, y = 126, w = 592, h = 34 }
+      local input_rect = { x = 34, y = 150, w = 592, h = 34 }
       if point_in_rect(gfx.mouse_x, gfx.mouse_y, input_rect.x, input_rect.y, input_rect.w, input_rect.h) then
         local now = reaper.time_precise()
         if active_input and (now - input_last_click_time) < 0.35 then
@@ -456,19 +466,20 @@ local function prompt_roles_visual(default_role, on_done)
     gfx.y = 84
     gfx.drawstr("Crea una traccia voce e la relativa traccia note personaggio per il gobbo.")
     ZP_UI.draw_help_button({ x = gfx.w - 54, y = 18, w = 34, h = 28 }, clicked, "zp-regia-ruoli")
+    gfx.set(0.72, 0.70, 0.78, 1)
     gfx.x = 34
     gfx.y = 104
     gfx.drawstr("Puoi inserire piu' ruoli separati da virgola.")
 
     gfx.set(0.72, 0.70, 0.78, 1)
     gfx.x = 34
-    gfx.y = 112
+    gfx.y = 130
     gfx.drawstr("Ruolo / ruoli")
-    draw_text_input({ x = 34, y = 126, w = 592, h = 34 }, text, active_input, false, input_cursor, input_select_all, "voce1")
+    draw_text_input({ x = 34, y = 150, w = 592, h = 34 }, text, active_input, false, input_cursor, input_select_all, "voce1")
 
     gfx.set(0.66, 0.65, 0.70, 1)
     gfx.x = 34
-    gfx.y = 176
+    gfx.y = 200
     gfx.drawstr("Esempio: Mario, Laura, Narratore")
 
     if draw_button({x = 390, y = 238, w = 112, h = 36}, "Crea", false, trim(text) ~= "", clicked, "ok") then

@@ -315,6 +315,31 @@ if not f then
   reaper.MB("Non riesco a scrivere:\n" .. target, "ZP Installa toolbar", 0)
   return
 end
+local function install_missing_icons(sub)
+  if not reaper.EnumerateFiles then return end
+  local src_dir = here .. sep .. "icons" .. (sub ~= "" and (sep .. sub) or "")
+  local dst_dir = resource .. sep .. "Data" .. sep .. "toolbar_icons" .. (sub ~= "" and (sep .. sub) or "")
+  reaper.RecursiveCreateDirectory(dst_dir, 0)
+  local i = 0
+  while true do
+    local fn = reaper.EnumerateFiles(src_dir, i)
+    if not fn then break end
+    i = i + 1
+    if fn:lower():match("%.png$") then
+      local dst = dst_dir .. sep .. fn
+      if not exists(dst) then
+        local data = read(src_dir .. sep .. fn)
+        if data then
+          local out = io.open(dst, "wb")
+          if out then out:write(data); out:close() end
+        end
+      end
+    end
+  end
+end
+install_missing_icons("")
+install_missing_icons("200")
+
 local function has_icon(name)
   return M.STOCK[name] or exists(resource .. sep .. "Data" .. sep .. "toolbar_icons" .. sep .. name)
 end

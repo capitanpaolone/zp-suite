@@ -143,3 +143,31 @@ JSFX 1.2.0-lab1, Paolo Balestri. Copia dal laboratorio zp-jsfx-lab identica a qu
        - `ZP Lab/ZP BrownSlope Dynamic Guard.jsfx` (`ce00bbc8b9b07775a853cf98ab7f6b5e8d33db331350f66d41796e1658f6fd4e`)
    - Tutti i 15 file JSFX sono allineati tra `zp-suite-2.6.7` e `/Users/paolob/Library/Application Support/REAPER/Effects/ZP Suite/`.
    - Archivio snapshot pre-zoom, candidata e `SHA256.txt`: `/Volumes/DISCO LACIE/Archivio_Storico_ZP/ZP Suite/2026-11-18_MagicVoice_LAB3_e_Zoom_JSFX/`.
+
+## Zoom proporzionale Lua, restyling Project Viewer e fix icone toolbar — 2026-11-19
+
+1. **Zoom proporzionale Lua (`ZP Studio Suite/ZP_GfxScale.lua` + `ZP Studio Suite/ZP_UI.lua`)**:
+   - Introdotto `ZP_GfxScale.lua` (`@noindex`, dichiarato `[nomain]` in `00_Apri_Help_ZP_Studio_Suite.lua`) e integrato lo zoom proporzionale su tutte le 24 finestre Lua operative della Suite (`01`, `04`, `05_Aggiorna_SRT_Video`, `07`, `08`, `13`, `17`, `18`, `19`, `20`, `22`, `23`, `24`, `25`, `29`, `30`, `31`, `33`, `34`, `35`, `36`, `37`, `render_copy/ZP_RenderCopy.lua`, `remote/ZP_Remote_Crea_Pacchetto.lua`) più `ZP_UI.lua`. Esclusi intenzionalmente `02`/`03` (già fluidi fullscreen), `05_worker_Gestione_SRT.lua` (batch) e `ZP_Xlsx_Copione.lua` (`0x0` invisibile).
+   - Validato prima in ambiente isolato `/Volumes/DiscoM28T/temporanee/Reaper26_test`, poi promosso nella candidata `release/2.6.7` rimuovendo le note di prova.
+
+2. **Restyling `18_Project_Viewer.lua`, fix `07_Note_Personaggio.lua` e icone toolbar (`32_Installa_Toolbar_ZP.lua` + `tools/sincronizza_reaper.sh`)**:
+   - `18_Project_Viewer.lua`: colonna `Tipo` fissa a sinistra, scorrimento orizzontale su `Nome | Start | End | Durata`, larghezze auto-fit e ridimensionabili da separatori intestazione (doppio clic = auto), griglia 3×2 pulita senza pulsante `Scroll` / `invert_h_scroll` e `?` adattivo senza collisioni fino a `320 px` in dock.
+   - `07_Note_Personaggio.lua`: corretta la spaziatura verticale del testo sotto l'intestazione (segnalata visivamente da Paolo su Actor/Note).
+   - `tools/sincronizza_reaper.sh` + `32_Installa_Toolbar_ZP.lua`: mirroring/copia non distruttiva delle icone PNG toolbar (`1×` e `200/`, esclusi `.svg`) verso `Data/toolbar_icons/` (risolve l'assenza di `ZP_tbB_37_Consolidate.png` dopo sincronizzazione manuale dal repo).
+
+3. **SHA-256 principali nel repository (`release/2.6.7`, post-promozione)**:
+   - `ZP Studio Suite/00_Apri_Help_ZP_Studio_Suite.lua`: `9021eed1dba1ca5bf9e175bbefba48819a00c83e2d87b1f42f72fbd7dbf9c966`
+   - `ZP Studio Suite/ZP_GfxScale.lua`: `4df95557b7491f24829bb01ac131a7894770200baebf47058a03c326cdbb1f18`
+   - `ZP Studio Suite/ZP_UI.lua`: `04baddf0021efa28abaf673ac113908088a5ceb7f9345fad25306af96ad082d5`
+   - `ZP Studio Suite/07_Note_Personaggio.lua`: `b1b0f6d86df1d82ab8b0cdd281cbee450e1a3401c6c73fb704aaa7a272badecb`
+   - `ZP Studio Suite/17_Crea_Regioni_Export_da_Item_Nominati.lua`: `a72b3075de9c0defb6170416de9a009088c27bb34afcbab8e66e3d25d2aea8b1`
+   - `ZP Studio Suite/18_Project_Viewer.lua`: `350c8e88584cf50f5368417383d661eb20e99d86da80d589b80ecd573e294e4b`
+   - `ZP Studio Suite/25_ZP_SOLO_Recorder.lua`: `e7b98f677697340de98a7040110e6dfecaffee1743bd14db238bb7cb01cd6038`
+   - `ZP Studio Suite/32_Installa_Toolbar_ZP.lua`: `d5caf3c310a216ff59ba47bff84500c46b232858d2ecf84353ab7f227049ac0c`
+   - `tools/sincronizza_reaper.sh`: `3cb89b0e0c311aecafa5cccc2379e565b7b09be109b4bd613e8b20f322f1beec`
+   - `gobbo_ricerca_battuta/test/test_gfx_scale.lua`: `2c267030c46d6d921a815d13c0b4da3e59dc0b632dc02ad75d29cc62a18f9e`
+
+4. **Verifiche e archivio**:
+   - Prove interattive di Paolo in `Reaper26_test` superate prima della promozione; guide `help/index.html`, `help/en/index.html`, `help/magic_voice_lab.html` e `help/en/magic_voice_lab.html` aggiornate.
+   - Eseguiti `test_gfx_scale.lua` (35 controlli), `run_all.sh` e `fumo_tutte.sh` IT/EN.
+   - Snapshot pre/post e `SHA256.txt` completo su `/Volumes/DISCO LACIE/Archivio_Storico_ZP/ZP Suite/2026-11-19_Zoom_Lua_e_Project_Viewer/`.

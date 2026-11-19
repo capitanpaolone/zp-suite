@@ -15,6 +15,16 @@
 -- Fine di ogni battuta = inizio della successiva; l'ultima dura al massimo 8 s
 -- e non supera la fine del file.
 
+-- Zoom proporzionale (ZP_GfxScale.lua): finestra di partenza 640x540; ingrandendola cresce tutto insieme.
+local gfx = gfx
+do
+  local zp_dir = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+  local zp_chunk = loadfile(zp_dir .. package.config:sub(1, 1) .. "ZP_GfxScale.lua")
+  if zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h) return math.max(0.6, math.min(3.0, math.min(w / 640, h / 540))) end
+    gfx = zp_chunk().wrap(gfx)
+  end
+end
 local M = {}
 local TITLE = "ZP SRT dall'audio"
 local LAST_MAX = 8.0     -- secondi: durata massima dell'ultima battuta

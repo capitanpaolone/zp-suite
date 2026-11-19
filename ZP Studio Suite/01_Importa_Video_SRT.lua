@@ -8,6 +8,17 @@
 -- Scegli video e SRT, aggiunge nel progetto corrente traccia video
 -- e traccia Rythmo Band Testi con empty items temporizzati.
 
+-- Zoom proporzionale (ZP_GfxScale.lua): finestra di partenza 790x520; ingrandendola cresce tutto insieme.
+local gfx = gfx
+do
+  local zp_dir = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+  local zp_chunk = loadfile(zp_dir .. package.config:sub(1, 1) .. "ZP_GfxScale.lua")
+  if gfx and zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h) return math.max(0.6, math.min(3.0, math.min(w / 790, h / 520))) end
+    gfx = zp_chunk().wrap(gfx)
+  end
+end
+
 local sep = package.config:sub(1, 1)
 
 local SUBTITLE_TRACK_NAME = "Rythmo Band Testi"

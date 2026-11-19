@@ -9,6 +9,16 @@
 -- I sottotitoli vengono esportati con timecode relativo allo start della
 -- regione/video, non alla posizione assoluta in timeline.
 
+-- Zoom proporzionale (ZP_GfxScale.lua): finestra di partenza 760x500; ingrandendola cresce tutto insieme.
+local gfx = gfx
+do
+  local zp_dir = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+  local zp_chunk = loadfile(zp_dir .. package.config:sub(1, 1) .. "ZP_GfxScale.lua")
+  if zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h) return math.max(0.6, math.min(3.0, math.min(w / 760, h / 500))) end
+    gfx = zp_chunk().wrap(gfx)
+  end
+end
 local SUBTITLE_TRACK_NAME = "Rythmo Band Testi"
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
 local ZP_UI = dofile(SCRIPT_DIR .. "ZP_UI.lua")

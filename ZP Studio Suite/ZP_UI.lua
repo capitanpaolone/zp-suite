@@ -3,6 +3,18 @@
 -- ZP Studio Suite shared UI helpers
 -- Small gfx primitives shared by ZP Studio Suite Lua windows.
 
+-- Zoom proporzionale: se lo script chiamante ha impostato ZP_GFX_SCALE_FN, "gfx" in questo
+-- file diventa l'involucro di ZP_GfxScale.lua; altrimenti e' la tabella gfx di REAPER, come prima.
+local gfx = gfx
+if rawget(_G, "ZP_GFX_SCALE_FN") then
+  local dir = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+  local load_ok, chunk = pcall(loadfile, dir .. package.config:sub(1, 1) .. "ZP_GfxScale.lua")
+  if load_ok and chunk then
+    local run_ok, mod = pcall(chunk)
+    if run_ok and type(mod) == "table" and mod.wrap then gfx = mod.wrap(gfx) end
+  end
+end
+
 local UI = {}
 
 UI.VERSION = "v1.0.0"

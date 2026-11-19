@@ -43,9 +43,11 @@ local TRACK_NAMES = {
 local TRACK_ORDER = { "main", "inserts", "retakes", "alt", "ref" }
 local RECORD_TRACK_KEYS = { "main", "inserts", "retakes", "alt" }
 
-local MINI_W, MINI_H = 750, 242   -- 750: trasporto con la PAUSA accanto a ingresso
-local COMPACT_W, COMPACT_H = 760, 524   -- +40: navigatore ridotto anche in Compact (+8 testata)
-local EXPANDED_W, EXPANDED_H = 1000, 668
+local WIN_SIZE = {
+  mini     = { 750, 242 },   -- 750: trasporto con la PAUSA accanto a ingresso
+  compact  = { 760, 524 },   -- +40: navigatore ridotto anche in Compact (+8 testata)
+  expanded = { 1000, 668 },
+}
 local TOOLBAR_H = 50   -- una fila: Save/Undo/Redo stanno in testata
 
 local NEXT_TAKE_GAP_SECONDS = 5.0
@@ -80,11 +82,27 @@ local function script_dir()
 end
 
 local sep = package.config:sub(1, 1)
-local ok_ui, ZP_UI = pcall(dofile, script_dir() .. sep .. "ZP_UI.lua")
-if not ok_ui and reaper.GetResourcePath then
-  ok_ui, ZP_UI = pcall(dofile, reaper.GetResourcePath() .. sep .. "Scripts" .. sep .. "ZP_Studio_Suite" .. sep .. "ZP_UI.lua")
+-- Zoom proporzionale (ZP_GfxScale.lua): la base segue la vista attiva (Mini / Compact / Expanded + Toolbar).
+local gfx = gfx
+local zp_mode_base = function() return WIN_SIZE.compact[1], WIN_SIZE.compact[2] end
+do
+  local zp_chunk = loadfile(script_dir() .. sep .. "ZP_GfxScale.lua")
+  if gfx and zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h)
+      local bw, bh = zp_mode_base()
+      return math.max(0.65, math.min(3.0, math.min(w / bw, h / bh)))
+    end
+    gfx = zp_chunk().wrap(gfx)
+  end
 end
-if not ok_ui then ZP_UI = nil end
+local ZP_UI
+do
+  local ok_ui, mod = pcall(dofile, script_dir() .. sep .. "ZP_UI.lua")
+  if not ok_ui and reaper.GetResourcePath then
+    ok_ui, mod = pcall(dofile, reaper.GetResourcePath() .. sep .. "Scripts" .. sep .. "ZP_Studio_Suite" .. sep .. "ZP_UI.lua")
+  end
+  if ok_ui then ZP_UI = mod end
+end
 -- La pulsantiera usa i controlli di ZP_UI (pomelli, interruttori, trasporto): senza, non parte.
 if not (ZP_UI and ZP_UI.draw_knob) then
   reaper.MB("Manca ZP_UI.lua aggiornato accanto a questo script.\nReinstalla la ZP Studio Suite da ReaPack.", "ZP SOLO Recorder", 0)
@@ -234,8 +252,9 @@ local function save_window_state()
   ext_set("window_dock", dock or 0)
   ext_set("window_x", x or 120)
   ext_set("window_y", y or 120)
-  ext_set("window_w", w or gfx.w)
-  ext_set("window_h", h or gfx.h)
+  local real_g = gfx._real or gfx
+  ext_set("window_w", w or real_g.w)
+  ext_set("window_h", h or real_g.h)
 end
 
 local function speak(text)
@@ -1646,23 +1665,39 @@ local function restore_reaper_on_exit()
 end
 
 local function mode_size(mode)
-  if mode == "mini" then return MINI_W, MINI_H end
-  if mode == "expanded" then return EXPANDED_W, EXPANDED_H end
-  return COMPACT_W, COMPACT_H
+  local sz = WIN_SIZE[mode] or WIN_SIZE.compact
+  return sz[1], sz[2]
+end
+
+zp_mode_base = function()
+  local bw, bh = mode_size(state.mode)
+  if state.toolbar then bh = bh + TOOLBAR_H end
+  return bw, bh
 end
 
 local function set_mode(mode)
   if mode ~= "mini" and mode ~= "compact" and mode ~= "expanded" then return end
+  local prev_mode = state.mode
+  local real_g = gfx._real or gfx
+  local real_w, real_h = real_g.w, real_g.h
   state.mode = mode
   state.mark_focus = false
   local w, h = mode_size(mode)
   if state.toolbar then h = h + TOOLBAR_H end
+  if mode == prev_mode and real_w and real_w > 0 and real_h and real_h > 0 then
+    local old_bh = h + (state.toolbar and -TOOLBAR_H or TOOLBAR_H)
+    local cur_s = math.max(0.65, math.min(3.0, math.min(real_w / w, real_h / old_bh)))
+    if math.abs(cur_s - 1) > 1e-4 then
+      w = math.floor(w * cur_s + 0.5)
+      h = math.floor(h * cur_s + 0.5)
+    end
+  end
   local dock, x, y = gfx.dock(-1, 0, 0, 0, 0)
   -- Il bordo in ALTO resta fermo e la finestra cresce/cala verso il basso. Su macOS la y della
   -- finestra si misura dal basso: senza correzione crescerebbe verso l'alto (e il trasporto si sposta).
   local os_name = reaper.GetOS()
   if y and ((dock or 0) & 1) == 0 and (os_name:find("OSX") or os_name:find("mac")) then
-    y = y + (gfx.h - h)
+    y = y + ((real_h or h) - h)
   end
   -- Su una finestra gia' aperta, gfx.init non sempre la ridimensiona: percio'
   -- la chiudo e la riapro alla misura giusta, tenendo posizione e dock.

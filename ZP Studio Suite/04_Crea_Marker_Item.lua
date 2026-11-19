@@ -10,6 +10,16 @@
 -- Seconda scheda "Fissa negli item": fa il lavoro del 14 (marker di progetto ->
 -- marker dell'item) senza domande bloccanti; la finestra resta aperta e mostra l'esito.
 
+-- Zoom proporzionale (ZP_GfxScale.lua): finestra di partenza 620x380; ingrandendola cresce tutto insieme.
+local gfx = gfx
+do
+  local zp_dir = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+  local zp_chunk = loadfile(zp_dir .. package.config:sub(1, 1) .. "ZP_GfxScale.lua")
+  if zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h) return math.max(0.6, math.min(3.0, math.min(w / 620, h / 380))) end
+    gfx = zp_chunk().wrap(gfx)
+  end
+end
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
 local WORKER_PATH = SCRIPT_DIR .. "04_worker_Crea_Marker_Item.lua"
 local FIX_PATH = SCRIPT_DIR .. "14_Marker_da_Timeline_a_Item.lua"

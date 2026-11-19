@@ -17,6 +17,16 @@
 -- Il software sgrossa: il lavoro di fino si fa ascoltando in Timeline.
 -- Progetto: docs/PROGETTO_22_Centrale_Montaggio_Parlato.md
 
+-- Zoom proporzionale (ZP_GfxScale.lua): scala con la larghezza (base 1240); l'altezza resta a scorrimento/adattamento.
+local gfx = gfx
+do
+  local zp_dir = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+  local zp_chunk = loadfile(zp_dir .. package.config:sub(1, 1) .. "ZP_GfxScale.lua")
+  if zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h) return math.max(0.8, math.min(3.0, w / 1240)) end
+    gfx = zp_chunk().wrap(gfx)
+  end
+end
 local sep = package.config:sub(1, 1)
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
 local UI = dofile(SCRIPT_DIR .. "ZP_UI.lua")
@@ -836,7 +846,7 @@ local function loop()
   gfx.update()
   local ch = gfx.getchar()
   if ch == 27 or ch < 0 then
-    set_ext("w", gfx.w); set_ext("h", gfx.h)
+    local zr = gfx._real or gfx; set_ext("w", zr.w); set_ext("h", zr.h)   -- misure vere, non logiche
     gfx.quit(); return
   end
   reaper.defer(loop)

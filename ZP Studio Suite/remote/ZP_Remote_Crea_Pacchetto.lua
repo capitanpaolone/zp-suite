@@ -12,6 +12,18 @@
 --   Versione interna: 1.0, campo @version ReaPack.
 
 local r = reaper
+-- Zoom proporzionale (ZP_GfxScale.lua): finestra di partenza 950x750 (760x600 * UI_SCALE 1.25); ingrandendola cresce tutto insieme.
+local gfx = gfx
+do
+  local zp_sep = package.config:sub(1, 1)
+  local zp_dir = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+  local zp_chunk = loadfile(zp_dir .. zp_sep .. ".." .. zp_sep .. "ZP_GfxScale.lua")
+    or (r and r.GetResourcePath and loadfile(r.GetResourcePath() .. zp_sep .. "Scripts" .. zp_sep .. "ZP Suite" .. zp_sep .. "ZP Studio Suite" .. zp_sep .. "ZP_GfxScale.lua"))
+  if gfx and zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h) return math.max(0.6, math.min(3.0, math.min(w / 950, h / 750))) end
+    gfx = zp_chunk().wrap(gfx)
+  end
+end
 local TITLE, SECTION = "ZP Remote · Pacchetto", "ZP_REMOTE_EXPORT"
 local HELP = [[Da REAPER a dubbertools.com
 

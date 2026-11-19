@@ -414,7 +414,7 @@
   <p><strong>Dove finiscono i file:</strong> Lane 1 = <code>Mixdown/&lt;marker&gt;/</code>; Lane 2 = <code>Mixdown/&lt;Lane1&gt;/&lt;Lane2&gt;/</code>. Le regioni visibili in Lane 1 e 2 entrano in selezione e render; quelle in Lane 3 e successive o nascoste sono escluse. Il nome file è <code>$region</code> e i nomi delle regioni non vengono modificati. Il CSV con LUFS, Peak e RMS si genera dopo il render, oppure dopo un <em>dry run</em> con le statistiche di REAPER.</p>
 
   <h2 id="zp-project-viewer">Project Viewer</h2>
-  <p><strong>A cosa serve.</strong> Un indice del progetto: tutti i marker e le regioni in ordine di tempo, su righe separate. Click per andarci, doppio click per rinominare, Play per ascoltare. Le regioni selezionate qui diventano la selezione di render (Ctrl/⌘+Alt+R apre il Render) e il <a href="#zp-report-minuti">Report minuti</a> le può contare.</p>
+  <p><strong>A cosa serve.</strong> Un indice del progetto: tutti i marker e le regioni in ordine di tempo, su righe separate. Click per andarci, doppio click per rinominare, Play per ascoltare. La colonna <em>Tipo</em> resta fissa a sinistra mentre <em>Nome</em>, <em>Start</em>, <em>End</em> e <em>Durata</em> scorrono orizzontalmente; le colonne si adattano ai contenuti e si possono ridimensionare trascinando i separatori nell'intestazione (doppio clic sul separatore per tornare ad auto). Ridimensionando le finestre grafiche della Suite, i controlli e i testi si scalano in proporzione. Le regioni selezionate qui diventano la selezione di render (Ctrl/⌘+Alt+R apre il Render) e il <a href="#zp-report-minuti">Report minuti</a> le può contare.</p>
   <p><strong>Spazio fra item.</strong> Il pulsante con l'icona dei due blocchi chiede la durata in secondi e poi la modalità. <em>Ripple globale</em> inserisce spazio spostando gli item successivi su tutte le tracce; <em>Solo selezionati</em> sposta i gruppi selezionati successivi e lascia fermi gli altri contenuti; se gli item si sovrappongono sulla stessa traccia, il pulsante chiede conferma. Gli item selezionati sovrapposti sono trattati come un gruppo, per mantenere la sincronizzazione. Il ripple globale si ferma se trova item bloccati a valle o item che attraversano un punto d'inserimento: risolvi il caso o scegli Solo selezionati. Play e Stop usano i comandi tondi del SOLO Recorder.</p>
   <p class="when">Quando: prima di un render o di una consegna, per controllare che sezioni e nomi siano giusti; oppure per muoverti in un progetto lungo. Può restare agganciato (Dock) accanto alla timeline.</p>
 
@@ -485,8 +485,8 @@
       <p><strong>Controlli principali:</strong> Harmonic Amount (Even/Odd), Body, Air/Presence, VOG Sub-bass, Dynamic Drive. Pubblica telemetria per il confronto con Master Pro.</p>
     </div>
     <div class="card" id="plugin-magic-voice-lab">
-      <h3>ZP Magic Voice LAB</h3>
-      <p>Livella una battuta e attenua le risonanze che sporgono soltanto su certe parole. <a href="magic_voice_lab.html">Apri la guida pratica: ZP Magic Voice LAB</a>.</p>
+      <h3>ZP Magic Voice / ZP Magic Voice LAB</h3>
+      <p>Livella una battuta, guida i detector con Input Level auto-compensato e attenua le risonanze che sporgono soltanto su certe parole (DRC a 4 bande con SOLO a molla, Dynamic EQ a 5 bande, Tone EQ + Mid Bump, Dynamic Balance e vista JSFX scorrevole). <a href="magic_voice_lab.html">Apri la guida pratica: ZP Magic Voice / LAB</a>.</p>
     </div>
     <div class="card" id="plugin-stagekeeper">
       <h3>ZP Stagekeeper Dialogue Director</h3>
@@ -544,6 +544,7 @@
       <p><strong>Letture:</strong> Scarto in dB per zona (Bassi, Medio-bassi, Medio-alti, Alti), pendenza residua (+ = pi&ugrave; brillante del brown, - = pi&ugrave; scuro), livello rispetto al riferimento, esito Pareggiato / Quasi / No. La Vista JSFX riporta la lista dei parametri di REAPER, letture comprese, per OSARA e screen reader.</p>
     </div>
   </div>
+  <p>Tutti i plugin JSFX della Suite scalano in proporzione ridimensionando la finestra FX di REAPER.</p>
   <p>Il LED dei plugin indica solo stato connessione: verde dati recenti, giallo dati parziali/vecchi, rosso componente essenziale assente. Il livello audio resta sui meter separati.</p>
 
   <h3>In dettaglio</h3>
@@ -698,7 +699,7 @@
     <tr><td>OSARA</td><td>Le azioni 09-12 e il Menu OSARA del Gobbo non parlano.</td><td>Lettura delle battute e dei comandi con lo screen reader.</td></tr>
     <tr><td>ZP Speech</td><td>La tappa <em>Trascrivi</em> non c'è: crei l'SRT con un altro Whisper e parti da Abbina.</td><td>Trascrizione automatica locale dentro ZP Trascrizione (MacWhisper su macOS o OpenAI Whisper locale multipiattaforma).</td></tr>
   </table></div>
-  <p class="small">File di supporto, da non lanciare né modificare: <code>ZP_UI.lua</code>, <code>ZP_sincronizza_aggancio.lua</code>, <code>lib_RythmoBand_Accessibile.lua</code>, i <code>worker</code> di 04 e 05, i template traccia, il ponte NVDA per Windows. Un aggiornamento ReaPack li sostituisce.</p>
+  <p class="small">File di supporto, da non lanciare né modificare: <code>ZP_UI.lua</code>, <code>ZP_GfxScale.lua</code>, <code>ZP_sincronizza_aggancio.lua</code>, <code>lib_RythmoBand_Accessibile.lua</code>, i <code>worker</code> di 04 e 05, i template traccia, il ponte NVDA per Windows. Un aggiornamento ReaPack li sostituisce.</p>
 <!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Sviluppata su un'idea di Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
 </main>
 </body>

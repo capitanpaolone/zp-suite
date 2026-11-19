@@ -8,6 +8,17 @@ Analizza gli item audio selezionati, rileva porzioni parlate con un gate RMS
 smart e permette preview/applicazione non distruttiva fino al comando APPLICA.
 ]]
 
+-- Zoom proporzionale (ZP_GfxScale.lua): scala con la larghezza (base 1040) e altezza minima utile 480; il corpo scorre in verticale.
+local gfx = gfx
+do
+  local zp_dir = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+  local zp_chunk = loadfile(zp_dir .. package.config:sub(1, 1) .. "ZP_GfxScale.lua")
+  if gfx and zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h) return math.max(0.6, math.min(3.0, math.min(w / 1040, h / 480))) end
+    gfx = zp_chunk().wrap(gfx)
+  end
+end
+
 local SCRIPT_NAME = "ZP Studio Suite - Split Silenzi / Voice Cleaner"
 local MEMORY_SECTION = "ZPSS22_VOICE_CLEANER"
 local PREVIEW_PREFIX = "ZPSS22_PREVIEW" -- compatibilita': ripulisce eventuali preview legacy, non ne crea di nuove.

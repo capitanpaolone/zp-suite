@@ -8,6 +8,22 @@
 
 local sep = package.config:sub(1, 1)
 local here = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\][^/\\]+$") or ".")
+-- Zoom proporzionale (pilota). Stretta e alta: scala con la larghezza (300 = misura di partenza);
+-- larga e bassa: con l'altezza (110) ma senza superare quello che la larghezza puo' contenere (520).
+local gfx = gfx
+do
+  local gs = here .. sep .. "ZP_GfxScale.lua"
+  local f = io.open(gs, "rb")
+  if f then
+    f:close()
+    ZP_GFX_SCALE_FN = function(w, h)
+      local s
+      if w > h * 2.2 then s = math.min(h / 110, w / 520) else s = w / 300 end
+      return math.max(0.7, math.min(3.0, s))
+    end
+    gfx = dofile(gs).wrap(gfx)
+  end
+end
 local UI = dofile(here .. sep .. "ZP_UI.lua")
 local C = dofile(here .. sep .. "ZP_Colori.lua")
 local T = UI.T or function(s) return s end

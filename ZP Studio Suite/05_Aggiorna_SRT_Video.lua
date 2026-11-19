@@ -7,6 +7,16 @@
 -- Launcher visuale. La finestra raccoglie le scelte, si chiude, poi lancia
 -- 05_worker_Gestione_SRT.lua che fa il lavoro pesante su file e timeline.
 
+-- Zoom proporzionale (ZP_GfxScale.lua): finestra di partenza 720x430; ingrandendola cresce tutto insieme.
+local gfx = gfx
+do
+  local zp_dir = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+  local zp_chunk = loadfile(zp_dir .. package.config:sub(1, 1) .. "ZP_GfxScale.lua")
+  if zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h) return math.max(0.6, math.min(3.0, math.min(w / 720, h / 430))) end
+    gfx = zp_chunk().wrap(gfx)
+  end
+end
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
 local WORKER_PATH = SCRIPT_DIR .. "05_worker_Gestione_SRT.lua"
 local ZP_UI = dofile(SCRIPT_DIR .. "ZP_UI.lua")

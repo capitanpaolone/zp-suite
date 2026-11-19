@@ -21,6 +21,17 @@
 -- e l'estensione js_ReaScriptAPI (JS_File_Stat), da installare con ReaPack.
 
 local sep = package.config:sub(1, 1)
+-- Zoom proporzionale (ZP_GfxScale.lua): finestra di partenza 650x540; ingrandendola cresce tutto insieme (e allungandola cresce il registro).
+local gfx = gfx
+do
+  local zp_dir = (debug.getinfo(1, 'S').source:gsub('^@', ''):match('^(.*)[/\\]') or '.')
+  local zp_chunk = loadfile(zp_dir .. sep .. '..' .. sep .. 'ZP_GfxScale.lua')
+    or (reaper and reaper.GetResourcePath and loadfile(reaper.GetResourcePath() .. sep .. 'Scripts' .. sep .. 'ZP Suite' .. sep .. 'ZP Studio Suite' .. sep .. 'ZP_GfxScale.lua'))
+  if gfx and zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h) return math.max(0.6, math.min(3.0, math.min(w / 650, h / 540))) end
+    gfx = zp_chunk().wrap(gfx)
+  end
+end
 local ui_path = reaper.GetResourcePath() .. sep .. 'Scripts' .. sep .. 'ZP Suite' .. sep .. 'ZP Studio Suite' .. sep .. 'ZP_UI.lua'
 local ok, UI = pcall(dofile, ui_path)
 if not ok then

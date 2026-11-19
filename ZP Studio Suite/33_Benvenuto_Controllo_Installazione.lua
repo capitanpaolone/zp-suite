@@ -19,6 +19,16 @@
 -- js_ReaScriptAPI, OSARA, marker degli item protetti (Mouse Modifiers), interfaccia web di REAPER (SOLO Web).
 -- Lo stato si ricontrolla da solo ogni secondo: fai una cosa e la spia cambia.
 
+-- Zoom proporzionale (ZP_GfxScale.lua): scala con la larghezza (base 820); l'altezza resta a scorrimento/adattamento.
+local gfx = gfx
+do
+  local zp_dir = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+  local zp_chunk = loadfile(zp_dir .. package.config:sub(1, 1) .. "ZP_GfxScale.lua")
+  if zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h) return math.max(0.8, math.min(3.0, w / 820)) end
+    gfx = zp_chunk().wrap(gfx)
+  end
+end
 local M = {}
 
 -- Parte pura (testata da gobbo_ricerca_battuta/test/test_benvenuto.lua) ----------------

@@ -13,6 +13,17 @@
 -- Raggruppa gli item in base al gap tra fine item e inizio item successivo.
 -- Crea regioni colorate e nominate da una lista testuale, senza modificare gli item.
 
+-- Zoom proporzionale (ZP_GfxScale.lua): base 980x620 (apertura 980x660); ingrandendola cresce tutto insieme, allungandola crescono gli elenchi.
+local gfx = gfx
+do
+  local zp_dir = (debug.getinfo(1, "S").source:gsub("^@", ""):match("^(.*)[/\\]") or ".")
+  local zp_chunk = loadfile(zp_dir .. package.config:sub(1, 1) .. "ZP_GfxScale.lua")
+  if gfx and zp_chunk then
+    ZP_GFX_SCALE_FN = function(w, h) return math.max(0.6, math.min(3.0, math.min(w / 980, h / 620))) end
+    gfx = zp_chunk().wrap(gfx)
+  end
+end
+
 local SCRIPT_TITLE = "ZP Studio Suite v1.0.5 - Gestore Progetto"
 local EXT_SECTION = "ZP_RythmoBand_ExportRegions"
 local REGION_COLOR = reaper.ColorToNative(40, 170, 210) | 0x1000000
@@ -3584,11 +3595,10 @@ local function open_window()
         gfx.quit()
         return
       end
-      gfx.init(SCRIPT_TITLE, FIXED_WINDOW_W, math.max(gfx.h, MIN_WINDOW_H))
+      local real_g = gfx._real or gfx
+      gfx.init(SCRIPT_TITLE, math.max(real_g.w or FIXED_WINDOW_W, 300), math.max(real_g.h or 660, 240))
     end
-    if gfx.w ~= FIXED_WINDOW_W or gfx.h < MIN_WINDOW_H then
-      gfx.init(SCRIPT_TITLE, FIXED_WINDOW_W, math.max(gfx.h, MIN_WINDOW_H))
-    end
+    -- Ridimensionamento libero: ZP_GfxScale scala proporzionalmente invece di bloccare a FIXED_WINDOW_W.
     poll_mixdown_report_monitor()
     if render_dialog_lock_until > 0 then
       if not pending_mixdown_report then

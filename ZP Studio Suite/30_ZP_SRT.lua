@@ -13,6 +13,13 @@ local here = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\][^/\\]+$") or
 local function path_of(name) return here .. sep .. name end
 local function exists(p) local f = io.open(p, "rb"); if f then f:close() return true end return false end
 
+-- Zoom proporzionale (pilota): finestra di partenza 780x530; ingrandendola cresce tutto insieme.
+local gfx = gfx
+if exists(path_of("ZP_GfxScale.lua")) then
+  ZP_GFX_SCALE_FN = function(w, h) return math.max(0.6, math.min(3.0, math.min(w / 780, h / 530))) end
+  gfx = dofile(path_of("ZP_GfxScale.lua")).wrap(gfx)
+end
+
 if not exists(path_of("ZP_UI.lua")) then
   reaper.ShowMessageBox("Non trovo ZP_UI.lua accanto allo script.", "ZP SRT", 0)
   return
@@ -100,6 +107,7 @@ local function launch(entry)
     return false
   end
   gfx.quit()
+  ZP_GFX_SCALE_FN = nil   -- lo script lanciato qui sotto non e' convertito: niente zoom ereditato
   _G.ZP_SRT_OP = entry.op
   local ok, err = pcall(dofile, p)
   if not ok then reaper.ShowMessageBox("Errore in " .. entry.script .. ":\n\n" .. tostring(err), "ZP SRT", 0) end

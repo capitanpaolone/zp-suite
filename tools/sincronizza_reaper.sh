@@ -70,23 +70,19 @@ echo "Destinazione: $DEST"
 [ "$PROVA" = 1 ] && echo "(prova: non viene copiato nulla)"
 echo
 
-while IFS= read -r -d '' f; do
-  src="$REPO/$f"
-  [ -f "$src" ] || continue
-  rel="$(destinazione "$f")"
-  [ -n "$rel" ] || continue
-  dst="$DEST/$rel"
-
+copia_file() {
+  local src="$1" rel="$2"
+  local dst="$DEST/$rel"
   if [ -f "$dst" ]; then
     if cmp -s "$src" "$dst"; then
       uguali=$((uguali + 1))
-      continue
+      return 0
     fi
     echo "aggiornato  $rel" >> "$ELENCO"
     aggiornati=$((aggiornati + 1))
     if [ "$PROVA" = 0 ]; then
       mkdir -p "$(dirname "$BACKUP/$rel")" && cp -p "$dst" "$BACKUP/$rel" \
-        || { echo "ERRORE backup: $rel" >&2; errori=$((errori + 1)); continue; }
+        || { echo "ERRORE backup: $rel" >&2; errori=$((errori + 1)); return 1; }
     fi
   else
     echo "nuovo       $rel" >> "$ELENCO"
@@ -97,6 +93,19 @@ while IFS= read -r -d '' f; do
     mkdir -p "$(dirname "$dst")" && cp -p "$src" "$dst" \
       || { echo "ERRORE copia: $rel" >&2; errori=$((errori + 1)); }
   fi
+}
+
+while IFS= read -r -d '' f; do
+  src="$REPO/$f"
+  [ -f "$src" ] || continue
+  rel="$(destinazione "$f")"
+  [ -n "$rel" ] || continue
+  copia_file "$src" "$rel"
+  case "$f" in
+    "ZP Studio Suite/icons/"*.png)
+      copia_file "$src" "Data/toolbar_icons/${f#ZP Studio Suite/icons/}"
+      ;;
+  esac
 done < <(git -C "$REPO" ls-files -co --exclude-standard -z -- \
   "ZP Studio Suite" "ZP Voce" "ZP Master" "ZP Misura" "ZP Lab" \
   "REAPER_Italiano/Italiano (ZP).ReaperLangPack")
