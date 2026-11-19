@@ -1,6 +1,6 @@
 # ZP Studio Suite 2.6.7 — appunti pre-release
 
-Stato: release 2.6.7 consolidata su `release/2.6.7`; controlli automatici completati il 2026-11-19. `index.xml` va generato sul commit finale della release prima del push e del tag.
+Stato: release 2.6.7 consolidata su `release/2.6.7`; controlli automatici completati e `index.xml` generato sul commit sorgente `2e3db417f296335d7c718ffb07d1f665017108ad` il 2026-11-19. Push, tag e release GitHub in corso.
 
 ## Base
 
@@ -26,7 +26,7 @@ Stato: release 2.6.7 consolidata su `release/2.6.7`; controlli automatici comple
 
 - `bash gobbo_ricerca_battuta/test/run_all.sh`: superato, inclusi sintassi di 133 file Lua, test di logica, Language Pack e server mock.
 - `bash gobbo_ricerca_battuta/test/fumo_tutte.sh`: superato in italiano e inglese.
-- `reapack-index --check`: 117 pacchetti, zero errori. I file `37_ZP_Consolidate.lua` e `remote/ZP_Remote_Crea_Pacchetto.lua` sono componenti forniti dalla Suite, non pacchetti separati; `docs/` e `archivio_prototipi/` sono escluse dalla scansione.
+- `reapack-index --check`: 115 pacchetti, zero errori. I file `37_ZP_Consolidate.lua` e `remote/ZP_Remote_Crea_Pacchetto.lua` sono componenti forniti dalla Suite, non pacchetti separati; `docs/` e `archivio_prototipi/` sono escluse dalla scansione.
 - Confronto SHA-256 con REAPER locale: 279 file distribuibili coincidono; la copia installata del prototipo Magic Voice resta locale e non viene inclusa né acquisita nella 2.6.8.
 - Pubblicazione autorizzata da Paolo il 2026-11-19.
 
@@ -40,7 +40,7 @@ Stato: release 2.6.7 consolidata su `release/2.6.7`; controlli automatici comple
 
 - Al controllo iniziale, GitHub `master` era a `7ae0a3d95c5e8f34828cfe3ddf853503fc42fdcd`; `v2.6.6` e la relativa release sono state conservate. L'archivio sorgenti offline è in `/Volumes/DISCO LACIE/Archivio_Storico_ZP/ZP Suite/2026-11-19_Archivio_ZP_Suite_2.6.6_tag_v2.6.6`.
 - La worktree `release/2.6.7` è partita dal tag `v2.6.6`. Prima di questo commit, HEAD era `b37809089f2699eeda7be527d321bfb859aa6168`. Il prototipo è conservato in `archivio_prototipi/ZP Magic Voice.jsfx`; `ZP Magic Voice LAB.jsfx` non è stato modificato.
-- L'indice versionato nel checkout all'inizio del gate riportava 2.6.6. Il controllo è stato eseguito con `reapack-index` 1.2.6 installato temporaneamente in `/private/tmp`; il file `index.xml` verrà rigenerato dopo il commit release per puntare ai sorgenti finali.
+- `index.xml` ora registra `2.6.7` e punta il pacchetto Suite al commit sorgente finale `2e3db417f296335d7c718ffb07d1f665017108ad`; il pacchetto `ZP Magic Voice LAB.jsfx` è presente e il prototipo senza LAB è escluso. Generazione con `reapack-index` 1.2.6 installato temporaneamente in `/private/tmp`.
 - Dopo la pubblicazione di v2.6.7, creare release/2.6.8 identica al tag. Per gli aggiornamenti, confrontare il REAPER locale con quel tag, acquisire soltanto i file effettivamente cambiati e registrare snapshot, SHA-256 e provenienza prima della copia. La candidata e REAPER coincidono sugli altri 279 file; il prototipo archiviato e gli altri elementi locali restano esclusi dalle acquisizioni automatiche in 2.6.8.
 - Dopo la pubblicazione di `v2.6.7`, creare `release/2.6.8` identica al tag. Per gli aggiornamenti, confrontare REAPER locale e tag, acquisire soltanto i file effettivamente cambiati e registrare snapshot, SHA-256 e provenienza. Non importare il prototipo Magic Voice né altri elementi locali esclusi.
 - La correzione archivia il prototipo fuori dalla cartella distribuibile, esclude `archivio_prototipi/` e `docs/` dalla scansione ReaPack e aggiorna la documentazione italiana e inglese della release.
