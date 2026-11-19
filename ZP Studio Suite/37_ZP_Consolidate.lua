@@ -1,6 +1,7 @@
 -- @description ZP Consolidate - copia in Media le sorgenti usate dal progetto e aggiorna i riferimenti
 -- @author Paolo Balestri
 -- @version 1.0
+-- @noindex
 -- @about
 --   Raccoglie in Media, con copie byte per byte verificate, le sorgenti file di tutti i take (anche
 --   inattivi: audio, MIDI esterni, video, sorgenti SECTION/reverse) e gli SRT/VTT del progetto

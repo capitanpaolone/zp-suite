@@ -1,5 +1,6 @@
 -- @description ZP Remote: controlla il progetto REAPER e crea il pacchetto da condividere
 -- @version 1.0
+-- @noindex
 -- @author ZP
 -- @about
 --   Interfaccia guidata per l'esportatore ZP Remote. Richiede accanto a questo file

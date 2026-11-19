@@ -1,8 +1,9 @@
 # Changelog — ZP Suite
 
-## ZP Studio Suite 2.6.7 — in preparazione
+## ZP Studio Suite 2.6.7 — 2026-11-19
 
-- **ZP Magic Voice 1.2.0 e ZP Magic Voice LAB 1.2.0-lab3** (ZP Voce): taratura strumentale completa di `Input Level` (`-24..0 dB` auto-compensato), `Dynamic EQ` a 5 bande coerenti di fase (`A/B/C/D`), `Tone EQ` (`A/B/C/D`) + `Mid Bump`, leveler multibanda `Dynamic Balance` (`A/B`), `DRC` con `SOLO A/B/C/D` a molla sui 3 rotori di banda, preset `MAGIC 1`, monitor per stadio, barra suggerimenti e vista parametri `JSFX` scorrevole.
+- **ZP Magic Voice LAB 1.2.0-lab3 (ZP Voce)**: taratura strumentale completa di Input Level (-24..0 dB auto-compensato), Dynamic EQ a 5 bande coerenti di fase (A/B/C/D), Tone EQ (A/B/C/D) + Mid Bump, Dynamic Balance (A/B), DRC con SOLO A/B/C/D a molla sui 3 rotori di banda, preset MAGIC 1, monitor per stadio, barra suggerimenti e vista parametri JSFX scorrevole. È la versione Magic Voice distribuita; ZP Magic Voice 1.2.0 senza LAB è il prototipo archiviato ed escluso dalla release.
+- **ZP Magic Voice LAB 1.2.0-lab3 (ZP Voce)**: fully calibrated against the MagicFlow audio unit, including auto-compensated Input Level, five-band phase-coherent Dynamic EQ, Tone EQ and Mid Bump, multiband Dynamic Balance, spring-loaded DRC solo, preset MAGIC 1, stage monitoring and a scrollable JSFX parameter view. LAB is the distributed version; ZP Magic Voice 1.2.0 without LAB is the archived prototype and is excluded from this release.
 - **Grafica JSFX interamente zoomabile su tutta la Suite**: tutti i plugin JSFX di `ZP Voce`, `ZP Master`, `ZP Misura` e `ZP Lab` scalano proporzionalmente disegni, testi e pomelli ridimensionando la finestra FX di REAPER (con DSP invariato al 100%).
 - **Grafica Lua zoomabile proporzionalmente (`ZP_GfxScale.lua`)**: tutte le 24 finestre operative Lua della Suite scalano proporzionalmente controlli, grafici e testi al ridimensionamento (incluso `17 Gestore Progetto` ora ridimensionabile liberamente); `18 Project Viewer` mantiene un fattore minimo `1.0` quando agganciato (dock).
 - **Proportional Lua UI zoom (`ZP_GfxScale.lua`)**: all 24 operative Suite Lua windows scale controls, graphics and text proportionally when resized (including `17 Project Manager`, now freely resizable); `18 Project Viewer` keeps a `1.0` minimum scale when docked.
@@ -41,7 +42,11 @@
 
 - Gobbi: importazione DOCX/ODT/RTF/TXT, incolla pulito, editor con scroll/Undo e durata temporizzata opzionale; controlli ZP_UI, progresso e riaggancio rapido. Guide IT/EN aggiornate. Pause effettive con Shift+Invio, promemoria tramite marker e divisione alla parola selezionata con conservazione del testo rimanente. Verifiche automatiche superate; collaudo del Gobbo confermato da Paolo il 10 novembre 2026.
 
-Copia di lavoro avviata dal tag `v2.6.6`. Le modifiche e i componenti aggiornati acquisiti dalla REAPER locale sono registrati in `docs/PRE_RELEASE_2.6.7.md` e `docs/PROVENIENZA_2.6.7.md`; questa sezione sarà completata dopo i collaudi.
+### Non incluso in questa versione / Not included in this release
+
+ZP Montaggio Parlato (prototipo), ZP BrownSlope Dynamic Guard e ZP Speech Engine restano in lavorazione. ZP Speech Engine non è un pacchetto ReaPack della Suite; il supporto Windows/Linux è ancora sperimentale.
+
+ZP Montaggio Parlato (prototype), ZP BrownSlope Dynamic Guard and ZP Speech Engine remain in development. ZP Speech Engine is not a ZP Suite ReaPack package; Windows/Linux support is still experimental.
 
 Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
 ciascun file e nel gestore pacchetti. Questo file registra la storia della Suite

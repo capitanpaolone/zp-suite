@@ -30,9 +30,9 @@ La Suite funziona anche con un’installazione pulita di REAPER. SWS, js_ReaScri
 La 2.6.6 estende la copia automatica e Sincronizza ora di Render & Copy a Windows (serve js_ReaScriptAPI) e Linux (servono find e stat). La 2.6.5 aggiorna la guida del Solo Recorder per chiarire il collegamento tra i pacchetti creati con ZP Remote e Dubbertools. La 2.6.4 ha aggiunto Render & Copy, il collegamento Dubbertools in SOLO Web e il tool REAPER di ZP Remote per esportare pacchetti e importare consegne. Per l’export ZP Remote servono Python 3 e ffmpeg.
 
 
-Nella candidata 2.6.7, **ZP Magic Voice LAB** è un effetto separato della categoria **ZP Voce**. Alla pubblicazione, selezionalo in ReaPack insieme a ZP Studio Suite. [Guida pratica](ZP%20Studio%20Suite/help/magic_voice_lab.html).
+La 2.6.7 distribuisce **ZP Magic Voice LAB 1.2.0-lab3**, l’unica versione corretta, come effetto separato della categoria **ZP Voce**. **ZP Magic Voice 1.2.0** senza suffisso LAB è un prototipo archiviato ed escluso dal pacchetto. Per installarlo, seleziona ZP Magic Voice LAB in ReaPack insieme a ZP Studio Suite. [Guida pratica](ZP%20Studio%20Suite/help/magic_voice_lab.html).
 
-La ZP Studio Suite 2.6.7 è in preparazione e non è pubblicata. La candidata 2.6.7 aggiunge ZP Consolidate, che raccoglie in Media le sorgenti dei take e gli SRT/VTT registrati nel progetto senza convertire i media. Il checkout candidato usa aggiornamenti provenienti dall’installazione REAPER locale; vedi `docs/PRE_RELEASE_2.6.7.md` e `docs/PROVENIENZA_2.6.7.md`.
+La ZP Studio Suite 2.6.7 aggiunge ZP Consolidate, che raccoglie in Media le sorgenti dei take e gli SRT/VTT registrati nel progetto senza convertire i media. L’elenco completo delle modifiche è nel [changelog](CHANGELOG.md).
 
 ## Non incluso in questa versione
 

@@ -786,7 +786,13 @@ Memoria condivisa per entrambi i checkout: `../AGENTS.md`. Consultarla prima di 
 - Procedura dettagliata per i cicli successivi: `docs/RELEASE_WORKFLOW.md`.
 - Nessun commit, push, tag o aggiornamento ReaPack senza richiesta esplicita di Paolo.
 
-## ZP Magic Voice (v1.2.0 / LAB 3) e Grafica Zoomabile su tutta la Suite JSFX — 2026-11-18
+## Decisione di Paolo — 2026-11-19
+
+- ZP Magic Voice LAB.jsfx 1.2.0-lab3 è la versione corretta e destinata alla distribuzione.
+- ZP Magic Voice.jsfx 1.2.0 è un prototipo archiviato in archivio_prototipi/ e ignorato da ReaPack; non reimportarlo dalla copia installata in REAPER.
+- SHA-256 del prototipo: eb94cf4d204cdae8dacc671442e6a465c9fcc7504163af541c764d99348b4ddb. Snapshot indipendente sul LaCie nella cartella 2026-11-18_MagicVoice_LAB3_e_Zoom_JSFX/candidata_2.6.7_jsfx/.
+
+## STORICO — ZP Magic Voice (v1.2.0 / LAB 3) e Grafica Zoomabile su tutta la Suite JSFX — 2026-11-18
 
 - **`ZP Magic Voice LAB.jsfx` (`1.2.0-lab3`) e `ZP Magic Voice.jsfx` (`1.2.0`)**:
   - Tarati sulle misure strumentali dirette dell'Audio Unit `MagicFlow` (vedi rapporto e JSON in `../zp-jsfx-lab/misure/2026-11-18_MagicFlow_Dynamic_EQ/` e memoria in `../zp-jsfx-lab/MEMORIA_MAGIC_VOICE_LAB.md`) e validati da Paolo in produzione sul podcast:

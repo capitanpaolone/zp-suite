@@ -23,11 +23,13 @@
 --   sono disponibili in entrambe le lingue. Il supporto screen reader Windows usa
 --   NVDA Controller Client (LGPL 2.1, NV Access). Dettagli in README.it.md.
 -- @changelog
---   2.6.7 (in preparation; not released)
+--   2.6.7 (2026-11-19)
 --   EN — Proportional zoom across all Lua tool windows (ZP_GfxScale.lua), redesigned Project Viewer (fixed Tipo column, auto-fit resizable columns, balanced 3x2 tool grid without Scroll), spacing fix in 07 Note Personaggio, and automatic installation of missing toolbar PNG icons in 32.
 --   IT — Zoom proporzionale su tutte le finestre Lua (ZP_GfxScale.lua), Project Viewer ridisegnato (colonna Tipo fissa, colonne auto-adattate e ridimensionabili, griglia 3x2 senza pulsante Scroll), correzione spaziatura in 07 Note Personaggio e copia automatica icone toolbar mancanti in 32.
---   EN — Local REAPER reference updates: safer project-region selection, Voice Minutes 1.0.6, ZP Remote import/export updates, Harmonic Space Carver 2.6.10 and Cue Navigator 1.14. These changes still require release collation and checks.
---   IT — Aggiornamenti dalla REAPER locale: selezione più sicura delle regioni, Report Minuti 1.0.6, aggiornamenti ZP Remote, Harmonic Space Carver 2.6.10 e Cue Navigator 1.14. Da consolidare e collaudare prima della pubblicazione.
+--   EN — Local REAPER reference updates: safer project-region selection, Voice Minutes 1.0.6, ZP Remote import/export updates, Harmonic Space Carver 2.6.10 and Cue Navigator 1.14.
+--   IT — Aggiornamenti dalla REAPER locale: selezione più sicura delle regioni, Report Minuti 1.0.6, aggiornamenti ZP Remote, Harmonic Space Carver 2.6.10 e Cue Navigator 1.14.
+--   EN — ZP Magic Voice LAB 1.2.0-lab3 is the distributed version; ZP Magic Voice 1.2.0 without LAB is an archived prototype and is excluded.
+--   IT — Si distribuisce ZP Magic Voice LAB 1.2.0-lab3; ZP Magic Voice 1.2.0 senza LAB è il prototipo archiviato ed è escluso.
 --   EN — ZP Consolidate copies referenced take sources and project-registered SRT/VTT files into Media without converting them; the 33 Welcome list now scrolls with bounded, damped motion.
 --   IT — ZP Consolidate raccoglie in Media le sorgenti dei take e gli SRT/VTT registrati nel progetto senza conversioni; lo scroll del 33 Benvenuto è smussato e limitato ai bordi.
 --   EN

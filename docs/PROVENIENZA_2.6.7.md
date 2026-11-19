@@ -110,9 +110,11 @@ Per la distribuzione, `00_Apri_Help_ZP_Studio_Suite.lua` dichiara l’azione, l�
 
 JSFX 1.2.0-lab1, Paolo Balestri. Copia dal laboratorio zp-jsfx-lab identica a quella ascoltata da Paolo nel suo REAPER su macOS. In candidata come effetto autonomo ZP Voce, distinto dalla 1.1.1 senza LAB. SHA-256: `f72a793a32119dc74345a9fc0c4e59856ce4b887956a83851c0de7f922360fa4`. Guida IT/EN distribuita con il pacchetto ZP Studio Suite.
 
-## ZP Magic Voice (v1.2.0 / LAB 3) e Grafica Zoomabile sull'intera Suite JSFX — 2026-11-18
+## ZP Magic Voice LAB (v1.2.0-lab3) e Grafica Zoomabile sull'intera Suite JSFX — 2026-11-18
 
-1. **ZP Magic Voice LAB (`1.2.0-lab3`) e ZP Magic Voice (`1.2.0`)**:
+Decisione di Paolo, 2026-11-19: ZP Magic Voice LAB 1.2.0-lab3 è la versione corretta e destinata alla distribuzione. ZP Magic Voice 1.2.0 è un prototipo, spostato in archivio_prototipi/ZP Magic Voice.jsfx ed escluso da ReaPack. SHA-256 del prototipo: eb94cf4d204cdae8dacc671442e6a465c9fcc7504163af541c764d99348b4ddb. La copia installata in REAPER resta disponibile localmente ma va esclusa dalle acquisizioni successive. Lo snapshot indipendente è in /Volumes/DISCO LACIE/Archivio_Storico_ZP/ZP Suite/2026-11-18_MagicVoice_LAB3_e_Zoom_JSFX/candidata_2.6.7_jsfx/.
+
+1. **ZP Magic Voice LAB (`1.2.0-lab3`), versione corretta per la distribuzione**:
    - Taratura strumentale completa sull'Audio Unit `MagicFlow` e collaudo A/B in produzione da Paolo:
      - `Input Level` (`-24.0 .. 0.0 dB`, default `-18.0 dB`, `MAGIC 1` = `-14.7 dB`) auto-compensato sul percorso lineare, pilota il punto di lavoro (drive) dei detector dinamici senza il picco transitorio spurio da +13 dB / 213 ms dell'originale e senza click a partenza a freddo.
      - `Dynamic EQ` a 5 bande coerenti di fase (albero a 2 SVF) calibrato sulle curve `A, B, C, D` misurate sull'AU.
@@ -121,7 +123,6 @@ JSFX 1.2.0-lab1, Paolo Balestri. Copia dal laboratorio zp-jsfx-lab identica a qu
      - `DRC` con 4 colonne divise graficamente e `SOLO A / B / C / D` a molla (attivo solo su banda accesa, preascolto mentre si toccano i 3 rotori `THR / HP / LP`, sgancio automatico a 10s e spia in testata).
      - Vista `JSFX` con lista dei 52 parametri interattiva e scorrevole dentro `@gfx` (rotella + scrollbar) mantenendo sempre visibili i pulsanti `FULL | MINI | JSFX` in alto.
    - SHA-256 `ZP Voce/ZP Magic Voice LAB.jsfx`: `cbceac4c3a7414bea606fb63bc997b5e8679cb300b832ca5426b8dd7269e6403`
-   - SHA-256 `ZP Voce/ZP Magic Voice.jsfx`: `eb94cf4d204cdae8dacc671442e6a465c9fcc7504163af541c764d99348b4ddb`
 
 2. **Motore grafico zoomabile proporzionale (`zp_sc`) su tutti gli altri 13 plugin JSFX della Suite 2.6.7**:
    - Applicato esclusivamente a `@gfx` e agli helper di disegno UI (sezioni DSP `@slider / @block / @sample` verificate bit-identiche al 100% rispetto agli originali pre-zoom):
@@ -141,7 +142,7 @@ JSFX 1.2.0-lab1, Paolo Balestri. Copia dal laboratorio zp-jsfx-lab identica a qu
        - `ZP Misura/ZP Oscilloscope 16ch.jsfx` (`a1c1b28c74b7c71e302dfad692418ba4f72e08c4f79a7f2c227059a26737ff3d`)
        - `ZP Misura/ZP Loudness Meter Multichannel.jsfx` (`e19cbd540004a3fe672ec9e1e34201916f7c8df50dadbcad1979274cc707d39f`)
        - `ZP Lab/ZP BrownSlope Dynamic Guard.jsfx` (`ce00bbc8b9b07775a853cf98ab7f6b5e8d33db331350f66d41796e1658f6fd4e`)
-   - Tutti i 15 file JSFX sono allineati tra `zp-suite-2.6.7` e `/Users/paolob/Library/Application Support/REAPER/Effects/ZP Suite/`.
+   - Alla cattura del 2026-11-18, tutti i 15 file JSFX erano allineati tra `zp-suite-2.6.7` e `/Users/paolob/Library/Application Support/REAPER/Effects/ZP Suite/`. Dal 2026-11-19 il prototipo Magic Voice è archiviato fuori dal pacchetto; la copia installata resta locale e non va reimportata.
    - Archivio snapshot pre-zoom, candidata e `SHA256.txt`: `/Volumes/DISCO LACIE/Archivio_Storico_ZP/ZP Suite/2026-11-18_MagicVoice_LAB3_e_Zoom_JSFX/`.
 
 ## Zoom proporzionale Lua, restyling Project Viewer e fix icone toolbar — 2026-11-19
