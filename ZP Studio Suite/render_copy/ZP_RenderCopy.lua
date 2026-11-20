@@ -86,11 +86,34 @@ local _, _, sec, cmd = reaper.get_action_context()
 -- progetto in primo piano (e quelle generali), cosi' con piu' progetti aperti in tab
 -- lo stato di uno non si mescola con quello di un altro.
 local logs = {}
+local log_scroll = {}       -- scorrimento righe dello storico per ciascun progetto (0 = in cima)
+local log_sb_drag, log_sb_grab_y = false, 0
 local current_key = ''      -- chiave del progetto in primo piano, aggiornata a ogni ciclo
 local GENERAL = '*'
 local function log(msg, key)
   table.insert(logs, 1, {text = os.date('%H:%M:%S') .. '  ' .. tostring(msg), key = key or current_key})
   if #logs > 120 then table.remove(logs) end
+end
+
+local function collect_log_lines(entries, key, wrap_fn, max_w)
+  local out = {}
+  for _, entry in ipairs(entries) do
+    if entry.key == key or entry.key == GENERAL then
+      local wrapped = wrap_fn and wrap_fn(entry.text, max_w) or {entry.text}
+      if #wrapped == 0 then wrapped = {entry.text} end
+      for _, line in ipairs(wrapped) do
+        out[#out + 1] = line
+      end
+    end
+  end
+  return out
+end
+
+local function clamp_log_scroll(scroll, total_lines, visible_rows)
+  local vis = math.max(1, visible_rows or 1)
+  local max_scroll = math.max(0, (total_lines or 0) - vis)
+  local s = math.floor((scroll or 0) + 0.5)
+  return math.max(0, math.min(max_scroll, s)), max_scroll
 end
 
 -- ---------------------------------------------------------------- messaggi nella finestra
@@ -846,6 +869,7 @@ local function loop()
       local old_key = project_key(proj, last_project_path)
       for _, entry in ipairs(logs) do if entry.key == old_key then entry.key = current_key end end
       last_delivered[current_key], last_delivered[old_key] = last_delivered[old_key], nil
+      log_scroll[current_key], log_scroll[old_key] = log_scroll[old_key], nil
     end
     log('Progetto in primo piano: ' .. project_label(project_path) .. '.')
     last_project, last_project_path = proj, project_path
@@ -936,16 +960,107 @@ local function loop()
     gfx.rect(34, y, math.floor((width - 24) * pct / 100), 8, 1)
     y = y + 18
   end
+  local line_h = 21
+  local text_w = math.max(120, width - 38)
+  local list_top = y
+  local list_h = math.max(line_h, bottom - 6 - list_top)
+  local visible_rows = math.max(1, math.floor(list_h / line_h))
+
   gfx.setfont(1, 'Arial', 17)
-  for _, entry in ipairs(logs) do
-    if entry.key == current_key or entry.key == GENERAL then
-      for _, line in ipairs(UI.wrap_text(entry.text, width - 24)) do
-        if y + 21 > bottom then break end
-        label(line, 34, y, UI.colors.muted)
-        y = y + 21
-      end
-      if y + 21 > bottom then break end
+  local log_lines = collect_log_lines(logs, current_key, UI.wrap_text, text_w)
+  local sc, max_scroll = clamp_log_scroll(log_scroll[current_key], #log_lines, visible_rows)
+
+  if had_dialog then
+    log_sb_drag = false
+  else
+    if gfx.mouse_wheel ~= 0 then
+      sc = sc - (gfx.mouse_wheel > 0 and 2 or -2)
+      gfx.mouse_wheel = 0
     end
+    if key == 30064 then
+      sc = sc - 1
+    elseif key == 1685026670 then
+      sc = sc + 1
+    elseif key == 1885828464 then
+      sc = sc - visible_rows
+    elseif key == 1885824110 then
+      sc = sc + visible_rows
+    elseif key == 1752132965 then
+      sc = 0
+    elseif key == 6647396 then
+      sc = max_scroll
+    end
+  end
+
+  local sb_x = 22 + width - 12
+  local sb_y = list_top
+  local sb_w = 6
+  local sb_h = visible_rows * line_h
+  local bar_h = math.max(20, math.floor(sb_h * visible_rows / math.max(1, #log_lines)))
+  sc, max_scroll = clamp_log_scroll(sc, #log_lines, visible_rows)
+
+  if max_scroll > 0 and not had_dialog then
+    local bar_y = sb_y + math.floor((sb_h - bar_h) * sc / max_scroll)
+    if pressed and gfx.mouse_x >= sb_x - 6 and gfx.mouse_x <= sb_x + sb_w + 6 and gfx.mouse_y >= sb_y and gfx.mouse_y <= sb_y + sb_h then
+      if gfx.mouse_y >= bar_y and gfx.mouse_y <= bar_y + bar_h then
+        log_sb_drag = true
+        log_sb_grab_y = gfx.mouse_y - bar_y
+      else
+        log_sb_drag = true
+        log_sb_grab_y = bar_h * 0.5
+        local span = math.max(1, sb_h - bar_h)
+        local ratio = math.max(0, math.min(1, (gfx.mouse_y - log_sb_grab_y - sb_y) / span))
+        sc = math.floor(ratio * max_scroll + 0.5)
+      end
+    elseif log_sb_drag and (gfx.mouse_cap & 1) == 1 then
+      local span = math.max(1, sb_h - bar_h)
+      local ratio = math.max(0, math.min(1, (gfx.mouse_y - log_sb_grab_y - sb_y) / span))
+      sc = math.floor(ratio * max_scroll + 0.5)
+    elseif (gfx.mouse_cap & 1) == 0 then
+      log_sb_drag = false
+    end
+  else
+    log_sb_drag = false
+  end
+
+  sc, max_scroll = clamp_log_scroll(sc, #log_lines, visible_rows)
+
+  if max_scroll > 0 then
+    local cnt_text = (sc > 0 and '↑ ' or '') .. ('%d–%d / %d'):format(sc + 1, math.min(#log_lines, sc + visible_rows), #log_lines)
+    gfx.setfont(1, 'Arial', 14)
+    local cw = gfx.measurestr(cnt_text)
+    local cx = 22 + width - 12 - cw
+    local chov = not had_dialog and sc > 0 and gfx.mouse_x >= cx - 6 and gfx.mouse_x <= 22 + width - 6 and gfx.mouse_y >= 398 and gfx.mouse_y <= 420
+    if clicked and chov then
+      sc = 0
+      cnt_text = ('%d–%d / %d'):format(1, math.min(#log_lines, visible_rows), #log_lines)
+      cw = gfx.measurestr(cnt_text)
+      cx = 22 + width - 12 - cw
+      chov = false
+    end
+    UI.set_color(chov and UI.colors.gold or UI.colors.muted)
+    gfx.x, gfx.y = cx, 402
+    gfx.drawstr(cnt_text)
+  end
+
+  log_scroll[current_key] = sc
+
+  gfx.setfont(1, 'Arial', 17)
+  UI.set_color(UI.colors.muted)
+  local rows_to_draw = math.min(visible_rows, math.max(0, #log_lines - sc))
+  for i = 1, rows_to_draw do
+    gfx.x, gfx.y = 34, list_top + (i - 1) * line_h
+    gfx.drawstr(UI.fit_text(log_lines[i + sc], text_w))
+  end
+
+  if max_scroll > 0 then
+    local bar_y = sb_y + math.floor((sb_h - bar_h) * sc / max_scroll)
+    local sb_hov = not had_dialog and gfx.mouse_x >= sb_x - 6 and gfx.mouse_x <= sb_x + sb_w + 6 and gfx.mouse_y >= sb_y and gfx.mouse_y <= sb_y + sb_h
+    gfx.set(0.45, 0.45, 0.5, 0.35)
+    gfx.rect(sb_x, sb_y, sb_w, sb_h, 1)
+    UI.set_color(UI.colors.gold)
+    if not log_sb_drag and not sb_hov then gfx.a = 0.82 end
+    gfx.rect(sb_x, bar_y, sb_w, bar_h, 1)
   end
   -- Un messaggio aperto in questo stesso ciclo si disegna dal prossimo: il clic che lo ha
   -- aperto non deve premere anche uno dei suoi pulsanti.
@@ -957,7 +1072,8 @@ end
 -- Per i collaudi: solo la logica, senza aprire la finestra.
 if rawget(_G, 'ZP_RENDER_COPY_TEST') then
   return {queued_owner = queued_owner, project_key = project_key, project_label = project_label,
-    is_inside = is_inside, work_project = work_project, version_path = version_path, latest_version = latest_version}
+    is_inside = is_inside, work_project = work_project, version_path = version_path, latest_version = latest_version,
+    collect_log_lines = collect_log_lines, clamp_log_scroll = clamp_log_scroll}
 end
 
 -- ---------------------------------------------------------------- avvio

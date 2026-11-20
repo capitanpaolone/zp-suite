@@ -1,32 +1,37 @@
 // @description ZP BrownSlope Prism
-// @version 1.0
+// @version 1.1
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
 //   ### ZP BrownSlope Prism
 //   Analizzatore passivo della pendenza brown: l'audio passa intatto. Lo spettro e' compensato di 4,5 dB per ottava,
-//   cosi' un rumore brown diventa una linea piatta; due riferimenti a -18 e -24 LUFS, scarto per zona,
-//   pendenza residua, livello ed esito Pareggiato / Quasi / No. Vista JSFX con le letture per OSARA.
+//   cosi' un rumore brown diventa una linea piatta; due riferimenti a -18 e -24 LUFS, corridoio di tolleranza ±1,5 / ±3 dB,
+//   riempimento differenziale caldo/freddo, scarto per zona con barre bilanciate, livella pendenza residua ed esito Pareggiato / Quasi / No.
+//   Vista JSFX con le letture per OSARA.
 //
 //   Passive brown-slope analyzer: audio passes through untouched. The spectrum is compensated by 4.5 dB per octave,
-//   so brown noise becomes a flat line; two references at -18 and -24 LUFS, deviation per zone,
-//   residual slope, level and a Matched / Close / No result. JSFX view exposes the readings to OSARA.
+//   so brown noise becomes a flat line; two references at -18 and -24 LUFS, ±1.5 / ±3 dB tolerance corridor,
+//   warm/cool differential fill, zone balance bars, residual slope level and Matched / Close / No result. JSFX view exposes the readings to OSARA.
 //
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: ZP Studio Suite/help/index.html#plugin-brownslope-prism
 // @changelog
+//   1.1: Restyling grafico comunicativo: corridoio di tolleranza ±1,5 e ±3 dB intorno al riferimento, curva smussata
+//     con riempimento differenziale caldo (eccesso) / freddo (carenza), traccia Live opzionale dietro la media lunga,
+//     etichette di zona nel grafico, barre bipolari nei 4 box inferiori, livella per la pendenza residua, badge esito,
+//     bugfix griglia verticale adattiva a ogni Scala e selettore tema Scuro / Chiaro. DSP passivo e slider OSARA invariati.
 //   Prima versione distribuita: analizzatore passivo con riferimenti a -18 e -24 LUFS, confronto Livello o Forma,
 //     pomelli Media, Pendenza e Scala, Calibra sul proprio file di riferimento, guida con ? e vista JSFX per OSARA.
 desc:ZP BrownSlope Prism - Passive Brown Slope Analyzer - Paolo Balestri
 // Autore: Paolo Balestri
-// Versione: 1.0
+// Versione: 1.1
 //
 // Analizzatore PASSIVO: l'audio passa intatto. Mostra lo spettro del programma
 // come TDR Prism con "Slope 4.5 dB/oct": compensando 4,5 dB per ottava, un rumore
 // brown diventa una linea piatta. Le due linee di riferimento sono i loop
 // "-4.5 dB/octave" a -18 e -24 LUFS misurati con lo stesso calcolo di questo
 // plugin (FFT 8192 Hann, densita' per Hz, media L/R, bande da 1/6 di ottava).
-// Sei "pareggiato" quando la curva arancione e' piatta e sta sulla linea scelta.
+// Sei "pareggiato" quando la curva sta nel corridoio verde ±1,5 dB attorno al riferimento.
 //
 // Letture: scarto in dB per zona (Bassi, Medio-bassi, Medio-alti, Alti),
 // pendenza residua in dB/ottava (positiva = piu' brillante del brown) e
@@ -86,6 +91,10 @@ function zp_arc(x, y, r, a1, a2, aa) (
 function zp_triangle(x1, y1, x2, y2, x3, y3) (
   gfx_triangle(zp_ox + (x1) * zp_sc, (y1) * zp_sc, zp_ox + (x2) * zp_sc, (y2) * zp_sc, zp_ox + (x3) * zp_sc, (y3) * zp_sc);
 );
+function zp_quad(x1, y1, x2, y2, x3, y3, x4, y4) (
+  zp_triangle(x1, y1, x2, y2, x3, y3);
+  zp_triangle(x1, y1, x3, y3, x4, y4);
+);
 function zp_setfont(idx) ( gfx_setfont(idx); );
 function zp_setfont(idx, fname, sz) ( gfx_setfont(idx, fname, max(7, floor((sz) * zp_sc + 0.5))); );
 function zp_setfont(idx, fname, sz, flg) ( gfx_setfont(idx, fname, max(7, floor((sz) * zp_sc + 0.5)), flg); );
@@ -93,6 +102,13 @@ function zp_drawstr(s) (
   gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
   gfx_y = floor(zp_gy * zp_sc + 0.5);
   gfx_drawstr(s);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+function zp_drawstr_clip(s, rx, by) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_drawstr(s, 0, floor(zp_ox + (rx) * zp_sc + 0.5), floor((by) * zp_sc + 0.5));
   zp_gx = (gfx_x - zp_ox) / zp_sc;
   zp_gy = gfx_y / zp_sc;
 );
@@ -134,6 +150,7 @@ function help_bridge_warn() local(tw2, th2) (
     zp_drawstr("Guida: avvia il Cue Navigator (33 Benvenuto) per aprirla da qui, oppure apri l'Help ZP.");
   );
 );
+
 // JSFX non accetta la notazione scientifica (1e-30): costanti calcolate qui
 TINY = 10 ^ (-30); SILENCE = 10 ^ (-8); EPSDEN = 10 ^ (-9);
 target = slider1; compare = slider2; avgmode = slider3; slopesel = slider4; RANGE = slider7;
@@ -142,6 +159,11 @@ ringL = 0; ringR = N; buf = 2 * N; win = 3 * N; avg = 4 * N; cur = 5 * N;
 NB = 63; KMIN = -36;
 bfc = 6 * N; blo = bfc + 64; bhi = blo + 64; bdb = bhi + 64; dev = bdb + 64;
 ref = dev + 64; cal18 = ref + 64; cal24 = cal18 + 64; reft = cal24 + 64;
+// Array v1.1 oltre la memoria esistente (ringL..reft <= 49727; 7*N = 57344, 8*N = 65536)
+live_avg = 7 * N;
+live_bdb = 8 * N;
+sm_bdb = live_bdb + 64;
+sm_live = sm_bdb + 64;
 REF24_OFFSET = 5.91;
 LOG2 = log(2);
 
@@ -182,13 +204,19 @@ loop(NB,
   b += 1;
 );
 
-pos = 0; hopc = 0; frames = 0; seconds = 0; have_data = 0;
+pos = 0; hopc = 0; frames = 0; seconds = 0; have_data = 0; live_last_t = -10;
 memset(avg, 0, half + 1);
+memset(live_avg, 0, half + 1);
 !cal_init ? (cal18_ok = 0; cal24_ok = 0; cal_init = 1;);
+!ui_init ? (live_on = 1; ui_theme = 0; ui_init = 1;);
 
 function slope_db() ( slopesel == 0 ? 0 : slopesel == 1 ? 3 : slopesel == 2 ? 4.5 : 6; );
 
-function reset_avg() ( memset(avg, 0, half + 1); frames = 0; seconds = 0; have_data = 0; );
+function reset_avg() (
+  memset(avg, 0, half + 1);
+  memset(live_avg, 0, half + 1);
+  frames = 0; seconds = 0; have_data = 0; live_last_t = -10;
+);
 
 function do_channel(ring) local(i, j, re, im, k) (
   i = 0; j = pos;
@@ -206,13 +234,14 @@ function ref_at(b, which) local(base) (
   base + (slope_db() - 4.5) * log(bfc[b] / 1000) / LOG2;
 );
 
-function compute_bands() local(b, k, s, n, sd, x, sx, sy, sxx, sxy, cnt, z1, z2, z3, z4, c1, c2, c3, c4, f, d, okz) (
+function compute_bands() local(b, k, s, sl, n, sd, x, sx, sy, sxx, sxy, cnt, z1, z2, z3, z4, c1, c2, c3, c4, f, d, okz) (
   sd = slope_db();
   b = 0; sx = sy = sxx = sxy = cnt = 0; z1 = z2 = z3 = z4 = c1 = c2 = c3 = c4 = 0;
   loop(NB,
-    s = 0; n = 0; k = blo[b];
-    loop(bhi[b] - blo[b] + 1, s += avg[k]; n += 1; k += 1;);
+    s = 0; sl = 0; n = 0; k = blo[b];
+    loop(bhi[b] - blo[b] + 1, s += avg[k]; sl += live_avg[k]; n += 1; k += 1;);
     bdb[b] = 10 * log10(max(s / max(n, 1), TINY)) + sd * log(bfc[b] / 1000) / LOG2;
+    live_bdb[b] = 10 * log10(max(sl / max(n, 1), TINY)) + sd * log(bfc[b] / 1000) / LOG2;
     reft[b] = ref_at(b, target);
     dev[b] = bdb[b] - reft[b];
     f = bfc[b]; d = dev[b];
@@ -223,6 +252,18 @@ function compute_bands() local(b, k, s, n, sd, x, sx, sy, sxx, sxy, cnt, z1, z2,
     f >= 4000 && f <= 14000 ? (z4 += d; c4 += 1;);
     b += 1;
   );
+  // Lisciatura ottica leggera per il solo disegno (0.15 / 0.70 / 0.15); le letture restano su bdb[]
+  sm_bdb[0] = 0.80 * bdb[0] + 0.20 * bdb[1];
+  sm_live[0] = 0.80 * live_bdb[0] + 0.20 * live_bdb[1];
+  b = 1;
+  loop(NB - 2,
+    sm_bdb[b] = 0.15 * bdb[b - 1] + 0.70 * bdb[b] + 0.15 * bdb[b + 1];
+    sm_live[b] = 0.15 * live_bdb[b - 1] + 0.70 * live_bdb[b] + 0.15 * live_bdb[b + 1];
+    b += 1;
+  );
+  sm_bdb[NB - 1] = 0.80 * bdb[NB - 1] + 0.20 * bdb[NB - 2];
+  sm_live[NB - 1] = 0.80 * live_bdb[NB - 1] + 0.20 * live_bdb[NB - 2];
+
   level = cnt > 0 ? sy / cnt : 0;
   tilt = cnt > 1 ? (cnt * sxy - sx * sy) / max(cnt * sxx - sx * sx, EPSDEN) : 0;
   off = compare == 1 ? level : 0;
@@ -232,7 +273,7 @@ function compute_bands() local(b, k, s, n, sd, x, sx, sy, sxx, sxy, cnt, z1, z2,
           : (abs(zb) <= 3 && abs(zlm) <= 3 && abs(zmh) <= 3 && abs(zh) <= 3 && abs(tilt) <= 1) ? 1 : 0;
 );
 
-function analyze() local(k, tot, alpha, p) (
+function analyze() local(k, tot, alpha, alpha_live, p) (
   memset(cur, 0, half + 1);
   do_channel(ringL);
   do_channel(ringR);
@@ -241,9 +282,16 @@ function analyze() local(k, tot, alpha, p) (
   tot *= psd_scale * binw;   // potenza media del frame (circa il valore quadratico medio)
   tot > SILENCE ? (             // sotto -80 dB: silenzio, la misura resta ferma
     frames += 1; seconds += hop / srate; have_data = 1;
+    live_last_t = time_precise();
     alpha = avgmode == 3 ? 1 / frames : 1 - exp(-hop / (srate * (avgmode == 0 ? 0.3 : avgmode == 1 ? 1 : 3)));
+    alpha_live = frames == 1 ? 1.0 : (1 - exp(-hop / (srate * 0.22)));
     k = 1;
-    loop(half - 1, p = cur[k] * psd_scale; avg[k] += alpha * (p - avg[k]); k += 1;);
+    loop(half - 1,
+      p = cur[k] * psd_scale;
+      avg[k] += alpha * (p - avg[k]);
+      live_avg[k] += alpha_live * (p - live_avg[k]);
+      k += 1;
+    );
     compute_bands();
   );
 );
@@ -272,27 +320,88 @@ function set_param(idx, v) local(m) (
   sync_params();
 );
 
+// ---- Palette e helper grafici (solo @gfx, definiti prima di @slider) ----
+function set_theme_palette() (
+  ui_theme == 0 ? (
+    bg_r = 0.068; bg_g = 0.078; bg_b = 0.098;
+    card_r = 0.105; card_g = 0.118; card_b = 0.148;
+    card2_r = 0.140; card2_g = 0.158; card2_b = 0.196;
+    plot_r = 0.082; plot_g = 0.092; plot_b = 0.114;
+    grid_r = 0.185; grid_g = 0.205; grid_b = 0.245;
+    grid0_r = 0.300; grid0_g = 0.340; grid0_b = 0.405;
+    line_r = 0.245; line_g = 0.275; line_b = 0.335;
+    txt_r = 0.925; txt_g = 0.942; txt_b = 0.962;
+    sub_r = 0.615; sub_g = 0.665; sub_b = 0.745;
+    acc_g_r = 0.36; acc_g_g = 0.86; acc_g_b = 0.58;
+    acc_w_r = 0.96; acc_w_g = 0.72; acc_w_b = 0.28;
+    acc_r_r = 0.96; acc_r_g = 0.42; acc_r_b = 0.34;
+    acc_c_r = 0.32; acc_c_g = 0.74; acc_c_b = 0.96;
+    acc_cb_r = 0.22; acc_cb_g = 0.56; acc_cb_b = 0.92;
+    prog_r = 1.00; prog_g = 0.72; prog_b = 0.34;
+    knob_r = 0.165; knob_g = 0.180; knob_b = 0.215;
+    btn_txt_on_r = 0.05; btn_txt_on_g = 0.10; btn_txt_on_b = 0.08;
+    trk_r = 0.065; trk_g = 0.075; trk_b = 0.095;
+  ) : (
+    bg_r = 0.925; bg_g = 0.938; bg_b = 0.958;
+    card_r = 0.980; card_g = 0.985; card_b = 0.995;
+    card2_r = 0.902; card2_g = 0.918; card2_b = 0.946;
+    plot_r = 0.962; plot_g = 0.972; plot_b = 0.988;
+    grid_r = 0.855; grid_g = 0.880; grid_b = 0.918;
+    grid0_r = 0.650; grid0_g = 0.700; grid0_b = 0.785;
+    line_r = 0.750; line_g = 0.790; line_b = 0.850;
+    txt_r = 0.120; txt_g = 0.150; txt_b = 0.200;
+    sub_r = 0.390; sub_g = 0.440; sub_b = 0.530;
+    acc_g_r = 0.08; acc_g_g = 0.58; acc_g_b = 0.36;
+    acc_w_r = 0.78; acc_w_g = 0.44; acc_w_b = 0.04;
+    acc_r_r = 0.80; acc_r_g = 0.22; acc_r_b = 0.16;
+    acc_c_r = 0.08; acc_c_g = 0.48; acc_c_b = 0.78;
+    acc_cb_r = 0.10; acc_cb_g = 0.38; acc_cb_b = 0.72;
+    prog_r = 0.88; prog_g = 0.42; prog_b = 0.06;
+    knob_r = 0.995; knob_g = 0.995; knob_b = 1.000;
+    btn_txt_on_r = 0.98; btn_txt_on_g = 0.99; btn_txt_on_b = 0.99;
+    trk_r = 0.865; trk_g = 0.885; trk_b = 0.920;
+  );
+);
+
+function catmull(p0, p1, p2, p3, t) local(t2, t3) (
+  t2 = t * t; t3 = t2 * t;
+  0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3);
+);
+
+function draw_frame(x, y, w, h) (
+  zp_line(x, y, x + w - 1, y);
+  zp_line(x, y + h - 1, x + w - 1, y + h - 1);
+  zp_line(x, y, x, y + h - 1);
+  zp_line(x + w - 1, y, x + w - 1, y + h - 1);
+);
+
 // pulsante stile Suite: restituisce 1 al clic (btn_click decide se i clic valgono)
-function ui_button(x, y, w, h, label, on, hint) local(hov) (
+function ui_button(x, y, w, h, label, on, hint) local(hov, tw, th) (
   hov = zp_mx >= x && zp_mx <= x + w && zp_my >= y && zp_my <= y + h;
   hov ? strcpy(#hint, hint);
-  on ? gfx_set(0.16, 0.40, 0.34, 1) : hov ? gfx_set(0.18, 0.20, 0.25, 1) : gfx_set(0.12, 0.13, 0.16, 1);
+  on ? (
+    ui_theme == 0 ? gfx_set(0.14, 0.38, 0.31, 1) : gfx_set(0.10, 0.56, 0.37, 1);
+  ) : hov ? (
+    gfx_set(card2_r + (ui_theme == 0 ? 0.05 : -0.05), card2_g + (ui_theme == 0 ? 0.05 : -0.05), card2_b + (ui_theme == 0 ? 0.05 : -0.05), 1);
+  ) : (
+    gfx_set(card2_r, card2_g, card2_b, 1);
+  );
   zp_rect(x, y, w, h);
-  on ? gfx_set(0.40, 0.88, 0.60, 1) : hov ? gfx_set(0.75, 0.80, 0.88, 1) : gfx_set(0.32, 0.33, 0.40, 1);
-  zp_line(x, y, x + w - 1, y); zp_line(x, y + h - 1, x + w - 1, y + h - 1);
-  zp_line(x, y, x, y + h - 1); zp_line(x + w - 1, y, x + w - 1, y + h - 1);
-  zp_setfont(1, "Arial", 14); (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc);
+  on ? gfx_set(acc_g_r, acc_g_g, acc_g_b, 1) : hov ? gfx_set(txt_r, txt_g, txt_b, 0.72) : gfx_set(line_r, line_g, line_b, 1);
+  draw_frame(x, y, w, h);
+  zp_setfont(1, "Arial", 13); (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc);
   zp_gx = x + (w - tw) / 2; zp_gy = y + (h - th) / 2;
-  gfx_set(0.92, 0.94, 0.96, 1); zp_drawstr(label);
+  on && ui_theme == 1 ? gfx_set(btn_txt_on_r, btn_txt_on_g, btn_txt_on_b, 1) : gfx_set(txt_r, txt_g, txt_b, 1);
+  zp_drawstr(label);
   hov && btn_click;
 );
 
 // pomello stile Suite: trascina in verticale; doppio clic o clic destro = valore di partenza.
 // steps > 0: valori interi (pomello a scatti).
-function ui_knob(idx, cx, cy, r, minv, maxv, defv, steps, label, valstr, hint) local(v, hov, n, a, a0, a1, k, x1, y1, x2, y2, now)
+function ui_knob(idx, cx, cy, r, minv, maxv, defv, steps, label, valstr, hint) local(v, hov, n, a, a0, a1, k, x1, y1, x2, y2, now, tw, th)
 (
   v = slider(idx);
-  hov = zp_mx >= cx - r - 8 && zp_mx <= cx + r + 8 && zp_my >= cy - r - 8 && zp_my <= cy + r + 30;
+  hov = zp_mx >= cx - r - 8 && zp_mx <= cx + r + 8 && zp_my >= cy - r - 8 && zp_my <= cy + r + 28;
   hov ? strcpy(#hint, hint);
   hov && btn_click ? (
     now = time_precise();
@@ -311,32 +420,63 @@ function ui_knob(idx, cx, cy, r, minv, maxv, defv, steps, label, valstr, hint) l
   v = slider(idx);
   a0 = 0.75 * $pi; a1 = 2.25 * $pi;
   a = a0 + (v - minv) / max(maxv - minv, 0.0001) * (a1 - a0);
-  (hov || kn_drag == idx) ? (gfx_set(0.40, 0.88, 0.60, 0.12); zp_circle(cx, cy, r + 7, 1, 1););
-  gfx_set(0.16, 0.17, 0.20, 1); zp_circle(cx, cy, r, 1, 1);
-  gfx_set(0.30, 0.31, 0.36, 1); zp_circle(cx, cy, r, 0, 1);
+  (hov || kn_drag == idx) ? (gfx_set(acc_g_r, acc_g_g, acc_g_b, 0.14); zp_circle(cx, cy, r + 6, 1, 1););
+  gfx_set(knob_r, knob_g, knob_b, 1); zp_circle(cx, cy, r, 1, 1);
+  gfx_set(line_r, line_g, line_b, 1); zp_circle(cx, cy, r, 0, 1);
   k = 0;   // arco del valore, a segmenti
   loop(40,
     x1 = a0 + (a - a0) * k / 40; x2 = a0 + (a - a0) * (k + 1) / 40;
-    gfx_set(0.40, 0.88, 0.60, 1);
-    zp_line(cx + cos(x1) * (r - 3), cy + sin(x1) * (r - 3), cx + cos(x2) * (r - 3), cy + sin(x2) * (r - 3), 1);
-    zp_line(cx + cos(x1) * (r - 4), cy + sin(x1) * (r - 4), cx + cos(x2) * (r - 4), cy + sin(x2) * (r - 4), 1);
+    gfx_set(acc_g_r, acc_g_g, acc_g_b, 1);
+    zp_line(cx + cos(x1) * (r - 2.5), cy + sin(x1) * (r - 2.5), cx + cos(x2) * (r - 2.5), cy + sin(x2) * (r - 2.5), 1);
+    zp_line(cx + cos(x1) * (r - 3.5), cy + sin(x1) * (r - 3.5), cx + cos(x2) * (r - 3.5), cy + sin(x2) * (r - 3.5), 1);
     k += 1;
   );
-  gfx_set(0.92, 0.92, 0.92, 1);
-  zp_line(cx + cos(a) * (r * 0.25), cy + sin(a) * (r * 0.25), cx + cos(a) * (r - 6), cy + sin(a) * (r - 6), 1);
-  zp_setfont(1, "Arial", 12); gfx_set(0.62, 0.66, 0.72, 1);
-  (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = cx - tw / 2; zp_gy = cy + r + 4; zp_drawstr(label);
-  gfx_set(0.92, 0.94, 0.96, 1);
-  (gfx_measurestr(valstr, tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = cx - tw / 2; zp_gy = cy + r + 17; zp_drawstr(valstr);
+  gfx_set(txt_r, txt_g, txt_b, 0.95);
+  zp_line(cx + cos(a) * (r * 0.25), cy + sin(a) * (r * 0.25), cx + cos(a) * (r - 5), cy + sin(a) * (r - 5), 1);
+  zp_setfont(1, "Arial", 11); gfx_set(sub_r, sub_g, sub_b, 1);
+  (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = cx - tw / 2; zp_gy = cy + r + 3; zp_drawstr(label);
+  gfx_set(txt_r, txt_g, txt_b, 1);
+  (gfx_measurestr(valstr, tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = cx - tw / 2; zp_gy = cy + r + 15; zp_drawstr(valstr);
+);
+
+function set_diff_fill_col(d_db) (
+  abs(d_db) <= 1.5 ? (
+    gfx_set(acc_g_r, acc_g_g, acc_g_b, ui_theme == 0 ? 0.14 : 0.18);
+  ) : d_db > 3.0 ? (
+    gfx_set(acc_r_r, acc_r_g, acc_r_b, 0.28);
+  ) : d_db > 1.5 ? (
+    gfx_set(acc_w_r, acc_w_g, acc_w_b, ui_theme == 0 ? 0.22 : 0.24);
+  ) : d_db < -3.0 ? (
+    gfx_set(acc_cb_r, acc_cb_g, acc_cb_b, ui_theme == 0 ? 0.28 : 0.26);
+  ) : (
+    gfx_set(acc_c_r, acc_c_g, acc_c_b, ui_theme == 0 ? 0.20 : 0.22);
+  );
+);
+
+function fill_diff_seg(x0, x1, ya0, ya1, yr0, yr1, d0_db, d1_db) local(da0, da1, tc, xm, ym, dm) (
+  da0 = ya0 - yr0; da1 = ya1 - yr1;
+  da0 * da1 < 0 ? (
+    tc = abs(da0) / max(0.0001, abs(da0) + abs(da1));
+    xm = x0 + (x1 - x0) * tc;
+    ym = yr0 + (yr1 - yr0) * tc;
+    set_diff_fill_col(d0_db * 0.5);
+    zp_triangle(x0, ya0, xm, ym, x0, yr0);
+    set_diff_fill_col(d1_db * 0.5);
+    zp_triangle(xm, ym, x1, ya1, x1, yr1);
+  ) : (
+    dm = 0.5 * (d0_db + d1_db);
+    set_diff_fill_col(dm);
+    zp_quad(x0, ya0, x1, ya1, x1, yr1, x0, yr0);
+  );
 );
 
 // guida sovrapposta, come nei pannelli di Master Pro
-function help_overlay() local(px, py, pw, ph, cx, cy, hc, ly) (
-  pw = min(820, max(520, zp_vw - 48)); px = floor((zp_vw - pw) / 2); py = 60; ph = min(470, zp_vh - 90);
-  gfx_set(0.025, 0.027, 0.030, 0.96); zp_rect(px, py, pw, ph);
-  gfx_set(0.40, 0.88, 0.60, 1); zp_rect(px, py, pw, 2); zp_rect(px, py + ph - 2, pw, 2); zp_rect(px, py, 2, ph); zp_rect(px + pw - 2, py, 2, ph);
-  zp_setfont(2, "Arial", 22, 'b'); gfx_set(0.94, 0.96, 0.98, 1); zp_gx = px + 24; zp_gy = py + 16; zp_drawstr("BrownSlope Prism - come si legge");
-  cx = px + pw - 44; cy = py + 16;
+function help_overlay() local(px, py, pw, ph, cx, cy, hc, ly, tw, th) (
+  pw = min(820, max(540, zp_vw - 48)); px = floor((zp_vw - pw) / 2); py = 54; ph = min(490, zp_vh - 82);
+  gfx_set(0.03, 0.035, 0.045, 0.96); zp_rect(px, py, pw, ph);
+  gfx_set(0.36, 0.86, 0.58, 1); zp_rect(px, py, pw, 2); zp_rect(px, py + ph - 2, pw, 2); zp_rect(px, py, 2, ph); zp_rect(px + pw - 2, py, 2, ph);
+  zp_setfont(2, "Arial", 21, 'b'); gfx_set(0.94, 0.96, 0.98, 1); zp_gx = px + 24; zp_gy = py + 15; zp_drawstr("ZP BrownSlope Prism v1.1 - come si legge");
+  cx = px + pw - 44; cy = py + 15;
   hc = zp_mx >= cx && zp_mx <= cx + 28 && zp_my >= cy && zp_my <= cy + 28;
   hc ? gfx_set(0.28, 0.12, 0.10, 1) : gfx_set(0.14, 0.12, 0.12, 1); zp_rect(cx, cy, 28, 28);
   zp_setfont(1, "Arial", 16, 'b'); gfx_set(0.94, 0.80, 0.78, 1); (gfx_measurestr("X", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = cx + (28 - tw) / 2; zp_gy = cy + (28 - th) / 2; zp_drawstr("X");
@@ -347,23 +487,24 @@ function help_overlay() local(px, py, pw, ph, cx, cy, hc, ly) (
   zp_setfont(9, "Arial", 14, 'b'); gfx_set(0.72, 0.92, 0.82, 1); (gfx_measurestr("GUIDA COMPLETA", tw, th); tw /= zp_sc; th /= zp_sc);
   zp_gx = cx - 188 + (180 - tw) / 2; zp_gy = cy + (28 - th) / 2; zp_drawstr("GUIDA COMPLETA");
   hc && click ? help_bridge_open(12);
-  ly = py + 58; zp_setfont(1, "Arial", 15);
-  gfx_set(0.84, 0.86, 0.86, 1);
-  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Il grafico compensa 4,5 dB per ottava: un rumore brown diventa una linea piatta."); ly += 24;
-  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Verde: i riferimenti -18 e -24 LUFS (misurati dai loop brown). Arancio: il tuo audio."); ly += 24;
+  ly = py + 54; zp_setfont(1, "Arial", 14);
+  gfx_set(0.86, 0.88, 0.90, 1);
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Il grafico compensa 4,5 dB/ottava: un rumore brown diventa una linea piatta (-18 o -24 LUFS)."); ly += 23;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Corridoio verde: fascia ±1,5 dB (PAREGGIATO) e alone esterno ±3 dB (QUASI)."); ly += 23;
   gfx_set(0.98, 0.74, 0.32, 1);
-  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Sei pareggiato quando l'arancio e' piatto e sta sulla linea scelta."); ly += 34;
-  gfx_set(0.84, 0.86, 0.86, 1);
-  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Zone: scarto medio in dB. Verde entro 1,5 - giallo entro 3 - rosso oltre."); ly += 24;
-  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Pendenza residua: + = piu' brillante del brown, - = piu' scuro."); ly += 24;
-  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Forma: toglie la differenza di livello e confronta solo l'EQ. Livello: conta anche il volume."); ly += 34;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Riempimento colorato rispetto alla linea target: caldo sopra (+Eccesso), azzurro sotto (-Carenza)."); ly += 23;
   gfx_set(0.72, 0.92, 0.82, 1);
-  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Media lunga: misura tutto il brano finche' non premi Reset; nei silenzi si ferma."); ly += 24;
-  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Pomelli: trascina in verticale; doppio clic o clic destro = valore di partenza."); ly += 24;
-  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Calibra: suona il loop di riferimento con media lunga e premi Calibra. Default la toglie."); ly += 34;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Live: traccia istantanea traslucida (~0,22 s) dietro la media lunga, cosi' vedi il segnale respirare."); ly += 30;
+  gfx_set(0.86, 0.88, 0.90, 1);
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Box delle 4 zone: scarto in dB + barra bipolare (±6 dB) centrata sulla finestra verde ±1,5 dB."); ly += 23;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Livella pendenza: centro verde entro ±0,5 dB/oct; a sinistra = piu' scuro, a destra = piu' brillante."); ly += 23;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Forma (EQ): toglie la differenza di volume; Livello: confronta anche i dB assoluti e i due target."); ly += 30;
+  gfx_set(0.72, 0.92, 0.82, 1);
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Media lunga: integra tutto il brano finche' non premi Reset (ferma nei silenzi sotto -80 dB)."); ly += 23;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Calibra: suona il tuo riferimento con media lunga e premi Calibra (salvato nel progetto; Default lo toglie)."); ly += 30;
   gfx_set(0.62, 0.72, 0.82, 1);
-  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Vista JSFX: riporta la lista parametri di REAPER, letture comprese, per OSARA."); ly += 24;
-  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Passivo: l'audio passa intatto.");
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Scuro/Chiaro cambia i colori GUI; Vista JSFX espone parametri e letture [Read] per OSARA."); ly += 23;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Pomelli: trascina in verticale; doppio clic o clic destro = valore iniziale. Passivo: audio intatto.");
 );
 
 update_visibility();
@@ -371,16 +512,58 @@ update_visibility();
 // funzioni del grafico (definite qui, usate in @gfx)
 function xf(f) ( gx0 + (log(f / 15) / log(20000 / 15)) * (gx1 - gx0); );
 function yv(v) ( gy0 + (RANGE - (v - ymid)) / (2 * RANGE) * (gy1 - gy0); );
-function zone_box(x, y, w, label, v) local(c) (
-  c = abs(v) <= 1.5 ? 0 : abs(v) <= 3 ? 1 : 2;
-  gfx_set(0.12, 0.13, 0.15, 1); zp_rect(x, y, w, 52);
-  gfx_set(0.62, 0.66, 0.72, 1); zp_gx = x + 10; zp_gy = y + 6; zp_setfont(1, "Arial", 13); zp_drawstr(label);
-  c == 0 ? gfx_set(0.40, 0.88, 0.60, 1) : c == 1 ? gfx_set(0.95, 0.78, 0.35, 1) : gfx_set(0.98, 0.45, 0.35, 1);
-  zp_setfont(2, "Arial", 22, 'b'); zp_gx = x + 10; zp_gy = y + 24;
+
+function zone_box(x, y, w, h, title, freq_lbl, v) local(c, bx, bw, by, bh, cx, tol_w, fill_w, px_v, tw, th, tag) (
+  c = !have_data ? 3 : abs(v) <= 1.5 ? 0 : abs(v) <= 3 ? 1 : 2;
+  gfx_set(card_r, card_g, card_b, 1); zp_rect(x, y, w, h);
+  gfx_set(line_r, line_g, line_b, 1); draw_frame(x, y, w, h);
+  c == 0 ? gfx_set(acc_g_r, acc_g_g, acc_g_b, 0.95) :
+  c == 1 ? gfx_set(acc_w_r, acc_w_g, acc_w_b, 0.95) :
+  c == 2 ? gfx_set(acc_r_r, acc_r_g, acc_r_b, 0.95) :
+           gfx_set(line_r, line_g, line_b, 0.85);
+  zp_rect(x, y, w, 3);
+
+  zp_setfont(1, "Arial", 10, 'b'); gfx_set(sub_r, sub_g, sub_b, 1);
+  zp_gx = x + 9; zp_gy = y + 9; zp_drawstr(title);
+  zp_setfont(1, "Arial", 10); (gfx_measurestr(freq_lbl, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = x + w - 9 - tw; zp_gy = y + 9; zp_drawstr(freq_lbl);
+
+  c == 0 ? gfx_set(acc_g_r, acc_g_g, acc_g_b, 1) :
+  c == 1 ? gfx_set(acc_w_r, acc_w_g, acc_w_b, 1) :
+  c == 2 ? gfx_set(acc_r_r, acc_r_g, acc_r_b, 1) :
+           gfx_set(sub_r, sub_g, sub_b, 1);
+  zp_setfont(2, "Arial", 20, 'b'); zp_gx = x + 9; zp_gy = y + 29;
   have_data ? sprintf(#zs, "%+.1f dB", v) : (#zs = "--");
   zp_drawstr(#zs);
-);
 
+  have_data ? (
+    tag = abs(v) <= 1.5 ? "OK" : v > 0 ? "ALTO" : "BASSO";
+    zp_setfont(1, "Arial", 10, 'b');
+    (gfx_measurestr(tag, tw, th); tw /= zp_sc; th /= zp_sc);
+    zp_gx = x + w - 9 - tw; zp_gy = y + 35; zp_drawstr(tag);
+  );
+
+  // Barra bipolare centrata (±6 dB, finestra verde ±1,5 dB al centro)
+  bx = x + 10; bw = w - 20; by = y + 66; bh = 12; cx = bx + bw * 0.5;
+  tol_w = bw * (1.5 / 6.0);
+  gfx_set(trk_r, trk_g, trk_b, 1); zp_rect(bx, by, bw, bh);
+  gfx_set(acc_g_r, acc_g_g, acc_g_b, ui_theme == 0 ? 0.16 : 0.20); zp_rect(cx - tol_w * 0.5, by, tol_w, bh);
+  gfx_set(line_r, line_g, line_b, 0.85); draw_frame(bx, by, bw, bh);
+  have_data ? (
+    fill_w = max(-1, min(1, v / 6.0)) * (bw * 0.5);
+    abs(v) <= 1.5 ? gfx_set(acc_g_r, acc_g_g, acc_g_b, 0.85) :
+    v > 0 ? (v > 3 ? gfx_set(acc_r_r, acc_r_g, acc_r_b, 0.88) : gfx_set(acc_w_r, acc_w_g, acc_w_b, 0.88)) :
+            (v < -3 ? gfx_set(acc_cb_r, acc_cb_g, acc_cb_b, 0.88) : gfx_set(acc_c_r, acc_c_g, acc_c_b, 0.88));
+    fill_w >= 0 ? zp_rect(cx, by + 2, max(1, fill_w), bh - 4) : zp_rect(cx + fill_w, by + 2, max(1, -fill_w), bh - 4);
+    px_v = cx + fill_w;
+    gfx_set(txt_r, txt_g, txt_b, 0.95); zp_rect(px_v - 1, by - 1, 2, bh + 2);
+  );
+  gfx_set(grid0_r, grid0_g, grid0_b, 0.9); zp_line(cx, by - 1, cx, by + bh + 1);
+  zp_setfont(1, "Arial", 9); gfx_set(sub_r, sub_g, sub_b, 0.88);
+  zp_gx = bx; zp_gy = y + 84; zp_drawstr("-6");
+  (gfx_measurestr("0", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = cx - tw * 0.5; zp_gy = y + 84; zp_drawstr("0");
+  (gfx_measurestr("+6", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = bx + bw - tw; zp_gy = y + 84; zp_drawstr("+6");
+);
 
 @slider
 slider5 ? (reset_avg(); slider5 = 0; sliderchange(slider5););
@@ -415,138 +598,349 @@ zp_dw = 900.0; zp_dh = 600.0; zp_sc = max(0.55, min(2.5, min(gfx_w / zp_dw, gfx_
 help_bridge_alive();   // battito del ponte guida, a ogni giro
 click = (mouse_cap & 1) && !last_cap; last_cap = mouse_cap & 1;
 rclick = (mouse_cap & 2) && !last_rcap; last_rcap = mouse_cap & 2;
-gfx_set(0.07, 0.08, 0.09, 1); zp_rect(0, 0, zp_vw, zp_vh);
+set_theme_palette();
+
+gfx_set(bg_r, bg_g, bg_b, 1); zp_rect(0, 0, zp_vw, zp_vh);
 #hint = "";
 btn_click = click && !help_open;
 
-// testata
-zp_setfont(2, "Arial", 18, 'b'); gfx_set(0.92, 0.88, 0.78, 1); zp_gx = 16; zp_gy = 12;
+// ---- Testata ----
+zp_setfont(2, "Arial", 18, 'b'); gfx_set(txt_r, txt_g, txt_b, 1); zp_gx = 16; zp_gy = 11;
 zp_drawstr("ZP BrownSlope Prism");
+gfx_set(card2_r, card2_g, card2_b, 1); zp_rect(206, 13, 36, 20);
+gfx_set(acc_g_r, acc_g_g, acc_g_b, 0.75); draw_frame(206, 13, 36, 20);
+zp_setfont(1, "Arial", 11, 'b'); gfx_set(acc_g_r, acc_g_g, acc_g_b, 1);
+(gfx_measurestr("v1.1", tw, th); tw /= zp_sc; th /= zp_sc);
+zp_gx = 206 + (36 - tw) * 0.5; zp_gy = 13 + (20 - th) * 0.5; zp_drawstr("v1.1");
 
-// pulsanti in alto a destra
-bx = zp_vw - 16;
-bx -= 34; btn_click = click;
-ui_button(bx, 12, 30, 28, "?", help_open, "Guida: come leggere il grafico e come usarlo.") ? (help_open = !help_open);
+// Pulsanti in alto a destra
+ui_button(682, 10, 66, 26, ui_theme == 0 ? "Scuro" : "Chiaro", ui_theme == 1,
+  "Cambia il tema cromatico tra Scuro e Chiaro.") ? (ui_theme = !ui_theme);
+ui_button(754, 10, 96, 26, slider6 >= 0.5 ? "Vista: JSFX" : "Vista: GUI", slider6 >= 0.5,
+  "JSFX espone la lista parametri e le letture [Read] per OSARA.") ? set_param(6, slider6 >= 0.5 ? 0 : 1);
+btn_click = click;
+ui_button(856, 10, 28, 26, "?", help_open, "Guida: come leggere corridoio, zone, livella e calibrazione.") ? (help_open = !help_open);
 btn_click = click && !help_open;
-bx -= 116; ui_button(bx, 12, 112, 28, slider6 >= 0.5 ? "Vista: JSFX" : "Vista: GUI", slider6 >= 0.5,
-  "JSFX riporta la lista parametri di REAPER (letture comprese) per OSARA e screen reader.") ? set_param(6, slider6 >= 0.5 ? 0 : 1);
 
-// striscia comandi: pulsanti e pomelli
-cy0 = 52;
-gfx_set(0.10, 0.11, 0.13, 1); zp_rect(12, cy0, zp_vw - 24, 74);
-x = 24;
-ui_button(x, cy0 + 10, 96, 26, target == 0 ? "Rif. -18" : "Rif. -24", 1,
-  "Riferimento: brown a -18 o -24 LUFS. Clic per cambiare.") ? set_param(1, !target);
-ui_button(x, cy0 + 40, 96, 26, compare == 1 ? "Forma" : "Livello", compare == 1,
-  "Forma: confronta solo l'EQ. Livello: conta anche il volume.") ? set_param(2, !compare);
-x += 110;
-ui_button(x, cy0 + 10, 84, 26, "Reset", 0, "Riparte la media da zero.") ? reset_avg();
-ui_button(x, cy0 + 40, 84, 26, "Calibra", (target == 0 ? cal18_ok : cal24_ok),
-  "Memorizza la curva misurata come riferimento (suona il loop brown con media lunga).") && have_data ? (
+// ---- Striscia comandi in 3 gruppi ----
+cy0 = 48;
+gfx_set(card_r, card_g, card_b, 1); zp_rect(14, cy0, 872, 74);
+gfx_set(line_r, line_g, line_b, 1); draw_frame(14, cy0, 872, 74);
+gfx_set(line_r, line_g, line_b, 0.7);
+zp_line(342, cy0 + 8, 342, cy0 + 66);
+zp_line(672, cy0 + 8, 672, cy0 + 66);
+
+// Gruppo 1: Target, Confronto, Reset, Live, Legenda
+ui_button(24, cy0 + 9, 78, 25, "-18 LUFS", target == 0,
+  "Riferimento target brown a -18 LUFS.") ? set_param(1, 0);
+ui_button(104, cy0 + 9, 78, 25, "-24 LUFS", target == 1,
+  "Riferimento target brown a -24 LUFS.") ? set_param(1, 1);
+ui_button(24, cy0 + 40, 88, 25, "Forma (EQ)", compare == 1,
+  "Forma: toglie la differenza di volume e confronta solo l'EQ.") ? set_param(2, 1);
+ui_button(114, cy0 + 40, 68, 25, "Livello", compare == 0,
+  "Livello: confronta sia timbro sia volume contro -18 / -24 LUFS.") ? set_param(2, 0);
+
+ui_button(194, cy0 + 9, 66, 25, "Reset", 0, "Azzera la media e riparte da zero.") ? reset_avg();
+ui_button(266, cy0 + 9, 64, 25, "Live", live_on,
+  "Mostra o nasconde la traccia istantanea (~0,22 s) dietro la media lunga.") ? (live_on = !live_on);
+
+// Legenda chiara sotto Reset / Live
+gfx_set(acc_w_r, acc_w_g, acc_w_b, 0.88); zp_rect(194, cy0 + 47, 10, 10);
+zp_setfont(1, "Arial", 10); gfx_set(sub_r, sub_g, sub_b, 1);
+zp_gx = 207; zp_gy = cy0 + 46; zp_drawstr("+Eccesso");
+gfx_set(acc_c_r, acc_c_g, acc_c_b, 0.88); zp_rect(266, cy0 + 47, 10, 10);
+gfx_set(sub_r, sub_g, sub_b, 1);
+zp_gx = 279; zp_gy = cy0 + 46; zp_drawstr("-Carenza");
+
+// Gruppo 2: Pomelli
+ui_knob(3, 400, cy0 + 25, 16, 0, 3, 3, 1, "Media",
+  avgmode == 0 ? "0,3 s" : avgmode == 1 ? "1 s" : avgmode == 2 ? "3 s" : "lunga",
+  "Finestra temporale: 0,3 s, 1 s, 3 s oppure lunga fino a Reset.");
+ui_knob(4, 508, cy0 + 25, 16, 0, 3, 2, 1, "Pendenza",
+  slopesel == 0 ? "0 dB/o" : slopesel == 1 ? "3 dB/o" : slopesel == 2 ? "4,5 dB/o" : "6 dB/o",
+  "Compensazione pendenza: 4,5 dB/oct rende piatto il rumore brown.");
+sprintf(#scala, "±%d dB", RANGE);
+ui_knob(7, 616, cy0 + 25, 16, 6, 30, 18, 1, "Scala", #scala,
+  "Escursione verticale del grafico sopra e sotto il riferimento.");
+
+// Gruppo 3: Calibrazione
+cal_act = target == 0 ? cal18_ok : cal24_ok;
+zp_setfont(1, "Arial", 10, 'b'); gfx_set(sub_r, sub_g, sub_b, 1);
+zp_gx = 686; zp_gy = cy0 + 6; zp_drawstr("CALIBRAZIONE RIF.");
+gfx_set(cal_act ? acc_g_r : line_r, cal_act ? acc_g_g : line_g, cal_act ? acc_g_b : line_b, 1);
+zp_circle(867, cy0 + 11, 4, 1);
+ui_button(686, cy0 + 23, 90, 25, "Calibra", cal_act,
+  "Memorizza la curva misurata per il riferimento attivo (usa media lunga).") && have_data ? (
   i = 0; sd = slope_db(); cbase = target == 0 ? cal18 : cal24;
   loop(NB, cbase[i] = bdb[i] - (sd - 4.5) * log(bfc[i] / 1000) / LOG2; i += 1;);
   target == 0 ? (cal18_ok = 1) : (cal24_ok = 1); compute_bands();
 );
-x += 98;
-ui_button(x, cy0 + 40, 84, 26, "Default", 0, "Toglie la calibrazione del riferimento scelto.") ? (
-  target == 0 ? (cal18_ok = 0) : (cal24_ok = 0); compute_bands(););
-x += 130;
-ui_knob(3, x, cy0 + 26, 17, 0, 3, 3, 1, "Media",
-  avgmode == 0 ? "veloce" : avgmode == 1 ? "1 s" : avgmode == 2 ? "lenta" : "lunga",
-  "Media: veloce 0,3 s, 1 s, lenta 3 s, lunga fino a Reset.");
-x += 96;
-ui_knob(4, x, cy0 + 26, 17, 0, 3, 2, 1, "Pendenza",
-  slopesel == 0 ? "0 dB/oct" : slopesel == 1 ? "3 dB/oct" : slopesel == 2 ? "4,5 dB/oct" : "6 dB/oct",
-  "Compensazione del grafico. 4,5 = come Prism: il brown e' piatto.");
-x += 96;
-sprintf(#scala, "+/- %d dB", RANGE);
-ui_knob(7, x, cy0 + 26, 17, 6, 30, 18, 1, "Scala", #scala, "Quanti dB mostra il grafico sopra e sotto il riferimento.");
+ui_button(782, cy0 + 23, 90, 25, "Default", 0,
+  "Rimuove la calibrazione utente sul riferimento scelto e torna di serie.") ? (
+  target == 0 ? (cal18_ok = 0) : (cal24_ok = 0); compute_bands();
+);
+zp_setfont(1, "Arial", 10); gfx_set(cal_act ? acc_g_r : sub_r, cal_act ? acc_g_g : sub_g, cal_act ? acc_g_b : sub_b, 1);
+zp_gx = 686; zp_gy = cy0 + 54;
+zp_drawstr(cal_act ? (target == 0 ? "Custom -18 attiva" : "Custom -24 attiva") : "Curva di serie (-4.5 dB/oct)");
 
-// riga di stato: il suggerimento del comando sotto il mouse, altrimenti lo stato
-zp_setfont(1, "Arial", 13); zp_gx = 220; zp_gy = 18;
-strlen(#hint) ? (gfx_set(0.62, 0.78, 0.92, 1); zp_drawstr(#hint);) : (
-  gfx_set(0.56, 0.72, 0.86, 1);
-  sprintf(#st, "passivo - analizzati %.0f s%s", seconds, cal18_ok || cal24_ok ? " - calibrato" : "");
-  zp_drawstr(#st);
+// Stato / Tooltip in testata (dopo tutti i controlli cosi' #hint e' gia' popolato)
+zp_setfont(1, "Arial", 12); zp_gx = 252; zp_gy = 17;
+strlen(#hint) ? (
+  gfx_set(acc_c_r, acc_c_g, acc_c_b, 1);
+  zp_drawstr_clip(#hint, 672, 42);
+) : (
+  gfx_set(sub_r, sub_g, sub_b, 1);
+  sprintf(#st, "Passivo · %.0f s analizzati%s", seconds, cal_act ? " · calibrato" : "");
+  zp_drawstr_clip(#st, 672, 42);
 );
 
-// grafico
-gx0 = 56; gx1 = zp_vw - 18; gy0 = 138; gy1 = zp_vh - 96;
-// centro verticale: la media del riferimento scelto
+// ---- Riquadro Spettro ----
+spec_y = 132; spec_bot = zp_vh - 134; spec_h = spec_bot - spec_y;
+gx0 = 54; gx1 = 876; gy0 = spec_y + 26; gy1 = spec_bot - 22;
 i = 0; ymid = 0; loop(NB, ymid += ref_at(i, target); i += 1;); ymid /= NB;
-gfx_set(0.10, 0.11, 0.12, 1); zp_rect(gx0, gy0, gx1 - gx0, gy1 - gy0);
-zp_setfont(1, "Arial", 12);
-v = -RANGE;
-loop(7,
-  y = yv(ymid + v); gfx_set(0.20, 0.21, 0.23, 1); zp_line(gx0, y, gx1, y);
-  gfx_set(0.55, 0.58, 0.62, 1); zp_gx = 8; zp_gy = y - 6; sprintf(#lb, "%+d", v); v == 0 ? (#lb = "0"); zp_drawstr(#lb);
-  v += 6;
+
+gfx_set(card_r, card_g, card_b, 1); zp_rect(14, spec_y, 872, spec_h);
+gfx_set(line_r, line_g, line_b, 1); draw_frame(14, spec_y, 872, spec_h);
+gfx_set(plot_r, plot_g, plot_b, 1); zp_rect(gx0, gy0, gx1 - gx0, gy1 - gy0);
+
+// Sfondo alternato leggero sulle 4 zone ed etichette in cima al grafico
+zx40 = xf(40); zx160 = xf(160); zx800 = xf(800); zx4k = xf(4000); zx14k = xf(14000);
+gfx_set(txt_r, txt_g, txt_b, ui_theme == 0 ? 0.025 : 0.030);
+zp_rect(zx160, gy0, zx800 - zx160, gy1 - gy0);
+zp_rect(zx4k, gy0, zx14k - zx4k, gy1 - gy0);
+
+zp_setfont(1, "Arial", 10, 'b'); gfx_set(sub_r, sub_g, sub_b, 0.92);
+(gfx_measurestr("BASSI", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = (zx40 + zx160) * 0.5 - tw * 0.5; zp_gy = spec_y + 7; zp_drawstr("BASSI");
+(gfx_measurestr("MEDIO-BASSI", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = (zx160 + zx800) * 0.5 - tw * 0.5; zp_gy = spec_y + 7; zp_drawstr("MEDIO-BASSI");
+(gfx_measurestr("MEDIO-ALTI", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = (zx800 + zx4k) * 0.5 - tw * 0.5; zp_gy = spec_y + 7; zp_drawstr("MEDIO-ALTI");
+(gfx_measurestr("ALTI", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = (zx4k + zx14k) * 0.5 - tw * 0.5; zp_gy = spec_y + 7; zp_drawstr("ALTI");
+
+// Griglia verticale adattiva (sempre simmetrica intorno a 0 per qualsiasi Scala 6..30)
+step_db = RANGE <= 8 ? 2 : RANGE <= 14 ? 3 : RANGE <= 24 ? 6 : 10;
+zp_setfont(1, "Arial", 11);
+y = yv(ymid);
+gfx_set(grid0_r, grid0_g, grid0_b, 0.95); zp_line(gx0, y, gx1, y);
+gfx_set(sub_r, sub_g, sub_b, 1);
+(gfx_measurestr("0", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = gx0 - 6 - tw; zp_gy = y - th * 0.5; zp_drawstr("0");
+k = step_db;
+loop(floor(RANGE / step_db),
+  y = yv(ymid + k);
+  gfx_set(grid_r, grid_g, grid_b, 1); zp_line(gx0, y, gx1, y);
+  gfx_set(sub_r, sub_g, sub_b, 0.92); sprintf(#lb, "+%d", k);
+  (gfx_measurestr(#lb, tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = gx0 - 6 - tw; zp_gy = y - th * 0.5; zp_drawstr(#lb);
+  y = yv(ymid - k);
+  gfx_set(grid_r, grid_g, grid_b, 1); zp_line(gx0, y, gx1, y);
+  gfx_set(sub_r, sub_g, sub_b, 0.92); sprintf(#lb, "-%d", k);
+  (gfx_measurestr(#lb, tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = gx0 - 6 - tw; zp_gy = y - th * 0.5; zp_drawstr(#lb);
+  k += step_db;
 );
+
+// Griglia frequenze
 f = 20;
 loop(10,
-  x = xf(f); gfx_set(0.20, 0.21, 0.23, 1); zp_line(x, gy0, x, gy1);
-  gfx_set(0.55, 0.58, 0.62, 1); zp_gx = x - 10; zp_gy = gy1 + 4;
-  f >= 1000 ? sprintf(#lb, "%dk", f / 1000) : sprintf(#lb, "%d", f); zp_drawstr(#lb);
+  x = xf(f); gfx_set(grid_r, grid_g, grid_b, 1); zp_line(x, gy0, x, gy1);
+  gfx_set(sub_r, sub_g, sub_b, 0.92);
+  f >= 1000 ? sprintf(#lb, "%dk", f / 1000) : sprintf(#lb, "%d", f);
+  (gfx_measurestr(#lb, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = min(gx1 - tw, max(gx0, x - tw * 0.5)); zp_gy = gy1 + 4; zp_drawstr(#lb);
   f = f == 20 ? 50 : f == 50 ? 100 : f == 100 ? 200 : f == 200 ? 500 : f == 500 ? 1000 : f == 1000 ? 2000 : f == 2000 ? 5000 : f == 5000 ? 10000 : 20000;
 );
-// zone
-gfx_set(0.16, 0.17, 0.19, 1);
-zp_line(xf(160), gy0, xf(160), gy1); zp_line(xf(800), gy0, xf(800), gy1); zp_line(xf(4000), gy0, xf(4000), gy1);
+// Separatori di zona verticali
+gfx_set(grid0_r, grid0_g, grid0_b, 0.55);
+zp_line(zx160, gy0, zx160, gy1); zp_line(zx800, gy0, zx800, gy1); zp_line(zx4k, gy0, zx4k, gy1);
+gfx_set(line_r, line_g, line_b, 0.9); draw_frame(gx0, gy0, gx1 - gx0, gy1 - gy0);
 
-// riferimenti: quello scelto pieno, l'altro tenue
-w2 = 0;
-loop(2,
-  which = w2 == 0 ? (target == 0 ? 1 : 0) : target;
-  which == target ? gfx_set(0.40, 0.88, 0.60, 1) : gfx_set(0.40, 0.88, 0.60, 0.35);
-  i = 1;
-  loop(NB - 1,
-    zp_line(xf(bfc[i - 1]), yv(ref_at(i - 1, which)), xf(bfc[i]), yv(ref_at(i, which)), 1);
-    which == target ? zp_line(xf(bfc[i - 1]), yv(ref_at(i - 1, which)) + 1, xf(bfc[i]), yv(ref_at(i, which)) + 1, 1);
-    i += 1;
-  );
-  zp_gx = gx1 - 70; zp_gy = yv(ref_at(NB - 1, which)) - 16;
-  zp_drawstr(which == 0 ? "-18 LUFS" : "-24 LUFS");
-  w2 += 1;
+// Corridoio target ±3 dB e ±1,5 dB attorno al riferimento selezionato
+i = 0;
+loop(NB - 1,
+  x0 = xf(bfc[i]); x1 = xf(bfc[i + 1]);
+  r0 = ref_at(i, target); r1 = ref_at(i + 1, target);
+  y0h3 = max(gy0, min(gy1, yv(r0 + 3.0))); y0l3 = max(gy0, min(gy1, yv(r0 - 3.0)));
+  y1h3 = max(gy0, min(gy1, yv(r1 + 3.0))); y1l3 = max(gy0, min(gy1, yv(r1 - 3.0)));
+  gfx_set(acc_g_r, acc_g_g, acc_g_b, ui_theme == 0 ? 0.065 : 0.085);
+  zp_quad(x0, y0h3, x1, y1h3, x1, y1l3, x0, y0l3);
+  y0h1 = max(gy0, min(gy1, yv(r0 + 1.5))); y0l1 = max(gy0, min(gy1, yv(r0 - 1.5)));
+  y1h1 = max(gy0, min(gy1, yv(r1 + 1.5))); y1l1 = max(gy0, min(gy1, yv(r1 - 1.5)));
+  gfx_set(acc_g_r, acc_g_g, acc_g_b, ui_theme == 0 ? 0.145 : 0.175);
+  zp_quad(x0, y0h1, x1, y1h1, x1, y1l1, x0, y0l1);
+  gfx_set(acc_g_r, acc_g_g, acc_g_b, 0.30);
+  zp_line(x0, y0h1, x1, y1h1, 1); zp_line(x0, y0l1, x1, y1l1, 1);
+  i += 1;
 );
 
-// programma (arancio), in "Forma" spostato del suo livello medio
+// Seconda curva di riferimento (solo in Livello; nascosta in Forma per pulizia)
+compare == 0 ? (
+  other_t = target == 0 ? 1 : 0;
+  gfx_set(acc_g_r, acc_g_g, acc_g_b, 0.28);
+  i = 1;
+  loop(NB - 1,
+    y0o = max(gy0, min(gy1, yv(ref_at(i - 1, other_t))));
+    y1o = max(gy0, min(gy1, yv(ref_at(i, other_t))));
+    zp_line(xf(bfc[i - 1]), y0o, xf(bfc[i]), y1o, 1);
+    i += 1;
+  );
+  zp_setfont(1, "Arial", 10);
+  (gfx_measurestr(other_t == 0 ? "-18 LUFS" : "-24 LUFS", tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = gx1 - 6 - tw; zp_gy = max(gy0 + 2, min(gy1 - 13, yv(ref_at(NB - 1, other_t)) - 13));
+  zp_drawstr(other_t == 0 ? "-18 LUFS" : "-24 LUFS");
+);
+
+// Curva di riferimento attiva
+gfx_set(acc_g_r, acc_g_g, acc_g_b, 0.96);
+i = 1;
+loop(NB - 1,
+  y0t = max(gy0, min(gy1, yv(ref_at(i - 1, target))));
+  y1t = max(gy0, min(gy1, yv(ref_at(i, target))));
+  zp_line(xf(bfc[i - 1]), y0t, xf(bfc[i]), y1t, 1);
+  zp_line(xf(bfc[i - 1]), y0t + 1, xf(bfc[i]), y1t + 1, 1);
+  i += 1;
+);
+zp_setfont(1, "Arial", 10, 'b');
+(gfx_measurestr(target == 0 ? "-18 LUFS" : "-24 LUFS", tw, th); tw /= zp_sc; th /= zp_sc);
+zp_gx = gx1 - 6 - tw; zp_gy = max(gy0 + 2, min(gy1 - 14, yv(ref_at(NB - 1, target)) - 14));
+zp_drawstr(target == 0 ? "-18 LUFS" : "-24 LUFS");
+zp_setfont(1, "Arial", 9); gfx_set(acc_g_r, acc_g_g, acc_g_b, 0.72);
+(gfx_measurestr("±1.5 dB", tw, th); tw /= zp_sc; th /= zp_sc);
+zp_gx = gx1 - 6 - tw; zp_gy = max(gy0 + 2, min(gy1 - 12, yv(ref_at(NB - 1, target) - 1.5) + 2));
+zp_drawstr("±1.5 dB");
+
+// Curve audio (Live traslucida + media principale Catmull-Rom con riempimento differenziale)
 have_data ? (
   shift = compare == 1 ? -level : 0;
+  live_vis = max(0, 1.0 - (time_precise() - live_last_t) / 0.8);
+
+  live_on && avgmode != 0 && live_vis > 0.02 ? (
+    SUB_L = 3;
+    i = 0;
+    loop(NB - 1,
+      i0 = max(0, i - 1); i1 = i; i2 = i + 1; i3 = min(NB - 1, i + 2);
+      xa = xf(bfc[i1]); xb = xf(bfc[i2]);
+      s = 0;
+      loop(SUB_L,
+        t0 = s / SUB_L; t1 = (s + 1) / SUB_L;
+        x0 = xa + (xb - xa) * t0; x1 = xa + (xb - xa) * t1;
+        yl0 = max(gy0, min(gy1, yv(catmull(sm_live[i0], sm_live[i1], sm_live[i2], sm_live[i3], t0) + shift)));
+        yl1 = max(gy0, min(gy1, yv(catmull(sm_live[i0], sm_live[i1], sm_live[i2], sm_live[i3], t1) + shift)));
+        gfx_set(prog_r, prog_g, prog_b, 0.30 * live_vis);
+        zp_line(x0, yl0, x1, yl1, 1);
+        s += 1;
+      );
+      i += 1;
+    );
+  );
+
+  SUB_M = 4;
   i = 0;
-  loop(NB,
-    y = max(gy0, min(gy1, yv(bdb[i] + shift)));
-    gfx_set(1.0, 0.72, 0.45, 0.10); zp_line(xf(bfc[i]), y, xf(bfc[i]), gy1);
-    i > 0 ? (
-      gfx_set(1.0, 0.72, 0.45, 1);
-      zp_line(xf(bfc[i - 1]), max(gy0, min(gy1, yv(bdb[i - 1] + shift))), xf(bfc[i]), y, 1);
-      zp_line(xf(bfc[i - 1]), max(gy0, min(gy1, yv(bdb[i - 1] + shift))) + 1, xf(bfc[i]), y + 1, 1);
+  loop(NB - 1,
+    i0 = max(0, i - 1); i1 = i; i2 = i + 1; i3 = min(NB - 1, i + 2);
+    xa = xf(bfc[i1]); xb = xf(bfc[i2]);
+    ra = ref_at(i1, target); rb = ref_at(i2, target);
+    s = 0;
+    loop(SUB_M,
+      t0 = s / SUB_M; t1 = (s + 1) / SUB_M;
+      x0 = xa + (xb - xa) * t0; x1 = xa + (xb - xa) * t1;
+      va0 = catmull(sm_bdb[i0], sm_bdb[i1], sm_bdb[i2], sm_bdb[i3], t0) + shift;
+      va1 = catmull(sm_bdb[i0], sm_bdb[i1], sm_bdb[i2], sm_bdb[i3], t1) + shift;
+      vr0 = ra * (1 - t0) + rb * t0;
+      vr1 = ra * (1 - t1) + rb * t1;
+      ya0 = max(gy0, min(gy1, yv(va0))); ya1 = max(gy0, min(gy1, yv(va1)));
+      yr0 = max(gy0, min(gy1, yv(vr0))); yr1 = max(gy0, min(gy1, yv(vr1)));
+      fill_diff_seg(x0, x1, ya0, ya1, yr0, yr1, va0 - vr0, va1 - vr1);
+      gfx_set(prog_r, prog_g, prog_b, 0.25);
+      zp_line(x0, ya0 + 1, x1, ya1 + 1, 1);
+      gfx_set(prog_r, prog_g, prog_b, 1.0);
+      zp_line(x0, ya0, x1, ya1, 1);
+      zp_line(x0, max(gy0, ya0 - 0.8), x1, max(gy0, ya1 - 0.8), 1);
+      s += 1;
     );
     i += 1;
   );
 ) : (
-  gfx_set(0.62, 0.66, 0.72, 1); zp_setfont(1, "Arial", 15);
-  zp_gx = gx0 + 20; zp_gy = (gy0 + gy1) / 2 - 8;
-  zp_drawstr("In attesa di segnale (sotto -80 dB la misura resta ferma)");
+  zp_setfont(1, "Arial", 14); gfx_set(sub_r, sub_g, sub_b, 0.92);
+  (gfx_measurestr("In attesa di segnale (sotto -80 dB la misura resta in pausa)", tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = (gx0 + gx1 - tw) * 0.5; zp_gy = (gy0 + gy1 - th) * 0.5;
+  zp_drawstr("In attesa di segnale (sotto -80 dB la misura resta in pausa)");
 );
 
-// letture
-zw = (zp_vw - 32 - 3 * 8 - 250) / 4; zy = zp_vh - 70;
-zone_box(16, zy, zw, "Bassi 40-160", zb);
-zone_box(16 + (zw + 8), zy, zw, "Medio-bassi 160-800", zlm);
-zone_box(16 + 2 * (zw + 8), zy, zw, "Medio-alti 800-4k", zmh);
-zone_box(16 + 3 * (zw + 8), zy, zw, "Alti 4k-14k", zh);
-rx = 16 + 4 * (zw + 8);
-gfx_set(0.12, 0.13, 0.15, 1); zp_rect(rx, zy, zp_vw - 16 - rx, 52);
-zp_setfont(1, "Arial", 13); gfx_set(0.62, 0.66, 0.72, 1); zp_gx = rx + 10; zp_gy = zy + 6;
-have_data ? sprintf(#t1, "Pendenza residua %+.2f dB/oct", tilt) : (#t1 = "Pendenza residua --");
-zp_drawstr(#t1);
-zp_gx = rx + 10; zp_gy = zy + 21;
-have_data ? sprintf(#t2, "Livello vs rif. %+.1f dB%s", level, compare == 1 ? " (ignorato)" : "") : (#t2 = "Livello --");
-zp_drawstr(#t2);
-zp_setfont(2, "Arial", 16, 'b'); zp_gx = rx + 10; zp_gy = zy + 35;
-verdict == 2 ? (gfx_set(0.40, 0.88, 0.60, 1); zp_drawstr("PAREGGIATO");)
-: verdict == 1 ? (gfx_set(0.95, 0.78, 0.35, 1); zp_drawstr("QUASI");)
-: (gfx_set(0.98, 0.45, 0.35, 1); zp_drawstr(have_data ? (tilt > 0.5 ? "PIU' BRILLANTE" : tilt < -0.5 ? "PIU' SCURO" : "NON PAREGGIATO") : "--"););
+// ---- Letture in basso: 4 box zona + Card pendenza/esito ----
+zy = spec_bot + 10; zh_card = 110;
+zone_box(14,  zy, 144, zh_card, "BASSI",       "40-160",  zb);
+zone_box(166, zy, 144, zh_card, "MEDIO-BASSI", "160-800", zlm);
+zone_box(318, zy, 144, zh_card, "MEDIO-ALTI",  "800-4k",  zmh);
+zone_box(470, zy, 144, zh_card, "ALTI",        "4k-14k",  zh);
+
+rx = 626; rw = 260;
+gfx_set(card_r, card_g, card_b, 1); zp_rect(rx, zy, rw, zh_card);
+gfx_set(line_r, line_g, line_b, 1); draw_frame(rx, zy, rw, zh_card);
+!have_data ? gfx_set(line_r, line_g, line_b, 0.85) :
+verdict == 2 ? gfx_set(acc_g_r, acc_g_g, acc_g_b, 0.95) :
+verdict == 1 ? gfx_set(acc_w_r, acc_w_g, acc_w_b, 0.95) :
+               gfx_set(acc_r_r, acc_r_g, acc_r_b, 0.95);
+zp_rect(rx, zy, rw, 3);
+
+// Livella Pendenza Residua
+zp_setfont(1, "Arial", 10, 'b'); gfx_set(sub_r, sub_g, sub_b, 1);
+zp_gx = rx + 12; zp_gy = zy + 9; zp_drawstr("PENDENZA RESIDUA");
+have_data ? (
+  sprintf(#t1, "%+.2f dB/oct", tilt);
+  abs(tilt) <= 0.5 ? gfx_set(acc_g_r, acc_g_g, acc_g_b, 1) :
+  abs(tilt) <= 1.0 ? gfx_set(acc_w_r, acc_w_g, acc_w_b, 1) :
+                     gfx_set(acc_r_r, acc_r_g, acc_r_b, 1);
+) : (
+  #t1 = "--"; gfx_set(sub_r, sub_g, sub_b, 1);
+);
+(gfx_measurestr(#t1, tw, th); tw /= zp_sc; th /= zp_sc);
+zp_gx = rx + rw - 12 - tw; zp_gy = zy + 9; zp_drawstr(#t1);
+
+lx = rx + 12; lw = rw - 24; ly_lv = zy + 27; lh_lv = 12; lcx = lx + lw * 0.5;
+ltol = lw * (0.5 / 2.0);
+gfx_set(trk_r, trk_g, trk_b, 1); zp_rect(lx, ly_lv, lw, lh_lv);
+gfx_set(acc_g_r, acc_g_g, acc_g_b, ui_theme == 0 ? 0.16 : 0.20); zp_rect(lcx - ltol * 0.5, ly_lv, ltol, lh_lv);
+gfx_set(line_r, line_g, line_b, 0.85); draw_frame(lx, ly_lv, lw, lh_lv);
+have_data ? (
+  tfill = max(-1, min(1, tilt / 2.0)) * (lw * 0.5);
+  abs(tilt) <= 0.5 ? gfx_set(acc_g_r, acc_g_g, acc_g_b, 0.85) :
+  tilt > 0 ? gfx_set(acc_w_r, acc_w_g, acc_w_b, 0.88) : gfx_set(acc_c_r, acc_c_g, acc_c_b, 0.88);
+  tfill >= 0 ? zp_rect(lcx, ly_lv + 2, max(1, tfill), lh_lv - 4) : zp_rect(lcx + tfill, ly_lv + 2, max(1, -tfill), lh_lv - 4);
+  bx_dot = lcx + tfill;
+  gfx_set(txt_r, txt_g, txt_b, 0.98); zp_circle(bx_dot, ly_lv + lh_lv * 0.5, 4.5, 1, 1);
+);
+gfx_set(grid0_r, grid0_g, grid0_b, 0.9); zp_line(lcx, ly_lv - 1, lcx, ly_lv + lh_lv + 1);
+zp_setfont(1, "Arial", 9); gfx_set(sub_r, sub_g, sub_b, 0.88);
+zp_gx = lx; zp_gy = zy + 41; zp_drawstr("SCURO");
+(gfx_measurestr("0", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = lcx - tw * 0.5; zp_gy = zy + 41; zp_drawstr("0");
+(gfx_measurestr("BRILLANTE", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = lx + lw - tw; zp_gy = zy + 41; zp_drawstr("BRILLANTE");
+
+// Livello vs rif.
+zp_setfont(1, "Arial", 11); gfx_set(sub_r, sub_g, sub_b, 1);
+zp_gx = rx + 12; zp_gy = zy + 57;
+have_data ? sprintf(#t2, "Livello vs rif.: %+.1f dB%s", level, compare == 1 ? " (solo Forma)" : "") : (#t2 = "Livello vs rif.: --");
+zp_drawstr_clip(#t2, rx + rw - 10, zy + 74);
+
+// Badge Esito finale
+bd_x = rx + 12; bd_y = zy + 76; bd_w = rw - 24; bd_h = 25;
+!have_data ? (
+  gfx_set(card2_r, card2_g, card2_b, 1); zp_rect(bd_x, bd_y, bd_w, bd_h);
+  gfx_set(line_r, line_g, line_b, 1); draw_frame(bd_x, bd_y, bd_w, bd_h);
+  gfx_set(sub_r, sub_g, sub_b, 1);
+  #vrd = "IN ATTESA DI SEGNALE";
+) : verdict == 2 ? (
+  gfx_set(acc_g_r, acc_g_g, acc_g_b, ui_theme == 0 ? 0.22 : 0.16); zp_rect(bd_x, bd_y, bd_w, bd_h);
+  gfx_set(acc_g_r, acc_g_g, acc_g_b, 0.95); draw_frame(bd_x, bd_y, bd_w, bd_h);
+  #vrd = "PAREGGIATO";
+) : verdict == 1 ? (
+  gfx_set(acc_w_r, acc_w_g, acc_w_b, ui_theme == 0 ? 0.22 : 0.16); zp_rect(bd_x, bd_y, bd_w, bd_h);
+  gfx_set(acc_w_r, acc_w_g, acc_w_b, 0.95); draw_frame(bd_x, bd_y, bd_w, bd_h);
+  #vrd = "QUASI PAREGGIATO";
+) : (
+  gfx_set(acc_r_r, acc_r_g, acc_r_b, ui_theme == 0 ? 0.22 : 0.16); zp_rect(bd_x, bd_y, bd_w, bd_h);
+  gfx_set(acc_r_r, acc_r_g, acc_r_b, 0.95); draw_frame(bd_x, bd_y, bd_w, bd_h);
+  #vrd = tilt > 0.5 ? "PIU' BRILLANTE" : tilt < -0.5 ? "PIU' SCURO" : "NON PAREGGIATO";
+);
+zp_setfont(2, "Arial", 13, 'b');
+(gfx_measurestr(#vrd, tw, th); tw /= zp_sc; th /= zp_sc);
+zp_gx = bd_x + (bd_w - tw) * 0.5; zp_gy = bd_y + (bd_h - th) * 0.5;
+zp_drawstr(#vrd);
 
 help_open ? help_overlay();
 help_bridge_warn();

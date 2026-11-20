@@ -66,4 +66,32 @@ do
   check('senza il file senza numero si riparte dal nome suo', last == nil and n == 0)
 end
 
+-- Scorrimento storico messaggi nel pannello STATO
+do
+  local entries = {
+    {text = 'riga A1', key = 'PA'},
+    {text = 'riga B1 altro progetto', key = 'PB'},
+    {text = 'riga globale', key = '*'},
+    {text = 'riga A2 lunga', key = 'PA'},
+  }
+  local function fake_wrap(s, max_w)
+    if #s > max_w then return {s:sub(1, max_w), s:sub(max_w + 1)} end
+    return {s}
+  end
+  local linesA = M.collect_log_lines(entries, 'PA', fake_wrap, 8)
+  check('storico filtra progetto + generali e wrappa in ordine',
+    #linesA == 5 and linesA[1] == 'riga A1' and linesA[2] == 'riga glo' and linesA[3] == 'bale' and linesA[4] == 'riga A2 ' and linesA[5] == 'lunga')
+  local linesB = M.collect_log_lines(entries, 'PB', fake_wrap, 40)
+  check('storico altro progetto non vede righe di PA', #linesB == 2 and linesB[1] == 'riga B1 altro progetto' and linesB[2] == 'riga globale')
+
+  local s0, m0 = M.clamp_log_scroll(3, 4, 5)
+  check('clamp: niente scroll se tutte le righe entrano', s0 == 0 and m0 == 0)
+  local s1, m1 = M.clamp_log_scroll(-4, 12, 5)
+  check('clamp: non scende sotto 0', s1 == 0 and m1 == 7)
+  local s2, m2 = M.clamp_log_scroll(99, 12, 5)
+  check('clamp: si ferma esattamente in fondo', s2 == 7 and m2 == 7)
+  local s3, m3 = M.clamp_log_scroll(3.6, 12, 5)
+  check('clamp: posizione intermedia valida', s3 == 4 and m3 == 7)
+end
+
 print(fails == 0 and '\nTUTTI OK' or ('\nFALLITI: ' .. fails)); os.exit(fails == 0 and 0 or 1)

@@ -511,9 +511,9 @@
     </div>
     <div class="card" id="plugin-loudness-meter">
       <h3>ZP Loudness Meter Multichannel</h3>
-      <p><strong>Purpose:</strong> High-precision loudness meter conforming to ITU-R BS.1770-4 and EBU R128 standards, from stereo up to 16 surround channels.</p>
-      <p><strong>Where to place:</strong> At end of master chain or across any multichannel monitor bus.</p>
-      <p><strong>Key controls:</strong> Numerical & bar meters for Integrated LUFS, Short-term LUFS, Momentary LUFS, LRA (Loudness Range), True Peak dBTP, measure reset, standard target scales (-23 EBU, -24 ATSC, -14 Streaming).</p>
+      <p><strong>Purpose:</strong> High-precision loudness and True Peak meter conforming to ITU-R BS.1770-4 and EBU R128 standards (up to 64 channels), redesigned in a vertical-first anti-drift layout (v45.0) built to stay docked comfortably on the side.</p>
+      <p><strong>Where to place:</strong> At the end of the Master chain or across any multichannel monitor bus (including TCP/MCP embedded mini-view showing <code>LUFS-I</code> and <code>TP</code>).</p>
+      <p><strong>Key controls:</strong> Free <code>TARGET</code> (drag, wheel, or double-click) with one-click <code>LOCK NOW</code> to capture current loudness, 4 quick shortcuts (<code>-23</code>, <code>-18</code>, <code>-16</code>, <code>-14</code>), <code>LUFS-I</code> spirit level, always-visible <code>LUFS-S</code> / clickable <code>TRUE PK</code> (clears peaks &amp; clips only) / <code>LUFS-M</code> / <code>LRA</code>, channel meters with floating peak-hold &amp; <code>TP RED</code> line, dedicated <code>S/I</code> column with green <code>&plusmn;LU</code> band, 60s drift ribbon (freezes on pause), compact settings drawer, and Dark/Light theme.</p>
     </div>
     <div class="card" id="plugin-oscilloscope">
       <h3>ZP Oscilloscope 16ch</h3>
@@ -529,10 +529,10 @@
     </div>
     <div class="card" id="plugin-brownslope-prism">
       <h3>ZP BrownSlope Prism</h3>
-      <p><strong>Purpose:</strong> Passive brown-slope analyzer: audio passes through untouched. It shows the spectrum with a 4.5 dB per octave slope compensation, so brown noise becomes a flat line. The two green lines are the -18 and -24 LUFS references; the orange curve is your audio. You are matched when the orange curve is flat and sits on the chosen line.</p>
+      <p><strong>Purpose:</strong> Passive brown-slope analyzer (v1.1): audio passes through untouched. It displays the 4.5 dB/octave-compensated spectrum around the -18 and -24 LUFS references with a <strong>&plusmn;1.5 dB green target corridor</strong> (and outer &plusmn;3 dB halo). A smoothed curve highlights excess in warm amber/coral and deficit in cool cyan/blue against the target, with an optional translucent <code>Live</code> (~0.22 s) trace behind the long average.</p>
       <p><strong>Where to place:</strong> At the end of the bus or track you want to compare with the brown reference, or on the Master.</p>
-      <p><strong>Key controls:</strong> Average, Slope, Scale knobs (drag vertically; double click or right click = default); Ref., Shape, Reset, Calibrate, Default buttons. Shape removes the level difference and compares EQ only. Calibrate: play your reference loop with long average and press Calibrate; the curve is saved with the project, Default removes it.</p>
-      <p><strong>Readings:</strong> Deviation in dB per zone (Lows, Low-mids, High-mids, Highs), residual slope (+ = brighter than brown, - = darker), level against the reference, result Matched / Close / No. JSFX view brings back REAPER's parameter list, readings included, for OSARA and screen readers.</p>
+      <p><strong>Key controls:</strong> Target <code>-18 / -24 LUFS</code>, compare <code>Forma (EQ) / Livello</code>, <code>Reset</code> and <code>Live</code> toggles, <code>Media</code>, <code>Pendenza</code> and <code>Scala</code> knobs (symmetric zero-centered grid across any range), project-saved <code>Calibra / Default</code> reference controls, Dark/Light header theme toggle, and <code>?</code> guide.</p>
+      <p><strong>Readings:</strong> Four frequency-zone cards (Lows, Low-mids, High-mids, Highs) with dB deviation and <strong>bipolar balance bars</strong> centered on the &plusmn;1.5 dB window, a residual-slope spirit level (dark to bright), level vs. reference, and status badge (Matched / Close / Brighter / Darker). JSFX view exposes all parameters and readings to OSARA and screen readers.</p>
     </div>
   </div>
   <p>All Suite JSFX plugins scale proportionally when you resize REAPER's FX window.</p>

@@ -18,3 +18,13 @@ ZP BrownSlope Dynamic Guard (v0.5-assist-dev)
 ZP BrownSlope Prism
   Uscito da ZP Lab il 13 novembre 2026: ora e' ZP Misura/ZP BrownSlope Prism.jsfx
   (1.0), distribuito con la Suite.
+
+ZP Click & Attack Softener (v0.1)
+  Doppio stadio per voce parlata con lookahead da 6,5 ms (PDC automatico):
+  1) De-Click simmetrico pre/post a due bande (1-4 kHz lingua/palato, 4+ kHz saliva)
+     con protezione consonanti (p/t/k);
+  2) Attack Softener selettivo sopra la frequenza di taglio (crossover SVF coerente di fase).
+  Quattro preset (PRE-CHAIN, POST-CHAIN, TAKE SPORCO, DELICATO), DELTA globale (auto-off 30 s),
+  D·MOLLA per singolo stadio, monitor eventi in tempo reale e vista JSFX/OSARA.
+  Stato: prototipo iniziale tarato sul take grezzo/processato di Paolo; in attesa di prova
+  d'ascolto in REAPER prima di eventuale promozione in ZP Voce.

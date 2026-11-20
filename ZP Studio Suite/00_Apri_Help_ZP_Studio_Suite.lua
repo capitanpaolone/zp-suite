@@ -24,10 +24,20 @@
 --   NVDA Controller Client (LGPL 2.1, NV Access). Dettagli in README.it.md.
 -- @changelog
 --   2.6.8 (in preparazione)
+--   EN — ZP Render & Copy: scrollable STATO message log (mouse wheel, keyboard, draggable scrollbar, per-tab position and jump-to-top counter).
+--   IT — ZP Render & Copy: storico messaggi nel pannello STATO ora scorrevole con rotella, tastiera e barra laterale trascinabile (posizione per tab e salto rapido in cima).
+--   EN — ZP Loudness Meter Multichannel 45.0: vertical-first anti-drift UI with free TARGET + LOCK NOW, ±LU green band, 60s drift ribbon, peak-hold, clickable TRUE PK reset, 4 responsive layouts (incl. LUFS-I/TP embedded), settings drawer & Dark/Light themes (BS.1770-4 core preserved).
+--   IT — ZP Loudness Meter Multichannel 45.0: interfaccia vertical-first anti-deriva con TARGET libero + SEGUI QUI, fascia verde ±LU, nastro deriva 60s, peak-hold, azzeramento clip da TRUE PK, 4 viste responsive (incluso embedded LUFS-I/TP), cassetto impostazioni e tema Scuro/Chiaro (motore BS.1770-4 invariato).
 --   EN — Marker embedding now uses only selected timeline markers; operational markers such as #HSC remain on the timeline.
 --   IT — Fissa negli item usa solo i marker selezionati sulla timeline; i marker operativi come #HSC restano in timeline.
+--   EN — ZP Magic Voice LAB 1.2.3: DYN EQ and DYN BAL monitors now render exact continuous complex transfer-function curves with centered ±5/±12 dB and ±6/±12 dB zoom.
+--   IT — ZP Magic Voice LAB 1.2.3: monitor DYN EQ e DYN BAL con curve reali continue delle funzioni di trasferimento complesse e zoom centrato ±5/±12 dB e ±6/±12 dB.
+--   EN — ZP Magic Voice LAB 1.2.2: DRC FREQ (center Hz) and OCT (octave width) knobs mapped to existing HP/LP sliders, plus real dynamic SVF bell curves in DRC monitor.
+--   IT — ZP Magic Voice LAB 1.2.2: rotori DRC FREQ (centro Hz) e OCT (ampiezza in ottave) retrocompatibili su HP/LP, piu' curve a campana SVF reali dinamiche nel monitor DRC.
 --   EN — ZP Magic Voice LAB 1.2.1: flashing DELTA with 30 s auto-off, extended spring-loaded S·DELTA per stage, 4 s speech-block suggestions, zoomable DYN EQ monitor (±5/±12 dB), color-only LIGHT/DARK theme, straight auto-compensated INPUT and recalibrated DRC.
 --   IT — ZP Magic Voice LAB 1.2.1: DELTA lampeggiante con auto-off 30 s, D·MOLLA per stadio, suggerimenti su blocchi da 4 s, monitor DYN EQ zoomabile (±5/±12 dB), tema solo cromatico CHIARO/SCURO, INPUT dritto auto-compensato e DRC ritarato.
+--   EN — ZP BrownSlope Prism 1.1: ±1.5/±3 dB green target corridor, smoothed curve with warm/cool differential fill, optional Live trace, bipolar zone bars, residual slope level, adaptive dB grid and Dark/Light toggle (DSP unchanged).
+--   IT — ZP BrownSlope Prism 1.1: corridoio verde ±1,5/±3 dB, curva smussata con riempimento caldo/freddo, traccia Live, barre bipolari per zona, livella pendenza residua, griglia adattiva e tema Scuro/Chiaro (DSP invariato).
 --   2.6.7 (2026-11-19)
 --   EN — Proportional zoom across all Lua tool windows (ZP_GfxScale.lua), redesigned Project Viewer (fixed Tipo column, auto-fit resizable columns, balanced 3x2 tool grid without Scroll), spacing fix in 07 Note Personaggio, and automatic installation of missing toolbar PNG icons in 32.
 --   IT — Zoom proporzionale su tutte le finestre Lua (ZP_GfxScale.lua), Project Viewer ridisegnato (colonna Tipo fissa, colonne auto-adattate e ridimensionabili, griglia 3x2 senza pulsante Scroll), correzione spaziatura in 07 Note Personaggio e copia automatica icone toolbar mancanti in 32.

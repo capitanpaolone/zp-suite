@@ -520,9 +520,9 @@
     </div>
     <div class="card" id="plugin-loudness-meter">
       <h3>ZP Loudness Meter Multichannel</h3>
-      <p><strong>A cosa serve:</strong> Metering di loudness di precisione secondo gli standard ITU-R BS.1770-4 ed EBU R128 su formati da stereo fino a 16 canali surround.</p>
-      <p><strong>Dove si inserisce:</strong> In chiusura della catena Master, o su qualsiasi bus multicanale da monitorare.</p>
-      <p><strong>Controlli principali:</strong> Display numerico e barre per Integrated LUFS, Short-term LUFS, Momentary LUFS, LRA (Loudness Range), True Peak dBTP, reset delle misure, scale broadcast (-23 EBU, -24 ATSC, -14 Streaming).</p>
+      <p><strong>A cosa serve:</strong> Meter di loudness e True Peak ad alta precisione secondo gli standard ITU-R BS.1770-4 ed EBU R128 (fino a 64 canali), ridisegnato in formato vertical-first anti-deriva (v45.0) per restare comodo a lato in sessione.</p>
+      <p><strong>Dove si inserisce:</strong> In chiusura della catena Master, o su qualsiasi bus multicanale da monitorare (anche in vista embedded TCP/MCP con <code>LUFS-I</code> e <code>TP</code>).</p>
+      <p><strong>Controlli principali:</strong> <code>TARGET</code> libero (trascina, rotella o doppio clic) con pulsante <code>SEGUI QUI</code> per agganciare subito il LUFS attuale, 4 scorciatoie (<code>-23</code>, <code>-18</code>, <code>-16</code>, <code>-14</code>), livella <code>LUFS-I</code>, griglia sempre visibile (<code>LUFS-S</code>, <code>TRUE PK</code> cliccabile per azzerare solo picchi/clip, <code>LUFS-M</code>, <code>LRA</code>), meter canali con peak-hold reale e linea <code>TP RED</code>, colonna <code>S/I</code> con fascia verde <code>&plusmn;LU</code>, nastro storico <code>DERIVA 60s</code> (congelato in pausa), cassetto impostazioni e tema Scuro/Chiaro.</p>
     </div>
     <div class="card" id="plugin-oscilloscope">
       <h3>ZP Oscilloscope 16ch</h3>
@@ -538,10 +538,10 @@
     </div>
     <div class="card" id="plugin-brownslope-prism">
       <h3>ZP BrownSlope Prism</h3>
-      <p><strong>A cosa serve:</strong> Analizzatore passivo della pendenza brown: l'audio passa intatto. Mostra lo spettro con la pendenza compensata di 4,5 dB per ottava, cos&igrave; un rumore brown diventa una linea piatta. Le due linee verdi sono i riferimenti a -18 e -24 LUFS; la curva arancione &egrave; il tuo audio. Sei pareggiato quando l'arancio &egrave; piatto e sta sulla linea scelta.</p>
+      <p><strong>A cosa serve:</strong> Analizzatore passivo della pendenza brown (v1.1): l'audio passa intatto. Mostra lo spettro con pendenza compensata di 4,5 dB per ottava attorno ai riferimenti a -18 e -24 LUFS, evidenziando il <strong>corridoio verde di tolleranza &plusmn;1,5 dB</strong> (e l'alone esterno &plusmn;3 dB). La curva smussata mostra con riempimento caldo (+Eccesso) o azzurro (-Carenza) dove il programma esce dal riferimento; il pulsante <code>Live</code> sovrappone una traccia istantanea (~0,22 s) dietro alla media lunga.</p>
       <p><strong>Dove si inserisce:</strong> In fondo al bus o alla traccia che vuoi confrontare con il riferimento brown, oppure sul Master.</p>
-      <p><strong>Controlli principali:</strong> Pomelli Media, Pendenza, Scala (trascina in verticale; doppio clic o clic destro = valore di partenza); pulsanti Rif., Forma, Reset, Calibra, Default. Forma toglie la differenza di livello e confronta solo l'EQ. Calibra: suona il tuo loop di riferimento con media lunga e premi Calibra; la curva resta salvata nel progetto, Default la toglie.</p>
-      <p><strong>Letture:</strong> Scarto in dB per zona (Bassi, Medio-bassi, Medio-alti, Alti), pendenza residua (+ = pi&ugrave; brillante del brown, - = pi&ugrave; scuro), livello rispetto al riferimento, esito Pareggiato / Quasi / No. La Vista JSFX riporta la lista dei parametri di REAPER, letture comprese, per OSARA e screen reader.</p>
+      <p><strong>Controlli principali:</strong> Selezione target <code>-18 / -24 LUFS</code>, confronto <code>Forma (EQ) / Livello</code>, <code>Reset</code> e <code>Live</code>, pomelli <code>Media</code>, <code>Pendenza</code>, <code>Scala</code> (con griglia verticale sempre simmetrica), sezione <code>Calibra / Default</code> (salvata nel progetto), selettore tema <code>Scuro / Chiaro</code> in testata e guida <code>?</code>.</p>
+      <p><strong>Letture:</strong> Quattro schede di zona (Bassi, Medio-bassi, Medio-alti, Alti) con scarto in dB e <strong>barra bipolare</strong> centrata su &plusmn;1,5 dB; livella grafica per la <strong>Pendenza residua</strong> (<code>SCURO &lt;- 0 -&gt; BRILLANTE</code>), livello contro riferimento e badge di esito (Pareggiato / Quasi / Pi&ugrave; brillante / Pi&ugrave; scuro). La Vista JSFX espone parametri e letture per OSARA e screen reader.</p>
     </div>
   </div>
   <p>Tutti i plugin JSFX della Suite scalano in proporzione ridimensionando la finestra FX di REAPER.</p>

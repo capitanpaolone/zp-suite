@@ -32,13 +32,13 @@ La 2.6.6 estende la copia automatica e Sincronizza ora di Render & Copy a Window
 
 La 2.6.7 distribuisce **ZP Magic Voice LAB 1.2.0-lab3**, l’unica versione corretta, come effetto separato della categoria **ZP Voce**. **ZP Magic Voice 1.2.0** senza suffisso LAB è un prototipo archiviato ed escluso dal pacchetto. Per installarlo, seleziona ZP Magic Voice LAB in ReaPack insieme a ZP Studio Suite. [Guida pratica](ZP%20Studio%20Suite/help/magic_voice_lab.html).
 
-La 2.6.8 è in preparazione: **Fissa negli item** trasferirà solo i marker selezionati sulla timeline; quelli operativi, come i cue `#HSC` di Harmonic Space Carver, resteranno al loro posto. Include inoltre **ZP Magic Voice LAB 1.2.1** (delta globale lampeggiante con auto-off a 30 s, `D·MOLLA` esteso per singolo stadio, suggerimenti su blocchi da 4 s di parlato attivo, monitor `DYN EQ` zoomabile `±5 / ±12 dB`, tema solo cromatico `CHIARO / SCURO` e controlli DRC sempre visibili).
+La 2.6.8 è in preparazione: **Fissa negli item** trasferirà solo i marker selezionati sulla timeline; quelli operativi, come i cue `#HSC` di Harmonic Space Carver, resteranno al loro posto. Include inoltre **ZP Magic Voice LAB 1.2.3** (rotori DRC `FREQ` centro + `OCT` ottave retrocompatibili, monitor reali continui su `DRC`, `DYN EQ` `±5 / ±12 dB` e `DYN BAL` `±6 / ±12 dB`, delta globale lampeggiante con auto-off a 30 s, `D·MOLLA` esteso per singolo stadio, suggerimenti su blocchi da 4 s di parlato attivo, tema solo cromatico `CHIARO / SCURO` e controlli DRC sempre visibili), **ZP BrownSlope Prism 1.1** (corridoio verde `±1,5 / ±3 dB`, riempimento differenziale caldo/freddo, traccia `Live`, barre bipolari per zona, livella pendenza e tema Scuro/Chiaro), **ZP Loudness Meter Multichannel 45.0** (GUI vertical-first anti-deriva con `TARGET` libero + `SEGUI QUI` / `LOCK NOW`, fascia verde `±LU`, nastro `DERIVA 60s` congelato in pausa, peak-hold reale, 4 viste responsive incluso embedded TCP/MCP con `LUFS-I`/`TP` e tema Scuro/Chiaro) e lo **storico scorrevole** nel pannello `STATO` di **ZP Render & Copy**.
 
 La ZP Studio Suite 2.6.7 aggiunge ZP Consolidate, che raccoglie in Media le sorgenti dei take e gli SRT/VTT registrati nel progetto senza convertire i media. L’elenco completo delle modifiche è nel [changelog](CHANGELOG.md).
 
 ## Non incluso in questa versione
 
-ZP Montaggio Parlato (prototipo) e ZP BrownSlope Dynamic Guard sono ancora in lavorazione e non fanno parte di questa versione ReaPack.
+ZP Montaggio Parlato (prototipo), ZP BrownSlope Dynamic Guard e ZP Click & Attack Softener (prototipo in `ZP Lab/`) sono ancora in lavorazione e non fanno parte di questa versione ReaPack.
 
 ZP Speech (il motore di trascrizione usato da Trascrivi, 29) non è nel pacchetto ReaPack: si installa dal Benvenuto (33), che lo scarica da GitHub. Su macOS usa MacWhisper o OpenAI Whisper; su Windows e Linux usa OpenAI Whisper locale ed è ancora **sperimentale**.
 

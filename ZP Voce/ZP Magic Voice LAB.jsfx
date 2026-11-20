@@ -1,5 +1,5 @@
 // @description ZP Magic Voice LAB
-// @version 1.2.1
+// @version 1.2.3
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
@@ -14,6 +14,8 @@
 //
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 // @changelog
+//   v1.2.3: MONITOR Dynamic EQ e Dynamic Balance aggiornati con le curve reali continue delle rispettive funzioni di trasferimento complesse (5 bande SVF e 3 bande 1-pole), scala centrata zoomabile (±5/±12 dB su Dyn EQ, ±6/±12 dB su Dyn Bal) e telemetria per banda; DSP invariato.
+//   v1.2.2: 2·DRC aggiornato con rotori FREQ (centro logaritmico in Hz) e OCT (ampiezza in ottave, 0.12-3.50 oct) retrocompatibili sugli slider HP/LP esistenti; MONITOR DRC ridisegnato con le curve a campana SVF reali dinamiche (0..-12 dB), anteprima statica delle campane e somma complessiva.
 //   v1.2.1: DELTA globale con avviso lampeggiante "DELTA MODE" e auto-off a 30s; DELTA MOLLA esteso (D·MOLLA) che isola il delta del singolo stadio toccato/trascinato con ritorno automatico al rilascio; Suggerimenti calcolati su blocchi di 4s di parlato attivo (completamente esclusi durante DELTA/MOLLA/SOLO); MONITOR Dynamic EQ centrato e zoommato (±5 dB di default, toggle ±12 dB); selettore CHIARO / SCURO solo colore con controlli DRC HP/LP sempre visibili.
 //   LAB 5: INPUT riportato a drive dritto (-12..+12 dB, default 0 dB, auto-compensato), soglie DRC ripristinate al range utile per il parlato con release meter leggibile e spia BYPASSED cliccabile in pannello 2, suggerimenti bilanciamento timbrico su media lenta 1.8 s post-uscita con filtri del 2° ordine (stop falsi "Voce scura").
 //   LAB 4: selezione moduli piu' evidente (bordo, sfondo e badge MONITOR), separazione Input/Peak e Filtri nel pannello 1, pannello 3 con rotori in verticale e preset in fila a destra, isoletta dedicata Uscita/Output. DSP invariato.
@@ -42,7 +44,7 @@ desc:ZP Magic Voice LAB - Vocal Homogenizer & Resonance Controller - Paolo Bales
 options:gmem=ZPVoiceoverSharedBus
 tags: voiceover dubbing vocal homogenizer resonance deesser dynamic eq multiband paolo balestri zio paolo magic voice
 //author: Paolo Balestri - Zio Paolo
-//variant: v1.2.1
+//variant: v1.2.3
 // Contatto: social@paolobalestri.com
 
 // ============================================================================
@@ -198,10 +200,13 @@ prev_delta_on = 0; delta_arm_time = 0;
 delta_spring_armed = 0; delta_spring_time = 0; delta_spring_stage = 0;
 delta_spring_aud_hb = 0; drc_solo_aud_hb = 0; ui_hold_delta_stage = 0;
 deq_mon_zoom = 0;
+dbal_mon_zoom = 0; ui_dbal_glo = 1.0; ui_dbal_gmid = 1.0; ui_dbal_ghi = 1.0;
 
 prev_view_mode = -1;
 prev_osara_preset = -1;
 ui_drag_id = 0;
+ui_drag_aux = 0;
+lab_edit_lp = 0;
 ui_last_click_id = -1;
 ui_last_click_frame = -1000;
 ui_gfx_frame = 0;
@@ -598,6 +603,22 @@ function update_dsp_params() local(sr, w_hp, cw_hp, sw_hp, al_hp, a0_hp, w_lp, c
   sug_blk_target = max(1, floor(sr * 4.0));
 );
 
+function set_drc_band_fc_oct(sl_hp, sl_lp, fc_in, oct_in) local(fc, oct, half_r, lo, hi) (
+  fc = clamp(fc_in, 25, 18000);
+  oct = clamp(oct_in, 0.12, 3.50);
+  half_r = 2 ^ (oct * 0.5);
+  lo = fc / half_r;
+  hi = fc * half_r;
+  lo < 20 ? ( lo = 20; hi = min(20000, max(40, lo * (2 ^ oct))); );
+  hi > 20000 ? ( hi = 20000; lo = max(20, min(19980, hi / (2 ^ oct))); );
+  lo = floor(clamp(lo, 20, 19980) + 0.5);
+  hi = floor(clamp(max(lo + 20, hi), 40, 20000) + 0.5);
+  set_param_slider(sl_hp, lo);
+  set_param_slider(sl_lp, hi);
+  floor(slider44 + 0.5) != 0 ? ( set_param_slider(44, 0); prev_osara_preset = 0; );
+  update_dsp_params();
+);
+
 update_dsp_params();
 
 @slider
@@ -866,6 +887,9 @@ slider33 >= 0.5 && slider35 > 0.1 ? (
   dbal_act_pct = min(100, deq_gr_db * 8);
 );
 s_dbal_dL = xL - s_dbal_inL; s_dbal_dR = xR - s_dbal_inR;
+ui_dbal_glo  = ui_dbal_glo  * 0.98 + g_lo  * 0.02;
+ui_dbal_gmid = ui_dbal_gmid * 0.98 + g_mid * 0.02;
+ui_dbal_ghi  = ui_dbal_ghi  * 0.98 + g_hi  * 0.02;
 
 // ---- DRC Solo (Sistema a molla: suona in preascolto SOLO mentre premi SOLO o tocchi i 3 rotori della banda attiva) ----
 drc_solo_audition_band == 1 && slider8 >= 0.5 && slider9  >= 0.5 ? ( xL = bAL * (1.0 - redA); xR = bAR * (1.0 - redA); ) :
@@ -1063,8 +1087,16 @@ while (lab_key > 0) (
       lab_value = floor(lab_value/10); lab_digits = max(0,lab_digits-1);
     ) : lab_key == 27 ? lab_edit = 0 :
     lab_key == 13 && lab_digits && lab_value >= lab_min && lab_value <= lab_max ? (
-      set_param_slider(lab_edit,lab_value); set_param_slider(44,0); prev_osara_preset = 0;
-      update_dsp_params(); lab_edit = 0;
+      (lab_edit == 10 || lab_edit == 14 || lab_edit == 18 || lab_edit == 22) && lab_edit_lp > 0 ? (
+        cur_lo = clamp(min(slider(lab_edit), slider(lab_edit_lp)), 20, 19980);
+        cur_hi = clamp(max(cur_lo + 20, max(slider(lab_edit), slider(lab_edit_lp))), 40, 20000);
+        cur_oct = clamp(log(cur_hi / cur_lo) / log(2.0), 0.12, 3.50);
+        set_drc_band_fc_oct(lab_edit, lab_edit_lp, lab_value, cur_oct);
+      ) : (
+        set_param_slider(lab_edit, lab_value); set_param_slider(44, 0); prev_osara_preset = 0;
+        update_dsp_params();
+      );
+      lab_edit = 0; lab_edit_lp = 0;
     );
   );
   lab_key = gfx_getchar();
@@ -1372,6 +1404,111 @@ local(val, norm_val, ang_min, ang_max, ang, is_hover, drag_sens, hover_mul, is_d
   g_txtc(kx, val_y, #kv);
 );
 
+function ui_drc_freq_knob(sl_hp, sl_lp, kx, ky, r, def_fc, cr, cg, cb, info_id)
+local(lo, hi, fc, oct, norm_val, ang_min, ang_max, ang, is_hover, hover_mul, is_dbl, HP, new_fc, fspan_lo, fspan_hi) (
+  lo = clamp(min(slider(sl_hp), slider(sl_lp)), 20, 19980);
+  hi = clamp(max(lo + 20, max(slider(sl_hp), slider(sl_lp))), 40, 20000);
+  fc = sqrt(lo * hi);
+  oct = clamp(log(hi / lo) / log(2.0), 0.12, 3.50);
+  HP = $pi * 0.5;
+  is_hover = hit(kx - r - 10, ky - r - 22, (r + 10) * 2, (r + 22) * 2 + 4);
+  is_hover ? (
+    active_info_id = info_id;
+    mouse_click ? (
+      set_mon(cur_mod);
+      is_dbl = (ui_last_click_id == sl_hp) && ((ui_gfx_frame - ui_last_click_frame) <= 18);
+      ui_last_click_id = sl_hp; ui_last_click_frame = ui_gfx_frame;
+      is_dbl ? ( lab_edit = sl_hp; lab_edit_lp = sl_lp; lab_digits = 0; lab_value = 0; lab_min = 25; lab_max = 18000; ui_drag_id = 0; ui_last_click_id = -1; ) :
+               ( ui_drag_id = sl_hp; ui_drag_start_y = myd; ui_drag_start_v = fc; ui_drag_aux = oct; );
+    );
+    mouse_right_click ? ( set_drc_band_fc_oct(sl_hp, sl_lp, def_fc, oct); );
+  );
+  ui_drag_id == sl_hp && mouse_down ? (
+    myd != ui_drag_start_y ? (
+      new_fc = clamp(ui_drag_start_v * exp(log(18000.0 / 25.0) * (ui_drag_start_y - myd) * fine_tune / 170.0), 25, 18000);
+      set_drc_band_fc_oct(sl_hp, sl_lp, new_fc, ui_drag_aux);
+      lo = clamp(min(slider(sl_hp), slider(sl_lp)), 20, 19980);
+      hi = clamp(max(lo + 20, max(slider(sl_hp), slider(sl_lp))), 40, 20000);
+      fc = sqrt(lo * hi);
+    );
+  ) : ( ui_drag_id == sl_hp && !mouse_down ? ui_drag_id = 0; );
+
+  hover_mul = (is_hover || ui_drag_id == sl_hp) ? 1.25 : 0.92;
+  ang_min = 2.356; ang_max = 7.068;
+  norm_val = clamp(log(max(25, fc) / 25.0) / log(18000.0 / 25.0), 0, 1);
+  ang = ang_min + norm_val * (ang_max - ang_min);
+
+  show_simple ? ( gfx_r = 0.99; gfx_g = 0.99; gfx_b = 1.0; ) : ( gfx_r = 0.17; gfx_g = 0.18; gfx_b = 0.22; );
+  gfx_a = 1; g_circ(kx, ky, r, 1);
+  show_simple ? ( gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.55; g_circ(kx, ky, r, 0); );
+  gfx_r = show_simple ? 0.82 : 0.26; gfx_g = show_simple ? 0.85 : 0.28; gfx_b = show_simple ? 0.90 : 0.33; gfx_a = 1;
+  g_arc(kx, ky, r - 2.5, ang_min + HP, ang_max + HP);
+  gfx_r = min(1, cr * hover_mul); gfx_g = min(1, cg * hover_mul); gfx_b = min(1, cb * hover_mul); gfx_a = 1;
+  g_arc(kx, ky, r - 2, ang_min + HP, ang + HP); g_arc(kx, ky, r - 3, ang_min + HP, ang + HP); g_arc(kx, ky, r - 4, ang_min + HP, ang + HP);
+  show_simple ? ( gfx_r = 0.15; gfx_g = 0.18; gfx_b = 0.24; ) : ( gfx_r = 0.95; gfx_g = 0.95; gfx_b = 0.96; );
+  g_line(kx + cos(ang) * r * 0.25, ky + sin(ang) * r * 0.25, kx + cos(ang) * (r - 3), ky + sin(ang) * (r - 3));
+
+  gfx_setfont(6); set_text_col();
+  g_txtc(kx, ky - r - 19, "FREQ");
+  fmt_freq(#kv, floor(fc + 0.5)); fc < 1000 ? strcat(#kv, " Hz");
+  gfx_setfont(5);
+  gfx_r = min(1, cr * hover_mul); gfx_g = min(1, cg * hover_mul); gfx_b = min(1, cb * hover_mul); gfx_a = 1;
+  lab_edit == sl_hp ? ( lab_digits ? sprintf(#kv, "%d_", lab_value) : strcpy(#kv, "_ Hz"); );
+  g_txtc(kx, ky + r + 5, #kv);
+);
+
+function ui_drc_oct_knob(sl_hp, sl_lp, kx, ky, r, def_oct, cr, cg, cb, info_id)
+local(lo, hi, fc, oct, norm_val, ang_min, ang_max, ang, is_hover, hover_mul, is_dbl, HP, new_oct) (
+  lo = clamp(min(slider(sl_hp), slider(sl_lp)), 20, 19980);
+  hi = clamp(max(lo + 20, max(slider(sl_hp), slider(sl_lp))), 40, 20000);
+  fc = sqrt(lo * hi);
+  oct = clamp(log(hi / lo) / log(2.0), 0.12, 3.50);
+  HP = $pi * 0.5;
+  is_hover = hit(kx - r - 10, ky - r - 22, (r + 10) * 2, (r + 22) * 2 + 4);
+  is_hover ? (
+    active_info_id = info_id;
+    mouse_click ? (
+      set_mon(cur_mod);
+      is_dbl = (ui_last_click_id == sl_lp) && ((ui_gfx_frame - ui_last_click_frame) <= 18);
+      ui_last_click_id = sl_lp; ui_last_click_frame = ui_gfx_frame;
+      is_dbl ? ( set_drc_band_fc_oct(sl_hp, sl_lp, fc, def_oct); ui_drag_id = 0; ) :
+               ( ui_drag_id = sl_lp; ui_drag_start_y = myd; ui_drag_start_v = oct; ui_drag_aux = fc; );
+    );
+    mouse_right_click ? ( set_drc_band_fc_oct(sl_hp, sl_lp, fc, def_oct); );
+  );
+  ui_drag_id == sl_lp && mouse_down ? (
+    myd != ui_drag_start_y ? (
+      new_oct = clamp(ui_drag_start_v + (ui_drag_start_y - myd) * ((3.50 - 0.12) / 170.0) * fine_tune, 0.12, 3.50);
+      set_drc_band_fc_oct(sl_hp, sl_lp, ui_drag_aux, new_oct);
+      lo = clamp(min(slider(sl_hp), slider(sl_lp)), 20, 19980);
+      hi = clamp(max(lo + 20, max(slider(sl_hp), slider(sl_lp))), 40, 20000);
+      oct = clamp(log(hi / lo) / log(2.0), 0.12, 3.50);
+    );
+  ) : ( ui_drag_id == sl_lp && !mouse_down ? ui_drag_id = 0; );
+
+  hover_mul = (is_hover || ui_drag_id == sl_lp) ? 1.25 : 0.92;
+  ang_min = 2.356; ang_max = 7.068;
+  norm_val = clamp((oct - 0.12) / (3.50 - 0.12), 0, 1);
+  ang = ang_min + norm_val * (ang_max - ang_min);
+
+  show_simple ? ( gfx_r = 0.99; gfx_g = 0.99; gfx_b = 1.0; ) : ( gfx_r = 0.17; gfx_g = 0.18; gfx_b = 0.22; );
+  gfx_a = 1; g_circ(kx, ky, r, 1);
+  show_simple ? ( gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.55; g_circ(kx, ky, r, 0); );
+  gfx_r = show_simple ? 0.82 : 0.26; gfx_g = show_simple ? 0.85 : 0.28; gfx_b = show_simple ? 0.90 : 0.33; gfx_a = 1;
+  g_arc(kx, ky, r - 2.5, ang_min + HP, ang_max + HP);
+  gfx_r = min(1, cr * hover_mul); gfx_g = min(1, cg * hover_mul); gfx_b = min(1, cb * hover_mul); gfx_a = 1;
+  g_arc(kx, ky, r - 2, ang_min + HP, ang + HP); g_arc(kx, ky, r - 3, ang_min + HP, ang + HP); g_arc(kx, ky, r - 4, ang_min + HP, ang + HP);
+  show_simple ? ( gfx_r = 0.15; gfx_g = 0.18; gfx_b = 0.24; ) : ( gfx_r = 0.95; gfx_g = 0.95; gfx_b = 0.96; );
+  g_line(kx + cos(ang) * r * 0.25, ky + sin(ang) * r * 0.25, kx + cos(ang) * (r - 3), ky + sin(ang) * (r - 3));
+
+  gfx_setfont(6); set_text_col();
+  g_txtc(kx, ky - r - 19, "OCT");
+  sprintf(#kv, "%.2f", oct);
+  gfx_setfont(5);
+  gfx_r = min(1, cr * hover_mul); gfx_g = min(1, cg * hover_mul); gfx_b = min(1, cb * hover_mul); gfx_a = 1;
+  g_txtc(kx, ky + r + 5, #kv);
+);
+
 // ---- Monitor: helper ----
 function bq_mag_db(b0, b1, b2, a1, a2, w) local(c1, c2, num, den) (
   c1 = cos(w); c2 = cos(2 * w);
@@ -1458,18 +1595,133 @@ function hbar_lvl(y, lbl, db, lo, hi, cr, cg, cb, mark_db) local(x0, x1, w, fill
   mark_db > lo ? ( mx = x0 + clamp((mark_db - lo) / (hi - lo), 0, 1) * w; gfx_r = 1; gfx_g = 0.85; gfx_b = 0.3; gfx_a = 1; g_rect(mx - 1, y - 3, 2, 19); );
   sprintf(#hl, "%.1f dB", db); gfx_r = 0.95; gfx_g = 0.96; gfx_b = 1; g_txtr(d_x + d_w - 16, y - 2, #hl);
 );
-// banda su asse frequenze con riduzione verticale (0..maxdb)
-function band_gr(f_a, f_b, gr_db, maxdb, eng, lbl, idx, cr, cg, cb) local(xa, xb, base, hh, h) (
-  xa = fx_map(min(f_a, f_b)); xb = max(xa + 3, fx_map(max(f_a, f_b)));
-  base = d_y + d_h - 30; hh = d_h - 70;
+// Risposta esatta (dB) di una banda DRC: y = x - red * SVF_BP(x)
+function drc_band_mag_db(f, fc, q_val, red, sr) local(om, om0, u, u2, num, den) (
+  red <= 0.0005 ? 0.0 : (
+    om = tan($pi * clamp(f, 15, sr * 0.48) / sr);
+    om0 = tan($pi * clamp(fc, 20, sr * 0.44) / sr);
+    u = q_val * (om / max(0.0000001, om0) - om0 / max(0.0000001, om));
+    u2 = u * u;
+    num = (1.0 - red) * (1.0 - red) + u2;
+    den = 1.0 + u2;
+    10.0 * log10(max(0.000000000001, num) / max(0.000000000001, den));
+  );
+);
+// Funzione di trasferimento complessa esatta di Dynamic EQ (albero 2 SVF a 5 bande coerenti di fase)
+function deq_mag_db(f, g0, g1, g2, g3, g4, sr)
+local(om, om1, k1, r1, r1sq, kr1, d1, om2, k2, r2, r2sq, kr2, d2, re2, im2, hp1_re, hp1_im, tot_re, tot_im, mag2) (
+  om = tan($pi * clamp(f, 15, sr * 0.48) / sr);
+  om1 = deq_svf1.g; k1 = deq_svf1.k;
+  r1 = om / max(0.0000001, om1); r1sq = r1 * r1; kr1 = k1 * r1;
+  d1 = (1.0 - r1sq) * (1.0 - r1sq) + kr1 * kr1;
+  om2 = deq_svf2.g; k2 = deq_svf2.k;
+  r2 = om / max(0.0000001, om2); r2sq = r2 * r2; kr2 = k2 * r2;
+  d2 = (1.0 - r2sq) * (1.0 - r2sq) + kr2 * kr2;
+  re2 = (g2 * (1.0 - r2sq) + g3 * (kr2 * kr2) - g4 * r2sq * (1.0 - r2sq)) / max(0.000000000001, d2);
+  im2 = (-g2 * kr2 + g3 * kr2 * (1.0 - r2sq) + g4 * kr2 * r2sq) / max(0.000000000001, d2);
+  hp1_re = (-r1sq * (1.0 - r1sq)) / max(0.000000000001, d1);
+  hp1_im = (kr1 * r1sq) / max(0.000000000001, d1);
+  tot_re = (g0 * (1.0 - r1sq) + g1 * (kr1 * kr1)) / max(0.000000000001, d1) + (hp1_re * re2 - hp1_im * im2);
+  tot_im = (-g0 * kr1 + g1 * kr1 * (1.0 - r1sq)) / max(0.000000000001, d1) + (hp1_re * im2 + hp1_im * re2);
+  mag2 = tot_re * tot_re + tot_im * tot_im;
+  10.0 * log10(max(0.000000000001, mag2));
+);
+// Funzione di trasferimento complessa esatta di Dynamic Balance (split 1-pole a 3 bande)
+function dbal_mag_db(f, g_l, g_m, g_h, sr)
+local(w, cw, sw, a1, c1, den1, re1, im1, a2, c2, den2, re2, im2, tot_re, tot_im, mag2) (
+  w = 2.0 * $pi * clamp(f, 15, sr * 0.48) / sr;
+  cw = cos(w); sw = sin(w);
+  c1 = dbal_c_lo; a1 = 1.0 - c1;
+  den1 = (1.0 - a1 * cw) * (1.0 - a1 * cw) + (a1 * sw) * (a1 * sw);
+  re1 = c1 * (1.0 - a1 * cw) / max(0.000000000001, den1);
+  im1 = -c1 * a1 * sw / max(0.000000000001, den1);
+  c2 = dbal_c_hi; a2 = 1.0 - c2;
+  den2 = (1.0 - a2 * cw) * (1.0 - a2 * cw) + (a2 * sw) * (a2 * sw);
+  re2 = c2 * (1.0 - a2 * cw) / max(0.000000000001, den2);
+  im2 = -c2 * a2 * sw / max(0.000000000001, den2);
+  tot_re = (g_l - g_m) * re1 + (g_m - g_h) * re2 + g_h;
+  tot_im = (g_l - g_m) * im1 + (g_m - g_h) * im2;
+  mag2 = tot_re * tot_re + tot_im * tot_im;
+  10.0 * log10(max(0.000000000001, mag2));
+);
+// Campana SVF reale della singola banda DRC (anteprima statica + taglio dinamico su [-maxdb..0])
+function band_gr(f_a, f_b, gr_db, maxdb, eng, lbl, idx, cr, cg, cb)
+local(lo, hi, fc, q_val, oct, red, sr_m, N, i, f, x, y, gy, y0, y_bot, y_apx, is_focus, px, py, pgx, pgy, g_red, db_g, db_c, xc, xl, xh, xl_lbl, y_lbl, pw_lbl) (
+  lo = clamp(min(f_a, f_b), 20, 19980);
+  hi = clamp(max(lo + 20, max(f_a, f_b)), 40, 20000);
+  sr_m = max(22050, srate);
+  fc = min(sqrt(lo * hi), sr_m * 0.44);
+  q_val = clamp(fc / max(20, hi - lo), 0.5, 12.0);
+  oct = clamp(log(hi / lo) / log(2.0), 0.12, 3.50);
+  red = eng ? (1.0 - db2lin(-clamp(gr_db, 0, maxdb))) : 0;
+  y0 = dbv_map(0, -maxdb, 0);
+  y_bot = dbv_map(-maxdb, -maxdb, 0);
+  is_focus = (ui_drag_id >= (10 + idx * 4) && ui_drag_id <= (12 + idx * 4))
+          || (lab_edit == (10 + idx * 4))
+          || (drc_solo_audition_band == (idx + 1));
+  g_red = 1.0 - db2lin(-2.6);
+
+  // Riferimenti verticali: linea apice centro frequenza fc + tacche a -3 dB (lo / hi)
+  xc = fx_map(fc); xl = fx_map(lo); xh = fx_map(hi);
   gfx_r = cr; gfx_g = cg; gfx_b = cb;
-  gfx_a = eng ? 0.22 : 0.07; g_rect(xa, d_y + 34, xb - xa, base - d_y - 34);
-  gfx_a = eng ? 0.9 : 0.3; g_rect(xa, base - 2, xb - xa, 3);
-  h = clamp(gr_db / maxdb, 0, 1) * hh;
-  eng && h > 0.5 ? ( gfx_a = 0.95; g_rect(xa, base - h, xb - xa, h); );
-  gfx_setfont(6); gfx_a = eng ? 1 : 0.45;
-  gr_db < 0.05 ? sprintf(#bl, "%s 0.0", lbl) : sprintf(#bl, "%s -%.1f", lbl, gr_db);
-  g_txtc((xa + xb) * 0.5, d_y + 26 + idx * 15, #bl);
+  gfx_a = eng ? (is_focus ? 0.88 : 0.54) : 0.16;
+  g_line(xc, y0, xc, y_bot);
+  eng ? (
+    gfx_a = is_focus ? 0.42 : 0.20;
+    g_line(xc + 1 / sc, y0, xc + 1 / sc, y_bot);
+    gfx_a = is_focus ? 1.0 : 0.85;
+    g_rect(xc - 1.5, y0 - 2.5, 3, 5);
+    g_rect(xc - 1.5, y_bot - 4, 3, 5);
+  );
+  gfx_a = eng ? 0.45 : 0.18; g_line(xl, y0 - 2, xl, y0 + 5); g_line(xh, y0 - 2, xh, y0 + 5);
+
+  N = 140; i = 0; pgx = -1; px = -1;
+  loop(N + 1,
+    f = 20 * 10 ^ (3 * i / N);
+    f < sr_m * 0.48 ? (
+      x = fx_map(f);
+      // Guida statica morbida della campana
+      db_g = drc_band_mag_db(f, fc, q_val, g_red, sr_m);
+      gy = dbv_map(db_g, -maxdb, 0);
+      pgx >= 0 ? (
+        gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = eng ? (is_focus ? 0.56 : 0.36) : 0.14;
+        g_line(pgx, pgy, x, gy);
+      );
+      pgx = x; pgy = gy;
+
+      // Curva dinamica reale durante l'attenuazione
+      eng && gr_db > 0.05 ? (
+        db_c = drc_band_mag_db(f, fc, q_val, red, sr_m);
+        y = dbv_map(db_c, -maxdb, 0);
+        px >= 0 ? (
+          gfx_r = cr; gfx_g = cg; gfx_b = cb;
+          gfx_a = 0.26; g_line(px, py, px, y0);
+          gfx_a = 0.98; g_line(px, py, x, y); g_line(px, py + 1 / sc, x, y + 1 / sc);
+        );
+        px = x; py = y;
+      );
+    );
+    i += 1;
+  );
+
+  eng && gr_db > 0.05 ? (
+    y_apx = dbv_map(-clamp(gr_db, 0, maxdb), -maxdb, 0);
+    gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = 1.0;
+    g_circ(xc, y_apx, 2.5, 1);
+  );
+
+  // Pillola informativa sopra o vicino alla campana
+  fmt_freq(#bf_s, floor(fc + 0.5));
+  gr_db < 0.05 ? sprintf(#bl, "%s %s (%.1fo) 0.0", lbl, #bf_s, oct)
+               : sprintf(#bl, "%s %s (%.1fo) -%.1f", lbl, #bf_s, oct, gr_db);
+  gfx_setfont(7);
+  pw_lbl = g_tw(#bl) + 10;
+  xl_lbl = clamp(xc, d_x + 36 + pw_lbl * 0.5, d_x + d_w - 20 - pw_lbl * 0.5);
+  y_lbl = d_y + 30 + (idx % 2) * 15;
+  gfx_r = 0.025; gfx_g = 0.04; gfx_b = 0.10; gfx_a = 0.78;
+  g_rect(xl_lbl - pw_lbl * 0.5, y_lbl - 1, pw_lbl, 13);
+  gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = eng ? 0.98 : 0.48;
+  g_txtc(xl_lbl, y_lbl, #bl);
 );
 
 // ============================================================================
@@ -1489,7 +1741,7 @@ gfx_a = 1; g_circ(dot_x, 32, 5, 1);
 cur_preset = floor(slider44 + 0.5);
 pname = cur_preset == 1 ? "MALE LD" : cur_preset == 2 ? "FEMALE LD" : cur_preset == 3 ? "CLARITY" : cur_preset == 4 ? "MID PC" :
         cur_preset == 5 ? "HOME BOOTH FIX" : cur_preset == 6 ? "BROADCAST" : cur_preset == 7 ? "MAGIC 1" : "Custom";
-sprintf(#hdr, "v1.2.1  ·  Paolo Balestri  ·  Preset: %s", pname);
+sprintf(#hdr, "v1.2.3  ·  Paolo Balestri  ·  Preset: %s", pname);
 gfx_setfont(5); set_sub_col(); g_txt(dot_x + 14, 25, #hdr);
 
 px = 30; py = 50;
@@ -1649,14 +1901,24 @@ view_mode == 0 ? (
   ui_knob(20, cxC + 53, r1y + 120, 27, 0, 100, 50, "THR C", "%", c_mag_r,   c_mag_g,   c_mag_b,   123, min(100, ui_drcC * 10));
   ui_knob(24, cxD + 53, r1y + 120, 27, 0, 100, 0,  "THR D", "%", c_grn_r,   c_grn_g,   c_grn_b,   124, min(100, ui_drcD * 10));
 
-  ui_knob(10, cxA + 28, r1y + 222, 18, 20, 20000, 6529, "HP", "Hz", c_cyan_r,  c_cyan_g,  c_cyan_b,  131, -1);
-  ui_knob(11, cxA + 78, r1y + 222, 18, 20, 20000, 9788, "LP", "Hz", c_cyan_r,  c_cyan_g,  c_cyan_b,  131, -1);
-  ui_knob(14, cxB + 28, r1y + 222, 18, 20, 20000, 233,  "HP", "Hz", c_amber_r, c_amber_g, c_amber_b, 132, -1);
-  ui_knob(15, cxB + 78, r1y + 222, 18, 20, 20000, 384,  "LP", "Hz", c_amber_r, c_amber_g, c_amber_b, 132, -1);
-  ui_knob(18, cxC + 28, r1y + 222, 18, 20, 20000, 1456, "HP", "Hz", c_mag_r,   c_mag_g,   c_mag_b,   133, -1);
-  ui_knob(19, cxC + 78, r1y + 222, 18, 20, 20000, 2641, "LP", "Hz", c_mag_r,   c_mag_g,   c_mag_b,   133, -1);
-  ui_knob(22, cxD + 28, r1y + 222, 18, 20, 20000, 5884, "HP", "Hz", c_grn_r,   c_grn_g,   c_grn_b,   134, -1);
-  ui_knob(23, cxD + 78, r1y + 222, 18, 20, 20000, 9200, "LP", "Hz", c_grn_r,   c_grn_g,   c_grn_b,   134, -1);
+  ui_drc_freq_knob(10, 11, cxA + 28, r1y + 220, 18, 7994, c_cyan_r,  c_cyan_g,  c_cyan_b,  131);
+  ui_drc_oct_knob( 10, 11, cxA + 78, r1y + 220, 18, 0.58, c_cyan_r,  c_cyan_g,  c_cyan_b,  135);
+  ui_drc_freq_knob(14, 15, cxB + 28, r1y + 220, 18, 299,  c_amber_r, c_amber_g, c_amber_b, 132);
+  ui_drc_oct_knob( 14, 15, cxB + 78, r1y + 220, 18, 0.72, c_amber_r, c_amber_g, c_amber_b, 136);
+  ui_drc_freq_knob(18, 19, cxC + 28, r1y + 220, 18, 1961, c_mag_r,   c_mag_g,   c_mag_b,   133);
+  ui_drc_oct_knob( 18, 19, cxC + 78, r1y + 220, 18, 0.86, c_mag_r,   c_mag_g,   c_mag_b,   137);
+  ui_drc_freq_knob(22, 23, cxD + 28, r1y + 220, 18, 7357, c_grn_r,   c_grn_g,   c_grn_b,   134);
+  ui_drc_oct_knob( 22, 23, cxD + 78, r1y + 220, 18, 0.64, c_grn_r,   c_grn_g,   c_grn_b,   138);
+
+  fmt_freq(#sp1, min(slider10, slider11)); fmt_freq(#sp2, max(slider10, slider11)); sprintf(#spa, "%s-%s", #sp1, #sp2);
+  fmt_freq(#sp1, min(slider14, slider15)); fmt_freq(#sp2, max(slider14, slider15)); sprintf(#spb, "%s-%s", #sp1, #sp2);
+  fmt_freq(#sp1, min(slider18, slider19)); fmt_freq(#sp2, max(slider18, slider19)); sprintf(#spc, "%s-%s", #sp1, #sp2);
+  fmt_freq(#sp1, min(slider22, slider23)); fmt_freq(#sp2, max(slider22, slider23)); sprintf(#spd, "%s-%s", #sp1, #sp2);
+  gfx_setfont(7); set_sub_col(); gfx_a = 0.85;
+  g_txtc(cxA + 53, r1y + 258, #spa);
+  g_txtc(cxB + 53, r1y + 258, #spb);
+  g_txtc(cxC + 53, r1y + 258, #spc);
+  g_txtc(cxD + 53, r1y + 258, #spd);
 
   draw_meter_h(cxA + 8, r1y + 274, 90, 10, min(100, ui_drcA * 10), c_cyan_r,  c_cyan_g,  c_cyan_b);
   draw_meter_h(cxB + 8, r1y + 274, 90, 10, min(100, ui_drcB * 10), c_amber_r, c_amber_g, c_amber_b);
@@ -1715,7 +1977,7 @@ view_mode == 0 ? (
     gfx_r = 1.0; gfx_g = 0.76; gfx_b = 0.22; gfx_a = 0.9;
     g_frame(288, r1y + 298, 424, 17);
     gfx_setfont(7); gfx_r = 1.0; gfx_g = 0.84; gfx_b = 0.35; gfx_a = 1;
-    sprintf(#swrn, "MOLLA SOLO %s ARMATA: tocca THR / HP / LP sopra per preascoltare (auto-off %ds)",
+    sprintf(#swrn, "MOLLA SOLO %s ARMATA: tocca THR / FREQ / OCT sopra per preascoltare (auto-off %ds)",
             cur_solo_arm == 1 ? "A" : cur_solo_arm == 2 ? "B" : cur_solo_arm == 3 ? "C" : "D",
             max(1, floor(10.9 - (time_now - solo_arm_time))));
     g_txtc(500, r1y + 300, #swrn);
@@ -2056,9 +2318,11 @@ view_mode != 2 ? (
     hbar_gr(d_y + 118 * fy, "TOTALE", ui_peak_gr_db, 12, c_amber_r, c_amber_g, c_amber_b);
     gr_scale(d_y + 142 * fy, 12);
   ) : mon_sel == 2 ? (
-    // ---- DRC: bande sullo spettro con riduzione ----
+    // ---- DRC: curve a campana SVF reali sullo spettro (0..-12 dB) ----
     mon_frame(c_mag_r, c_mag_g, c_mag_b);
     draw_freq_grid();
+    draw_db_line(0, -12, 0, "0"); draw_db_line(-3, -12, 0, "-3"); draw_db_line(-6, -12, 0, "-6");
+    draw_db_line(-9, -12, 0, "-9"); draw_db_line(-12, -12, 0, "-12");
     drc_on = slider8 >= 0.5;
     sprintf(#rA, "A·%s", band_role(slider10, slider11));
     sprintf(#rB, "B·%s", band_role(slider14, slider15));
@@ -2068,6 +2332,31 @@ view_mode != 2 ? (
     band_gr(slider14, slider15, ui_drcB, 12, drc_on && slider13 >= 0.5, #rB, 1, c_amber_r, c_amber_g, c_amber_b);
     band_gr(slider18, slider19, ui_drcC, 12, drc_on && slider17 >= 0.5, #rC, 2, c_mag_r,   c_mag_g,   c_mag_b);
     band_gr(slider22, slider23, ui_drcD, 12, drc_on && slider21 >= 0.5, #rD, 3, c_grn_r,   c_grn_g,   c_grn_b);
+
+    // Curva somma complessiva quando 2+ bande stanno attenuando insieme
+    drc_on ? (
+      drc_act_cnt = ((slider9 >= 0.5 && ui_drcA > 0.1) ? 1 : 0) + ((slider13 >= 0.5 && ui_drcB > 0.1) ? 1 : 0)
+                  + ((slider17 >= 0.5 && ui_drcC > 0.1) ? 1 : 0) + ((slider21 >= 0.5 && ui_drcD > 0.1) ? 1 : 0);
+      drc_act_cnt >= 2 ? (
+        drc_srm = max(22050, srate);
+        d_px = -1; d_i = 0;
+        loop(141,
+          d_f = 20 * 10 ^ (3 * d_i / 140);
+          d_f < drc_srm * 0.48 ? (
+            d_tot = 0;
+            slider9  >= 0.5 && ui_drcA > 0.1 ? ( d_tot += drc_band_mag_db(d_f, min(sqrt(min(slider10,slider11)*max(slider10,slider11)), drc_srm*0.44), clamp(min(sqrt(min(slider10,slider11)*max(slider10,slider11)), drc_srm*0.44)/max(20,abs(slider11-slider10)),0.5,12.0), 1.0 - db2lin(-clamp(ui_drcA,0,12)), drc_srm); );
+            slider13 >= 0.5 && ui_drcB > 0.1 ? ( d_tot += drc_band_mag_db(d_f, min(sqrt(min(slider14,slider15)*max(slider14,slider15)), drc_srm*0.44), clamp(min(sqrt(min(slider14,slider15)*max(slider14,slider15)), drc_srm*0.44)/max(20,abs(slider15-slider14)),0.5,12.0), 1.0 - db2lin(-clamp(ui_drcB,0,12)), drc_srm); );
+            slider17 >= 0.5 && ui_drcC > 0.1 ? ( d_tot += drc_band_mag_db(d_f, min(sqrt(min(slider18,slider19)*max(slider18,slider19)), drc_srm*0.44), clamp(min(sqrt(min(slider18,slider19)*max(slider18,slider19)), drc_srm*0.44)/max(20,abs(slider19-slider18)),0.5,12.0), 1.0 - db2lin(-clamp(ui_drcC,0,12)), drc_srm); );
+            slider21 >= 0.5 && ui_drcD > 0.1 ? ( d_tot += drc_band_mag_db(d_f, min(sqrt(min(slider22,slider23)*max(slider22,slider23)), drc_srm*0.44), clamp(min(sqrt(min(slider22,slider23)*max(slider22,slider23)), drc_srm*0.44)/max(20,abs(slider23-slider22)),0.5,12.0), 1.0 - db2lin(-clamp(ui_drcD,0,12)), drc_srm); );
+            d_x1 = fx_map(d_f); d_y1 = dbv_map(d_tot, -12, 0);
+            d_px >= 0 ? ( gfx_r = 0.94; gfx_g = 0.97; gfx_b = 1.0; gfx_a = 0.85; g_line(d_px, d_py, d_x1, d_y1); );
+            d_px = d_x1; d_py = d_y1;
+          );
+          d_i += 1;
+        );
+      );
+    );
+
     gfx_setfont(7);
     drc_solo_audition_band > 0 ? (
       gfx_r = 1.0; gfx_g = 0.76; gfx_b = 0.22; gfx_a = 1;
@@ -2076,13 +2365,13 @@ view_mode != 2 ? (
       g_txt(d_x + 40, d_y + 7, #mwrn);
     ) : (
       gfx_r = 0.62; gfx_g = 0.70; gfx_b = 0.9; gfx_a = 0.9;
-      g_txt(d_x + 40, d_y + 7, msg("altezza = riduzione (0..12 dB)  ·  SOLO a molla: suona mentre tocchi THR / HP / LP", "height = reduction (0..12 dB)  ·  Spring SOLO: auditions while touching THR / HP / LP"));
+      g_txt(d_x + 40, d_y + 7, msg("campana SVF reale (0..-12 dB)  ·  SOLO a molla: suona mentre tocchi THR / FREQ / OCT", "real SVF bell (0..-12 dB)  ·  Spring SOLO: auditions while touching THR / FREQ / OCT"));
     );
   ) : mon_sel == 3 ? (
-    // ---- DYNAMIC EQ (5-Band Centered & Zoomed View: ±5 dB / ±12 dB) ----
+    // ---- DYNAMIC EQ (Curva reale 5-Band SVF centrata & zoomabile: ±5 / ±12 dB) ----
     mon_frame(c_cyan_r, c_cyan_g, c_cyan_b);
     draw_freq_grid();
-    deq_on = slider26 >= 0.5;
+    deq_on = slider26 >= 0.5 && slider28 > 0.1;
     deq_z_hv = hit(d_x + d_w - 76, d_y + 4, 68, 16);
     deq_z_hv ? ( active_info_id = 234; );
     deq_z_hv && mouse_click ? ( deq_mon_zoom = !deq_mon_zoom; );
@@ -2091,6 +2380,19 @@ view_mode != 2 ? (
     deq_bot = d_y + d_h - 26;
     deq_mid = (deq_top + deq_bot) * 0.5;
     deq_half = (deq_bot - deq_top) * 0.5;
+    // Confini delle 5 bande + riferimento lift a riposo
+    gi = 0;
+    loop(4,
+      bfz = gi == 0 ? 105 : gi == 1 ? 460 : gi == 2 ? 1450 : 5600;
+      gfx_r = c_cyan_r; gfx_g = c_cyan_g; gfx_b = c_cyan_b; gfx_a = 0.16;
+      g_line(fx_map(bfz), deq_top, fx_map(bfz), deq_bot);
+      gi += 1;
+    );
+    deq_on && deq_lift0 > 0.1 ? (
+      gy_l0 = deq_mid - (clamp(deq_lift0, -deq_rng, deq_rng) / deq_rng) * deq_half;
+      gfx_r = c_grn_r; gfx_g = c_grn_g; gfx_b = c_grn_b; gfx_a = 0.28;
+      g_line(d_x + 34, gy_l0, d_x + d_w - 18, gy_l0);
+    );
     gi = 0;
     loop(5,
       ldb = deq_mon_zoom ? (12 - gi * 6) : (4 - gi * 2);
@@ -2102,6 +2404,35 @@ view_mode != 2 ? (
       g_txtr(d_x + 30, gy - 6, #dgl);
       gi += 1;
     );
+    // Curva complessa reale 5-Band SVF
+    deq_srm = max(22050, srate);
+    dg_0 = deq_on ? db2lin(ui_deq0) : 1.0;
+    dg_1 = deq_on ? db2lin(ui_deq1) : 1.0;
+    dg_2 = deq_on ? db2lin(ui_deq2) : 1.0;
+    dg_3 = deq_on ? db2lin(ui_deq3) : 1.0;
+    dg_4 = deq_on ? db2lin(ui_deq4) : 1.0;
+    deq_px = -1; deq_i = 0;
+    loop(161,
+      deq_f = 20 * 10 ^ (3 * deq_i / 160);
+      deq_f < deq_srm * 0.48 ? (
+        deq_db = deq_mag_db(deq_f, dg_0, dg_1, dg_2, dg_3, dg_4, deq_srm);
+        deq_xc = fx_map(deq_f);
+        deq_yc = deq_mid - (clamp(deq_db, -deq_rng, deq_rng) / deq_rng) * deq_half;
+        deq_px >= 0 ? (
+          gfx_r = deq_db >= 0 ? c_grn_r : c_cyan_r;
+          gfx_g = deq_db >= 0 ? c_grn_g : c_cyan_g;
+          gfx_b = deq_db >= 0 ? c_grn_b : c_cyan_b;
+          gfx_a = deq_on ? 0.30 : 0.08;
+          g_line(deq_px, deq_py, deq_px, deq_mid);
+          abs(deq_db) > deq_rng ? ( gfx_r = c_amber_r; gfx_g = c_amber_g; gfx_b = c_amber_b; );
+          gfx_a = deq_on ? 0.98 : 0.42;
+          g_line(deq_px, deq_py, deq_xc, deq_yc);
+          g_line(deq_px, deq_py + 1 / sc, deq_xc, deq_yc + 1 / sc);
+        );
+        deq_px = deq_xc; deq_py = deq_yc;
+      );
+      deq_i += 1;
+    );
     bi = 0;
     loop(5,
       bfa = bi == 0 ? 20  : bi == 1 ? 105 : bi == 2 ? 460  : bi == 3 ? 1450 : 5600;
@@ -2109,16 +2440,6 @@ view_mode != 2 ? (
       bgv = bi == 0 ? ui_deq0 : bi == 1 ? ui_deq1 : bi == 2 ? ui_deq2 : bi == 3 ? ui_deq3 : ui_deq4;
       b_nm = bi == 0 ? "SUB" : bi == 1 ? "BODY" : bi == 2 ? "PIVOT" : bi == 3 ? "BITE" : "AIR";
       bxa = fx_map(bfa) + 2; bxb = fx_map(bfb) - 2;
-      bclamp = clamp(bgv, -deq_rng, deq_rng);
-      byv = deq_mid - (bclamp / deq_rng) * deq_half;
-      gfx_r = bgv >= 0 ? c_grn_r : c_cyan_r;
-      gfx_g = bgv >= 0 ? c_grn_g : c_cyan_g;
-      gfx_b = bgv >= 0 ? c_grn_b : c_cyan_b;
-      gfx_a = deq_on ? 0.58 : 0.15;
-      bgv >= 0 ? g_rect(bxa, byv, bxb - bxa, max(2, deq_mid - byv)) : g_rect(bxa, deq_mid, bxb - bxa, max(2, byv - deq_mid));
-      abs(bgv) > deq_rng ? ( gfx_r = c_amber_r; gfx_g = c_amber_g; gfx_b = c_amber_b; );
-      gfx_a = deq_on ? 1.0 : 0.4;
-      g_rect(bxa, byv - 1, bxb - bxa, 2.5);
       gfx_setfont(7);
       gfx_r = bgv >= 0 ? c_grn_r : c_cyan_r;
       gfx_g = bgv >= 0 ? c_grn_g : c_cyan_g;
@@ -2129,7 +2450,7 @@ view_mode != 2 ? (
       bi += 1;
     );
     dq = floor(slider27 + 0.5);
-    sprintf(#dt, "CURVA %s (5-Band AU Calibrated)  ·  THR %.1f%%  ·  verde = lift, azzurro = taglio", dq == 0 ? "A" : dq == 1 ? "B" : dq == 2 ? "C" : "D", slider28);
+    sprintf(#dt, "CURVA %s (SVF 5-Band Reale)  ·  THR %.1f%%  ·  verde = lift, azzurro = taglio", dq == 0 ? "A" : dq == 1 ? "B" : dq == 2 ? "C" : "D", slider28);
     gfx_setfont(7); gfx_r = 0.62; gfx_g = 0.70; gfx_b = 0.9; gfx_a = 0.95; g_txt(d_x + 40, d_y + 7, #dt);
     btn_face(d_x + d_w - 76, d_y + 4, 68, 16, deq_mon_zoom ? "±12 dB" : "±5 dB", 0, deq_z_hv, c_cyan_r, c_cyan_g, c_cyan_b);
   ) : mon_sel == 4 ? (
@@ -2143,31 +2464,84 @@ view_mode != 2 ? (
     sprintf(#tt, "TONE %s  ·  SCALE %.2fx  ·  MID BUMP %s", tq == 0 ? "A" : tq == 1 ? "B" : tq == 2 ? "C" : "D", slider31, slider32 >= 0.5 ? "ON" : "OFF");
     gfx_setfont(6); gfx_r = 1; gfx_g = 0.82; gfx_b = 0.5; gfx_a = slider29 >= 0.5 ? 1 : 0.5; g_txt(d_x + 40, d_y + 8, #tt);
   ) : mon_sel == 5 ? (
-    // ---- DYNAMIC BALANCE: distribuzione misurata vs target ----
+    // ---- DYNAMIC BALANCE: curva EQ reale 3-bande (zoomabile ±6 / ±12 dB) + barre energia/target ----
     mon_frame(c_grn_r, c_grn_g, c_grn_b);
     draw_freq_grid();
-    base = d_y + d_h - 30; hh = d_h - 72;
+    dbal_on = slider33 >= 0.5 && slider35 > 0.1;
+    dbal_z_hv = hit(d_x + d_w - 76, d_y + 4, 68, 16);
+    dbal_z_hv ? ( active_info_id = 235; );
+    dbal_z_hv && mouse_click ? ( dbal_mon_zoom = !dbal_mon_zoom; );
+    dbal_rng = dbal_mon_zoom ? 12.0 : 6.0;
+    dbal_top = d_y + 48;
+    dbal_bot = d_y + d_h - 26;
+    dbal_mid = (dbal_top + dbal_bot) * 0.5;
+    dbal_half = (dbal_bot - dbal_top) * 0.5;
+    gfx_r = c_grn_r; gfx_g = c_grn_g; gfx_b = c_grn_b; gfx_a = 0.22;
+    g_line(fx_map(280), dbal_top, fx_map(280), dbal_bot);
+    g_line(fx_map(2800), dbal_top, fx_map(2800), dbal_bot);
+    gi = 0;
+    loop(5,
+      ldb = dbal_mon_zoom ? (12 - gi * 6) : (6 - gi * 3);
+      gy = dbal_mid - (ldb / dbal_rng) * dbal_half;
+      gfx_r = 0.55; gfx_g = 0.62; gfx_b = 0.85; gfx_a = ldb == 0 ? 0.65 : 0.22;
+      g_line(d_x + 34, gy, d_x + d_w - 18, gy);
+      gfx_setfont(7); gfx_a = ldb == 0 ? 0.95 : 0.80;
+      ldb > 0 ? sprintf(#dblg, "+%d", ldb) : sprintf(#dblg, "%d", ldb);
+      g_txtr(d_x + 30, gy - 6, #dblg);
+      gi += 1;
+    );
+    db_srm = max(22050, srate);
+    db_gl = dbal_on ? ui_dbal_glo  : 1.0;
+    db_gm = dbal_on ? ui_dbal_gmid : 1.0;
+    db_gh = dbal_on ? ui_dbal_ghi  : 1.0;
+    db_px = -1; db_i = 0;
+    loop(161,
+      db_f = 20 * 10 ^ (3 * db_i / 160);
+      db_f < db_srm * 0.48 ? (
+        db_val = dbal_mag_db(db_f, db_gl, db_gm, db_gh, db_srm);
+        db_xc = fx_map(db_f);
+        db_yc = dbal_mid - (clamp(db_val, -dbal_rng, dbal_rng) / dbal_rng) * dbal_half;
+        db_px >= 0 ? (
+          gfx_r = db_val >= 0 ? c_grn_r : c_cyan_r;
+          gfx_g = db_val >= 0 ? c_grn_g : c_cyan_g;
+          gfx_b = db_val >= 0 ? c_grn_b : c_cyan_b;
+          gfx_a = dbal_on ? 0.30 : 0.08;
+          g_line(db_px, db_py, db_px, dbal_mid);
+          abs(db_val) > dbal_rng ? ( gfx_r = c_amber_r; gfx_g = c_amber_g; gfx_b = c_amber_b; );
+          gfx_a = dbal_on ? 0.98 : 0.42;
+          g_line(db_px, db_py, db_xc, db_yc);
+          g_line(db_px, db_py + 1 / sc, db_xc, db_yc + 1 / sc);
+        );
+        db_px = db_xc; db_py = db_yc;
+      );
+      db_i += 1;
+    );
     i = 0;
     loop(3,
       fa = i == 0 ? 20 : i == 1 ? 280 : 2800;
       fb = i == 0 ? 280 : i == 1 ? 2800 : 20000;
       shv = i == 0 ? ui_sh_lo : i == 1 ? ui_sh_mid : ui_sh_hi;
       tgv = i == 0 ? t_lo : i == 1 ? t_mid : t_hi;
-      gv  = i == 0 ? g_lo : i == 1 ? g_mid : g_hi;
-      xa = fx_map(fa) + 3; xb = fx_map(fb) - 3;
-      gfx_r = c_grn_r; gfx_g = c_grn_g; gfx_b = c_grn_b; gfx_a = 0.10; g_rect(xa, d_y + 34, xb - xa, base - d_y - 34);
-      h = clamp(shv / 0.7, 0, 1) * hh;
-      gfx_a = 0.85; g_rect(xa + 10, base - h, xb - xa - 20, h);
-      ty2 = base - clamp(tgv / 0.7, 0, 1) * hh;
-      gfx_r = 1; gfx_g = 0.85; gfx_b = 0.3; gfx_a = 1; g_rect(xa + 4, ty2 - 1, xb - xa - 8, 2);
-      gfx_setfont(6); gfx_r = 0.9; gfx_g = 1; gfx_b = 0.92;
-      sprintf(#bt, "%s  %.0f%% / target %.0f%%", i == 0 ? "LOW" : i == 1 ? "MID" : "HIGH", shv * 100, tgv * 100);
-      g_txtc((xa + xb) * 0.5, d_y + 22, #bt);
-      gfx_setfont(5); sprintf(#bg, "%+.1f dB", lin2db(gv)); g_txtc((xa + xb) * 0.5, d_y + 40, #bg);
+      gv  = i == 0 ? ui_dbal_glo : i == 1 ? ui_dbal_gmid : ui_dbal_ghi;
+      gdb = dbal_on ? lin2db(gv) : 0;
+      xa = fx_map(fa) + 6; xb = fx_map(fb) - 6;
+      bw3 = xb - xa;
+      gfx_setfont(7); gfx_r = 0.88; gfx_g = 0.98; gfx_b = 0.92; gfx_a = 0.95;
+      sprintf(#bt, "%s %.0f%%/%.0f%% (%+.1f)", i == 0 ? "LOW" : i == 1 ? "MID" : "HIGH", shv * 100, tgv * 100, gdb);
+      g_txtc((xa + xb) * 0.5, d_y + 21, #bt);
+      gfx_r = 0.08; gfx_g = 0.14; gfx_b = 0.18; gfx_a = 0.95; g_rect(xa + 4, d_y + 36, bw3 - 8, 4);
+      gfx_r = c_grn_r; gfx_g = c_grn_g; gfx_b = c_grn_b; gfx_a = 0.92;
+      g_rect(xa + 4, d_y + 36, clamp(shv / 0.7, 0, 1) * (bw3 - 8), 4);
+      tx_mk = xa + 4 + clamp(tgv / 0.7, 0, 1) * (bw3 - 8);
+      gfx_r = 1; gfx_g = 0.86; gfx_b = 0.30; gfx_a = 1; g_rect(tx_mk - 1, d_y + 34, 2, 8);
       i += 1;
     );
-    gfx_setfont(7); gfx_r = 0.62; gfx_g = 0.70; gfx_b = 0.9; gfx_a = 0.9;
-    g_txtr(d_x + d_w - 12, d_y + 6, slider33 >= 0.5 ? "barra = energia misurata · linea gialla = target" : "BYPASSED: solo analisi");
+    sprintf(#dt_b, dbal_on ? "DYN BAL %s (Curva Reale)  ·  %.0f%%  ·  verde = boost, azzurro = taglio"
+                           : "BYPASSED: solo analisi energia vs target",
+            slider34 >= 0.5 ? "B·DENSE" : "A·NATURAL", slider35);
+    gfx_setfont(7); gfx_r = 0.62; gfx_g = 0.70; gfx_b = 0.9; gfx_a = 0.95;
+    g_txt(d_x + 40, d_y + 7, #dt_b);
+    btn_face(d_x + d_w - 76, d_y + 4, 68, 16, dbal_mon_zoom ? "±12 dB" : "±6 dB", 0, dbal_z_hv, c_grn_r, c_grn_g, c_grn_b);
   ) : (
     // ---- OUTPUT ----
     mon_frame(c_grn_r, c_grn_g, c_grn_b);
@@ -2292,8 +2666,9 @@ active_info_id == 105 ? msg("TUBE PREAMP: saturazione armonica leggera per dare 
 active_info_id == 106 ? msg("FILTERS: attiva/esclude Lowcut e Hicut.", "FILTERS: enable/bypass Lowcut and Hicut.") :
 active_info_id >= 111 && active_info_id <= 114 ? msg("DRC: attiva la banda. Il nome (LOW/BOX/HARSH/PRES/SIB/AIR) segue la frequenza impostata.", "DRC: enable the band. Its name (LOW/BOX/HARSH/PRES/SIB/AIR) follows the set frequency.") :
 active_info_id >= 121 && active_info_id <= 124 ? msg("THR: piu' alto = interviene prima e di piu'. L'anello e la barra mostrano la riduzione reale.", "THR: higher = acts sooner and more. Ring and bar show the actual reduction.") :
-active_info_id >= 131 && active_info_id <= 134 ? msg("HP / LP: limiti della banda DRC (20 Hz - 20 kHz). SHIFT = precisione. Doppio clic = scrivi gli Hz.", "HP / LP: DRC band limits (20 Hz - 20 kHz). SHIFT = fine. Double click to type Hz.") :
-active_info_id == 125 ? msg("SOLO A MOLLA: arma la banda attiva; preascolti SOLO mentre tieni premuto o mentre muovi THR / HP / LP sopra (auto-off 10s).", "SPRING SOLO: arms active band; auditions ONLY while holding button or dragging THR / HP / LP above (10s auto-off).") :
+active_info_id >= 131 && active_info_id <= 134 ? msg("FREQ: centro della campana DRC (25 Hz - 18 kHz, sposta HP/LP insieme). SHIFT = fine. Doppio clic = scrivi gli Hz.", "FREQ: DRC bell center frequency (25 Hz - 18 kHz, moves HP/LP together). SHIFT = fine. Double click to type Hz.") :
+active_info_id >= 135 && active_info_id <= 138 ? msg("OCT: ampiezza della campana DRC in ottave (0.12 - 3.50 oct, destra = piu' larga; bordi morbida curva SVF a -3 dB).", "OCT: DRC bell width in octaves (0.12 - 3.50 oct, right = wider; smooth SVF -3 dB skirts).") :
+active_info_id == 125 ? msg("SOLO A MOLLA: arma la banda attiva; preascolti SOLO mentre tieni premuto o mentre muovi THR / FREQ / OCT sopra (auto-off 10s).", "SPRING SOLO: arms active band; auditions ONLY while holding button or dragging THR / FREQ / OCT above (10s auto-off).") :
 active_info_id == 126 ? msg("Banda DRC disattivata: attiva prima il pulsante A/B/C/D in alto per poter usare il preascolto SOLO a molla.", "DRC band disabled: enable the A/B/C/D button at the top first to use spring-loaded SOLO audition.") :
 active_info_id == 140 ? msg("DYN EQ: taglio dinamico su boom (~210 Hz) e bite (~3.1 kHz) solo quando la voce spinge.", "DYN EQ: dynamic cut on boom (~210 Hz) and bite (~3.1 kHz) only when the voice pushes.") :
 active_info_id == 141 ? msg("Curve Dynamic EQ: A Clarity, B Warm Control, C Male Focus, D Smooth Presence.", "Dynamic EQ curves: A Clarity, B Warm Control, C Male Focus, D Smooth Presence.") :
@@ -2313,7 +2688,7 @@ active_info_id == 206 ? msg("BROADCAST: voce ferma e autorevole.", "BROADCAST: s
 active_info_id == 207 ? msg("MAGIC 1: preset di Paolo (da Magic1.mfp): DRC su 20-200 Hz, 1.6k-2.3k, 3.6k-5.7k.", "MAGIC 1: Paolo's preset (from Magic1.mfp): DRC on 20-200 Hz, 1.6k-2.3k, 3.6k-5.7k.") :
 active_info_id >= 210 && active_info_id <= 217 && active_info_id != 213 ? msg("Attiva/esclude lo stadio e lo mostra nel MONITOR.", "Enable/bypass the stage and show it in the MONITOR.") :
 active_info_id == 220 ? msg("FULL tutta la grafica, MINI solo monitor, JSFX lista parametri (OSARA).", "FULL complete GUI, MINI monitor only, JSFX parameter list (OSARA).") :
-active_info_id == 221 ? msg("CHIARO / SCURO: cambia solo il tema colori mantenendo tutti i controlli completi (comprese le bande DRC HP/LP).", "LIGHT / DARK: switches color theme while keeping all controls visible (including DRC band HP/LP).") :
+active_info_id == 221 ? msg("CHIARO / SCURO: cambia solo il tema colori mantenendo tutti i controlli completi (comprese le bande DRC FREQ/OCT).", "LIGHT / DARK: switches color theme while keeping all controls visible (including DRC band FREQ/OCT).") :
 active_info_id == 222 ? msg("GAIN MATCH: compensa il volume percepito per confronti onesti.", "GAIN MATCH: compensates perceived loudness for fair comparisons.") :
 active_info_id == 223 ? msg("DELTA: ascolta solo cio' che il plugin toglie/aggiunge (auto-off dopo 30s di inattivita').", "DELTA: hear only what the plugin removes/adds (30s inactivity auto-off).") :
 active_info_id == 224 ? msg("D·MOLLA (Delta Molla): arma l'ascolto delta del singolo stadio; tocca/trascina un controllo per isolarne il solo intervento e rilascia per tornare alla voce.", "S·DELTA (Spring Delta): arms single-stage delta audition; hold/drag any control to isolate its contribution and release to return.") :
@@ -2323,6 +2698,7 @@ active_info_id == 233 ? msg("DRC - Dynamic Resonance Controller: clicca per vede
 active_info_id == 213 ? msg("DRC - Dynamic Resonance Controller: attiva o esclude il controllo delle risonanze.", "DRC - Dynamic Resonance Controller: enable or bypass resonance control.") :
 active_info_id == 232 ? msg("Clic sul titolo: mostra questo modulo nel MONITOR.", "Click the title: show this module in the MONITOR.") :
 active_info_id == 234 ? msg("ZOOM DYN EQ: alterna scala centrata ±5 dB (dettaglio) e ±12 dB (escursione completa).", "DYN EQ ZOOM: toggle centered ±5 dB (detail) and ±12 dB (full range) scale.") :
+active_info_id == 235 ? msg("ZOOM DYN BAL: alterna scala centrata ±6 dB (dettaglio) e ±12 dB (escursione completa).", "DYN BAL ZOOM: toggle centered ±6 dB (detail) and ±12 dB (full range) scale.") :
 msg("ZP MAGIC VOICE LAB  ·  Passa il mouse su un controllo per la guida  ·  SHIFT = precisione  ·  Doppio clic sugli Hz = scrivi",
             "ZP MAGIC VOICE LAB  ·  Hover a control for help  ·  SHIFT = fine  ·  Double click Hz = type");
 g_txt(30, help_yd + 8, help_s);
