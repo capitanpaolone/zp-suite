@@ -32,6 +32,8 @@ La 2.6.6 estende la copia automatica e Sincronizza ora di Render & Copy a Window
 
 La 2.6.7 distribuisce **ZP Magic Voice LAB 1.2.0-lab3**, l’unica versione corretta, come effetto separato della categoria **ZP Voce**. **ZP Magic Voice 1.2.0** senza suffisso LAB è un prototipo archiviato ed escluso dal pacchetto. Per installarlo, seleziona ZP Magic Voice LAB in ReaPack insieme a ZP Studio Suite. [Guida pratica](ZP%20Studio%20Suite/help/magic_voice_lab.html).
 
+La 2.6.8 è in preparazione: **Fissa negli item** trasferirà solo i marker selezionati sulla timeline; quelli operativi, come i cue `#HSC` di Harmonic Space Carver, resteranno al loro posto. Include inoltre **ZP Magic Voice LAB 1.2.1** (delta globale lampeggiante con auto-off a 30 s, `D·MOLLA` esteso per singolo stadio, suggerimenti su blocchi da 4 s di parlato attivo, monitor `DYN EQ` zoomabile `±5 / ±12 dB`, tema solo cromatico `CHIARO / SCURO` e controlli DRC sempre visibili).
+
 La ZP Studio Suite 2.6.7 aggiunge ZP Consolidate, che raccoglie in Media le sorgenti dei take e gli SRT/VTT registrati nel progetto senza convertire i media. L’elenco completo delle modifiche è nel [changelog](CHANGELOG.md).
 
 ## Non incluso in questa versione

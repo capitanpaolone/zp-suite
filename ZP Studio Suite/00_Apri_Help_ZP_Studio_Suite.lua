@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.6.7
+-- @version 2.6.8
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -23,6 +23,11 @@
 --   sono disponibili in entrambe le lingue. Il supporto screen reader Windows usa
 --   NVDA Controller Client (LGPL 2.1, NV Access). Dettagli in README.it.md.
 -- @changelog
+--   2.6.8 (in preparazione)
+--   EN — Marker embedding now uses only selected timeline markers; operational markers such as #HSC remain on the timeline.
+--   IT — Fissa negli item usa solo i marker selezionati sulla timeline; i marker operativi come #HSC restano in timeline.
+--   EN — ZP Magic Voice LAB 1.2.1: flashing DELTA with 30 s auto-off, extended spring-loaded S·DELTA per stage, 4 s speech-block suggestions, zoomable DYN EQ monitor (±5/±12 dB), color-only LIGHT/DARK theme, straight auto-compensated INPUT and recalibrated DRC.
+--   IT — ZP Magic Voice LAB 1.2.1: DELTA lampeggiante con auto-off 30 s, D·MOLLA per stadio, suggerimenti su blocchi da 4 s, monitor DYN EQ zoomabile (±5/±12 dB), tema solo cromatico CHIARO/SCURO, INPUT dritto auto-compensato e DRC ritarato.
 --   2.6.7 (2026-11-19)
 --   EN — Proportional zoom across all Lua tool windows (ZP_GfxScale.lua), redesigned Project Viewer (fixed Tipo column, auto-fit resizable columns, balanced 3x2 tool grid without Scroll), spacing fix in 07 Note Personaggio, and automatic installation of missing toolbar PNG icons in 32.
 --   IT — Zoom proporzionale su tutte le finestre Lua (ZP_GfxScale.lua), Project Viewer ridisegnato (colonna Tipo fissa, colonne auto-adattate e ridimensionabili, griglia 3x2 senza pulsante Scroll), correzione spaziatura in 07 Note Personaggio e copia automatica icone toolbar mancanti in 32.

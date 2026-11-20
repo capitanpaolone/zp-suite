@@ -32,6 +32,8 @@ Version 2.6.6 adds automatic copying and Sync now in Render & Copy on Windows (r
 
 ZP Studio Suite 2.6.7 distributes **ZP Magic Voice LAB 1.2.0-lab3**, the correct version, as a separate **ZP Voce** effect. **ZP Magic Voice 1.2.0** without LAB is an archived prototype and is excluded from the package. Install ZP Magic Voice LAB alongside ZP Studio Suite in ReaPack. [Operating guide](ZP%20Studio%20Suite/help/en/magic_voice_lab.html).
 
+Version 2.6.8 is in preparation: **Embed into Items** will copy only timeline markers you have selected; operational markers such as Harmonic Space Carver's `#HSC` cues will stay on the timeline. It also includes **ZP Magic Voice LAB 1.2.1** (flashing global DELTA with 30 s auto-off, extended spring-loaded per-stage `S·DELTA`, 4 s active-speech block suggestions, zoomable `DYN EQ` monitor `±5 / ±12 dB`, color-only `LIGHT / DARK` theme keeping all DRC controls visible).
+
 ZP Studio Suite 2.6.7 adds ZP Consolidate, which copies referenced take sources and project-registered SRT/VTT files into Media without converting media. See the [changelog](CHANGELOG.md) for the complete list of changes.
 
 ## Not included in this version

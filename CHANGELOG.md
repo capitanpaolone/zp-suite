@@ -1,5 +1,12 @@
 # Changelog — ZP Suite
 
+## ZP Studio Suite 2.6.8 — in preparazione
+
+- **Fissa marker negli item**: nella finestra Marker trasferisce negli item selezionati solo i marker scelti sulla timeline. I marker operativi, compresi i cue `#HSC` di Harmonic Space Carver, restano in timeline; si possono fissare anche marker senza nome.
+- **Embed markers in items**: the Marker window copies only timeline markers you select into selected items. Operational markers, including Harmonic Space Carver's `#HSC` cues, stay on the timeline; unnamed markers can also be embedded.
+- **ZP Magic Voice LAB 1.2.1 (ZP Voce)**: pannelli ridisegnati con selezione modulo più leggibile e isoletta Uscita/Output; INPUT drive dritto (-12..+12 dB, auto-compensato) e soglie DRC ritarate sul parlato con spia BYPASSED cliccabile; DELTA globale lampeggiante con auto-off a 30 s e D·MOLLA esteso al delta del singolo stadio; suggerimenti su blocchi di 4 s di parlato attivo (in pausa durante DELTA/SOLO); monitor DYN EQ centrato e zoomabile (±5 dB / ±12 dB); selettore solo cromatico CHIARO/SCURO con tutti i controlli DRC sempre visibili.
+- **ZP Magic Voice LAB 1.2.1 (ZP Voce)**: redesigned panels with clearer module selection and a dedicated Output island; straight auto-compensated INPUT drive (-12..+12 dB) and recalibrated DRC speech thresholds with clickable BYPASSED indicator; flashing global DELTA with 30 s auto-off plus extended spring-loaded per-stage S·DELTA audition; 4 s active-speech block suggestions (paused during DELTA/SOLO); centered zoomable DYN EQ monitor (±5 dB / ±12 dB); color-only LIGHT/DARK theme keeping all DRC controls visible.
+
 ## ZP Studio Suite 2.6.7 — 2026-11-19
 
 - **ZP Magic Voice LAB 1.2.0-lab3 (ZP Voce)**: taratura strumentale completa di Input Level (-24..0 dB auto-compensato), Dynamic EQ a 5 bande coerenti di fase (A/B/C/D), Tone EQ (A/B/C/D) + Mid Bump, Dynamic Balance (A/B), DRC con SOLO A/B/C/D a molla sui 3 rotori di banda, preset MAGIC 1, monitor per stadio, barra suggerimenti e vista parametri JSFX scorrevole. È la versione Magic Voice distribuita; ZP Magic Voice 1.2.0 senza LAB è il prototipo archiviato ed escluso dalla release.

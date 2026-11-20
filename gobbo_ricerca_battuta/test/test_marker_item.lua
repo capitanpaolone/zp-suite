@@ -5,7 +5,7 @@ local function check(n, c) print((c and "ok   " or "FAIL ") .. n); if not c then
 check("segnaposto #", M.service_reason("#scena 2") == "segnaposto")
 check("azione !", M.service_reason("!1016") == "azione")
 check("marker SOLO", M.service_reason("BAD_003") == "SOLO" and M.service_reason("SOLO_MARK_012") == "SOLO" and M.service_reason("INSERT_001") == "SOLO")
-check("senza nome", M.service_reason("  ") == "senza nome")
+check("marker senza nome trasferibile", M.service_reason("  ") == nil)
 check("testo vero", M.service_reason("Ciao, come stai?") == nil and M.service_reason("OK, andiamo") == nil and M.service_reason("BAD") == nil)
 -- la registrazione parte prima del segnaposto e se lo porta dentro
 local items = { { pos = 10, len = 20, startoffs = 0, rate = 1, existing = {} } }

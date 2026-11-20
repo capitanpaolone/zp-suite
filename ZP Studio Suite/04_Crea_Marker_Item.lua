@@ -2,13 +2,13 @@
 
 -- CREA MARKER ITEM - LAUNCHER
 -- Linea: ZP Paolo Balestri
--- Suite: ZP Studio Suite for REAPER v1.0.5
+-- Suite: ZP Studio Suite for REAPER v1.0.6
 -- Distribuzione gratuita.
 -- Finestra ponte moderna. Raccoglie le opzioni, si chiude, poi lancia
 -- 04_worker_Crea_Marker_Item.lua che crea realmente i marker.
 --
--- Seconda scheda "Fissa negli item": fa il lavoro del 14 (marker di progetto ->
--- marker dell'item) senza domande bloccanti; la finestra resta aperta e mostra l'esito.
+-- Seconda scheda "Fissa negli item": copia negli item selezionati i marker di
+-- progetto selezionati sulla timeline, saltando quelli operativi.
 
 -- Zoom proporzionale (ZP_GfxScale.lua): finestra di partenza 620x380; ingrandendola cresce tutto insieme.
 local gfx = gfx
@@ -27,6 +27,16 @@ local ZP_UI = dofile(SCRIPT_DIR .. "ZP_UI.lua")
 
 local function trim(s)
   return (s or ""):gsub("^%s+", ""):gsub("%s+$", "")
+end
+
+local function fix_service_reason(name)
+  name = trim(name)
+  if name:sub(1, 1) == "#" then return "segnaposto" end
+  if name:sub(1, 1) == "!" then return "azione" end
+  for _, prefix in ipairs({ "SOLO_MARK", "OK", "BAD", "ALT", "NOISE", "INSERT" }) do
+    if name:match("^" .. prefix .. "_%d+$") then return "SOLO" end
+  end
+  return nil
 end
 
 local function file_exists(path)
@@ -156,7 +166,8 @@ local function open_marker_bridge()
   local fix_all = true
   local fix_remove = false
   local fix_status = ""
-  local fix_info_t, fix_items, fix_markers = -1, 0, 0
+  local fix_info_t, fix_items, fix_selected_inside, fix_markers, fix_service = -1, 0, 0, 0, 0
+  local fix_selection_ok, fix_selection_error = true, nil
   local mode = 2
   local base_name = "NOME"
   local add_video_tc = true
@@ -168,7 +179,7 @@ local function open_marker_bridge()
 
   -- toolbar: icona accesa finche' la finestra e' aperta; un altro clic sull'icona la chiude (REAPER 7.03+)
   if reaper.set_action_options then reaper.set_action_options(1 | 4); reaper.atexit(function() reaper.set_action_options(8) end) end
-  gfx.init("ZP Studio Suite v1.0.5 - Marker", 620, 380)
+    gfx.init("ZP Studio Suite v1.0.6 - Marker", 620, 380)
   gfx.setfont(1, "Arial", 16)
 
   local function edit_input_char(ch)
@@ -272,7 +283,7 @@ local function open_marker_bridge()
     gfx.x = 22
     gfx.y = 60
     gfx.drawstr(tab == 1 and "Crea marker all'inizio degli item selezionati. La finestra si chiude prima di scrivere in timeline."
-      or "Marker di progetto dentro gli item -> marker dell'item: seguono tagli e spostamenti.")
+      or "Solo i marker selezionati: seguono l'item; #HSC e gli operativi restano in timeline.")
     ZP_UI.draw_help_button({ x = gfx.w - 54, y = 18, w = 34, h = 28 }, clicked, tab == 1 and "tool-04" or "tool-14")
     if draw_button({ x = 300, y = 16, w = 128, h = 30 }, "Crea dagli item", tab == 1, true, clicked, "tab") then tab = 1 end
     if draw_button({ x = 434, y = 16, w = 128, h = 30 }, "Fissa negli item", tab == 2, true, clicked, "tab") then
@@ -280,7 +291,7 @@ local function open_marker_bridge()
     end
 
     if tab == 2 then
-      -- quanti item e quanti marker di progetto ci cadono dentro (aggiornato ogni mezzo secondo)
+      -- Conta i marker selezionati negli item; quelli operativi sono esclusi.
       local now = reaper.time_precise()
       if now - fix_info_t > 0.5 then
         fix_info_t = now
@@ -292,13 +303,33 @@ local function open_marker_bridge()
           local pos = reaper.GetMediaItemInfo_Value(it, "D_POSITION")
           ranges[#ranges + 1] = { pos, pos + reaper.GetMediaItemInfo_Value(it, "D_LENGTH") }
         end
-        fix_markers = 0
+        fix_selected_inside, fix_markers, fix_service = 0, 0, 0
+        fix_selection_ok = reaper.GetNumRegionsOrMarkers and reaper.GetRegionOrMarker and
+          reaper.GetRegionOrMarkerInfo_Value
+        fix_selection_error = nil
+        if not fix_selection_ok then fix_selection_error = "REAPER non espone la selezione dei marker." end
+        local selected_ids = {}
+        if fix_selection_ok then
+          for i = 0, reaper.GetNumRegionsOrMarkers(0) - 1 do
+            local marker = reaper.GetRegionOrMarker(0, i, "")
+            if marker and reaper.GetRegionOrMarkerInfo_Value(0, marker, "B_ISREGION") == 0 and
+                reaper.GetRegionOrMarkerInfo_Value(0, marker, "B_UISEL") ~= 0 then
+              local id = tonumber(reaper.GetRegionOrMarkerInfo_Value(0, marker, "I_NUMBER"))
+              if id then selected_ids[math.floor(id + 0.5)] = true end
+            end
+          end
+        end
         local _, nm, nr = reaper.CountProjectMarkers(0)
         for i = 0, nm + nr - 1 do
-          local rv, isrgn, pos = reaper.EnumProjectMarkers3(0, i)
-          if rv > 0 and not isrgn then
+          local rv, isrgn, pos, _, name, id = reaper.EnumProjectMarkers3(0, i)
+          if rv > 0 and not isrgn and id and selected_ids[id] then
             for _, r in ipairs(ranges) do
-              if pos >= r[1] and pos < r[2] then fix_markers = fix_markers + 1; break end
+              if pos >= r[1] and pos < r[2] then
+                fix_selected_inside = fix_selected_inside + 1
+                if fix_service_reason(name) then fix_service = fix_service + 1
+                else fix_markers = fix_markers + 1 end
+                break
+              end
             end
           end
         end
@@ -308,8 +339,8 @@ local function open_marker_bridge()
       gfx.x, gfx.y = 22, 96
       gfx.drawstr("Item")
       local r_all, r_first = { x = 22, y = 112, w = 180, h = 36 }, { x = 210, y = 112, w = 180, h = 36 }
-      if point_in_rect(gfx.mouse_x, gfx.mouse_y, r_all.x, r_all.y, r_all.w, r_all.h) then help_text = "Fissa i marker in tutti gli item selezionati." end
-      if point_in_rect(gfx.mouse_x, gfx.mouse_y, r_first.x, r_first.y, r_first.w, r_first.h) then help_text = "Solo nel primo item selezionato." end
+      if point_in_rect(gfx.mouse_x, gfx.mouse_y, r_all.x, r_all.y, r_all.w, r_all.h) then help_text = "Fissa i marker di progetto selezionati in tutti gli item selezionati." end
+      if point_in_rect(gfx.mouse_x, gfx.mouse_y, r_first.x, r_first.y, r_first.w, r_first.h) then help_text = "Fissa i marker selezionati solo nel primo item." end
       if draw_button(r_all, "Tutti i selezionati", fix_all, true, clicked, "tab") then fix_all = true; fix_info_t = -1 end
       if draw_button(r_first, "Solo il primo", not fix_all, true, clicked, "tab") then fix_all = false; fix_info_t = -1 end
 
@@ -326,16 +357,25 @@ local function open_marker_bridge()
 
       gfx.set(0.74, 0.72, 0.80, 1)
       gfx.x, gfx.y = 22, 256
-      gfx.drawstr(fit_text(string.format("Item: %d   Marker di progetto dentro: %d   (quelli gia' presenti nell'item vengono saltati)",
-        fix_items, fix_markers), gfx.w - 44))
+      gfx.drawstr(fit_text(string.format("Item: %d   Marker selezionati nell'item: %d   Fissabili: %d   Operativi esclusi: %d",
+        fix_items, fix_selected_inside, fix_markers, fix_service), gfx.w - 44))
       gfx.set(0.92, 0.88, 0.78, 1)
       gfx.x, gfx.y = 22, 280
-      gfx.drawstr(fit_text(help_text ~= "" and help_text or fix_status, gfx.w - 44))
+      local status = fix_status
+      if status == "" then
+        if not fix_selection_ok then status = fix_selection_error
+        elseif fix_items == 0 then status = "Seleziona gli item e i marker di progetto da fissare."
+        elseif fix_selected_inside == 0 then status = "Seleziona un marker di progetto dentro l'item."
+        elseif fix_markers == 0 then status = "I marker selezionati sono operativi e restano in timeline."
+        else status = "Si copiano solo i marker selezionati; i duplicati vengono saltati." end
+      end
+      gfx.drawstr(fit_text(help_text ~= "" and help_text or status, gfx.w - 44))
 
-      if draw_button({ x = 372, y = 320, w = 96, h = 38 }, "Fissa", false, fix_items > 0 and fix_markers > 0, clicked, "save") then
-        _G.ZP_14_ALL, _G.ZP_14_REMOVE, _G.ZP_14_QUIET = fix_all, fix_remove, true
+      if draw_button({ x = 372, y = 320, w = 96, h = 38 }, "Fissa", false,
+          fix_selection_ok and fix_items > 0 and fix_markers > 0, clicked, "save") then
+        _G.ZP_14_ALL, _G.ZP_14_REMOVE, _G.ZP_14_SELECTED_ONLY, _G.ZP_14_QUIET = fix_all, fix_remove, true, true
         local ok, res = pcall(dofile, FIX_PATH)
-        _G.ZP_14_ALL, _G.ZP_14_REMOVE, _G.ZP_14_QUIET = nil, nil, nil
+        _G.ZP_14_ALL, _G.ZP_14_REMOVE, _G.ZP_14_SELECTED_ONLY, _G.ZP_14_QUIET = nil, nil, nil, nil
         fix_status = ok and (tostring(res or "Nessuna modifica."):gsub("\n", "   ")) or ("Errore: " .. tostring(res))
         fix_info_t = -1
       end

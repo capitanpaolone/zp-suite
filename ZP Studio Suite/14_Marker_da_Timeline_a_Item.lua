@@ -3,8 +3,8 @@
 -- ZP Studio Suite for REAPER
 -- 14 Marker da timeline a item
 --
--- Copia i marker di progetto che cadono dentro l'item selezionato come take
--- marker dell'item. Tiene nome, posizione e colore.
+-- Di norma copia negli item selezionati solo i marker di progetto selezionati
+-- sulla timeline. Tiene nome, posizione e colore, anche quando il marker non ha nome.
 --
 -- Con piu' item selezionati chiede se lavorare su tutti o solo sul primo.
 -- Non duplica: un marker gia' presente nell'item (stesso punto, stesso nome)
@@ -15,12 +15,11 @@
 -- Il tempo dei take marker e' quello della sorgente, non della timeline:
 -- la conversione tiene conto di start offset e playrate del take.
 --
--- Marker di servizio: una registrazione puo' partire prima di un marker e portarselo
--- dentro. Non sono testo, quindi NON si copiano e NON si cancellano mai:
+-- Marker operativi: una registrazione puo' partire prima di un marker e portarselo
+-- dentro. NON si copiano e NON si cancellano mai:
 --   - segnaposto: nome che comincia con "#" (es. "#scena 2", "#riprendere da qui")
 --   - azioni di marker di REAPER: nome che comincia con "!"
 --   - marker del SOLO Recorder: SOLO_MARK_001, OK_001, BAD_001, ALT_001, NOISE_001, INSERT_001
---   - marker senza nome
 
 local M = {}
 local TITLE = "Project Markers -> Take Markers"
@@ -30,11 +29,10 @@ local SAME_POS = 0.001   -- secondi: entro 1 ms e' lo stesso punto della sorgent
 -- LOGICA PURA (collaudabile con lua fuori da REAPER)
 ---------------------------------------------------------------------------
 
--- Marker che non sono testo (vedi sopra). Restituisce il motivo, oppure nil.
+-- Riconosce i marker operativi (vedi sopra). Restituisce il motivo, oppure nil.
 local SOLO_PREFIXES = { "SOLO_MARK", "OK", "BAD", "ALT", "NOISE", "INSERT" }
 function M.service_reason(name)
   name = tostring(name or ""):gsub("^%s+", ""):gsub("%s+$", "")
-  if name == "" then return "senza nome" end
   if name:sub(1, 1) == "#" then return "segnaposto" end
   if name:sub(1, 1) == "!" then return "azione" end
   for _, p in ipairs(SOLO_PREFIXES) do
@@ -44,10 +42,10 @@ function M.service_reason(name)
 end
 
 -- items:   { {pos, len, startoffs, rate, existing = { {src, name}, ... }}, ... }
--- markers: { {pos, name, id, color}, ... }  marker di progetto (non regioni)
+-- markers: { {pos, name, id, color}, ... }  marker di progetto selezionati (non regioni)
 -- Restituisce per ogni item i marker da aggiungere e quanti sono gia' presenti,
 -- e l'elenco degli id dei marker di progetto fissati in almeno un item.
--- I marker di servizio dentro gli item vanno in skipped (id unici) e non si toccano.
+-- I marker operativi dentro gli item vanno in skipped (id unici) e non si toccano.
 function M.plan(items, markers)
   local result, fixed, fixed_seen = {}, {}, {}
   local skipped, skipped_seen = {}, {}
@@ -92,6 +90,7 @@ if not reaper then return M end
 --   _G.ZP_14_ALL    true = tutti gli item selezionati, false = solo il primo, senza chiedere
 --   _G.ZP_14_REMOVE true/false = cancella o no dalla timeline, senza chiedere
 --                   (se manca, la domanda resta: e' una scelta tua)
+--   _G.ZP_14_SELECTED_ONLY false = importa tutti i marker (compatibilita' ZP Trascrizione)
 --   _G.ZP_14_QUIET  restituisce il riepilogo invece di mostrarlo
 local function report(message)
   if _G.ZP_14_QUIET then return message end
@@ -141,13 +140,34 @@ if #items == 0 then
   return report("L'item selezionato non ha un take attivo.")
 end
 
+local selected_ids = {}
+local selected_only = _G.ZP_14_SELECTED_ONLY ~= false
+if selected_only then
+  if not (reaper.GetNumRegionsOrMarkers and reaper.GetRegionOrMarker and
+      reaper.GetRegionOrMarkerInfo_Value) then
+    return report("Questa versione di REAPER non permette di leggere la selezione dei marker.")
+  end
+  for i = 0, reaper.GetNumRegionsOrMarkers(0) - 1 do
+    local marker = reaper.GetRegionOrMarker(0, i, "")
+    if marker and reaper.GetRegionOrMarkerInfo_Value(0, marker, "B_ISREGION") == 0 and
+        reaper.GetRegionOrMarkerInfo_Value(0, marker, "B_UISEL") ~= 0 then
+      local id = tonumber(reaper.GetRegionOrMarkerInfo_Value(0, marker, "I_NUMBER"))
+      if id then selected_ids[math.floor(id + 0.5)] = true end
+    end
+  end
+end
+
 local markers = {}
 local _, num_markers, num_regions = reaper.CountProjectMarkers(0)
 for i = 0, num_markers + num_regions - 1 do
   local retval, is_region, pos, _, name, id, color = reaper.EnumProjectMarkers3(0, i)
-  if retval > 0 and not is_region then
+  if retval > 0 and not is_region and (not selected_only or (id and selected_ids[id])) then
     markers[#markers + 1] = { pos = pos, name = name, id = id, color = color }
   end
+end
+
+if selected_only and #markers == 0 then
+  return report("Seleziona sulla timeline uno o più marker di progetto da fissare negli item.")
 end
 
 local plan, fixed, skipped = M.plan(items, markers)
@@ -164,7 +184,8 @@ local to_add, already = 0, 0
 for _, p in ipairs(plan) do to_add = to_add + #p.add; already = already + p.already end
 
 if #fixed == 0 then
-  return report("Nessun marker di testo dentro " .. (#items > 1 and "gli item selezionati." or "l'item selezionato.") .. skipped_note)
+  return report((selected_only and "Nessun marker selezionato e trasferibile dentro " or "Nessun marker trasferibile dentro ") ..
+    (#items > 1 and "gli item selezionati." or "l'item selezionato.") .. skipped_note)
 end
 
 -- Tutte le domande prima di modificare: un Annulla non lascia lavori a meta'.

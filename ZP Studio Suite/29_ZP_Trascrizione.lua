@@ -509,7 +509,9 @@ end
 -- Tappa 2 da marker di progetto: motore del 14 su tutti gli item selezionati,
 -- poi subito nel gobbo. La domanda "cancello dalla timeline?" la fa il 14.
 local function do_link_markers()
-  local msg = run_script("14_Marker_da_Timeline_a_Item.lua", { ZP_14_ALL = true, ZP_14_QUIET = true })
+  local msg = run_script("14_Marker_da_Timeline_a_Item.lua", {
+    ZP_14_ALL = true, ZP_14_QUIET = true, ZP_14_SELECTED_ONLY = false
+  })
   local brought = do_bring(true)
   status = (msg and (tostring(msg):gsub("\n", "  ")) or T("Da marker di progetto: nessuna modifica.")) ..
     (brought and string.format(T("  Testi: %s"), tostring(brought):gsub("\n", " ")) or "")
