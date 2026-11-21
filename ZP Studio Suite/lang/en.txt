@@ -1011,11 +1011,11 @@ Volume bip %d dB.	Beep volume %d dB.
 22 Volume bip -	22 Beep volume -
 23 Volume bip +	23 Beep volume +
 Per il bip serve l'estensione SWS.	The beep needs the SWS extension.
-ZP Clean & Paint (beta)	ZP Clean & Paint (beta)
-Beta candidata 2.6.8: azione Lua non installata.	2.6.8 candidate beta: Lua action is not installed.
-Beta candidata 2.6.8: CLI, Python e preset presenti; motore AI in sviluppo.	2.6.8 candidate beta: CLI, Python and presets found; AI engine under development.
-Beta candidata 2.6.8: motore esterno configurato ma incompleto; motore AI in sviluppo.	2.6.8 candidate beta: external engine configured but incomplete; AI engine under development.
-Beta candidata 2.6.8: motore esterno non configurato; motore AI in sviluppo.	2.6.8 candidate beta: external engine not configured; AI engine under development.
+ZP Clean & Paint (BETA)	ZP Clean & Paint (BETA)
+BETA: azione Lua non installata.	BETA: Lua action is not installed.
+BETA: CLI, Python e preset presenti; motore AI in sviluppo.	BETA: CLI, Python and presets found; AI engine under development.
+BETA: motore esterno configurato ma incompleto; motore AI in sviluppo.	BETA: external engine configured but incomplete; AI engine under development.
+BETA: motore esterno non configurato; motore AI in sviluppo.	BETA: external engine not configured; AI engine under development.
 Come installare FFmpeg…	How to install FFmpeg…
 Scegli FFmpeg…	Choose FFmpeg…
 FFmpeg trovato ma non parte:	FFmpeg found but it does not run:

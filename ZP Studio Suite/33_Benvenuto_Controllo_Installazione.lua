@@ -882,16 +882,16 @@ local function check_all()
     local presets = root and P(root, "data", "paint_presets.json")
     local line
     if not action then
-      line = T("Beta candidata 2.6.8: azione Lua non installata.")
+      line = T("BETA: azione Lua non installata.")
     elseif root and exists(py) and exists(cli) and exists(presets) then
-      line = T("Beta candidata 2.6.8: CLI, Python e preset presenti; motore AI in sviluppo.")
+      line = T("BETA: CLI, Python e preset presenti; motore AI in sviluppo.")
     elseif root then
-      line = T("Beta candidata 2.6.8: motore esterno configurato ma incompleto; motore AI in sviluppo.")
+      line = T("BETA: motore esterno configurato ma incompleto; motore AI in sviluppo.")
     else
-      line = T("Beta candidata 2.6.8: motore esterno non configurato; motore AI in sviluppo.")
+      line = T("BETA: motore esterno non configurato; motore AI in sviluppo.")
     end
     out[#out + 1] = {
-      title = T("ZP Clean & Paint (beta)"),
+      title = T("ZP Clean & Paint (BETA)"),
       state = "beta",
       line = line,
       buttons = {},

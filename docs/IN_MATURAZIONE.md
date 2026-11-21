@@ -1,24 +1,19 @@
-# Prodotti in maturazione (beta) — NON inclusi nella versione pubblicata
+# Prodotti Beta — Suite 2.6.8
 
 Regola: vedi `gobbo_ricerca_battuta/ANTI_REGRESSIONE.md`, «Versioni, sincronizzazione e pubblicazione».
 
-**Dal 2026-11-21 (regola di Paolo):** questi prodotti si committano e, alla pubblicazione, escono anche online
-segnalati come **Beta**, invece di restare fuori. Decisione di Paolo (2026-11-21): la 2.6.8 esce senza le beta; nella **2.6.9** si preparano come
-pacchetti Beta (oggi sono `@noindex` o esclusi dall'indice) e si toglie l'aggiunta a parte in `tools/beta_in_prova.txt`.
-Questi prodotti non fanno parte dell'avanzamento: le loro modifiche non fanno scattare la versione e non vanno
-nel `@provides` del 00. Prima di ogni pubblicazione rileggere questo elenco, aggiornarlo e riportarlo in README e
-note di rilascio come «Non incluso in questa versione». Esce da qui solo per decisione di Paolo.
+Decisione di Paolo, 2026-11-21: i prodotti indicati qui si pubblicano come **BETA** per provarli con volontari. Clean & Paint, Montaggio Parlato, BrownSlope Dynamic Guard e Click & Attack Softener sono pacchetti separati ReaPack nella 2.6.8. Restano in maturazione finché Paolo non decide di togliere l'etichetta. Le modifiche ai soli beta non fanno scattare la versione della Suite. I loro requisiti e limiti vanno mantenuti in README, guide IT/EN e note di rilascio.
 
-Aggiornato: 2026-10-18 (compilato da Claude dai file del repo; stato e «cosa manca» da confermare con Paolo)
+Aggiornato: 2026-11-21.
 
-| Prodotto | Dove vive | Perche' non e' nella release | Cosa manca |
+| Prodotto | Dove vive | Stato e dipendenze | Cosa manca |
 |---|---|---|---|
-| 36 ZP Montaggio Parlato (+ `ZP_Montaggio.lua`) | `ZP Studio Suite/36_ZP_Montaggio_Parlato.lua` (`@noindex`) | Prototipo «prova, Fase 0+1»: sgrossatore del parlato; non distribuito | Da confermare. Progetto in `docs/PROGETTO_22_Centrale_Montaggio_Parlato.md` |
-| ZP BrownSlope Dynamic Guard | `ZP Lab/` (esclusa dall'indice ReaPack) | LEGGIMI di ZP Lab: «non e' ancora una beta», non pubblicare finche' non regge una verifica | Da confermare. Vedi `ZP Lab/LEGGIMI.txt` |
-| ZP Click & Attack Softener | `ZP Lab/ZP Click & Attack Softener.jsfx` (`@noindex`, `v0.1`) | Prototipo di laboratorio per de-click lingua/saliva pre-catena e arrotondamento attacchi post-catena con lookahead 6,5 ms (PDC) | Da provare in REAPER su riprese vocali reali pre e post Magic Voice |
-| ZP Speech Engine | `speech-engine/` (esclusa dall'indice) | Fase 1 con MacWhisper in lavorazione; OpenAI Whisper su Windows/Linux sperimentale; si installa dal Benvenuto (33) o a parte con `install_macos.sh` / `install_windows.ps1` | Da confermare. Vedi `docs/ZP_Speech_Engine_Project.md` |
-| ZP Clean & Paint (beta 1.0.1) | Tre Lua in ZP Voce/ (tutti @noindex); motore esterno nel progetto locale zp-voice-model-lab | Candidata 2.6.9 (come Beta); il motore AI resta in sviluppo e fuori dal pacchetto ReaPack | Validazione completa del motore e del flusso REAPER; provenienza in docs/PROVENIENZA_2.6.8.md |
+| ZP Montaggio Parlato (BETA 0.1.0) | `ZP Studio Suite/36_ZP_Montaggio_Parlato.lua` e `ZP_Montaggio.lua` | Pacchetto ReaPack separato; richiede ZP Studio Suite e runtime ZP Speech installato dal 33. Attualmente collaudato su macOS; PDF richiede Poppler, Incolla SWS. | Prove con progetti e copioni reali, verifica del flusso dall'analisi all'Undo. |
+| ZP BrownSlope Dynamic Guard (BETA 0.5-assist-dev) | `ZP Lab/ZP BrownSlope Dynamic Guard.jsfx` | Pacchetto ReaPack separato; DSP autonomo. Cue Navigator facoltativo per il pulsante di aiuto. | Sessioni di ascolto e verifica prima di usarlo in consegna. |
+| ZP Click & Attack Softener (BETA 0.1) | `ZP Lab/ZP Click & Attack Softener.jsfx` | Pacchetto ReaPack separato; DSP autonomo. Cue Navigator facoltativo per il pulsante di aiuto. | Prove su riprese vocali reali pre e post catena. |
+| ZP Speech Engine | `speech-engine/` | Runtime installato separatamente dal Benvenuto (33), non è un pacchetto ReaPack; Windows/Linux sperimentali. | Proseguire il supporto e la validazione dei provider. |
+| ZP Clean & Paint (BETA 1.0.1) | Tre Lua in `ZP Voce/`; motore nel progetto esterno `zp-voice-model-lab` | Pacchetto ReaPack separato per le action. Il motore, l'ambiente Python, i preset e i modelli non sono distribuiti con la Suite. | Validare il motore AI e il flusso REAPER. Nell'ambiente locale `pip check` segnala che `rvc-python 0.1.5` richiede `faiss-cpu==1.7.3` e `numpy<=1.23.5`, mentre `requirements.txt` richiede `faiss-cpu>=1.8.0` e `numpy>=1.24`; inferenza RVC non verificata. Provenienza in `docs/PROVENIENZA_2.6.8.md`. |
 
 Nota: `gobbo_ricerca_battuta/` e' la cartella di lavoro e memoria degli agenti, non un prodotto.
 
-Uscito dalla maturazione: ZP BrownSlope Prism, per decisione di Paolo del 2026-11-13. Ora e' `ZP Misura/ZP BrownSlope Prism.jsfx` (1.0), nella candidata 2.6.7.
+Uscito dalla maturazione: ZP BrownSlope Prism, per decisione di Paolo del 2026-11-13. Ora e' `ZP Misura/ZP BrownSlope Prism.jsfx` (1.1), distribuito con la 2.6.8.

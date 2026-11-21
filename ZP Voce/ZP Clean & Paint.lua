@@ -1,15 +1,17 @@
--- @noindex
--- @description ZP Clean & Paint — Restauro CoreML, Riverniciatura e Voice Morphing RVC per REAPER 7
+-- @description ZP Clean & Paint (BETA) — REAPER 7
 -- @version 1.0.1
 -- @author Paolo Balestri / Antigravity
 -- @about
---   Pannello operativo offline (zero CPU/RAM a riposo) collegato a ZP Voice Model Lab:
---   - Modalità SOLO CLEAN: De-Reverb + Bandwidth Extension CoreML (per interviste/ospiti)
---   - Modalità SOLO PAINT: Voice Morphing RVC v2 con Pitch e Formanti (per doppiaggio personaggi)
---   - Modalità CLEAN + PAINT: Pulizia + Riverniciatura completa sulla tua voce (LoZio.pth)
---   Supporta Preascolto Rapido 4s, salvataggio Preset e inserimento su Fixed Item Lanes (REAPER 7) o Nuova Take.
+--   IT — BETA. Pannello REAPER per Clean (CoreML/fallback) e Paint (RVC), collegato al motore esterno ZP Voice Model Lab.
+--   Il motore, l'ambiente Python, i modelli CoreML/RVC e i preset non sono inclusi nel pacchetto. Configurare lab_root_path.txt; vedi la guida ZP Beta.
+--   EN — BETA. REAPER panel for Clean (CoreML/fallback) and Paint (RVC), connected to the separate ZP Voice Model Lab engine.
+--   The engine, Python environment, CoreML/RVC models and presets are not included. Configure lab_root_path.txt; see the ZP Beta guide.
+-- @changelog
+--   1.0.1 — prima distribuzione pubblica come BETA nella ZP Studio Suite 2.6.8.
+-- @provides
+--   [main] ZP_Clean_And_Paint_Reaper.lua
+--   [main] ZP_Importa_da_Clean_Paint.lua
 -- Provenienza ZP: Suite 2.6.8 beta; acquisito dal progetto motore locale il 2026-11-21.
--- Il motore ZP Voice Model Lab resta esterno, in sviluppo e non viene distribuito dalla Suite.
 
 local IS_WIN = (reaper.GetOS():match("Win") ~= nil)
 
@@ -52,7 +54,7 @@ local LAB_ROOT = resolve_lab_root()
 if not LAB_ROOT or LAB_ROOT == "" then
   reaper.MB(
     "Motore ZP Clean & Paint non configurato.\n\nImposta il percorso di ZP Voice Model Lab in lab_root_path.txt dentro ZP_Clean_Paint.",
-    "ZP Clean & Paint (beta)",
+    "ZP Clean & Paint (BETA)",
     0
   )
   return
@@ -72,8 +74,8 @@ local function readable_file(path)
 end
 if not readable_file(CLI_SCRIPT) or not readable_file(PYTHON_BIN) or not readable_file(PRESETS_PATH) then
   reaper.MB(
-    "Il motore Clean & Paint è configurato ma incompleto.\n\nServono CLI, Python dell'ambiente locale e paint_presets.json. La beta 2.6.8 resta in sviluppo.",
-    "ZP Clean & Paint (beta)",
+    "Il motore Clean & Paint è configurato ma incompleto.\n\nServono CLI, Python dell'ambiente locale e paint_presets.json.",
+    "ZP Clean & Paint (BETA)",
     0
   )
   return
@@ -529,5 +531,5 @@ local function loop()
   reaper.defer(loop)
 end
 
-gfx.init("ZP Clean & Paint — REAPER 7", 472, 345, 0, 220, 180)
+gfx.init("ZP Clean & Paint — BETA", 472, 345, 0, 220, 180)
 loop()

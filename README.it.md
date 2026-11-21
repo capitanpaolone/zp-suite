@@ -32,19 +32,22 @@ La 2.6.6 estende la copia automatica e Sincronizza ora di Render & Copy a Window
 
 La 2.6.7 distribuisce **ZP Magic Voice LAB 1.2.0-lab3**, l’unica versione corretta, come effetto separato della categoria **ZP Voce**. **ZP Magic Voice 1.2.0** senza suffisso LAB è un prototipo archiviato ed escluso dal pacchetto. Per installarlo, seleziona ZP Magic Voice LAB in ReaPack insieme a ZP Studio Suite. [Guida pratica](ZP%20Studio%20Suite/help/magic_voice_lab.html).
 
-La 2.6.8 è in preparazione: **Fissa negli item** trasferirà solo i marker selezionati sulla timeline; quelli operativi, come i cue `#HSC` di Harmonic Space Carver, resteranno al loro posto. Include inoltre **ZP Magic Voice LAB 1.2.3** (rotori DRC `FREQ` centro + `OCT` ottave retrocompatibili, monitor reali continui su `DRC`, `DYN EQ` `±5 / ±12 dB` e `DYN BAL` `±6 / ±12 dB`, delta globale lampeggiante con auto-off a 30 s, `D·MOLLA` esteso per singolo stadio, suggerimenti su blocchi da 4 s di parlato attivo, tema solo cromatico `CHIARO / SCURO` e controlli DRC sempre visibili), **ZP BrownSlope Prism 1.1** (corridoio verde `±1,5 / ±3 dB`, riempimento differenziale caldo/freddo, traccia `Live`, barre bipolari per zona, livella pendenza e tema Scuro/Chiaro), **ZP Loudness Meter Multichannel 45.0** (GUI vertical-first anti-deriva con `TARGET` libero + `SEGUI QUI` / `LOCK NOW`, fascia verde `±LU`, nastro `DERIVA 60s` congelato in pausa, peak-hold reale, 4 viste responsive incluso embedded TCP/MCP con `LUFS-I`/`TP` e tema Scuro/Chiaro) e lo **storico scorrevole** nel pannello `STATO` di **ZP Render & Copy**.
+La versione 2.6.8 include: **Fissa negli item** trasferirà solo i marker selezionati sulla timeline; quelli operativi, come i cue `#HSC` di Harmonic Space Carver, resteranno al loro posto. Include inoltre **ZP Magic Voice LAB 1.2.3** (rotori DRC `FREQ` centro + `OCT` ottave retrocompatibili, monitor reali continui su `DRC`, `DYN EQ` `±5 / ±12 dB` e `DYN BAL` `±6 / ±12 dB`, delta globale lampeggiante con auto-off a 30 s, `D·MOLLA` esteso per singolo stadio, suggerimenti su blocchi da 4 s di parlato attivo, tema solo cromatico `CHIARO / SCURO` e controlli DRC sempre visibili), **ZP BrownSlope Prism 1.1** (corridoio verde `±1,5 / ±3 dB`, riempimento differenziale caldo/freddo, traccia `Live`, barre bipolari per zona, livella pendenza e tema Scuro/Chiaro), **ZP Loudness Meter Multichannel 45.0** (GUI vertical-first anti-deriva con `TARGET` libero + `SEGUI QUI` / `LOCK NOW`, fascia verde `±LU`, nastro `DERIVA 60s` congelato in pausa, peak-hold reale, 4 viste responsive incluso embedded TCP/MCP con `LUFS-I`/`TP` e tema Scuro/Chiaro) e lo **storico scorrevole** nel pannello `STATO` di **ZP Render & Copy**.
 
 La ZP Studio Suite 2.6.7 aggiunge ZP Consolidate, che raccoglie in Media le sorgenti dei take e gli SRT/VTT registrati nel progetto senza convertire i media. L’elenco completo delle modifiche è nel [changelog](CHANGELOG.md).
 
-## Non incluso in questa versione
+## Beta in questa versione
 
-ZP Montaggio Parlato (prototipo), ZP BrownSlope Dynamic Guard e ZP Click & Attack Softener (prototipo in `ZP Lab/`) sono ancora in lavorazione e non fanno parte di questa versione ReaPack.
+- **ZP Clean & Paint (BETA)**: ReaPack installa le action REAPER. Il motore ZP Voice Model Lab, l'ambiente Python, i preset e i modelli restano esterni; servono installazione e percorso configurato.
+- **ZP Montaggio Parlato (BETA)**: richiede ZP Studio Suite e ZP Speech dal 33 Benvenuto; la versione corrente è collaudata su macOS. PDF: `pdftotext` (Poppler). Incolla: SWS.
+- **ZP BrownSlope Dynamic Guard (BETA)** e **ZP Click & Attack Softener (BETA)**: effetti separati, da provare su sessioni e copie di lavoro. Il Cue Navigator serve solo per il pulsante `?` e la guida.
 
 ZP Speech (il motore di trascrizione usato da Trascrivi, 29) non è nel pacchetto ReaPack: si installa dal Benvenuto (33), che lo scarica da GitHub. Su macOS usa MacWhisper o OpenAI Whisper; su Windows e Linux usa OpenAI Whisper locale ed è ancora **sperimentale**.
 
 ## Guide e sorgenti
 
 - [Guida italiana della Suite](ZP%20Studio%20Suite/help/index.html)
+- [Guida dei pacchetti BETA](ZP%20Studio%20Suite/help/lab.html)
 - [English Suite guide](ZP%20Studio%20Suite/help/en/index.html)
 - [Lato Cardioide — Strumenti](https://latocardioide.it/strumenti/)
 - [Indice del repository ReaPack](https://github.com/capitanpaolone/zp-suite/raw/master/index.xml)

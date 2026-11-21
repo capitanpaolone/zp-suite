@@ -1,10 +1,9 @@
-// @description ZP Click & Attack Softener (LAB)
+// @description ZP Click & Attack Softener (BETA)
 // @version 0.1
-// @noindex
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
-//   ### ZP Click & Attack Softener (Prototipo ZP Lab)
+//   ### ZP Click & Attack Softener (BETA)
 //   Strumento a doppio stadio con lookahead (6,5 ms, PDC automatico) tarato sulla voce parlata:
 //   1. DE-CLICK: rilevatore simmetrico pre/post a due bande (1-4 kHz lingua/palato, 4+ kHz saliva/altoparlato) con protezione consonanti (p/t/k).
 //   2. ATTACK SOFTENER: arrotonda la punta iniziale degli attacchi vocali solo sopra la frequenza di taglio (crossover SVF coerente di fase).
@@ -13,12 +12,14 @@
 //   Dual-stage voice cleaner and onset rounder with lookahead (6.5 ms, automatic PDC):
 //   symmetric two-band de-clicker with consonant protection plus phase-coherent high-band attack softener.
 //
+//   BETA. Audio processing is self-contained; Cue Navigator is optional and only opens the help page from the ? button.
+//
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 // @changelog
 //   v0.1: Prima versione di laboratorio tarata su ripresa microfonica e catena voce di Paolo;
 //     De-Click pre/post con protezione consonanti, Attack Softener selettivo, 4 preset (PRE-CHAIN, POST-CHAIN,
 //     TAKE SPORCO, DELICATO), DELTA con auto-off 30 s, D·MOLLA per stadio, tema Scuro/Chiaro e vista JSFX/OSARA.
-desc:ZP Click & Attack Softener (LAB) - Mouth De-Click & Attack Rounder - Paolo Balestri
+desc:ZP Click & Attack Softener (BETA) - Mouth De-Click & Attack Rounder - Paolo Balestri
 options:gmem=ZPVoiceoverSharedBus
 in_pin:left input
 in_pin:right input

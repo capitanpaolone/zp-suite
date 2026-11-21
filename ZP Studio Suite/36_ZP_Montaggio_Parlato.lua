@@ -1,6 +1,17 @@
--- @noindex
+-- @description ZP Montaggio Parlato (BETA)
+-- @version 0.1.0
+-- @author Paolo Balestri
+-- @about
+--   BETA. Richiede ZP Studio Suite e ZP Speech installato dal 33 Benvenuto.
+--   ZP Speech deve avere un provider pronto (MacWhisper o OpenAI Whisper locale con modello).
+--   BETA. Requires ZP Studio Suite and ZP Speech installed from 33 Welcome.
+--   ZP Speech needs a ready provider (MacWhisper or local OpenAI Whisper with a model).
+--   Currently tested on macOS. PDF import optionally needs pdftotext (Poppler); clipboard paste optionally needs SWS.
+-- @provides
+--   [nomain] ZP_Montaggio.lua
+--
 -- ZP Studio Suite for REAPER
--- 36 ZP Montaggio Parlato (prova, Fase 0+1): lo sgrossatore del parlato.
+-- ZP Montaggio Parlato (BETA): lo sgrossatore del parlato.
 --
 -- Legge gli item audio (selezionati, o tutta la traccia selezionata), li trascrive con ZP Speech
 -- (parole con i tempi, in cache accanto al WAV: <nome>.zpwords.json), ascolta il file (click,
@@ -33,7 +44,7 @@ local UI = dofile(SCRIPT_DIR .. "ZP_UI.lua")
 local M = dofile(SCRIPT_DIR .. "ZP_Montaggio.lua")
 local T = UI.T
 
-local TITLE = "ZP Montaggio Parlato"
+local TITLE = "ZP Montaggio Parlato — BETA"
 local EXT = "ZP_MONTAGGIO"
 local W0, H0 = 1240, 820
 

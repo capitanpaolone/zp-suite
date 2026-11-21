@@ -1,5 +1,5 @@
 -- @noindex
--- @description ZP Clean & Paint — Importa in REAPER l'ultimo file inviato dalla Web App
+-- @description ZP Clean & Paint (BETA) — Importa in REAPER l'ultimo file inviato dalla Web App
 -- @version 1.0.0
 -- @author Paolo Balestri / Antigravity
 -- Legge reaper_import_path.txt scritto da ZP Clean & Paint (e compatibile con ZP Catalogo).

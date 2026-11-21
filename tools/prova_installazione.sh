@@ -13,7 +13,9 @@
 # 2. Pulizia (solo REAPER chiuso e con il file ZP_BANCO_DI_PROVA): sposta i file
 #    ZP in ZP_backup_prova/<data_ora>/, fa dimenticare a ReaPack la ZP Suite e
 #    punta il repository "ZP Suite" all'indice locale.
-# 3. Beta: copia i prodotti in maturazione elencati in tools/beta_in_prova.txt.
+# 3. Beta non ancora selezionate nel profilo di prova: copia gli eventuali file
+#    elencati in tools/beta_in_prova.txt, per includerli nello smoke test. Il loro
+#    pacchetto ReaPack resta verificato separatamente nell'indice del punto 1.
 # 4. Installazione: apre il REAPER di prova, registra le azioni beta, lancia la
 #    sincronizzazione di ReaPack e aspetta che finisca. Poi il "fumo JSFX": ogni effetto
 #    ZP su una traccia con un tono, 3 secondi di play; un effetto che non si carica o i cui
@@ -22,7 +24,7 @@
 #    <REAPER>/ZP_prova_installazione_esito.txt.
 #
 # --solo-indice  solo il punto 1 (per la prova su strada sul REAPER operativo).
-# --senza-beta   salta il punto 3.
+# --senza-beta   salta il punto 3 (overlay di prova; non cambia l'indice ReaPack).
 #
 # Non tocca mai il repo, GitHub, ne' un REAPER senza ZP_BANCO_DI_PROVA.
 
@@ -187,7 +189,14 @@ fi
 
 # ---------------------------------------------------------------- 4. installazione
 echo; echo "== 4. Installazione con ReaPack in $(basename "$APP")"
-ATTESI="$(grep -c '<reapack ' "$INDICE")"
+ATTESI="$(python3 - "$BACKUP/ReaPack/registry.db" "$INDICE" <<'PY'
+import sqlite3, sys, xml.etree.ElementTree as ET
+db = sqlite3.connect(sys.argv[1])
+selezionati = {r[0] for r in db.execute("SELECT DISTINCT package FROM entries WHERE remote='ZP Suite'")}
+indicizzati = {r.get("name") for r in ET.parse(sys.argv[2]).getroot().iter("reapack")}
+print(len(selezionati & indicizzati))
+PY
+)" || ferma "non riesco a contare i pacchetti ZP selezionati nel backup."
 LUA="$LAVORO/avvio_prova.lua"
 {
   echo "-- generato da tools/prova_installazione.sh"
@@ -251,15 +260,15 @@ rm -f "$LAVORO/via_fumo" "$LAVORO/fumo_fatto.txt"
 "$APP/Contents/MacOS/REAPER" -newinst -nosplash "$LUA" >/dev/null 2>&1 &
 disown 2>/dev/null
 
-conta() { sqlite3 "$DEST/ReaPack/registry.db" "SELECT count(*) FROM entries WHERE remote='ZP Suite';" 2>/dev/null || echo 0; }
+conta() { sqlite3 "$DEST/ReaPack/registry.db" "SELECT count(DISTINCT package) FROM entries WHERE remote='ZP Suite';" 2>/dev/null || echo 0; }
 n=0; prima=-1; fermo=0
 for s in $(seq 1 180); do
   sleep 2; n="$(conta)"
   if [ "$n" -ge "$ATTESI" ] && [ "$n" = "$prima" ]; then fermo=$((fermo + 1)); [ "$fermo" -ge 2 ] && break; else fermo=0; fi
   prima="$n"
 done
-echo "Pacchetti ZP installati da ReaPack: $n su $ATTESI"
-[ "$n" -ge "$ATTESI" ] || echo "ATTENZIONE: ReaPack non ha finito entro 6 minuti. Guarda la finestra di ReaPack in REAPER di prova."
+echo "Pacchetti ZP selezionati ripristinati da ReaPack: $n su $ATTESI"
+[ "$n" -ge "$ATTESI" ] || echo "ATTENZIONE: ReaPack non ha ripristinato tutti i pacchetti selezionati entro 6 minuti. Guarda la finestra di ReaPack in REAPER di prova."
 sleep 3   # lascia a REAPER il tempo di scrivere reaper-kb.ini
 
 echo; echo "== 4b. Fumo JSFX: ogni effetto ZP caricato e fatto suonare 3 secondi"

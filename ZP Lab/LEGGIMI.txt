@@ -1,16 +1,14 @@
 ZP Lab
 
-Roba in lavorazione. Sta nel repository per avere una storia delle modifiche,
-NON per essere installata: questa cartella e' esclusa dall'indice ReaPack,
-quindi in Browse packages non compare niente di quello che c'e' qui dentro.
+ZP BrownSlope Dynamic Guard e ZP Click & Attack Softener sono pubblicati come pacchetti BETA separati nella Suite 2.6.8.
+Questa cartella conserva i sorgenti e la storia; le guide per chi prova i pacchetti sono in ZP Studio Suite/help/lab.html e nella versione inglese.
 
 ZP BrownSlope Dynamic Guard (v0.5-assist-dev)
   Versione avanzata e visibile del modulo Brown che sta gia' dentro ZP BUS
   Chain e ZP Master Pro. L'idea e' avere un brown sloper con cui equalizzare
   tenendo quel riferimento sempre sotto gli occhi, invece che nascosto dentro
   la catena.
-  Stato: non e' ancora una beta. Non va pubblicata finche' non regge una
-  sessione vera.
+  Stato: BETA pubblica 2.6.8. Da provare in sessioni reali; resta sperimentale.
   Origine: cartella "ZP_Paolo Balestri JSFX in uso", 16 giugno 2026.
   Esiste anche una variante piu' piccola, "PRO" v0.4, tenuta fuori: questa
   la comprende.
@@ -26,5 +24,4 @@ ZP Click & Attack Softener (v0.1)
   2) Attack Softener selettivo sopra la frequenza di taglio (crossover SVF coerente di fase).
   Quattro preset (PRE-CHAIN, POST-CHAIN, TAKE SPORCO, DELICATO), DELTA globale (auto-off 30 s),
   D·MOLLA per singolo stadio, monitor eventi in tempo reale e vista JSFX/OSARA.
-  Stato: prototipo iniziale tarato sul take grezzo/processato di Paolo; in attesa di prova
-  d'ascolto in REAPER prima di eventuale promozione in ZP Voce.
+  Stato: BETA pubblica 2.6.8. Da provare su riprese vocali reali pre e post catena; resta sperimentale.

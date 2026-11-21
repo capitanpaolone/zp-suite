@@ -1,6 +1,10 @@
-desc:ZP BrownSlope Dynamic Guard Assist - Paolo Balestri
-//author: Paolo Balestri / Codex prototype
-//version: 0.5-assist-dev
+desc:ZP BrownSlope Dynamic Guard (BETA) - Paolo Balestri
+// @description ZP BrownSlope Dynamic Guard (BETA)
+// @version 0.5-assist-dev
+// @author Paolo Balestri
+// @about
+//   BETA. Dynamic four-band tonal guard for voice/music chains.
+//   Audio processing is self-contained; ZP Harmonic Space Carver Cue Navigator is optional and only opens the help page from the ? button.
 // Contatto: social@paolobalestri.com
 //tags: dynamics eq broadcast brown slope multiband limiter-prep
 //

@@ -1,6 +1,6 @@
 # Changelog — ZP Suite
 
-## ZP Studio Suite 2.6.8 — in preparazione
+## ZP Studio Suite 2.6.8 — 2026-11-21
 
 - **ZP Magic Voice LAB (ZP Voce): LEGA OUTPUT e memoria A/B**: sulle righe PEAK, DYN EQ, TONE SCL e DYN BAL un pulsante con la catenella lega il modulo a `OUTPUT`, che si corregge di quanto il modulo alza o abbassa (calcolato dai parametri; per i moduli dinamici sul livello medio della voce degli ultimi secondi, INPUT compreso): si giudica il suono a parità di volume. Comandi coinvolti in viola. Memoria di lavoro A/B nella barra USCITA (A, B, A=B), salvata nel progetto. `OUTPUT` ora ±24 dB. Pulsante `?` che apre la guida dedicata.
 - **ZP Magic Voice LAB (ZP Voce): LINK OUTPUT and A/B memory**: a chain button on the PEAK, DYN EQ, TONE SCL and DYN BAL rows links the module to `OUTPUT`, which moves by the gain the module adds or removes (computed from the parameters; dynamic modules use the average voice level of the last seconds, INPUT included): you judge the sound at equal loudness. Involved controls turn purple. A/B working memory in the OUTPUT bar (A, B, A=B), saved with the project. `OUTPUT` now ±24 dB. `?` button opening the dedicated guide.
@@ -73,11 +73,17 @@
 
 - Gobbi: importazione DOCX/ODT/RTF/TXT, incolla pulito, editor con scroll/Undo e durata temporizzata opzionale; controlli ZP_UI, progresso e riaggancio rapido. Guide IT/EN aggiornate. Pause effettive con Shift+Invio, promemoria tramite marker e divisione alla parola selezionata con conservazione del testo rimanente. Verifiche automatiche superate; collaudo del Gobbo confermato da Paolo il 10 novembre 2026.
 
-### Non incluso in questa versione / Not included in this release
+### Beta in questa versione / Beta in this release
 
-ZP Montaggio Parlato (prototipo), ZP BrownSlope Dynamic Guard e ZP Speech Engine restano in lavorazione. ZP Speech Engine non è un pacchetto ReaPack della Suite; il supporto Windows/Linux è ancora sperimentale.
+- **ZP Clean & Paint (BETA) 1.0.1**: ReaPack distribuisce le action REAPER; il motore AI ZP Voice Model Lab resta esterno e in sviluppo.
+- **ZP Montaggio Parlato (BETA) 0.1.0**: richiede ZP Studio Suite e ZP Speech dal 33 Benvenuto; collaudo corrente su macOS.
+- **ZP BrownSlope Dynamic Guard (BETA) 0.5-assist-dev** e **ZP Click & Attack Softener (BETA) 0.1**: pacchetti ZP Lab per prove su sessioni e copie di lavoro.
 
-ZP Montaggio Parlato (prototype), ZP BrownSlope Dynamic Guard and ZP Speech Engine remain in development. ZP Speech Engine is not a ZP Suite ReaPack package; Windows/Linux support is still experimental.
+- **ZP Clean & Paint (BETA) 1.0.1**: ReaPack ships the REAPER actions; the ZP Voice Model Lab AI engine remains external and in development.
+- **ZP Montaggio Parlato (BETA) 0.1.0**: requires ZP Studio Suite and ZP Speech from 33 Welcome; currently tested on macOS.
+- **ZP BrownSlope Dynamic Guard (BETA) 0.5-assist-dev** and **ZP Click & Attack Softener (BETA) 0.1**: ZP Lab packages for testing on sessions and working copies.
+
+ZP Speech Engine resta un runtime separato installato dal 33 Benvenuto; il supporto Windows/Linux è sperimentale. / ZP Speech Engine remains a separate runtime installed from 33 Welcome; Windows/Linux support is experimental.
 
 Le versioni dei singoli effetti sono indipendenti: le trovi nell'intestazione di
 ciascun file e nel gestore pacchetti. Questo file registra la storia della Suite

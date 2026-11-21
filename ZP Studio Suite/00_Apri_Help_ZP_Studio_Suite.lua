@@ -23,7 +23,9 @@
 --   sono disponibili in entrambe le lingue. Il supporto screen reader Windows usa
 --   NVDA Controller Client (LGPL 2.1, NV Access). Dettagli in README.it.md.
 -- @changelog
---   2.6.8 (in preparazione)
+--   2.6.8 (2026-11-21)
+--   EN — Beta packages: ZP Clean & Paint, ZP Montaggio Parlato, ZP BrownSlope Dynamic Guard, and ZP Click & Attack Softener.
+--   IT — Pacchetti Beta: ZP Clean & Paint, ZP Montaggio Parlato, ZP BrownSlope Dynamic Guard e ZP Click & Attack Softener.
 --   EN — ZP Render & Copy: scrollable STATO message log (mouse wheel, keyboard, draggable scrollbar, per-tab position and jump-to-top counter).
 --   IT — ZP Render & Copy: storico messaggi nel pannello STATO ora scorrevole con rotella, tastiera e barra laterale trascinabile (posizione per tab e salto rapido in cima).
 --   EN — ZP Loudness Meter Multichannel 45.0: vertical-first anti-drift UI with free TARGET + LOCK NOW, ±LU green band, 60s drift ribbon, peak-hold, clickable TRUE PK reset, 4 responsive layouts (incl. LUFS-I/TP embedded), settings drawer & Dark/Light themes (BS.1770-4 core preserved).
@@ -176,6 +178,7 @@
 --   help/pannello_trascrizione.html
 --   help/collega_marker.html
 --   help/master_pro_glue_matrix.html
+--   help/lab.html
 --   help/ffmpeg.html
 --   icons/ZP_tb_28_Collega_Marker.png
 --   help/en/index.html
@@ -183,6 +186,7 @@
 --   help/en/solo_recorder.html
 --   help/en/voice_cleaner.html
 --   help/en/magic_voice_lab.html
+--   help/en/lab.html
 --   help/en/pannello_trascrizione.html
 --   help/en/collega_marker.html
 --   help/en/ffmpeg.html

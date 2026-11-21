@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ZP Lab - plugin in lavorazione</title>
+<title>ZP Suite — Beta 2.6.8</title>
 <style>
 :root{
   --carta:#f7f6f3; --inchiostro:#1f2b35; --tenue:#5d6a74;
@@ -59,8 +59,8 @@ a{color:var(--accento)}
 </head><body>
 <main>
 <!-- lc-testata --><div class="lc-testata"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><a href="https://latocardioide.it/strumenti/">Lato Cardioide</a> &middot; Strumenti</div><!-- /lc-testata -->
-<h1>ZP Lab</h1>
-<p class="occhiello">Plugin in lavorazione: non sono nel pacchetto ReaPack, si copiano a mano. Possono cambiare.</p><!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
+<h1>ZP Beta</h1>
+<p class="occhiello">Questi strumenti sono distribuiti come pacchetti BETA separati nella ZP Studio Suite 2.6.8. Possono cambiare mentre li proviamo insieme.</p><!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
 
 
 <h2 id="plugin-brownslope-guard">ZP BrownSlope Dynamic Guard</h2>
@@ -72,7 +72,19 @@ a{color:var(--accento)}
 <li><strong>Analisi stereo e M/S</strong> visibile: L, R, Mid, Side, Width e differenza L/R. La correzione resta collegata L/R per non cambiare l'immagine stereo.</li>
 <li>In testata: riquadri IN, OUT e W/D (dry/wet). Il <strong>?</strong> accanto apre questa pagina (serve il Cue Navigator acceso).</li>
 </ul>
-<p class="nota">Stato: non &egrave; ancora una beta. Non va usato in consegna finch&eacute; non regge una sessione vera.</p>
+<p class="nota"><strong>BETA.</strong> Da provare in sessioni reali; non usare come passaggio non verificato in una consegna.</p>
+
+<h2 id="plugin-click-attack">ZP Click &amp; Attack Softener</h2>
+<p><strong>BETA.</strong> De-Click e arrotondamento degli attacchi vocali con lookahead e compensazione PDC. Il Cue Navigator &egrave; facoltativo e serve solo al pulsante <code>?</code> per aprire questa guida.</p>
+<p class="nota">Provalo su copie di riprese vocali e confronta il risultato con il bypass prima di usarlo in una consegna.</p>
+
+<h2 id="montaggio-parlato">ZP Montaggio Parlato</h2>
+<p><strong>BETA.</strong> Analizza item audio WAV, trascrive con ZP Speech e propone una bozza di montaggio. La decisione resta all'utente; APPLICA lavora sugli item con split e note di montaggio in un solo Undo.</p>
+<p>Richiede ZP Studio Suite e ZP Speech installato dal <strong>33 Benvenuto</strong>, con un provider pronto: MacWhisper oppure OpenAI Whisper locale con un modello. Al momento e' collaudato su macOS. Per importare PDF serve <code>pdftotext</code> (Poppler); gli altri formati usano <code>textutil</code>. Incolla e' facoltativo e richiede SWS; senza SWS puoi caricare il copione da file.</p>
+
+<h2 id="clean-paint">ZP Clean &amp; Paint</h2>
+<p><strong>BETA.</strong> Il pacchetto ReaPack contiene le action REAPER, non il motore AI. Serve un'installazione separata di <em>ZP Voice Model Lab</em>, con CLI <code>engines/rvc_local/zp_clean_paint_cli.py</code>, Python nel suo ambiente locale, <code>data/paint_presets.json</code> e i modelli necessari alla modalita' scelta.</p>
+<p>Configura il percorso assoluto del progetto esterno in <code>~/Library/Application Support/ZP_Clean_Paint/lab_root_path.txt</code> (macOS) o <code>%APPDATA%/ZP_Clean_Paint/lab_root_path.txt</code> (Windows). Per PAINT servono il modello RVC e i relativi indici; il controllo del 33 verifica CLI, Python e preset, non i modelli. Il motore resta in sviluppo.</p>
 
 <p class="nota"><a href="index.html">Torna alla guida completa</a></p>
 <!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Sviluppata su un'idea di Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ZP Lab - work in progress plugins</title>
+<title>ZP Suite — Beta 2.6.8</title>
 <style>
 :root{
   --carta:#f7f6f3; --inchiostro:#1f2b35; --tenue:#5d6a74;
@@ -59,8 +59,8 @@ a{color:var(--accento)}
 </head><body>
 <main>
 <!-- lc-testata --><div class="lc-testata"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><a href="https://latocardioide.it/strumenti/">Lato Cardioide</a> &middot; Tools</div><!-- /lc-testata -->
-<h1>ZP Lab</h1>
-<p class="occhiello">Work-in-progress plugins: not in the ReaPack package, copied by hand. They may change.</p><!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
+<h1>ZP Beta</h1>
+<p class="occhiello">These tools are distributed as separate BETA packages in ZP Studio Suite 2.6.8. They may change as we test them together.</p><!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
 
 
 <h2 id="plugin-brownslope-guard">ZP BrownSlope Dynamic Guard</h2>
@@ -72,7 +72,19 @@ a{color:var(--accento)}
 <li><strong>Stereo and M/S analysis</strong>: L, R, Mid, Side, Width and L/R difference. Correction stays L/R linked so the stereo image does not change.</li>
 <li>Header: IN, OUT and W/D (dry/wet) tiles. The <strong>?</strong> next to them opens this page (Cue Navigator must be running).</li>
 </ul>
-<p class="nota">Status: not a beta yet. Do not use it on deliveries until it survives a real session.</p>
+<p class="nota"><strong>BETA.</strong> Test it in real sessions; do not rely on an unverified pass in a delivery.</p>
+
+<h2 id="plugin-click-attack">ZP Click &amp; Attack Softener</h2>
+<p><strong>BETA.</strong> Voice de-clicking and onset softening with lookahead and automatic PDC. Cue Navigator is optional; it is only needed by the <code>?</code> button to open this guide.</p>
+<p class="nota">Try it on copies of vocal recordings and compare with bypass before using it in a delivery.</p>
+
+<h2 id="montaggio-parlato">ZP Montaggio Parlato</h2>
+<p><strong>BETA.</strong> Analyzes WAV items, transcribes them with ZP Speech and proposes an editing draft. The user makes the decisions; Apply creates splits and editing notes with one Undo.</p>
+<p>Requires ZP Studio Suite and ZP Speech installed from <strong>33 Welcome</strong>, with a ready provider: MacWhisper or local OpenAI Whisper with a model. It is currently tested on macOS. PDF import needs <code>pdftotext</code> (Poppler); other document formats use <code>textutil</code>. Clipboard paste is optional and requires SWS; without SWS, load the script from a file.</p>
+
+<h2 id="clean-paint">ZP Clean &amp; Paint</h2>
+<p><strong>BETA.</strong> The ReaPack package contains the REAPER actions, not the AI engine. It requires a separate <em>ZP Voice Model Lab</em> installation with CLI <code>engines/rvc_local/zp_clean_paint_cli.py</code>, Python in its local environment, <code>data/paint_presets.json</code> and the models needed by the selected mode.</p>
+<p>Set the absolute path to the external project in <code>~/Library/Application Support/ZP_Clean_Paint/lab_root_path.txt</code> (macOS) or <code>%APPDATA%/ZP_Clean_Paint/lab_root_path.txt</code> (Windows). PAINT also needs the RVC model and related index files; Welcome (33) checks for the CLI, Python and presets, not the models. The engine remains in development.</p>
 
 <p class="nota"><a href="index.html">Back to the full guide</a></p>
 <!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Developed from an idea by Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
