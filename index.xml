@@ -6138,65 +6138,60 @@ Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]
   <metadata>
     <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
-{\*\listtable{\list\listtemplateid1{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelindent0{\leveltext\'01\u8226 ?;}{\levelnumbers;}\fi-360\li360\lin360 }{\listname ;}\listid1}
-{\list\listtemplateid2{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelindent0{\leveltext\'01\u8226 ?;}{\levelnumbers;}\fi-360\li360\lin360 }{\listname ;}\listid2}
-{\list\listtemplateid3{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelindent0{\leveltext\'01\u8226 ?;}{\levelnumbers;}\fi-360\li360\lin360 }{\listname ;}\listid3}
-}
-{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}{\listoverride\listid2\listoverridecount0\ls2}{\listoverride\listid3\listoverridecount0\ls3}}
 \widowctrl\hyphauto
 
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 \outlinelevel0 \b \fs34 ZP Suite\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 A free, open-source toolkit for voiceover, dubbing, podcasts, e-learning and broadcast workflows in REAPER. It brings script reading, subtitle handling, project preparation, accessible controls and ZP audio tools into one REAPER setup.\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 {\b Prefer Italian?} See {\field{\*\fldinst{HYPERLINK "README.it.md"}}{\fldrslt{\ul
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs36 ZP Suite\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 A free, open-source toolkit for voiceover, dubbing, podcasts, e-learning and broadcast workflows in REAPER. It brings script reading, subtitle handling, project preparation, accessible controls and ZP audio tools into one REAPER setup.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Prefer Italian?} See {\field{\*\fldinst{HYPERLINK "README.it.md"}}{\fldrslt{\ul
 README in Italian
 }}}
 . The Suite itself is available in Italian and English.\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Choose your language\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 After installing or updating, open {\b 33 Welcome} from REAPER's Action List. Under {\b Suite language}, choose {\b English} or {\b Italiano}. This preference is saved and is independent of REAPER's own language. The {\f1 \fs24 ?} help buttons open the guide in the selected Suite language.\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Install with ReaPack\par}
-{\pard \ql \f0 \fs24 \sa180 \li360 \fi-360\ls1\ilvl0\tx360 {\listtext\tab 1.\tab} In REAPER, choose {\b Extensions \u8594 ? ReaPack \u8594 ? Import repositories}.\par}
-{\pard \ql \f0 \fs24 \sa180 \li360 \fi-360\ls1\ilvl0\tx360 {\listtext\tab 2.\tab} Add this repository URL:\par}
-{\pard \ql \f0 \fs24 \sa180 \li360 \ls1\ilvl0\fi0 {\f1 \fs24 https://github.com/capitanpaolone/zp-suite/raw/master/index.xml}\par}
-{\pard \ql \f0 \fs24 \sa180 \li360 \fi-360\ls1\ilvl0\tx360 {\listtext\tab 3.\tab} Choose {\b Extensions \u8594 ? ReaPack \u8594 ? Browse packages}, search for {\b ZP}, and install {\b ZP Studio Suite} and any ZP effects you need.\par}
-{\pard \ql \f0 \fs24 \sa180 \li360 \fi-360\ls1\ilvl0\tx360 {\listtext\tab 4.\tab} Synchronize packages to receive updates.\sa180\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 The Suite works in a clean REAPER install. SWS, js_ReaScriptAPI and OSARA are optional; they add features where available.\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 What is included\par}
-{\pard \ql \f0 \fs24 \sa0 \li360 \fi-360\ls2\ilvl0\tx360 {\listtext\tab \bullet \tab} {\b ZP Studio Suite} \u8212- teleprompters, SRT import/export and references, project tools, mixdown preparation, voice-minute reports, Voice Cleaner and accessible workflows.\par}
-{\pard \ql \f0 \fs24 \sa0 \li360 \fi-360\ls2\ilvl0\tx360 {\listtext\tab \bullet \tab} {\b ZP Voce} \u8212- voice chains, dialogue tools and voice/music processing.\par}
-{\pard \ql \f0 \fs24 \sa0 \li360 \fi-360\ls2\ilvl0\tx360 {\listtext\tab \bullet \tab} {\b ZP Master} \u8212- mastering and reference-tone tools.\par}
-{\pard \ql \f0 \fs24 \sa0 \li360 \fi-360\ls2\ilvl0\tx360 {\listtext\tab \bullet \tab} {\b ZP Misura} \u8212- loudness meters, oscilloscope, passive signal probes and ZP BrownSlope Prism, a passive brown-slope analyzer.\sa180\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 Version 2.6.6 adds automatic copying and Sync now in Render & Copy on Windows (requires js_ReaScriptAPI) and Linux (requires find and stat). Version 2.6.5 updates the Solo Recorder guide to explain how ZP Remote packages relate to Dubbertools. Version 2.6.4 added Render & Copy, a Dubbertools link in SOLO Web, and the ZP Remote REAPER tool for creating packages and importing deliveries. ZP Remote export requires Python 3 and ffmpeg.\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 ZP Studio Suite 2.6.7 distributes {\b ZP Magic Voice LAB 1.2.0-lab3}, the correct version, as a separate {\b ZP Voce} effect. {\b ZP Magic Voice 1.2.0} without LAB is an archived prototype and is excluded from the package. Install ZP Magic Voice LAB alongside ZP Studio Suite in ReaPack. {\field{\*\fldinst{HYPERLINK "ZP%20Studio%20Suite/help/en/magic_voice_lab.html"}}{\fldrslt{\ul
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Choose your language\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 After installing or updating, open {\b 33 Welcome} from REAPER's Action List. Under {\b Suite language}, choose {\b English} or {\b Italiano}. This preference is saved and is independent of REAPER's own language. The {\f1 ?} help buttons open the guide in the selected Suite language.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Install with ReaPack\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 1.\tx360\tab In REAPER, choose {\b Extensions \u8594 ? ReaPack \u8594 ? Import repositories}.\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 2.\tx360\tab Add this repository URL:\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 {\f1 https://github.com/capitanpaolone/zp-suite/raw/master/index.xml}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 3.\tx360\tab Choose {\b Extensions \u8594 ? ReaPack \u8594 ? Browse packages}, search for {\b ZP}, and install {\b ZP Studio Suite} and any ZP effects you need.\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 4.\tx360\tab Synchronize packages to receive updates.\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The Suite works in a clean REAPER install. SWS, js_ReaScriptAPI and OSARA are optional; they add features where available.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 What is included\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b ZP Studio Suite} \u8212- teleprompters, SRT import/export and references, project tools, mixdown preparation, voice-minute reports, Voice Cleaner and accessible workflows.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b ZP Voce} \u8212- voice chains, dialogue tools and voice/music processing.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b ZP Master} \u8212- mastering and reference-tone tools.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b ZP Misura} \u8212- loudness meters, oscilloscope, passive signal probes and ZP BrownSlope Prism, a passive brown-slope analyzer.\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Version 2.6.6 adds automatic copying and Sync now in Render & Copy on Windows (requires js_ReaScriptAPI) and Linux (requires find and stat). Version 2.6.5 updates the Solo Recorder guide to explain how ZP Remote packages relate to Dubbertools. Version 2.6.4 added Render & Copy, a Dubbertools link in SOLO Web, and the ZP Remote REAPER tool for creating packages and importing deliveries. ZP Remote export requires Python 3 and ffmpeg.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 ZP Studio Suite 2.6.7 distributes {\b ZP Magic Voice LAB 1.2.0-lab3}, the correct version, as a separate {\b ZP Voce} effect. {\b ZP Magic Voice 1.2.0} without LAB is an archived prototype and is excluded from the package. Install ZP Magic Voice LAB alongside ZP Studio Suite in ReaPack. {\field{\*\fldinst{HYPERLINK "ZP%20Studio%20Suite/help/en/magic_voice_lab.html"}}{\fldrslt{\ul
 Operating guide
 }}}
 .\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 ZP Studio Suite 2.6.7 adds ZP Consolidate, which copies referenced take sources and project-registered SRT/VTT files into Media without converting media. See the {\field{\*\fldinst{HYPERLINK "CHANGELOG.md"}}{\fldrslt{\ul
+{\pard \ql \f0 \sa180 \li0 \fi0 ZP Studio Suite 2.6.7 adds ZP Consolidate, which copies referenced take sources and project-registered SRT/VTT files into Media without converting media. See the {\field{\*\fldinst{HYPERLINK "CHANGELOG.md"}}{\fldrslt{\ul
 changelog
 }}}
  for the complete list of changes.\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Not included in this version\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 ZP Montaggio Parlato (prototype) and ZP BrownSlope Dynamic Guard are still in development and are not part of this ReaPack release.\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 ZP Speech (the transcription engine behind Transcribe, 29) is not in the ReaPack package: install it from Welcome (33), which downloads it from GitHub. On macOS it uses MacWhisper or OpenAI Whisper; on Windows and Linux it uses local OpenAI Whisper and is still {\b experimental}.\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Guides and source\par}
-{\pard \ql \f0 \fs24 \sa0 \li360 \fi-360\ls3\ilvl0\tx360 {\listtext\tab \bullet \tab} {\field{\*\fldinst{HYPERLINK "ZP%20Studio%20Suite/help/en/index.html"}}{\fldrslt{\ul
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Not included in this version\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 ZP Montaggio Parlato (prototype) and ZP BrownSlope Dynamic Guard are still in development and are not part of this ReaPack release.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 ZP Speech (the transcription engine behind Transcribe, 29) is not in the ReaPack package: install it from Welcome (33), which downloads it from GitHub. On macOS it uses MacWhisper or OpenAI Whisper; on Windows and Linux it uses local OpenAI Whisper and is still {\b experimental}.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Guides and source\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\field{\*\fldinst{HYPERLINK "ZP%20Studio%20Suite/help/en/index.html"}}{\fldrslt{\ul
 English Suite guide
 }}}
 \par}
-{\pard \ql \f0 \fs24 \sa0 \li360 \fi-360\ls3\ilvl0\tx360 {\listtext\tab \bullet \tab} {\field{\*\fldinst{HYPERLINK "ZP%20Studio%20Suite/help/index.html"}}{\fldrslt{\ul
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\field{\*\fldinst{HYPERLINK "ZP%20Studio%20Suite/help/index.html"}}{\fldrslt{\ul
 Guida italiana della Suite
 }}}
 \par}
-{\pard \ql \f0 \fs24 \sa0 \li360 \fi-360\ls3\ilvl0\tx360 {\listtext\tab \bullet \tab} {\field{\*\fldinst{HYPERLINK "https://latocardioide.it/strumenti/"}}{\fldrslt{\ul
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\field{\*\fldinst{HYPERLINK "https://latocardioide.it/strumenti/"}}{\fldrslt{\ul
 Website: Lato Cardioide \u8212- Tools
 }}}
 \par}
-{\pard \ql \f0 \fs24 \sa0 \li360 \fi-360\ls3\ilvl0\tx360 {\listtext\tab \bullet \tab} {\field{\*\fldinst{HYPERLINK "https://github.com/capitanpaolone/zp-suite/raw/master/index.xml"}}{\fldrslt{\ul
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\field{\*\fldinst{HYPERLINK "https://github.com/capitanpaolone/zp-suite/raw/master/index.xml"}}{\fldrslt{\ul
 ReaPack repository index
 }}}
 \sa180\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 The ReaPack package description and release notes are provided in both English and Italian. The GitHub README is English-first; Italian readers can choose the Italian README and set the Suite language in {\b 33 Welcome}.\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 License\par}
-{\pard \ql \f0 \fs24 \sa180 \li0 \fi0 GPL-3.0-or-later for most components; some REAPER-derived meters are LGPL-2.1-or-later. See {\field{\*\fldinst{HYPERLINK "LICENSE"}}{\fldrslt{\ul
+{\pard \ql \f0 \sa180 \li0 \fi0 The ReaPack package description and release notes are provided in both English and Italian. The GitHub README is English-first; Italian readers can choose the Italian README and set the Suite language in {\b 33 Welcome}.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 License\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 GPL-3.0-or-later for most components; some REAPER-derived meters are LGPL-2.1-or-later. See {\field{\*\fldinst{HYPERLINK "LICENSE"}}{\fldrslt{\ul
 LICENSE
 }}}
 , {\field{\*\fldinst{HYPERLINK "LICENSE-LGPL-2.1.txt"}}{\fldrslt{\ul
