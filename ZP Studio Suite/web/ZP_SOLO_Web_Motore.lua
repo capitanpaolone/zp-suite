@@ -195,6 +195,27 @@ COMANDI.fine = function()
   reaper.SetEditCurPos(last and (last + NEXT_GAP) or 0, true, false)
   say(last and "Dopo l'ultimo item + 5 s" or "Nessun item: cursore a 0")
 end
+-- LOOP della selezione (pulsantino sul PLAY): la selezione temporale diventa la zona di loop e si accende
+-- il Repeat di REAPER; da fermo, se il cursore e' fuori dalla selezione, va al suo inizio. Lo stato e' quello di REAPER.
+local function loop_on() return reaper.GetSetRepeat(-1) == 1 end
+local function toggle_loop_selection()
+  local on = not loop_on()
+  local s, e = reaper.GetSet_LoopTimeRange(false, false, 0, 0, false)
+  local has_sel = e > s
+  if on and has_sel then
+    reaper.GetSet_LoopTimeRange(true, true, s, e, false)
+    if reaper.GetPlayState() & 1 == 0 then
+      local cur = reaper.GetCursorPosition()
+      if cur < s or cur >= e then reaper.SetEditCurPos(s, true, false) end
+    end
+  end
+  reaper.GetSetRepeat(on and 1 or 0)
+  return on, has_sel
+end
+COMANDI.loop = function()
+  local on, has_sel = toggle_loop_selection()
+  say(on and (has_sel and "Loop acceso sulla selezione" or "Loop acceso sui punti di loop: nessuna selezione") or "Loop spento")
+end
 COMANDI.preroll = function()
   if not preroll_api() then return say("Il pre-roll in secondi richiede SWS.") end
   local v = math.floor(reaper.SNM_GetIntConfigVar("preroll", 0))
@@ -365,6 +386,7 @@ local function publish()
     rit_db = track_db(reaper.GetMasterTrack(0)),
     region = region_at(pos),
     preroll = preroll_on(),
+    loop = loop_on(),
     preroll_s = preroll_s(),
     sws = preroll_api() and true or false,
     dirty = reaper.IsProjectDirty(0) ~= 0,

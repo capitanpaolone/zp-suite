@@ -1,10 +1,12 @@
 -- @description ZP Harmonic Space Carver Cue Navigator (background helper)
--- @version 1.14
+-- @version 1.15
 -- @author Paolo Balestri / Codex
 -- @about Collega i Carver a REAPER: salti tra i cue, punto del cursore a trasporto fermo,
 --   verifica del routing sidechain e cue come marker #HSC sul righello (seguono l'editing).
 -- @changelog
---   Il ? di ZP BrownSlope Prism apre la sua sezione nella guida principale della Suite.
+--   Il ? di ZP Magic Voice LAB apre la sua guida dedicata (magic_voice_lab.html).
+--   Rampa del cue fino a 1200 ms (formato di scambio con il Carver allargato); i preset C/S/M/L non contano piu'.
+--   Il ? di ZP BrownSlope Prism apre la sua sezione nella guida principale della Suite (non piu' la pagina di ZP Lab).
 --   2026-11-09: memoria per marker estesa a Rampa e durata Custom; sincronizzazione con JSFX e render.
 --   1.14: preset C/S/M/L salvati per marker nel progetto; il Carver riceve anche una copia nel suo stato
 --        per mantenere le impostazioni cue-specifiche disponibili durante il render offline.
@@ -364,8 +366,9 @@ local Bridge = {
     [12] = "plugin-brownslope-prism",
     -- ZP Lab (plugin in lavorazione, non pubblicati): pagina a parte, help/lab.html
     [13] = "plugin-brownslope-guard",
+    [14] = "plugin-magic-voice-lab",   -- pagina dedicata, sotto
   },
-  PLUGIN_PAGES = { [13] = "lab.html" },   -- di serie index.html
+  PLUGIN_PAGES = { [13] = "lab.html", [14] = "magic_voice_lab.html" },   -- di serie index.html
   FALLBACK_URL = "https://latocardioide.it/strumenti/"
 }
 HSC.Bridge = Bridge
@@ -949,7 +952,7 @@ local function default_cue_times(c)
       if name and name:find("Quick Return Open", 1, true) then hold = reaper.TrackFX_GetParam(c.track, c.fx, p) end
     end
   end
-  return math.max(10, math.min(250, math.floor(ramp + 0.5))), math.max(0, math.min(2000, math.floor(hold / 10 + 0.5) * 10))
+  return math.max(10, math.min(1200, math.floor(ramp + 0.5))), math.max(0, math.min(2000, math.floor(hold / 10 + 0.5) * 10))
 end
 
 local function load_cue_prefs(key)
@@ -967,7 +970,7 @@ timing_bank = function(markers)
   for i, m in ipairs(markers) do
     if i > HSC.MAX then break end
     local p = cue_prefs[m.num] or {}
-    bank[i] = (p.ramp or 200) + math.floor((p.hold or 500) / 10 + 0.5) * 256
+    bank[i] = (p.ramp or 200) + math.floor((p.hold or 500) / 10 + 0.5) * 2048
   end
   return bank, table.concat(bank, ",")
 end
@@ -975,10 +978,10 @@ end
 timing_command = function(payload)
   local key = project_key()
   if key ~= cue_prefs_key then load_cue_prefs(key) end
-  local pos = math.floor(payload / 65536) / 1000
-  local packed = math.floor(payload + 0.5) % 65536
-  local ramp = math.max(10, math.min(250, packed % 256))
-  local hold = math.max(0, math.min(2000, math.floor(packed / 256) * 10))
+  local pos = math.floor(payload / 1048576) / 1000
+  local packed = math.floor(payload + 0.5) % 1048576
+  local ramp = math.max(10, math.min(1200, packed % 2048))
+  local hold = math.max(0, math.min(2000, math.floor(packed / 2048) * 10))
   for _, m in ipairs(read_cue_markers()) do
     if math.abs(m.pos - pos) <= HSC.TOL or (synced and synced[m.num] and math.abs(synced[m.num] - pos) <= HSC.TOL) then
       local p = cue_prefs[m.num] or {mode = default_hold_mode(carvers[1])}

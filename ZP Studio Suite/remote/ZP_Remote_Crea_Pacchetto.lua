@@ -60,8 +60,15 @@ local function find_python()
   return nil
 end
 local python = find_python()
+-- FFmpeg: stesso modulo del Benvenuto; il percorso trovato va all'esportatore (--ffmpeg), che con il PATH
+-- ridotto di REAPER aperto dal Finder altrimenti non lo troverebbe.
+local ok_ff, FF = pcall(dofile, join(script_dir, "zp_ffmpeg.lua"))
 local function command(args)
   if not python then return nil end
+  if args[1] == quote(exporter) and ok_ff and FF then
+    local ff = FF.trova(r)
+    if ff then args[#args + 1] = "--ffmpeg"; args[#args + 1] = quote(ff) end
+  end
   return python .. " " .. table.concat(args, " ")
 end
 local function read_json(path)

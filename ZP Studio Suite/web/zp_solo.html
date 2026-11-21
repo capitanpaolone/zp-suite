@@ -62,6 +62,7 @@ section h2{font-size:12px;font-weight:600;color:var(--sub);margin:0 0 8px}
 .pauseb.on .round{background:#dc941f;border-color:#7a5210}
 .playb.on .round{background:#22a64e}
 .badge{position:absolute;top:-6px;left:-8px;width:26px;height:26px;border-radius:50%;border:2px solid #0b0b0d;background:#4a4d57;color:#e8e9ee;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0}
+.badge.right{left:auto;right:-8px}
 .badge[aria-pressed=true]{background:#f9c23d;color:#231703}
 .meter-row{display:flex;align-items:center;gap:8px;margin:6px 0}
 .meter-row b{width:30px;font-size:13px}
@@ -166,7 +167,10 @@ footer{padding:4px 16px 16px;color:var(--sub);font-size:14px;min-height:24px}
       </span>
       <button class="tbtn" data-cmd="stop" aria-label="Stop"><span class="round r58"><span style="width:22px;height:22px;background:#fff;display:block"></span></span>STOP</button>
       <button class="tbtn pauseb" id="b-pause" data-cmd="pause" aria-label="Pausa, anche della registrazione"><span class="round r40" style="margin-top:9px"><svg class="i" viewBox="0 0 16 16" style="fill:#fff;stroke:none"><path d="M4 3h3v10H4zM9 3h3v10H9z"/></svg></span>PAUSA</button>
+      <span style="position:relative">
       <button class="tbtn playb" id="b-play" data-cmd="play" aria-label="Play"><span class="round r58"><svg class="i" viewBox="0 0 16 16" style="width:24px;height:24px;fill:#fff;stroke:none"><path d="M4 2l10 6-10 6z"/></svg></span>PLAY</button>
+        <button class="badge right" id="b-loop" aria-pressed="false" aria-label="Loop della selezione"><svg viewBox="0 0 16 16" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2"><path d="M13 8a5 5 0 1 1-2-4"/><path d="M10.5 1.2v3.2h3.2"/></svg></button>
+      </span>
       <button class="tbtn" data-cmd="fine" aria-label="Dopo l'ultimo item più 5 secondi"><span class="round r48"><svg class="i" viewBox="0 0 16 16" style="fill:currentColor;stroke:none"><path d="M12 3h2v10h-2zM1 3v10l5-5zM7 3v10l5-5z"/></svg></span>fine +5s</button>
     </div>
   </section>
@@ -245,6 +249,7 @@ const ZP_EN = {
   "REC": "REC",
   "Pre-roll acceso o spento": "Pre-roll on or off",
   "PRE": "PRE",
+  "Loop della selezione": "Loop the selection",
   "Stop": "Stop",
   "STOP": "STOP",
   "Pausa, anche della registrazione": "Pause, including recording",
@@ -368,6 +373,7 @@ function applyStaticTranslations() {
   document.querySelector('[data-cmd="back"]')?.setAttribute("aria-label", t("Indietro di 5 secondi"));
   $("b-rec")?.setAttribute("aria-label", t("Registra"));
   $("b-pre")?.setAttribute("aria-label", t("Pre-roll acceso o spento"));
+  $("b-loop")?.setAttribute("aria-label", t("Loop della selezione"));
   document.querySelector('[data-cmd="stop"]')?.setAttribute("aria-label", t("Stop"));
   $("b-pause")?.setAttribute("aria-label", t("Pausa, anche della registrazione"));
   $("b-play")?.setAttribute("aria-label", t("Play"));
@@ -536,6 +542,7 @@ function render() {
   $("b-rec").classList.toggle("on", rec);
   $("b-play").classList.toggle("on", st.transport === "PLAY");
   $("b-pre").setAttribute("aria-pressed", st.preroll ? "true" : "false");
+  $("b-loop").setAttribute("aria-pressed", st.loop ? "true" : "false");
   $("pre-lamp").classList.toggle("on", !!st.preroll);
   $("pre-s").textContent = t("Pre-roll %d s").replace("%d", st.preroll_s);
   $("pre-minus").disabled = st.preroll_s <= 1; $("pre-plus").disabled = st.preroll_s >= 5;
@@ -725,6 +732,7 @@ function frame() {
 // ---- eventi ----
 document.querySelectorAll("[data-cmd]").forEach(b => b.addEventListener("click", () => send(b.dataset.cmd)));
 $("b-pre").addEventListener("click", e => { e.stopPropagation(); send("preroll"); });
+$("b-loop").addEventListener("click", e => { e.stopPropagation(); send("loop"); });
 $("b-save").addEventListener("click", () => send("save"));
 $("b-undo").addEventListener("click", () => send("undo"));
 $("b-redo").addEventListener("click", () => send("redo"));

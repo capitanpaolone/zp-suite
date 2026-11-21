@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZP Remote · FFmpeg</title><style>
+:root{color-scheme:light dark;--bg:#f7f7f4;--paper:#fff;--ink:#202024;--muted:#5e6068;--line:#d9d9d2;--accent:#245ba6}
+@media(prefers-color-scheme:dark){:root{--bg:#101217;--paper:#171a21;--ink:#eceff4;--muted:#adb2bd;--line:#303541;--accent:#77a9ff}}
+body{margin:0;padding:28px;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}main{max-width:900px;margin:auto}h1{margin:0 0 6px}h2{margin-top:30px;border-top:1px solid var(--line);padding-top:18px}p,li{max-width:78ch}.lead,.muted{color:var(--muted)}.card{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:14px;margin:12px 0}code{background:rgba(127,127,127,.16);padding:2px 5px;border-radius:4px}.icon{width:180px;height:60px;image-rendering:pixelated}.state{display:inline-block;margin-right:12px}.note{border-left:4px solid var(--accent);padding:10px 14px;background:color-mix(in srgb,var(--accent) 10%,var(--bg))}
+</style><style id="lc-firma">
+.lc-testata{display:flex;align-items:center;gap:.5rem;margin:0 0 .4rem;font:600 .78rem/1.2 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  letter-spacing:.08em;text-transform:uppercase;color:#565F66}
+.lc-testata a{color:inherit;text-decoration:none}.lc-testata a:hover{color:#A94F35}
+.lc-logo{width:22px;height:22px;flex:none}
+.lc-filetto{border:0;border-top:2px solid #A94F35;margin:.6rem 0 1.4rem}
+.lc-piede{display:flex;align-items:center;gap:.6rem;margin:3rem 0 1rem;padding:.8rem 1rem;border:1px solid #CFCCC3;
+  border-radius:6px;background:#FAF9F5;color:#37444E;font:.95rem/1.4 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+.lc-piede a{color:#8F4630}
+@media (prefers-color-scheme: dark){
+  .lc-testata{color:#9aa4ac}.lc-piede{background:#1d2226;border-color:#2e3439;color:#c9cfd4}.lc-piede a{color:#d98b6f}
+}
+</style>
+</head><body><main>
+<!-- lc-testata --><div class="lc-testata"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><a href="https://latocardioide.it/strumenti/">Lato Cardioide</a> &middot; Tools</div><!-- /lc-testata -->
+<h1 id="ffmpeg">FFmpeg for ZP Remote</h1>
+
+<!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
+<p class="lead">ZP Remote uses FFmpeg only to <strong>export</strong> the package: light video, cover image and audio guide. Importing does not need it. The Suite does not install FFmpeg: it detects it if present and tells you where it found it.</p>
+<h2>Do I have it?</h2><p>Open <strong>33 Welcome</strong>: the ZP Remote row reads <em>FFmpeg &lt;version&gt;: &lt;path&gt;</em>. If it says <em>FFmpeg found but it does not run</em>, the file is there but does not work on this computer (for example it is built for another processor): get a suitable one as described below.</p>
+<p>To know which Mac you have: Apple menu &rsaquo; <strong>About This Mac</strong>. <em>Chip Apple M1, M2, M3…</em> means Apple Silicon; <em>Intel processor</em> means Intel.</p>
+<h2>Mac with Apple Silicon (M1, M2, M3, M4…)</h2><ol><li>Install Homebrew from <a href="https://brew.sh">brew.sh</a> (one line to paste in Terminal).</li><li>In Terminal: <code>brew install ffmpeg</code>.</li><li>FFmpeg ends up in <code>/opt/homebrew/bin/ffmpeg</code>: the Suite finds it by itself.</li></ol>
+<h2>Mac with Intel processor</h2><p>Homebrew no longer officially supports Intel Macs. The simplest way is a ready-made build:</p><ol><li>From <a href="https://evermeet.cx/ffmpeg/">evermeet.cx/ffmpeg</a> (listed on the official FFmpeg page) download the <strong>ffmpeg</strong> zip and open it: you get a single file, <code>ffmpeg</code>.</li><li>Copy it to <code>/usr/local/bin</code>. In Terminal: <code>sudo mkdir -p /usr/local/bin</code> then <code>sudo cp ~/Downloads/ffmpeg /usr/local/bin/</code> (asks for your Mac password).</li><li>If macOS blocks it on first use because it is not signed: System Settings &rsaquo; <strong>Privacy &amp; Security</strong> &rsaquo; <em>Open Anyway</em>.</li></ol><p>Alternatively: <a href="https://www.macports.org/install.php">MacPorts</a>, then <code>sudo port install ffmpeg</code> (it ends up in <code>/opt/local/bin/ffmpeg</code>, which the Suite finds by itself).</p>
+<h2>Windows</h2><p>For now ZP Remote (import and export) works only on macOS: on Windows the Welcome marks it as not available. If you need FFmpeg anyway, ready-made builds are at <a href="https://www.gyan.dev/ffmpeg/builds/">gyan.dev</a> or <a href="https://github.com/BtbN/FFmpeg-Builds/releases">BtbN</a>: extract the zip and add the <code>bin</code> folder to the Windows PATH.</p>
+<h2>Linux</h2><p>From your distribution's package manager: Debian and Ubuntu <code>sudo apt install ffmpeg</code>; Fedora <code>sudo dnf install ffmpeg</code> (with RPM Fusion); Arch <code>sudo pacman -S ffmpeg</code>. It ends up in the PATH and the Suite finds it.</p>
+<h2>FFmpeg in another folder</h2><p>In the Welcome press <strong>Choose FFmpeg…</strong> and point to the file. The choice is kept across Suite updates. If the file later disappears, the Suite goes back to the usual places.</p>
+<h2>After installing</h2><p>Close and reopen the Welcome: the ZP Remote row should show version and path. No need to restart REAPER or the computer, or to change system settings. All builds: <a href="https://ffmpeg.org/download.html">ffmpeg.org/download.html</a>.</p>
+<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Developed from an idea by Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
+</main></body></html>

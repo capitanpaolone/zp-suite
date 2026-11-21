@@ -1,8 +1,12 @@
 // @description ZP Harmonic Space Carver
-// @version 2.6.10
+// @version 2.6.11
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   Cue: un solo comportamento. Rampa regolabile fino a 1200 ms (per marker), poi la musica resta a duck 0
+//     finche' non arriva il primo suono dal sidechain dopo un silenzio. Tolti i preset C/S/M/L e la tenuta Custom.
+//   LOCK nel pannello Carver: attacco e rilascio del Carver comandati dal VCA (rispetta Voice Hold e il rientro GRADUAL).
+//   Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
 //   2026-11-09: Rampa e durata Custom salvate e richiamate per marker insieme a C/S/M/L.
 //   2026-11-09: ripristino proporzioni GUI compatte; preset sopra Rampa/Custom e Voice Ret leggibile.
 //   Corretta la parentesi mancante nel comando cue in Play; algoritmi DSP invariati.
@@ -92,7 +96,7 @@ slider51:0<0,1,1{Full,Dock}>-View Mode
 slider52:0<0,2,1{Carver+VCA,Solo Carver,Solo VCA}>-Engines
 slider53:0<0,1,1{Off,On}>-Debug Overlay
 slider55:0<0,0,1{TXT 1}>-GUI Text Size (Fixed)
-slider56:200<10,250,1>-Quick Return Ramp (ms)
+slider56:200<10,1200,1>-Quick Return Ramp (ms)
 slider57:500<0,2000,10>-Quick Return Open (ms)
 slider58:0<-24,24,0.1>-SC 2 Gain (dB)
 slider59:0<-24,24,0.1>-SC 3 Gain (dB)
@@ -103,6 +107,7 @@ slider63:0<0,20,0.1>-Lookahead (ms)
 slider64:6<0,12,0.1>-Carver Knee (dB)
 slider65:0<0,900,1>-HSC Slot (helper)
 slider66:0<0,3,1{Custom,Short,Medium,Long}>-Cue Hold Mode (new cue default)
+slider67:0<0,1,1{Off,On}>-Carver Timing Lock (VCA)
 
 // -----------------------------
 // METER VITALI (Esclusivi per OSARA, prefisso [Read])
@@ -426,8 +431,8 @@ function quick_timing_service() local(i, packed) (
       i = 0;
       while(i < quick_point_count && !quick_timing_dirty[i]) (i += 1;);
       i < quick_point_count ? (
-        packed = floor(quick_cue_ramps[i] + 0.5) + floor(quick_cue_holds[i] / 10 + 0.5) * 256;
-        gmem[quick_gmem_base+70] = floor(quick_points[i] * 1000 + 0.5) * 65536 + packed;
+        packed = floor(quick_cue_ramps[i] + 0.5) + floor(quick_cue_holds[i] / 10 + 0.5) * 2048;
+        gmem[quick_gmem_base+70] = floor(quick_points[i] * 1000 + 0.5) * 1048576 + packed;
         gmem[quick_gmem_base] = 9; gmem[quick_gmem_base+1] += 1;
         quick_timing_seq = gmem[quick_gmem_base+1]; quick_timing_inflight = 1;
         quick_timing_pos = quick_points[i]; quick_timing_dirty[i] = 0;
@@ -506,8 +511,8 @@ function quick_service() local(base, i, seq, cmd, res, pos, n, same_list, select
                 quick_cue_ramps[i] = quick_sync_ramps[i]; quick_cue_holds[i] = quick_sync_holds[i];
                 quick_timing_dirty[i] = 1;
               ) : (
-                quick_cue_ramps[i] = max(10, min(250, packed % 256));
-                quick_cue_holds[i] = max(0, min(2000, floor(packed / 256) * 10));
+                quick_cue_ramps[i] = max(10, min(1200, packed % 2048));
+                quick_cue_holds[i] = max(0, min(2000, floor(packed / 2048) * 10));
               ); i += 1;
             );
           );
@@ -549,7 +554,8 @@ quick_request = 0; quick_ui_pos = 0; quick_fire_ext = 0;
 quick_total_samples = max(1, floor(0.200 * srate));
 quick_hold_ms = slider(57); quick_hold_samples = max(0, floor(quick_hold_ms * 0.001 * srate));
 quick_samples_left = 0; quick_guard_samples_left = 0; quick_event_total_samples = quick_total_samples; quick_event_hold_samples = 0;
-quick_ramp_active = 0; quick_hold_active = 0; quick_override_active = 0; quick_start_gr = 1.0;
+quick_ramp_active = 0; quick_hold_active = 0; quick_override_active = 0; quick_wait_voice = 0; quick_voice_armed = 0;
+c_ret_prog = 1; c_ret_l = c_ret_m = c_ret_h = 1; c_last_l = c_last_m = c_last_h = 1; quick_start_gr = 1.0;
 quick_carver_start_l = 1.0; quick_carver_start_m = 1.0; quick_carver_start_h = 1.0;
 quick_last_event_pos = -1;
 last_mouse_cap = 0;
@@ -711,17 +717,15 @@ is_jumping && is_playing ? (
   os_gr_l=0; os_gr_m=0; os_gr_h=0; os_vca_gr=0; os_fat_gr=0; os_glue_gr=0; os_sc_in=-60; os_delta_l=-60;
   i_clr = 0; loop(16, i_clr[0] = 0; i_clr += 1;);
 );
-is_jumping ? (quick_samples_left = 0; quick_guard_samples_left = 0;);
+(is_jumping || (is_playing && !was_playing)) ? (quick_samples_left = 0; quick_guard_samples_left = 0; quick_wait_voice = 0; quick_voice_armed = 0; c_ret_prog = 1;);
 quick_fire ? (
   quick_start_gr = final_vca_gr;
   quick_carver_start_l = gr_l; quick_carver_start_m = gr_m; quick_carver_start_h = gr_h;
   quick_fire == 2 ? (quick_start_gr = 1.0; quick_carver_start_l = 1.0; quick_carver_start_m = 1.0; quick_carver_start_h = 1.0;);
   // Latch ramp and hold at the cue: later SC activity/automation cannot shorten this override.
   quick_event_total_samples = (quick_fire_idx >= 0 && !quick_fire_default) ? max(1, floor(quick_cue_ramps[quick_fire_idx] * 0.001 * srate)) : quick_total_samples;
-  quick_hold_mode = (quick_fire_idx >= 0 && !quick_fire_default) ? quick_pref_mode(quick_fire_idx) : floor(slider(66) + 0.5);
-  quick_hold_ms = quick_hold_mode == 1 ? 500 : quick_hold_mode == 2 ? 1000 : quick_hold_mode == 3 ? 2000 : (quick_fire_idx >= 0 && !quick_fire_default) ? quick_cue_holds[quick_fire_idx] : slider(57);
-  quick_hold_samples = max(0, floor(quick_hold_ms * 0.001 * srate));
-  quick_event_hold_samples = quick_hold_samples;
+  // Dopo la rampa: duck 0 finche' arriva il primo suono dal sidechain dopo un silenzio (preset C/S/M/L ignorati).
+  quick_wait_voice = 1; quick_voice_armed = 0;
   quick_samples_left = quick_event_total_samples;
   quick_guard_samples_left = 0;
   quick_last_event_pos = play_position;
@@ -783,6 +787,8 @@ max_red_db = slider(24);
 vca_attack_ms = slider(26);
 vca_hold_ms = slider(27);
 vca_release_ms = slider(28);
+carver_lock = slider(67) >= 0.5;
+carver_lock ? ( carver_attack_ms = max(0.1, vca_attack_ms); carver_release_ms = vca_release_ms; );
 glue_amt = slider(33) / 100.0;
 wet = slider(35) / 100.0;
 
@@ -921,9 +927,10 @@ svf_split(inR, 4,  6); mR_lo=_low; mR_md=_mid; mR_hi=_high;
 svf_split(sc_det_L, 8,  10); sL_lo=_low; sL_md=_mid; sL_hi=_high;
 svf_split(sc_det_R, 12, 14); sR_lo=_low; sR_md=_mid; sR_hi=_high;
 
-det_l = sqrt(0.5 * (sL_lo*sL_lo + sR_lo*sR_lo)); det_l > env_l ? (env_l = att_coef*env_l + (1-att_coef)*det_l) : (env_l = rel_coef*env_l + (1-rel_coef)*det_l);
-det_m = sqrt(0.5 * (sL_md*sL_md + sR_md*sR_md)); det_m > env_m ? (env_m = att_coef*env_m + (1-att_coef)*det_m) : (env_m = rel_coef*env_m + (1-rel_coef)*det_m);
-det_h = sqrt(0.5 * (sL_hi*sL_hi + sR_hi*sR_hi)); det_h > env_h ? (env_h = att_coef*env_h + (1-att_coef)*det_h) : (env_h = rel_coef*env_h + (1-rel_coef)*det_h);
+c_rel = (carver_lock && speech_state == 2) ? 1.0 : rel_coef;
+det_l = sqrt(0.5 * (sL_lo*sL_lo + sR_lo*sR_lo)); det_l > env_l ? (env_l = att_coef*env_l + (1-att_coef)*det_l) : (env_l = c_rel*env_l + (1-c_rel)*det_l);
+det_m = sqrt(0.5 * (sL_md*sL_md + sR_md*sR_md)); det_m > env_m ? (env_m = att_coef*env_m + (1-att_coef)*det_m) : (env_m = c_rel*env_m + (1-c_rel)*det_m);
+det_h = sqrt(0.5 * (sL_hi*sL_hi + sR_hi*sR_hi)); det_h > env_h ? (env_h = att_coef*env_h + (1-att_coef)*det_h) : (env_h = c_rel*env_h + (1-c_rel)*det_h);
 
 env_l_db = amp2db(env_l); env_m_db = amp2db(env_m); env_h_db = amp2db(env_h);
 k_l = knee_factor(env_l_db, thresh_db, knee_half); k_m = knee_factor(env_m_db, thresh_db, knee_half); k_h = knee_factor(env_h_db, thresh_db, knee_half);
@@ -933,8 +940,16 @@ gr_l = max(0.0001, 1.0 - (raw_l * s_eff_dl * k_l)); gr_m = max(0.0001, 1.0 - (ra
 
 spread > 0 ? ( r_l=gr_l; r_m=gr_m; r_h=gr_h; sp2=spread*0.5;
   gr_l = max(0.0001, r_l*(1-spread) + r_m*sp2 + r_h*sp2); gr_m = max(0.0001, r_m*(1-spread) + r_l*sp2 + r_h*sp2); gr_h = max(0.0001, r_h*(1-spread) + r_l*sp2 + r_m*sp2); );
+carver_lock && release_mode_gradual ? (
+  speech_just_released ? ( c_ret_prog = 0; c_ret_l = c_last_l; c_ret_m = c_last_m; c_ret_h = c_last_h; );
+  !speech_active && c_ret_prog < 1 ? (
+    c_ret_prog = min(1, c_ret_prog + 1 / max(1, vca_return_samples));
+    gr_l = c_ret_l + (1 - c_ret_l) * c_ret_prog; gr_m = c_ret_m + (1 - c_ret_m) * c_ret_prog; gr_h = c_ret_h + (1 - c_ret_h) * c_ret_prog;
+  );
+) : c_ret_prog = 1;
 quick_ramp_active = quick_samples_left > 0;
-quick_hold_active = !quick_ramp_active && quick_guard_samples_left > 0;
+quick_wait_voice ? ( speech_env < speech_thr ? (quick_voice_armed = 1) : (quick_voice_armed ? quick_wait_voice = 0); );
+quick_hold_active = !quick_ramp_active && quick_wait_voice;
 quick_override_active = quick_ramp_active || quick_hold_active;
 quick_ramp_active ? (
   quick_t = min(1.0, (quick_event_total_samples - quick_samples_left + 1) / max(1, quick_event_total_samples));
@@ -942,6 +957,7 @@ quick_ramp_active ? (
   gr_m = quick_carver_start_m + (1.0 - quick_carver_start_m) * quick_t;
   gr_h = quick_carver_start_h + (1.0 - quick_carver_start_h) * quick_t;
 ) : quick_hold_active ? (gr_l = 1.0; gr_m = 1.0; gr_h = 1.0;);
+c_last_l = gr_l; c_last_m = gr_m; c_last_h = gr_h;
 
 procL = inL + mL_lo*(gr_l - 1.0) + mL_md*(gr_m - 1.0) + mL_hi*(gr_h - 1.0);
 procR = inR + mR_lo*(gr_l - 1.0) + mR_md*(gr_m - 1.0) + mR_hi*(gr_h - 1.0);
@@ -1003,10 +1019,7 @@ s_vca_amt <= 0 ? (
 );
 
 // Advance the shared cue timer once per sample, outside the VCA gate and SC detector.
-quick_ramp_active ? (
-  quick_samples_left -= 1;
-  quick_samples_left <= 0 ? quick_guard_samples_left = quick_event_hold_samples;
-) : quick_hold_active ? quick_guard_samples_left -= 1;
+quick_ramp_active ? quick_samples_left -= 1;
 
 flat_mix_both = flat_mix_both * flat_focus_tc + flat_t_both * (1.0 - flat_focus_tc);
 flat_mix_carver = flat_mix_carver * flat_focus_tc + flat_t_carver * (1.0 - flat_focus_tc);
@@ -1110,7 +1123,7 @@ file_avail(0) >= 0 ? (
       quick_serialize_version >= 2611 ? (
         qpi = 0; loop(64,
           file_var(0, quick_cue_ramps[qpi]); file_var(0, quick_cue_holds[qpi]); file_var(0, quick_timing_dirty[qpi]);
-          quick_cue_ramps[qpi] = max(10, min(250, floor(quick_cue_ramps[qpi] + 0.5)));
+          quick_cue_ramps[qpi] = max(10, min(1200, floor(quick_cue_ramps[qpi] + 0.5)));
           quick_cue_holds[qpi] = max(0, min(2000, floor(quick_cue_holds[qpi] / 10 + 0.5) * 10));
           quick_timing_dirty[qpi] = quick_timing_dirty[qpi] ? 1 : 0; qpi += 1;
         );
@@ -1670,7 +1683,7 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
   // Fila dei cue: dove sei (playhead rosso) rispetto ai cue. Clic su un punto = selezionalo;
   // Cmd/Ctrl+clic aggiunge o toglie un punto, Shift+clic prende l'intervallo (convenzioni di REAPER).
   // In fondo alla fila: ELIMINA (e RIALLINEA / ADOTTA POSIZIONE per il cue selezionato).
-  lx = qx; row_w = full ? (bw - 218) : (bw - 20);
+  lx = qx; row_w = full ? (bw - 118) : (bw - 20);
   del_w = 92; lw = row_w - del_w - 10;
   quick_sel_lost ? lw -= 228 : quick_sel_missing ? lw -= 142;
   ly = by + (full ? 82 : 84);
@@ -1732,26 +1745,10 @@ local(sy, qx, qy, qh, x, tw, th, i, t0, t1, span, lx, lw, px, cx, best, bestd, m
   full ? (
     cue_has_selection = quick_sel >= 0 && quick_sel < quick_point_count;
     preset_enabled = cue_has_selection && quick_pref_available();
-    hold_mode = cue_has_selection ? quick_pref_mode(quick_sel) : floor(slider(66) + 0.5);
-    preset_x = bx + bw - 166;
-    ui_cue_button(preset_x,      by + 32, 26, 20, "C", hold_mode == 0, preset_enabled, 80) ? quick_pref_set_mode(quick_sel, 0);
-    ui_cue_button(preset_x + 36, by + 32, 26, 20, "S", hold_mode == 1, preset_enabled, 80) ? quick_pref_set_mode(quick_sel, 1);
-    ui_cue_button(preset_x + 72, by + 32, 26, 20, "M", hold_mode == 2, preset_enabled, 80) ? quick_pref_set_mode(quick_sel, 2);
-    ui_cue_button(preset_x + 108, by + 32, 26, 20, "L", hold_mode == 3, preset_enabled, 80) ? quick_pref_set_mode(quick_sel, 3);
     zp_setfont(5); gfx_r=0.70; gfx_g=0.72; gfx_b=0.78; gfx_a=1;
-    (gfx_measurestr(ui_lang == 1 ? "Ramp" : "Rampa", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = bx + bw - 146 - tw/2; zp_gy = ui_sy(by + 57); zp_drawstr(ui_lang == 1 ? "Ramp" : "Rampa");
-    hold_mode == 0 ? strcpy(#quick_hold_label, ui_lang == 1 ? "Custom" : "Personalizza") : strcpy(#quick_hold_label, ui_lang == 1 ? "Hold" : "Tenuta");
-    (gfx_measurestr(#quick_hold_label, tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = bx + bw - 50 - tw/2; zp_gy = ui_sy(by + 57); zp_drawstr(#quick_hold_label);
+    (gfx_measurestr(ui_lang == 1 ? "Ramp" : "Rampa", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = bx + bw - 50 - tw/2; zp_gy = ui_sy(by + 57); zp_drawstr(ui_lang == 1 ? "Ramp" : "Rampa");
     cue_has_selection ? (slider(56) = quick_cue_ramps[quick_sel]; slider(57) = quick_cue_holds[quick_sel];);
-    ui_knob(56, bx + bw - 146, by + 82, 12, 10, 250, 200, "", "ms", 0.95, 0.42, 0.20, 56);
-    hold_mode == 0 ?
-      ui_knob(57, bx + bw - 50, by + 82, 12, 0, 2000, 500, "", "ms", 0.95, 0.42, 0.20, 80)
-    : (
-      quick_hold_ms = hold_mode == 1 ? 500 : hold_mode == 2 ? 1000 : 2000;
-      zp_setfont(5); gfx_r=0.95; gfx_g=0.72; gfx_b=0.32; gfx_a=1;
-      sprintf(#quick_hold_readout, "%d ms", quick_hold_ms); (gfx_measurestr(#quick_hold_readout, tw, th); tw /= zp_sc; th /= zp_sc);
-      zp_gx = bx + bw - 50 - tw/2; zp_gy = ui_sy(by + 100); zp_drawstr(#quick_hold_readout);
-    );
+    ui_knob(56, bx + bw - 50, by + 82, 12, 10, 1200, 200, "", "ms", 0.95, 0.42, 0.20, 80);
     cue_has_selection ? (
       (slider(56) != quick_cue_ramps[quick_sel] || slider(57) != quick_cue_holds[quick_sel]) ? (
         quick_cue_ramps[quick_sel] = slider(56); quick_cue_holds[quick_sel] = slider(57);
@@ -1881,6 +1878,7 @@ show_simple ? (
   ui_cue_button(548, 61, 42, 19, carver_on ? "ON" : "OFF", carver_on, 1, 71) ? (
     slider(52) = carver_on ? 2 : 0; notify_slider(52);
   );
+  ui_cue_button(494, 61, 48, 19, "LOCK", slider(67) >= 0.5, 1, 81) ? ( slider(67) = slider(67) >= 0.5 ? 0 : 1; notify_slider(67); );
   ui_knob(7,  300, 126, 17, -60, 0, -30, "Thresh", "dB", 0.14, 0.72, 0.83, 7);
   ui_knob(16, 364, 126, 15, 0, 150, 100, "Intens", "%", 0.14, 0.72, 0.83, 16);
   ui_knob(13, 428, 126, 13, 0, 150, 40, "Low", "%", 0.14, 0.52, 0.93, 13);
@@ -1893,8 +1891,9 @@ show_simple ? (
   ui_knob(18, 492, 216, 13, 10, 2000, 250, "Release", "ms", 0.14, 0.72, 0.83, 18);
   // curva dei tempi del Carver disegnata dai valori
   ex = 528; ey = 196; ew = 62; eh = 38;
-  e_aw = 3 + ew * 0.30 * log(1 + slider(17)) / log(201);
-  e_rw = 6 + ew * 0.55 * log(1 + slider(18) / 10) / log(201);
+  e_aw = 3 + ew * 0.30 * log(1 + (slider(67) >= 0.5 ? min(200, slider(26)) : slider(17))) / log(201);
+  e_rw = 6 + ew * 0.55 * log(1 + (slider(67) >= 0.5 ? min(2000, slider(28)) : slider(18)) / 10) / log(201);
+  slider(67) >= 0.5 ? ( zp_setfont(5); gfx_r=0.88; gfx_g=0.42; gfx_b=0.65; gfx_a=1; zp_gx = ex; zp_gy = ui_sy(ey - 12); zp_drawstr(ui_lang == 1 ? "= VCA times" : "= tempi VCA"); );
   gfx_r=0.08; gfx_g=0.08; gfx_b=0.10; zp_rect(ex, ui_sy(ey), ew, eh);
   gfx_r=0.14; gfx_g=0.72; gfx_b=0.83; gfx_a=0.95;
   zp_line(ex + 2, ui_sy(ey + eh - 3), ex + 2 + e_aw, ui_sy(ey + 4));
@@ -2141,7 +2140,8 @@ view_mode == 0 ? (
   active_info_id == 60 ? (ui_lang == 1 ? zp_drawstr("CUE ROW: cyan = aligned, red = displaced, amber = voice reference changed. Click selects, Cmd/Ctrl+click adds, Shift+click range.") : zp_drawstr("FILA DEI CUE: ciano = al suo posto, rosso = fuori posto, ambra = riferimento voce cambiato. Clic sceglie, Cmd/Ctrl+clic aggiunge, Shift+clic intervallo.")) :
   active_info_id == 77 ? (ui_lang == 1 ? zp_drawstr("DELETE: removes selected cues and their #HSC markers (Cmd/Ctrl+click or Shift+click for multiple). UNDO restores.") : zp_drawstr("ELIMINA: toglie i cue selezionati e i loro marker #HSC (Cmd/Ctrl+clic o Shift+clic per piu' cue). UNDO li rimette.")) :
   active_info_id == 61 ? (ui_lang == 1 ? zp_drawstr("CUSTOM CUE HOLD: after the ramp, music stays open for this duration while ignoring voice.") : zp_drawstr("TENUTA CUE PERSONALIZZATA: dopo la rampa la musica resta aperta per questo tempo, ignorando la voce.")) :
-  active_info_id == 80 ? (ui_lang == 1 ? zp_drawstr("CUE PRESET: select a cue, then choose C/S/M/L; the choice is saved with that marker. Ramp and Custom duration are saved per marker. Sidechain resumes when Hold expires.") : zp_drawstr("PRESET CUE: seleziona un cue e scegli C/S/M/L; la scelta resta salvata su quel marker. Rampa e durata Personalizzata sono salvate per marker. Il sidechain riprende alla fine della tenuta.")) :
+  active_info_id == 80 ? (ui_lang == 1 ? zp_drawstr("CUE: ramp (saved per marker, up to 1200 ms) brings music back, then it stays open until the first sidechain sound after a silence.") : zp_drawstr("CUE: la rampa (per marker, fino a 1200 ms) riporta la musica, che resta aperta fino al primo suono del sidechain dopo un silenzio.")) :
+  active_info_id == 81 ? (ui_lang == 1 ? zp_drawstr("LOCK: Carver attack and release follow the VCA (Voice Hold and GRADUAL recovery included).") : zp_drawstr("LOCK: attacco e rilascio del Carver seguono il VCA (compresi Voice Hold e rientro GRADUAL).")) :
   active_info_id == 65 ? zp_drawstr(#sc_msg0) : active_info_id == 66 ? zp_drawstr(#sc_msg1) : active_info_id == 67 ? zp_drawstr(#sc_msg2) :
   active_info_id == 68 ? (ui_lang == 1 ? zp_drawstr("VOICE INPUTS: visible when track has channels. Plugin I/O, Track channels 6 (SC2) or 8 (SC3).") : zp_drawstr("FONTI VOCE: compaiono quando la traccia ha i canali. Pulsante I/O del plugin, Track channels 6 (SC2) o 8 (SC3).")) :
   active_info_id == 63 ? (ui_lang == 1 ? zp_drawstr("LOOKAHEAD: Carver analyzes voice before music (lookahead), adding matching latency (PDC).") : zp_drawstr("ANTICIPO: il Carver vede la voce prima della musica (lookahead). Aggiunge la stessa latenza (PDC).")) :

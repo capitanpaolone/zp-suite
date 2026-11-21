@@ -14,6 +14,10 @@
 //
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 // @changelog
+//   Pulsante ? (accanto a FULL/MINI/JSFX): apre la guida di Magic Voice LAB nell'help della Suite, tramite il Cue Navigator.
+//   Memoria A/B di lavoro (barra USCITA): LEGA mette lo stato slegato in A e si prova in B; A/B per confrontare, A=B per chiudere.
+//   LEGA OUTPUT su Peak Leveler, Dynamic EQ, Tone EQ e Dynamic Balance (riferimento: media degli ultimi secondi di voce): cambiando il modulo, la manopola OUTPUT si corregge di quanto il modulo
+//     alza o abbassa (calcolato dai parametri, non misurato); OUTPUT resta dov'e' quando si lega o si slega.
 //   v1.2.3: MONITOR Dynamic EQ e Dynamic Balance aggiornati con le curve reali continue delle rispettive funzioni di trasferimento complesse (5 bande SVF e 3 bande 1-pole), scala centrata zoomabile (±5/±12 dB su Dyn EQ, ±6/±12 dB su Dyn Bal) e telemetria per banda; DSP invariato.
 //   v1.2.2: 2·DRC aggiornato con rotori FREQ (centro logaritmico in Hz) e OCT (ampiezza in ottave, 0.12-3.50 oct) retrocompatibili sugli slider HP/LP esistenti; MONITOR DRC ridisegnato con le curve a campana SVF reali dinamiche (0..-12 dB), anteprima statica delle campane e somma complessiva.
 //   v1.2.1: DELTA globale con avviso lampeggiante "DELTA MODE" e auto-off a 30s; DELTA MOLLA esteso (D·MOLLA) che isola il delta del singolo stadio toccato/trascinato con ritorno automatico al rilascio; Suggerimenti calcolati su blocchi di 4s di parlato attivo (completamente esclusi durante DELTA/MOLLA/SOLO); MONITOR Dynamic EQ centrato e zoommato (±5 dB di default, toggle ±12 dB); selettore CHIARO / SCURO solo colore con controlli DRC HP/LP sempre visibili.
@@ -108,7 +112,7 @@ slider34:1<0,1,1{Profile A (Natural Contour),Profile B (Dense Studio Anchor)}>-D
 slider35:31.0<0,100,0.1>-Dynamic Balance Amount (%)
 
 slider36:100<0,100,1>-Parallel Processing (% Wet)
-slider37:0<-12,12,0.1>-Output Gain (dB)
+slider37:0<-24,24,0.1>-Output Gain (dB)
 slider38:0<0,1,1{Off,On}>-Auto Gain Match
 slider39:0<0,1,1{Off,On}>-Delta (Solo Intervento)
 slider40:1<0,1,1{Off,On}>-Sample Peak Limiter
@@ -126,6 +130,10 @@ slider49:-60<-60,6,0.1>-[Read] RMS Out (dBFS)
 slider50:0<0,18,0.1>-[Read] Peak Limiter GR (dB)
 slider51:0<0,1,1{Off,On}>-Barra Suggerimenti
 slider52:2<0,6,1{Filter,Peak Leveler,DRC,Dynamic EQ,Tone EQ,Dynamic Balance,Output}>-Monitor Modulo
+slider53:0<0,1,1{Off,On}>-Dynamic Balance Link Output
+slider54:0<0,1,1{Off,On}>-Tone EQ Link Output
+slider55:0<0,1,1{Off,On}>-Dynamic EQ Link Output
+slider56:0<0,1,1{Off,On}>-Peak Leveler Link Output
 
 @init
 ext_noinit = 1;
@@ -176,6 +184,17 @@ dbal_act_pct = 0;
 g_lo = 1; g_mid = 1; g_hi = 1;
 t_lo = 0.38; t_mid = 0.42; t_hi = 0.20;
 gm_rms_in = 0.001; gm_rms_out = 0.001; gm_gain = 1.0;
+lk_clamped = 0; lk_prev_t = 0; lk_prev_d = 0; lk_base = 0; lk_written = 0; gt_ref = gd_ref = gt_now = gd_now = 0; // LEGA OUTPUT
+lk_Llo = lk_Lmid = lk_Lhi = -20;
+lk_prev_q = 0; gq_ref = gq_now = 0; lk_Q0 = lk_Q1 = lk_Q2 = lk_Q3 = lk_Q4 = -20;
+lk_W0 = 0.10; lk_W1 = 0.30; lk_W2 = 0.35; lk_W3 = 0.18; lk_W4 = 0.07;
+lk_prev_p = 0; gp_ref = gp_now = 0; lk_P = -10;
+// medie lente (2,5 s, solo con voce presente) dei livelli che servono ai legami; senza Input Drive
+av_db_ok = av_dq_ok = av_pk_ok = 0; av_Llo = av_Lmid = av_Lhi = -20; av_Q0 = av_Q1 = av_Q2 = av_Q3 = av_Q4 = -20;
+av_W0 = 0.10; av_W1 = 0.30; av_W2 = 0.35; av_W3 = 0.18; av_W4 = 0.07; av_P = -10;
+// MEMORIA A/B di lavoro: tutti i parametri del suono (esclusi vista, tema, monitor, preset, DELTA, SOLO DRC)
+AB_MEM = 1000000; ab_list = AB_MEM + 500; AB_N = 0; ab_on = 0; ab_cur = 1;
+ab_i = 1; loop(56, (ab_i != 25 && ab_i != 39 && (ab_i <= 41 || ab_i >= 53)) ? ( ab_list[AB_N] = ab_i; AB_N += 1; ); ab_i += 1; );
 tp_prevL = 0; tp_prevR = 0; tp_gr = 1.0; tp_gr_smooth = 1.0; tp_meter_peak = 0;
 
 ui_rms_in_sq = 0; ui_rms_out_sq = 0; ui_rms_in_db = -60; ui_rms_out_db = -60;
@@ -469,6 +488,69 @@ function dbal_band_curve_db(L_db, b_t, modeB, tilt_db) local(u, shape, max_lift2
   );
 );
 
+// LEGA OUTPUT: guadagno medio del modulo calcolato dai suoi parametri (non misurato sull'audio)
+function bq_mag2(w) local(c1, s1, c2, s2, nr, ni, dr, di) (
+  c1 = cos(w); s1 = sin(w); c2 = cos(2 * w); s2 = sin(2 * w);
+  nr = this.b0 + this.b1 * c1 + this.b2 * c2; ni = -(this.b1 * s1 + this.b2 * s2);
+  dr = 1 + this.a1 * c1 + this.a2 * c2;       di = -(this.a1 * s1 + this.a2 * s2);
+  (nr * nr + ni * ni) / max(0.000000000001, dr * dr + di * di);
+);
+// Tone EQ + Mid Bump: media di potenza su 24 frequenze, pesata come lo spettro medio della voce parlata
+function tone_gain_db() local(k, fq, w, wt, p, sw, sp) (
+  (slider29 >= 0.5 || slider32 >= 0.5) ? (
+    sw = 0; sp = 0; k = 0;
+    loop(24,
+      fq = min(80 * pow(150, k / 23), max(22050, srate) * 0.45); w = 2 * $pi * fq / max(22050, srate);
+      wt = fq < 100 ? sqr(fq / 100) : fq > 500 ? pow(500 / fq, 1.5) : 1;
+      p = 1;
+      slider29 >= 0.5 ? p = tone_lo.bq_mag2(w) * tone_mid.bq_mag2(w) * tone_hi.bq_mag2(w);
+      slider32 >= 0.5 ? p *= mid_bump_bq.bq_mag2(w) * mid_bump_gain * mid_bump_gain;
+      sw += wt; sp += wt * p; k += 1;
+    );
+    10 * log10(sp / sw);
+  ) : 0;
+);
+// Dynamic Balance: la sua curva sui livelli di banda fissati quando si lega, pesata sulle quote target
+function dbal_gain_db() local(bt, mB, g1, g2, g3) (
+  slider33 >= 0.5 && slider35 > 0.1 ? (
+    bt = slider35 * 0.01; mB = slider34 >= 0.5;
+    g1 = dbal_band_curve_db(lk_Llo + in_drive_db, bt, mB, 0.35); g2 = dbal_band_curve_db(lk_Lmid + in_drive_db, bt, mB, 0.20); g3 = dbal_band_curve_db(lk_Lhi + in_drive_db, bt, mB, -0.45);
+    10 * log10((t_lo * 10 ^ (g1 / 10) + t_mid * 10 ^ (g2 / 10) + t_hi * 10 ^ (g3 / 10)) / max(0.001, t_lo + t_mid + t_hi));
+  ) : 0;
+);
+// DYN EQ: lift a riposo meno i tagli, sulle 5 bande ai livelli letti quando si lega (senza Input Drive, riapplicato qui)
+function deq_gain_db() local(g0, g1, g2, g3, g4) (
+  slider26 >= 0.5 && slider28 > 0.1 ? (
+    g0 = deq_calc_band_db(lk_Q0 + in_drive_db, deq_lift0, deq_T0, deq_S0, deq_M0);
+    g1 = deq_calc_band_db(lk_Q1 + in_drive_db, deq_lift0, deq_T1, deq_S1, deq_M1);
+    g2 = deq_calc_band_db(lk_Q2 + in_drive_db, deq_lift0, deq_T2, deq_S2, deq_M2);
+    g3 = deq_calc_band_db(lk_Q3 + in_drive_db, deq_lift0, deq_T3, deq_S3, deq_M3);
+    g4 = deq_calc_band_db(lk_Q4 + in_drive_db, deq_lift0, deq_T4, deq_S4, deq_M4);
+    10 * log10((lk_W0 * 10 ^ (g0 / 10) + lk_W1 * 10 ^ (g1 / 10) + lk_W2 * 10 ^ (g2 / 10) + lk_W3 * 10 ^ (g3 / 10) + lk_W4 * 10 ^ (g4 / 10))
+               / max(0.001, lk_W0 + lk_W1 + lk_W2 + lk_W3 + lk_W4));
+  ) : 0;
+);
+function deq_ref_levels() (
+  av_dq_ok ? (
+    lk_Q0 = av_Q0; lk_Q1 = av_Q1; lk_Q2 = av_Q2; lk_Q3 = av_Q3; lk_Q4 = av_Q4;
+    lk_W0 = av_W0; lk_W1 = av_W1; lk_W2 = av_W2; lk_W3 = av_W3; lk_W4 = av_W4;
+  ) : (
+    lk_Q0 = lk_Q1 = lk_Q2 = lk_Q3 = lk_Q4 = -20;
+    lk_W0 = 0.10; lk_W1 = 0.30; lk_W2 = 0.35; lk_W3 = 0.18; lk_W4 = 0.07;
+  );
+);
+// Peak Leveler: makeup meno riduzione (Opto + RComp) al livello di picco medio della voce
+function pk_gain_db() local(amt, thr, L, go, gr) (
+  slider7 >= 0.5 && slider6 > 0.1 ? (
+    amt = slider6 * 0.01; thr = -6.0 - amt * 22.0; L = lk_P + in_drive_db;
+    go = L > thr ? (L - thr) * 0.48 : 0; gr = L > thr + 2.5 ? (L - thr - 2.5) * 0.62 : 0;
+    min(5.0, amt * 3.4 + clamp(-in_drive_db, -4.0, 6.0) * 0.18) - min(16.0, go * 0.55 + gr * 0.45);
+  ) : 0;
+);
+function dbal_ref_levels() (
+  av_db_ok ? ( lk_Llo = av_Llo; lk_Lmid = av_Lmid; lk_Lhi = av_Lhi; ) : ( lk_Llo = lk_Lmid = lk_Lhi = -20; );
+);
+
 function update_dsp_params() local(sr, w_hp, cw_hp, sw_hp, al_hp, a0_hp, w_lp, cw_lp, sw_lp, al_lp, a0_lp, eq_curve, eq_scale) (
   sr = max(22050, srate);
   // Input Drive dritto (-12.0 .. +12.0 dB, default 0.0 dB): spinge i detector senza sbalzi sul percorso lineare
@@ -621,6 +703,29 @@ function set_drc_band_fc_oct(sl_hp, sl_lp, fc_in, oct_in) local(fc, oct, half_r,
 
 update_dsp_params();
 
+// Ponte guida (gmem ZPVoiceoverSharedBus 3900-3905, Cue Navigator): "?" apre magic_voice_lab.html (plugin 14).
+// Il ponte e' acceso solo se il battito (3900) cambia: un numero fermo da piu' di 3 s = Cue Navigator spento.
+hb_seen = 0; hb_last = 0; hb_t = -10; help_warn_until = 0;
+function help_bridge_alive() local(hb, now) (
+  hb = gmem[3900]; now = time_precise();
+  !hb_seen ? (hb_last = hb; hb_seen = 1) : hb != hb_last ? (hb_last = hb; hb_t = now);
+  hb > 0 && now - hb_t < 3;
+);
+function help_bridge_open(plugin_id) (
+  help_bridge_alive() ? (gmem[3902] = plugin_id; gmem[3903] += 1; help_warn_until = 0;)
+  : (help_warn_until = time_precise() + 4.0);
+);
+
+// --- MEMORIA A/B (dopo update_dsp_params, che ab_recall chiama)
+function ab_store(m) local(k) ( k = 0; loop(AB_N, AB_MEM[m * 100 + k] = slider(ab_list[k]); k += 1; ); );
+function ab_recall(m) local(k, idx) (
+  k = 0; loop(AB_N, idx = ab_list[k]; slider(idx) = AB_MEM[m * 100 + k]; sliderchange(2 ^ (idx - 1)); k += 1; );
+  update_dsp_params(); out_gain_lin = db2lin(slider37);
+);
+function ab_start() ( !ab_on ? ( ab_store(0); ab_store(1); ab_on = 1; ab_cur = 1; ); );   // A = stato di adesso, si lavora in B
+function ab_go(m) ( ab_on && m != ab_cur ? ( ab_store(ab_cur); ab_recall(m); ab_cur = m; ); );
+function ab_close() ( ab_on ? ( ab_store(ab_cur); ab_store(1 - ab_cur); ab_on = 0; ); );
+
 @slider
 osara_p = floor(slider44 + 0.5);
 osara_p > 0 && osara_p != prev_osara_preset ? (
@@ -631,6 +736,50 @@ osara_p == 0 ? prev_osara_preset = 0;
 update_dsp_params();
 
 @block
+// medie lente dei livelli per i legami (aggiornate solo con voce presente, sopra -55 dB circa)
+av_c = 1 - exp(-samplesblock / (max(22050, srate) * 2.5));
+dbal_mid_env > 0.0018 ? (
+  av_x = av_db_ok ? av_c : 1;
+  av_Llo  += av_x * (lin2db(dbal_low_env * 2.4) + 3.3 - av_Llo);
+  av_Lmid += av_x * (lin2db(dbal_mid_env * 2.1) + 3.3 - av_Lmid);
+  av_Lhi  += av_x * (lin2db(dbal_hi_env  * 3.2) + 3.3 - av_Lhi); av_db_ok = 1;
+);
+slider26 >= 0.5 && deq_e2 > 0.0018 ? (
+  av_x = av_dq_ok ? av_c : 1; av_s = max(0.000000001, sqr(deq_e0) + sqr(deq_e1) + sqr(deq_e2) + sqr(deq_e3) + sqr(deq_e4));
+  av_Q0 += av_x * (lin2db(deq_e0 * 1.42) - in_drive_db - av_Q0); av_W0 += av_x * (sqr(deq_e0) / av_s - av_W0);
+  av_Q1 += av_x * (lin2db(deq_e1 * 1.42) - in_drive_db - av_Q1); av_W1 += av_x * (sqr(deq_e1) / av_s - av_W1);
+  av_Q2 += av_x * (lin2db(deq_e2 * 1.42) - in_drive_db - av_Q2); av_W2 += av_x * (sqr(deq_e2) / av_s - av_W2);
+  av_Q3 += av_x * (lin2db(deq_e3 * 1.42) - in_drive_db - av_Q3); av_W3 += av_x * (sqr(deq_e3) / av_s - av_W3);
+  av_Q4 += av_x * (lin2db(deq_e4 * 1.42) - in_drive_db - av_Q4); av_W4 += av_x * (sqr(deq_e4) / av_s - av_W4); av_dq_ok = 1;
+);
+slider7 >= 0.5 && rcomp_env > 0.0018 ? ( av_x = av_pk_ok ? av_c : 1; av_P += av_x * (lin2db(rcomp_env) - in_drive_db - av_P); av_pk_ok = 1; );
+
+// LEGA OUTPUT: OUTPUT = punto di partenza - (guadagno del modulo ora - guadagno quando si e' legato), per ogni modulo legato
+lk_t = slider54 >= 0.5; lk_d = slider53 >= 0.5; lk_q = slider55 >= 0.5; lk_p = slider56 >= 0.5;
+lk_any = lk_t || lk_d || lk_q || lk_p; lk_prev_any = lk_prev_t || lk_prev_d || lk_prev_q || lk_prev_p;
+(lk_any || lk_prev_any) ? (
+  !lk_prev_any ? ( lk_base = slider37; ) : ( abs(slider37 - lk_written) > 0.0005 ? ( lk_base += slider37 - lk_written; ); );
+  (lk_d && !lk_prev_d) ? ( dbal_ref_levels(); );
+  (lk_q && !lk_prev_q) ? ( deq_ref_levels(); );
+  (lk_p && !lk_prev_p) ? ( lk_P = av_pk_ok ? av_P : -10; );
+  gt_now = tone_gain_db(); gd_now = dbal_gain_db(); gq_now = deq_gain_db(); gp_now = pk_gain_db();
+  (lk_t && !lk_prev_t) ? ( gt_ref = gt_now; );
+  (lk_d && !lk_prev_d) ? ( gd_ref = gd_now; );
+  (lk_q && !lk_prev_q) ? ( gq_ref = gq_now; );
+  (lk_p && !lk_prev_p) ? ( gp_ref = gp_now; );
+  (!lk_t && lk_prev_t) ? ( lk_base += gt_ref - gt_now; );
+  (!lk_d && lk_prev_d) ? ( lk_base += gd_ref - gd_now; );
+  (!lk_q && lk_prev_q) ? ( lk_base += gq_ref - gq_now; );
+  (!lk_p && lk_prev_p) ? ( lk_base += gp_ref - gp_now; );
+  lk_any ? (
+    lk_raw = lk_base + (lk_t ? gt_ref - gt_now : 0) + (lk_d ? gd_ref - gd_now : 0) + (lk_q ? gq_ref - gq_now : 0) + (lk_p ? gp_ref - gp_now : 0);
+    lk_clamped = lk_raw > 24 || lk_raw < -24;   // OUTPUT al tetto: il legame non compensa piu' tutto
+    lk_target = clamp(lk_raw, -24, 24);
+    abs(lk_target - slider37) > 0.01 ? ( slider37 = lk_target; out_gain_lin = db2lin(slider37); sliderchange(slider37); );
+  );
+  lk_written = slider37;
+);
+lk_prev_t = lk_t; lk_prev_d = lk_d; lk_prev_q = lk_q; lk_prev_p = lk_p;
 zp_bus_refresh(ZP_BUS_ID);
 blk_now = time_precise();
 // Auto-off DELTA globale dopo 30s di inattivita' (anche a finestra FX chiusa)
@@ -1006,6 +1155,13 @@ audition_active = (slider39 >= 0.5) || (delta_spring_stage > 0) || (drc_solo_aud
   );
 );
 
+@serialize
+ab_ver = 1; file_var(0, ab_ver);
+ab_ver == 1 ? (
+  file_var(0, ab_on); file_var(0, ab_cur);
+  ab_i = 0; loop(64, file_var(0, AB_MEM[ab_i]); file_var(0, AB_MEM[100 + ab_i]); ab_i += 1; );
+) : ( ab_on = 0; ab_cur = 1; );
+
 @gfx 1240 900
 // ============================================================================
 // GUI — scalabile: layout in unita' di progetto (larghezza 1100), scala sc.
@@ -1066,6 +1222,17 @@ c_cyan_r = 0.15; c_cyan_g = 0.69; c_cyan_b = 0.84;
 c_amber_r = 0.92; c_amber_g = 0.58; c_amber_b = 0.18;
 c_mag_r = 0.82; c_mag_g = 0.34; c_mag_b = 0.56;
 c_grn_r = 0.26; c_grn_g = 0.76; c_grn_b = 0.46;
+// LEGA OUTPUT: colore unico del legame; i comandi coinvolti prendono questo colore quando sono legati
+c_lnk_r = 0.64; c_lnk_g = 0.48; c_lnk_b = 1.00;
+lk_gt = slider54 >= 0.5; lk_gd = slider53 >= 0.5; lk_gq = slider55 >= 0.5; lk_gp = slider56 >= 0.5;
+lkp_r = lk_gp ? c_lnk_r : c_amber_r; lkp_g = lk_gp ? c_lnk_g : c_amber_g; lkp_b = lk_gp ? c_lnk_b : c_amber_b;
+lkp7_r = lk_gp ? c_lnk_r : c_cyan_r; lkp7_g = lk_gp ? c_lnk_g : c_cyan_g; lkp7_b = lk_gp ? c_lnk_b : c_cyan_b;
+lki_r = (lk_gd || lk_gq || lk_gp) ? c_lnk_r : c_cyan_r; lki_g = (lk_gd || lk_gq || lk_gp) ? c_lnk_g : c_cyan_g; lki_b = (lk_gd || lk_gq || lk_gp) ? c_lnk_b : c_cyan_b;
+lkq_r = lk_gq ? c_lnk_r : c_cyan_r;  lkq_g = lk_gq ? c_lnk_g : c_cyan_g;  lkq_b = lk_gq ? c_lnk_b : c_cyan_b;
+lkt_r = lk_gt ? c_lnk_r : c_amber_r; lkt_g = lk_gt ? c_lnk_g : c_amber_g; lkt_b = lk_gt ? c_lnk_b : c_amber_b;
+lkm_r = lk_gt ? c_lnk_r : c_mag_r;   lkm_g = lk_gt ? c_lnk_g : c_mag_g;   lkm_b = lk_gt ? c_lnk_b : c_mag_b;
+lkd_r = lk_gd ? c_lnk_r : c_grn_r;   lkd_g = lk_gd ? c_lnk_g : c_grn_g;   lkd_b = lk_gd ? c_lnk_b : c_grn_b;
+lko_r = (lk_gt || lk_gd || lk_gq || lk_gp) ? c_lnk_r : c_cyan_r; lko_g = (lk_gt || lk_gd || lk_gq || lk_gp) ? c_lnk_g : c_cyan_g; lko_b = (lk_gt || lk_gd || lk_gq || lk_gp) ? c_lnk_b : c_cyan_b;
 
 // ---- Mouse (unita' di progetto) ----
 mxd = (mouse_x - ox) / sc;
@@ -1239,6 +1406,32 @@ function btn_face(bx, by, bw, bh, label, is_on, is_hover, cr, cg, cb) local(th) 
   is_on ? ( gfx_r = 0.04; gfx_g = 0.05; gfx_b = 0.07; gfx_a = 1; ) : set_text_col();
   th = g_th();
   g_txtc(bx + bw * 0.5, by + (bh - th) * 0.5, label);
+);
+// LEGA OUTPUT: pulsante sulla riga del titolo del modulo; acceso mostra quanto il modulo sta togliendo/dando a OUTPUT
+function ui_link_btn(sl_idx, bx, by, comp_db, info_id, cr, cg, cb) local(is_on, is_hover, gdb) (
+  is_on = slider(sl_idx) >= 0.5;
+  is_hover = hit(bx, by, 94, 18);
+  is_hover ? active_info_id = info_id;
+  is_hover && mouse_click ? ( (!is_on) ? ( ab_start(); ); set_param_slider(sl_idx, is_on ? 0 : 1); is_on = !is_on; );
+  btn_face(bx, by, 94, 18, "", is_on, is_hover, c_lnk_r, c_lnk_g, c_lnk_b);
+  is_on ? (
+    gdb = floor(comp_db * 10 + (comp_db >= 0 ? 0.5 : -0.5)) * 0.1;
+    gdb >= 0 ? sprintf(#lnk_txt, "OUT +%.1f dB", gdb) : sprintf(#lnk_txt, "OUT %.1f dB", gdb);
+    gfx_r = 0.04; gfx_g = 0.05; gfx_b = 0.07; gfx_a = 1;
+    lk_clamped ? ( gfx_r = 0.80; gfx_g = 0.06; gfx_b = 0.06; );   // rosso: OUTPUT al tetto di +/-24 dB
+  ) : ( strcpy(#lnk_txt, msg("LEGA OUTPUT", "LINK OUTPUT")); set_text_col(); );
+  gfx_setfont(7); g_txtc(bx + 55, by + (18 - g_th()) * 0.5, #lnk_txt);
+  is_on ? ( gfx_r = 0.04; gfx_g = 0.05; gfx_b = 0.07; ) : ( gfx_r = c_lnk_r; gfx_g = c_lnk_g; gfx_b = c_lnk_b; ); gfx_a = 1;
+  g_circ(bx + 9, by + 9, 3.2, 0); g_circ(bx + 14, by + 9, 3.2, 0);   // catenella: due anelli intrecciati
+);
+// Pulsantini della memoria A/B (barra USCITA · OUTPUT)
+function ui_ab_btn(bx, by, bw, lbl, is_on, enabled, info_id) local(is_hover) (
+  is_hover = hit(bx, by, bw, 18);
+  is_hover ? active_info_id = info_id;
+  btn_face(bx, by, bw, 18, "", is_on, is_hover && enabled, c_grn_r, c_grn_g, c_grn_b);
+  gfx_setfont(7); is_on ? ( gfx_r = 0.04; gfx_g = 0.05; gfx_b = 0.07; gfx_a = 1; ) : ( set_text_col(); gfx_a = enabled ? 1 : 0.40; );
+  g_txtc(bx + bw * 0.5, by + (18 - g_th()) * 0.5, lbl); gfx_a = 1;
+  is_hover && enabled && mouse_click;
 );
 function ui_tab_btn(sl_idx, target_val, bx, by, bw, bh, label, info_id, cr, cg, cb, mon) local(is_on, is_hover) (
   is_on = floor(slider(sl_idx) + 0.5) == target_val;
@@ -1756,17 +1949,22 @@ ui_tab_btn(44, 7, px + 650, py, 96,  25, "MAGIC 1",    207, c_mag_r,   c_mag_g, 
 sy = 84;
 ui_toggle_btn(4,  px,       sy, 88, 25, "1·FILTERS", 210, c_cyan_r,  c_cyan_g,  c_cyan_b, 0);
 ui_toggle_btn(5,  px + 94,  sy, 88, 25, "2·PREAMP",  211, c_amber_r, c_amber_g, c_amber_b, 0);
-ui_toggle_btn(7,  px + 188, sy, 80, 25, "3·PEAK",    212, c_cyan_r,  c_cyan_g,  c_cyan_b, 1);
+ui_toggle_btn(7,  px + 188, sy, 80, 25, "3·PEAK",    212, lkp7_r, lkp7_g, lkp7_b, 1);
 ui_toggle_btn(8,  px + 274, sy, 76, 25, "4·DRC",     213, c_mag_r,   c_mag_g,   c_mag_b, 2);
-ui_toggle_btn(26, px + 356, sy, 88, 25, "5·DYN EQ",  214, c_cyan_r,  c_cyan_g,  c_cyan_b, 3);
-ui_toggle_btn(29, px + 450, sy, 80, 25, "6·TONE",    215, c_amber_r, c_amber_g, c_amber_b, 4);
-ui_toggle_btn(32, px + 536, sy, 96, 25, "MID BUMP",  216, c_mag_r,   c_mag_g,   c_mag_b, 4);
-ui_toggle_btn(33, px + 638, sy, 108,25, "7·DYN BAL", 217, c_grn_r,   c_grn_g,   c_grn_b, 5);
+ui_toggle_btn(26, px + 356, sy, 88, 25, "5·DYN EQ",  214, lkq_r, lkq_g, lkq_b, 3);
+ui_toggle_btn(29, px + 450, sy, 80, 25, "6·TONE",    215, lkt_r, lkt_g, lkt_b, 4);
+ui_toggle_btn(32, px + 536, sy, 96, 25, "MID BUMP",  216, lkm_r, lkm_g, lkm_b, 4);
+ui_toggle_btn(33, px + 638, sy, 108,25, "7·DYN BAL", 217, lkd_r, lkd_g, lkd_b, 5);
 
 rx = 810;
 ui_tab_btn(43, 0, rx,       20, 82, 24, "FULL", 220, c_grn_r, c_grn_g, c_grn_b, -1);
 ui_tab_btn(43, 1, rx + 89,  20, 82, 24, "MINI", 220, c_grn_r, c_grn_g, c_grn_b, -1);
 ui_tab_btn(43, 2, rx + 178, 20, 82, 24, "JSFX", 220, c_grn_r, c_grn_g, c_grn_b, -1);
+// "?": guida di Magic Voice LAB nell'help della Suite (tramite il Cue Navigator)
+hq_hv = hit(rx + 264, 20, 24, 24); hq_hv ? active_info_id = 225;
+hq_hv && mouse_click ? help_bridge_open(14);
+btn_face(rx + 264, 20, 24, 24, "?", 0, hq_hv, c_grn_r, c_grn_g, c_grn_b);
+time_precise() < help_warn_until && !hq_hv ? active_info_id = 226;
 ui_tab_btn(42, 0, rx,       50, 126, 25, msg("CHIARO", "LIGHT"), 221, c_cyan_r,  c_cyan_g,  c_cyan_b, -1);
 ui_tab_btn(42, 1, rx + 134, 50, 126, 25, msg("SCURO",  "DARK"),  221, c_amber_r, c_amber_g, c_amber_b, -1);
 ui_toggle_btn(38, rx,       84, 94,  25, "GAIN MATCH", 222, c_grn_r, c_grn_g, c_grn_b, 6);
@@ -1839,10 +2037,10 @@ view_mode == 0 ? (
     gfx_a = 0.95; g_rect(18, r1y + 30, 3, 139);
   );
   cur_mod = 1;
-  ui_knob(1, 82,  r1y + 86, 27, -12, 12, 0, "INPUT", "dB", c_cyan_r, c_cyan_g, c_cyan_b, 101, -1);
-  ui_knob(6, 202, r1y + 86, 27, 0, 100, 45, "PEAK RED", "%", c_amber_r, c_amber_g, c_amber_b, 102, min(100, ui_peak_gr_db * 8));
-  gfx_setfont(5); set_sub_col(); g_txt(28, r1y + 146, "Opto+RComp");
-  draw_meter_h(116, r1y + 149, 136, 11, min(100, ui_peak_gr_db * 7), c_amber_r, c_amber_g, c_amber_b);
+  ui_knob(1, 82,  r1y + 86, 27, -12, 12, 0, "INPUT", "dB", lki_r, lki_g, lki_b, 101, -1);
+  ui_knob(6, 202, r1y + 86, 27, 0, 100, 45, "PEAK RED", "%", lkp_r, lkp_g, lkp_b, 102, min(100, ui_peak_gr_db * 8));
+  ui_link_btn(56, 20, r1y + 145, gp_ref - gp_now, 156, lkp_r, lkp_g, lkp_b);
+  draw_meter_h(116, r1y + 149, 136, 11, min(100, ui_peak_gr_db * 7), lkp_r, lkp_g, lkp_b);
 
   // Linea di separazione e sotto-testata cliccabile: Filters & Preamp
   p1_fl_act ? ( gfx_r = c_cyan_r; gfx_g = c_cyan_g; gfx_b = c_cyan_b; gfx_a = 0.95; g_rect(18, r1y + 172, 248, 2); ) :
@@ -2024,29 +2222,32 @@ view_mode == 0 ? (
   g_line(746, r1y + 165, 1074, r1y + 165);
 
   ry0 = r1y + 30;
-  draw_p3_row_bg(ry0, p3_deq_act, c_cyan_r, c_cyan_g, c_cyan_b, "DYN EQ", msg("Curva A-D", "Curve A-D"), 3);
+  draw_p3_row_bg(ry0, p3_deq_act, lkq_r, lkq_g, lkq_b, "DYN EQ", msg("Curva A-D", "Curve A-D"), 3);
   cur_mod = 3;
-  ui_knob(28, 782, ry0 + 26, 18, 0, 100, 52, "", "%", c_cyan_r, c_cyan_g, c_cyan_b, 140, min(100, max(ui_deq_lo, ui_deq_hi) * 14));
-  ui_tab_btn(27, 0, 830,  ry0 + 29, 56, 26, "A", 141, c_cyan_r, c_cyan_g, c_cyan_b, 3);
-  ui_tab_btn(27, 1, 892,  ry0 + 29, 56, 26, "B", 141, c_cyan_r, c_cyan_g, c_cyan_b, 3);
-  ui_tab_btn(27, 2, 954,  ry0 + 29, 56, 26, "C", 141, c_cyan_r, c_cyan_g, c_cyan_b, 3);
-  ui_tab_btn(27, 3, 1016, ry0 + 29, 56, 26, "D", 141, c_cyan_r, c_cyan_g, c_cyan_b, 3);
+  ui_knob(28, 782, ry0 + 26, 18, 0, 100, 52, "", "%", lkq_r, lkq_g, lkq_b, 140, min(100, max(ui_deq_lo, ui_deq_hi) * 14));
+  ui_link_btn(55, 908, ry0 + 4, gq_ref - gq_now, 157, lkq_r, lkq_g, lkq_b);
+  ui_tab_btn(27, 0, 830,  ry0 + 29, 56, 26, "A", 141, lkq_r, lkq_g, lkq_b, 3);
+  ui_tab_btn(27, 1, 892,  ry0 + 29, 56, 26, "B", 141, lkq_r, lkq_g, lkq_b, 3);
+  ui_tab_btn(27, 2, 954,  ry0 + 29, 56, 26, "C", 141, lkq_r, lkq_g, lkq_b, 3);
+  ui_tab_btn(27, 3, 1016, ry0 + 29, 56, 26, "D", 141, lkq_r, lkq_g, lkq_b, 3);
 
   ry1 = r1y + 98;
-  draw_p3_row_bg(ry1, p3_ton_act, c_amber_r, c_amber_g, c_amber_b, "TONE SCL", msg("Curva A-D", "Curve A-D"), 4);
+  draw_p3_row_bg(ry1, p3_ton_act, lkt_r, lkt_g, lkt_b, "TONE SCL", msg("Curva A-D", "Curve A-D"), 4);
   cur_mod = 4;
-  ui_knob(31, 782, ry1 + 26, 18, 0.2, 3.5, 1.56, "", "x", c_amber_r, c_amber_g, c_amber_b, 142, -1);
-  ui_tab_btn(30, 0, 830,  ry1 + 29, 56, 26, "A", 143, c_amber_r, c_amber_g, c_amber_b, 4);
-  ui_tab_btn(30, 1, 892,  ry1 + 29, 56, 26, "B", 143, c_amber_r, c_amber_g, c_amber_b, 4);
-  ui_tab_btn(30, 2, 954,  ry1 + 29, 56, 26, "C", 143, c_amber_r, c_amber_g, c_amber_b, 4);
-  ui_tab_btn(30, 3, 1016, ry1 + 29, 56, 26, "D", 143, c_amber_r, c_amber_g, c_amber_b, 4);
+  ui_knob(31, 782, ry1 + 26, 18, 0.2, 3.5, 1.56, "", "x", lkt_r, lkt_g, lkt_b, 142, -1);
+  ui_link_btn(54, 908, ry1 + 4, gt_ref - gt_now, 159, lkt_r, lkt_g, lkt_b);
+  ui_tab_btn(30, 0, 830,  ry1 + 29, 56, 26, "A", 143, lkt_r, lkt_g, lkt_b, 4);
+  ui_tab_btn(30, 1, 892,  ry1 + 29, 56, 26, "B", 143, lkt_r, lkt_g, lkt_b, 4);
+  ui_tab_btn(30, 2, 954,  ry1 + 29, 56, 26, "C", 143, lkt_r, lkt_g, lkt_b, 4);
+  ui_tab_btn(30, 3, 1016, ry1 + 29, 56, 26, "D", 143, lkt_r, lkt_g, lkt_b, 4);
 
   ry2 = r1y + 166;
-  draw_p3_row_bg(ry2, p3_bal_act, c_grn_r, c_grn_g, c_grn_b, "DYN BAL", msg("Profilo A/B", "Profile A/B"), 5);
+  draw_p3_row_bg(ry2, p3_bal_act, lkd_r, lkd_g, lkd_b, "DYN BAL", msg("Profilo A/B", "Profile A/B"), 5);
   cur_mod = 5;
-  ui_knob(35, 782, ry2 + 26, 18, 0, 100, 31, "", "%", c_grn_r, c_grn_g, c_grn_b, 144, dbal_act_pct);
-  ui_tab_btn(34, 0, 830, ry2 + 29, 118, 26, "A · NATURAL", 145, c_grn_r, c_grn_g, c_grn_b, 5);
-  ui_tab_btn(34, 1, 954, ry2 + 29, 118, 26, "B · DENSE",   145, c_grn_r, c_grn_g, c_grn_b, 5);
+  ui_knob(35, 782, ry2 + 26, 18, 0, 100, 31, "", "%", lkd_r, lkd_g, lkd_b, 144, dbal_act_pct);
+  ui_link_btn(53, 908, ry2 + 4, gd_ref - gd_now, 158, lkd_r, lkd_g, lkd_b);
+  ui_tab_btn(34, 0, 830, ry2 + 29, 118, 26, "A · NATURAL", 145, lkd_r, lkd_g, lkd_b, 5);
+  ui_tab_btn(34, 1, 954, ry2 + 29, 118, 26, "B · DENSE",   145, lkd_r, lkd_g, lkd_b, 5);
 
   // ---- Isoletta dedicata: USCITA · OUTPUT ----
   out_y = r1y + 242; out_h = 118;
@@ -2058,9 +2259,12 @@ view_mode == 0 ? (
   );
   hit(736, out_y + 24, 348, out_h - 24) && mouse_click ? set_mon(6);
   draw_group_title_ex(736, out_y, 348, 24, msg("USCITA · OUTPUT", "OUTPUT STAGE"), c_grn_r, c_grn_g, c_grn_b, 6, p4_act);
+  ui_ab_btn(892, out_y + 3, 24, "A", ab_on && ab_cur == 0, 1, 160) ? ( ab_on ? ab_go(0) : ab_start(); );
+  ui_ab_btn(918, out_y + 3, 24, "B", ab_on && ab_cur == 1, 1, 160) ? ( ab_on ? ab_go(1) : ab_start(); );
+  ui_ab_btn(944, out_y + 3, 36, "A=B", 0, ab_on, 161) ? ab_close();
   cur_mod = 6;
   ui_knob(36, 798,  out_y + 71, 21, 0, 100, 100, "MIX", "%", c_grn_r, c_grn_g, c_grn_b, 146, -1);
-  ui_knob(37, 910,  out_y + 71, 21, -12, 12, 0, "OUTPUT", "dB", c_cyan_r, c_cyan_g, c_cyan_b, 147, -1);
+  ui_knob(37, 910,  out_y + 71, 21, -24, 24, 0, "OUTPUT", "dB", lko_r, lko_g, lko_b, 147, -1);
   ui_knob(41, 1022, out_y + 71, 21, -3.0, -0.1, -0.5, "PEAK CEIL", "dB", c_mag_r, c_mag_g, c_mag_b, 148, clamp(((lin2db(tp_meter_peak) + 18) / 18) * 100, 0, 100));
 );
 
@@ -2174,7 +2378,7 @@ function jsfx_param_meta(idx) (
   idx == 34 ? ( strcpy(#p_nm, "34. Dynamic Balance Mode");  p_min=0;    p_max=1;     p_def=1;     strcpy(#p_unit, "ab"); ) :
   idx == 35 ? ( strcpy(#p_nm, "35. Dynamic Balance Amount");p_min=0;    p_max=100;   p_def=31.1;  strcpy(#p_unit, "%"); ) :
   idx == 36 ? ( strcpy(#p_nm, "36. Parallel Mix Wet");      p_min=0;    p_max=100;   p_def=100;   strcpy(#p_unit, "%"); ) :
-  idx == 37 ? ( strcpy(#p_nm, "37. Output Gain");           p_min=-12;  p_max=12;    p_def=0;     strcpy(#p_unit, "dB"); ) :
+  idx == 37 ? ( strcpy(#p_nm, "37. Output Gain");           p_min=-24;  p_max=24;    p_def=0;     strcpy(#p_unit, "dB"); ) :
   idx == 38 ? ( strcpy(#p_nm, "38. Auto Gain Match");       p_min=0;    p_max=1;     p_def=0;     strcpy(#p_unit, "bool"); ) :
   idx == 39 ? ( strcpy(#p_nm, "39. Delta (Solo Intervento)");p_min=0;   p_max=1;     p_def=0;     strcpy(#p_unit, "bool"); ) :
   idx == 40 ? ( strcpy(#p_nm, "40. Sample Peak Limiter");   p_min=0;    p_max=1;     p_def=1;     strcpy(#p_unit, "bool"); ) :
@@ -2678,6 +2882,12 @@ active_info_id == 144 ? msg("DYN BAL: porta il peso di basse/medie/alte verso la
 active_info_id == 145 ? msg("Target Balance: A naturale, B denso da studio (piu' corpo).", "Balance target: A natural, B dense studio (more body).") :
 active_info_id == 146 ? msg("MIX: parallelo della catena (0% dry, 100% processato).", "MIX: chain parallel blend (0% dry, 100% processed).") :
 active_info_id == 147 ? msg("OUTPUT: guadagno finale prima del limiter.", "OUTPUT: final gain before the limiter.") :
+active_info_id == 160 ? msg("A / B: memoria di lavoro. LEGA (o il primo clic qui) mette lo stato attuale in A e ti fa lavorare in B; clicca A o B per confrontare. Resta quella attiva. Non e' un preset.", "A / B: working memory. LINK (or the first click here) stores the current state in A and you work in B; click A or B to compare. The active one stays. Not a preset.") :
+active_info_id == 161 ? msg("A=B: chiude il confronto copiando la memoria attiva nell'altra; si riparte da qui.", "A=B: ends the comparison by copying the active memory into the other; you start again from here.") :
+active_info_id == 156 ? msg("LEGA OUTPUT (PEAK): cambiando PEAK RED o INPUT, OUTPUT si corregge di quanto il Peak Leveler riduce e recupera (makeup). Riferimento: il picco medio della voce negli ultimi secondi.", "LINK OUTPUT (PEAK): when you change PEAK RED or INPUT, OUTPUT moves by the Peak Leveler reduction and makeup. Reference: the average voice peak over the last seconds.") :
+active_info_id == 157 ? msg("LEGA OUTPUT (DYN EQ): cambiando soglia o curva, OUTPUT si corregge di quanto il Dynamic EQ alza (lift a riposo) o taglia. Livelli di riferimento: quelli della voce quando leghi.", "LINK OUTPUT (DYN EQ): when you change threshold or curve, OUTPUT moves by the rest lift and cuts of Dynamic EQ. Reference levels: the voice when you link.") :
+active_info_id == 158 ? msg("LEGA OUTPUT (DYN BAL): cambiando intensita' o profilo, OUTPUT si corregge di quanto il Dynamic Balance alza o abbassa. Il livello di riferimento e' quello della voce quando leghi.", "LINK OUTPUT (DYN BAL): when you change amount or profile, OUTPUT moves by the gain Dynamic Balance adds or removes. The reference level is the voice level when you link.") :
+active_info_id == 159 ? msg("LEGA OUTPUT (TONE): cambiando scala, curva o Mid Bump, OUTPUT si corregge di quanto il Tone EQ alza o abbassa in media sulla voce.", "LINK OUTPUT (TONE): when you change scale, curve or Mid Bump, OUTPUT moves by the average gain Tone EQ adds or removes on voice.") :
 active_info_id == 148 ? msg("PEAK CEIL: imposta il tetto del limiter sui picchi dei campioni (dBFS).", "PEAK CEIL: sets the sample peak limiter ceiling (dBFS).") :
 active_info_id == 201 ? msg("MALE LD: taratura MagicFlow per voce maschile.", "MALE LD: MagicFlow calibration for male voice.") :
 active_info_id == 202 ? msg("FEMALE LD: taratura MagicFlow per voce femminile, 4 bande DRC.", "FEMALE LD: MagicFlow calibration for female voice, 4 DRC bands.") :
@@ -2691,6 +2901,8 @@ active_info_id == 220 ? msg("FULL tutta la grafica, MINI solo monitor, JSFX list
 active_info_id == 221 ? msg("CHIARO / SCURO: cambia solo il tema colori mantenendo tutti i controlli completi (comprese le bande DRC FREQ/OCT).", "LIGHT / DARK: switches color theme while keeping all controls visible (including DRC band FREQ/OCT).") :
 active_info_id == 222 ? msg("GAIN MATCH: compensa il volume percepito per confronti onesti.", "GAIN MATCH: compensates perceived loudness for fair comparisons.") :
 active_info_id == 223 ? msg("DELTA: ascolta solo cio' che il plugin toglie/aggiunge (auto-off dopo 30s di inattivita').", "DELTA: hear only what the plugin removes/adds (30s inactivity auto-off).") :
+active_info_id == 225 ? msg("? Guida: apre la pagina di Magic Voice LAB nell'help della Suite (serve il Cue Navigator acceso).", "? Guide: opens the Magic Voice LAB page in the Suite help (needs the Cue Navigator running).") :
+active_info_id == 226 ? msg("Guida: avvia il Cue Navigator (33 Benvenuto) per aprirla da qui, oppure apri l'Help ZP.", "Guide: start the Cue Navigator (33 Welcome) to open it from here, or open the ZP Help.") :
 active_info_id == 224 ? msg("D·MOLLA (Delta Molla): arma l'ascolto delta del singolo stadio; tocca/trascina un controllo per isolarne il solo intervento e rilascia per tornare alla voce.", "S·DELTA (Spring Delta): arms single-stage delta audition; hold/drag any control to isolate its contribution and release to return.") :
 active_info_id == 230 ? msg("MONITOR: scegli il modulo da osservare (anche cliccando titoli, knob o pulsanti).", "MONITOR: pick the module to watch (also by clicking titles, knobs or buttons).") :
 active_info_id == 231 ? msg("SUGGERIMENTI: barra con i consigli dell'analisi in tempo reale (blocchi da 4 s di parlato).", "SUGGESTIONS: bar with real-time analysis advice (4 s active speech blocks).") :

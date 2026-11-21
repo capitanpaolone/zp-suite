@@ -424,7 +424,7 @@ local DETTAGLI = {
 -- Le zone, come le numera la guida.
 local ZONE_AIUTO = {
   testata = "C'e' in ogni vista: una riga di icone a gruppi. A sinistra il progetto (salva, annulla, ripeti), la modalita' (cartella = Sessione SOLO, telecomando = Telecomando) e la sessione (regioni, effetti, video); a destra le tre viste, toolbar e REAPER, la guida e la puntina. Azzurro = acceso o in uso; attenuato = non disponibile. Sotto: stato del trasporto con la modalita', timecode, traccia, regione, take e pre-roll.",
-  trasporto = "I comandi di ogni secondo. REC e' il piu' grande; sul bordo PRE accende il pre-roll, il lucchetto protegge la registrazione e il piccolo S in basso a sinistra mette in solo la traccia di registrazione.",
+  trasporto = "I comandi di ogni secondo. REC e' il piu' grande; sul bordo PRE accende il pre-roll, il lucchetto protegge la registrazione e il piccolo S in basso a sinistra mette in solo la traccia di registrazione. Il cerchietto sul PLAY accende il loop della selezione.",
   ingresso = "Cosa entra e cosa senti: meter dell'ingresso e del ritorno, da dove pesca la traccia, monitor. Il pomello regola il ritorno.",
   traccia = "Solo nella sessione SOLO: su quale delle sue tracce registri (MAIN, INSERTS, RETAKES, ALT), con il loro ingresso. In Telecomando la traccia si arma dal menu dell'ingresso.",
   vai = "Muoversi tra marker, regioni o item con i selettori a icona; il pulsante col simbolo marker ne mette uno, e accanto c'e la casella per dargli un nome.",
@@ -1731,6 +1731,28 @@ local function toggle_rec_lock()
     or "Lock REC spento: la barra spaziatrice ferma anche il REC, come in REAPER.")
 end
 
+-- LOOP della selezione (pulsantino sul PLAY): la selezione temporale diventa la zona di loop e si accende
+-- il Repeat di REAPER; da fermo, se il cursore e' fuori dalla selezione, va al suo inizio. Lo stato e' quello di REAPER.
+local function loop_on() return reaper.GetSetRepeat(-1) == 1 end
+local function toggle_loop_selection()
+  local on = not loop_on()
+  local s, e = reaper.GetSet_LoopTimeRange(false, false, 0, 0, false)
+  local has_sel = e > s
+  if on and has_sel then
+    reaper.GetSet_LoopTimeRange(true, true, s, e, false)
+    if reaper.GetPlayState() & 1 == 0 then
+      local cur = reaper.GetCursorPosition()
+      if cur < s or cur >= e then reaper.SetEditCurPos(s, true, false) end
+    end
+  end
+  reaper.GetSetRepeat(on and 1 or 0)
+  return on, has_sel
+end
+local function toggle_loop()
+  local on, has_sel = toggle_loop_selection()
+  speak(on and (has_sel and "Loop acceso sulla selezione." or "Loop acceso sui punti di loop: non c'e' una selezione.") or "Loop spento.")
+end
+
 -- TESTATA A ICONE --------------------------------------------------------
 -- Ogni comando della testata e' una cella 28 x 24 con un'icona disegnata (16 px, tratto 2 px),
 -- in "pillole": gruppi con un solo bordo arrotondato e una riga sottile fra le celle.
@@ -2273,6 +2295,7 @@ function Z.trasporto.draw(c, clicked)
   local total = 274
   local g = math.max(6, math.min(28, math.floor((c.w - total) / 5)))
   local x = c.x + math.floor((c.w - total - g * 5) / 2)
+  local x0 = x
   local cy, cap_y = c.y + 30, c.y + 62
   -- il lucchetto sta sul bordo del REC: se il mouse e' li', il clic non fa partire il REC
   local rec_cx = x + 40 + g + 29
@@ -2283,13 +2306,17 @@ function Z.trasporto.draw(c, clicked)
   local on_pre = (gfx.mouse_x - px) ^ 2 + (gfx.mouse_y - ly) ^ 2 <= (lr + 1) ^ 2
   local sx, sy, sr = rec_cx - 22, cy + 20, 10
   local on_solo = (gfx.mouse_x - sx) ^ 2 + (gfx.mouse_y - sy) ^ 2 <= (sr + 1) ^ 2
+  -- il loop sta sul bordo del PLAY, in alto a destra come il lucchetto sul REC
+  local play_cx = x0 + 40 + g + 58 + g + 50 + g + 36 + g + 25
+  local qx, qy, qr = play_cx + 19, cy - 19, 10
+  local on_loop = (gfx.mouse_x - qx) ^ 2 + (gfx.mouse_y - qy) ^ 2 <= (qr + 1) ^ 2
   for _, t in ipairs(tasti) do
     local kind, d = t[1], t[2]
     local r = {x=x, y=cy - d // 2, w=d, h=d}
     note(r, t[4])
     local paused = reaper.GetPlayState() & 2 == 2
     local active = (kind == "rec" and ts == "REC") or (kind == "play" and ts == "PLAY") or (kind == "pause" and paused)
-    if ZP_UI.draw_round_button(r, kind, active, true, clicked and not on_lock and not on_pre and not on_solo) then
+    if ZP_UI.draw_round_button(r, kind, active, true, clicked and not on_lock and not on_pre and not on_solo and not on_loop) then
       if kind == "rec" then record_on_track(state.active_track_key, "REC")
       elseif kind == "stop" then stop_transport()
       elseif kind == "play" then play_transport()
@@ -2341,6 +2368,20 @@ function Z.trasporto.draw(c, clicked)
   gfx.x, gfx.y = math.floor(sx - sw / 2 + 0.5), math.floor(sy - sh / 2 + 0.5)
   gfx.drawstr("S")
   if clicked and on_solo and solo_tr then toggle_active_track_solo() end
+
+  local lp = loop_on()
+  note({x=qx - qr, y=qy - qr, w=qr * 2, h=qr * 2}, "Loop", lp and "Loop acceso: PLAY ripete la selezione. Clic: spegne." or "Loop spento. Clic: la selezione diventa il loop e PLAY la ripete.")
+  if lp then gfx.set(0.98, on_loop and 0.88 or 0.76, 0.24, 1)
+  else gfx.set(on_loop and 0.42 or 0.28, on_loop and 0.44 or 0.30, on_loop and 0.50 or 0.36, 1) end
+  gfx.circle(qx, qy, qr, true, true)
+  gfx.set(0.05, 0.05, 0.06, 1); gfx.circle(qx, qy, qr, false, true)
+  if lp then gfx.set(0.14, 0.09, 0.02, 1) else gfx.set(0.86, 0.88, 0.93, 1) end
+  -- simbolo: freccia circolare
+  local ar, a = 4.6, math.pi * 2 - 0.35
+  gfx.arc(qx, qy, ar, 0.45, a, true); gfx.arc(qx, qy, ar - 0.8, 0.45, a, true)
+  local ax, ay = qx + ar * math.sin(a), qy - ar * math.cos(a)
+  gfx.triangle(ax + 3.2, ay, ax - 1, ay - 3, ax - 1, ay + 3)
+  if clicked and on_loop then toggle_loop() end
 end
 
 -- 3 INGRESSO E ASCOLTO ----------------------------------------------------

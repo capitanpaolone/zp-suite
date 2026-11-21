@@ -112,6 +112,7 @@
 --   [nomain] remote/zp_remote_recupero.lua
 --   [nomain] remote/zp_remote_recupero_logic.lua
 --   remote/zp_remote_esporta.py
+--   remote/zp_ffmpeg.lua
 --   remote/zp_remote_identity.py
 --   remote/zp_remote_preflight.py
 --   remote/assets/zp_remote_pacchetto.png
@@ -174,6 +175,9 @@
 --   help/magic_voice_lab.html
 --   help/pannello_trascrizione.html
 --   help/collega_marker.html
+--   help/master_pro_glue_matrix.html
+--   help/ffmpeg.html
+--   icons/ZP_tb_28_Collega_Marker.png
 --   help/en/index.html
 --   help/en/toolbar.html
 --   help/en/solo_recorder.html
@@ -181,6 +185,7 @@
 --   help/en/magic_voice_lab.html
 --   help/en/pannello_trascrizione.html
 --   help/en/collega_marker.html
+--   help/en/ffmpeg.html
 --   fxchains/ZP_Bus_VoiceChain.RfxChain
 --   fxchains/ZP_MasterChain.RfxChain
 --   presets/js-ZP Suite_ZP Voce_ZP BUS Chain_jsfx.ini

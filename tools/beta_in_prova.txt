@@ -1,0 +1,15 @@
+# Prodotti in maturazione da aggiungere nel REAPER di prova, sopra l'installazione
+# ReaPack (tools/prova_installazione.sh). Gli utenti NON li ricevono.
+#
+# Una riga per file o cartella del repo (cartella = con / finale).
+# "* " davanti = script da registrare come azione.
+# Tenere allineato a docs/IN_MATURAZIONE.md.
+
+ZP Lab/
+* ZP Studio Suite/36_ZP_Montaggio_Parlato.lua
+ZP Studio Suite/ZP_Montaggio.lua
+ZP Studio Suite/help/lab.html
+ZP Studio Suite/help/en/lab.html
+* ZP Voce/ZP Clean & Paint.lua
+* ZP Voce/ZP_Clean_And_Paint_Reaper.lua
+* ZP Voce/ZP_Importa_da_Clean_Paint.lua

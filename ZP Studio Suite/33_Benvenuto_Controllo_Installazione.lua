@@ -15,7 +15,7 @@
 -- riapre dall'Action List ("33 Benvenuto") o dall'help.
 --
 -- Pezzi controllati: toolbar ed effetti (32), Cue Navigator del Harmonic Space Carver
--- (deve partire a ogni apertura di REAPER), ZP Speech (Trascrivi; Windows sperimentale), SWS,
+-- (deve partire a ogni apertura di REAPER), ZP Speech, Clean & Paint (beta), ZP Remote, SWS,
 -- js_ReaScriptAPI, OSARA, marker degli item protetti (Mouse Modifiers), interfaccia web di REAPER (SOLO Web).
 -- Lo stato si ricontrolla da solo ogni secondo: fai una cosa e la spia cambia.
 
@@ -263,7 +263,7 @@ end
 
 -- Requisiti esterni di ZP Remote su macOS. La verifica guarda gli stessi percorsi
 -- usati dal launcher e dal suo esportatore, senza avviare processi a ogni refresh.
-function M.remote_tools(exists, path)
+function M.remote_tools(exists, path, ff_resolve, ff_preferito)
   local function in_path(name)
     for dir in tostring(path or ""):gmatch("[^:]+") do
       if exists(dir:gsub("/+$", "") .. "/" .. name) then return true end
@@ -281,7 +281,8 @@ function M.remote_tools(exists, path)
   }) do
     if exists(p) then python = true; break end
   end
-  local ffmpeg = exists("/opt/homebrew/bin/ffmpeg") or exists("/usr/local/bin/ffmpeg") or in_path("ffmpeg")
+  -- FFmpeg: il percorso (non solo si/no), con lo stesso ordine del lanciatore e dell'esportatore (remote/zp_ffmpeg.lua)
+  local ffmpeg = ff_resolve and ff_resolve(exists, path, ff_preferito) or false
   local shasum = exists("/usr/bin/shasum") or in_path("shasum")
   return { python = python, ffmpeg = ffmpeg, shasum = shasum }
 end
@@ -430,6 +431,7 @@ local ok_ui, UI = pcall(dofile, here .. sep .. "ZP_UI.lua")
 if not ok_ui or not UI then reaper.MB("Manca ZP_UI.lua accanto a questo script: reinstalla la ZP Studio Suite da ReaPack.", "ZP Benvenuto", 0) return end
 
 local T = UI.T or function(s) return s end
+local ff_cache = {}   -- FFmpeg: percorso gia' provato, versione o errore
 local TITLE = "ZP Studio Suite - " .. T("Benvenuto")
 local HELPER_NAME = "ZP Harmonic Space Carver Cue Navigator.lua"
 local IS_MAC = (reaper.GetOS() or ""):match("OSX") or (reaper.GetOS() or ""):match("macOS")
@@ -860,13 +862,56 @@ local function check_all()
     }
   end
 
+  -- 3a ZP Clean & Paint: beta della 2.6.8, collegata a un motore esterno ancora in sviluppo.
+  do
+    local home = os.getenv("HOME") or os.getenv("USERPROFILE") or ""
+    local appdata = os.getenv("APPDATA") or ""
+    local candidates = {}
+    if appdata ~= "" then candidates[#candidates + 1] = appdata .. "/ZP_Clean_Paint/lab_root_path.txt" end
+    if home ~= "" then candidates[#candidates + 1] = home .. "/Library/Application Support/ZP_Clean_Paint/lab_root_path.txt" end
+    local root
+    for _, path in ipairs(candidates) do
+      local raw = read(path)
+      local p = raw and raw:gsub("^%s+", ""):gsub("%s+$", ""):gsub("[/\\]+$", "")
+      if p and p ~= "" then root = p; break end
+    end
+    local action = exists(P(resource, "Scripts", "ZP Suite", "ZP Voce", "ZP Clean & Paint.lua"))
+    local is_win = (reaper.GetOS() or ""):match("^Win") ~= nil
+    local py = root and P(root, "engines", "rvc_local", ".venv", is_win and "Scripts" or "bin", is_win and "python.exe" or "python")
+    local cli = root and P(root, "engines", "rvc_local", "zp_clean_paint_cli.py")
+    local presets = root and P(root, "data", "paint_presets.json")
+    local line
+    if not action then
+      line = T("Beta candidata 2.6.8: azione Lua non installata.")
+    elseif root and exists(py) and exists(cli) and exists(presets) then
+      line = T("Beta candidata 2.6.8: CLI, Python e preset presenti; motore AI in sviluppo.")
+    elseif root then
+      line = T("Beta candidata 2.6.8: motore esterno configurato ma incompleto; motore AI in sviluppo.")
+    else
+      line = T("Beta candidata 2.6.8: motore esterno non configurato; motore AI in sviluppo.")
+    end
+    out[#out + 1] = {
+      title = T("ZP Clean & Paint (beta)"),
+      state = "beta",
+      line = line,
+      buttons = {},
+    }
+  end
+
   -- 3b ZP Remote: importazione e esportazione hanno requisiti diversi.
   local remote_dir = P(here, "remote")
-  local rt = M.remote_tools(exists, os.getenv("PATH"))
+  local ok_ff, FF = pcall(dofile, P(remote_dir, "zp_ffmpeg.lua"))
+  if not ok_ff then FF = nil end
+  local rt = M.remote_tools(exists, os.getenv("PATH"), FF and FF.resolve, FF and FF.preferito(reaper))
+  -- la prova "ffmpeg -version" si fa una volta per percorso, non a ogni ridisegno
+  if rt.ffmpeg and FF then
+    if ff_cache.path ~= rt.ffmpeg then ff_cache.path = rt.ffmpeg; ff_cache.ver, ff_cache.err = FF.versione(reaper, rt.ffmpeg) end
+    if not ff_cache.ver then rt.ffmpeg_rotto = rt.ffmpeg; rt.ffmpeg = false end
+  end
   local remote_files = {
     "ZP_Remote_Crea_Pacchetto.lua", "zp_remote_json.lua", "zp_remote_identity.py",
     "zp_remote_importer.lua", "zp_remote_import_logic.lua", "zp_remote_preflight.py",
-    "zp_remote_esporta.py",
+    "zp_remote_esporta.py", "zp_ffmpeg.lua",
   }
   local missing_remote = {}
   for _, name in ipairs(remote_files) do
@@ -892,13 +937,19 @@ local function check_all()
   else
     remote_line = T("Manca FFmpeg per esportare. L'importazione è pronta.")
   end
+  if #missing_remote == 0 and rt.ffmpeg_rotto then
+    remote_line = remote_line .. " " .. T("FFmpeg trovato ma non parte:") .. " " .. rt.ffmpeg_rotto .. " (" .. tostring(ff_cache.err) .. ")."
+  elseif #missing_remote == 0 and rt.ffmpeg then
+    remote_line = remote_line .. " FFmpeg " .. tostring(ff_cache.ver) .. ": " .. rt.ffmpeg
+  end
   local remote_row = {
     title = T("ZP Remote (Importa / Esporta)"),
     state = import_ready and export_ready and "ok" or "fare",
     line = remote_line,
     buttons = {
       { T("Python 3"), function() UI.open_url("https://www.python.org/downloads/macos/") end, hidden = rt.python },
-      { "FFmpeg / Homebrew", function() UI.open_url("https://brew.sh") end, hidden = rt.ffmpeg },
+      { T("Come installare FFmpeg…"), function() UI.open_help("ffmpeg", "ffmpeg.html") end, hidden = rt.ffmpeg },
+      { T("Scegli FFmpeg…"), function() if FF and FF.scegli(reaper) then ff_cache.path = nil end end, hidden = not FF },
     },
   }
   -- Importa/Esporta usano shasum, i percorsi di Python e le cartelle Unix: su Windows non partono,
@@ -981,8 +1032,8 @@ local function check_all()
 end
 
 -- Disegno ---------------------------------------------------------------------
-local LED = { ok = {0.25, 0.85, 0.42}, fare = {0.95, 0.30, 0.22}, passo = {0.98, 0.72, 0.20}, manca = {0.55, 0.60, 0.70}, na = {0.32, 0.34, 0.40} }
-local WORD = { ok = "pronto", fare = "da fare", passo = "manca un passo", manca = "facoltativo", na = "non serve" }
+local LED = { ok = {0.25, 0.85, 0.42}, fare = {0.95, 0.30, 0.22}, passo = {0.98, 0.72, 0.20}, manca = {0.55, 0.60, 0.70}, na = {0.32, 0.34, 0.40}, beta = {0.72, 0.54, 0.92} }
+local WORD = { ok = "pronto", fare = "da fare", passo = "manca un passo", manca = "facoltativo", na = "non serve", beta = "beta" }
 local mouse_was_down = false
 local scroll = 0          -- posizione visualizzata: righe che scorrono quando la finestra e' bassa
 local scroll_target = 0   -- destinazione della rotella, separata dalla posizione animata
@@ -1116,7 +1167,7 @@ local function loop()
   reaper.defer(loop)
 end
 
-gfx.init(TITLE, 820, 76 + 11 * 78 + 60 + 34, 0, 160, 120)
+gfx.init(TITLE, 820, 76 + 12 * 78 + 60 + 34, 0, 160, 120)
 rows = check_all(); last_check = reaper.time_precise()
 local fare = 0
 for _, r in ipairs(rows) do if r.state == "fare" or r.state == "passo" then fare = fare + 1 end end

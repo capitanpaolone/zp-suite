@@ -21,10 +21,14 @@ Regola di Paolo, 2026-10-18. Vale per tutti gli agenti (Codex, Claude, altri).
    (punto 5) NON fanno scattare la versione.
 4. **Pubblicare = via esplicito di Paolo.** Merge/push su `master`, tag e ReaPack partono solo dopo un suo
    "pubblica" nella conversazione corrente. Prima si prepara e si collauda (`run_all.sh`, check).
-5. **Prodotti in maturazione (beta).** Quelli non conclusi stanno elencati in `docs/IN_MATURAZIONE.md`: nome, dove
-   vivono, perche' non sono nella release, cosa manca. Restano `@noindex` o `--ignore`, fuori dal `@provides`.
-   Prima di ogni pubblicazione l'elenco si rilegge e si aggiorna; README e note di rilascio riportano una sezione
-   **«Non incluso in questa versione»** con quell'elenco. Un prodotto esce dalla beta solo per decisione di Paolo.
+5. **Prodotti in maturazione (beta) — regola di Paolo aggiornata il 2026-11-21.** Tutto il lavoro della nuova
+   versione va committato, compresi i prodotti non conclusi: niente lavoro che vive solo in REAPER e si dimentica.
+   I prodotti non conclusi escono anche online, segnalati come **Beta** (nome o descrizione ReaPack, help, README),
+   non tenuti fuori. Restano elencati in `docs/IN_MATURAZIONE.md` (nome, dove vivono, cosa manca) e le loro modifiche
+   non fanno scattare la versione della Suite. Escono dalla Beta solo per decisione di Paolo. Prima di ogni
+   pubblicazione l'elenco si rilegge e README e note di rilascio riportano una sezione «Beta in questa versione».
+   Giro di collaudo: `tools/prova_installazione.sh` su Reaper26_test → prova sul campo sul REAPER di Paolo
+   (`tools/Sincronizza REAPER.command`) → commit.
 6. **Prima di pubblicare** si aggiornano allo stato reale: questo file, MEMORIA.md, gli help (it/en),
    README (it/en) e CHANGELOG.
 7. **Come riferire (gli agenti sono troppo verbosi e le cose importanti sfuggono).** Il messaggio finale inizia con

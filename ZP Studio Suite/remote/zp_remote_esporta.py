@@ -18,9 +18,23 @@ Regole (decise con Paolo, 23/10/2026):
 
 Uso:
     python3 zp_remote_esporta.py PROGETTO.RPP --region-guid GUID [--uscita CARTELLA] [--personaggi A,B] [--preroll 5] [--postroll 1]
-Serve ffmpeg (Homebrew: /opt/homebrew/bin/ffmpeg).
+Serve ffmpeg: --ffmpeg PERCORSO (lo passa Crea pacchetto), altrimenti PATH, /usr/local/bin, /opt/homebrew/bin, /opt/local/bin.
 """
 import argparse, base64, json, math, os, re, shlex, shutil, subprocess, sys, tempfile, zipfile
+
+# Stesso ordine di remote/zp_ffmpeg.lua (un test controlla che le due liste coincidano).
+FFMPEG_CANDIDATI = ("/usr/local/bin/ffmpeg", "/opt/homebrew/bin/ffmpeg", "/opt/local/bin/ffmpeg")
+
+
+def trova_ffmpeg():
+    """PATH, poi i percorsi standard (REAPER aperto dal Finder ha un PATH ridotto); solo file eseguibili."""
+    p = shutil.which("ffmpeg")
+    if p:
+        return p
+    for c in FFMPEG_CANDIDATI:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    return "ffmpeg"
 from array import array
 from zp_remote_identity import ID_RE, canonical_id, legacy_path_id as old_project_id, project_id_from_lines
 
@@ -473,7 +487,7 @@ def inspect_project(rpp, ffmpeg="ffmpeg", region_guid=None, region_name=None, re
         if resolved:
             ffmpeg = resolved
         else:
-            sys.exit("Non trovo ffmpeg. Installa ffmpeg e riavvia REAPER.")
+            sys.exit("Non trovo FFmpeg. Nel Benvenuto (33 Controllo installazione) usa «Scegli FFmpeg…» o «Come installare FFmpeg…».")
     return {
         "ok": True,
         "progetto": os.path.splitext(os.path.basename(rpp))[0],
@@ -527,8 +541,9 @@ def make_poster(ffmpeg, video, pkg, poster_jpg=None, poster_project_s=None):
 
 def guide_segments(ffmpeg, video, pkg):
     """Decodifica l'audio del video una volta sola, lo taglia in pezzi esatti al campione (FLAC) e calcola i picchi."""
+    dec_err = tempfile.TemporaryFile()   # errori del decoder: un file, cosi' non si blocca la lettura dell'audio
     dec = subprocess.Popen([ffmpeg, "-loglevel", "error", "-ss", f"{video['soffs']:.6f}", "-i", video["file"], "-t", f"{video['len']:.6f}",
-                            "-vn", "-ac", "2", "-ar", str(SR), "-f", "s16le", "-"], stdout=subprocess.PIPE)
+                            "-vn", "-ac", "2", "-ar", str(SR), "-f", "s16le", "-"], stdout=subprocess.PIPE, stderr=dec_err)
     seg_bytes, step = SEG_S * SR * 4, SR // PEAKS_PER_S
     segs, peaks, k = [], bytearray(), 0
     os.makedirs(os.path.join(pkg, "guida"), exist_ok=True)
@@ -549,7 +564,10 @@ def guide_segments(ffmpeg, video, pkg):
             p = max(max(blk), -min(blk)) / 32768 if blk else 0
             peaks.append(0 if p <= 0 else max(0, min(255, round(255 * (1 + math.log10(p) / 2.4)))))
         k += 1
-    dec.wait()
+    if dec.wait():
+        dec_err.seek(0)
+        msg = dec_err.read().decode("utf-8", "replace").strip()[-800:]
+        sys.exit("ffmpeg non è riuscito a leggere l'audio del video per la guida" + (":\n" + msg if msg else "."))
     return segs, base64.b64encode(bytes(peaks)).decode()
 
 
@@ -695,7 +713,7 @@ if __name__ == "__main__":
     ap.add_argument("--preroll", type=float, default=5.0)
     ap.add_argument("--postroll", type=float, default=1.0)
     ap.add_argument("--base", help="cartella da cui risolvere i file del progetto (se il .RPP è una copia altrove)")
-    ap.add_argument("--ffmpeg", default=shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg")
+    ap.add_argument("--ffmpeg", default=trova_ffmpeg())
     ap.add_argument("--legacy-path-id", action="store_true", help="solo compatibilità con vecchi pacchetti: ID derivato dal percorso")
     ap.add_argument("--region-guid", help="GUID della regione REAPER selezionata")
     ap.add_argument("--region-name", help="nome della regione REAPER selezionata")

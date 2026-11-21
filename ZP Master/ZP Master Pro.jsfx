@@ -1,5 +1,5 @@
 // @description ZP Master Pro
-// @version 2.46
+// @version 2.47
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
@@ -13,6 +13,7 @@
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: ZP Studio Suite/help/index.html#plugin-master-pro
 // @changelog
+//   Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
 //   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
 //     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
 //   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
