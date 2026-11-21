@@ -4,6 +4,7 @@
 -- @about Collega i Carver a REAPER: salti tra i cue, punto del cursore a trasporto fermo,
 --   verifica del routing sidechain e cue come marker #HSC sul righello (seguono l'editing).
 -- @changelog
+--   Marker #HSC cliccato sulla timeline (trasporto fermo): il cue si seleziona anche nei Carver.
 --   Il ? di ZP Magic Voice LAB apre la sua guida dedicata (magic_voice_lab.html).
 --   Rampa del cue fino a 1200 ms (formato di scambio con il Carver allargato); i preset C/S/M/L non contano piu'.
 --   Il ? di ZP BrownSlope Prism apre la sua sezione nella guida principale della Suite (non piu' la pagina di ZP Lab).
@@ -787,6 +788,15 @@ local function send_list(base, list, markers, timing_signature)
   pending = { base = base, seq = seq, t = reaper.time_precise(), list = list, timing_signature = timing_signature }
 end
 
+-- comando breve per un Carver (stessa casella di send_list; seq scritto per ultimo)
+local function send_cmd(base, cmd, pos)
+  local seq = math.floor(reaper.gmem_read(MB + 3) + 0.5) + 1
+  reaper.gmem_write(MB, base); reaper.gmem_write(MB + 1, cmd); reaper.gmem_write(MB + 2, pos)
+  reaper.gmem_write(MB + 3, seq)
+  pending = { base = base, seq = seq, t = reaper.time_precise(), kind = "sel" }
+end
+local sel_last_cursor, sel_todo = nil, {}
+
 local function alive_carvers()
   local out = {}
   for _, c in ipairs(carvers) do if reaper.gmem_read(c.base + 69) == MAGIC then out[#out + 1] = c end end
@@ -805,7 +815,8 @@ local function sync()
   if reaper.time_precise() < settle_until then return end
   if pending then
     if math.floor(reaper.gmem_read(MB + 4) + 0.5) == pending.seq then
-      expected[pending.base] = pending.list; timing_sent[pending.base] = pending.timing_signature; pending = nil
+      if pending.kind ~= "sel" then expected[pending.base] = pending.list; timing_sent[pending.base] = pending.timing_signature end
+      pending = nil
     elseif reaper.time_precise() - pending.t > 1.0 then
       pending = nil                       -- Carver fermo: si riprova al prossimo giro
     end
@@ -864,6 +875,24 @@ local function sync()
       send_list(c.base, target, markers, timing_signature); return
     end
     expected[c.base] = target
+  end
+
+  -- marker #HSC cliccato in REAPER (trasporto fermo: il cursore va sul marker): il cue si seleziona anche
+  -- nei Carver. Una volta per spostamento del cursore, cosi' una scelta fatta poi nel Carver non viene rimessa.
+  if reaper.GetCursorPosition and (reaper.GetPlayState() & 1) == 0 then
+    local cur = reaper.GetCursorPosition()
+    if cur ~= sel_last_cursor then
+      sel_last_cursor, sel_todo = cur, {}
+      for _, m in ipairs(markers) do
+        if math.abs(m.pos - cur) <= 0.0005 then
+          for _, c in ipairs(list) do sel_todo[#sel_todo + 1] = { base = c.base, pos = m.pos } end
+          break
+        end
+      end
+    end
+    if #sel_todo > 0 then local s = table.remove(sel_todo, 1); send_cmd(s.base, 7, s.pos) end
+  else
+    sel_last_cursor = nil
   end
 end
 

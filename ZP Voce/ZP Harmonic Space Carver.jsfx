@@ -3,6 +3,7 @@
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   Cliccando un marker #HSC sulla timeline (trasporto fermo) il cue si seleziona anche nel Carver: il pomello Rampa mostra e salva quello.
 //   Cue: un solo comportamento. Rampa regolabile fino a 1200 ms (per marker), poi la musica resta a duck 0
 //     finche' non arriva il primo suono dal sidechain dopo un silenzio. Tolti i preset C/S/M/L e la tenuta Custom.
 //   LOCK nel pannello Carver: attacco e rilascio del Carver comandati dal VCA (rispetta Voice Hold e il rientro GRADUAL).
@@ -492,6 +493,11 @@ function quick_service() local(base, i, seq, cmd, res, pos, n, same_list, select
             (play_state & 1) && abs(pos - play_position) < 0.3 ? quick_fire_ext = 1;
           ) : (res = quick_status == 2 ? 2 : 3;);
         ) : cmd == 4 ? (res = quick_undo();
+        ) : cmd == 7 ? (
+          // marker #HSC cliccato sulla timeline (trasporto fermo): lo stesso cue si seleziona anche qui,
+          // cosi' il pomello Rampa mostra e salva il tempo di quel marker
+          quick_found = -1; i = 0; loop(quick_point_count, abs(quick_points[i] - pos) <= 0.002 ? quick_found = i; i += 1;);
+          quick_found >= 0 ? ( quick_msel_clear(); quick_sel = quick_found; gmem[base+2] = quick_sel; res = 10; ) : ( res = 3; );
         ) : cmd == 5 ? (
           // 2.6: l'helper sostituisce l'elenco con i marker #HSC della timeline
           n = max(0, min(64, floor(gmem[HSC_MB+10] + 0.5)));
