@@ -184,14 +184,14 @@ dbal_act_pct = 0;
 g_lo = 1; g_mid = 1; g_hi = 1;
 t_lo = 0.38; t_mid = 0.42; t_hi = 0.20;
 gm_rms_in = 0.001; gm_rms_out = 0.001; gm_gain = 1.0;
-lk_clamped = 0; lk_prev_t = 0; lk_prev_d = 0; lk_base = 0; lk_written = 0; gt_ref = gd_ref = gt_now = gd_now = 0; // LEGA OUTPUT
+lk_user_move = 0; lk_shq = lk_shd = 0; gp_snap = gq_snap = gt_snap = 0; lk_clamped = 0; lk_prev_t = 0; lk_prev_d = 0; lk_base = 0; lk_written = 0; gt_ref = gd_ref = gt_now = gd_now = 0; // LEGA OUTPUT
 lk_Llo = lk_Lmid = lk_Lhi = -20;
 lk_prev_q = 0; gq_ref = gq_now = 0; lk_Q0 = lk_Q1 = lk_Q2 = lk_Q3 = lk_Q4 = -20;
 lk_W0 = 0.10; lk_W1 = 0.30; lk_W2 = 0.35; lk_W3 = 0.18; lk_W4 = 0.07;
-lk_prev_p = 0; gp_ref = gp_now = 0; lk_P = -10;
+lk_prev_p = 0; gp_ref = gp_now = 0; lk_pklev = -10;
 // medie lente (2,5 s, solo con voce presente) dei livelli che servono ai legami; senza Input Drive
 av_db_ok = av_dq_ok = av_pk_ok = 0; av_Llo = av_Lmid = av_Lhi = -20; av_Q0 = av_Q1 = av_Q2 = av_Q3 = av_Q4 = -20;
-av_W0 = 0.10; av_W1 = 0.30; av_W2 = 0.35; av_W3 = 0.18; av_W4 = 0.07; av_P = -10;
+av_W0 = 0.10; av_W1 = 0.30; av_W2 = 0.35; av_W3 = 0.18; av_W4 = 0.07; av_pklev = -10;
 // MEMORIA A/B di lavoro: tutti i parametri del suono (esclusi vista, tema, monitor, preset, DELTA, SOLO DRC)
 AB_MEM = 1000000; ab_list = AB_MEM + 500; AB_N = 0; ab_on = 0; ab_cur = 1;
 ab_i = 1; loop(56, (ab_i != 25 && ab_i != 39 && (ab_i <= 41 || ab_i >= 53)) ? ( ab_list[AB_N] = ab_i; AB_N += 1; ); ab_i += 1; );
@@ -234,6 +234,7 @@ sug_t = -10;
 
 // ---------------- Slider helpers (masks via 2^(n-1), valid oltre slider 32) ----------------
 function set_param_slider(sl_idx, new_val) local(mask) (
+  sl_idx == 37 ? lk_user_move = 1;   // LEGA OUTPUT: mossa vera di OUTPUT dalla GUI o da un preset
   slider(sl_idx) = new_val;
   mask = 2 ^ (sl_idx - 1);
   sliderchange(mask);
@@ -514,18 +515,18 @@ function tone_gain_db() local(k, fq, w, wt, p, sw, sp) (
 function dbal_gain_db() local(bt, mB, g1, g2, g3) (
   slider33 >= 0.5 && slider35 > 0.1 ? (
     bt = slider35 * 0.01; mB = slider34 >= 0.5;
-    g1 = dbal_band_curve_db(lk_Llo + in_drive_db, bt, mB, 0.35); g2 = dbal_band_curve_db(lk_Lmid + in_drive_db, bt, mB, 0.20); g3 = dbal_band_curve_db(lk_Lhi + in_drive_db, bt, mB, -0.45);
+    g1 = dbal_band_curve_db(lk_Llo + in_drive_db + lk_shd, bt, mB, 0.35); g2 = dbal_band_curve_db(lk_Lmid + in_drive_db + lk_shd, bt, mB, 0.20); g3 = dbal_band_curve_db(lk_Lhi + in_drive_db + lk_shd, bt, mB, -0.45);
     10 * log10((t_lo * 10 ^ (g1 / 10) + t_mid * 10 ^ (g2 / 10) + t_hi * 10 ^ (g3 / 10)) / max(0.001, t_lo + t_mid + t_hi));
   ) : 0;
 );
 // DYN EQ: lift a riposo meno i tagli, sulle 5 bande ai livelli letti quando si lega (senza Input Drive, riapplicato qui)
 function deq_gain_db() local(g0, g1, g2, g3, g4) (
   slider26 >= 0.5 && slider28 > 0.1 ? (
-    g0 = deq_calc_band_db(lk_Q0 + in_drive_db, deq_lift0, deq_T0, deq_S0, deq_M0);
-    g1 = deq_calc_band_db(lk_Q1 + in_drive_db, deq_lift0, deq_T1, deq_S1, deq_M1);
-    g2 = deq_calc_band_db(lk_Q2 + in_drive_db, deq_lift0, deq_T2, deq_S2, deq_M2);
-    g3 = deq_calc_band_db(lk_Q3 + in_drive_db, deq_lift0, deq_T3, deq_S3, deq_M3);
-    g4 = deq_calc_band_db(lk_Q4 + in_drive_db, deq_lift0, deq_T4, deq_S4, deq_M4);
+    g0 = deq_calc_band_db(lk_Q0 + in_drive_db + lk_shq, deq_lift0, deq_T0, deq_S0, deq_M0);
+    g1 = deq_calc_band_db(lk_Q1 + in_drive_db + lk_shq, deq_lift0, deq_T1, deq_S1, deq_M1);
+    g2 = deq_calc_band_db(lk_Q2 + in_drive_db + lk_shq, deq_lift0, deq_T2, deq_S2, deq_M2);
+    g3 = deq_calc_band_db(lk_Q3 + in_drive_db + lk_shq, deq_lift0, deq_T3, deq_S3, deq_M3);
+    g4 = deq_calc_band_db(lk_Q4 + in_drive_db + lk_shq, deq_lift0, deq_T4, deq_S4, deq_M4);
     10 * log10((lk_W0 * 10 ^ (g0 / 10) + lk_W1 * 10 ^ (g1 / 10) + lk_W2 * 10 ^ (g2 / 10) + lk_W3 * 10 ^ (g3 / 10) + lk_W4 * 10 ^ (g4 / 10))
                / max(0.001, lk_W0 + lk_W1 + lk_W2 + lk_W3 + lk_W4));
   ) : 0;
@@ -542,7 +543,7 @@ function deq_ref_levels() (
 // Peak Leveler: makeup meno riduzione (Opto + RComp) al livello di picco medio della voce
 function pk_gain_db() local(amt, thr, L, go, gr) (
   slider7 >= 0.5 && slider6 > 0.1 ? (
-    amt = slider6 * 0.01; thr = -6.0 - amt * 22.0; L = lk_P + in_drive_db;
+    amt = slider6 * 0.01; thr = -6.0 - amt * 22.0; L = lk_pklev + in_drive_db;
     go = L > thr ? (L - thr) * 0.48 : 0; gr = L > thr + 2.5 ? (L - thr - 2.5) * 0.62 : 0;
     min(5.0, amt * 3.4 + clamp(-in_drive_db, -4.0, 6.0) * 0.18) - min(16.0, go * 0.55 + gr * 0.45);
   ) : 0;
@@ -722,7 +723,7 @@ function ab_recall(m) local(k, idx) (
   k = 0; loop(AB_N, idx = ab_list[k]; slider(idx) = AB_MEM[m * 100 + k]; sliderchange(2 ^ (idx - 1)); k += 1; );
   update_dsp_params(); out_gain_lin = db2lin(slider37);
 );
-function ab_start() ( !ab_on ? ( ab_store(0); ab_store(1); ab_on = 1; ab_cur = 1; ); );   // A = stato di adesso, si lavora in B
+function ab_start() ( (!ab_on || ab_cur == 0) ? ( ab_store(0); ab_store(1); ab_on = 1; ab_cur = 1; ); );   // A = stato di adesso, si lavora in B (anche ripartendo da A)
 function ab_go(m) ( ab_on && m != ab_cur ? ( ab_store(ab_cur); ab_recall(m); ab_cur = m; ); );
 function ab_close() ( ab_on ? ( ab_store(ab_cur); ab_store(1 - ab_cur); ab_on = 0; ); );
 
@@ -752,17 +753,26 @@ slider26 >= 0.5 && deq_e2 > 0.0018 ? (
   av_Q3 += av_x * (lin2db(deq_e3 * 1.42) - in_drive_db - av_Q3); av_W3 += av_x * (sqr(deq_e3) / av_s - av_W3);
   av_Q4 += av_x * (lin2db(deq_e4 * 1.42) - in_drive_db - av_Q4); av_W4 += av_x * (sqr(deq_e4) / av_s - av_W4); av_dq_ok = 1;
 );
-slider7 >= 0.5 && rcomp_env > 0.0018 ? ( av_x = av_pk_ok ? av_c : 1; av_P += av_x * (lin2db(rcomp_env) - in_drive_db - av_P); av_pk_ok = 1; );
+slider7 >= 0.5 && rcomp_env > 0.0018 ? ( av_x = av_pk_ok ? av_c : 1; av_pklev += av_x * (lin2db(rcomp_env) - in_drive_db - av_pklev); av_pk_ok = 1; );
 
 // LEGA OUTPUT: OUTPUT = punto di partenza - (guadagno del modulo ora - guadagno quando si e' legato), per ogni modulo legato
 lk_t = slider54 >= 0.5; lk_d = slider53 >= 0.5; lk_q = slider55 >= 0.5; lk_p = slider56 >= 0.5;
 lk_any = lk_t || lk_d || lk_q || lk_p; lk_prev_any = lk_prev_t || lk_prev_d || lk_prev_q || lk_prev_p;
 (lk_any || lk_prev_any) ? (
-  !lk_prev_any ? ( lk_base = slider37; ) : ( abs(slider37 - lk_written) > 0.0005 ? ( lk_base += slider37 - lk_written; ); );
-  (lk_d && !lk_prev_d) ? ( dbal_ref_levels(); );
-  (lk_q && !lk_prev_q) ? ( deq_ref_levels(); );
-  (lk_p && !lk_prev_p) ? ( lk_P = av_pk_ok ? av_P : -10; );
-  gt_now = tone_gain_db(); gd_now = dbal_gain_db(); gq_now = deq_gain_db(); gp_now = pk_gain_db();
+  // nuovo punto di partenza solo se OUTPUT e' stato mosso davvero (manopola o preset): un valore vecchio
+  // rimandato da REAPER quando cambia un altro parametro non conta, il legame lo riscrive qui sotto
+  !lk_prev_any ? ( lk_base = slider37; lk_user_move = 0; ) : ( lk_user_move ? ( lk_base += slider37 - lk_written; lk_user_move = 0; ); );
+  // primo legame: una sola fotografia dei livelli per tutta la catena (media degli ultimi secondi di voce)
+  (lk_any && !lk_prev_any) ? (
+    lk_pklev = av_pk_ok ? av_pklev : -10; deq_ref_levels(); dbal_ref_levels(); lk_shq = 0; lk_shd = 0;
+    gp_snap = pk_gain_db(); gq_snap = deq_gain_db(); gt_snap = tone_gain_db();
+  );
+  // in ordine di catena: ogni stadio riceve INPUT e quanto e' cambiato il guadagno degli stadi prima di lui
+  gp_now = pk_gain_db();
+  lk_shq = gp_now - gp_snap;                                    // DYN EQ dopo il Peak Leveler
+  gq_now = deq_gain_db(); gt_now = tone_gain_db();
+  lk_shd = lk_shq + (gq_now - gq_snap) + (gt_now - gt_snap);    // DYN BAL dopo DYN EQ e Tone
+  gd_now = dbal_gain_db();
   (lk_t && !lk_prev_t) ? ( gt_ref = gt_now; );
   (lk_d && !lk_prev_d) ? ( gd_ref = gd_now; );
   (lk_q && !lk_prev_q) ? ( gq_ref = gq_now; );

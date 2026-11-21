@@ -47,6 +47,9 @@ python3 gobbo_ricerca_battuta/test/parentesi_jsfx.py || fail=1
 say "== 3c. JSFX: ogni funzione definita prima di essere usata (altrimenti 'undefined' in REAPER)"
 python3 gobbo_ricerca_battuta/test/funzioni_jsfx.py || fail=1
 
+say "== 3d. JSFX: nessuna variabile nuova che differisce solo per maiuscole (in EEL2 sono la stessa)"
+python3 gobbo_ricerca_battuta/test/maiuscole_jsfx.py || fail=1
+
 say "== 4. Test della logica pura"
 for t in gobbo_ricerca_battuta/test/test_*.lua; do
   out=$(lua "$t" 2>&1); last=$(printf '%s\n' "$out" | tail -1)
