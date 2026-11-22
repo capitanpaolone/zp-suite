@@ -30,13 +30,17 @@ The Suite works in a clean REAPER install. SWS, js_ReaScriptAPI and OSARA are op
 Version 2.6.6 adds automatic copying and Sync now in Render & Copy on Windows (requires js_ReaScriptAPI) and Linux (requires find and stat). Version 2.6.5 updates the Solo Recorder guide to explain how ZP Remote packages relate to Dubbertools. Version 2.6.4 added Render & Copy, a Dubbertools link in SOLO Web, and the ZP Remote REAPER tool for creating packages and importing deliveries. ZP Remote export requires Python 3 and ffmpeg.
 
 
+The local 2.6.9 candidate introduces **ZP Shared Bus v3** (`ZP Master Pro 2.48`, `Voice-Music Probe 1.4`, `BUS Chain 1.3.3`, `Unified Chain 4.1.9`, `Spoken Finish 3.10.2`, `Stagekeeper 2.5.3`, `Magic Voice LAB 1.2.4`, `Harmonic Space Carver 2.6.12` + `Cue Navigator 1.16`, `BrownSlope Dynamic Guard 0.5.1-assist-dev`, and `Click & Attack Softener 0.2`) so Master Pro shows every upstream active processor in order (**CATENA** tab, **DELTA/SOLO/CHECK** upstream alerts, Music Probe/Carver context, and click-to-open FX via Cue Navigator), alongside the ReaPack version bumps for `#HSC` marker cue selection and Magic Voice LAB's LINK OUTPUT / A/B memory / ±24 dB output range. This candidate is not published.
+
 ZP Studio Suite 2.6.7 distributes **ZP Magic Voice LAB 1.2.0-lab3**, the correct version, as a separate **ZP Voce** effect. **ZP Magic Voice 1.2.0** without LAB is an archived prototype and is excluded from the package. Install ZP Magic Voice LAB alongside ZP Studio Suite in ReaPack. [Operating guide](ZP%20Studio%20Suite/help/en/magic_voice_lab.html).
 
 Version 2.6.8 includes: **Embed into Items** will copy only timeline markers you have selected; operational markers such as Harmonic Space Carver's `#HSC` cues will stay on the timeline. It also includes **ZP Magic Voice LAB 1.2.3** (backward-compatible DRC `FREQ` center + `OCT` octave width knobs, real continuous response curves in `DRC`, `DYN EQ` `±5 / ±12 dB` and `DYN BAL` `±6 / ±12 dB` monitors, flashing global DELTA with 30 s auto-off, extended spring-loaded per-stage `S·DELTA`, 4 s active-speech block suggestions, color-only `LIGHT / DARK` theme keeping all DRC controls visible), **ZP BrownSlope Prism 1.1** (`±1.5 / ±3 dB` tolerance corridor, warm/cool differential fill, optional `Live` trace, bipolar zone bars, slope spirit level, and Dark/Light theme toggle), **ZP Loudness Meter Multichannel 45.0** (vertical-first anti-drift UI with free `TARGET` + one-click `LOCK NOW`, green `±LU` band, 60s drift ribbon freezing on pause, floating peak-hold, 4 responsive views including `LUFS-I`/`TP` embedded TCP/MCP, and Dark/Light themes) and the **scrollable `STATO` log** in **ZP Render & Copy**.
 
 ZP Studio Suite 2.6.7 adds ZP Consolidate, which copies referenced take sources and project-registered SRT/VTT files into Media without converting media. See the [changelog](CHANGELOG.md) for the complete list of changes.
 
-## Beta in this release
+## BETA packages
+
+The 2.6.8 release on GitHub introduced these separate packages. They remain BETA in the local 2.6.9 candidate, which is still in preparation and is not published.
 
 - **ZP Clean & Paint (BETA)**: ReaPack installs the REAPER actions. The ZP Voice Model Lab engine, Python environment, presets and voice models remain external and must be installed and configured separately.
 - **ZP Montaggio Parlato (BETA)**: requires ZP Studio Suite and ZP Speech from 33 Welcome; the current version is tested on macOS. PDF import needs `pdftotext` (Poppler). Clipboard paste needs SWS.

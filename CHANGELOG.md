@@ -1,5 +1,19 @@
 # Changelog — ZP Suite
 
+## ZP Studio Suite 2.6.9 — in preparazione
+
+- **ZP Shared Bus v3 (`ZP Master Pro 2.48` + 9 plugin JSFX + `Cue Navigator 1.16`)**: flusso telemetrico organico e multi-istanza dai singoli canali (Magic Voice LAB 1.2.4, Spoken Finish 3.10.2, Stagekeeper 2.5.3, Click & Attack Softener 0.2), dai bus (BUS Chain 1.3.3, Unified Chain 4.1.9, BrownSlope Dynamic Guard 0.5.1-assist-dev, Harmonic Space Carver 2.6.12) e dalle sonde (Voice-Music Probe 1.4 Voice e Music) verso `ZP Master Pro`. Nel Navigator di Master Pro arrivano le schede **SINTESI** e **CATENA** (nodi ordinati da monte a valle con compressione, DynEQ/DRC, limiter, tono, RMS/delta, alert **DELTA/SOLO/CHECK** a monte, contesto Music Probe/Carver e, con Cue Navigator attivo, nomi reali delle tracce e **click-per-aprire** la finestra del plugin a monte). DSP audio, slider e retrocompatibilità Shared Bus v2.20 invariati.
+- **ZP Harmonic Space Carver 2.6.12 e Cue Navigator 1.16**: ReaPack riceverà l'aggiornamento che seleziona il cue quando si clicca il suo marker #HSC a trasporto fermo.
+- **ZP Magic Voice LAB 1.2.4**: ReaPack riceverà LEGA OUTPUT, memoria A/B e uscita fino a ±24 dB.
+- **Beta**: Clean & Paint, Montaggio Parlato, BrownSlope Dynamic Guard e Click & Attack Softener restano pacchetti separati; prerequisiti e limiti sono descritti in README e nella guida.
+
+- **ZP Shared Bus v3 (`ZP Master Pro 2.48` + 9 JSFX plugins + `Cue Navigator 1.16`)**: organic multi-instance telemetry flow from individual channels (Magic Voice LAB 1.2.4, Spoken Finish 3.10.2, Stagekeeper 2.5.3, Click & Attack Softener 0.2), buses (BUS Chain 1.3.3, Unified Chain 4.1.9, BrownSlope Dynamic Guard 0.5.1-assist-dev, Harmonic Space Carver 2.6.12), and probes (Voice-Music Probe 1.4 Voice & Music) into `ZP Master Pro`. Master Pro's Navigator adds **SINTESI** and **CATENA** tabs (nodes ordered upstream to downstream with compression, DynEQ/DRC, limiter, tone, RMS/delta, upstream **DELTA/SOLO/CHECK** safety alerts, Music Probe/Carver context, and — when Cue Navigator is running — real track names and **click-to-open** upstream FX windows). Audio DSP, sliders and Shared Bus v2.20 compatibility remain unchanged.
+- **ZP Harmonic Space Carver 2.6.12 and Cue Navigator 1.16**: ReaPack will deliver cue selection when its #HSC marker is clicked while stopped.
+- **ZP Magic Voice LAB 1.2.4**: ReaPack will deliver LINK OUTPUT, A/B memory and output gain up to ±24 dB.
+- **Beta**: Clean & Paint, Montaggio Parlato, BrownSlope Dynamic Guard and Click & Attack Softener remain separate packages; prerequisites and limitations are documented in the README and guide.
+
+Candidate status: based on the published v2.6.8 release; this local 2.6.9 branch has not been published.
+
 ## ZP Studio Suite 2.6.8 — 2026-11-21
 
 - **ZP Magic Voice LAB (ZP Voce): LEGA OUTPUT e memoria A/B**: sulle righe PEAK, DYN EQ, TONE SCL e DYN BAL un pulsante con la catenella lega il modulo a `OUTPUT`, che si corregge di quanto il modulo alza o abbassa (calcolato dai parametri; per i moduli dinamici sul livello medio della voce degli ultimi secondi, INPUT compreso): si giudica il suono a parità di volume. Comandi coinvolti in viola. Memoria di lavoro A/B nella barra USCITA (A, B, A=B), salvata nel progetto. `OUTPUT` ora ±24 dB. Pulsante `?` che apre la guida dedicata.

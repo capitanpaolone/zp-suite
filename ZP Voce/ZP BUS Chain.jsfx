@@ -1,5 +1,5 @@
 // @description ZP BUS Chain
-// @version 1.3.2
+// @version 1.3.3
 // @author Paolo Balestri
 // @about
 //   Catena di dinamica e colore per voce parlata, podcast e doppiaggio.
@@ -17,6 +17,7 @@
 //   Complete documentation: https://latocardioide.it/strumenti/ or click '?'
 // @license GPL-3.0-or-later
 // @changelog
+//   1.3.3: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (1175/LA2/MT/Gate/Brown/ANA/Limiter e RMS in/out).
 //   Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
 //   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
 //     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
@@ -821,6 +822,72 @@ function zp_bus_refresh(plugin_id) (
 );
 zp_bus_boot();
 zp_bus_read();
+
+// ---- ZP Shared Bus v3 (telemetria multi-istanza a monte -> Master Pro) ----
+function zp3_boot() (
+  gmem[1000] != 905300 || gmem[1001] < 300 ? (
+    gmem[1000] = 905300;
+    gmem[1001] = 300;
+    gmem[1002] = 64;
+    gmem[1003] = 32;
+  );
+);
+function zp3_clear_slot() local(zp3_cb) (
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_cb = 1024 + zp3_slot * 32;
+    gmem[zp3_cb + 3] == zp3_prev_key ? (
+      gmem[zp3_cb] = 0;
+      gmem[zp3_cb + 2] = 0;
+    );
+  );
+  zp3_slot = -1;
+  zp3_prev_key = -1;
+);
+function zp3_claim(zp3_pt) local(zp3_now, zp3_key, zp3_h, zp3_i, zp3_s, zp3_b, zp3_m, zp3_found) (
+  zp3_boot();
+  zp3_now = time_precise();
+  zp3_fx = 0; zp3_hf = 0;
+  zp3_tr = get_host_placement(zp3_fx, zp3_hf);
+  zp3_key = max(0, zp3_tr + 2) * 1024 + max(0, zp3_fx) * 16 + zp3_pt;
+  zp3_prev_key >= 0 && zp3_prev_key != zp3_key ? zp3_clear_slot();
+  zp3_found = -1;
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_slot;);
+  );
+  zp3_found < 0 ? (
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_b = 1024 + zp3_i * 32;
+        gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_i;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_found < 0 ? (
+    zp3_h = (max(0, zp3_tr + 2) * 13 + max(0, zp3_fx) * 7 + zp3_pt * 3) % 64;
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_s = (zp3_h + zp3_i) % 64;
+        zp3_b = 1024 + zp3_s * 32;
+        zp3_m = gmem[zp3_b];
+        (zp3_m != 905301 || (zp3_now - gmem[zp3_b + 1]) > 2.5) ? (zp3_found = zp3_s;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_slot = zp3_found;
+  zp3_prev_key = zp3_key;
+  zp3_slot >= 0 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    zp3_seq = max(zp3_seq, floor(gmem[zp3_b + 2] + 0.5));
+    zp3_b;
+  ) : -1;
+);
+zp3_prev_key <= 0 ? (zp3_slot = -1; zp3_prev_key = -1;);
+zp3_boot();
 ext_tail_size = -1;
 ext_noinit = 1;
 last_profile = -100;
@@ -1962,6 +2029,48 @@ gmem[119] = brn_on >= 0.5;
 gmem[120] = lim_on >= 0.5;
 gmem[121] = out_enable >= 0.5 && out_final_lim_on >= 0.5;
 zp_bus_refresh(ZP_BUS_ID);
+
+zp3_b = zp3_claim(1);
+zp3_b >= 0 ? (
+  zp3_1175 = c1175_on >= 0.5 ? ui_1175_act_db : 0;
+  zp3_la2  = la2_on >= 0.5 ? ui_la2_act_db : 0;
+  zp3_mt   = mt_on >= 0.5 ? ui_mt_act_db : 0;
+  zp3_dyneq = brn_on >= 0.5 ? max(max(abs(brn_gd1), abs(brn_gd2)), max(abs(brn_gd3), abs(brn_gd4))) : 0;
+  zp3_harm  = analog_on >= 0.5 ? clamp(analog_drive * analog_mix * 0.01, 0, 100) : 0;
+  gmem[zp3_b + 3] = zp3_prev_key;
+  gmem[zp3_b + 4] = 1;
+  gmem[zp3_b + 5] = zp3_tr;
+  gmem[zp3_b + 6] = zp3_fx;
+  gmem[zp3_b + 7] = zp3_hf;
+  gmem[zp3_b + 8] = 1;
+  gmem[zp3_b + 9] = (gate_on >= 0.5 || c1175_on >= 0.5 || la2_on >= 0.5 || mt_on >= 0.5 || brn_on >= 0.5 || lim_on >= 0.5 || analog_on >= 0.5 || (out_enable >= 0.5 && out_final_lim_on >= 0.5)) ? 1 : 2;
+  gmem[zp3_b + 10] = max(zp3_1175, max(zp3_la2, zp3_mt));
+  gmem[zp3_b + 11] = zp3_dyneq;
+  gmem[zp3_b + 12] = max(lim_on >= 0.5 ? ui_lim_act_db : 0, (out_enable >= 0.5 && out_final_lim_on >= 0.5) ? ui_out_act_db : 0);
+  gmem[zp3_b + 13] = brn_on >= 0.5 ? brn_gd1 : 0;
+  gmem[zp3_b + 14] = brn_on >= 0.5 ? 0.5 * (brn_gd2 + brn_gd3) : 0;
+  gmem[zp3_b + 15] = brn_on >= 0.5 ? brn_gd4 : 0;
+  gmem[zp3_b + 16] = zp3_harm;
+  gmem[zp3_b + 17] = in_rms_db;
+  gmem[zp3_b + 18] = ui_global_rms_db;
+  gmem[zp3_b + 19] = ui_out_peak_dbfs;
+  gmem[zp3_b + 20] = in_rms_db > -55 ? clamp(ui_global_rms_db - in_rms_db, -24, 24) : 0;
+  gmem[zp3_b + 21] = clamp((ui_global_rms_db + 55) * 2.5, 0, 100);
+  gmem[zp3_b + 22] = max(0, ui_out_peak_dbfs - ui_global_rms_db);
+  gmem[zp3_b + 23] = max(-30, min(12, bus_air_rel_db));
+  gmem[zp3_b + 24] = zp3_1175;
+  gmem[zp3_b + 25] = zp3_la2;
+  gmem[zp3_b + 26] = zp3_mt;
+  gmem[zp3_b + 27] = gate_on >= 0.5 ? ui_gate_act_db : 0;
+  gmem[zp3_b + 28] = zp3_dyneq;
+  gmem[zp3_b + 29] = zp3_harm;
+  gmem[zp3_b + 30] = 0;
+  gmem[zp3_b + 31] = 0;
+  gmem[zp3_b] = 905301;
+  gmem[zp3_b + 1] = time_precise();
+  zp3_seq += 1;
+  gmem[zp3_b + 2] = zp3_seq;
+);
 
 @sample
 function process_1175()

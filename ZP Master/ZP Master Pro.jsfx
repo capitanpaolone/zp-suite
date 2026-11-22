@@ -1,5 +1,5 @@
 // @description ZP Master Pro
-// @version 2.47
+// @version 2.48
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
@@ -13,6 +13,7 @@
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: ZP Studio Suite/help/index.html#plugin-master-pro
 // @changelog
+//   2.48: ZP Shared Bus v3 — telemetria multi-istanza da tutti i canali e bus verso Master Pro, nuova scheda CATENA nel Navigator (ordine monte->valle, alert DELTA/SOLO/CHECK, Music Probe/Carver e click-per-aprire FX via Cue Navigator).
 //   Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
 //   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
 //     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
@@ -598,6 +599,232 @@ tape_sweepL=$pi; tape_sweepR=$pi; tape_nextmaxL=0.5; tape_nextmaxR=0.5;
 tape_gcount=999; tape_avgPos=0;
 tape_clear_delay();
 
+// ── ZP Shared Bus v3 (lettore multi-istanza a monte) ────────────
+zp3_mem = tape_mem + 64;
+zp3_nodes = zp3_mem; zp3_mem += 2048;
+zp3_order = zp3_mem; zp3_mem += 64;
+zp3_vis_idx = zp3_mem; zp3_mem += 64;
+zp3_nav_tab = 0;
+zp3_filter = 0;
+zp3_active_n = 0;
+zp3_vis_count = 0;
+zp3_last_scan_t = -100;
+zp3_open_msg_t = -100;
+zp3_open_status = 0;
+zp3_dir_ok = 0;
+zp3_voice_n = 0;
+zp3_music_n = 0;
+zp3_voice_comp_sum = 0;
+zp3_voice_dyneq_sum = 0;
+zp3_voice_lim_sum = 0;
+zp3_voice_harm_max = 0;
+zp3_voice_act_max = 0;
+zp3_music_duck_max = 0;
+zp3_music_carve_max = 0;
+zp3_music_glue_max = 0;
+zp3_mprobe_ok = 0; zp3_mprobe_rms = -120; zp3_mprobe_peak = -120; zp3_mprobe_density = 0; zp3_mprobe_glue = 0;
+zp3_vprobe_ok = 0; zp3_vprobe_rms = -120; zp3_vprobe_peak = -120; zp3_vprobe_density = 0; zp3_vprobe_bright = 0; zp3_vprobe_crest = 0; zp3_vprobe_speech = 0;
+zp3_vo_mus_valid = 0; zp3_vo_mus_diff_db = 0;
+zp3_top_comp_idx = -1; zp3_top_comp_val = 0;
+zp3_top_dyneq_idx = -1; zp3_top_dyneq_val = 0;
+zp3_top_lim_idx = -1; zp3_top_lim_val = 0;
+zp3_top_gain_idx = -1; zp3_top_gain_val = 0;
+zp3_alert_count = 0; zp3_alert_flags = 0; zp3_alert_idx = -1;
+
+function zp3_plugin_name(zp3_pt) (
+  zp3_pt == 1 ? strcpy(#zp3_pl_name, "BUS Chain") :
+  zp3_pt == 2 ? strcpy(#zp3_pl_name, "Unified Chain") :
+  zp3_pt == 3 ? strcpy(#zp3_pl_name, "Magic Voice LAB") :
+  zp3_pt == 4 ? strcpy(#zp3_pl_name, "Spoken Finish") :
+  zp3_pt == 5 ? strcpy(#zp3_pl_name, "Stagekeeper") :
+  zp3_pt == 6 ? strcpy(#zp3_pl_name, "Click & Attack") :
+  zp3_pt == 7 ? strcpy(#zp3_pl_name, "BrownSlope Grd") :
+  zp3_pt == 8 ? strcpy(#zp3_pl_name, "Space Carver") :
+  zp3_pt == 9 ? strcpy(#zp3_pl_name, "Voice Probe") :
+  zp3_pt == 10 ? strcpy(#zp3_pl_name, "Music Probe") :
+  strcpy(#zp3_pl_name, "ZP Plugin");
+);
+
+function zp3_read_track_name(zp3_ti) local(zp3_d, zp3_nlen, zp3_ci, zp3_g, zp3_j, zp3_div, zp3_ch, zp3_now) (
+  zp3_ti < 0 ? (
+    strcpy(#zp3_tr_name, "MASTER");
+  ) : (
+    zp3_now = time_precise();
+    zp3_dir_ok = gmem[1004] > 0 && (zp3_now - gmem[1005]) <= 3.0;
+    zp3_d = 3072 + zp3_ti * 8;
+    (zp3_dir_ok && zp3_ti < 64 && (gmem[zp3_d] & 1)) ? (
+      zp3_nlen = min(20, max(0, floor(gmem[zp3_d + 2] + 0.5)));
+      #zp3_raw_name = "";
+      zp3_ci = 0;
+      loop(zp3_nlen,
+        zp3_g = floor(zp3_ci / 4);
+        zp3_j = zp3_ci - zp3_g * 4;
+        zp3_div = zp3_j == 0 ? 1 : zp3_j == 1 ? 256 : zp3_j == 2 ? 65536 : 16777216;
+        zp3_ch = floor(gmem[zp3_d + 3 + zp3_g] / zp3_div) % 256;
+        zp3_ch = (zp3_ch >= 32 && zp3_ch <= 126) ? zp3_ch : 32;
+        str_setchar(#zp3_raw_name, zp3_ci, zp3_ch);
+        zp3_ci += 1;
+      );
+      zp3_nlen > 0 ? sprintf(#zp3_tr_name, "%d %s", zp3_ti + 1, #zp3_raw_name) : sprintf(#zp3_tr_name, "Tr %d", zp3_ti + 1);
+    ) : (
+      sprintf(#zp3_tr_name, "Tr %d", zp3_ti + 1);
+    );
+  );
+);
+
+function zp3_request_open_fx(zp3_ti, zp3_fi) (
+  gmem[1008] = zp3_ti;
+  gmem[1009] = zp3_fi;
+  gmem[1010] = floor(gmem[1010] + 0.5) + 1;
+);
+
+function zp3_node_sort_key(zp3_ni) local(zp3_nb, zp3_tr, zp3_fx, zp3_pt, zp3_rl, zp3_lvl, zp3_tf) (
+  zp3_nb = zp3_nodes + zp3_ni * 32;
+  zp3_pt = floor(zp3_nb[4] + 0.5);
+  zp3_tr = floor(zp3_nb[5] + 0.5);
+  zp3_fx = floor(zp3_nb[6] + 0.5);
+  zp3_rl = floor(zp3_nb[8] + 0.5);
+  zp3_tf = (zp3_dir_ok && zp3_tr >= 0 && zp3_tr < 64) ? floor(gmem[3072 + zp3_tr * 8] + 0.5) : 0;
+  zp3_lvl = zp3_tr < 0 ? 3 :
+    ((zp3_tf & 32) || zp3_rl == 2 || zp3_pt == 10) ? 2 :
+    ((zp3_tf & 16) || zp3_rl == 1 || zp3_pt == 9) ? 1 : 0;
+  zp3_lvl * 1000000 + max(0, zp3_tr + 2) * 1000 + max(0, zp3_fx) * 16 + zp3_pt;
+);
+
+function zp3_scan_bus() local(zp3_now, zp3_i, zp3_b, zp3_m, zp3_ts, zp3_s0, zp3_s1, zp3_k, zp3_dst, zp3_cnt, zp3_j, zp3_swp, zp3_ka, zp3_kb, zp3_nb, zp3_pt, zp3_fl, zp3_gc, zp3_gd, zp3_gl, zp3_hm, zp3_ac, zp3_gn, zp3_ap, zp3_best_ap, zp3_vref) (
+  zp3_now = time_precise();
+  zp3_last_scan_t = zp3_now;
+  zp3_dir_ok = gmem[1004] > 0 && (zp3_now - gmem[1005]) <= 3.0;
+  zp3_cnt = 0;
+  zp3_i = 0;
+  loop(64,
+    zp3_b = 1024 + zp3_i * 32;
+    zp3_m = gmem[zp3_b];
+    zp3_ts = gmem[zp3_b + 1];
+    (zp3_m == 905301 && (zp3_now - zp3_ts) <= 2.5 && zp3_cnt < 64) ? (
+      zp3_s0 = gmem[zp3_b + 2];
+      zp3_dst = zp3_nodes + zp3_cnt * 32;
+      zp3_k = 0;
+      loop(32,
+        zp3_dst[zp3_k] = gmem[zp3_b + zp3_k];
+        zp3_k += 1;
+      );
+      zp3_s1 = gmem[zp3_b + 2];
+      zp3_s0 == zp3_s1 ? (
+        zp3_order[zp3_cnt] = zp3_cnt;
+        zp3_cnt += 1;
+      );
+    );
+    zp3_i += 1;
+  );
+  zp3_active_n = zp3_cnt;
+  // Ordina da monte a valle
+  zp3_i = 0;
+  loop(zp3_cnt,
+    zp3_j = zp3_i + 1;
+    while (zp3_j < zp3_cnt) (
+      zp3_ka = zp3_node_sort_key(zp3_order[zp3_i]);
+      zp3_kb = zp3_node_sort_key(zp3_order[zp3_j]);
+      zp3_kb < zp3_ka ? (
+        zp3_swp = zp3_order[zp3_i];
+        zp3_order[zp3_i] = zp3_order[zp3_j];
+        zp3_order[zp3_j] = zp3_swp;
+      );
+      zp3_j += 1;
+    );
+    zp3_i += 1;
+  );
+
+  zp3_voice_n = 0; zp3_music_n = 0;
+  zp3_voice_comp_sum = 0; zp3_voice_dyneq_sum = 0; zp3_voice_lim_sum = 0;
+  zp3_voice_harm_max = 0; zp3_voice_act_max = 0;
+  zp3_music_duck_max = 0; zp3_music_carve_max = 0; zp3_music_glue_max = 0;
+  zp3_mprobe_ok = 0; zp3_mprobe_rms = -120; zp3_mprobe_peak = -120; zp3_mprobe_density = 0; zp3_mprobe_glue = 0;
+  zp3_vprobe_ok = 0; zp3_vprobe_rms = -120; zp3_vprobe_peak = -120; zp3_vprobe_density = 0; zp3_vprobe_bright = 0; zp3_vprobe_crest = 0; zp3_vprobe_speech = 0;
+  zp3_top_comp_idx = -1; zp3_top_comp_val = 0;
+  zp3_top_dyneq_idx = -1; zp3_top_dyneq_val = 0;
+  zp3_top_lim_idx = -1; zp3_top_lim_val = 0;
+  zp3_top_gain_idx = -1; zp3_top_gain_val = 0;
+  zp3_alert_count = 0; zp3_alert_flags = 0; zp3_alert_idx = -1;
+  zp3_best_ap = 0;
+
+  zp3_i = 0;
+  loop(zp3_cnt,
+    zp3_k = zp3_order[zp3_i];
+    zp3_nb = zp3_nodes + zp3_k * 32;
+    zp3_pt = floor(zp3_nb[4] + 0.5);
+    zp3_fl = floor(zp3_nb[9] + 0.5);
+    zp3_gc = max(0, zp3_nb[10]);
+    zp3_gd = max(0, zp3_nb[11]);
+    zp3_gl = max(0, zp3_nb[12]);
+    zp3_hm = max(0, zp3_nb[16]);
+    zp3_ac = max(0, zp3_nb[21]);
+    zp3_gn = abs(zp3_nb[20]);
+
+    (zp3_fl & 28) ? (
+      zp3_alert_count += 1;
+      zp3_ap = (zp3_fl & 16) ? 3 : (zp3_fl & 4) ? 2 : 1;
+      zp3_ap > zp3_best_ap ? (
+        zp3_best_ap = zp3_ap;
+        zp3_alert_flags = zp3_fl;
+        zp3_alert_idx = zp3_k;
+      );
+    );
+
+    zp3_pt <= 7 ? (
+      !(zp3_fl & 2) ? (
+        zp3_voice_n += 1;
+        zp3_voice_comp_sum += zp3_gc;
+        zp3_voice_dyneq_sum += zp3_gd;
+        zp3_voice_lim_sum += zp3_gl;
+        zp3_voice_harm_max = max(zp3_voice_harm_max, zp3_hm);
+        zp3_voice_act_max = max(zp3_voice_act_max, zp3_ac);
+        zp3_gc > zp3_top_comp_val ? (zp3_top_comp_val = zp3_gc; zp3_top_comp_idx = zp3_k;);
+        zp3_gd > zp3_top_dyneq_val ? (zp3_top_dyneq_val = zp3_gd; zp3_top_dyneq_idx = zp3_k;);
+        zp3_gl > zp3_top_lim_val ? (zp3_top_lim_val = zp3_gl; zp3_top_lim_idx = zp3_k;);
+        zp3_gn > zp3_top_gain_val ? (zp3_top_gain_val = zp3_gn; zp3_top_gain_idx = zp3_k;);
+      );
+    ) : zp3_pt == 8 ? (
+      !(zp3_fl & 2) ? (
+        zp3_music_n += 1;
+        zp3_music_duck_max = max(zp3_music_duck_max, zp3_gc);
+        zp3_music_carve_max = max(zp3_music_carve_max, zp3_gd);
+        zp3_music_glue_max = max(zp3_music_glue_max, zp3_gl);
+      );
+    ) : zp3_pt == 9 ? (
+      zp3_vprobe_ok = 1;
+      zp3_vprobe_rms = zp3_nb[18];
+      zp3_vprobe_peak = zp3_nb[19];
+      zp3_vprobe_density = zp3_nb[24];
+      zp3_vprobe_bright = zp3_nb[25];
+      zp3_vprobe_crest = zp3_nb[26];
+      zp3_vprobe_speech = zp3_nb[27];
+    ) : zp3_pt == 10 ? (
+      zp3_mprobe_ok = 1;
+      zp3_mprobe_rms = zp3_nb[18];
+      zp3_mprobe_peak = zp3_nb[19];
+      zp3_mprobe_density = zp3_nb[24];
+      zp3_mprobe_glue = zp3_nb[27];
+    );
+    zp3_i += 1;
+  );
+
+  (!zp3_mprobe_ok && zp_bus_music_conn == 2) ? (
+    zp3_mprobe_ok = 1;
+    zp3_mprobe_rms = zp_bus_music_rms;
+    zp3_mprobe_peak = zp_bus_music_peak;
+    zp3_mprobe_density = zp_bus_music_density;
+    zp3_mprobe_glue = zp_bus_music_glue;
+  );
+  (zp_bus_voice_frame_ok || zp3_vprobe_ok) && zp3_mprobe_ok ? (
+    zp3_vref = zp_bus_voice_frame_ok ? zp_bus_voice_rms : zp3_vprobe_rms;
+    zp3_vo_mus_diff_db = zp3_vref - zp3_mprobe_rms;
+    zp3_vo_mus_valid = 1;
+  ) : (
+    zp3_vo_mus_valid = 0;
+  );
+);
+
 // Runtime
 lim_gain=1;out_trim_db=0;out_auto_g=1;
 play_declick_total=1;play_declick_remaining=0;
@@ -799,6 +1026,9 @@ zp_bus_voice_frame_ok ? (zp_bus_voice_rms=zp_v_rms;zp_bus_voice_peak=zp_v_peak;z
 zp_bus_music_rms=gmem[601]; zp_bus_music_peak=gmem[602]; zp_bus_music_density=gmem[604]; zp_bus_music_glue=gmem[606];
 zp_target_effective_profile=target_profile>0 ? floor(target_profile+0.5) : max(1,min(6,floor(gmem[2]+0.5)));
 floor(target_matrix_profile+0.5) != zp_target_effective_profile ? zp_target_load_defaults(zp_target_effective_profile);
+zp3_scan_bus();
+zp3_v3_voice_work = zp3_voice_comp_sum + zp3_voice_dyneq_sum + zp3_voice_lim_sum;
+zp3_v3_has_signal = (zp3_voice_n > 0) && (zp3_voice_act_max > 5);
 zp_bus_warning=0; zp_bus_severity=0; zp_bus_findings=0;
 !zp_bus_unified_ok ? zp_raise_finding(2,2);
 !zp_bus_voice_probe_ok ? zp_raise_finding(1,2);
@@ -809,7 +1039,7 @@ zp_bus_voice_probe_ok && zp_bus_voice_speech>5 && zp_bus_voice_density<target_de
 zp_bus_voice_probe_ok && zp_bus_voice_speech>5 && (zp_bus_voice_crest<target_crest_min || zp_bus_voice_crest>target_crest_max) ? zp_raise_finding(10,(zp_bus_voice_crest<target_crest_min-4 || zp_bus_voice_crest>target_crest_max+4)?2:1);
 zp_bus_voice_probe_ok && zp_bus_voice_speech>5 && (zp_bus_voice_bright>target_brightness+target_brightness_tol || zp_bus_voice_bright<target_brightness-target_brightness_tol) ? zp_raise_finding(11,(zp_bus_voice_bright>target_brightness+target_brightness_tol+4 || zp_bus_voice_bright<target_brightness-target_brightness_tol-4)?2:1);
 zp_bus_spoken_frame_ok && zp_bus_spoken_bright>45 && zp_bus_voice_probe_ok && zp_bus_voice_speech>5 && zp_bus_voice_bright>target_brightness+target_brightness_tol ? zp_raise_finding(5,1);
-zp_bus_voice_probe_ok && zp_bus_voice_speech>5 && zp_bus_voice_density>target_density_max && zp_bus_unified_comp<1.5 && zp_bus_unified_lim<0.5 && (!zp_bus_spoken_frame_ok || (zp_bus_spoken_harm<10 && zp_bus_spoken_drive<10)) ? zp_raise_finding(6,1);
+zp_bus_voice_probe_ok && zp_bus_voice_speech>5 && zp_bus_voice_density>target_density_max && zp_bus_unified_comp<1.5 && zp_bus_unified_lim<0.5 && zp3_v3_voice_work<1.5 && (!zp_bus_spoken_frame_ok || (zp_bus_spoken_harm<10 && zp_bus_spoken_drive<10)) ? zp_raise_finding(6,1);
 zp_bus_warning==0 && zp_bus_voice_probe_ok && zp_bus_voice_speech>5 && zp_bus_voice_density>=target_density_min && zp_bus_voice_density<=target_density_max && zp_bus_voice_peak<-0.5 ? (zp_bus_warning=7;);
 gmem[401]=zp_bus_warning; gmem[402]=zp_bus_severity; gmem[403]=zp_bus_findings; gmem[404]=zp_target_effective_profile;
 
@@ -838,9 +1068,9 @@ nav_probe_signal=nav_probe_fresh && zp_bus_voice_speech>nav_speech_gate;
 nav_bus_signal=nav_bus_fresh && zp_bus_unified_rms>-55;
 // BUS Chain e' la sorgente primaria. La Probe verifica il risultato ma non e'
 // necessaria per maturare una misura; la sua assenza riduce la fiducia.
-nav_source_fresh=nav_bus_fresh||nav_probe_fresh;
-nav_signal_useful=(play_state&1) && nav_source_fresh && (nav_probe_signal || nav_bus_signal) && !(nav_mode_i==0&&nav_manual_complete);
-nav_density_now=nav_probe_fresh?zp_bus_voice_density:zp_bus_unified_density;
+nav_source_fresh=nav_bus_fresh||nav_probe_fresh||(zp3_voice_n>0);
+nav_signal_useful=(play_state&1) && nav_source_fresh && (nav_probe_signal || nav_bus_signal || zp3_v3_has_signal) && !(nav_mode_i==0&&nav_manual_complete);
+nav_density_now=nav_probe_fresh?zp_bus_voice_density:(nav_bus_fresh?zp_bus_unified_density:ui_final_density);
 // Density Flow: BUS e FINAL usano la stessa misura locale pre/post.
 // MASTER misura invece il lavoro dinamico reale della catena: riduzione di
 // guadagno di compressore/Glue/limiter, con il delta di densita' come conferma.
@@ -929,8 +1159,8 @@ nav_avg_lufs=nav_lufs_time>0?10*log(max(nav_sum_lufs/nav_lufs_den,0.000000000001
 // segnale. Nessun singolo fattore puo' produrre da solo una fiducia alta.
 nav_measure_progress=min(1,nav_useful_time/max(0.001,nav_required_seconds));
 nav_time_score=nav_measure_progress;
-nav_complete_score=(nav_bus_fresh?0.45:0)+(nav_probe_fresh?0.45:0)+(nav_spoken_fresh?0.10:0);
-nav_fresh_score=(zp_bus_unified_conn==2?0.45:(zp_bus_unified_conn==1?0.15:0))+(zp_bus_voice_conn==2?0.45:(zp_bus_voice_conn==1?0.15:0))+(zp_bus_spoken_conn==2?0.10:(zp_bus_spoken_conn==1?0.03:0));
+nav_complete_score=(nav_bus_fresh?0.45:(zp3_voice_n>0?0.35:0))+(nav_probe_fresh?0.45:0)+(nav_spoken_fresh?0.10:0);
+nav_fresh_score=(zp_bus_unified_conn==2?0.45:(zp_bus_unified_conn==1?0.15:(zp3_voice_n>0?0.35:0)))+(zp_bus_voice_conn==2?0.45:(zp_bus_voice_conn==1?0.15:0))+(zp_bus_spoken_conn==2?0.10:(zp_bus_spoken_conn==1?0.03:0));
 nav_signal_score=min(1,nav_useful_time/max(0.001,nav_required_seconds*0.65));
 nav_sd_comp=sqrt(max(0,nav_sum_sq_comp/nav_den-nav_avg_comp*nav_avg_comp));
 nav_sd_density=sqrt(max(0,nav_sum_sq_density/nav_den-nav_avg_density*nav_avg_density));
@@ -1073,7 +1303,7 @@ nav_measure_progress<1 ? nav_measure_state=2 : nav_measure_state=3;
 // Un solo messaggio principale, ordinato per priorita' tecnica.
 nav_primary_code=0;
 nav_gravity=0;
-!nav_has_valid_measure && zp_bus_unified_conn==0 ? (nav_primary_code=1;nav_gravity=2;) :
+!nav_has_valid_measure && zp_bus_unified_conn==0 && zp3_voice_n==0 ? (nav_primary_code=1;nav_gravity=2;) :
 !nav_has_valid_measure && nav_measure_progress<1 ? (nav_primary_code=2;nav_gravity=1;) :
 nav_flag_level_low ? (nav_primary_code=9;nav_gravity=abs(nav_lufs_delta)>3?2:1;) :
 nav_flag_level_high ? (nav_primary_code=10;nav_gravity=abs(nav_lufs_delta)>3?2:1;) :
@@ -1081,7 +1311,7 @@ nav_flag_comp ? (nav_primary_code=3;nav_gravity=nav_severe_count>0||nav_warning_
 nav_flag_lim ? (nav_primary_code=4;nav_gravity=nav_severe_count>0||nav_warning_count>=3?2:1;) :
 nav_flag_bright||nav_flag_dark||nav_spoken_result_flag ? (nav_primary_code=5;nav_gravity=nav_severe_count>0||nav_warning_count>=3?2:1;) :
 nav_flag_density||nav_flag_density_low||nav_flag_crest||nav_flag_rms ? (nav_primary_code=6;nav_gravity=nav_severe_count>0||nav_warning_count>=3?2:1;) :
-nav_avg_density>(target_density_min+target_density_max)*0.5 && nav_avg_comp<1.5 && nav_avg_vog<10 ? (nav_primary_code=7;nav_gravity=1;) :
+nav_avg_density>(target_density_min+target_density_max)*0.5 && nav_avg_comp<1.5 && nav_avg_vog<10 && zp3_v3_voice_work<1.5 ? (nav_primary_code=7;nav_gravity=1;) :
 nav_primary_code=8;
 last_srate!=srate?(
   compute_params();
@@ -1837,6 +2067,25 @@ apply_host_slider_visibility(floor(gfx_view+0.5)==1 ? 1 : 0);
 
 // Altezza reale del flusso: Header + Engine + Meter + Navigator + footer.
 // Lo scroll generale deve conoscere il Navigator, senza overlay sul viewport.
+(time_precise() - zp3_last_scan_t) > 0.25 ? zp3_scan_bus();
+zp3_vis_count = 0;
+zp3_fi = 0;
+loop(zp3_active_n,
+  zp3_fk = zp3_order[zp3_fi];
+  zp3_fnb = zp3_nodes + zp3_fk * 32;
+  zp3_fpt = floor(zp3_fnb[4] + 0.5);
+  zp3_frl = floor(zp3_fnb[8] + 0.5);
+  zp3_fshow = (zp3_filter == 0) ? 1 :
+    (zp3_filter == 1) ? (zp3_fpt <= 7 || zp3_fpt == 9) :
+    (zp3_frl >= 1 || zp3_fpt == 8 || zp3_fpt == 10);
+  zp3_fshow ? (
+    zp3_vis_idx[zp3_vis_count] = zp3_fk;
+    zp3_vis_count += 1;
+  );
+  zp3_fi += 1;
+);
+zp3_sintesi_h = zp3_alert_count > 0 ? 364 : 336;
+zp3_catena_h = max(360, 146 + (zp3_alert_count > 0 ? 28 : 0) + max(1, zp3_vis_count) * 26);
 BASE_W=900;BASE_H=1345;
 PX0=14;PX=PX0;KR=21;KS=86;
 PH=150;  // engine panel height extra
@@ -1844,7 +2093,7 @@ TIP_H=38;
 HDR_H=67;
 ENGINE_LAYOUT_H=PH+260+26+18+18;
 METER_LAYOUT_H=PH+218;
-NAV_LAYOUT_H=320;
+NAV_LAYOUT_H=(zp3_nav_tab>=0.5)?zp3_catena_h:zp3_sintesi_h;
 ui_show_engine=ui_show_engine>=0.5;
 ui_show_meter=ui_show_meter>=0.5;
 ui_show_nav=ui_show_nav>=0.5;
@@ -3360,9 +3609,10 @@ nav_measure_state==1?strcpy(#nav_state_text,"STO CALCOLANDO"):
 nav_measure_state==2?strcpy(#nav_state_text,"MISURA IN CORSO"):
 nav_measure_state==3?strcpy(#nav_state_text,"MISURA STABILE"):nav_has_valid_measure?strcpy(#nav_state_text,"ULTIMA MISURA VALIDA"):strcpy(#nav_state_text,"ULTIMA MISURA");
 nav_target_state==0?strcpy(#nav_target_state_text,"BASSO"):nav_target_state==1?strcpy(#nav_target_state_text,"OTTIMALE"):nav_target_state==2?strcpy(#nav_target_state_text,"ALTO"):strcpy(#nav_target_state_text,"ECCESSIVO");
-nav_conn_state=(zp_bus_unified_conn==2&&nav_probe_ui_fresh&&nav_spoken_ui_fresh)?2:
-               ((zp_bus_unified_conn>0||nav_probe_ui_fresh)?1:0);
+nav_conn_state=(zp_bus_unified_conn==2&&(nav_probe_ui_fresh||zp3_vprobe_ok)&&(nav_spoken_ui_fresh||zp3_voice_n>0))?2:
+               ((zp_bus_unified_conn>0||nav_probe_ui_fresh||zp3_voice_n>0||zp3_vprobe_ok)?1:0);
 nav_conn_state==2?strcpy(#nav_connection_label,"DATI COMPLETI E RECENTI"):
+zp_bus_unified_conn==0&&zp3_voice_n>0?sprintf(#nav_connection_label,"CATENA ZP v3 (%d nodi)",zp3_active_n):
 nav_probe_ui_fresh&&zp_bus_unified_conn==0?strcpy(#nav_connection_label,"PROBE DIRETTO - BUS CHAIN ASSENTE"):
 nav_conn_state==1?(nav_has_valid_measure?strcpy(#nav_connection_label,"DATI PARZIALI - MISURA VALIDA MANTENUTA"):strcpy(#nav_connection_label,"DATI PARZIALI / VECCHI")):
 strcpy(#nav_connection_label,"NESSUNA SORGENTE TELEMETRICA");
@@ -3383,8 +3633,10 @@ nav_spoken_ui_fresh ? strcpy(#nav_spoken_source,"Spoken Finish: telemetria diret
 
 nav_comp_dom_id==1?strcpy(#nav_dom_name,"1175"):nav_comp_dom_id==2?strcpy(#nav_dom_name,"LA2"):strcpy(#nav_dom_name,"Major Tom");
 nav_comp_second_id==1?strcpy(#nav_second_name,"1175"):nav_comp_second_id==2?strcpy(#nav_second_name,"LA2"):strcpy(#nav_second_name,"Major Tom");
-nav_primary_code==1 && !nav_probe_ui_fresh ? (
+nav_primary_code==1 && !nav_probe_ui_fresh && zp3_voice_n==0 ? (
   strcpy(#nav_status,"Nessuna sorgente telemetrica disponibile");strcpy(#nav_cause,"BUS Chain e Voice Probe non risultano recenti");strcpy(#nav_suggest,"Inserisci BUS Chain oppure Voice-Music Probe");
+) : nav_primary_code==1 && !nav_probe_ui_fresh && zp3_voice_n>0 ? (
+  strcpy(#nav_status,"Analisi da catena ZP v3 a monte");strcpy(#nav_cause,"BUS Chain assente: letti i nodi v3 attivi");strcpy(#nav_suggest,"Controlla i singoli stadi nella scheda CATENA");
 ) : nav_primary_code==1 && nav_probe_ui_fresh ? (
   strcpy(#nav_status,"Analisi diretta dal Voice Probe");strcpy(#nav_cause,"BUS Chain assente: moduli granulari non disponibili");strcpy(#nav_suggest,"La misura voce resta valida; aggiungi BUS Chain solo per i contributi dei moduli");
 ) : nav_primary_code==2 ? (
@@ -3433,11 +3685,47 @@ nav_lufs_available?sprintf(#nav_data,"LUFS %.1f/%.1f | RMS %.1f | C %.1f | D %.0
 
 // Pannello normale nel flusso, dopo ENGINE e METER. Se la finestra e' bassa,
 // lo scroll della GUI porta al pannello completo e a tutti i suoi comandi.
-nav_x=PX;nav_y=py+(ui_show_meter?oh+10:0);nav_w=PW;nav_h=320;
+nav_x=PX;nav_y=py+(ui_show_meter?oh+10:0);nav_w=PW;nav_h=NAV_LAYOUT_H;
 ui_show_nav ? (
+  zp3_ui_ok = !(glue_help_open >= 0.5 || auto_help_open >= 0.5);
   gfx_set(0.045,0.05,0.06,0.98); zp_rect(nav_x,nav_y,nav_w,nav_h);
   gfx_set(0.18,0.50,0.90,0.85);zp_rect(nav_x,nav_y,nav_w,2);zp_rect(nav_x,nav_y+nav_h-2,nav_w,2);zp_rect(nav_x,nav_y,2,nav_h);zp_rect(nav_x+nav_w-2,nav_y,2,nav_h);
   zp_setfont(1,"Arial",15,'b');gfx_set(0.68,0.84,0.98,1);zp_gx=nav_x+12;zp_gy=nav_y+6;zp_drawstr("NAVIGATOR / TARGET ENGINE");
+
+  // Schede SINTESI | CATENA (N)
+  zp3_t1x = nav_x + 258; zp3_ty = nav_y + 4; zp3_t1w = 82; zp3_th = 20;
+  zp3_t1hit = hit(zp3_t1x, zp3_ty, zp3_t1w, zp3_th);
+  zp3_t1hit ? ui_set_hover(9200);
+  zp3_ui_ok && zp3_t1hit && mouse_click ? (zp3_nav_tab = 0;);
+  zp3_nav_tab < 0.5 ? gfx_set(0.18,0.50,0.90,1) : zp3_t1hit ? gfx_set(0.18,0.22,0.28,1) : gfx_set(0.11,0.13,0.17,1);
+  zp_rect(zp3_t1x, zp3_ty, zp3_t1w, zp3_th);
+  zp_setfont(1,"Arial",11,'b'); gfx_set(0.94,0.96,0.99,1);
+  zp_gx = zp3_t1x + 15; zp_gy = zp3_ty + 4; zp_drawstr("SINTESI");
+
+  zp3_t2x = zp3_t1x + zp3_t1w + 6; zp3_t2w = 116;
+  zp3_t2hit = hit(zp3_t2x, zp3_ty, zp3_t2w, zp3_th);
+  zp3_t2hit ? ui_set_hover(9201);
+  zp3_ui_ok && zp3_t2hit && mouse_click ? (zp3_nav_tab = 1;);
+  zp3_nav_tab >= 0.5 ? gfx_set(0.18,0.50,0.90,1) : zp3_t2hit ? gfx_set(0.18,0.22,0.28,1) : gfx_set(0.11,0.13,0.17,1);
+  zp_rect(zp3_t2x, zp3_ty, zp3_t2w, zp3_th);
+  sprintf(#zp3_tab_lbl, "CATENA (%d)", zp3_active_n);
+  gfx_set(0.94,0.96,0.99,1); zp_gx = zp3_t2x + 12; zp_gy = zp3_ty + 4; zp_drawstr(#zp3_tab_lbl);
+  zp3_alert_count > 0 ? (
+    gfx_set(0.98, 0.25, 0.22, 0.55 + 0.45 * abs(sin(time_precise() * 5)));
+    zp_circle(zp3_t2x + zp3_t2w - 11, zp3_ty + 10, 4, 1);
+  );
+
+  // Stato Track Directory / feedback apertura FX
+  zp_setfont(1,"Arial",11,'b');
+  time_precise() < zp3_open_msg_t ? (
+    zp3_dir_ok ? (gfx_set(0.35,0.90,0.60,1); zp_gx = zp3_t2x + zp3_t2w + 14; zp_gy = nav_y + 7; zp_drawstr("Apertura FX richiesta a Cue Navigator...");)
+    : (gfx_set(1.0,0.72,0.20,1); zp_gx = zp3_t2x + zp3_t2w + 14; zp_gy = nav_y + 7; zp_drawstr("Avvia Cue Navigator per aprire i plugin a monte"););
+  ) : (
+    zp3_dir_ok ? (gfx_set(0.36,0.82,0.56,0.95); zp_gx = zp3_t2x + zp3_t2w + 14; zp_gy = nav_y + 7; zp_drawstr("Cue Nav OK · clic su riga apre FX");)
+    : (gfx_set(0.55,0.62,0.70,0.85); zp_gx = zp3_t2x + zp3_t2w + 14; zp_gy = nav_y + 7; zp_drawstr("Autonomo (Tr/FX · senza Cue Nav)"););
+  );
+
+  zp3_nav_tab < 0.5 ? (
   _nbh=30;_ny=nav_y+27;
   zp_setfont(1,"Arial",14,'b');gfx_set(0.58,0.66,0.74,1);zp_gx=nav_x+12;zp_gy=_ny+7;zp_drawstr("MEASURE TIME");
   _time_x=nav_x+125;_time_y=_ny+8;_time_w=150;_time_h=16;
@@ -3446,20 +3734,20 @@ ui_show_nav ? (
   _time_knob_x=_time_x+floor(_time_w*nav_measure_time/60);
   gfx_set(0.92,0.95,0.98,1);zp_rect(_time_knob_x-2,_time_y-2,4,_time_h+4);
   _time_hit=hit(_time_x-4,_time_y-5,_time_w+8,_time_h+10);
-  _time_hit&&mouse_click?nav_time_drag=1;
-  nav_time_drag&&btn_down?set_nav_time((zp_mx-_time_x)/max(1,_time_w)*60);
+  zp3_ui_ok&&_time_hit&&mouse_click?nav_time_drag=1;
+  zp3_ui_ok&&nav_time_drag&&btn_down?set_nav_time((zp_mx-_time_x)/max(1,_time_w)*60);
   !btn_down?nav_time_drag=0;
   sprintf(#nav_time_text,"%.0f s",nav_measure_time);zp_setfont(1,"Arial",15,'b');gfx_set(0.90,0.94,0.98,1);zp_gx=nav_x+284;zp_gy=_ny+7;zp_drawstr(#nav_time_text);
   _mode_x=nav_x+400;
   zp_setfont(1,"Arial",14,'b');gfx_set(0.58,0.66,0.74,1);zp_gx=nav_x+340;zp_gy=_ny+7;zp_drawstr("MODE");
   _m0w=94;_m1w=76;_m2w=76;_mg=5;
-  nav_draw_mode==0?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);zp_rect(_mode_x,_ny,_m0w,_nbh);zp_setfont(1,"Arial",14,'b');gfx_set(0.92,0.95,0.98,1);zp_gx=_mode_x+12;zp_gy=_ny+8;zp_drawstr("MANUAL");hit(_mode_x,_ny,_m0w,_nbh)&&mouse_click?set_nav_mode(0);
-  _m1x=_mode_x+_m0w+_mg;nav_draw_mode==1?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);zp_rect(_m1x,_ny,_m1w,_nbh);zp_setfont(1,"Arial",14,'b');gfx_set(0.92,0.95,0.98,1);zp_gx=_m1x+18;zp_gy=_ny+8;zp_drawstr("LIVE");hit(_m1x,_ny,_m1w,_nbh)&&mouse_click?set_nav_mode(1);
-  _m2x=_m1x+_m1w+_mg;nav_draw_mode==2?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);zp_rect(_m2x,_ny,_m2w,_nbh);zp_setfont(1,"Arial",14,'b');gfx_set(0.92,0.95,0.98,1);zp_gx=_m2x+17;zp_gy=_ny+8;zp_drawstr("AUTO");hit(_m2x,_ny,_m2w,_nbh)&&mouse_click?set_nav_mode(2);
+  nav_draw_mode==0?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);zp_rect(_mode_x,_ny,_m0w,_nbh);zp_setfont(1,"Arial",14,'b');gfx_set(0.92,0.95,0.98,1);zp_gx=_mode_x+12;zp_gy=_ny+8;zp_drawstr("MANUAL");zp3_ui_ok&&hit(_mode_x,_ny,_m0w,_nbh)&&mouse_click?set_nav_mode(0);
+  _m1x=_mode_x+_m0w+_mg;nav_draw_mode==1?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);zp_rect(_m1x,_ny,_m1w,_nbh);zp_setfont(1,"Arial",14,'b');gfx_set(0.92,0.95,0.98,1);zp_gx=_m1x+18;zp_gy=_ny+8;zp_drawstr("LIVE");zp3_ui_ok&&hit(_m1x,_ny,_m1w,_nbh)&&mouse_click?set_nav_mode(1);
+  _m2x=_m1x+_m1w+_mg;nav_draw_mode==2?gfx_set(0.18,0.50,0.90,1):gfx_set(0.12,0.14,0.18,1);zp_rect(_m2x,_ny,_m2w,_nbh);zp_setfont(1,"Arial",14,'b');gfx_set(0.92,0.95,0.98,1);zp_gx=_m2x+17;zp_gy=_ny+8;zp_drawstr("AUTO");zp3_ui_ok&&hit(_m2x,_ny,_m2w,_nbh)&&mouse_click?set_nav_mode(2);
   _rx=nav_x+nav_w-138; _rw=126;
   hit(_rx,_ny,_rw,_nbh)?gfx_set(0.62,0.18,0.16,1):gfx_set(0.30,0.12,0.12,1);zp_rect(_rx,_ny,_rw,_nbh);
   gfx_set(0.98,0.86,0.84,1);zp_setfont(1,"Arial",14,'b');zp_gx=_rx+7;zp_gy=_ny+8;zp_drawstr("RESET MEASURE");
-  hit(_rx,_ny,_rw,_nbh)&&mouse_click?(
+  zp3_ui_ok&&hit(_rx,_ny,_rw,_nbh)&&mouse_click?(
     nav_reset_measure();
     meter_reset_pending=1;
   );
@@ -3497,6 +3785,260 @@ ui_show_nav ? (
   _ly+=38;zp_setfont(1,"Arial",15,'b');gfx_set(0.48,0.68,0.92,1);zp_gx=_label_x;zp_gy=_ly;zp_drawstr("SUGGERIMENTO");zp_setfont(1,"Arial",15);gfx_set(0.86,0.90,0.94,1);zp_gx=_body_x;zp_drawstr(#nav_suggest);
   _ly+=25;zp_setfont(1,"Arial",15,'b');gfx_set(0.48,0.68,0.92,1);zp_gx=_label_x;zp_gy=_ly;zp_drawstr("DATI");zp_setfont(1,"Arial",13);gfx_set(0.70,0.76,0.82,1);zp_gx=_body_x;zp_drawstr(#nav_data);
   nav_module_alert_on?(_ly+=24;zp_setfont(1,"Arial",13,'b');gfx_set(1.0,0.64,0.24,1);zp_gx=_label_x;zp_gy=_ly;zp_drawstr("MODULO");zp_gx=_body_x;zp_drawstr(#nav_module_alert););
+
+  // Riga compatta A MONTE v3 in SINTESI
+  _ly += 22;
+  zp3_active_n == 0 ? (
+    strcpy(#zp3_s_sum, "Nessun nodo ZP v3 rilevato a monte");
+  ) : (
+    sprintf(#zp3_s_sum, "%d nodi v3", zp3_active_n);
+    zp3_top_comp_idx >= 0 && zp3_top_comp_val >= 0.5 ? (
+      zp3_s_nb = zp3_nodes + zp3_top_comp_idx * 32;
+      zp3_read_track_name(floor(zp3_s_nb[5] + 0.5));
+      zp3_plugin_name(floor(zp3_s_nb[4] + 0.5));
+      sprintf(#zp3_s_part1, " | Top Comp: %s · %s (%.1f dB)", #zp3_tr_name, #zp3_pl_name, zp3_top_comp_val);
+      strcat(#zp3_s_sum, #zp3_s_part1);
+    ) : zp3_top_dyneq_idx >= 0 && zp3_top_dyneq_val >= 0.5 ? (
+      zp3_s_nb = zp3_nodes + zp3_top_dyneq_idx * 32;
+      zp3_read_track_name(floor(zp3_s_nb[5] + 0.5));
+      zp3_plugin_name(floor(zp3_s_nb[4] + 0.5));
+      sprintf(#zp3_s_part1, " | Top DynEQ: %s · %s (%.1f dB)", #zp3_tr_name, #zp3_pl_name, zp3_top_dyneq_val);
+      strcat(#zp3_s_sum, #zp3_s_part1);
+    );
+    zp3_music_n > 0 ? (
+      sprintf(#zp3_s_part2, " | Mus Duck -%.1f dB", zp3_music_duck_max);
+      strcat(#zp3_s_sum, #zp3_s_part2);
+    );
+    zp3_vo_mus_valid ? (
+      sprintf(#zp3_s_part2, " | V-M %+.1f dB", zp3_vo_mus_diff_db);
+      strcat(#zp3_s_sum, #zp3_s_part2);
+    );
+  );
+  zp_setfont(1,"Arial",12,'b'); gfx_set(0.48,0.68,0.92,1); zp_gx=_label_x; zp_gy=_ly; zp_drawstr("A MONTE");
+  zp_setfont(1,"Arial",12); gfx_set(0.76,0.84,0.90,1); zp_gx=_body_x; zp_drawstr(#zp3_s_sum);
+
+  // Banner Alert a monte cliccabile in SINTESI
+  zp3_alert_count > 0 && zp3_alert_idx >= 0 ? (
+    zp3_ab = zp3_nodes + zp3_alert_idx * 32;
+    zp3_read_track_name(floor(zp3_ab[5] + 0.5));
+    zp3_plugin_name(floor(zp3_ab[4] + 0.5));
+    zp3_atr = floor(zp3_ab[5] + 0.5); zp3_afx = floor(zp3_ab[6] + 0.5);
+    (zp3_alert_flags & 16) ? strcpy(#zp3_badge, "CHECK") : (zp3_alert_flags & 4) ? strcpy(#zp3_badge, "DELTA") : strcpy(#zp3_badge, "SOLO");
+    sprintf(#zp3_alert_txt, "ALERT A MONTE (%d): %s attivo su %s · %s [FX%d] — clicca per aprire", zp3_alert_count, #zp3_badge, #zp3_tr_name, #zp3_pl_name, zp3_afx + 1);
+    zp3_ay = nav_y + nav_h - 28; zp3_ax = nav_x + 12; zp3_aw = nav_w - 24; zp3_ah = 22;
+    zp3_ahit = hit(zp3_ax, zp3_ay, zp3_aw, zp3_ah);
+    zp3_ahit ? ui_set_hover(9205);
+    zp3_ahit ? gfx_set(0.55,0.16,0.14,0.96) : gfx_set(0.38,0.11,0.10,0.92);
+    zp_rect(zp3_ax, zp3_ay, zp3_aw, zp3_ah);
+    gfx_set(0.95,0.34,0.28,0.9); zp_rect(zp3_ax, zp3_ay, zp3_aw, 1); zp_rect(zp3_ax, zp3_ay+zp3_ah-1, zp3_aw, 1);
+    zp_setfont(1,"Arial",11,'b'); gfx_set(1.0,0.92,0.88,1);
+    zp_gx = zp3_ax + 10; zp_gy = zp3_ay + 5; zp_drawstr(#zp3_alert_txt);
+    zp3_ui_ok && zp3_ahit && mouse_click ? (
+      zp3_dir_ok ? zp3_request_open_fx(zp3_atr, zp3_afx) : (zp3_nav_tab = 1;);
+      zp3_open_msg_t = time_precise() + 2.5;
+    );
+  );
+  ) : (
+  // ── Vista CATENA (ordine da monte a valle) ───────────────────
+  zp3_fy = nav_y + 30; zp3_fh = 22;
+  zp3_f0x = nav_x + 12; zp3_f0w = 60;
+  zp3_f1x = zp3_f0x + zp3_f0w + 5; zp3_f1w = 60;
+  zp3_f2x = zp3_f1x + zp3_f1w + 5; zp3_f2w = 78;
+  zp3_f0hit = hit(zp3_f0x, zp3_fy, zp3_f0w, zp3_fh);
+  zp3_f1hit = hit(zp3_f1x, zp3_fy, zp3_f1w, zp3_fh);
+  zp3_f2hit = hit(zp3_f2x, zp3_fy, zp3_f2w, zp3_fh);
+  zp3_f0hit ? ui_set_hover(9202); zp3_f1hit ? ui_set_hover(9203); zp3_f2hit ? ui_set_hover(9204);
+  zp3_ui_ok && zp3_f0hit && mouse_click ? (zp3_filter = 0;);
+  zp3_ui_ok && zp3_f1hit && mouse_click ? (zp3_filter = 1;);
+  zp3_ui_ok && zp3_f2hit && mouse_click ? (zp3_filter = 2;);
+
+  zp3_filter == 0 ? gfx_set(0.18,0.50,0.90,1) : gfx_set(0.12,0.14,0.18,1); zp_rect(zp3_f0x, zp3_fy, zp3_f0w, zp3_fh);
+  zp3_filter == 1 ? gfx_set(0.18,0.50,0.90,1) : gfx_set(0.12,0.14,0.18,1); zp_rect(zp3_f1x, zp3_fy, zp3_f1w, zp3_fh);
+  zp3_filter == 2 ? gfx_set(0.18,0.50,0.90,1) : gfx_set(0.12,0.14,0.18,1); zp_rect(zp3_f2x, zp3_fy, zp3_f2w, zp3_fh);
+  zp_setfont(1,"Arial",11,'b'); gfx_set(0.94,0.96,0.99,1);
+  zp_gx = zp3_f0x + 14; zp_gy = zp3_fy + 5; zp_drawstr("TUTTI");
+  zp_gx = zp3_f1x + 14; zp_gy = zp3_fy + 5; zp_drawstr("VOCE");
+  zp_gx = zp3_f2x + 12; zp_gy = zp3_fy + 5; zp_drawstr("BUS/MUS");
+
+  sprintf(#zp3_tot_line, "Nodi:%d  Comp %.1f dB  DynEQ %.1f dB  Lim %.1f dB  MusDuck -%.1f dB", zp3_active_n, zp3_voice_comp_sum, zp3_voice_dyneq_sum, zp3_voice_lim_sum, zp3_music_duck_max);
+  zp3_vo_mus_valid ? (
+    sprintf(#zp3_s_part2, "  V-M %+.1f dB", zp3_vo_mus_diff_db);
+    strcat(#zp3_tot_line, #zp3_s_part2);
+  );
+  zp_setfont(1,"Arial",12,'b'); gfx_set(0.76,0.84,0.92,1);
+  zp_gx = zp3_f2x + zp3_f2w + 14; zp_gy = zp3_fy + 5; zp_drawstr(#zp3_tot_line);
+
+  zp3_alert_count > 0 && zp3_alert_idx >= 0 ? (
+    zp3_ab = zp3_nodes + zp3_alert_idx * 32;
+    zp3_read_track_name(floor(zp3_ab[5] + 0.5));
+    zp3_plugin_name(floor(zp3_ab[4] + 0.5));
+    zp3_atr = floor(zp3_ab[5] + 0.5); zp3_afx = floor(zp3_ab[6] + 0.5);
+    (zp3_alert_flags & 16) ? strcpy(#zp3_badge, "CHECK") : (zp3_alert_flags & 4) ? strcpy(#zp3_badge, "DELTA") : strcpy(#zp3_badge, "SOLO");
+    sprintf(#zp3_alert_txt, "ALERT A MONTE (%d): %s attivo su %s · %s [FX%d] — clicca per aprire", zp3_alert_count, #zp3_badge, #zp3_tr_name, #zp3_pl_name, zp3_afx + 1);
+    zp3_ay = nav_y + 58; zp3_ax = nav_x + 12; zp3_aw = nav_w - 24; zp3_ah = 22;
+    zp3_ahit = hit(zp3_ax, zp3_ay, zp3_aw, zp3_ah);
+    zp3_ahit ? ui_set_hover(9205);
+    zp3_ahit ? gfx_set(0.55,0.16,0.14,0.96) : gfx_set(0.38,0.11,0.10,0.92);
+    zp_rect(zp3_ax, zp3_ay, zp3_aw, zp3_ah);
+    gfx_set(0.95,0.34,0.28,0.9); zp_rect(zp3_ax, zp3_ay, zp3_aw, 1); zp_rect(zp3_ax, zp3_ay+zp3_ah-1, zp3_aw, 1);
+    zp_setfont(1,"Arial",11,'b'); gfx_set(1.0,0.92,0.88,1);
+    zp_gx = zp3_ax + 10; zp_gy = zp3_ay + 5; zp_drawstr(#zp3_alert_txt);
+    zp3_ui_ok && zp3_ahit && mouse_click ? (
+      zp3_dir_ok ? zp3_request_open_fx(zp3_atr, zp3_afx) : 0;
+      zp3_open_msg_t = time_precise() + 2.5;
+    );
+  );
+
+  zp3_cty = nav_y + (zp3_alert_count > 0 ? 86 : 60);
+  gfx_set(0.09,0.11,0.14,1); zp_rect(nav_x + 10, zp3_cty, nav_w - 20, 20);
+  gfx_set(0.20,0.26,0.34,1); zp_rect(nav_x + 10, zp3_cty + 19, nav_w - 20, 1);
+  zp_setfont(1,"Arial",10,'b'); gfx_set(0.56,0.70,0.86,1);
+  zp_gx = nav_x + 16;  zp_gy = zp3_cty + 5; zp_drawstr("TRACCIA / FX");
+  zp_gx = nav_x + 198; zp_gy = zp3_cty + 5; zp_drawstr("PLUGIN");
+  zp_gx = nav_x + 344; zp_gy = zp3_cty + 5; zp_drawstr("DINAMICA (GR)");
+  zp_gx = nav_x + 492; zp_gy = zp3_cty + 5; zp_drawstr("TONO / COLORE");
+  zp_gx = nav_x + 632; zp_gy = zp3_cty + 5; zp_drawstr("LIV / DELTA");
+  zp_gx = nav_x + 742; zp_gy = zp3_cty + 5; zp_drawstr("DETTAGLIO / STATO");
+
+  zp3_ry = zp3_cty + 24;
+  zp3_vis_count == 0 ? (
+    zp_setfont(1,"Arial",13); gfx_set(0.62,0.68,0.76,1);
+    zp_gx = nav_x + 18; zp_gy = zp3_ry + 10;
+    zp_drawstr("Nessun nodo ZP v3 attivo per il filtro selezionato (inserisci i plugin sui canali/bus e tieni il playback o i plugin attivi).");
+  ) : (
+    zp3_r = 0;
+    loop(zp3_vis_count,
+      zp3_idx = zp3_vis_idx[zp3_r];
+      zp3_nb = zp3_nodes + zp3_idx * 32;
+      zp3_pt = floor(zp3_nb[4] + 0.5);
+      zp3_tr = floor(zp3_nb[5] + 0.5);
+      zp3_fx = floor(zp3_nb[6] + 0.5);
+      zp3_rl = floor(zp3_nb[8] + 0.5);
+      zp3_fl = floor(zp3_nb[9] + 0.5);
+      zp3_gc = max(0, zp3_nb[10]);
+      zp3_gd = max(0, zp3_nb[11]);
+      zp3_gl = max(0, zp3_nb[12]);
+      zp3_tl = zp3_nb[13]; zp3_tm = zp3_nb[14]; zp3_th = zp3_nb[15];
+      zp3_hm = max(0, zp3_nb[16]);
+      zp3_ro = zp3_nb[18]; zp3_pk = zp3_nb[19]; zp3_gn = zp3_nb[20];
+      zp3_ac = zp3_nb[21]; zp3_br = zp3_nb[23];
+      zp3_d1 = zp3_nb[24]; zp3_d2 = zp3_nb[25]; zp3_d3 = zp3_nb[26];
+      zp3_d4 = zp3_nb[27]; zp3_d5 = zp3_nb[28]; zp3_d6 = zp3_nb[29];
+      zp3_byp = (zp3_fl & 2) ? 1 : 0;
+
+      zp3_rhit = hit(nav_x + 10, zp3_ry, nav_w - 20, 24);
+      zp3_rhit ? ui_set_hover(9206);
+      zp3_rhit ? gfx_set(0.14,0.19,0.26,0.95) : (zp3_r % 2 == 0) ? gfx_set(0.065,0.075,0.095,0.92) : gfx_set(0.052,0.060,0.078,0.92);
+      zp_rect(nav_x + 10, zp3_ry, nav_w - 20, 24);
+      (zp3_fl & 28) ? (gfx_set(0.95,0.28,0.24,0.85); zp_rect(nav_x + 10, zp3_ry, 3, 24););
+      zp3_ui_ok && zp3_rhit && mouse_click ? (
+        zp3_dir_ok ? zp3_request_open_fx(zp3_tr, zp3_fx) : 0;
+        zp3_open_msg_t = time_precise() + 2.5;
+      );
+
+      // Col 1: activity dot + role tag + track + FX
+      zp3_ac > 15 && !zp3_byp ? gfx_set(0.28,0.88,0.52,1) : gfx_set(0.28,0.32,0.38,0.9);
+      zp_circle(nav_x + 20, zp3_ry + 12, 3.5, 1);
+
+      zp3_tr < 0 ? (strcpy(#zp3_badge, "MS"); gfx_set(0.88,0.62,0.22,1);) :
+      zp3_rl == 2 ? (strcpy(#zp3_badge, "MU"); gfx_set(0.68,0.44,0.92,1);) :
+      zp3_rl == 1 ? (strcpy(#zp3_badge, "VO"); gfx_set(0.24,0.62,0.95,1);) :
+      zp3_rl == 3 ? (strcpy(#zp3_badge, "PR"); gfx_set(0.28,0.84,0.78,1);) :
+      (strcpy(#zp3_badge, "CH"); gfx_set(0.40,0.78,0.88,1););
+      zp_setfont(1,"Arial",9,'b'); zp_gx = nav_x + 28; zp_gy = zp3_ry + 6; zp_drawstr(#zp3_badge);
+
+      zp3_read_track_name(zp3_tr);
+      strlen(#zp3_tr_name) > 13 ? strcpy_substr(#zp3_tr_name, #zp3_tr_name, 0, 13);
+      sprintf(#zp3_c1, "%s · F%d", #zp3_tr_name, zp3_fx + 1);
+      zp_setfont(1,"Arial",11); zp3_byp ? gfx_set(0.50,0.54,0.60,1) : gfx_set(0.86,0.90,0.95,1);
+      zp_gx = nav_x + 50; zp_gy = zp3_ry + 5; zp_drawstr(#zp3_c1);
+
+      // Col 2: plugin
+      zp3_plugin_name(zp3_pt);
+      zp_setfont(1,"Arial",11,'b'); zp3_byp ? gfx_set(0.50,0.54,0.60,1) : gfx_set(0.92,0.94,0.98,1);
+      zp_gx = nav_x + 198; zp_gy = zp3_ry + 5; zp_drawstr(#zp3_pl_name);
+
+      // Col 3: dynamics
+      zp3_gmax = max(zp3_gc, max(zp3_gd, zp3_gl));
+      zp3_byp ? (
+        strcpy(#zp3_c3, "BYPASS");
+        gfx_set(0.52,0.56,0.62,1);
+      ) : (zp3_gmax < 0.05) ? (
+        strcpy(#zp3_c3, "--");
+        gfx_set(0.48,0.54,0.60,1);
+      ) : (
+        sprintf(#zp3_c3, "C%.1f D%.1f L%.1f", zp3_gc, zp3_gd, zp3_gl);
+        zp3_gmax > 6 ? gfx_set(1.0,0.36,0.30,1) : zp3_gmax >= 3 ? gfx_set(1.0,0.74,0.24,1) : gfx_set(0.36,0.88,0.56,1);
+      );
+      zp_setfont(1,"Arial",11); zp_gx = nav_x + 344; zp_gy = zp3_ry + 5; zp_drawstr(#zp3_c3);
+
+      // Col 4: tone / color
+      (zp3_pt == 9 || zp3_pt == 10) ? (
+        sprintf(#zp3_c4, "Br%+.1f Den%.0f%%", zp3_br, zp3_d1);
+        gfx_set(0.56,0.84,0.92,1);
+      ) : (zp3_hm > 1) ? (
+        sprintf(#zp3_c4, "H%.0f%% L%+.0f H%+.0f", zp3_hm, zp3_tl, zp3_th);
+        gfx_set(0.94,0.72,0.38,1);
+      ) : (abs(zp3_tl) >= 0.1 || abs(zp3_tm) >= 0.1 || abs(zp3_th) >= 0.1) ? (
+        sprintf(#zp3_c4, "L%+.1f M%+.1f H%+.1f", zp3_tl, zp3_tm, zp3_th);
+        gfx_set(0.76,0.86,0.96,1);
+      ) : (
+        strcpy(#zp3_c4, "Neutro");
+        gfx_set(0.50,0.55,0.62,1);
+      );
+      zp_setfont(1,"Arial",11); zp_gx = nav_x + 492; zp_gy = zp3_ry + 5; zp_drawstr(#zp3_c4);
+
+      // Col 5: level / gain delta
+      zp3_ro > -110 ? (
+        sprintf(#zp3_c5, "%.0f (%+.1f)", zp3_ro, zp3_gn);
+        abs(zp3_gn) > 4.0 ? gfx_set(1.0,0.74,0.24,1) : gfx_set(0.80,0.86,0.92,1);
+      ) : zp3_pk > -110 ? (
+        sprintf(#zp3_c5, "Pk %.0f dB", zp3_pk);
+        gfx_set(0.76,0.82,0.88,1);
+      ) : (
+        strcpy(#zp3_c5, "--");
+        gfx_set(0.48,0.54,0.60,1);
+      );
+      zp_setfont(1,"Arial",11); zp_gx = nav_x + 632; zp_gy = zp3_ry + 5; zp_drawstr(#zp3_c5);
+
+      // Col 6: badge + detail
+      zp3_dx = nav_x + 742;
+      (zp3_fl & 16) ? (
+        gfx_set(0.86,0.22,0.18,1); zp_rect(zp3_dx, zp3_ry + 4, 48, 16);
+        zp_setfont(1,"Arial",9,'b'); gfx_set(1,0.96,0.95,1); zp_gx = zp3_dx + 5; zp_gy = zp3_ry + 6; zp_drawstr("CHECK!");
+        zp3_dx += 54;
+      ) : (zp3_fl & 4) ? (
+        gfx_set(0.86,0.22,0.18,1); zp_rect(zp3_dx, zp3_ry + 4, 48, 16);
+        zp_setfont(1,"Arial",9,'b'); gfx_set(1,0.96,0.95,1); zp_gx = zp3_dx + 5; zp_gy = zp3_ry + 6; zp_drawstr("DELTA!");
+        zp3_dx += 54;
+      ) : (zp3_fl & 8) ? (
+        gfx_set(0.84,0.52,0.14,1); zp_rect(zp3_dx, zp3_ry + 4, 44, 16);
+        zp_setfont(1,"Arial",9,'b'); gfx_set(0.10,0.08,0.06,1); zp_gx = zp3_dx + 5; zp_gy = zp3_ry + 6; zp_drawstr("SOLO!");
+        zp3_dx += 50;
+      ) : (zp3_fl & 32) ? (
+        gfx_set(0.76,0.44,0.16,1); zp_rect(zp3_dx, zp3_ry + 4, 40, 16);
+        zp_setfont(1,"Arial",9,'b'); gfx_set(1,0.96,0.92,1); zp_gx = zp3_dx + 5; zp_gy = zp3_ry + 6; zp_drawstr("CLIP!");
+        zp3_dx += 46;
+      );
+
+      zp3_pt == 1 ? sprintf(#zp3_c6, "75:%.1f LA:%.1f MT:%.1f", zp3_d1, zp3_d2, zp3_d3) :
+      zp3_pt == 2 ? sprintf(#zp3_c6, "75:%.1f LA:%.1f MT:%.1f", zp3_d1, zp3_d2, zp3_d3) :
+      zp3_pt == 3 ? sprintf(#zp3_c6, "Pk%.1f DRC%.1f EQ%.1f", zp3_d1, zp3_d2, zp3_d3) :
+      zp3_pt == 4 ? sprintf(#zp3_c6, "H%.0f%% VOG%.0f%% Air%.0f%%", zp3_d1, zp3_d2, zp3_d4) :
+      zp3_pt == 5 ? sprintf(#zp3_c6, "%s L:%.1f R:%.1f", zp3_d1 == 1 ? "L-DOM" : zp3_d1 == 2 ? "R-DOM" : "NEU", zp3_d2, zp3_d3) :
+      zp3_pt == 6 ? sprintf(#zp3_c6, "Ck%.0f/s %.1f At%.1f", zp3_d3, zp3_d1, zp3_d2) :
+      zp3_pt == 7 ? sprintf(#zp3_c6, "Mix%.0f%% Out%+.1f", zp3_d5, zp3_d6) :
+      zp3_pt == 8 ? sprintf(#zp3_c6, "VCA%.1f Crv%.1f Gl%.1f", zp3_d1, zp3_d2, zp3_d5) :
+      zp3_pt == 9 ? sprintf(#zp3_c6, "Spch%.0f%% Cr%.1f", zp3_d4, zp3_d3) :
+      sprintf(#zp3_c6, "Glue%.0f%% Cr%.1f", zp3_d4, zp3_d3);
+      zp_setfont(1,"Arial",10); gfx_set(0.72,0.78,0.86,1);
+      zp_gx = zp3_dx; zp_gy = zp3_ry + 6; zp_drawstr(#zp3_c6);
+
+      zp3_ry += 26;
+      zp3_r += 1;
+    );
+  );
+  );
 
 ); // end NAV visibility
 
@@ -3715,6 +4257,13 @@ ui_hover_id==9105?zp_drawstr("EQD: dynamic EQ mirata sui punti; comprime le zone
 ui_hover_id==9106?zp_drawstr("RST Tone: click reset punti EQ/frequenze; tieni 0.5s per reset completo Tone"):
 ui_hover_id>=9100&&ui_hover_id<=9103?zp_drawstr("Tone point: numero=freq+EQ fisso; barra DYN=correzione DIN+EQD (+ verde / - rosso)"):
 ui_hover_id==9015?zp_drawstr("RST: azzera tutti i parametri Output ai valori di default"):
+ui_hover_id==9200?zp_drawstr("SINTESI: diagnosi Target Engine, Density Flow e top contributor a monte"):
+ui_hover_id==9201?zp_drawstr("CATENA v3: mappa completa di tutti i plugin ZP attivi ordinati da monte a valle"):
+ui_hover_id==9202?zp_drawstr("Filtro TUTTI: mostra canali, Voice Bus, Music Bus e Master"):
+ui_hover_id==9203?zp_drawstr("Filtro VOCE: mostra solo processori e sonde della catena voce"):
+ui_hover_id==9204?zp_drawstr("Filtro BUS/MUS: mostra BUS voce, Harmonic Space Carver, Music Probe e Master"):
+ui_hover_id==9205?zp_drawstr("ALERT A MONTE: DELTA, SOLO o CHECK attivo in un plugin a monte — clicca per aprire il plugin"):
+ui_hover_id==9206?zp_drawstr(zp3_dir_ok ? "Clicca sulla riga per aprire direttamente questo plugin a monte" : "Avvia Cue Navigator per aprire questo plugin con un clic"):
 zp_drawstr(ui_lang == 0 ? "ZP MASTER PRO · Processore di Mastering Integrato" : "ZP MASTER PRO · Integrated Mastering Processor");
 
 // ZP Target Engine: il LED indica solo connessione, mai livello audio.
@@ -3741,8 +4290,8 @@ zp_bus_warning==9 ? strcpy(#zp_bus_detail,"Densita' finale sotto target: la voce
 zp_bus_warning==10 ? strcpy(#zp_bus_detail,"Crest factor fuori target: controlla dinamica e transienti") :
 zp_bus_warning==11 ? strcpy(#zp_bus_detail,"Brightness finale fuori target per il profilo scelto") :
 strcpy(#zp_bus_detail,"Target rispettato: intenzione e risultato sono coerenti");
-// LED: rosso solo se manca BUS Chain; giallo per Probe/dati/stabilita'; verde completo.
-nav_led_state=zp_bus_unified_conn==0?0:(zp_bus_unified_conn==2 && zp_bus_voice_conn==2 && zp_bus_spoken_conn==2?2:1);
+// LED: rosso solo se mancano BUS Chain e nodi v3; giallo per dati parziali; verde completo.
+nav_led_state=(zp_bus_unified_conn==0 && zp3_voice_n==0 && !zp3_vprobe_ok)?0:(((zp_bus_unified_conn==2 && zp_bus_voice_conn==2 && zp_bus_spoken_conn==2) || (zp3_voice_n>0 && zp3_vprobe_ok))?2:1);
 nav_led_state==2 ? gfx_set(0.30,0.92,0.58,1) : nav_led_state==1 ? gfx_set(1.0,0.72,0.20,1) : gfx_set(1.0,0.30,0.25,1);
 zp_circle(PX+164,18,5,1); zp_setfont(1,"Arial",9,'b'); zp_gx=PX+174; zp_gy=12; zp_drawstr("ZP");
 // Lo stato connessione vive nel Navigator. Il footer resta dedicato all'help.

@@ -1,0 +1,195 @@
+-- Test unitario per ZP Shared Bus v3 (Cue Navigator TeleDir + Open-FX + integrita' JSFX)
+-- Eseguibile con: lua gobbo_ricerca_battuta/test/test_shared_bus_v3.lua
+
+local info = debug.getinfo(1, "S").source:match("^@?(.*[/\\])")
+local root_dir = (info or "./") .. "../../"
+
+-- 1. Test modulo puro TeleDir
+_G.HSC_SYNC_TEST = true
+local HSC = dofile(root_dir .. "ZP Voce/ZP Harmonic Space Carver Cue Navigator.lua")
+local TeleDir = HSC.TeleDir
+assert(TeleDir, "TeleDir non esposto in HSC")
+
+assert(TeleDir.sanitize_name("Voce Paolo èéàù") == "Voce Paolo eeau", "Sanitizzazione accenti errata")
+assert(TeleDir.sanitize_name("") == "", "Stringa vuota non preservata")
+assert(#TeleDir.sanitize_name("12345678901234567890XYZ") == 20, "Troncamento a 20 caratteri fallito")
+assert(TeleDir.sanitize_name("A😀B") == "AB", "Caratteri non ASCII non filtrati")
+
+local samples = { "", "Paolo", "Ospite è 1", "VO BUS (Stereo)", "12345678901234567890extra" }
+for _, raw in ipairs(samples) do
+  local expected = TeleDir.sanitize_name(raw)
+  local len, p0, p1, p2, p3, p4 = TeleDir.pack_name(raw)
+  assert(len == #expected, "Lunghezza packed errata per " .. raw)
+  for _, p in ipairs({ p0, p1, p2, p3, p4 }) do
+    assert(p >= 0 and p < 2147483648, "Packed float fuori range int31: " .. tostring(p))
+  end
+  local unpacked = TeleDir.unpack_name(len, p0, p1, p2, p3, p4)
+  assert(unpacked == expected, string.format("Roundtrip fallito: got '%s' want '%s'", unpacked, expected))
+end
+
+-- 2. Simulazione serve_telemetry_dir() e serve_telemetry_cmd()
+_G.HSC_SYNC_TEST = nil
+_G.HSC_SYNC_SIM = true
+
+local gmem = {}
+local ext = {}
+local shown_fx = {}
+local clock = 50.0
+
+local vo_bus = { name = "VO BUS", role = "VO_BUS", mute = 0, solo = 0, fdep = 1, parent = nil, fx_cnt = 2 }
+local tr_paolo = { name = "Paolo à", role = "", mute = 0, solo = 1, fdep = 0, parent = vo_bus, fx_cnt = 3 }
+local tr_ospite = { name = "Ospite", role = "", mute = 1, solo = 0, fdep = 0, parent = vo_bus, fx_cnt = 2 }
+local music_bus = { name = "Music BUS", role = "MUSIC_BUS", mute = 0, solo = 0, fdep = 0, parent = nil, fx_cnt = 1 }
+local master_tr = { name = "MASTER", fx_cnt = 1 }
+local tracks = { vo_bus, tr_paolo, tr_ospite, music_bus }
+
+_G.reaper = {
+  gmem_attach = function() end,
+  gmem_read = function(idx) return gmem[idx] or 0 end,
+  gmem_write = function(idx, val) gmem[idx] = val end,
+  time_precise = function() return clock end,
+  defer = function() end,
+  GetExtState = function(s, k) return ext[s .. ":" .. k] or "" end,
+  SetExtState = function(s, k, v) ext[s .. ":" .. k] = v end,
+  DeleteExtState = function(s, k) ext[s .. ":" .. k] = nil end,
+  GetProjExtState = function() return 0, "" end,
+  SetProjExtState = function() end,
+  GetProjectStateChangeCount = function() return 1 end,
+  EnumProjects = function(i) if i == -1 or i == 0 then return "P1", "/tmp/p1.rpp" end end,
+  CountTracks = function() return #tracks end,
+  GetTrack = function(_, i) return tracks[i + 1] end,
+  GetMasterTrack = function() return master_tr end,
+  GetParentTrack = function(t) return t.parent end,
+  GetSetMediaTrackInfo_String = function(t, k)
+    if k == "P_NAME" then return true, t.name end
+    if k == "P_EXT:ZP_CHAIN_ROLE" then return true, t.role end
+    return false, ""
+  end,
+  GetMediaTrackInfo_Value = function(t, k)
+    if k == "B_MUTE" then return t.mute or 0 end
+    if k == "I_SOLO" then return t.solo or 0 end
+    if k == "I_FOLDERDEPTH" then return t.fdep or 0 end
+    if k == "I_NCHAN" then return 2 end
+    return 0
+  end,
+  TrackFX_GetCount = function(t) return t.fx_cnt or 0 end,
+  TrackFX_GetFXName = function() return false, "" end,
+  TrackFX_GetNumParams = function() return 0 end,
+  TrackFX_Show = function(t, fx, flag)
+    shown_fx[#shown_fx + 1] = { track = t, fx = fx, flag = flag }
+  end,
+  CountProjectMarkers = function() return 0 end,
+  EnumProjectMarkers3 = function() return 0 end,
+  CountTrackMediaItems = function() return 0 end,
+  GetPlayState = function() return 0 end,
+  ColorToNative = function() return 0 end,
+  TrackCtl_SetToolTip = function() end,
+  GetResourcePath = function() return root_dir end,
+  GetOS = function() return "OSX64" end,
+}
+
+local sim = dofile(root_dir .. "ZP Voce/ZP Harmonic Space Carver Cue Navigator.lua")
+assert(sim and sim.serve_telemetry_dir and sim.serve_telemetry_cmd, "Funzioni TeleDir non esposte in HSC_SYNC_SIM")
+
+sim.serve_telemetry_dir()
+assert(gmem[1004] == 1, "dir_heartbeat deve essere 1")
+assert(gmem[1005] == 50.0, "dir_time deve essere 50.0")
+assert(gmem[1006] == 4, "dir_track_count deve essere 4")
+
+-- Traccia 0 = VO BUS (exists + folder + VO_BUS = 1 + 8 + 16 = 25)
+local d0 = 3072 + 0 * 8
+assert(gmem[d0 + 0] == 25, "Flags VO BUS errati: " .. tostring(gmem[d0 + 0]))
+assert(gmem[d0 + 1] == -1, "Parent VO BUS deve essere -1")
+assert(TeleDir.unpack_name(gmem[d0 + 2], gmem[d0 + 3], gmem[d0 + 4], gmem[d0 + 5], gmem[d0 + 6], gmem[d0 + 7]) == "VO BUS")
+
+-- Traccia 1 = Paolo à (exists + solo = 1 + 4 = 5, parent = 0)
+local d1 = 3072 + 1 * 8
+assert(gmem[d1 + 0] == 5, "Flags Paolo errati: " .. tostring(gmem[d1 + 0]))
+assert(gmem[d1 + 1] == 0, "Parent Paolo deve essere 0")
+assert(TeleDir.unpack_name(gmem[d1 + 2], gmem[d1 + 3], gmem[d1 + 4], gmem[d1 + 5], gmem[d1 + 6], gmem[d1 + 7]) == "Paolo a")
+
+-- Traccia 2 = Ospite (exists + mute = 1 + 2 = 3, parent = 0)
+local d2 = 3072 + 2 * 8
+assert(gmem[d2 + 0] == 3, "Flags Ospite errati: " .. tostring(gmem[d2 + 0]))
+
+-- Traccia 3 = Music BUS (exists + MUSIC_BUS = 1 + 32 = 33)
+local d3 = 3072 + 3 * 8
+assert(gmem[d3 + 0] == 33, "Flags Music BUS errati: " .. tostring(gmem[d3 + 0]))
+
+-- Rimozione tracce -> pulizia slot vecchi
+tracks = { vo_bus, tr_paolo }
+clock = 51.0
+sim.serve_telemetry_dir()
+assert(gmem[1004] == 2, "dir_heartbeat deve avanzare a 2")
+assert(gmem[1006] == 2, "dir_track_count deve scendere a 2")
+assert(gmem[d2 + 0] == 0 and gmem[d3 + 0] == 0, "Slot tracce rimosse devono essere azzerati")
+
+-- Test Open-FX mailbox
+gmem[1008] = 1
+gmem[1009] = 2
+gmem[1010] = 1
+sim.serve_telemetry_cmd()
+assert(gmem[1011] == 1 and gmem[1012] == 1, "Open-FX traccia valida fallito")
+assert(#shown_fx == 1 and shown_fx[1].track == tr_paolo and shown_fx[1].fx == 2 and shown_fx[1].flag == 3)
+
+-- Stessa seq -> nessuna nuova apertura
+sim.serve_telemetry_cmd()
+assert(#shown_fx == 1, "Open-FX non deve ripetere comando con seq gia' evasa")
+
+-- Master track (tr_idx = -1)
+gmem[1008] = -1
+gmem[1009] = 0
+gmem[1010] = 2
+sim.serve_telemetry_cmd()
+assert(gmem[1011] == 2 and gmem[1012] == 1, "Open-FX Master fallito")
+assert(#shown_fx == 2 and shown_fx[2].track == master_tr and shown_fx[2].fx == 0)
+
+-- FX inesistente
+gmem[1008] = 0
+gmem[1009] = 99
+gmem[1010] = 3
+sim.serve_telemetry_cmd()
+assert(gmem[1011] == 3 and gmem[1012] == 2, "Open-FX target invalido deve restituire status 2")
+assert(#shown_fx == 2, "Non deve chiamare TrackFX_Show per FX inesistente")
+
+-- 3. Verifica statica integrita' protocollo nei 10 JSFX
+local producers = {
+  { path = "ZP Voce/ZP BUS Chain.jsfx", ptypes = { 1 } },
+  { path = "ZP Voce/ZP Voiceover Unified Chain.jsfx", ptypes = { 2 } },
+  { path = "ZP Voce/ZP Magic Voice LAB.jsfx", ptypes = { 3 } },
+  { path = "ZP Voce/ZP Spoken Finish.jsfx", ptypes = { 4 } },
+  { path = "ZP Voce/ZP Stagekeeper Dialogue Director.jsfx", ptypes = { 5 } },
+  { path = "ZP Lab/ZP Click & Attack Softener.jsfx", ptypes = { 6 } },
+  { path = "ZP Lab/ZP BrownSlope Dynamic Guard.jsfx", ptypes = { 7 } },
+  { path = "ZP Voce/ZP Harmonic Space Carver.jsfx", ptypes = { 8 } },
+  { path = "ZP Misura/ZP Voice-Music Probe.jsfx", ptypes = { 9, 10 } },
+}
+local seen_pt = {}
+for _, pr in ipairs(producers) do
+  local f = assert(io.open(root_dir .. pr.path, "r"), "Impossibile aprire " .. pr.path)
+  local txt = f:read("*a"); f:close()
+  assert(txt:find("function zp3_boot()", 1, true), "Manca zp3_boot in " .. pr.path)
+  assert(txt:find("function zp3_claim(", 1, true), "Manca zp3_claim in " .. pr.path)
+  assert(txt:find("get_host_placement(", 1, true), "Manca get_host_placement in " .. pr.path)
+  assert(txt:find("905301", 1, true), "Manca magic 905301 in " .. pr.path)
+  for _, pt in ipairs(pr.ptypes) do
+    assert(not seen_pt[pt], "ptype duplicato: " .. tostring(pt))
+    seen_pt[pt] = pr.path
+    assert(txt:find("gmem[zp3_b + 4] = " .. tostring(pt), 1, true) or txt:find("gmem[zp3_b + 4] = zp3_pt", 1, true),
+      "Manca scrittura plugin_type in " .. pr.path)
+  end
+end
+for pt = 1, 10 do
+  assert(seen_pt[pt], "Manca produttore per ptype " .. tostring(pt))
+end
+
+local mf = assert(io.open(root_dir .. "ZP Master/ZP Master Pro.jsfx", "r"))
+local mtxt = mf:read("*a"); mf:close()
+assert(mtxt:find("function zp3_scan_bus()", 1, true), "Manca zp3_scan_bus in Master Pro")
+assert(mtxt:find("function zp3_read_track_name(", 1, true), "Manca zp3_read_track_name in Master Pro")
+assert(mtxt:find("function zp3_request_open_fx(", 1, true), "Manca zp3_request_open_fx in Master Pro")
+assert(mtxt:find('"SINTESI"', 1, true) and mtxt:find('"CATENA (%d)"', 1, true), "Mancano schede SINTESI/CATENA in Master Pro")
+assert(mtxt:find("gmem[10]==905010", 1, true) and mtxt:find("gmem[50]==905050", 1, true) and mtxt:find("gmem[60]==905060", 1, true),
+  "Compatibilita' legacy v2.20 alterata in Master Pro")
+
+print("TUTTI OK")

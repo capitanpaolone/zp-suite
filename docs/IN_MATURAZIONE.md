@@ -1,8 +1,8 @@
-# Prodotti Beta — Suite 2.6.8
+# Prodotti BETA — Suite 2.6.9 in preparazione
 
 Regola: vedi `gobbo_ricerca_battuta/ANTI_REGRESSIONE.md`, «Versioni, sincronizzazione e pubblicazione».
 
-Decisione di Paolo, 2026-11-21: i prodotti indicati qui si pubblicano come **BETA** per provarli con volontari. Clean & Paint, Montaggio Parlato, BrownSlope Dynamic Guard e Click & Attack Softener sono pacchetti separati ReaPack nella 2.6.8. Restano in maturazione finché Paolo non decide di togliere l'etichetta. Le modifiche ai soli beta non fanno scattare la versione della Suite. I loro requisiti e limiti vanno mantenuti in README, guide IT/EN e note di rilascio.
+Decisione di Paolo, 2026-11-21: i prodotti indicati qui si pubblicano come **BETA** per provarli con volontari. Clean & Paint, Montaggio Parlato, BrownSlope Dynamic Guard e Click & Attack Softener sono stati pubblicati come pacchetti separati ReaPack nella 2.6.8 e restano inclusi come BETA nella candidata 2.6.9. Restano in maturazione finché Paolo non decide di togliere l'etichetta. Le modifiche ai soli beta non fanno scattare la versione della Suite. I loro requisiti e limiti vanno mantenuti in README, guide IT/EN e note di rilascio.
 
 Aggiornato: 2026-11-21.
 

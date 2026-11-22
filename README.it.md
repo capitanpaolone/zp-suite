@@ -34,9 +34,13 @@ La 2.6.7 distribuisce **ZP Magic Voice LAB 1.2.0-lab3**, l’unica versione corr
 
 La versione 2.6.8 include: **Fissa negli item** trasferirà solo i marker selezionati sulla timeline; quelli operativi, come i cue `#HSC` di Harmonic Space Carver, resteranno al loro posto. Include inoltre **ZP Magic Voice LAB 1.2.3** (rotori DRC `FREQ` centro + `OCT` ottave retrocompatibili, monitor reali continui su `DRC`, `DYN EQ` `±5 / ±12 dB` e `DYN BAL` `±6 / ±12 dB`, delta globale lampeggiante con auto-off a 30 s, `D·MOLLA` esteso per singolo stadio, suggerimenti su blocchi da 4 s di parlato attivo, tema solo cromatico `CHIARO / SCURO` e controlli DRC sempre visibili), **ZP BrownSlope Prism 1.1** (corridoio verde `±1,5 / ±3 dB`, riempimento differenziale caldo/freddo, traccia `Live`, barre bipolari per zona, livella pendenza e tema Scuro/Chiaro), **ZP Loudness Meter Multichannel 45.0** (GUI vertical-first anti-deriva con `TARGET` libero + `SEGUI QUI` / `LOCK NOW`, fascia verde `±LU`, nastro `DERIVA 60s` congelato in pausa, peak-hold reale, 4 viste responsive incluso embedded TCP/MCP con `LUFS-I`/`TP` e tema Scuro/Chiaro) e lo **storico scorrevole** nel pannello `STATO` di **ZP Render & Copy**.
 
+La candidata locale 2.6.9 introduce lo **ZP Shared Bus v3** (`ZP Master Pro 2.48`, `Voice-Music Probe 1.4`, `BUS Chain 1.3.3`, `Unified Chain 4.1.9`, `Spoken Finish 3.10.2`, `Stagekeeper 2.5.3`, `Magic Voice LAB 1.2.4`, `Harmonic Space Carver 2.6.12` + `Cue Navigator 1.16`, `BrownSlope Dynamic Guard 0.5.1-assist-dev` e `Click & Attack Softener 0.2`) per leggere su Master Pro chi sta comprimendo, limitando o colorando a monte (nuova scheda **CATENA**, alert **DELTA/SOLO/CHECK**, contesto Music Probe/Carver e click-per-aprire con Cue Navigator), oltre ai bump ReaPack per la selezione cue su `#HSC` e per LEGA OUTPUT / memoria A/B / uscita ±24 dB in Magic Voice LAB. La candidata non è pubblicata.
+
 La ZP Studio Suite 2.6.7 aggiunge ZP Consolidate, che raccoglie in Media le sorgenti dei take e gli SRT/VTT registrati nel progetto senza convertire i media. L’elenco completo delle modifiche è nel [changelog](CHANGELOG.md).
 
-## Beta in questa versione
+## Pacchetti BETA
+
+La release 2.6.8 su GitHub ha introdotto questi pacchetti separati. Restano BETA nella candidata locale 2.6.9, ancora in preparazione e non pubblicata.
 
 - **ZP Clean & Paint (BETA)**: ReaPack installa le action REAPER. Il motore ZP Voice Model Lab, l'ambiente Python, i preset e i modelli restano esterni; servono installazione e percorso configurato.
 - **ZP Montaggio Parlato (BETA)**: richiede ZP Studio Suite e ZP Speech dal 33 Benvenuto; la versione corrente è collaudata su macOS. PDF: `pdftotext` (Poppler). Incolla: SWS.

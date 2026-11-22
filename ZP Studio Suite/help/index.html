@@ -508,9 +508,9 @@
     </div>
     <div class="card" id="plugin-master-pro">
       <h3>ZP Master Pro</h3>
-      <p><strong>A cosa serve:</strong> Supervisore e analizzatore intelligente per il bus Master finale. Confronta la telemetria di tutti i plugin ZP e le misure delle Probe contro profili target (ADR, Voiceover, E-learning, Podcast, Spot, Radio).</p>
+      <p><strong>A cosa serve:</strong> Supervisore e analizzatore intelligente per il bus Master finale. Confronta la telemetria multi-istanza dello Shared Bus v3 (tutti i canali, bus voce/musica e le Probe) contro profili target (ADR, Voiceover, E-learning, Podcast, Spot, Radio), permettendo di vedere a monte dove nasce compressione, colorazione o un ascolto DELTA/SOLO/CHECK lasciato acceso.</p>
       <p><strong>Dove si inserisce:</strong> Sul Master Bus finale del progetto (prima o dopo il limiter di consegna).</p>
-      <p><strong>Controlli principali:</strong> Selezione Target Profile, Navigator (MANUAL / AUTO SIMPLE / AUTO COMPLEX), Measure Engine con display causale, parametri di tolleranza [Target], LED di stato del bus.</p>
+      <p><strong>Controlli principali:</strong> Selezione Target Profile, Navigator con schede <strong>SINTESI</strong> (MANUAL / LIVE / AUTO, Measure Engine, top contributor a monte) e <strong>CATENA</strong> (mappa di tutti i plugin ZP attivi ordinati da monte a valle con filtri <em>TUTTI / VOCE / BUS/MUS</em>, alert a monte e click-per-aprire con Cue Navigator), parametri [Target], LED di stato del bus.</p>
       <p><strong>Approfondimento:</strong> <a href="master_pro_glue_matrix.html">Glue Matrix e ISP</a> (percorso del segnale, Macro/Micro/Crest, Texture SM/API/SSA).</p>
     </div>
     <div class="card" id="plugin-mirror-eq">
@@ -533,7 +533,7 @@
     </div>
     <div class="card" id="plugin-probe">
       <h3>ZP Voice-Music Probe</h3>
-      <p><strong>A cosa serve:</strong> Sonda di misurazione passiva e trasparente per lo Shared Bus. Non altera l'audio ma misura con precisione RMS, True Peak, crest factor, densità, brillantezza e presenza del parlato.</p>
+      <p><strong>A cosa serve:</strong> Sonda di misurazione passiva e trasparente per lo Shared Bus. Non altera l'audio ma misura RMS, picco campione, crest factor, densità, brillantezza e presenza del parlato (Voice) oppure stima glue (Music).</p>
       <p><strong>Dove si inserisce:</strong> Ultimo slot assoluto del Voice Bus (in ruolo Voice) e del Music Bus (in ruolo Music), protetto dal Probe Guard.</p>
       <p><strong>Controlli principali:</strong> Selettore di ruolo (Voice / Music), meter di verifica istantanea, stato trasmissione gmem Shared Bus.</p>
     </div>
@@ -550,7 +550,7 @@
 
   <h3>In dettaglio</h3>
   <h3 id="shared-bus-logica">Come ragiona lo Shared Bus</h3>
-  <p>Shared Bus v2.2 separa due mondi: BUS Chain e Spoken Finish dichiarano cosa stanno facendo; Voice-Music Probe misura cosa esce davvero; Master Pro confronta i dati con lo <strong>ZP Target Engine</strong>. Nessun warning modifica automaticamente il DSP.</p>
+  <p>Shared Bus v3 (retrocompatibile con v2.20) raccoglie automaticamente la telemetria di ogni istanza ZP attiva su canali, Voice Bus, Music Bus e Master (<em>BUS Chain</em>, <em>Unified Chain</em>, <em>Magic Voice LAB</em>, <em>Spoken Finish</em>, <em>Stagekeeper</em>, <em>Click &amp; Attack Softener</em>, <em>BrownSlope Dynamic Guard</em>, <em>Harmonic Space Carver</em> e <em>Voice-Music Probe</em>), identificandone traccia e posizione nella catena. Master Pro ordina i nodi da monte a valle nella scheda <strong>CATENA</strong> e li confronta con lo <strong>ZP Target Engine</strong>; con <em>Cue Navigator</em> attivo mostra anche i nomi reali delle tracce e apre al clic la finestra del plugin a monte. Nessun warning modifica automaticamente il DSP.</p>
 
   <h3>Voice-Music Probe</h3>
   <p><code>ZP Voice-Music Probe.jsfx</code> è un analizzatore passivo. In modalità Voice pubblica RMS, peak, crest, density, brightness e speech activity. In modalità Music pubblica le stesse misure senza speech activity. Non scrive sui campioni audio e deve restare ultimo nella catena del bus osservato.</p>
@@ -702,7 +702,7 @@
   </table></div>
   <p class="small">File di supporto, da non lanciare né modificare: <code>ZP_UI.lua</code>, <code>ZP_GfxScale.lua</code>, <code>ZP_sincronizza_aggancio.lua</code>, <code>lib_RythmoBand_Accessibile.lua</code>, i <code>worker</code> di 04 e 05, i template traccia, il ponte NVDA per Windows. Un aggiornamento ReaPack li sostituisce.</p>
 <!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Sviluppata su un'idea di Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
-<h2 id="beta-268">Strumenti BETA — Suite 2.6.8</h2>
+<h2 id="beta-tools">Strumenti BETA</h2>
 <p>ZP Clean &amp; Paint, ZP Montaggio Parlato, ZP BrownSlope Dynamic Guard e ZP Click &amp; Attack Softener sono pacchetti BETA. Vedi <a href="lab.html">guida, prerequisiti e limiti delle beta</a>.</p>
 </main>
 </body>

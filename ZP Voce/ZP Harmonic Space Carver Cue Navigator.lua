@@ -1,9 +1,11 @@
 -- @description ZP Harmonic Space Carver Cue Navigator (background helper)
--- @version 1.15
+-- @version 1.16
 -- @author Paolo Balestri / Codex
 -- @about Collega i Carver a REAPER: salti tra i cue, punto del cursore a trasporto fermo,
 --   verifica del routing sidechain e cue come marker #HSC sul righello (seguono l'editing).
 -- @changelog
+--   1.16: cliccando un marker #HSC a trasporto fermo il cue corrispondente si seleziona nel Carver;
+--     Shared Bus v3 Track Directory + Open-FX Mailbox (nomi traccia/ruoli/folder e click-per-aprire da Master Pro).
 --   Marker #HSC cliccato sulla timeline (trasporto fermo): il cue si seleziona anche nei Carver.
 --   Il ? di ZP Magic Voice LAB apre la sua guida dedicata (magic_voice_lab.html).
 --   Rampa del cue fino a 1200 ms (formato di scambio con il Carver allargato); i preset C/S/M/L non contano piu'.
@@ -23,8 +25,8 @@
 -- Provenienza ZP:
 --   Proprietà: ZP Harmonic Space Carver / Cue Navigator.
 --   Pacchetto d’origine: ZP Harmonic Space Carver 2.6.10 (installazione locale REAPER).
---   Copia locale REAPER acquisita il 2026-11-09; preparazione Suite 2.6.7.
---   Versione interna: 1.14, campo @version ReaPack.
+--   Copia locale REAPER acquisita il 2026-11-21; preparazione Suite 2.6.9.
+--   Versione interna: 1.16, campo @version ReaPack.
 
 local HSC = { TOL = 0.005, MAX = 64, NAME = "#HSC" }
 
@@ -418,6 +420,80 @@ function Bridge.open_url(url)
     os.execute(string.format('open "%s"', url))
   end
   return true
+end
+
+-- ================================================================
+-- Shared Bus v3: Track Directory & Open-FX Mailbox (gmem 1004..1012, 3072..3583)
+-- ================================================================
+local TeleDir = {
+  GMEM_DIR_HB    = 1004,
+  GMEM_DIR_TIME  = 1005,
+  GMEM_DIR_COUNT = 1006,
+  GMEM_CMD_TR    = 1008,
+  GMEM_CMD_FX    = 1009,
+  GMEM_CMD_REQ   = 1010,
+  GMEM_CMD_ACK   = 1011,
+  GMEM_CMD_STAT  = 1012,
+  GMEM_DIR_BASE  = 3072,
+  DIR_MAX        = 64,
+  DIR_STRIDE     = 8,
+}
+HSC.TeleDir = TeleDir
+
+local ACCENT_MAP = {
+  ["à"] = "a", ["á"] = "a", ["â"] = "a", ["ä"] = "a",
+  ["è"] = "e", ["é"] = "e", ["ê"] = "e", ["ë"] = "e",
+  ["ì"] = "i", ["í"] = "i", ["î"] = "i", ["ï"] = "i",
+  ["ò"] = "o", ["ó"] = "o", ["ô"] = "o", ["ö"] = "o",
+  ["ù"] = "u", ["ú"] = "u", ["û"] = "u", ["ü"] = "u",
+  ["À"] = "A", ["Á"] = "A", ["Â"] = "A", ["Ä"] = "A",
+  ["È"] = "E", ["É"] = "E", ["Ê"] = "E", ["Ë"] = "E",
+  ["Ì"] = "I", ["Í"] = "I", ["Î"] = "I", ["Ï"] = "I",
+  ["Ò"] = "O", ["Ó"] = "O", ["Ô"] = "O", ["Ö"] = "O",
+  ["Ù"] = "U", ["Ú"] = "U", ["Û"] = "U", ["Ü"] = "U",
+}
+
+function TeleDir.sanitize_name(s)
+  local txt = tostring(s or "")
+  for k, v in pairs(ACCENT_MAP) do
+    txt = txt:gsub(k, v)
+  end
+  txt = txt:gsub("[^\32-\126]", "")
+  if #txt > 20 then txt = txt:sub(1, 20) end
+  return txt
+end
+
+function TeleDir.pack_name(s)
+  local clean = TeleDir.sanitize_name(s)
+  local len = #clean
+  local p = { 0, 0, 0, 0, 0 }
+  for g = 0, 4 do
+    local base = g * 4 + 1
+    local b0 = (base     <= len) and clean:byte(base)     or 0
+    local b1 = (base + 1 <= len) and clean:byte(base + 1) or 0
+    local b2 = (base + 2 <= len) and clean:byte(base + 2) or 0
+    local b3 = (base + 3 <= len) and clean:byte(base + 3) or 0
+    p[g + 1] = b0 + b1 * 256 + b2 * 65536 + b3 * 16777216
+  end
+  return len, p[1], p[2], p[3], p[4], p[5]
+end
+
+function TeleDir.unpack_name(len, p0, p1, p2, p3, p4)
+  local n = math.max(0, math.min(20, math.floor((tonumber(len) or 0) + 0.5)))
+  if n == 0 then return "" end
+  local ps = { tonumber(p0) or 0, tonumber(p1) or 0, tonumber(p2) or 0, tonumber(p3) or 0, tonumber(p4) or 0 }
+  local out = {}
+  for i = 0, n - 1 do
+    local g = math.floor(i / 4) + 1
+    local j = i % 4
+    local byte = math.floor((ps[g] or 0) / (256 ^ j)) % 256
+    if byte >= 32 and byte <= 126 then
+      out[#out + 1] = string.char(byte)
+    else
+      out[#out + 1] = " "
+    end
+  end
+  return table.concat(out)
 end
 
 if HSC_SYNC_TEST or HSC_LIBRARY then return HSC end
@@ -1248,9 +1324,93 @@ local function serve_requests()
   end
 end
 
+local dir_hb, dir_prev_n, last_dir_tick = 0, 0, nil
+local function serve_telemetry_dir()
+  if not reaper or not reaper.gmem_write or not reaper.CountTracks or not reaper.GetTrack then return end
+  local n_raw = reaper.CountTracks(0) or 0
+  local n = math.max(0, math.min(TeleDir.DIR_MAX, math.floor(n_raw + 0.5)))
+  local tracks, idx_map = {}, {}
+  for i = 0, n - 1 do
+    local tr = reaper.GetTrack(0, i)
+    tracks[i] = tr
+    if tr then idx_map[tr] = i end
+  end
+  for i = 0, n - 1 do
+    local tr = tracks[i]
+    local d = TeleDir.GMEM_DIR_BASE + i * TeleDir.DIR_STRIDE
+    if tr then
+      local tr_name, tr_role = "", ""
+      if reaper.GetSetMediaTrackInfo_String then
+        local _, nm = reaper.GetSetMediaTrackInfo_String(tr, "P_NAME", "", false)
+        local _, rl = reaper.GetSetMediaTrackInfo_String(tr, "P_EXT:ZP_CHAIN_ROLE", "", false)
+        tr_name = nm or ""
+        tr_role = rl or ""
+      end
+      local mute = reaper.GetMediaTrackInfo_Value and (reaper.GetMediaTrackInfo_Value(tr, "B_MUTE") or 0) or 0
+      local solo = reaper.GetMediaTrackInfo_Value and (reaper.GetMediaTrackInfo_Value(tr, "I_SOLO") or 0) or 0
+      local fdep = reaper.GetMediaTrackInfo_Value and (reaper.GetMediaTrackInfo_Value(tr, "I_FOLDERDEPTH") or 0) or 0
+      local flags = 1
+      if mute >= 0.5 then flags = flags + 2 end
+      if solo >= 0.5 then flags = flags + 4 end
+      if fdep > 0 then flags = flags + 8 end
+      if tr_role == "VO_BUS" then flags = flags + 16 end
+      if tr_role == "MUSIC_BUS" then flags = flags + 32 end
+      local parent_tr = reaper.GetParentTrack and reaper.GetParentTrack(tr) or nil
+      local parent_idx = (parent_tr and idx_map[parent_tr]) or -1
+      local len, p0, p1, p2, p3, p4 = TeleDir.pack_name(tr_name)
+      reaper.gmem_write(d + 0, flags)
+      reaper.gmem_write(d + 1, parent_idx)
+      reaper.gmem_write(d + 2, len)
+      reaper.gmem_write(d + 3, p0)
+      reaper.gmem_write(d + 4, p1)
+      reaper.gmem_write(d + 5, p2)
+      reaper.gmem_write(d + 6, p3)
+      reaper.gmem_write(d + 7, p4)
+    else
+      reaper.gmem_write(d + 0, 0)
+    end
+  end
+  for i = n, math.min(TeleDir.DIR_MAX - 1, dir_prev_n - 1) do
+    reaper.gmem_write(TeleDir.GMEM_DIR_BASE + i * TeleDir.DIR_STRIDE, 0)
+  end
+  dir_prev_n = n
+  local now_t = reaper.time_precise and reaper.time_precise() or 0
+  dir_hb = (dir_hb % 1000000000) + 1
+  reaper.gmem_write(TeleDir.GMEM_DIR_COUNT, n)
+  reaper.gmem_write(TeleDir.GMEM_DIR_TIME, now_t)
+  reaper.gmem_write(TeleDir.GMEM_DIR_HB, dir_hb)
+end
+
+local function serve_telemetry_cmd()
+  if not reaper or not reaper.gmem_read or not reaper.gmem_write then return end
+  local req_seq = math.floor((reaper.gmem_read(TeleDir.GMEM_CMD_REQ) or 0) + 0.5)
+  local ack_seq = math.floor((reaper.gmem_read(TeleDir.GMEM_CMD_ACK) or 0) + 0.5)
+  if req_seq > 0 and req_seq ~= ack_seq then
+    local tr_idx = math.floor((reaper.gmem_read(TeleDir.GMEM_CMD_TR) or -99) + 0.5)
+    local fx_idx = math.floor((reaper.gmem_read(TeleDir.GMEM_CMD_FX) or -1) + 0.5)
+    local tr = nil
+    if tr_idx == -1 and reaper.GetMasterTrack then
+      tr = reaper.GetMasterTrack(0)
+    elseif tr_idx >= 0 and reaper.GetTrack then
+      tr = reaper.GetTrack(0, tr_idx)
+    end
+    local status = 2
+    if tr and reaper.TrackFX_GetCount and reaper.TrackFX_Show then
+      local cnt = reaper.TrackFX_GetCount(tr) or 0
+      if fx_idx >= 0 and fx_idx < cnt then
+        reaper.TrackFX_Show(tr, fx_idx, 3)
+        status = 1
+      end
+    end
+    reaper.gmem_write(TeleDir.GMEM_CMD_STAT, status)
+    reaper.gmem_write(TeleDir.GMEM_CMD_ACK, req_seq)
+  end
+end
+
 local bridge_tick = 0
 local function serve_bridge()
   if not reaper or not reaper.gmem_write then return end
+  serve_telemetry_cmd()
   local lang_str = reaper.GetExtState and reaper.GetExtState("ZP_STUDIO_SUITE", "lingua") or ""
   local lang_val = (lang_str == "en") and 1 or 0
   reaper.gmem_write(Bridge.GMEM_LANG, lang_val)
@@ -1277,6 +1437,7 @@ local function run()
   if not i_am_owner() then return end     -- un helper piu' nuovo ha preso il posto: questo si ferma
   serve_bridge()
   local now = reaper.time_precise()
+  if not last_dir_tick or (now - last_dir_tick >= 0.5) then serve_telemetry_dir(); last_dir_tick = now end
   if now - last_scan >= 1.0 then rescan(); last_scan = now end
   for _, base in ipairs(bases) do handle(base) end
   if now - last_prefs_tick >= 0.05 then prefs_tick(); last_prefs_tick = now end
@@ -1288,5 +1449,5 @@ end
 reaper.SetExtState("ZP_HSC", "owner", MY_ID, false)
 reaper.DeleteExtState("ZP_HSC", "req", false)   -- richieste rimaste da prima: vecchie
 -- simulazione fuori REAPER (test): espone i passi senza avviare il ciclo
-if HSC_SYNC_SIM then return { sync = sync, rescan = rescan, anchors_tick = anchors_tick, anchor_command = anchor_command, serve_requests = serve_requests, bridge = Bridge, serve_bridge = serve_bridge, run_once = function() local d = reaper.defer; reaper.defer = function() end; run(); reaper.defer = d end, id = MY_ID } end
+if HSC_SYNC_SIM then return { sync = sync, rescan = rescan, anchors_tick = anchors_tick, anchor_command = anchor_command, serve_requests = serve_requests, bridge = Bridge, serve_bridge = serve_bridge, tele_dir = TeleDir, serve_telemetry_dir = serve_telemetry_dir, serve_telemetry_cmd = serve_telemetry_cmd, run_once = function() local d = reaper.defer; reaper.defer = function() end; run(); reaper.defer = d end, id = MY_ID } end
 run()

@@ -1,8 +1,10 @@
 // @description ZP Harmonic Space Carver
-// @version 2.6.11
+// @version 2.6.12
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @changelog
+//   2.6.12: cliccando un marker #HSC sulla timeline a trasporto fermo si seleziona lo stesso cue nel Carver;
+//     telemetria ZP Shared Bus v3 verso Master Pro (VCA duck, Carver multibanda, Glue, livelli musica/sidechain e delta).
 //   Cliccando un marker #HSC sulla timeline (trasporto fermo) il cue si seleziona anche nel Carver: il pomello Rampa mostra e salva quello.
 //   Cue: un solo comportamento. Rampa regolabile fino a 1200 ms (per marker), poi la musica resta a duck 0
 //     finche' non arriva il primo suono dal sidechain dopo un silenzio. Tolti i preset C/S/M/L e la tenuta Custom.
@@ -230,6 +232,72 @@ function zp_bus_refresh(plugin_id) (
   zp_bus_boot(); gmem[plugin_id]=905000+plugin_id; gmem[plugin_id+1]=time_precise(); gmem[plugin_id+2]+=1; zp_bus_read();
 );
 zp_bus_refresh(ZP_BUS_ID);
+
+// ---- ZP Shared Bus v3 (telemetria multi-istanza a monte -> Master Pro) ----
+function zp3_boot() (
+  gmem[1000] != 905300 || gmem[1001] < 300 ? (
+    gmem[1000] = 905300;
+    gmem[1001] = 300;
+    gmem[1002] = 64;
+    gmem[1003] = 32;
+  );
+);
+function zp3_clear_slot() local(zp3_cb) (
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_cb = 1024 + zp3_slot * 32;
+    gmem[zp3_cb + 3] == zp3_prev_key ? (
+      gmem[zp3_cb] = 0;
+      gmem[zp3_cb + 2] = 0;
+    );
+  );
+  zp3_slot = -1;
+  zp3_prev_key = -1;
+);
+function zp3_claim(zp3_pt) local(zp3_now, zp3_key, zp3_h, zp3_i, zp3_s, zp3_b, zp3_m, zp3_found) (
+  zp3_boot();
+  zp3_now = time_precise();
+  zp3_fx = 0; zp3_hf = 0;
+  zp3_tr = get_host_placement(zp3_fx, zp3_hf);
+  zp3_key = max(0, zp3_tr + 2) * 1024 + max(0, zp3_fx) * 16 + zp3_pt;
+  zp3_prev_key >= 0 && zp3_prev_key != zp3_key ? zp3_clear_slot();
+  zp3_found = -1;
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_slot;);
+  );
+  zp3_found < 0 ? (
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_b = 1024 + zp3_i * 32;
+        gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_i;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_found < 0 ? (
+    zp3_h = (max(0, zp3_tr + 2) * 13 + max(0, zp3_fx) * 7 + zp3_pt * 3) % 64;
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_s = (zp3_h + zp3_i) % 64;
+        zp3_b = 1024 + zp3_s * 32;
+        zp3_m = gmem[zp3_b];
+        (zp3_m != 905301 || (zp3_now - gmem[zp3_b + 1]) > 2.5) ? (zp3_found = zp3_s;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_slot = zp3_found;
+  zp3_prev_key = zp3_key;
+  zp3_slot >= 0 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    zp3_seq = max(zp3_seq, floor(gmem[zp3_b + 2] + 0.5));
+    zp3_b;
+  ) : -1;
+);
+zp3_prev_key <= 0 ? (zp3_slot = -1; zp3_prev_key = -1;);
+zp3_boot();
 // ================================================================
 
 db2log = 0.11512925464970228;
@@ -678,6 +746,52 @@ calc_crossover();
 zp_bus_refresh(ZP_BUS_ID);
 // Space Carver comunica contesto mix; non e' requisito del mastering.
 gmem[201] = max(0, -log2db * log(max(0.000001, glue_meter_gr)));
+
+zp3_b = zp3_claim(8);
+zp3_b >= 0 ? (
+  zp3_vca_db = max(0, -log2db * log(max(0.0001, vca_meter_gr)));
+  zp3_crl = log2db * log(max(0.0001, meter_gr_l));
+  zp3_crm = log2db * log(max(0.0001, meter_gr_m));
+  zp3_crh = log2db * log(max(0.0001, meter_gr_h));
+  zp3_crv_db = max(0, max(-zp3_crl, max(-zp3_crm, -zp3_crh)));
+  zp3_glu_db = max(0, -log2db * log(max(0.0001, glue_meter_gr)));
+  zp3_in_db  = log2db * log(max(0.000001, max(meter_main_l, meter_main_r)));
+  zp3_out_db = log2db * log(max(0.000001, max(meter_out_l, meter_out_r)));
+  zp3_sc_db  = log2db * log(max(0.000001, max(meter_sc_l, meter_sc_r)));
+  gmem[zp3_b + 3] = zp3_prev_key;
+  gmem[zp3_b + 4] = 8;
+  gmem[zp3_b + 5] = zp3_tr;
+  gmem[zp3_b + 6] = zp3_fx;
+  gmem[zp3_b + 7] = zp3_hf;
+  gmem[zp3_b + 8] = 2;
+  gmem[zp3_b + 9] = 1 + (delta_mode > 0 ? 4 : 0);
+  gmem[zp3_b + 10] = zp3_vca_db;
+  gmem[zp3_b + 11] = zp3_crv_db;
+  gmem[zp3_b + 12] = zp3_glu_db;
+  gmem[zp3_b + 13] = zp3_crl;
+  gmem[zp3_b + 14] = zp3_crm;
+  gmem[zp3_b + 15] = zp3_crh;
+  gmem[zp3_b + 16] = 0;
+  gmem[zp3_b + 17] = zp3_in_db;
+  gmem[zp3_b + 18] = zp3_out_db;
+  gmem[zp3_b + 19] = zp3_out_db;
+  gmem[zp3_b + 20] = -zp3_vca_db;
+  gmem[zp3_b + 21] = max(0, min(100, (zp3_sc_db + 55) * 2.5));
+  gmem[zp3_b + 22] = -1;
+  gmem[zp3_b + 23] = -99;
+  gmem[zp3_b + 24] = zp3_vca_db;
+  gmem[zp3_b + 25] = -zp3_crm;
+  gmem[zp3_b + 26] = -zp3_crl;
+  gmem[zp3_b + 27] = -zp3_crh;
+  gmem[zp3_b + 28] = zp3_glu_db;
+  gmem[zp3_b + 29] = delta_mode;
+  gmem[zp3_b + 30] = 0;
+  gmem[zp3_b + 31] = 0;
+  gmem[zp3_b] = 905301;
+  gmem[zp3_b + 1] = time_precise();
+  zp3_seq += 1;
+  gmem[zp3_b + 2] = zp3_seq;
+);
 // ================================================================
 quick_service();
 quick_pref_sync();

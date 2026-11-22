@@ -1,5 +1,5 @@
 // @description ZP Click & Attack Softener (BETA)
-// @version 0.1
+// @version 0.2
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
@@ -16,6 +16,7 @@
 //
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 // @changelog
+//   v0.2: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (De-Click GR, Attack GR, Click/s e alert DELTA).
 //   v0.1: Prima versione di laboratorio tarata su ripresa microfonica e catena voce di Paolo;
 //     De-Click pre/post con protezione consonanti, Attack Softener selettivo, 4 preset (PRE-CHAIN, POST-CHAIN,
 //     TAKE SPORCO, DELICATO), DELTA con auto-off 30 s, D·MOLLA per stadio, tema Scuro/Chiaro e vista JSFX/OSARA.
@@ -412,6 +413,72 @@ function draw_help_overlay() local(px, py, pw, ph, cx, cy, hc, ly, tw, th) (
 
 update_params();
 
+// ---- ZP Shared Bus v3 (telemetria multi-istanza a monte -> Master Pro) ----
+function zp3_boot() (
+  gmem[1000] != 905300 || gmem[1001] < 300 ? (
+    gmem[1000] = 905300;
+    gmem[1001] = 300;
+    gmem[1002] = 64;
+    gmem[1003] = 32;
+  );
+);
+function zp3_clear_slot() local(zp3_cb) (
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_cb = 1024 + zp3_slot * 32;
+    gmem[zp3_cb + 3] == zp3_prev_key ? (
+      gmem[zp3_cb] = 0;
+      gmem[zp3_cb + 2] = 0;
+    );
+  );
+  zp3_slot = -1;
+  zp3_prev_key = -1;
+);
+function zp3_claim(zp3_pt) local(zp3_now, zp3_key, zp3_h, zp3_i, zp3_s, zp3_b, zp3_m, zp3_found) (
+  zp3_boot();
+  zp3_now = time_precise();
+  zp3_fx = 0; zp3_hf = 0;
+  zp3_tr = get_host_placement(zp3_fx, zp3_hf);
+  zp3_key = max(0, zp3_tr + 2) * 1024 + max(0, zp3_fx) * 16 + zp3_pt;
+  zp3_prev_key >= 0 && zp3_prev_key != zp3_key ? zp3_clear_slot();
+  zp3_found = -1;
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_slot;);
+  );
+  zp3_found < 0 ? (
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_b = 1024 + zp3_i * 32;
+        gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_i;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_found < 0 ? (
+    zp3_h = (max(0, zp3_tr + 2) * 13 + max(0, zp3_fx) * 7 + zp3_pt * 3) % 64;
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_s = (zp3_h + zp3_i) % 64;
+        zp3_b = 1024 + zp3_s * 32;
+        zp3_m = gmem[zp3_b];
+        (zp3_m != 905301 || (zp3_now - gmem[zp3_b + 1]) > 2.5) ? (zp3_found = zp3_s;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_slot = zp3_found;
+  zp3_prev_key = zp3_key;
+  zp3_slot >= 0 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    zp3_seq = max(zp3_seq, floor(gmem[zp3_b + 2] + 0.5));
+    zp3_b;
+  ) : -1;
+);
+zp3_prev_key <= 0 ? (zp3_slot = -1; zp3_prev_key = -1;);
+zp3_boot();
+
 @slider
 osara_p = floor(slider12 + 0.5);
 osara_p > 0 && osara_p != prev_osara_preset ? (
@@ -457,6 +524,45 @@ blk_now - ck_rate_t >= 1.0 ? (
   sliderchange(2 ^ 15);
   sliderchange(2 ^ 16);
   sliderchange(2 ^ 17);
+);
+
+zp3_b = zp3_claim(6);
+zp3_b >= 0 ? (
+  zp3_pk_db = mon_in_pk > 0.000001 ? 20 * log10(mon_in_pk) : -120;
+  gmem[zp3_b + 3] = zp3_prev_key;
+  gmem[zp3_b + 4] = 6;
+  gmem[zp3_b + 5] = zp3_tr;
+  gmem[zp3_b + 6] = zp3_fx;
+  gmem[zp3_b + 7] = zp3_hf;
+  gmem[zp3_b + 8] = 0;
+  gmem[zp3_b + 9] = ((slider1 >= 0.5 || slider6 >= 0.5) ? 1 : 2)
+    + ((slider11 >= 0.5 || delta_spring_stage > 0) ? 4 : 0);
+  gmem[zp3_b + 10] = slider6 >= 0.5 ? ui_at_hold : 0;
+  gmem[zp3_b + 11] = slider1 >= 0.5 ? ui_ck_hold : 0;
+  gmem[zp3_b + 12] = 0;
+  gmem[zp3_b + 13] = 0;
+  gmem[zp3_b + 14] = 0;
+  gmem[zp3_b + 15] = 0;
+  gmem[zp3_b + 16] = 0;
+  gmem[zp3_b + 17] = -120;
+  gmem[zp3_b + 18] = -120;
+  gmem[zp3_b + 19] = zp3_pk_db;
+  gmem[zp3_b + 20] = 0;
+  gmem[zp3_b + 21] = max(0, min(100, (zp3_pk_db + 55) * 2.5));
+  gmem[zp3_b + 22] = -1;
+  gmem[zp3_b + 23] = -99;
+  gmem[zp3_b + 24] = ui_ck_hold;
+  gmem[zp3_b + 25] = ui_at_hold;
+  gmem[zp3_b + 26] = ck_rate_disp;
+  gmem[zp3_b + 27] = slider10;
+  gmem[zp3_b + 28] = slider1;
+  gmem[zp3_b + 29] = slider6;
+  gmem[zp3_b + 30] = 0;
+  gmem[zp3_b + 31] = 0;
+  gmem[zp3_b] = 905301;
+  gmem[zp3_b + 1] = time_precise();
+  zp3_seq += 1;
+  gmem[zp3_b + 2] = zp3_seq;
 );
 
 @sample

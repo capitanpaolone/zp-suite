@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.6.8
+-- @version 2.6.9
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -23,6 +23,14 @@
 --   sono disponibili in entrambe le lingue. Il supporto screen reader Windows usa
 --   NVDA Controller Client (LGPL 2.1, NV Access). Dettagli in README.it.md.
 -- @changelog
+--   2.6.9 (in preparazione)
+--   EN — ZP Shared Bus v3 (Master Pro 2.48 + 9 voice/bus/music JSFX + Cue Navigator 1.16): multi-instance telemetry from every active channel and bus ordered upstream->downstream, CATENA view in Master Pro Navigator, upstream DELTA/SOLO/CHECK alerts, Music Probe/Carver context, and click-to-open FX via Cue Navigator.
+--   IT — ZP Shared Bus v3 (Master Pro 2.48 + 9 JSFX voce/bus/musica + Cue Navigator 1.16): telemetria multi-istanza da tutti i canali e bus ordinata da monte a valle, scheda CATENA nel Navigator di Master Pro, alert a monte DELTA/SOLO/CHECK, contesto Music Probe/Carver e apertura diretta FX al clic con Cue Navigator.
+--   EN — Carver 2.6.12 + Cue Navigator 1.16: select a cue when its #HSC marker is clicked while stopped.
+--   IT — Carver 2.6.12 + Cue Navigator 1.16: il cue si seleziona cliccando il suo marker #HSC a trasporto fermo.
+--   EN — Magic Voice LAB 1.2.4: LINK OUTPUT, project-saved A/B memory and ±24 dB output range.
+--   IT — Magic Voice LAB 1.2.4: LEGA OUTPUT, memoria A/B salvata nel progetto e uscita ±24 dB.
+--   EN/IT — The four separate BETA packages and their documented requirements are retained.
 --   2.6.8 (2026-11-21)
 --   EN — Beta packages: ZP Clean & Paint, ZP Montaggio Parlato, ZP BrownSlope Dynamic Guard, and ZP Click & Attack Softener.
 --   IT — Pacchetti Beta: ZP Clean & Paint, ZP Montaggio Parlato, ZP BrownSlope Dynamic Guard e ZP Click & Attack Softener.

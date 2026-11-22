@@ -451,7 +451,7 @@
 
   <!-- ================================================================== -->
   <h2 id="zp-shared-bus">ZP Shared Bus Plugins</h2>
-  <p>ZP plugins communicate via shared memory (<code>gmem=ZPVoiceoverSharedBus</code>): each plugin reports real-time activity, the Probe measures real bus audio output, and Master Pro compares results against the target loudness engine to offer advisory suggestions. No plugin ever alters another plugin's DSP parameters. Installed via ReaPack in <code>Effects/ZP_Paolo Balestri JSFX</code>.</p>
+  <p>ZP plugins communicate via shared memory (<code>gmem=ZPVoiceoverSharedBus</code>, Shared Bus v3 backward-compatible with v2.20): every active instance on voice channels, Voice Bus, Music Bus, and Master (<em>BUS Chain</em>, <em>Unified Chain</em>, <em>Magic Voice LAB</em>, <em>Spoken Finish</em>, <em>Stagekeeper</em>, <em>Click &amp; Attack Softener</em>, <em>BrownSlope Dynamic Guard</em>, <em>Harmonic Space Carver</em>, and <em>Voice-Music Probe</em>) automatically reports its track/FX order, dynamics, tone, levels, and safety alerts (DELTA/SOLO/CHECK) to Master Pro's <strong>SINTESI</strong> and <strong>CATENA</strong> views. With <em>Cue Navigator</em> running, Master Pro also shows real track names and opens any upstream plugin window with one click. No plugin ever alters another plugin's DSP parameters.</p>
   <div class="grid">
     <div class="card" id="plugin-bus-chain">
       <h3>ZP BUS Chain</h3>
@@ -499,9 +499,9 @@
     </div>
     <div class="card" id="plugin-master-pro">
       <h3>ZP Master Pro</h3>
-      <p><strong>Purpose:</strong> Master bus supervisory intelligence. Analyzes multi-plugin telemetry and Probe readings against target loudness profiles (ADR, Voiceover, E-learning, Podcast, Spot, Radio).</p>
+      <p><strong>Purpose:</strong> Master bus supervisory intelligence. Analyzes multi-instance Shared Bus v3 telemetry across channels, voice/music buses, and Probes against target loudness profiles (ADR, Voiceover, E-learning, Podcast, Spot, Radio) so you see upstream compression, tone shifts, or forgotten DELTA/SOLO/CHECK states before touching the master.</p>
       <p><strong>Where to place:</strong> On final project Master Bus.</p>
-      <p><strong>Key controls:</strong> Target Profile selector, Navigator (MANUAL / AUTO SIMPLE / AUTO COMPLEX), causal Measure Engine display, [Target] thresholds, bus status LEDs.</p>
+      <p><strong>Key controls:</strong> Target Profile selector, Navigator with <strong>SINTESI</strong> (MANUAL / LIVE / AUTO, Measure Engine, top upstream contributor) and <strong>CATENA</strong> (upstream-to-downstream table of all active ZP plugins with <em>TUTTI / VOCE / BUS/MUS</em> filters, upstream alerts, and click-to-open FX via Cue Navigator), [Target] thresholds, bus status LEDs.</p>
       <p><strong>In depth:</strong> <a href="../master_pro_glue_matrix.html">Glue Matrix and ISP</a> (Italian only: signal path, Macro/Micro/Crest, SM/API/SSA textures).</p>
     </div>
     <div class="card" id="plugin-mirror-eq">
@@ -524,7 +524,7 @@
     </div>
     <div class="card" id="plugin-probe">
       <h3>ZP Voice-Music Probe</h3>
-      <p><strong>Purpose:</strong> Passive transparent shared bus metering probe. Never alters audio; accurately measures RMS, True Peak, crest factor, density, brightness, and speech activity.</p>
+      <p><strong>Purpose:</strong> Passive transparent shared bus metering probe. Never alters audio; measures RMS, sample peak, crest factor, density, brightness, and speech activity (Voice) or glue estimate (Music).</p>
       <p><strong>Where to place:</strong> Absolute final slot on Voice Bus (Voice role) and Music Bus (Music role), guarded by Probe Guard.</p>
       <p><strong>Key controls:</strong> Role switch (Voice / Music), real-time meter display, Shared Bus gmem activity indicator.</p>
     </div>
@@ -623,7 +623,7 @@
   </ul>
   <p id="tool-32"><strong>Toolbar & FX:</strong> run <strong>32 Install ZP Toolbar</strong> after installation to register action IDs and install FX chains. Details in <a href="toolbar.html">toolbar guide</a>.</p>
 <!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Developed from an idea by Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
-<h2 id="beta-268">BETA tools — Suite 2.6.8</h2>
+<h2 id="beta-tools">BETA tools</h2>
 <p>ZP Clean &amp; Paint, ZP Montaggio Parlato, ZP BrownSlope Dynamic Guard and ZP Click &amp; Attack Softener are BETA packages. See the <a href="lab.html">Beta guide, prerequisites and limitations</a>.</p>
 </main>
 </body>

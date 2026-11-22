@@ -1,5 +1,5 @@
 // @description ZP Spoken Finish
-// @version 3.10.1
+// @version 3.10.2
 // @author Paolo Balestri
 // @about
 //   Eccitatore e de-eccitatore armonico per voce parlata, podcast e doppiaggio.
@@ -17,6 +17,7 @@
 //   Complete documentation: https://latocardioide.it/strumenti/ or click '?'
 // @license GPL-3.0-or-later
 // @changelog
+//   3.10.2: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (armoniche, VOG/body, aria, dynamic drive e livelli).
 //   Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
 //   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
 //     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
@@ -488,6 +489,72 @@ function zp_bus_refresh(plugin_id) (
 );
 zp_bus_boot();
 zp_bus_read();
+
+// ---- ZP Shared Bus v3 (telemetria multi-istanza a monte -> Master Pro) ----
+function zp3_boot() (
+  gmem[1000] != 905300 || gmem[1001] < 300 ? (
+    gmem[1000] = 905300;
+    gmem[1001] = 300;
+    gmem[1002] = 64;
+    gmem[1003] = 32;
+  );
+);
+function zp3_clear_slot() local(zp3_cb) (
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_cb = 1024 + zp3_slot * 32;
+    gmem[zp3_cb + 3] == zp3_prev_key ? (
+      gmem[zp3_cb] = 0;
+      gmem[zp3_cb + 2] = 0;
+    );
+  );
+  zp3_slot = -1;
+  zp3_prev_key = -1;
+);
+function zp3_claim(zp3_pt) local(zp3_now, zp3_key, zp3_h, zp3_i, zp3_s, zp3_b, zp3_m, zp3_found) (
+  zp3_boot();
+  zp3_now = time_precise();
+  zp3_fx = 0; zp3_hf = 0;
+  zp3_tr = get_host_placement(zp3_fx, zp3_hf);
+  zp3_key = max(0, zp3_tr + 2) * 1024 + max(0, zp3_fx) * 16 + zp3_pt;
+  zp3_prev_key >= 0 && zp3_prev_key != zp3_key ? zp3_clear_slot();
+  zp3_found = -1;
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_slot;);
+  );
+  zp3_found < 0 ? (
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_b = 1024 + zp3_i * 32;
+        gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_i;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_found < 0 ? (
+    zp3_h = (max(0, zp3_tr + 2) * 13 + max(0, zp3_fx) * 7 + zp3_pt * 3) % 64;
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_s = (zp3_h + zp3_i) % 64;
+        zp3_b = 1024 + zp3_s * 32;
+        zp3_m = gmem[zp3_b];
+        (zp3_m != 905301 || (zp3_now - gmem[zp3_b + 1]) > 2.5) ? (zp3_found = zp3_s;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_slot = zp3_found;
+  zp3_prev_key = zp3_key;
+  zp3_slot >= 0 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    zp3_seq = max(zp3_seq, floor(gmem[zp3_b + 2] + 0.5));
+    zp3_b;
+  ) : -1;
+);
+zp3_prev_key <= 0 ? (zp3_slot = -1; zp3_prev_key = -1;);
+zp3_boot();
 // ---------------- FILTER STATE L ----------------
 hpL_a0 = 0; hpL_a1 = 0; hpL_a2 = 0;
 hpL_b1 = 0; hpL_b2 = 0;
@@ -894,6 +961,45 @@ gmem[305] = ui_vog_active;                      // VOG activity
 gmem[306] = ui_dynamic_drive;                   // output/drive activity
 // Commit del frame dopo il payload: heartbeat e sequence descrivono dati completi.
 zp_bus_refresh(ZP_BUS_ID);
+
+zp3_b = zp3_claim(4);
+zp3_b >= 0 ? (
+  zp3_harm = 0.5 * (ui_even_active + ui_odd_active);
+  zp3_pres = profile == 0 ? char_amt * 100 : ui_air_active;
+  gmem[zp3_b + 3] = zp3_prev_key;
+  gmem[zp3_b + 4] = 4;
+  gmem[zp3_b + 5] = zp3_tr;
+  gmem[zp3_b + 6] = zp3_fx;
+  gmem[zp3_b + 7] = zp3_hf;
+  gmem[zp3_b + 8] = 0;
+  gmem[zp3_b + 9] = 1;
+  gmem[zp3_b + 10] = 0;
+  gmem[zp3_b + 11] = 0;
+  gmem[zp3_b + 12] = 0;
+  gmem[zp3_b + 13] = ui_vog_active * 0.06;
+  gmem[zp3_b + 14] = zp3_pres * 0.04;
+  gmem[zp3_b + 15] = ui_air_active * 0.06;
+  gmem[zp3_b + 16] = min(100, max(0, max(zp3_harm, ui_dynamic_drive)));
+  gmem[zp3_b + 17] = ui_rms_in_db;
+  gmem[zp3_b + 18] = ui_rms_out_db;
+  gmem[zp3_b + 19] = -120;
+  gmem[zp3_b + 20] = ui_rms_in_db > -55 ? max(-24, min(24, ui_rms_out_db - ui_rms_in_db)) : 0;
+  gmem[zp3_b + 21] = max(0, min(100, (ui_rms_out_db + 55) * 2.5));
+  gmem[zp3_b + 22] = -1;
+  gmem[zp3_b + 23] = -99;
+  gmem[zp3_b + 24] = zp3_harm;
+  gmem[zp3_b + 25] = ui_vog_active;
+  gmem[zp3_b + 26] = zp3_pres;
+  gmem[zp3_b + 27] = ui_air_active;
+  gmem[zp3_b + 28] = ui_dynamic_drive;
+  gmem[zp3_b + 29] = profile;
+  gmem[zp3_b + 30] = 0;
+  gmem[zp3_b + 31] = 0;
+  gmem[zp3_b] = 905301;
+  gmem[zp3_b + 1] = time_precise();
+  zp3_seq += 1;
+  gmem[zp3_b + 2] = zp3_seq;
+);
 update_engine_params();
 cur_play_state = play_state & 1;
 play_just_started = cur_play_state && !last_play_state;
