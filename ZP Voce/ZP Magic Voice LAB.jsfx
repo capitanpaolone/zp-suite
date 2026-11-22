@@ -16,8 +16,12 @@
 // @changelog
 //   v1.2.4: Hardware Insert (HW INS, slider57) a latenza zero con curva pre-dinamica e dispersione all-pass sui bassi
 //     calibrata su MagicFlow AU; Preamp aggiornato con curva di trasformatore reale e saturazione dispari H3 senza DC offset;
+//     banco interno a 5 firme hardware (slider58: GLUE, TUBE, IRON, BCAST, TAPE) per HW INS e Preamp (curve, all-pass, sag e H2/H3 con DC blocker);
+//     taratura fine GLUE/catena (EQ/LPF e all-pass 6 stadi riallineati in fase/ampiezza, compensazione spettrale DRC, Dynamic EQ B bassa, soglia Peak Leveler);
 //     LEGA OUTPUT su PEAK, DYN EQ, TONE e DYN BAL; memoria A/B salvata nel progetto; OUTPUT esteso a ±24 dB;
-//     telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (dinamica, tonalita', livelli e alert DELTA/SOLO).
+//     telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (dinamica, tonalita', livelli e alert DELTA/SOLO);
+//     restyling pannello hardware old-style (LED dedicati + targhette Dymo sulla striscia di catena e DRC,
+//     pulsanti tattili serigrafati su INSERT/PREAMP/FILTERS/SOLO/GAIN MATCH/DELTA/D·MOLLA e barra LED sui selettori).
 //   Pulsante ? (accanto a FULL/MINI/JSFX): apre la guida di Magic Voice LAB nell'help della Suite, tramite il Cue Navigator.
 //   Memoria A/B di lavoro (barra USCITA): LEGA mette lo stato slegato in A e si prova in B; A/B per confrontare, A=B per chiudere.
 //   LEGA OUTPUT su Peak Leveler, Dynamic EQ, Tone EQ e Dynamic Balance (riferimento: media degli ultimi secondi di voce): cambiando il modulo, la manopola OUTPUT si corregge di quanto il modulo
@@ -139,6 +143,7 @@ slider54:0<0,1,1{Off,On}>-Tone EQ Link Output
 slider55:0<0,1,1{Off,On}>-Dynamic EQ Link Output
 slider56:0<0,1,1{Off,On}>-Peak Leveler Link Output
 slider57:0<0,1,1{Off,On}>-Hardware Insert (Glue)
+slider58:0<0,4,1{Studio Glue (MagicFlow),Tube / VoxBox,Iron / 1073,Broadcast / VCA,Tape / Ribbon}>-Hardware Character
 
 @init
 ext_noinit = 1;
@@ -244,7 +249,11 @@ function lin2db(lin) ( 20 * log10(max(lin, 0.0000001)); );
 function clamp(v, mn, mx) ( max(mn, min(mx, v)); );
 
 // ---------------- State ----------------
-pre_env = 0; ins_gain_db = -0.3646; ins_gain_lin = db2lin(ins_gain_db);
+pre_env = 0; pre_dc_x1L = 0; pre_dc_x1R = 0; pre_dc_y1L = 0; pre_dc_y1R = 0;
+ins_gain_db = -0.0782; ins_gain_lin = db2lin(ins_gain_db); ins_ap5_en = 1;
+pre_gain_db = 0.0; pre_gain_lin = 1.0;
+pre_sag_k = 0.065; pre_k2 = 0.0; pre_k3 = 0.0024; pre_d3 = 0.5;
+pre_dc_r = exp(-2.0 * $pi * 5.0 / max(22050, srate));
 opt_env = 0; rcomp_env = 0;
 drcA_env = 0; drcB_env = 0; drcC_env = 0; drcD_env = 0;
 drcA_gr_db = 0; drcB_gr_db = 0; drcC_gr_db = 0; drcD_gr_db = 0;
@@ -266,7 +275,7 @@ av_db_ok = av_dq_ok = av_pk_ok = 0; av_Llo = av_Lmid = av_Lhi = -20; av_Q0 = av_
 av_W0 = 0.10; av_W1 = 0.30; av_W2 = 0.35; av_W3 = 0.18; av_W4 = 0.07; av_pklev = -10;
 // MEMORIA A/B di lavoro: tutti i parametri del suono (esclusi vista, tema, monitor, preset, DELTA, SOLO DRC)
 AB_MEM = 1000000; ab_list = AB_MEM + 500; AB_N = 0; ab_on = 0; ab_cur = 1;
-ab_i = 1; loop(57, (ab_i != 25 && ab_i != 39 && (ab_i <= 41 || ab_i >= 53)) ? ( ab_list[AB_N] = ab_i; AB_N += 1; ); ab_i += 1; );
+ab_i = 1; loop(58, (ab_i != 25 && ab_i != 39 && (ab_i <= 41 || ab_i >= 53)) ? ( ab_list[AB_N] = ab_i; AB_N += 1; ); ab_i += 1; );
 tp_prevL = 0; tp_prevR = 0; tp_gr = 1.0; tp_gr_smooth = 1.0; tp_meter_peak = 0;
 
 ui_rms_in_sq = 0; ui_rms_out_sq = 0; ui_rms_in_db = -60; ui_rms_out_db = -60;
@@ -337,7 +346,7 @@ function update_view_mode_visibility() local(s) (
   slider_show(slider45, s); slider_show(slider46, s); slider_show(slider47, s); slider_show(slider48, s);
   slider_show(slider49, s); slider_show(slider50, s);
   slider_show(slider51, s); slider_show(slider52, s);
-  slider_show(slider53, s); slider_show(slider54, s); slider_show(slider55, s); slider_show(slider56, s); slider_show(slider57, s);
+  slider_show(slider53, s); slider_show(slider54, s); slider_show(slider55, s); slider_show(slider56, s); slider_show(slider57, s); slider_show(slider58, s);
   prev_view_mode = floor(slider43 + 0.5);
 );
 
@@ -450,14 +459,16 @@ function apply_magic_preset(pid) (
     set_param_slider(36, 100); set_param_slider(37, 0.3);
   );
   set_param_slider(25, 0);
+  set_param_slider(58, 0);
 );
 
 // ---------------- Filtri ----------------
-function svf_bp_coeff(f_a, f_b, sr) local(lo, hi, fc, bw, w0) (
+function svf_bp_coeff(f_a, f_b, sr) local(lo, hi, fc, bw, w0, oct_w, sens_db) (
   lo = max(20, min(f_a, f_b));
   hi = max(lo + 20, max(f_a, f_b));
   fc = min(sqrt(lo * hi), sr * 0.44);
   bw = max(20, hi - lo);
+  oct_w = log(hi / lo) / log(2.0);
   this.q = clamp(fc / bw, 0.5, 12.0);
   w0 = 2 * $pi * fc / sr;
   this.g = tan(w0 * 0.5);
@@ -465,6 +476,9 @@ function svf_bp_coeff(f_a, f_b, sr) local(lo, hi, fc, bw, w0) (
   this.a1 = 1.0 / (1.0 + this.g * (this.g + this.k));
   this.a2 = this.g * this.a1;
   this.a3 = this.g * this.a2;
+  // Compensazione spettrale voce (BrownSlope): sensibilita' proporzionata a centro banda e larghezza
+  sens_db = clamp(log(fc / 250.0) / log(2.0), -2.5, 5.5) * 1.5 + clamp((1.0 - oct_w) * 0.9, -3.5, 2.5);
+  this.sens_lin = db2lin(sens_db);
 );
 function svf_bp_procL(x) local(v3, v1, v2) (
   v3 = x - this.ic2L;
@@ -654,16 +668,16 @@ function deq_ref_levels() (
 // Peak Leveler: makeup meno riduzione (Opto + RComp) al livello di picco medio della voce
 function pk_gain_db() local(amt, thr, L, go, gr) (
   slider7 >= 0.5 && slider6 > 0.1 ? (
-    amt = slider6 * 0.01; thr = -6.0 - amt * 22.0; L = lk_pklev + in_drive_db;
+    amt = slider6 * 0.01; thr = -9.5 - amt * 23.0; L = lk_pklev + in_drive_db;
     go = L > thr ? (L - thr) * 0.48 : 0; gr = L > thr + 2.5 ? (L - thr - 2.5) * 0.62 : 0;
-    min(5.0, amt * 3.4 + clamp(-in_drive_db, -4.0, 6.0) * 0.18) - min(16.0, go * 0.55 + gr * 0.45);
+    min(5.0, 0.10 + amt * 2.2 + clamp(-in_drive_db, -4.0, 6.0) * 0.08) - min(16.0, go * 0.55 + gr * 0.45);
   ) : 0;
 );
 function dbal_ref_levels() (
   av_db_ok ? ( lk_Llo = av_Llo; lk_Lmid = av_Lmid; lk_Lhi = av_Lhi; ) : ( lk_Llo = lk_Lmid = lk_Lhi = -20; );
 );
 
-function update_dsp_params() local(sr, w_hp, cw_hp, sw_hp, al_hp, a0_hp, w_lp, cw_lp, sw_lp, al_lp, a0_lp, eq_curve, eq_scale) (
+function update_dsp_params() local(sr, hw_prof, w_hp, cw_hp, sw_hp, al_hp, a0_hp, w_lp, cw_lp, sw_lp, al_lp, a0_lp, eq_curve, eq_scale) (
   sr = max(22050, srate);
   // Input Drive dritto (-12.0 .. +12.0 dB, default 0.0 dB): spinge i detector senza sbalzi sul percorso lineare
   in_drive_db = clamp(slider1, -12.0, 12.0);
@@ -681,25 +695,110 @@ function update_dsp_params() local(sr, w_hp, cw_hp, sw_hp, al_hp, a0_hp, w_lp, c
   lp_b0 = (1.0 - cw_lp) * 0.5 * a0_lp; lp_b1 = (1.0 - cw_lp) * a0_lp; lp_b2 = lp_b0;
   lp_a1 = -2.0 * cw_lp * a0_lp; lp_a2 = (1.0 - al_lp) * a0_lp;
 
-  // Hardware Insert (slider57): curva pre-dinamica e dispersione all-pass (MagicFlow AU Insert="1")
-  ins_eq1.bq_peaking(83.6,  0.207,  0.825, sr);
-  ins_eq2.bq_peaking(774.0, 0.310, -2.157, sr);
-  ins_lp1.bq_lpf(18000.0, 0.460, sr);
-  ins_lp2.bq_lpf(18000.0, 0.780, sr);
-  ins_gain_db = -0.3646;
+  // Banco firme hardware interno (slider58: 0=GLUE, 1=TUBE, 2=IRON, 3=BCAST, 4=TAPE)
+  // Profilo 0 identico bit-per-bit alla calibrazione MagicFlow AU; profili 1..4 allineati a 0.00 ± 0.03 dB RMS su parlato.
+  hw_prof = floor(clamp(slider58, 0, 4) + 0.5);
+  pre_dc_r = exp(-2.0 * $pi * 5.0 / sr);
+  hw_prof == 0 ? (
+    // 0 · STUDIO GLUE (MagicFlow AU Insert + Preamp)
+    ins_eq1.bq_peaking(82.5,   0.278,  0.531, sr);
+    ins_eq2.bq_peaking(854.2,  0.301, -2.326, sr);
+    ins_lp1.bq_lpf(17146.0, 0.447, sr);
+    ins_lp2.bq_lpf(18574.0, 0.866, sr);
+    ins_gain_db = -0.0782;
+    ins_ap1.bq_ap2(87.1,   0.852, sr);
+    ins_ap2.bq_ap2(176.0,  0.698, sr);
+    ins_ap3.bq_ap2(596.1,  0.709, sr);
+    ins_ap4.bq_ap2(1102.6, 0.563, sr);
+    ins_ap5.bq_ap2(1280.6, 0.573, sr);
+    ins_ap6.bq_ap2(6504.8, 0.676, sr);
+    ins_ap5_en = 1;
+    pre_b1.bq_peaking(53.0,   1.129,  2.846, sr);
+    pre_b2.bq_peaking(114.3,  0.454, -0.785, sr);
+    pre_b3.bq_peaking(1681.9, 1.309,  0.715, sr);
+    pre_b4.bq_hshelf(3113.7,  0.397,  0.642, sr);
+    pre_gain_db = 0.0;
+    pre_att = exp(-1.0 / (sr * 0.0015)); pre_rel = exp(-1.0 / (sr * 0.025));
+    pre_sag_k = 0.065; pre_k2 = 0.0; pre_k3 = 0.0024; pre_d3 = 0.5;
+  ) : hw_prof == 1 ? (
+    // 1 · TUBE / VOXBOX (calore valvolare Classe A, prevalenza H2, sag morbido, alte setose)
+    ins_eq1.bq_peaking(125.0,  0.550,  1.500, sr);
+    ins_eq2.bq_peaking(3100.0, 0.750, -1.300, sr);
+    ins_lp1.bq_lpf(19500.0, 0.500, sr);
+    ins_lp2.bq_peaking(9500.0, 0.550,  0.900, sr);
+    ins_gain_db = -0.400;
+    ins_ap1.bq_ap2(62.0,   0.650, sr);
+    ins_ap2.bq_ap2(165.0,  0.700, sr);
+    ins_ap3.bq_ap2(480.0,  0.750, sr);
+    ins_ap4.bq_ap2(1400.0, 0.700, sr);
+    ins_ap5_en = 0;
+    pre_b1.bq_peaking(95.0,   0.650,  1.600, sr);
+    pre_b2.bq_peaking(420.0,  0.600, -0.800, sr);
+    pre_b3.bq_peaking(2400.0, 0.800, -0.550, sr);
+    pre_b4.bq_hshelf(8500.0,  0.550,  1.150, sr);
+    pre_gain_db = 0.080;
+    pre_att = exp(-1.0 / (sr * 0.0030)); pre_rel = exp(-1.0 / (sr * 0.055));
+    pre_sag_k = 0.140; pre_k2 = 0.014; pre_k3 = 0.0045; pre_d3 = 0.6;
+  ) : hw_prof == 2 ? (
+    // 2 · IRON / 1073 (trasformatore ferro britannico: peso bassi, medi avanti, H3 decisa + tocco H2)
+    ins_eq1.bq_peaking(92.0,   0.650,  1.750, sr);
+    ins_eq2.bq_peaking(340.0,  0.700, -1.400, sr);
+    ins_lp1.bq_peaking(1850.0, 0.750,  1.350, sr);
+    ins_lp2.bq_lpf(16500.0, 0.650, sr);
+    ins_gain_db = -0.100;
+    ins_ap1.bq_ap2(58.0,   0.850, sr);
+    ins_ap2.bq_ap2(185.0,  0.820, sr);
+    ins_ap3.bq_ap2(720.0,  0.880, sr);
+    ins_ap4.bq_ap2(2200.0, 0.820, sr);
+    ins_ap5_en = 0;
+    pre_b1.bq_peaking(68.0,   0.850,  2.100, sr);
+    pre_b2.bq_peaking(260.0,  0.650, -0.750, sr);
+    pre_b3.bq_peaking(1900.0, 0.900,  1.150, sr);
+    pre_b4.bq_hshelf(9500.0,  0.600, -0.750, sr);
+    pre_gain_db = -0.170;
+    pre_att = exp(-1.0 / (sr * 0.0012)); pre_rel = exp(-1.0 / (sr * 0.022));
+    pre_sag_k = 0.110; pre_k2 = 0.006; pre_k3 = 0.0110; pre_d3 = 0.75;
+  ) : hw_prof == 3 ? (
+    // 3 · BROADCAST / VCA (stato solido pulito, bassi asciutti, articolazione 3.2 kHz, THD bassissima)
+    ins_eq1.bq_peaking(140.0,  0.700, -1.100, sr);
+    ins_eq2.bq_peaking(520.0,  0.650, -0.900, sr);
+    ins_lp1.bq_peaking(3400.0, 0.800,  1.250, sr);
+    ins_lp2.bq_lpf(19500.0, 0.700, sr);
+    ins_gain_db = 0.580;
+    ins_ap1.bq_ap2(110.0,  0.450, sr);
+    ins_ap2.bq_ap2(380.0,  0.500, sr);
+    ins_ap3.bq_ap2(1200.0, 0.500, sr);
+    ins_ap4.bq_ap2(3400.0, 0.500, sr);
+    ins_ap5_en = 0;
+    pre_b1.bq_peaking(85.0,   0.900,  0.600, sr);
+    pre_b2.bq_peaking(320.0,  0.750, -0.650, sr);
+    pre_b3.bq_peaking(3200.0, 0.950,  0.950, sr);
+    pre_b4.bq_hshelf(7500.0,  0.650,  0.550, sr);
+    pre_gain_db = 0.050;
+    pre_att = exp(-1.0 / (sr * 0.0008)); pre_rel = exp(-1.0 / (sr * 0.015));
+    pre_sag_k = 0.025; pre_k2 = 0.0; pre_k3 = 0.0008; pre_d3 = 0.4;
+  ) : (
+    // 4 · TAPE / RIBBON (head-bump 15 IPS, roll-off dolce in alto, compressione morbida picchi e H3 calda)
+    ins_eq1.bq_peaking(88.0,   0.850,  1.800, sr);
+    ins_eq2.bq_peaking(4200.0, 0.650, -1.100, sr);
+    ins_lp1.bq_hshelf(9500.0,  0.550, -2.400, sr);
+    ins_lp2.bq_lpf(18000.0, 0.550, sr);
+    ins_gain_db = -0.220;
+    ins_ap1.bq_ap2(68.0,   0.750, sr);
+    ins_ap2.bq_ap2(210.0,  0.800, sr);
+    ins_ap3.bq_ap2(680.0,  0.850, sr);
+    ins_ap4.bq_ap2(2400.0, 0.800, sr);
+    ins_ap5_en = 0;
+    pre_b1.bq_peaking(82.0,   0.900,  1.500, sr);
+    pre_b2.bq_peaking(290.0,  0.600,  0.450, sr);
+    pre_b3.bq_peaking(5200.0, 0.700, -0.950, sr);
+    pre_b4.bq_hshelf(9000.0,  0.550, -1.650, sr);
+    pre_gain_db = -0.380;
+    pre_att = exp(-1.0 / (sr * 0.0009)); pre_rel = exp(-1.0 / (sr * 0.035));
+    pre_sag_k = 0.160; pre_k2 = 0.003; pre_k3 = 0.0135; pre_d3 = 0.85;
+  );
   ins_gain_lin = db2lin(ins_gain_db);
-  ins_ap1.bq_ap2(73.6,   0.780, sr);
-  ins_ap2.bq_ap2(197.7,  0.787, sr);
-  ins_ap3.bq_ap2(634.8,  0.926, sr);
-  ins_ap4.bq_ap2(1733.1, 0.860, sr);
-
-  // Preamp (slider5): curva di trasformatore reale + costanti cushion per saturazione H3
-  pre_b1.bq_peaking(53.0,   1.129,  2.846, sr);
-  pre_b2.bq_peaking(114.3,  0.454, -0.785, sr);
-  pre_b3.bq_peaking(1681.9, 1.309,  0.715, sr);
-  pre_b4.bq_hshelf(3113.7,  0.397,  0.642, sr);
-  pre_att = exp(-1.0 / (sr * 0.0015));
-  pre_rel = exp(-1.0 / (sr * 0.025));
+  pre_gain_lin = db2lin(pre_gain_db);
 
   opt_att = exp(-1.0 / (sr * 0.018)); opt_rel = exp(-1.0 / (sr * 0.240));
   rc_att  = exp(-1.0 / (sr * 0.0035)); rc_rel  = exp(-1.0 / (sr * 0.085));
@@ -735,8 +834,8 @@ function update_dsp_params() local(sr, w_hp, cw_hp, sw_hp, al_hp, a0_hp, w_lp, c
     T50_4=-32; S50_4=0.15; M50_4=3.5;  T100_4=-30; S100_4=0.55; M100_4=13.0;
   ) : deq_c == 1 ? (
     // Curve B (Warm Control / MAGIC 1 / Female LD / Podcast1)
-    T50_0=-58; S50_0=0.30; M50_0=4.0;  T100_0=-58; S100_0=0.70; M100_0=16.0;
-    T50_1=-38; S50_1=0.20; M50_1=6.5;  T100_1=-36; S100_1=0.60; M100_1=17.5;
+    T50_0=-44; S50_0=0.30; M50_0=4.0;  T100_0=-48; S100_0=0.70; M100_0=16.0;
+    T50_1=-34; S50_1=0.20; M50_1=6.5;  T100_1=-36; S100_1=0.60; M100_1=17.5;
     T50_2=-24; S50_2=0.25; M50_2=4.0;  T100_2=-26; S100_2=0.60; M100_2=12.0;
     T50_3=-32; S50_3=0.20; M50_3=4.0;  T100_3=-32; S100_3=0.55; M100_3=14.0;
     T50_4=-40; S50_4=0.15; M50_4=5.0;  T100_4=-38; S100_4=0.50; M100_4=15.0;
@@ -1004,6 +1103,7 @@ mix_dryL = dryL; mix_dryR = dryR;
 slider57 >= 0.5 ? (
   xL = ins_ap1.bq_procL(xL); xL = ins_ap2.bq_procL(xL); xL = ins_ap3.bq_procL(xL); xL = ins_ap4.bq_procL(xL);
   xR = ins_ap1.bq_procR(xR); xR = ins_ap2.bq_procR(xR); xR = ins_ap3.bq_procR(xR); xR = ins_ap4.bq_procR(xR);
+  ins_ap5_en ? ( xL = ins_ap5.bq_procL(xL); xR = ins_ap5.bq_procR(xR); xL = ins_ap6.bq_procL(xL); xR = ins_ap6.bq_procR(xR); );
   slider36 > 0.1 ? ( mix_dryL = xL; mix_dryR = xR; );
   xL = ins_eq1.bq_procL(xL); xL = ins_eq2.bq_procL(xL); xL = ins_lp1.bq_procL(xL); xL = ins_lp2.bq_procL(xL);
   xR = ins_eq1.bq_procR(xR); xR = ins_eq2.bq_procR(xR); xR = ins_lp1.bq_procR(xR); xR = ins_lp2.bq_procR(xR);
@@ -1026,19 +1126,29 @@ s_flt_dL = xL - s_flt_inL; s_flt_dR = xR - s_flt_inR;
 
 s_pre_inL = xL; s_pre_inR = xR;
 slider5 >= 0.5 ? (
-  xL = pre_b1.bq_procL(xL); xL = pre_b2.bq_procL(xL); xL = pre_b3.bq_procL(xL); xL = pre_b4.bq_procL(xL);
-  xR = pre_b1.bq_procR(xR); xR = pre_b2.bq_procR(xR); xR = pre_b3.bq_procR(xR); xR = pre_b4.bq_procR(xR);
+  xL = pre_b1.bq_procL(xL); xL = pre_b2.bq_procL(xL); xL = pre_b3.bq_procL(xL); xL = pre_b4.bq_procL(xL) * pre_gain_lin;
+  xR = pre_b1.bq_procR(xR); xR = pre_b2.bq_procR(xR); xR = pre_b3.bq_procR(xR); xR = pre_b4.bq_procR(xR) * pre_gain_lin;
   pL = xL * in_drive_lin; pR = xR * in_drive_lin;
   pre_lvl = max(abs(pL), abs(pR));
   pre_env = pre_lvl > pre_env ? (pre_att * pre_env + (1 - pre_att) * pre_lvl) : (pre_rel * pre_env + (1 - pre_rel) * pre_lvl);
-  pre_sag = 1.0 / (1.0 + 0.065 * pre_env * pre_env);
+  pre_sag = 1.0 / (1.0 + pre_sag_k * pre_env * pre_env);
   pL *= pre_sag; pR *= pre_sag;
-  pL = pL - (0.0024 * pL * pL * pL) / (1.0 + 0.5 * pL * pL);
-  pR = pR - (0.0024 * pR * pR * pR) / (1.0 + 0.5 * pR * pR);
+  pre_k2 > 0 ? (
+    pL = pL + (pre_k2 * pL * pL) / (1.0 + 0.8 * abs(pL));
+    pR = pR + (pre_k2 * pR * pR) / (1.0 + 0.8 * abs(pR));
+  );
+  pL = pL - (pre_k3 * pL * pL * pL) / (1.0 + pre_d3 * pL * pL);
+  pR = pR - (pre_k3 * pR * pR * pR) / (1.0 + pre_d3 * pR * pR);
+  pre_k2 > 0 ? (
+    pre_nyL = pL - pre_dc_x1L + pre_dc_r * pre_dc_y1L; pre_dc_x1L = pL; pre_dc_y1L = pre_nyL; pL = pre_nyL;
+    pre_nyR = pR - pre_dc_x1R + pre_dc_r * pre_dc_y1R; pre_dc_x1R = pR; pre_dc_y1R = pre_nyR; pR = pre_nyR;
+  ) : (
+    pre_dc_x1L = 0; pre_dc_x1R = 0; pre_dc_y1L = 0; pre_dc_y1R = 0;
+  );
   xL = pL / max(0.25, in_drive_lin);
   xR = pR / max(0.25, in_drive_lin);
 ) : (
-  pre_env *= 0.99;
+  pre_env *= 0.99; pre_dc_x1L = 0; pre_dc_x1R = 0; pre_dc_y1L = 0; pre_dc_y1R = 0;
 );
 s_pre_dL = xL - s_pre_inL; s_pre_dR = xR - s_pre_inR;
 
@@ -1049,15 +1159,15 @@ slider7 >= 0.5 && slider6 > 0.1 ? (
   opt_env = in_abs > opt_env ? (opt_att * opt_env + (1 - opt_att) * in_abs) : (opt_rel * opt_env + (1 - opt_rel) * in_abs);
   rcomp_env = in_abs > rcomp_env ? (rc_att * rcomp_env + (1 - rc_att) * in_abs) : (rc_rel * rcomp_env + (1 - rc_rel) * in_abs);
   pk_amt = slider6 * 0.01;
-  pk_thr_db = -6.0 - pk_amt * 22.0;
+  pk_thr_db = -9.5 - pk_amt * 23.0;
   opt_db = lin2db(opt_env);
   rc_db  = lin2db(rcomp_env);
   gr_opt_db = opt_db > pk_thr_db ? (opt_db - pk_thr_db) * 0.48 : 0.0;
   gr_rc_db  = rc_db  > (pk_thr_db + 2.5) ? (rc_db - (pk_thr_db + 2.5)) * 0.62 : 0.0;
   c_opt = gr_opt_db * 0.55; c_rc = gr_rc_db * 0.45;
   tot_pk_gr_db = min(16.0, c_opt + c_rc);
-  // Makeup ottico misurato su MagicFlow AU (+1.5 dB con PeakRed 39.7% e Input -3.3 dB)
-  pk_makeup_db = min(5.0, pk_amt * 3.4 + clamp(-in_drive_db, -4.0, 6.0) * 0.18);
+  // Makeup ottico calibrato su MagicFlow AU e voce parlata
+  pk_makeup_db = min(5.0, 0.10 + pk_amt * 2.2 + clamp(-in_drive_db, -4.0, 6.0) * 0.08);
   pk_gain = db2lin(-tot_pk_gr_db + pk_makeup_db);
   xL *= pk_gain; xR *= pk_gain;
   ui_peak_gr_db = ui_peak_gr_db * 0.995 + tot_pk_gr_db * 0.005;
@@ -1078,34 +1188,34 @@ bDL = drcD.svf_bp_procL(xL); bDR = drcD.svf_bp_procR(xR);
 
 slider8 >= 0.5 ? (
   slider9 >= 0.5 && slider12 > 0.1 ? (
-    eA = max(abs(bAL), abs(bAR)) * in_drive_lin;
+    eA = max(abs(bAL), abs(bAR)) * in_drive_lin * drcA.sens_lin;
     drcA_env = eA > drcA_env ? (drc_att * drcA_env + (1 - drc_att) * eA) : (drc_rel * drcA_env + (1 - drc_rel) * eA);
-    ovA = lin2db(drcA_env) - (-10.0 - (slider12 * 0.01) * 32.0);
-    drcA_gr_db = ovA > 0 ? min(12.0, ovA * 0.72) : 0;
+    ovA = lin2db(drcA_env) - (-10.0 - (slider12 * 0.01) * 30.0);
+    drcA_gr_db = ovA > 0 ? min(12.0, ovA * 0.65) : 0;
     redA = 1.0 - db2lin(-drcA_gr_db);
     xL -= bAL * redA; xR -= bAR * redA;
   ) : ( drcA_gr_db = 0; redA = 0; );
   slider13 >= 0.5 && slider16 > 0.1 ? (
-    eB = max(abs(bBL), abs(bBR)) * in_drive_lin;
+    eB = max(abs(bBL), abs(bBR)) * in_drive_lin * drcB.sens_lin;
     drcB_env = eB > drcB_env ? (drc_att * drcB_env + (1 - drc_att) * eB) : (drc_rel * drcB_env + (1 - drc_rel) * eB);
-    ovB = lin2db(drcB_env) - (-8.0 - (slider16 * 0.01) * 30.0);
-    drcB_gr_db = ovB > 0 ? min(10.0, ovB * 0.65) : 0;
+    ovB = lin2db(drcB_env) - (-10.0 - (slider16 * 0.01) * 30.0);
+    drcB_gr_db = ovB > 0 ? min(12.0, ovB * 0.65) : 0;
     redB = 1.0 - db2lin(-drcB_gr_db);
     xL -= bBL * redB; xR -= bBR * redB;
   ) : ( drcB_gr_db = 0; redB = 0; );
   slider17 >= 0.5 && slider20 > 0.1 ? (
-    eC = max(abs(bCL), abs(bCR)) * in_drive_lin;
+    eC = max(abs(bCL), abs(bCR)) * in_drive_lin * drcC.sens_lin;
     drcC_env = eC > drcC_env ? (drc_att * drcC_env + (1 - drc_att) * eC) : (drc_rel * drcC_env + (1 - drc_rel) * eC);
     ovC = lin2db(drcC_env) - (-10.0 - (slider20 * 0.01) * 30.0);
-    drcC_gr_db = ovC > 0 ? min(10.0, ovC * 0.68) : 0;
+    drcC_gr_db = ovC > 0 ? min(12.0, ovC * 0.65) : 0;
     redC = 1.0 - db2lin(-drcC_gr_db);
     xL -= bCL * redC; xR -= bCR * redC;
   ) : ( drcC_gr_db = 0; redC = 0; );
   slider21 >= 0.5 && slider24 > 0.1 ? (
-    eD = max(abs(bDL), abs(bDR)) * in_drive_lin;
+    eD = max(abs(bDL), abs(bDR)) * in_drive_lin * drcD.sens_lin;
     drcD_env = eD > drcD_env ? (drc_att * drcD_env + (1 - drc_att) * eD) : (drc_rel * drcD_env + (1 - drc_rel) * eD);
-    ovD = lin2db(drcD_env) - (-12.0 - (slider24 * 0.01) * 32.0);
-    drcD_gr_db = ovD > 0 ? min(12.0, ovD * 0.72) : 0;
+    ovD = lin2db(drcD_env) - (-10.0 - (slider24 * 0.01) * 30.0);
+    drcD_gr_db = ovD > 0 ? min(12.0, ovD * 0.65) : 0;
     redD = 1.0 - db2lin(-drcD_gr_db);
     xL -= bDL * redD; xR -= bDR * redD;
   ) : ( drcD_gr_db = 0; redD = 0; );
@@ -1407,6 +1517,7 @@ gfx_setfont(4, "Arial", 13.5 * sc, 'b');
 gfx_setfont(5, "Arial", 13 * sc);
 gfx_setfont(6, "Arial", 12 * sc, 'b');
 gfx_setfont(7, "Arial", 11.5 * sc);
+gfx_setfont(8, "Arial", 11 * sc, 'b');
 
 show_simple ? (
   bg_r = 0.92; bg_g = 0.94; bg_b = 0.97;
@@ -1601,42 +1712,270 @@ function draw_meter_h(x, y, w, h, val_pct, rr, gg, bb) local(fill) (
   fill = clamp(w * val_pct * 0.01, 0, w);
   fill > 0 ? ( gfx_r = rr; gfx_g = gg; gfx_b = bb; gfx_a = 0.98; g_rect(x, y, fill, h); );
 );
-function btn_face(bx, by, bw, bh, label, is_on, is_hover, cr, cg, cb) local(th) (
-  is_on ? ( gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = 0.95; ) :
-          ( gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 1;
-            is_hover ? ( gfx_r += 0.06; gfx_g += 0.06; gfx_b += 0.06; ); );
-  g_rect(bx, by, bw, bh);
-  gfx_r = is_hover ? min(1, cr + 0.2) : line_r; gfx_g = is_hover ? min(1, cg + 0.2) : line_g; gfx_b = is_hover ? min(1, cb + 0.2) : line_b; gfx_a = 0.95;
-  g_frame(bx, by, bw, bh);
-  gfx_setfont(6);
-  is_on ? ( gfx_r = 0.04; gfx_g = 0.05; gfx_b = 0.07; gfx_a = 1; ) : set_text_col();
-  th = g_th();
-  g_txtc(bx + bw * 0.5, by + (bh - th) * 0.5, label);
+function draw_hw_led(hw_x, hw_y, hw_r, is_on, is_hover, cr, cg, cb) local(hw_bzr, hw_bzg, hw_bzb, hw_rmr, hw_rmg, hw_rmb, hw_dr, hw_dg, hw_db) (
+  // Ghiera metallica esterna del LED
+  show_simple ? (
+    hw_bzr = 0.28; hw_bzg = 0.33; hw_bzb = 0.40;
+    hw_rmr = 0.58; hw_rmg = 0.64; hw_rmb = 0.72;
+  ) : (
+    hw_bzr = 0.03; hw_bzg = 0.04; hw_bzb = 0.05;
+    hw_rmr = 0.34; hw_rmg = 0.38; hw_rmb = 0.45;
+  );
+  gfx_r = hw_bzr; gfx_g = hw_bzg; gfx_b = hw_bzb; gfx_a = 0.98;
+  g_circ(hw_x, hw_y, hw_r + 1.6, 1);
+  gfx_r = hw_rmr; gfx_g = hw_rmg; gfx_b = hw_rmb; gfx_a = 0.80;
+  g_circ(hw_x, hw_y, hw_r + 1.6, 0);
+  is_on ? (
+    gfx_r = cr; gfx_g = cg; gfx_b = cb;
+    gfx_a = show_simple ? 0.22 : 0.28;
+    g_circ(hw_x, hw_y, hw_r + 3.8, 1);
+    gfx_a = 0.42;
+    g_circ(hw_x, hw_y, hw_r + 1.9, 1);
+    gfx_r = min(1, cr * 1.15 + 0.08); gfx_g = min(1, cg * 1.15 + 0.08); gfx_b = min(1, cb * 1.15 + 0.08);
+    gfx_a = 1;
+    g_circ(hw_x, hw_y, hw_r, 1);
+    gfx_r = min(1, cr * 0.45 + 0.55); gfx_g = min(1, cg * 0.45 + 0.55); gfx_b = min(1, cb * 0.45 + 0.55);
+    gfx_a = 0.62;
+    g_circ(hw_x - hw_r * 0.14, hw_y - hw_r * 0.14, hw_r * 0.46, 1);
+    gfx_r = 1; gfx_g = 1; gfx_b = 1; gfx_a = 0.88;
+    g_circ(hw_x - hw_r * 0.34, hw_y - hw_r * 0.34, max(0.75, hw_r * 0.22), 1);
+  ) : (
+    show_simple ? (
+      hw_dr = 0.20 + cr * 0.16; hw_dg = 0.23 + cg * 0.16; hw_db = 0.27 + cb * 0.16;
+    ) : (
+      hw_dr = 0.07 + cr * 0.14; hw_dg = 0.08 + cg * 0.14; hw_db = 0.10 + cb * 0.14;
+    );
+    is_hover ? ( hw_dr = min(1, hw_dr + 0.08); hw_dg = min(1, hw_dg + 0.08); hw_db = min(1, hw_db + 0.08); );
+    gfx_r = hw_dr; gfx_g = hw_dg; gfx_b = hw_db; gfx_a = 1;
+    g_circ(hw_x, hw_y, hw_r, 1);
+    gfx_r = 1; gfx_g = 1; gfx_b = 1; gfx_a = is_hover ? 0.34 : 0.22;
+    g_circ(hw_x - hw_r * 0.32, hw_y - hw_r * 0.32, max(0.65, hw_r * 0.18), 1);
+  );
 );
-// LEGA OUTPUT: pulsante sulla riga del titolo del modulo; acceso mostra quanto il modulo sta togliendo/dando a OUTPUT
-function ui_link_btn(sl_idx, bx, by, comp_db, info_id, cr, cg, cb) local(is_on, is_hover, gdb) (
+
+function draw_dymo_plate(hw_x, hw_y, hw_w, hw_h, lbl, is_on, is_hover, cr, cg, cb, hw_font, hw_acc) local(hw_br, hw_bg, hw_bb, hw_th) (
+  // Ombra aderente della fascetta vinilica Dymo sulla lamiera
+  gfx_r = 0.03; gfx_g = 0.04; gfx_b = 0.05; gfx_a = show_simple ? 0.42 : 0.78;
+  g_rect(hw_x + 1, hw_y + 1, hw_w, hw_h);
+  is_on ? (
+    hw_br = show_simple ? 0.11 : 0.07; hw_bg = show_simple ? 0.12 : 0.08; hw_bb = show_simple ? 0.14 : 0.10;
+  ) : (
+    hw_br = show_simple ? 0.20 : 0.11; hw_bg = show_simple ? 0.22 : 0.12; hw_bb = show_simple ? 0.25 : 0.14;
+  );
+  is_hover ? ( hw_br += 0.04; hw_bg += 0.04; hw_bb += 0.04; );
+  gfx_r = hw_br; gfx_g = hw_bg; gfx_b = hw_bb; gfx_a = 0.98;
+  g_rect(hw_x, hw_y, hw_w, hw_h);
+  // Riflesso satinato superiore
+  gfx_r = 1; gfx_g = 1; gfx_b = 1; gfx_a = 0.06;
+  g_rect(hw_x + 1, hw_y + 1, hw_w - 2, 1);
+  // Bordo targhetta
+  is_hover ? (
+    gfx_r = min(1, cr + 0.18); gfx_g = min(1, cg + 0.18); gfx_b = min(1, cb + 0.18); gfx_a = 0.92;
+  ) : is_on ? (
+    gfx_r = cr * 0.60; gfx_g = cg * 0.60; gfx_b = cb * 0.60; gfx_a = 0.70;
+  ) : (
+    gfx_r = show_simple ? 0.40 : 0.27; gfx_g = show_simple ? 0.44 : 0.30; gfx_b = show_simple ? 0.49 : 0.35; gfx_a = 0.72;
+  );
+  g_frame(hw_x, hw_y, hw_w, hw_h);
+  // Eventuale filetto di banda (es. bande DRC A..D)
+  hw_acc >= 0.5 ? (
+    gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = is_on ? 0.92 : 0.32;
+    g_rect(hw_x + 1, hw_y + hw_h - 2, hw_w - 2, 2);
+  );
+  gfx_setfont(hw_font);
+  is_on ? (
+    gfx_r = 0.96; gfx_g = 0.95; gfx_b = 0.90; gfx_a = 1;
+  ) : (
+    gfx_r = is_hover ? 0.90 : 0.66; gfx_g = is_hover ? 0.90 : 0.68; gfx_b = is_hover ? 0.88 : 0.72; gfx_a = 1;
+  );
+  hw_th = g_th();
+  g_txtc(hw_x + hw_w * 0.5, hw_y + (hw_h - hw_th) * 0.5 - (hw_acc >= 0.5 ? 0.5 : 0), lbl);
+);
+
+function draw_hw_pushcap(hw_x, hw_y, hw_w, hw_h, is_on, is_hover, cr, cg, cb, enabled) local(hw_br, hw_bg, hw_bb, hw_lw, hw_lh) (
+  // Sede incassata
+  gfx_r = show_simple ? 0.46 : 0.03; gfx_g = show_simple ? 0.51 : 0.04; gfx_b = show_simple ? 0.58 : 0.05;
+  gfx_a = enabled ? 0.92 : 0.40;
+  g_rect(hw_x - 1, hw_y - 1, hw_w + 2, hw_h + 2);
+  // Corpo tasto tattile (incassato se is_on, sollevato con smusso se spento)
+  is_on ? (
+    hw_br = show_simple ? 0.66 : 0.14; hw_bg = show_simple ? 0.70 : 0.16; hw_bb = show_simple ? 0.75 : 0.19;
+  ) : (
+    hw_br = show_simple ? 0.82 : 0.22; hw_bg = show_simple ? 0.85 : 0.25; hw_bb = show_simple ? 0.89 : 0.29;
+  );
+  is_hover && enabled ? ( hw_br += 0.05; hw_bg += 0.05; hw_bb += 0.05; );
+  gfx_r = min(1, hw_br); gfx_g = min(1, hw_bg); gfx_b = min(1, hw_bb);
+  gfx_a = enabled ? 1 : 0.42;
+  g_rect(hw_x, hw_y, hw_w, hw_h);
+  // Smusso 3D
+  is_on ? (
+    gfx_r = 0; gfx_g = 0; gfx_b = 0; gfx_a = enabled ? 0.38 : 0.18;
+    g_rect(hw_x, hw_y, hw_w, 1); g_rect(hw_x, hw_y, 1, hw_h);
+    gfx_r = 1; gfx_g = 1; gfx_b = 1; gfx_a = enabled ? 0.10 : 0.05;
+    g_rect(hw_x + 1, hw_y + hw_h - 1, hw_w - 1, 1);
+  ) : (
+    gfx_r = 1; gfx_g = 1; gfx_b = 1; gfx_a = enabled ? (show_simple ? 0.65 : 0.16) : 0.06;
+    g_rect(hw_x, hw_y, hw_w - 1, 1); g_rect(hw_x, hw_y, 1, hw_h - 1);
+    gfx_r = 0; gfx_g = 0; gfx_b = 0; gfx_a = enabled ? 0.35 : 0.15;
+    g_rect(hw_x + 1, hw_y + hw_h - 1, hw_w - 1, 1);
+  );
+  is_hover && enabled ? (
+    gfx_r = min(1, cr + 0.18); gfx_g = min(1, cg + 0.18); gfx_b = min(1, cb + 0.18); gfx_a = 0.88;
+  ) : is_on && enabled ? (
+    gfx_r = cr * 0.80; gfx_g = cg * 0.80; gfx_b = cb * 0.80; gfx_a = 0.82;
+  ) : (
+    gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = enabled ? 0.78 : 0.35;
+  );
+  g_frame(hw_x, hw_y, hw_w, hw_h);
+  // Finestrella LED interna nella parte alta del tasto
+  hw_lw = max(6, hw_w - 6); hw_lh = 3.5;
+  is_on && enabled ? (
+    gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = 0.28;
+    g_rect(hw_x + 1, hw_y + 1, hw_w - 2, 7);
+    gfx_r = min(1, cr * 1.15 + 0.10); gfx_g = min(1, cg * 1.15 + 0.10); gfx_b = min(1, cb * 1.15 + 0.10); gfx_a = 1;
+    g_rect(hw_x + 3, hw_y + 3, hw_lw, hw_lh);
+    gfx_r = 1; gfx_g = 1; gfx_b = 1; gfx_a = 0.55;
+    g_rect(hw_x + 4, hw_y + 3, max(2, hw_lw - 4), 1);
+  ) : (
+    gfx_r = show_simple ? (0.36 + cr * 0.16) : (0.08 + cr * 0.15);
+    gfx_g = show_simple ? (0.38 + cg * 0.16) : (0.09 + cg * 0.15);
+    gfx_b = show_simple ? (0.42 + cb * 0.16) : (0.11 + cb * 0.15);
+    gfx_a = enabled ? 0.88 : 0.32;
+    g_rect(hw_x + 3, hw_y + 3, hw_lw, hw_lh);
+  );
+);
+
+function hw_key_face_ex(bx, by, bw, bh, lbl, is_on, is_hover, cr, cg, cb, hw_fnt, hw_dim) local(hw_br, hw_bg, hw_bb, hw_bar, hw_th) (
+  show_simple ? (
+    is_on ? (
+      hw_br = min(1, 0.83 + cr * 0.08); hw_bg = min(1, 0.86 + cg * 0.08); hw_bb = min(1, 0.90 + cb * 0.08);
+    ) : (
+      hw_br = 0.93; hw_bg = 0.95; hw_bb = 0.97;
+    );
+    is_hover ? ( hw_br -= 0.04; hw_bg -= 0.04; hw_bb -= 0.04; );
+  ) : (
+    is_on ? (
+      hw_br = 0.10 + cr * 0.08; hw_bg = 0.12 + cg * 0.08; hw_bb = 0.16 + cb * 0.08;
+    ) : (
+      hw_br = panel2_r - 0.01; hw_bg = panel2_g - 0.01; hw_bb = panel2_b - 0.01;
+    );
+    is_hover ? ( hw_br += 0.05; hw_bg += 0.05; hw_bb += 0.05; );
+  );
+  gfx_r = hw_br; gfx_g = hw_bg; gfx_b = hw_bb; gfx_a = 1;
+  g_rect(bx, by, bw, bh);
+  hw_bar = bh < 20 ? 2 : 3;
+  is_on ? (
+    gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = hw_dim >= 0.5 ? 0.42 : 0.98;
+    g_rect(bx + 1, by + 1, bw - 2, hw_bar);
+    gfx_a = hw_dim >= 0.5 ? 0.08 : 0.16;
+    g_rect(bx + 1, by + 1 + hw_bar, bw - 2, 2);
+  ) : (
+    gfx_r = cr * 0.35 + (show_simple ? 0.30 : 0.06);
+    gfx_g = cg * 0.35 + (show_simple ? 0.32 : 0.07);
+    gfx_b = cb * 0.35 + (show_simple ? 0.35 : 0.08);
+    gfx_a = is_hover ? 0.65 : 0.34;
+    g_rect(bx + 1, by + 1, bw - 2, hw_bar);
+  );
+  is_hover ? (
+    gfx_r = min(1, cr + 0.18); gfx_g = min(1, cg + 0.18); gfx_b = min(1, cb + 0.18); gfx_a = 0.92;
+  ) : is_on ? (
+    gfx_r = cr * 0.78; gfx_g = cg * 0.78; gfx_b = cb * 0.78; gfx_a = hw_dim >= 0.5 ? 0.48 : 0.85;
+  ) : (
+    gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.88;
+  );
+  g_frame(bx, by, bw, bh);
+  gfx_setfont(hw_fnt);
+  is_on ? (
+    show_simple ? ( gfx_r = 0.08; gfx_g = 0.10; gfx_b = 0.14; ) : ( gfx_r = 0.96; gfx_g = 0.97; gfx_b = 0.99; );
+    gfx_a = hw_dim >= 0.5 ? 0.65 : 1;
+  ) : (
+    set_text_col();
+    gfx_a = is_hover ? 1.0 : (hw_dim >= 0.5 ? 0.62 : 0.86);
+  );
+  hw_th = g_th();
+  g_txtc(bx + bw * 0.5, by + (bh - hw_th) * 0.5 + 1.0, lbl);
+);
+
+function hw_key_face(bx, by, bw, bh, lbl, is_on, is_hover, cr, cg, cb) (
+  hw_key_face_ex(bx, by, bw, bh, lbl, is_on, is_hover, cr, cg, cb, 6, 0);
+);
+
+function ui_hw_push_face(bx, by, bw, bh, lbl, is_on, is_hover, cr, cg, cb, enabled) local(hw_cap, hw_tw, hw_th, hw_sx, hw_cy) (
+  is_hover && enabled ? (
+    gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = show_simple ? 0.10 : 0.09;
+    g_rect(bx, by, bw, bh);
+    gfx_a = 0.45;
+    g_frame(bx, by, bw, bh);
+  );
+  hw_cap = min(15, bh - 8);
+  gfx_setfont(8);
+  hw_tw = g_tw(lbl);
+  hw_th = g_th();
+  hw_sx = max(bx + 2, bx + (bw - (hw_cap + 5 + hw_tw)) * 0.5);
+  hw_cy = by + (bh - hw_cap) * 0.5;
+  draw_hw_pushcap(hw_sx, hw_cy, hw_cap, hw_cap, is_on, is_hover, cr, cg, cb, enabled);
+  !enabled ? (
+    set_sub_col(); gfx_a = 0.34;
+  ) : is_on ? (
+    show_simple ? ( gfx_r = 0.08; gfx_g = 0.10; gfx_b = 0.14; ) : ( gfx_r = 0.96; gfx_g = 0.97; gfx_b = 0.99; );
+    gfx_a = 1;
+  ) : (
+    set_text_col(); gfx_a = is_hover ? 0.98 : 0.78;
+  );
+  g_txt(hw_sx + hw_cap + 5, by + (bh - hw_th) * 0.5, lbl);
+);
+
+function btn_face(bx, by, bw, bh, label, is_on, is_hover, cr, cg, cb) (
+  hw_key_face(bx, by, bw, bh, label, is_on, is_hover, cr, cg, cb);
+);
+// LEGA OUTPUT: switch compatto con LED dedicato; acceso mostra quanto il modulo sta togliendo/dando a OUTPUT
+function ui_link_btn(sl_idx, bx, by, comp_db, info_id, cr, cg, cb) local(is_on, is_hover, gdb, hw_lr, hw_lg, hw_lb) (
   is_on = slider(sl_idx) >= 0.5;
   is_hover = hit(bx, by, 94, 18);
   is_hover ? active_info_id = info_id;
   is_hover && mouse_click ? ( (!is_on) ? ( ab_start(); ); set_param_slider(sl_idx, is_on ? 0 : 1); is_on = !is_on; );
-  btn_face(bx, by, 94, 18, "", is_on, is_hover, c_lnk_r, c_lnk_g, c_lnk_b);
+  hw_lr = (is_on && lk_clamped) ? 0.96 : c_lnk_r;
+  hw_lg = (is_on && lk_clamped) ? 0.24 : c_lnk_g;
+  hw_lb = (is_on && lk_clamped) ? 0.22 : c_lnk_b;
+  show_simple ? (
+    gfx_r = is_on ? 0.84 : 0.93; gfx_g = is_on ? 0.86 : 0.95; gfx_b = is_on ? 0.91 : 0.97;
+    is_hover ? ( gfx_r -= 0.04; gfx_g -= 0.04; gfx_b -= 0.04; );
+  ) : (
+    gfx_r = is_on ? 0.11 : panel2_r - 0.01; gfx_g = is_on ? 0.12 : panel2_g - 0.01; gfx_b = is_on ? 0.17 : panel2_b - 0.01;
+    is_hover ? ( gfx_r += 0.05; gfx_g += 0.05; gfx_b += 0.05; );
+  );
+  gfx_a = 1; g_rect(bx, by, 94, 18);
+  is_hover ? ( gfx_r = min(1, hw_lr + 0.18); gfx_g = min(1, hw_lg + 0.18); gfx_b = min(1, hw_lb + 0.18); gfx_a = 0.92; )
+  : is_on  ? ( gfx_r = hw_lr * 0.78; gfx_g = hw_lg * 0.78; gfx_b = hw_lb * 0.78; gfx_a = 0.85; )
+           : ( gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.88; );
+  g_frame(bx, by, 94, 18);
+  draw_hw_led(bx + 10, by + 9, 2.8, is_on, is_hover, hw_lr, hw_lg, hw_lb);
   is_on ? (
     gdb = floor(comp_db * 10 + (comp_db >= 0 ? 0.5 : -0.5)) * 0.1;
     gdb >= 0 ? sprintf(#lnk_txt, "OUT +%.1f dB", gdb) : sprintf(#lnk_txt, "OUT %.1f dB", gdb);
-    gfx_r = 0.04; gfx_g = 0.05; gfx_b = 0.07; gfx_a = 1;
-    lk_clamped ? ( gfx_r = 0.80; gfx_g = 0.06; gfx_b = 0.06; );   // rosso: OUTPUT al tetto di +/-24 dB
-  ) : ( strcpy(#lnk_txt, msg("LEGA OUTPUT", "LINK OUTPUT")); set_text_col(); );
-  gfx_setfont(7); g_txtc(bx + 55, by + (18 - g_th()) * 0.5, #lnk_txt);
-  is_on ? ( gfx_r = 0.04; gfx_g = 0.05; gfx_b = 0.07; ) : ( gfx_r = c_lnk_r; gfx_g = c_lnk_g; gfx_b = c_lnk_b; ); gfx_a = 1;
-  g_circ(bx + 9, by + 9, 3.2, 0); g_circ(bx + 14, by + 9, 3.2, 0);   // catenella: due anelli intrecciati
+    lk_clamped ? (
+      gfx_r = show_simple ? 0.78 : 1.0; gfx_g = 0.24; gfx_b = 0.24; gfx_a = 1;
+    ) : (
+      show_simple ? ( gfx_r = 0.08; gfx_g = 0.10; gfx_b = 0.14; ) : ( gfx_r = 0.96; gfx_g = 0.97; gfx_b = 0.99; ); gfx_a = 1;
+    );
+  ) : (
+    strcpy(#lnk_txt, msg("LEGA OUTPUT", "LINK OUTPUT"));
+    set_text_col(); gfx_a = is_hover ? 1.0 : 0.85;
+  );
+  gfx_setfont(7); g_txtc(bx + 54, by + (18 - g_th()) * 0.5, #lnk_txt);
 );
 // Pulsantini della memoria A/B (barra USCITA · OUTPUT)
 function ui_ab_btn(bx, by, bw, lbl, is_on, enabled, info_id) local(is_hover) (
   is_hover = hit(bx, by, bw, 18);
   is_hover ? active_info_id = info_id;
-  btn_face(bx, by, bw, 18, "", is_on, is_hover && enabled, c_grn_r, c_grn_g, c_grn_b);
-  gfx_setfont(7); is_on ? ( gfx_r = 0.04; gfx_g = 0.05; gfx_b = 0.07; gfx_a = 1; ) : ( set_text_col(); gfx_a = enabled ? 1 : 0.40; );
-  g_txtc(bx + bw * 0.5, by + (18 - g_th()) * 0.5, lbl); gfx_a = 1;
+  hw_key_face(bx, by, bw, 18, "", is_on, is_hover && enabled, c_grn_r, c_grn_g, c_grn_b);
+  gfx_setfont(7);
+  is_on ? (
+    show_simple ? ( gfx_r = 0.08; gfx_g = 0.10; gfx_b = 0.14; ) : ( gfx_r = 0.96; gfx_g = 0.97; gfx_b = 0.99; ); gfx_a = 1;
+  ) : (
+    set_text_col(); gfx_a = enabled ? 1 : 0.40;
+  );
+  g_txtc(bx + bw * 0.5, by + (18 - g_th()) * 0.5 + 1.0, lbl); gfx_a = 1;
   is_hover && enabled && mouse_click;
 );
 function ui_tab_btn(sl_idx, target_val, bx, by, bw, bh, label, info_id, cr, cg, cb, mon) local(is_on, is_hover) (
@@ -1690,47 +2029,94 @@ function ui_drc_solo_btn(target_band, eng_sl, bx, by, bw, bh, label, cr, cg, cb)
     ui_hold_solo_btn = 0;
     ui_solo_toggle_off_on_release ? ( set_param_slider(25, 0); ui_solo_toggle_off_on_release = 0; );
   );
-  !band_active ? (
-    gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 0.45; g_rect(bx, by, bw, bh);
-    gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.35; g_frame(bx, by, bw, bh);
-    gfx_setfont(6); set_sub_col(); gfx_a = 0.38;
+  target_band == 0 ? (
+    // Pillola di allerta ad alta visibilita' ("MOLLA X (8s) [X]")
+    gfx_r = is_hover ? 1.0 : 0.96; gfx_g = is_hover ? 0.72 : 0.62; gfx_b = 0.14; gfx_a = 0.98;
+    g_rect(bx, by, bw, bh);
+    gfx_r = 1.0; gfx_g = 0.92; gfx_b = 0.65; gfx_a = is_hover ? 1.0 : 0.80;
+    g_frame(bx, by, bw, bh);
+    gfx_setfont(6); gfx_r = 0.05; gfx_g = 0.05; gfx_b = 0.07; gfx_a = 1;
     g_txtc(bx + bw * 0.5, by + (bh - g_th()) * 0.5, label);
+  ) : !band_active ? (
+    ui_hw_push_face(bx, by, bw, bh, label, 0, 0, cr, cg, cb, 0);
   ) : is_aud ? (
-    btn_face(bx, by, bw, bh, label, 1, is_hover, 1.0, 0.72, 0.16);
+    ui_hw_push_face(bx, by, bw, bh, label, 1, is_hover, 1.0, 0.72, 0.16, 1);
   ) : (
-    btn_face(bx, by, bw, bh, label, is_on, is_hover, cr, cg, cb);
+    ui_hw_push_face(bx, by, bw, bh, label, is_on, is_hover, cr, cg, cb, 1);
   );
+);
+function hw_handle_toggle_click(sl_idx, is_on, mon) (
+  set_param_slider(sl_idx, is_on ? 0 : 1);
+  set_mon(mon);
+  update_dsp_params();
+  is_on = !is_on;
+  sl_idx == 39 && is_on ? (
+    delta_arm_time = time_now;
+    delta_spring_armed = 0; delta_spring_stage = 0; ui_hold_delta_stage = 0;
+    slider25 > 0 ? ( set_param_slider(25, 0); );
+    ui_hold_solo_btn = 0; drc_solo_audition_band = 0;
+  );
+  delta_spring_armed && is_on ? (
+    sl_idx == 57 ? ( ui_hold_delta_stage = 13; ) :
+    sl_idx == 4 ? ( ui_hold_delta_stage = 1; ) :
+    sl_idx == 5 ? ( ui_hold_delta_stage = 2; ) :
+    sl_idx == 7 ? ( ui_hold_delta_stage = 3; ) :
+    sl_idx == 9 ? ( ui_hold_delta_stage = 4; ) :
+    sl_idx == 13 ? ( ui_hold_delta_stage = 5; ) :
+    sl_idx == 17 ? ( ui_hold_delta_stage = 6; ) :
+    sl_idx == 21 ? ( ui_hold_delta_stage = 7; ) :
+    sl_idx == 26 ? ( ui_hold_delta_stage = 8; ) :
+    (sl_idx == 29 || sl_idx == 32) ? ( ui_hold_delta_stage = 9; ) :
+    sl_idx == 33 ? ( ui_hold_delta_stage = 10; );
+  );
+  is_on;
 );
 function ui_toggle_btn(sl_idx, bx, by, bw, bh, lbl, info_id, cr, cg, cb, mon) local(is_on, is_hover) (
   is_on = slider(sl_idx) >= 0.5;
   is_hover = hit(bx, by, bw, bh);
   is_hover ? active_info_id = info_id;
-  is_hover && mouse_click ? (
-    set_param_slider(sl_idx, is_on ? 0 : 1);
-    set_mon(mon);
-    update_dsp_params();
-    is_on = !is_on;
-    sl_idx == 39 && is_on ? (
-      delta_arm_time = time_now;
-      delta_spring_armed = 0; delta_spring_stage = 0; ui_hold_delta_stage = 0;
-      slider25 > 0 ? ( set_param_slider(25, 0); );
-      ui_hold_solo_btn = 0; drc_solo_audition_band = 0;
-    );
-    delta_spring_armed && is_on ? (
-      sl_idx == 57 ? ( ui_hold_delta_stage = 13; ) :
-      sl_idx == 4 ? ( ui_hold_delta_stage = 1; ) :
-      sl_idx == 5 ? ( ui_hold_delta_stage = 2; ) :
-      sl_idx == 7 ? ( ui_hold_delta_stage = 3; ) :
-      sl_idx == 9 ? ( ui_hold_delta_stage = 4; ) :
-      sl_idx == 13 ? ( ui_hold_delta_stage = 5; ) :
-      sl_idx == 17 ? ( ui_hold_delta_stage = 6; ) :
-      sl_idx == 21 ? ( ui_hold_delta_stage = 7; ) :
-      sl_idx == 26 ? ( ui_hold_delta_stage = 8; ) :
-      (sl_idx == 29 || sl_idx == 32) ? ( ui_hold_delta_stage = 9; ) :
-      sl_idx == 33 ? ( ui_hold_delta_stage = 10; );
-    );
-  );
+  is_hover && mouse_click ? ( is_on = hw_handle_toggle_click(sl_idx, is_on, mon); );
   btn_face(bx, by, bw, bh, lbl, is_on, is_hover, cr, cg, cb);
+);
+function ui_led_dymo_toggle(sl_idx, bx, by, bw, bh, lbl, info_id, cr, cg, cb, mon, hw_mode) local(is_on, is_hover) (
+  is_on = slider(sl_idx) >= 0.5;
+  is_hover = hit(bx, by, bw, bh);
+  is_hover ? active_info_id = info_id;
+  is_hover && mouse_click ? ( is_on = hw_handle_toggle_click(sl_idx, is_on, mon); );
+  hw_mode == 1 ? (
+    // Layout orizzontale (bande DRC): LED a sinistra + fascetta Dymo a destra con filetto colorato
+    draw_hw_led(bx + 9, by + bh * 0.5, 4.0, is_on, is_hover, cr, cg, cb);
+    draw_dymo_plate(bx + 18, by + 2, bw - 20, bh - 4, lbl, is_on, is_hover, cr, cg, cb, 8, 1);
+  ) : (
+    // Layout verticale (striscia di catena in testata): LED in alto + fascetta Dymo sotto
+    draw_hw_led(bx + bw * 0.5, by + 5.5, 3.8, is_on, is_hover, cr, cg, cb);
+    draw_dymo_plate(bx + 1, by + 13, bw - 2, bh - 13, lbl, is_on, is_hover, cr, cg, cb, 8, 0);
+  );
+);
+function ui_hw_push_toggle(sl_idx, bx, by, bw, bh, lbl, info_id, cr, cg, cb, mon) local(is_on, is_hover) (
+  is_on = slider(sl_idx) >= 0.5;
+  is_hover = hit(bx, by, bw, bh);
+  is_hover ? active_info_id = info_id;
+  is_hover && mouse_click ? ( is_on = hw_handle_toggle_click(sl_idx, is_on, mon); );
+  ui_hw_push_face(bx, by, bw, bh, lbl, is_on, is_hover, cr, cg, cb, 1);
+);
+function draw_hw_chev(hw_x, hw_y) (
+  gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 0.55;
+  g_line(hw_x - 1.5, hw_y - 3, hw_x + 1.5, hw_y);
+  g_line(hw_x + 1.5, hw_y, hw_x - 1.5, hw_y + 3);
+);
+function ui_hw_prof_btn(target_val, bx, by, bw, bh, lbl, info_id, cr, cg, cb, stage_on) local(is_on, is_hover) (
+  is_on = floor(slider58 + 0.5) == target_val;
+  is_hover = hit(bx, by, bw, bh);
+  is_hover ? active_info_id = info_id;
+  is_hover && mouse_click ? (
+    set_param_slider(58, target_val);
+    set_mon(0);
+    update_dsp_params();
+    is_on = 1;
+    delta_spring_armed ? ( ui_hold_delta_stage = slider57 >= 0.5 ? 13 : 2; );
+  );
+  hw_key_face_ex(bx, by, bw, bh, lbl, is_on, is_hover, cr, cg, cb, 8, !stage_on);
 );
 // Knob: arco corretto (gfx_arc: 0 = ore 12) allineato all'indicatore (cos/sin: 0 = ore 3)
 function ui_knob(sl_idx, kx, ky, r, min_v, max_v, def_v, label, unit, cr, cg, cb, info_id, ring_pct)
@@ -1953,7 +2339,8 @@ function draw_curve(mode, lo, hi, cr, cg, cb) local(i, N, f, w, db, x, y, px, py
                               + bq_mag_db(ins_eq2.b0, ins_eq2.b1, ins_eq2.b2, ins_eq2.a1, ins_eq2.a2, w)
                               + bq_mag_db(ins_lp1.b0, ins_lp1.b1, ins_lp1.b2, ins_lp1.a1, ins_lp1.a2, w)
                               + bq_mag_db(ins_lp2.b0, ins_lp2.b1, ins_lp2.b2, ins_lp2.a1, ins_lp2.a2, w);
-        slider5  >= 0.5 ? db += bq_mag_db(pre_b1.b0, pre_b1.b1, pre_b1.b2, pre_b1.a1, pre_b1.a2, w)
+        slider5  >= 0.5 ? db += pre_gain_db
+                              + bq_mag_db(pre_b1.b0, pre_b1.b1, pre_b1.b2, pre_b1.a1, pre_b1.a2, w)
                               + bq_mag_db(pre_b2.b0, pre_b2.b1, pre_b2.b2, pre_b2.a1, pre_b2.a2, w)
                               + bq_mag_db(pre_b3.b0, pre_b3.b1, pre_b3.b2, pre_b3.a1, pre_b3.a2, w)
                               + bq_mag_db(pre_b4.b0, pre_b4.b1, pre_b4.b2, pre_b4.a1, pre_b4.a2, w);
@@ -2163,15 +2550,29 @@ ui_tab_btn(44, 6, px + 538, py, 106, 25, "BROADCAST",  206, c_amber_r, c_amber_g
 ui_tab_btn(44, 7, px + 650, py, 96,  25, "MAGIC 1",    207, c_mag_r,   c_mag_g,   c_mag_b, -1);
 
 sy = 84;
-ui_toggle_btn(57, px,       sy, 66, 25, "HW INS",    209, c_ins_r,   c_ins_g,   c_ins_b,   0);
-ui_toggle_btn(4,  px + 71,  sy, 78, 25, "1·FILTERS", 210, c_cyan_r,  c_cyan_g,  c_cyan_b,  0);
-ui_toggle_btn(5,  px + 154, sy, 78, 25, "2·PREAMP",  211, c_amber_r, c_amber_g, c_amber_b, 0);
-ui_toggle_btn(7,  px + 237, sy, 72, 25, "3·PEAK",    212, lkp7_r, lkp7_g, lkp7_b, 1);
-ui_toggle_btn(8,  px + 314, sy, 68, 25, "4·DRC",     213, c_mag_r,   c_mag_g,   c_mag_b,   2);
-ui_toggle_btn(26, px + 387, sy, 82, 25, "5·DYN EQ",  214, lkq_r, lkq_g, lkq_b, 3);
-ui_toggle_btn(29, px + 474, sy, 72, 25, "6·TONE",    215, lkt_r, lkt_g, lkt_b, 4);
-ui_toggle_btn(32, px + 551, sy, 88, 25, "MID BUMP",  216, lkm_r, lkm_g, lkm_b, 4);
-ui_toggle_btn(33, px + 644, sy, 98, 25, "7·DYN BAL", 217, lkd_r, lkd_g, lkd_b, 5);
+// Canalina incassata hardware della catena di segnale con LED dedicati e targhette Dymo
+gfx_r = show_simple ? 0.80 : 0.04; gfx_g = show_simple ? 0.84 : 0.05; gfx_b = show_simple ? 0.89 : 0.07; gfx_a = 0.96;
+g_rect(25, sy - 3, 756, 33);
+gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.72;
+g_frame(25, sy - 3, 756, 33);
+
+ui_led_dymo_toggle(57, px,       sy - 1, 66, 28, "HW INS",    209, c_ins_r,   c_ins_g,   c_ins_b,   0, 0);
+draw_hw_chev(px + 70.5,  sy + 19.5);
+ui_led_dymo_toggle(4,  px + 75,  sy - 1, 68, 28, "1·FILT",    210, c_cyan_r,  c_cyan_g,  c_cyan_b,  0, 0);
+draw_hw_chev(px + 147.5, sy + 19.5);
+ui_led_dymo_toggle(5,  px + 152, sy - 1, 68, 28, "2·PRE",     211, c_amber_r, c_amber_g, c_amber_b, 0, 0);
+draw_hw_chev(px + 224.5, sy + 19.5);
+ui_led_dymo_toggle(7,  px + 229, sy - 1, 70, 28, "3·PEAK",    212, lkp7_r, lkp7_g, lkp7_b, 1, 0);
+draw_hw_chev(px + 303.5, sy + 19.5);
+ui_led_dymo_toggle(8,  px + 308, sy - 1, 66, 28, "4·DRC",     213, c_mag_r,   c_mag_g,   c_mag_b,   2, 0);
+draw_hw_chev(px + 378.5, sy + 19.5);
+ui_led_dymo_toggle(26, px + 383, sy - 1, 82, 28, "5·DYN EQ",  214, lkq_r, lkq_g, lkq_b, 3, 0);
+draw_hw_chev(px + 469.5, sy + 19.5);
+ui_led_dymo_toggle(29, px + 474, sy - 1, 72, 28, "6·TONE",    215, lkt_r, lkt_g, lkt_b, 4, 0);
+draw_hw_chev(px + 550.5, sy + 19.5);
+ui_led_dymo_toggle(32, px + 555, sy - 1, 88, 28, "MID BUMP",  216, lkm_r, lkm_g, lkm_b, 4, 0);
+draw_hw_chev(px + 647.5, sy + 19.5);
+ui_led_dymo_toggle(33, px + 652, sy - 1, 94, 28, "7·DYN BAL", 217, lkd_r, lkd_g, lkd_b, 5, 0);
 
 rx = 810;
 ui_tab_btn(43, 0, rx,       20, 82, 24, "FULL", 220, c_grn_r, c_grn_g, c_grn_b, -1);
@@ -2184,12 +2585,12 @@ btn_face(rx + 264, 20, 24, 24, "?", 0, hq_hv, c_grn_r, c_grn_g, c_grn_b);
 time_precise() < help_warn_until && !hq_hv ? active_info_id = 226;
 ui_tab_btn(42, 0, rx,       50, 126, 25, msg("CHIARO", "LIGHT"), 221, c_cyan_r,  c_cyan_g,  c_cyan_b, -1);
 ui_tab_btn(42, 1, rx + 134, 50, 126, 25, msg("SCURO",  "DARK"),  221, c_amber_r, c_amber_g, c_amber_b, -1);
-ui_toggle_btn(38, rx,       84, 94,  25, "GAIN MATCH", 222, c_grn_r, c_grn_g, c_grn_b, 6);
+ui_hw_push_toggle(38, rx,       84, 96,  25, "GAIN MATCH", 222, c_grn_r, c_grn_g, c_grn_b, 6);
 
 // DELTA globale (lampeggiante quando attivo, con auto-off a 30s)
 delta_on_ui = slider39 >= 0.5;
 delta_blink = sin(time_now * 7.0) > 0;
-d_hv = hit(rx + 100, 84, 74, 25);
+d_hv = hit(rx + 102, 84, 74, 25);
 d_hv ? ( active_info_id = 223; );
 d_hv && mouse_click ? (
   set_param_slider(39, delta_on_ui ? 0 : 1);
@@ -2204,13 +2605,13 @@ d_hv && mouse_click ? (
   delta_on_ui = !delta_on_ui;
 );
 delta_on_ui ? (
-  btn_face(rx + 100, 84, 74, 25, "DELTA", 1, d_hv, delta_blink ? 0.98 : 1.00, delta_blink ? 0.22 : 0.62, delta_blink ? 0.46 : 0.14);
+  ui_hw_push_face(rx + 102, 84, 74, 25, "DELTA", 1, d_hv, delta_blink ? 0.98 : 1.00, delta_blink ? 0.22 : 0.62, delta_blink ? 0.46 : 0.14, 1);
 ) : (
-  btn_face(rx + 100, 84, 74, 25, "DELTA", 0, d_hv, c_mag_r, c_mag_g, c_mag_b);
+  ui_hw_push_face(rx + 102, 84, 74, 25, "DELTA", 0, d_hv, c_mag_r, c_mag_g, c_mag_b, 1);
 );
 
 // DELTA MOLLA esteso a tutti i moduli
-dm_hv = hit(rx + 180, 84, 80, 25);
+dm_hv = hit(rx + 182, 84, 78, 25);
 dm_hv ? ( active_info_id = 224; );
 dm_hv && mouse_click ? (
   delta_spring_armed = !delta_spring_armed;
@@ -2224,11 +2625,11 @@ dm_hv && mouse_click ? (
   );
 );
 delta_spring_stage > 0 ? (
-  btn_face(rx + 180, 84, 80, 25, msg("D·MOLLA", "S·DELTA"), 1, dm_hv, 1.0, 0.64, 0.16);
+  ui_hw_push_face(rx + 182, 84, 78, 25, msg("D·MOLLA", "S·DELTA"), 1, dm_hv, 1.0, 0.64, 0.16, 1);
 ) : delta_spring_armed ? (
-  btn_face(rx + 180, 84, 80, 25, msg("D·MOLLA", "S·DELTA"), 1, dm_hv, 0.90, 0.36, 0.62);
+  ui_hw_push_face(rx + 182, 84, 78, 25, msg("D·MOLLA", "S·DELTA"), 1, dm_hv, 0.90, 0.36, 0.62, 1);
 ) : (
-  btn_face(rx + 180, 84, 80, 25, msg("D·MOLLA", "S·DELTA"), 0, dm_hv, c_amber_r, c_amber_g, c_amber_b);
+  ui_hw_push_face(rx + 182, 84, 78, 25, msg("D·MOLLA", "S·DELTA"), 0, dm_hv, c_amber_r, c_amber_g, c_amber_b, 1);
 );
 
 // ============================================================================
@@ -2283,11 +2684,22 @@ view_mode == 0 ? (
     gfx_a = 0.95; g_rect(18, r1y + 196, 3, 160);
   );
   cur_mod = 0;
-  ui_knob(2, 82,  r1y + 250, 26, 20, 250, 75, "LOWCUT", "Hz", c_cyan_r, c_cyan_g, c_cyan_b, 103, -1);
-  ui_knob(3, 202, r1y + 250, 26, 8000, 20000, 18000, "HICUT", "Hz", c_cyan_r, c_cyan_g, c_cyan_b, 104, -1);
-  ui_toggle_btn(57, 24,  r1y + 318, 74, 28, "HW INS",  107, c_ins_r,   c_ins_g,   c_ins_b,   0);
-  ui_toggle_btn(5,  104, r1y + 318, 74, 28, "PREAMP",  105, c_amber_r, c_amber_g, c_amber_b, 0);
-  ui_toggle_btn(4,  184, r1y + 318, 74, 28, "FILTERS", 106, c_cyan_r,  c_cyan_g,  c_cyan_b,  0);
+  ui_knob(2, 82,  r1y + 240, 22, 20, 250, 75, "LOWCUT", "Hz", c_cyan_r, c_cyan_g, c_cyan_b, 103, -1);
+  ui_knob(3, 202, r1y + 240, 22, 8000, 20000, 18000, "HICUT", "Hz", c_cyan_r, c_cyan_g, c_cyan_b, 104, -1);
+  ui_hw_push_toggle(57, 24,  r1y + 290, 74, 24, "HW INS",  107, c_ins_r,   c_ins_g,   c_ins_b,   0);
+  ui_hw_push_toggle(5,  104, r1y + 290, 74, 24, "PREAMP",  105, c_amber_r, c_amber_g, c_amber_b, 0);
+  ui_hw_push_toggle(4,  184, r1y + 290, 74, 24, "FILTERS", 106, c_cyan_r,  c_cyan_g,  c_cyan_b,  0);
+  gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.55; g_rect(24, r1y + 318, 236, 1);
+  gfx_r = show_simple ? 0.80 : 0.04; gfx_g = show_simple ? 0.84 : 0.05; gfx_b = show_simple ? 0.89 : 0.07; gfx_a = 0.96;
+  g_rect(22, r1y + 322, 240, 31);
+  gfx_r = line_r; gfx_g = line_g; gfx_b = line_b; gfx_a = 0.72;
+  g_frame(22, r1y + 322, 240, 31);
+  hw_st_on = (slider57 >= 0.5) || (slider5 >= 0.5);
+  ui_hw_prof_btn(0, 26,  r1y + 325, 44, 25, "GLUE",  170, c_ins_r,   c_ins_g,   c_ins_b,   hw_st_on);
+  ui_hw_prof_btn(1, 73,  r1y + 325, 44, 25, "TUBE",  171, c_amber_r, c_amber_g, c_amber_b, hw_st_on);
+  ui_hw_prof_btn(2, 120, r1y + 325, 44, 25, "IRON",  172, c_cyan_r,  c_cyan_g,  c_cyan_b,  hw_st_on);
+  ui_hw_prof_btn(3, 167, r1y + 325, 44, 25, "BCAST", 173, c_grn_r,   c_grn_g,   c_grn_b,   hw_st_on);
+  ui_hw_prof_btn(4, 214, r1y + 325, 44, 25, "TAPE",  174, c_mag_r,   c_mag_g,   c_mag_b,   hw_st_on);
 
   // ---- 2 · DRC ----
   p2_act = (mon_sel == 2);
@@ -2307,10 +2719,10 @@ view_mode == 0 ? (
   g_line(503, r1y + 38, 503, r1y + 346);
   g_line(611, r1y + 38, 611, r1y + 346);
 
-  ui_toggle_btn(9,  cxA + 3, r1y + 38, 100, 25, #lbA, 111, c_cyan_r,  c_cyan_g,  c_cyan_b, 2);
-  ui_toggle_btn(13, cxB + 3, r1y + 38, 100, 25, #lbB, 112, c_amber_r, c_amber_g, c_amber_b, 2);
-  ui_toggle_btn(17, cxC + 3, r1y + 38, 100, 25, #lbC, 113, c_mag_r,   c_mag_g,   c_mag_b, 2);
-  ui_toggle_btn(21, cxD + 3, r1y + 38, 100, 25, #lbD, 114, c_grn_r,   c_grn_g,   c_grn_b, 2);
+  ui_led_dymo_toggle(9,  cxA + 3, r1y + 38, 100, 25, #lbA, 111, c_cyan_r,  c_cyan_g,  c_cyan_b, 2, 1);
+  ui_led_dymo_toggle(13, cxB + 3, r1y + 38, 100, 25, #lbB, 112, c_amber_r, c_amber_g, c_amber_b, 2, 1);
+  ui_led_dymo_toggle(17, cxC + 3, r1y + 38, 100, 25, #lbC, 113, c_mag_r,   c_mag_g,   c_mag_b, 2, 1);
+  ui_led_dymo_toggle(21, cxD + 3, r1y + 38, 100, 25, #lbD, 114, c_grn_r,   c_grn_g,   c_grn_b, 2, 1);
 
   ui_knob(12, cxA + 53, r1y + 120, 27, 0, 100, 75, "THR A", "%", c_cyan_r,  c_cyan_g,  c_cyan_b,  121, min(100, ui_drcA * 10));
   ui_knob(16, cxB + 53, r1y + 120, 27, 0, 100, 59, "THR B", "%", c_amber_r, c_amber_g, c_amber_b, 122, min(100, ui_drcB * 10));
@@ -2617,7 +3029,8 @@ function jsfx_param_meta(idx) (
   idx == 54 ? ( strcpy(#p_nm, "54. Tone EQ Link Output");   p_min=0;    p_max=1;     p_def=0;     strcpy(#p_unit, "bool"); ) :
   idx == 55 ? ( strcpy(#p_nm, "55. Dyn EQ Link Output");    p_min=0;    p_max=1;     p_def=0;     strcpy(#p_unit, "bool"); ) :
   idx == 56 ? ( strcpy(#p_nm, "56. Peak Link Output");      p_min=0;    p_max=1;     p_def=0;     strcpy(#p_unit, "bool"); ) :
-              ( strcpy(#p_nm, "57. Hardware Insert (Glue)");p_min=0;    p_max=1;     p_def=0;     strcpy(#p_unit, "bool"); );
+  idx == 57 ? ( strcpy(#p_nm, "57. Hardware Insert (Glue)");p_min=0;    p_max=1;     p_def=0;     strcpy(#p_unit, "bool"); ) :
+              ( strcpy(#p_nm, "58. Hardware Character");    p_min=0;    p_max=4;     p_def=0;     strcpy(#p_unit, "hwprof"); );
 );
 
 view_mode == 2 ? (
@@ -2627,7 +3040,7 @@ view_mode == 2 ? (
 
   row_h = 28;
   vis_rows = max(8, floor((j_h - 46) / row_h));
-  max_scroll = max(0, 57 - vis_rows);
+  max_scroll = max(0, 58 - vis_rows);
   mouse_wheel != 0 ? (
     jsfx_scroll = clamp(jsfx_scroll - sign(mouse_wheel) * 3, 0, max_scroll);
     mouse_wheel = 0;
@@ -2637,7 +3050,7 @@ view_mode == 2 ? (
   // Scrollbar verticale a destra
   sb_x = 1060; sb_y = j_y + 38; sb_w = 14; sb_h = j_h - 48;
   gfx_r = 0.06; gfx_g = 0.08; gfx_b = 0.12; gfx_a = 1; g_rect(sb_x, sb_y, sb_w, sb_h);
-  thumb_h = max(28, sb_h * vis_rows / 57);
+  thumb_h = max(28, sb_h * vis_rows / 58);
   thumb_y = sb_y + (max_scroll > 0 ? (jsfx_scroll / max_scroll) * (sb_h - thumb_h) : 0);
   sb_hov = hit(sb_x - 4, sb_y, sb_w + 8, sb_h);
   sb_hov && mouse_click ? ui_drag_id = 999;
@@ -2650,7 +3063,7 @@ view_mode == 2 ? (
   ri = 0;
   loop(vis_rows,
     p_idx = floor(jsfx_scroll + 0.5) + ri + 1;
-    p_idx <= 57 ? (
+    p_idx <= 58 ? (
       jsfx_param_meta(p_idx);
       ry = j_y + 38 + ri * row_h;
       ri % 2 == 0 ? ( gfx_r = panel2_r; gfx_g = panel2_g; gfx_b = panel2_b; gfx_a = 0.45; g_rect(26, ry, 1026, row_h - 2); );
@@ -2680,7 +3093,7 @@ view_mode == 2 ? (
       ui_drag_id == (500 + p_idx) && mouse_down ? (
         nn = clamp((mxd - bx0) / bw0, 0, 1);
         nv = p_min + nn * (p_max - p_min);
-        (strcmp(#p_unit, "int") == 0 || strcmp(#p_unit, "abcd") == 0 || strcmp(#p_unit, "ab") == 0 || strcmp(#p_unit, "Hz") == 0) ? nv = floor(nv + 0.5);
+        (strcmp(#p_unit, "int") == 0 || strcmp(#p_unit, "abcd") == 0 || strcmp(#p_unit, "ab") == 0 || strcmp(#p_unit, "hwprof") == 0 || strcmp(#p_unit, "Hz") == 0) ? nv = floor(nv + 0.5);
         p_idx == 43 ? set_ui_state(43, nv) : set_param_slider(p_idx, nv);
         update_dsp_params();
       ) : ( ui_drag_id == (500 + p_idx) && !mouse_down ? ui_drag_id = 0; );
@@ -2689,6 +3102,7 @@ view_mode == 2 ? (
       strcmp(#p_unit, "bool") == 0 ? strcpy(#pv_s, pval >= 0.5 ? "ON" : "OFF") :
       strcmp(#p_unit, "abcd") == 0 ? ( c_i = floor(pval + 0.5); strcpy(#pv_s, c_i == 0 ? "Curva A" : c_i == 1 ? "Curva B" : c_i == 2 ? "Curva C" : "Curva D"); ) :
       strcmp(#p_unit, "ab") == 0   ? ( c_i = floor(pval + 0.5); strcpy(#pv_s, c_i == 0 ? "A · Natural" : "B · Dense"); ) :
+      strcmp(#p_unit, "hwprof") == 0 ? ( c_i = floor(pval + 0.5); strcpy(#pv_s, c_i == 0 ? "GLUE (MagicFlow)" : c_i == 1 ? "TUBE (VoxBox)" : c_i == 2 ? "IRON (1073)" : c_i == 3 ? "BCAST (VCA)" : "TAPE (Ribbon)"); ) :
       strcmp(#p_unit, "int") == 0  ? sprintf(#pv_s, "%.0f", pval) :
       strcmp(#p_unit, "Hz") == 0   ? sprintf(#pv_s, "%.0f Hz", pval) :
                                      sprintf(#pv_s, "%.2f %s", pval, #p_unit);
@@ -2731,8 +3145,9 @@ view_mode != 2 ? (
     fmt_freq(#fa, slider2); fmt_freq(#fb, slider3);
     sprintf(#ft, "LOW CUT %s Hz", #fa); g_txt(d_x + 40, d_y + 8, #ft);
     st1_any = (slider57 >= 0.5) || (slider5 >= 0.5) || (slider4 >= 0.5);
+    hw_pnm = floor(slider58 + 0.5) == 0 ? "GLUE" : floor(slider58 + 0.5) == 1 ? "TUBE" : floor(slider58 + 0.5) == 2 ? "IRON" : floor(slider58 + 0.5) == 3 ? "BCAST" : "TAPE";
     gfx_r = st1_any ? 0.55 : 1; gfx_g = st1_any ? 0.88 : 0.5; gfx_b = st1_any ? 1 : 0.4;
-    sprintf(#st1_m, "INS %s · PRE %s · FLT %s", slider57 >= 0.5 ? "ON" : "OFF", slider5 >= 0.5 ? "ON" : "OFF", slider4 >= 0.5 ? "ON" : "OFF");
+    sprintf(#st1_m, "[%s]  INS %s · PRE %s · FLT %s", hw_pnm, slider57 >= 0.5 ? "ON" : "OFF", slider5 >= 0.5 ? "ON" : "OFF", slider4 >= 0.5 ? "ON" : "OFF");
     g_txtc(d_x + d_w * 0.5, d_y + 8, #st1_m);
     gfx_r = 0.62; gfx_g = 0.82; gfx_b = 1;
     sprintf(#ft, "HIGH CUT %s Hz", #fb); g_txtr(d_x + d_w - 20, d_y + 8, #ft);
@@ -3092,9 +3507,14 @@ help_s = lab_edit ? msg("Frequenza in Hz: digita il valore. Invio applica, Esc a
 active_info_id == 102 ? msg("PEAK RED: livellatore Opto + RComp, uniforma la distanza dal microfono. L'anello mostra la riduzione.", "PEAK RED: Opto + RComp leveler, evens out mic distance. The ring shows gain reduction.") :
 active_info_id == 103 ? msg("LOWCUT: passa-alto 12 dB/oct contro subsoniche, colpi d'aria ed effetto prossimita'.", "LOWCUT: 12 dB/oct high-pass against rumble, plosive air and proximity effect.") :
 active_info_id == 104 ? msg("HICUT: passa-basso morbido, toglie il frizzio digitale fuori banda.", "HICUT: gentle low-pass, removes out-of-band digital fizz.") :
-active_info_id == 105 ? msg("PREAMP: curva trasformatore reale (+2.3 dB @ 56 Hz, +0.9 dB @ 1.6 kHz, aria 16 kHz) + saturazione dispari H3 guidata da INPUT (zero DC).", "PREAMP: real transformer curve (+2.3 dB @ 56 Hz, +0.9 dB @ 1.6 kHz, air 16 kHz) + INPUT-driven odd H3 saturation (zero DC).") :
+active_info_id == 105 ? msg("PREAMP: curva hardware e saturazione H2/H3 guidata da INPUT (segue la cartuccia attiva GLUE/TUBE/IRON/BCAST/TAPE).", "PREAMP: hardware curve and INPUT-driven H2/H3 saturation (follows active cartridge GLUE/TUBE/IRON/BCAST/TAPE).") :
 active_info_id == 106 ? msg("FILTERS: attiva/esclude Lowcut e Hicut.", "FILTERS: enable/bypass Lowcut and Hicut.") :
-(active_info_id == 107 || active_info_id == 209) ? msg("HW INS: inserzione hardware a latenza zero calibrata su MagicFlow AU (scavo -2.35 dB @ 780 Hz, roll-off setoso >13 kHz e dispersione all-pass sui bassi).", "HW INS: zero-latency hardware insert calibrated to MagicFlow AU (-2.35 dB dip @ 780 Hz, silky roll-off >13 kHz and bass all-pass dispersion).") :
+(active_info_id == 107 || active_info_id == 209) ? msg("HW INS: inserzione hardware a latenza zero con dispersione all-pass e curva pre-dinamica (segue GLUE/TUBE/IRON/BCAST/TAPE).", "HW INS: zero-latency hardware insert with all-pass dispersion and pre-dynamics curve (follows GLUE/TUBE/IRON/BCAST/TAPE).") :
+active_info_id == 170 ? msg("CARTUCCIA 0 · GLUE: firma originale MagicFlow AU (scavo 780 Hz, dispersione all-pass e H3 pulita).", "CARTRIDGE 0 · GLUE: original MagicFlow AU signature (780 Hz dip, all-pass dispersion and clean H3).") :
+active_info_id == 171 ? msg("CARTUCCIA 1 · TUBE: stile valvolare Classe A / VoxBox (medio-bassi pieni, prevalenza H2 calda, sag morbido, alte setose).", "CARTRIDGE 1 · TUBE: Class A tube / VoxBox style (full low-mids, warm H2 dominance, gentle sag, silky highs).") :
+active_info_id == 172 ? msg("CARTUCCIA 2 · IRON: stile trasformatore ferro britannico / 1073 (peso bassi, medi avanti, H3 decisa con DRIVE/INPUT).", "CARTRIDGE 2 · IRON: British iron transformer / 1073 style (weighty lows, forward mids, punchy H3 with INPUT).") :
+active_info_id == 173 ? msg("CARTUCCIA 3 · BCAST: stile stato solido / VCA broadcast (bassi asciutti, articolazione 3.2 kHz, THD minima).", "CARTRIDGE 3 · BCAST: clean solid-state / VCA broadcast style (tight lows, 3.2 kHz articulation, ultra-low THD).") :
+active_info_id == 174 ? msg("CARTUCCIA 4 · TAPE: stile nastro / ribbon (head-bump sui bassi, roll-off dolce sulle sibilanti e picchi arrotondati).", "CARTRIDGE 4 · TAPE: tape / ribbon style (low head-bump, gentle high roll-off and rounded peaks).") :
 active_info_id >= 111 && active_info_id <= 114 ? msg("DRC: attiva la banda. Il nome (LOW/BOX/HARSH/PRES/SIB/AIR) segue la frequenza impostata.", "DRC: enable the band. Its name (LOW/BOX/HARSH/PRES/SIB/AIR) follows the set frequency.") :
 active_info_id >= 121 && active_info_id <= 124 ? msg("THR: piu' alto = interviene prima e di piu'. L'anello e la barra mostrano la riduzione reale.", "THR: higher = acts sooner and more. Ring and bar show the actual reduction.") :
 active_info_id >= 131 && active_info_id <= 134 ? msg("FREQ: centro della campana DRC (25 Hz - 18 kHz, sposta HP/LP insieme). SHIFT = fine. Doppio clic = scrivi gli Hz.", "FREQ: DRC bell center frequency (25 Hz - 18 kHz, moves HP/LP together). SHIFT = fine. Double click to type Hz.") :
