@@ -1196,7 +1196,13 @@ function C.offer_cleanup(res, H)
   local total = 0
   for _, f in ipairs(list) do total = total + f.size end
   local dest = join(project_dir, "Media non usati " .. os.date("%Y-%m-%d %H-%M-%S"))
-  local lines = { "In Media ci sono " .. #list .. " file (" .. human_size(total) .. ") che il progetto non usa:" }
+  local lines = {
+    "ATTENZIONE: il file di progetto REAPER è solo testo e non contiene i media: i file stanno nella cartella Media, che può essere condivisa.",
+    "Se in questa cartella ci sono anche altri progetti, i file che QUESTO progetto non usa potrebbero servire a loro: spostandoli, gli altri progetti perderebbero i media (offline).",
+    "Più sicuro: prima salva questo progetto in una cartella separata (File > Save project as, con «Copy all media into project directory»), così avrà solo i propri media, e poi pulisci.",
+    "",
+    "In Media ci sono " .. #list .. " file (" .. human_size(total) .. ") che questo progetto non usa:",
+  }
   for i, f in ipairs(list) do
     if i > 12 then lines[#lines + 1] = "  … e altri " .. (#list - 12); break end
     lines[#lines + 1] = "  · " .. f.name .. " (" .. human_size(f.size) .. ")"
@@ -1204,7 +1210,7 @@ function C.offer_cleanup(res, H)
   lines[#lines + 1] = ""
   lines[#lines + 1] = "Se confermi, salvo il progetto e SPOSTO questi file (non li cancello) in una cartella fuori da Media:"
   lines[#lines + 1] = dest
-  lines[#lines + 1] = "Potrai cancellarla tu quando vuoi."
+  lines[#lines + 1] = "Potrai cancellarla tu quando vuoi, o riportare i file in Media se un altro progetto li cerca."
   lines[#lines + 1] = ""
   lines[#lines + 1] = "Non vengono analizzati i campioni/IR dei plug-in né altri progetti che usino questa cartella Media; con Undo oltre questo punto REAPER potrebbe cercare file spostati."
   lines[#lines + 1] = "Spostare i file?"
@@ -1273,6 +1279,7 @@ local HELP = [[ZP Consolidate ha tre comandi indipendenti. Per i primi due il pr
 Se una sorgente non è raggiungibile (per esempio un file Dropbox non ancora scaricato) puoi riprovare dopo averla resa disponibile, scegliere il file corretto, saltarla o annullare tutto. Se in Media c'è già un file con lo stesso nome, scegli se rinominare, sovrascrivere o saltare. Un SECTION/reverse che non si può ricostruire con certezza resta com'è e viene segnalato.
 
 2. «Pulisci Media» non copia niente. Cerca i file direttamente in Media che nessun take e nessun SRT del progetto usa e mostra l'elenco. Se confermi, salva il progetto e SPOSTA quei file (non li cancella) in «Media non usati <data e ora>», una cartella accanto a Media, fuori da Media. Puoi cancellarla tu quando vuoi.
+ATTENZIONE: il file di progetto REAPER è solo testo e non contiene i media; la cartella Media può essere condivisa. Se altri progetti usano la stessa cartella Media, spostare i file «non usati» da questo progetto può metterli offline negli altri. Prima di pulire, salva questo progetto in una cartella separata (File > Save project as, con «Copy all media into project directory»): così avrà solo i propri media.
 La pulizia lascia stare le sottocartelle (peaks, ecc.) e i file nascosti. Non analizza i campioni o le IR dei plug-in né altri progetti che usino la stessa cartella Media. Non viene proposta se ci sono errori, riferimenti lasciati intatti o dipendenze manuali: prima consolida e risolvi.
 
 3. «Numera item» rinomina gli item delle tracce selezionate con il nome della traccia e un numero progressivo (Voce#1, Voce#2…), nell'ordine in cui stanno sulla traccia. Serve a ritrovare la sequenza dopo un montaggio pesante. Non tocca i file né i testi senza take; Ctrl+Z annulla.

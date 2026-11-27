@@ -154,9 +154,10 @@
       <a href="#zp-report-minuti">Voice Minutes Report</a>
     </div>
     <div class="card">
-      <h3>Audio & DSP</h3>
+      <h3>Audio &amp; DSP</h3>
       <a href="#zp-chain-builder">Chain Builder</a> &middot; <a href="#zp-probe-guard">Probe Guard</a><br>
-      <a href="#zp-shared-bus">ZP Shared Bus Plugins</a>
+      <a href="#zp-shared-bus">ZP Shared Bus Plugins</a> &middot; <a href="#tool-39">39 Telemetry Engine</a><br>
+      <a href="master_pro_glue_matrix.html">Master Pro 2.50 (technical guide)</a> &middot; <a href="#plugin-audition-noise">Audition Noise</a>
     </div>
     <div class="card">
       <h3>Reference & Setup</h3>
@@ -324,21 +325,16 @@
 
   <!-- ================================================================== -->
   <h2 id="tool-30">ZP SRT</h2>
-  <p><strong>Overview.</strong> Central hub gathering all subtitle and script actions in one unified panel, organized by workflow order. Hovering displays contextual advice.</p>
-  <p class="when">When: handling SRT files and looking for the exact tool for the job.</p>
+  <p><strong>Overview.</strong> Always-open, proportionally scalable subtitle workstation combining every video/SRT operation in a single 4-tab window instead of separate popups: importing media and subtitles, replacing scripts or adding reference languages, inspecting/editing cues and coalescing short fragments, and exporting final SRTs. Every timeline action undoes cleanly in one <code>Cmd/Ctrl+Z</code>.</p>
+  <p class="when">When: loading video + SRT/VTT/Excel, updating scripts, cleaning 1–2 word transcription slivers, or delivering final SRTs.</p>
   <div class="wrap"><table>
-    <tr><th>Column</th><th>Button</th><th>Action</th><th>When to use</th></tr>
-    <tr><td rowspan="5">1 Import</td><td>Video + SRT</td><td><a href="#zp-import">01</a></td><td>Starting a video production.</td></tr>
-    <tr><td>Replace Text</td><td><a href="#zp-gestione-srt">05</a></td><td>Updated script/subtitles arrived.</td></tr>
-    <tr><td>Add Language</td><td><a href="#zp-gestione-srt">05</a></td><td>Add reference language alongside main script.</td></tr>
-    <tr><td>Link to Audio</td><td><a href="#tool-29">29</a></td><td>SRT belongs to an audio take and must track cuts.</td></tr>
-    <tr><td>From Text / Translation</td><td><a href="#tool-srt-tools">26</a></td><td>You have text with timecode (Word/Excel) instead of an SRT.</td></tr>
-    <tr><td rowspan="3">2 Inspect</td><td>SRT Item Info</td><td><a href="#tool-13">13</a></td><td>Check source cue, file, and take marker bindings.</td></tr>
-    <tr><td>Empty Prompter Track</td><td><a href="#zp-gestione-srt">05</a></td><td>Write or transcribe a script manually.</td></tr>
-    <tr><td>Read in Prompter</td><td><a href="#tool-02">02</a></td><td>Open prompter to rehearse, search, and edit.</td></tr>
-    <tr><td rowspan="2">3 Export</td><td>Export SRT</td><td><a href="#tool-08">08</a></td><td>Deliver finalized video subtitles.</td></tr>
-    <tr><td>SRT from Audio</td><td><a href="#tool-31">31</a></td><td>Export updated dialogue cues from edited audio.</td></tr>
+    <tr><th>Tab</th><th>Key Actions</th><th>When to use</th></tr>
+    <tr><td><strong>1 · Load</strong></td><td><em>Video + SRT/VTT/Excel</em>, <em>SRT only</em>, <em>Video only</em>, <em>Folder Batch</em> (configurable gap), insertion point (<em>Auto</em>: if the playhead is inside a region the region sets the timecode, otherwise the SRT goes under the selected video, otherwise at the playhead; or Playhead, <code>00:00:00</code>, selected video, project end), overlap handling (2nd red lane or tail trim), and optional <em>Coalesce short cues on import</em>.</td><td>Starting a video session or dropping subtitles onto an existing project.</td></tr>
+    <tr><td><strong>2 · Replace &amp; Lang</strong></td><td><em>Replace subtitles</em> (moves previous cues onto a single muted <code>BKP</code> safety track) or <em>Add Language / Ref</em> (<code>ENG</code>, <code>ORIG</code>, <code>FRA</code>, <code>ESP</code>, <code>DEU</code>, or custom tag) across 1 or multiple selected videos, cursor region, or all matching sidecar files.</td><td>Updated script arrived or you want a reference language track alongside the main translation.</td></tr>
+    <tr><td><strong>3 · Edit &amp; Coalesce</strong></td><td>Live cue inspector (source SRT + cue #, words, lines, CPS) with built-in <em>Edit text…</em> (<code>ZP_Editor_Copione</code>) and <em>+ New cue here</em>; <strong>Coalesce short cues</strong> (absorbs isolated 1–3 word fragments into adjacent dialogue while respecting pauses, dialogue dashes, speaker tags, and Teleprompter anchors); <em>Merge</em>, <em>Split at Playhead</em>, <em>Split lines</em>, and quick selection nudges (<code>±100/500 ms</code>, <code>1st → Playhead</code>).</td><td>Cleaning up tiny single-word transcription crumbs, splitting a 3-line block, or tweaking text and timing in place.</td></tr>
+    <tr><td><strong>4 · Export</strong></td><td>Export SRT from any subtitle track by <em>Selected videos</em>, <em>Region at playhead</em>, <em>All regions</em>, <em>All videos</em> (timecode zeroed per video/region), or <em>Whole track</em>, plus <em>Write SRT from audio</em> take markers (<a href="#tool-31">31</a>).</td><td>Delivering finalized video subtitles or post-edit audio transcripts.</td></tr>
   </table></div>
+  <p>Quick-launch buttons at the bottom open <a href="#tool-02">Vertical Teleprompter (02)</a>, <a href="#tool-03">Horizontal Teleprompter (03)</a>, <a href="#tool-29">Audio Transcription (29)</a>, and <a href="#tool-srt-tools">SRT Tools Web (26)</a> without closing ZP SRT.</p>
 
   <!-- ================================================================== -->
   <h2 id="tool-04">Markers</h2>
@@ -442,6 +438,7 @@
     <li><strong>Transform Project</strong> creates missing elements only. Never deletes user FX or clips.</li>
     <li><strong>Presets:</strong> <em>ZP BUS Chain</em> loads preset <code>Voiceover_Body1_BG80HzDyn_-3dBLim</code>; existing instances are preserved. <em>ZP Master Pro</em> initializes to <code>Flat -19</code> and configures profile targets. Installed via <a href="#tool-32">32 Install toolbar and FX</a>.</li>
     <li><strong>Check / Repair</strong> audits status (FOUND, MISSING, MISCONFIGURED) and prompts before applying fixes. Launches <a href="#zp-probe-guard">Probe Guard</a> on finish.</li>
+    <li><strong>Ready ZP Project Templates (ZP plugins only, peak targets):</strong> directly from Chain Builder (as well as <a href="#tool-33">33 Welcome</a> and REAPER's <em>File &rarr; Project templates</em>) you can open a brand-new pre-wired project calibrated with ZP Suite plugins only, sidechain included: <strong>ZP Setup VoiceOver (-18 LUFS)</strong> for spoken voice and <strong>ZP Setup Mix-Spot (-8 LUFS)</strong> for commercials and dense mixes.</li>
   </ul>
 
   <!-- ================================================================== -->
@@ -451,13 +448,13 @@
 
   <!-- ================================================================== -->
   <h2 id="zp-shared-bus">ZP Shared Bus Plugins</h2>
-  <p>ZP plugins communicate via shared memory (<code>gmem=ZPVoiceoverSharedBus</code>): each plugin reports real-time activity, the Probe measures real bus audio output, and Master Pro compares results against the target loudness engine to offer advisory suggestions. No plugin ever alters another plugin's DSP parameters. Installed via ReaPack in <code>Effects/ZP_Paolo Balestri JSFX</code>.</p>
+  <p>ZP plugins communicate via shared memory (<code>gmem=ZPVoiceoverSharedBus</code>, Shared Bus v3 backward-compatible with v2.20): every active instance on voice channels, Voice Bus, Music Bus, and Master (<em>BUS Chain</em>, <em>Unified Chain</em>, <em>Magic Voice LAB</em>, <em>Spoken Finish</em>, <em>Stagekeeper</em>, <em>Click &amp; Attack Softener</em>, <em>BrownSlope Dynamic Guard</em>, <em>Harmonic Space Carver</em>, and <em>Voice-Music Probe</em>) automatically reports its track/FX order, dynamics, tone, levels, and safety alerts (DELTA/SOLO/CHECK) to Master Pro's <strong>SINTESI</strong> and <strong>CATENA</strong> views. With <em>Cue Navigator</em> running, Master Pro also shows real track names and opens any upstream plugin window with one click. No plugin ever alters another plugin's DSP parameters.</p>
   <div class="grid">
     <div class="card" id="plugin-bus-chain">
       <h3>ZP BUS Chain</h3>
-      <p><strong>Purpose:</strong> Primary voice bus processor (dialogue, voiceover, dubbing). Combines Expander/Gate, De-Esser/Air, 1175, LA-2A, and Major Tom compressors, analog Brown stage, and safety Limiter.</p>
-      <p><strong>Where to place:</strong> On Voice Bus (voice folder or master dialogue bus).</p>
-      <p><strong>Key controls:</strong> Expander Thresh/Range, compressor RED/MAKEUP, Brown Drive/Mix, High Air, Limiter Ceiling/Release, module toggles. Broadcasts full telemetry to Shared Bus. The Brown Guard page has two separate switches: <strong>DYN</strong> (the dynamic correction that follows the Slope target) and <strong>EQ</strong> (the four manual EQ points); they work independently of the main Brown switch.</p>
+      <p><strong>Purpose:</strong> Primary voice bus processor (dialogue, voiceover, dubbing) and modular rack that also works cleanly as a single dedicated block (e.g. Expander-only before Magic Voice LAB or LA2 Gray-only on output). Combines Expander/Gate, 1175, <strong>LA2 (Clean / Gray T4B opto-tube)</strong>, Major Tom, Brown Guard, ANA, and safety Limiter.</p>
+      <p><strong>Where to place:</strong> On Voice Bus or individual voice tracks (including multiple single-module instances along a chain).</p>
+      <p><strong>Key controls:</strong> The 7 header module buttons toggle blocks ON/OFF and automatically compact the rack to <strong>ACTIVE ONLY</strong> (<strong>right-click or Alt+click</strong> isolates that single module by turning the other 6 off; <code>SHOW ALL</code> restores all blocks). Inside <strong>LA2</strong>, the <strong>CLEAN | GRAY</strong> switch engages the Gray opto-tube engine calibrated on Teletronix LA-2A Gray: 12AX7A/12BH7A tube stage with <strong>residual-only 2&times; oversampling</strong> (zero linear HF loss and residual-only DC blocker), UTC A-24 output transformer air lift (<code>+0.8 dB @ 20 kHz</code>, active even at <code>RED = 0</code>), phase-aligned parallel <code>MIX</code>, open-emphasis sidechain sparing <code>6&ndash;10 kHz</code> air, and dual-stage T4B cell (fast strike + 50% release in 60 ms with phosphor memory). <strong>ANA</strong> adds an auto-compensated <strong><code>PAD -6</code></strong> toggle (plus smooth pre-folding guard) for clean headroom on hot radio spot buses, while <strong>Voice Limiter</strong> <code>SAT</code> runs at <strong>2&times; oversampling</strong> to prevent upper-mid aliasing. On Brown Guard, <strong>DYN</strong> and <strong>EQ</strong> stay independent. Broadcasts full Shared Bus v3.1 telemetry.</p>
     </div>
     <div class="card" id="plugin-carver">
       <h3>ZP Harmonic Space Carver</h3>
@@ -471,9 +468,15 @@
     </div>
     <div class="card" id="plugin-spoken-finish">
       <h3>ZP Spoken Finish</h3>
-      <p><strong>Purpose:</strong> Optional harmonic voice enhancer. Adds body, even/odd harmonics, presence, air, and VOG (Voice of God) sub-bass for authoritative broadcast density.</p>
+      <p><strong>Purpose:</strong> Classic harmonic voice exciter and de-exciter (<em>Voice Base</em> / <em>Trailer</em> profiles, v3.10.2). Preserved intact at its original file path to guarantee <strong>100% sonic recall</strong> across all existing REAPER projects and saved chains (<code>ZP_Bus_VoiceChain.RfxChain</code>).</p>
+      <p><strong>Where to place:</strong> On Voice Bus after BUS Chain, or on individual voice tracks (for new sessions you can also choose the next-generation <a href="#plugin-spoken-finish-pro">ZP Spoken Finish Pro</a>).</p>
+      <p><strong>Key controls:</strong> <em>Simple</em> (Min/Med/Max) and <em>Advanced</em> modes, Crossover, Even/Odd (<code>-100..+100%</code>), Character, Dynamic Drive, Voice of God, Cinema Air, Gain Match, Delta, Dry/Wet, and True Peak Limiter. Publishes Shared Bus v3.1 telemetry.</p>
+    </div>
+    <div class="card" id="plugin-spoken-finish-pro">
+      <h3>ZP Spoken Finish Pro</h3>
+      <p><strong>Purpose:</strong> Next-generation harmonic voice exciter and de-exciter (<em>Voice Base</em> / <em>Trailer</em> profiles, v1.0.0), shipped alongside classic <em>ZP Spoken Finish</em> without altering older sessions. Features the 3-mode <strong>MAGIC</strong> sonic signature (<strong>VELVET</strong> for <code>125&ndash;260 Hz</code> <code>H2</code> proximity warmth and <code>380 Hz</code> anti-box scoop, <strong>AIR SILK</strong> for Dolby-361 style <code>&gt; 7 kHz</code> harmonic air with automatic <strong>S-Guard</strong> sibilance ducking, and <strong>3D FOCUS</strong> with 2-stage analog all-pass relief and midrange focus), envelope-normalized Chebyshev harmonics (<code>H2+H4</code> / <code>H3+H5</code> and bounded dynamic de-harsh) via residual-only 2&times; oversampling (<code>0.00 dB</code> linear loss up to Nyquist), <em>Voice of God</em> with H2 chest reinforcement, and <em>Cinema Air</em> (<code>&gt; 6.2 kHz</code>).</p>
       <p><strong>Where to place:</strong> On Voice Bus after BUS Chain, or on individual voice tracks.</p>
-      <p><strong>Key controls:</strong> Harmonic Amount (Even/Odd), Body, Air/Presence, VOG Sub-bass, Dynamic Drive. Reports telemetry for Master Pro comparison.</p>
+      <p><strong>Key controls:</strong> <strong>MAGIC ON/OFF</strong> + <code>VELVET / AIR SILK / 3D FOCUS</code> + <code>Magic %</code>, Crossover, independent Even/Odd (<code>-100..+100%</code>), Character, Dynamic Drive, Voice of God, Cinema Air, Gain Match (<code>-6..+3 dB</code>), pure <code>DELTA</code> with 30 s auto-off, Dry/Wet, persistent <code>LIGHT / DARK</code> theme switch, and final 4&times; cubic True Peak Limiter.</p>
     </div>
     <div class="card" id="plugin-magic-voice-lab">
       <h3>ZP Magic Voice / ZP Magic Voice LAB</h3>
@@ -499,10 +502,16 @@
     </div>
     <div class="card" id="plugin-master-pro">
       <h3>ZP Master Pro</h3>
-      <p><strong>Purpose:</strong> Master bus supervisory intelligence. Analyzes multi-plugin telemetry and Probe readings against target loudness profiles (ADR, Voiceover, E-learning, Podcast, Spot, Radio).</p>
-      <p><strong>Where to place:</strong> On final project Master Bus.</p>
-      <p><strong>Key controls:</strong> Target Profile selector, Navigator (MANUAL / AUTO SIMPLE / AUTO COMPLEX), causal Measure Engine display, [Target] thresholds, bus status LEDs.</p>
-      <p><strong>In depth:</strong> <a href="../master_pro_glue_matrix.html">Glue Matrix and ISP</a> (Italian only: signal path, Macro/Micro/Crest, SM/API/SSA textures).</p>
+      <p><strong>Purpose:</strong> Master bus processor and supervisor with dual <strong>ANALOG</strong> (Tape Glue + Glue Matrix + Tone Guard + Lookahead Limiter) and <strong>TRANSP</strong> (transparent path with <code>INPUT</code> up to <code>+30 dB</code>, Auto/LUFS targets up to <code>-6 LUFS</code>, <strong>2&times; OS ENHANCE</strong> up to <code>+7.5 dB</code> with <code>2.4&ndash;6.2 kHz</code> de-harshness guard and <code>-48 dB</code> gate, <strong>2&times; OS PRECLIP</strong> transparent soft-clipper ahead of the limiter for clean <code>-8 LUFS</code> radio spot masters, dual-stage Auto-Release Precision Limiter, Soft Knee <code>0..4 dB</code>, and <strong>4&times; ISP True Peak</strong>) profiles. Integrates <strong>Shared Bus v3.1</strong> telemetry, <a href="#tool-39">39 ZP Telemetry Engine</a> badge, and <strong>NOISE</strong> remote control for <a href="#plugin-audition-noise">ZP Audition Noise Monitor</a> in REAPER's Monitor FX.</p>
+      <p><strong>Where to place:</strong> On the final project Master Bus (and optionally load <code>ZP Audition Noise Monitor</code> once in REAPER's Monitor FX chain).</p>
+      <p><strong>Key controls:</strong> <strong>ANALOG | TRANSP</strong> switch (instant A/B), <strong>NOISE</strong> Monitor FX remote strip, <code>INPUT / ENHANCE / PRECLIP / ATK / REL / KNEE / AUTO REL / CURV</code> in <code>TRANSP</code>, <code>TAPE / COMP / GLUE / Texture</code> in <code>ANALOG</code>, <code>ISP OFF/2x/4x</code>, Target Profile selector, Navigator (<strong>SINTESI</strong> / <strong>CATENA</strong>), bus status LEDs.</p>
+      <p><strong>Full technical guide:</strong> <a href="master_pro_glue_matrix.html">ZP Master Pro — ANALOG, TRANSP, ENHANCE, 4&times; True Peak &amp; Glue Matrix &rarr;</a></p>
+    </div>
+    <div class="card" id="plugin-audition-noise">
+      <h3>ZP Audition Noise Monitor</h3>
+      <p><strong>Purpose:</strong> Real-world noisy environment and speaker simulator (v1.1) designed to test whether quiet phrases, tails, or podcast details get lost in a car, ceiling office speaker, or open earbuds, <strong>without ever entering the mix or rendered files</strong>.</p>
+      <p><strong>Where to place:</strong> <strong>Only in REAPER's Monitor FX chain</strong> (insert once; applies globally across projects). Displays a red warning banner if accidentally placed on a regular track, and an amber active banner whenever noise or speaker sim is engaged.</p>
+      <p><strong>DSP &amp; key controls:</strong> Decorrelated stereo Paul Kellet pink generator with 4 RMS-calibrated acoustic profiles (<strong>City Car</strong>, <strong>Highway</strong>, <strong>Pink Room</strong>, <strong>Train / Jet</strong> aligned to <code>0 dBFS</code>), program-referenced SNR level (<code>-24..+6 dB</code> with quick steps <code>-18 / -12 / -6 / -3 / 0 / +3 dB</code>), 4 Monitor FX speaker simulations (<strong>Studio Flat</strong> bit-identical bypass, <strong>Car / Van</strong> <code>85 Hz&ndash;10.5 kHz</code> + subtle crossfeed, <strong>Ceiling Mono</strong> <code>250 Hz&ndash;5.2 kHz</code>, <strong>Open Earbuds</strong> with passive <code>-3.5 dB @ 2.5 kHz</code> high-shelf ambient attenuation), click-free fades, <strong>PLAY ONLY</strong> gate, active safety soft-limiter (<code>-1.0..-0.3 dBFS</code>), live meters, and bidirectional <code>gmem[3670..3683]</code> link with ZP Master Pro (always boots OFF).</p>
     </div>
     <div class="card" id="plugin-mirror-eq">
       <h3>ZP Reference Tone Mirror EQ Pro</h3>
@@ -512,9 +521,9 @@
     </div>
     <div class="card" id="plugin-loudness-meter">
       <h3>ZP Loudness Meter Multichannel</h3>
-      <p><strong>Purpose:</strong> High-precision loudness and True Peak meter conforming to ITU-R BS.1770-4 and EBU R128 standards (up to 64 channels), redesigned in a vertical-first anti-drift layout (v45.0) built to stay docked comfortably on the side.</p>
+      <p><strong>Purpose:</strong> High-precision loudness and True Peak meter conforming to ITU-R BS.1770-4 and EBU R128 standards (up to 64 channels), in a vertical-first layout (v45.3) with <strong>large stable readouts</strong> and <strong>Shared Bus v3.1</strong> integration (publishes <code>LUFS-I/S/M</code>, <code>True Peak</code>, <code>LRA</code>, and <code>Target</code> into <a href="#tool-39">39 ZP Telemetry Engine</a>).</p>
       <p><strong>Where to place:</strong> At the end of the Master chain or across any multichannel monitor bus (including TCP/MCP embedded mini-view showing <code>LUFS-I</code> and <code>TP</code>).</p>
-      <p><strong>Key controls:</strong> Free <code>TARGET</code> (drag, wheel, or double-click) with one-click <code>LOCK NOW</code> to capture current loudness, 4 quick shortcuts (<code>-23</code>, <code>-18</code>, <code>-16</code>, <code>-14</code>), <code>LUFS-I</code> spirit level, always-visible <code>LUFS-S</code> / clickable <code>TRUE PK</code> (clears peaks &amp; clips only) / <code>LUFS-M</code> / <code>LRA</code>, channel meters with floating peak-hold &amp; <code>TP RED</code> line, dedicated <code>S/I</code> column with green <code>&plusmn;LU</code> band, 60s drift ribbon (freezes on pause), compact settings drawer, and Dark/Light theme.</p>
+      <p><strong>Key controls:</strong> Free <code>TARGET</code> (drag, wheel, or double-click) with one-click <code>LOCK NOW</code> to capture current loudness, <strong>9-step detented target rotor</strong> (<code>-24 / -21 / -18 / -16 / -14 / -12 / -10 / -8 / -6 LUFS</code> via drag, wheel, <code>-/+</code> buttons, or clickable step bar), <code>LUFS-I</code> spirit level, always-visible <code>LUFS-S</code> / clickable <code>TRUE PK</code> (clears peaks &amp; clips only) / <code>LUFS-M</code> / <code>LRA</code>, expandable channel meters with floating peak-hold &amp; <code>TP RED</code> line, dedicated <code>S/I</code> column with green <code>&plusmn;LU</code> band, header <strong><code>DRIFT</code></strong> toggle (optional 60s history ribbon — OFF by default — tracking 3s <code>LUFS-S</code> vs Target and pausing on Stop), compact settings drawer, and action-labeled theme toggle (<code>LIGHT</code> / <code>DARK</code>).</p>
     </div>
     <div class="card" id="plugin-oscilloscope">
       <h3>ZP Oscilloscope 16ch</h3>
@@ -524,19 +533,22 @@
     </div>
     <div class="card" id="plugin-probe">
       <h3>ZP Voice-Music Probe</h3>
-      <p><strong>Purpose:</strong> Passive transparent shared bus metering probe. Never alters audio; accurately measures RMS, True Peak, crest factor, density, brightness, and speech activity.</p>
-      <p><strong>Where to place:</strong> Absolute final slot on Voice Bus (Voice role) and Music Bus (Music role), guarded by Probe Guard.</p>
-      <p><strong>Key controls:</strong> Role switch (Voice / Music), real-time meter display, Shared Bus gmem activity indicator.</p>
+      <p><strong>Purpose:</strong> Passive zero-latency <strong>Shared Bus v3.1</strong> probe (v1.6), fully independent of BUS Chain. Never alters audio; measures RMS, sample peak, crest factor, density, brightness, and 4-zone <strong>Brown (-4.5 dB/oct)</strong> balance with residual tilt using two acoustic profiles: <strong>VOICE</strong> (<code>85&ndash;14k Hz</code> across vocal zones <code>85&ndash;250</code>, <code>250&ndash;800</code>, <code>800&ndash;4k</code>, <code>4k&ndash;14k</code> plus <strong>sub &lt;80 Hz</strong> rumble watch and speech activity) or <strong>FULL / MUS+FX</strong> (<code>40&ndash;14k Hz</code> full band across <code>40&ndash;160</code>, <code>160&ndash;800</code>, <code>800&ndash;4k</code>, <code>4k&ndash;14k</code> plus glue estimate).</p>
+      <p><strong>Where to place:</strong> At the end of any track, sub-chain, Voice Bus or Music Bus — or <strong>before and after 3rd-party FX blocks</strong> for differential measurement in <a href="#tool-39">39 ZP Telemetry Engine</a>.</p>
+      <p><strong>Key controls:</strong> Acoustic profile switch (<code>VOICE</code> / <code>FULL MUS+FX</code>), real-time meter display, Brown 4.5 tilt, sub &lt;80 Hz rumble indicator, and direct Shared Bus v3.1 status toward Master Pro / Telemetry Engine.</p>
     </div>
     <div class="card" id="plugin-brownslope-prism">
       <h3>ZP BrownSlope Prism</h3>
-      <p><strong>Purpose:</strong> Passive brown-slope analyzer (v1.1): audio passes through untouched. It displays the 4.5 dB/octave-compensated spectrum around the -18 and -24 LUFS references with a <strong>&plusmn;1.5 dB green target corridor</strong> (and outer &plusmn;3 dB halo). A smoothed curve highlights excess in warm amber/coral and deficit in cool cyan/blue against the target, with an optional translucent <code>Live</code> (~0.22 s) trace behind the long average.</p>
+      <p><strong>Purpose:</strong> Passive brown-slope analyzer (v1.2): audio passes through untouched while 4-zone deviations, residual slope, and a real <strong>cepstral comb-filter detector</strong> (<code>0.33&ndash;8 ms</code>, header <code>COMB</code> pill and alert over <strong>Shared Bus v3.1</strong>) feed <a href="#tool-39">39 ZP Telemetry Engine</a>. Displays the 4.5 dB/octave-compensated spectrum around the -18 and -24 LUFS references with a <strong>&plusmn;1.5 dB green target corridor</strong> (&plusmn;3 dB halo), warm/cool differential fill, modernized log-subdivided grid with mouse crosshair, and optional translucent <code>Live</code> (~0.22 s) trace.</p>
       <p><strong>Where to place:</strong> At the end of the bus or track you want to compare with the brown reference, or on the Master.</p>
-      <p><strong>Key controls:</strong> Target <code>-18 / -24 LUFS</code>, compare <code>Forma (EQ) / Livello</code>, <code>Reset</code> and <code>Live</code> toggles, <code>Media</code>, <code>Pendenza</code> and <code>Scala</code> knobs (symmetric zero-centered grid across any range), project-saved <code>Calibra / Default</code> reference controls, Dark/Light header theme toggle, and <code>?</code> guide.</p>
+      <p><strong>Key controls:</strong> Target <code>-18 / -24 LUFS</code>, compare <code>Forma (EQ) / Livello</code>, <code>Reset</code> and <code>Live</code> toggles, <code>Media</code>, <code>Pendenza</code> and <code>Scala</code> knobs (symmetric zero-centered grid), header <code>COMB</code> badge, hover <code>Hz / dB</code> crosshair, project-saved <code>Calibra / Default</code> reference controls, Dark/Light header theme toggle, and <code>?</code> guide.</p>
       <p><strong>Readings:</strong> Four frequency-zone cards (Lows, Low-mids, High-mids, Highs) with dB deviation and <strong>bipolar balance bars</strong> centered on the &plusmn;1.5 dB window, a residual-slope spirit level (dark to bright), level vs. reference, and status badge (Matched / Close / Brighter / Darker). JSFX view exposes all parameters and readings to OSARA and screen readers.</p>
     </div>
   </div>
   <p>All Suite JSFX plugins scale proportionally when you resize REAPER's FX window.</p>
+
+  <h3 id="shared-bus-logica">How Shared Bus v3.1 Works</h3>
+  <p>Shared Bus v3.1 (backward-compatible with v2.20) collects live telemetry from all 13 ZP plugin types across channels, Voice Bus, Music Bus, and Master (<em>BUS Chain</em>, <em>Unified Chain</em>, <em>Magic Voice LAB</em>, <em>Spoken Finish</em>, <em>Stagekeeper</em>, <em>Click &amp; Attack Softener</em>, <em>BrownSlope Dynamic Guard</em>, <em>Harmonic Space Carver</em>, <em>Voice-Music Probe</em>, <em>BrownSlope Prism</em>, <em>Loudness Meter Multichannel</em>, and <em>Master Pro</em>), independently of BUS Chain. Master Pro orders nodes upstream&rarr;downstream in its <strong>CATENA</strong> tab, while <a href="#tool-39"><strong>39 ZP Telemetry Engine</strong></a> combines them with REAPER's routing graph and 3rd-party FX. No diagnostic ever modifies DSP parameters automatically.</p>
 
   <!-- ================================================================== -->
   <h2 id="strumenti-srt">Standalone SRT Tools</h2>
@@ -586,8 +598,20 @@
   <p>One window with three independent commands, plus <strong>?</strong> for the full explanation.</p>
   <ul>
     <li><strong>Consolida progetto</strong> (consolidate project): copies into <em>Media</em>, byte for byte, the files used by the project (audio, video, external MIDI, sources of every take) and its SRT/VTT files, then relinks the takes. It never converts or deletes the originals; it saves the project first and keeps a safety copy.</li>
-    <li><strong>Pulisci Media</strong> (clean Media): finds the files in <em>Media</em> the project does not use and, if you confirm, moves them to a folder next to Media. Nothing is deleted.</li>
+    <li><strong>Pulisci Media</strong> (clean Media): finds the files in <em>Media</em> the project does not use and, if you confirm, moves them to a folder next to Media. Nothing is deleted. <strong>Warning:</strong> a REAPER project file is plain text and does not contain its media; if other projects share the same <em>Media</em> folder, moving the files this project does not use may take them offline in those projects. Before cleaning, save the project to a separate folder (<em>File → Save project as</em> with “Copy all media into project directory”) so it has only its own media.</li>
     <li><strong>Numera item</strong> (number items): renames the items on the selected tracks with the track name and a running number (<em>Voice#1</em>, <em>Voice#2</em>&hellip;), in the order they sit on the track. Useful to find the sequence again after heavy editing. Ctrl+Z undoes it.</li>
+  </ul>
+
+  <!-- ================================================================== -->
+  <h2 id="tool-39">39 &middot; ZP Telemetry Engine (Chain Analysis &amp; Diagnostics 2.6.9)</h2>
+  <p><strong>Purpose:</strong> Slow-window advisory telemetry engine that inspects REAPER's real routing graph (folders, main sends, aux sends, faders, mute/solo, exact FX order for both ZP and 3rd-party plugins) and identifies <strong>which stage along the chain is pushing too hard or too little</strong> relative to the expected Master output. Never alters DSP automatically: click any flagged FX to open it directly, while all engineering decisions stay with the user.</p>
+  <ul>
+    <li><strong>Fixed reference frame:</strong> Uses the <strong>Brown <code>-4.5 dB/oct &plusmn;10%</code></strong> slope (<code>&plusmn;0.45 dB/oct</code>, 4 zones green at <code>&plusmn;1.5 dB</code> and yellow at <code>&plusmn;3.0 dB</code>), <code>LUFS</code>, and <code>True Peak</code>. Whenever <strong>Tone Guard</strong> is active on <em>ZP Master Pro</em>, its chosen tonal horizon takes priority as the authoritative reference.</li>
+    <li><strong>Slow gated integration:</strong> Accumulates only during active Play with real program signal (<code>5 s</code> short window, <code>18 s</code> judgment window with at least <code>5 s</code> active), avoiding false alarms on isolated syllables or pauses.</li>
+    <li><strong>Visibility into 3rd-party FX:</strong> Reads host-reported <code>GainReduction_dB</code> from external VST/AU/CLAP plugins and computes differential gain + 4-zone residuals whenever two <em>Voice-Music Probes</em> bracket an opaque FX block.</li>
+    <li><strong>Opposing stages ("tug of war") with non-linearity filter:</strong> Flags stages cancelling each other out (opposite gain &ge; <code>2.5 dB</code> or tone &ge; <code>1.8 dB</code>), <em>unless</em> an active non-linear stage sits between them (compressor GR &ge; <code>1.5 dB</code> or saturation &ge; <code>10%</code>), respecting intentional pre-emphasis before dynamics.</li>
+    <li><strong>Diagnostic classes:</strong> Brown/Loudness/True Peak drift; idle oppositions; dynamic concentration (&gt;<code>70%</code> of total GR on one stage when total &gt;<code>5 dB</code>); <strong>voice sub-&lt;80 Hz rumble</strong> (&gt;<code>3 dB</code>); <strong>voice/music masking</strong> with targeted guidance for <em>ZP Harmonic Space Carver</em>; upstream safety alerts (<code>DELTA</code>, <code>SOLO</code>, <code>CHECK</code>, or <code>CLIP</code>).</li>
+    <li><strong>Engineer control:</strong> Open any flagged FX in one click or dismiss intentional creative choices per session. A live status badge inside <em>ZP Master Pro</em> summarizes the Telemetry Engine verdict.</li>
   </ul>
 
   <h2 id="azioni">Background Actions</h2>
@@ -616,15 +640,18 @@
     <li><strong>Suite language</strong>: side-by-side buttons (<em>Italiano</em> | <em>English</em>). Applies immediately to windows, messages and guides opened after.</li>
     <li><strong>REAPER language</strong>: dropdown menu showing the active language pack (or <em>Original (English)</em>) from <code>REAPER/LangPack</code>. Selecting a pack shows a restart button to apply immediately. Prefer <strong>Italiano (ZP)</strong> for Italian: third-party packs translate three entries that REAPER matches in English (<code>(delay %ds)</code>, <code>sel_regions</code>, <code>sel_markers</code>), and with those packs Render Queue jobs may fail to delete or run.</li>
     <li><strong>Toolbar & FX</strong>: <em>Install</em> runs tool 32. Restart REAPER to finalize.</li>
+    <li><strong>ZP Project Setups (-18 / -8 LUFS)</strong>: checks/installs in <code>REAPER/ProjectTemplates</code> the two ready-calibrated setups using ZP plugins only (<strong>ZP Setup VoiceOver (-18 LUFS)</strong> and <strong>ZP Setup Mix-Spot (-8 LUFS)</strong>, sidechain pre-wired) and opens either in a new project tab with one click.</li>
     <li><strong>Cue Navigator</strong> (Harmonic Space Carver helper): starts helper on launch.</li>
     <li><strong>ZP Speech</strong>: powers local Whisper transcription (MacWhisper on macOS or isolated OpenAI Whisper on macOS, Windows, and Linux) and translation.</li>
     <li><strong>SWS</strong>, <strong>js_ReaScriptAPI</strong>, <strong>OSARA</strong>: optional enhancements.</li>
     <li><strong>Item Markers</strong>: sets mouse modifier to protect take markers from accidental displacement.</li>
   </ul>
   <p id="tool-32"><strong>Toolbar & FX:</strong> run <strong>32 Install ZP Toolbar</strong> after installation to register action IDs and install FX chains. Details in <a href="toolbar.html">toolbar guide</a>.</p>
-<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Developed from an idea by Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
-<h2 id="beta-268">BETA tools — Suite 2.6.8</h2>
-<p>ZP Clean &amp; Paint, ZP Montaggio Parlato, ZP BrownSlope Dynamic Guard and ZP Click &amp; Attack Softener are BETA packages. See the <a href="lab.html">Beta guide, prerequisites and limitations</a>.</p>
+<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; <a href="https://latocardioide.it/strumenti/">latocardioide.it</a> &middot; <a href="https://dubbertools.com/">dubbertools.com</a></span></p><!-- /lc-piede -->
+<h2 id="beta-tools">ZP Lab tools</h2>
+<p>ZP Clean &amp; Paint, ZP Montaggio Parlato, ZP BrownSlope Dynamic Guard and ZP Click &amp; Attack Softener are separate packages, no longer in beta as of 2.6.9. See the <a href="lab.html">guide, prerequisites and limitations</a>.</p>
+<h2 id="manleva">License &amp; Disclaimer of Warranty</h2>
+<p class="small">ZP Suite is free, open-source software licensed primarily under <strong>GNU GPL-3.0-or-later</strong> (some REAPER-derived meters are LGPL-2.1-or-later). It is provided <strong>"AS IS" without warranty of any kind</strong>, expressed or implied, including implied warranties of merchantability or fitness for a particular purpose (GPLv3 Sections 15&ndash;16). Production use is solely at the user's own risk: always maintain project backups and verify rendered files. The author assumes no liability for any direct or indirect damages, downtime, or data loss arising from the use of this software.</p>
 </main>
 </body>
 </html>

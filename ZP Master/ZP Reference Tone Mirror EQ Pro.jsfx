@@ -1,5 +1,5 @@
 // @description ZP Reference Tone Mirror EQ Pro
-// @version 0.064
+// @version 1.0.0
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
@@ -13,15 +13,12 @@
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: ZP Studio Suite/help/index.html#plugin-mirror-eq
 // @changelog
-//   Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
-//   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
-//     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
-//   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
-desc:ZP Reference Tone Mirror EQ Pro - Paolo Balestri
+//   v1.0.0: Interfaccia hardware ZP Suite completa (vista FULL senza slider nativi sovrapposti + vista JSFX per OSARA), grafico live della curva EQ a 31 bande, 3 pannelli con pomelli rotativi (Match & Shape, Tone & Harmonics, Level & Output), Debug Overlay spento di default. DSP e slider 1..109 invariati.
+desc:ZP Reference Tone Mirror EQ Pro · latocardioide.it · dubbertools.com
 options:gmem=ZPVoiceoverSharedBus gfx_hz=30
 // Autore: Paolo Balestri / Codex prototype
 // Versione: 0.062 true-capture + low-control + diag null hunter
-// Contatto: social@paolobalestri.com
+// Contatto: paolo@latocardioide.it
 // ============================================================================
 //  MANUALE D'USO - REFERENCE TONE MIRROR EQ PRO
 // ============================================================================
@@ -112,13 +109,13 @@ slider18:-120<-120,12,0.1>-[Read] Output Avg (dB)
 slider93:0<-24,24,0.01>-[Read] AGC Gain (dB)
 slider94:0<-24,24,0.1>-Target Level Offset (dB)
 slider95:0<0,1,1{Match Reference,Keep Input Delta}>-Level Target
-slider96:1<0,1,1{Off,On}>-Debug Overlay (GUI Dev)
+slider96:0<0,1,1{Off,On}>-Debug Overlay (GUI Dev)
 slider97:0<0,1,1{Off,On}>-Strict EQ (No Speech Chasing)
 slider98:0<-0.0,1.0,0.0001>-[Read] DBG Eff Match
 slider99:0<-0.0,1.0,0.0001>-[Read] DBG Mirror Err
 slider100:0<0.0,4.0,0.001>-[Read] DBG Curve Time (s)
 slider101:0<0.0,12.0,0.001>-[Read] DBG Raw Err (dB)
-slider19:0<0,1,1{Lite,JSFX}>-Interface Mode
+slider19:0<0,1,1{FULL,JSFX}>-Interface Mode
 slider20:0<0,2,1{Follow,Capture,Keep}>-Profile Memory
 slider21:0<0,100,1>-[Read] Capture Progress (%)
 slider22:0<-18,18,0.1>-AGC Trim (dB)
@@ -269,8 +266,13 @@ function zp_printf(fmt, a1) (
 ext_noinit = 1;
 ext_nodenorm = 1;
 gfx_ext_retina = 1;
-slider19 = 0;
-ui_mode = 1;
+ui_mode = max(0, min(1, floor(slider19 + 0.5)));
+tm_drag_id = 0;
+tm_drag_y0 = 0;
+tm_drag_v0 = 0;
+tm_last_click_t = 0;
+tm_last_click_id = 0;
+tm_hover_tip = 0;
 
 help_bridge_alive = 0;
 help_warn_until = 0;
@@ -533,11 +535,10 @@ safe_preset_last = floor(slider105 + 0.5);
 safe_preset_last < 0 ? safe_preset_last = 0;
 safe_preset_last > 5 ? safe_preset_last = 5;
 
-slider_show(all_sliders_mask, 1);
+slider_show(all_sliders_mask, ui_mode >= 0.5 ? 1 : 0);
 slider_show(view_slider_mask, 0);
-init_ui_mode = 1;
-slider_show(view_slider_mask, 0);
-last_ui_mode = 1;
+init_ui_mode = ui_mode;
+last_ui_mode = ui_mode;
 
 function clamp(x, lo, hi) (
   x < lo ? lo : x > hi ? hi : x;
@@ -789,7 +790,7 @@ local(i) (
 );
 
 function apply_ui_visibility(mode) (
-  slider_show(all_sliders_mask, 1);
+  slider_show(all_sliders_mask, mode >= 0.5 ? 1 : 0);
   slider_show(view_slider_mask, 0);
   last_ui_mode = mode;
 );
@@ -1251,6 +1252,140 @@ local(over, clicked, tw, th) (
   clicked;
 );
 
+function tm_draw_box(x, y, w, h, ar, ag, ab) (
+  gfx_r = 0.095; gfx_g = 0.110; gfx_b = 0.138; gfx_a = 1;
+  zp_rect(x, y, w, h);
+  gfx_r = 0.18; gfx_g = 0.21; gfx_b = 0.26; gfx_a = 0.9;
+  zp_rect(x, y, w, 1); zp_rect(x, y + h - 1, w, 1);
+  zp_rect(x, y, 1, h); zp_rect(x + w - 1, y, 1, h);
+  gfx_r = ar; gfx_g = ag; gfx_b = ab; gfx_a = 0.95;
+  zp_rect(x, y, w, 2);
+);
+
+function tm_pill_btn(x, y, w, h, txt, active, ar, ag, ab)
+local(over, clicked, tw, th) (
+  over = zp_mx >= x && zp_mx < x + w && zp_my >= y && zp_my < y + h;
+  clicked = over && (mouse_cap & 1) && !last_mouse_cap;
+  active ? (
+    gfx_r = ar; gfx_g = ag; gfx_b = ab; gfx_a = 0.95;
+  ) : over ? (
+    gfx_r = 0.20; gfx_g = 0.23; gfx_b = 0.29; gfx_a = 1;
+  ) : (
+    gfx_r = 0.13; gfx_g = 0.15; gfx_b = 0.19; gfx_a = 1;
+  );
+  zp_rect(x, y, w, h);
+  gfx_r = active ? min(1, ar + 0.18) : (over ? 0.36 : 0.24);
+  gfx_g = active ? min(1, ag + 0.18) : (over ? 0.42 : 0.28);
+  gfx_b = active ? min(1, ab + 0.18) : (over ? 0.52 : 0.36);
+  gfx_a = 0.95;
+  zp_rect(x, y, w, 1); zp_rect(x, y + h - 1, w, 1);
+  zp_rect(x, y, 1, h); zp_rect(x + w - 1, y, 1, h);
+  zp_setfont(1, "Arial", 11, active ? 'b' : 0);
+  gfx_r = active ? 0.98 : 0.82; gfx_g = active ? 0.99 : 0.85; gfx_b = active ? 1.0 : 0.90; gfx_a = 1;
+  (gfx_measurestr(txt, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = x + (w - tw) * 0.5;
+  zp_gy = y + (h - th) * 0.5;
+  zp_drawstr(txt);
+  clicked;
+);
+
+function tm_knob(id, cx, cy, r, val, vmin, vmax, vdef, step, lbl, valtxt, ar, ag, ab, tip_id)
+local(dx, dy, over, norm, a_start, a_end, a_val, px, py, tw, th, nv, now_t, sens, bi, a_zero) (
+  dx = zp_mx - cx; dy = zp_my - cy;
+  over = (dx * dx + dy * dy <= (r + 8) * (r + 8));
+  over ? ( tm_hover_tip = tip_id; );
+
+  // Double-click reset + drag start
+  over && (mouse_cap & 1) && !last_mouse_cap ? (
+    now_t = time_precise();
+    (tm_last_click_id == id && (now_t - tm_last_click_t) < 0.32) ? (
+      val = vdef;
+      tm_drag_id = 0;
+      tm_last_click_id = 0;
+    ) : (
+      tm_drag_id = id;
+      tm_drag_y0 = zp_my;
+      tm_drag_v0 = val;
+      tm_last_click_id = id;
+      tm_last_click_t = now_t;
+    );
+  );
+  tm_drag_id == id && (mouse_cap & 1) ? (
+    sens = (mouse_cap & 8) ? 0.0012 : 0.0055;
+    nv = tm_drag_v0 + (tm_drag_y0 - zp_my) * sens * (vmax - vmin);
+    step > 0 ? ( nv = floor(nv / step + 0.5) * step; );
+    val = clamp(nv, vmin, vmax);
+    tm_hover_tip = tip_id;
+  );
+
+  // Label above knob
+  zp_setfont(1, "Arial", 10, 'b');
+  gfx_r = over || tm_drag_id == id ? 0.95 : 0.72;
+  gfx_g = over || tm_drag_id == id ? 0.97 : 0.77;
+  gfx_b = over || tm_drag_id == id ? 1.00 : 0.84;
+  gfx_a = 1;
+  (gfx_measurestr(lbl, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = cx - tw * 0.5;
+  zp_gy = cy - r - 17;
+  zp_drawstr(lbl);
+
+  // Outer track arc
+  a_start = -2.356194;
+  a_end = 2.356194;
+  norm = clamp((val - vmin) / max(0.000001, vmax - vmin), 0, 1);
+  a_val = a_start + norm * (a_end - a_start);
+
+  gfx_r = 0.16; gfx_g = 0.19; gfx_b = 0.24; gfx_a = 1;
+  zp_arc(cx, cy, r + 3, a_start, a_end, 1);
+  zp_arc(cx, cy, r + 4, a_start, a_end, 1);
+
+  // Active value arc (bipolar if vmin < 0 && vmax > 0)
+  bi = (vmin < 0 && vmax > 0);
+  gfx_r = ar; gfx_g = ag; gfx_b = ab; gfx_a = 0.95;
+  bi ? (
+    a_zero = a_start + clamp((0 - vmin) / max(0.000001, vmax - vmin), 0, 1) * (a_end - a_start);
+    a_val >= a_zero ? (
+      zp_arc(cx, cy, r + 3, a_zero, a_val, 1);
+      zp_arc(cx, cy, r + 4, a_zero, a_val, 1);
+    ) : (
+      zp_arc(cx, cy, r + 3, a_val, a_zero, 1);
+      zp_arc(cx, cy, r + 4, a_val, a_zero, 1);
+    );
+  ) : (
+    norm > 0.005 ? (
+      zp_arc(cx, cy, r + 3, a_start, a_val, 1);
+      zp_arc(cx, cy, r + 4, a_start, a_val, 1);
+    );
+  );
+
+  // Metallic knob body
+  gfx_r = 0.12; gfx_g = 0.14; gfx_b = 0.18; gfx_a = 1;
+  zp_circle(cx, cy, r, 1, 1);
+  gfx_r = over || tm_drag_id == id ? 0.30 : 0.22;
+  gfx_g = over || tm_drag_id == id ? 0.35 : 0.26;
+  gfx_b = over || tm_drag_id == id ? 0.44 : 0.32;
+  gfx_a = 1;
+  zp_circle(cx, cy, r, 0, 1);
+  gfx_r = 0.16; gfx_g = 0.18; gfx_b = 0.23; gfx_a = 1;
+  zp_circle(cx, cy, r - 4, 1, 1);
+
+  // Pointer needle (0 rad = up, clockwise positive)
+  px = cx + sin(a_val) * (r - 3);
+  py = cy - cos(a_val) * (r - 3);
+  gfx_r = 0.96; gfx_g = 0.98; gfx_b = 1.0; gfx_a = 1;
+  zp_line(cx + sin(a_val) * (r * 0.28), cy - cos(a_val) * (r * 0.28), px, py, 1);
+
+  // Value readout below
+  zp_setfont(1, "Arial", 10);
+  gfx_r = 0.86; gfx_g = 0.90; gfx_b = 0.96; gfx_a = 1;
+  (gfx_measurestr(valtxt, tw, th); tw /= zp_sc; th /= zp_sc);
+  zp_gx = cx - tw * 0.5;
+  zp_gy = cy + r + 6;
+  zp_drawstr(valtxt);
+
+  val;
+);
+
 function biquad_process(base, idx, x)
 local(off, y) (
   off = idx * 9;
@@ -1405,7 +1540,7 @@ agc_range_db = max(1, slider23);
 mix_wet = slider13 / 100;
 mix_dry = 1 - mix_wet;
 monitor_mode = floor(slider14);
-ui_mode = clamp(floor(slider19 + 0.5), 0, 1);
+ui_mode = max(0, min(1, floor(slider19 + 0.5)));
 profile_mode = clamp(floor(slider20 + 0.5), 0, 2);
 target_offset_amp = db_to_amp(slider94);
 level_target_mode = floor(slider95);
@@ -2801,8 +2936,13 @@ spl1 = outR;
 spl2 = 0;
 spl3 = 0;
 
-@gfx 980 606
-zp_dw = 760.0; zp_dh = 470.0; zp_sc = max(0.55, min(2.5, min(gfx_w / zp_dw, gfx_h / zp_dh))); zp_ox = max(0, (gfx_w - zp_dw * zp_sc) * 0.5); zp_vw = zp_dw; zp_vh = max(zp_dh, gfx_h / zp_sc); zp_mx = (mouse_x - zp_ox) / zp_sc; zp_my = mouse_y / zp_sc;
+@gfx 980 620
+zp_dw = 980.0; zp_dh = 620.0;
+zp_sc = max(0.50, min(2.5, min(gfx_w / zp_dw, gfx_h / zp_dh)));
+zp_ox = max(0, (gfx_w - zp_dw * zp_sc) * 0.5);
+zp_vw = zp_dw; zp_vh = max(zp_dh, gfx_h / zp_sc);
+zp_mx = (mouse_x - zp_ox) / zp_sc;
+zp_my = mouse_y / zp_sc;
 
 // Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
 zp_hb = gmem[3900]; zp_hb_now = time_precise();
@@ -2812,404 +2952,474 @@ help_bridge_alive = zp_hb_ok;
 ui_lang = (gmem[3901] == 1) ? 1 : 0;
 help_mouse_click = (mouse_cap & 1) && !(last_mouse_cap & 1);
 
-gfx_set(0.08, 0.09, 0.11, 1);
-zp_rect(0, 0, zp_vw, zp_vh);
-
-ui_mode = clamp(floor(slider19 + 0.5), 0, 1);
 mouse_down = mouse_cap & 1;
+!mouse_down ? ( tm_drag_id = 0; );
+tm_hover_tip = 0;
+tm_changed = 0;
+
+ui_mode = max(0, min(1, floor(slider19 + 0.5)));
 profile_mode = clamp(floor(slider20 + 0.5), 0, 2);
 strict_eq_on = slider97 >= 0.5;
 diag_mode = clamp(floor(slider107 + 0.5), 0, 3);
 listen_mode = floor(slider104);
+monitor_mode = clamp(floor(slider14 + 0.5), 0, 2);
 
-zp_setfont(1, "Arial", 18);
-gfx_r = 0.93; gfx_g = 0.95; gfx_b = 0.98; gfx_a = 1;
-zp_gx = 22; zp_gy = 18;
-zp_drawstr("Tone Mirror EQ Pro");
-zp_setfont(1, "Arial", 13);
-gfx_r = 0.60; gfx_g = 0.66; gfx_b = 0.74;
-zp_gx = 24; zp_gy = 42;
-zp_drawstr("Profilo medio sidechain + broad EQ + harmonics + level match");
+// Sfondo satinato ZP Suite
+gfx_set(0.062, 0.072, 0.092, 1);
+zp_rect(0, 0, zp_vw, zp_vh);
 
-zp_setfont(1, "Arial", 12);
+// ---- HEADER BAR (y = 0..48) ----
+gfx_set(0.088, 0.102, 0.130, 1);
+zp_rect(0, 0, zp_vw, 48);
+gfx_set(0.20, 0.24, 0.30, 1);
+zp_rect(0, 47, zp_vw, 1);
+
+// Status jewel + Title + Product Brand
+routing_state == 0 ? ( gfx_set(0.22, 0.84, 0.46, 1); ) : ( gfx_set(0.96, 0.68, 0.22, 1); );
+zp_circle(24, 24, 5, 1, 1);
+
+zp_setfont(1, "Arial", 15, 'b');
+gfx_set(0.94, 0.96, 0.99, 1);
+zp_gx = 38; zp_gy = 10;
+zp_drawstr("ZP REFERENCE TONE MIRROR EQ PRO");
+
+zp_setfont(1, "Arial", 10);
+gfx_set(0.56, 0.64, 0.74, 1);
+zp_gx = 38; zp_gy = 29;
+zp_drawstr("v1.0.0  ·  latocardioide.it  ·  dubbertools.com");
+
+// Routing status pill (center-right)
+tm_rt_x = 516; tm_rt_y = 12; tm_rt_w = 248; tm_rt_h = 24;
 routing_state == 0 ? (
-  gfx_r = 0.36; gfx_g = 0.84; gfx_b = 0.56;
-  zp_gx = 24; zp_gy = 60;
-  zp_drawstr("Routing: Reference sidechain OK");
-) : routing_state == 3 ? (
-  gfx_r = 0.96; gfx_g = 0.72; gfx_b = 0.26;
-  zp_gx = 24; zp_gy = 60;
-  zp_drawstr("Routing: la traccia deve avere 4 canali");
-) : routing_state == 1 ? (
-  gfx_r = 0.96; gfx_g = 0.72; gfx_b = 0.26;
-  zp_gx = 24; zp_gy = 60;
-  zp_drawstr("Routing: nessun segnale su Reference 3/4");
+  gfx_set(0.10, 0.24, 0.17, 1); zp_rect(tm_rt_x, tm_rt_y, tm_rt_w, tm_rt_h);
+  gfx_set(0.22, 0.62, 0.38, 0.9);
 ) : (
-  gfx_r = 0.96; gfx_g = 0.64; gfx_b = 0.26;
-  zp_gx = 24; zp_gy = 60;
-  zp_drawstr("Routing: Reference sta leggendo lo stesso segnale di Input");
+  gfx_set(0.28, 0.19, 0.09, 1); zp_rect(tm_rt_x, tm_rt_y, tm_rt_w, tm_rt_h);
+  gfx_set(0.88, 0.58, 0.18, 0.9);
 );
+zp_rect(tm_rt_x, tm_rt_y, tm_rt_w, 1); zp_rect(tm_rt_x, tm_rt_y + tm_rt_h - 1, tm_rt_w, 1);
+zp_rect(tm_rt_x, tm_rt_y, 1, tm_rt_h); zp_rect(tm_rt_x + tm_rt_w - 1, tm_rt_y, 1, tm_rt_h);
+zp_setfont(1, "Arial", 11, 'b');
+routing_state == 0 ? (
+  gfx_set(0.42, 0.90, 0.58, 1);
+  strcpy(#tm_rt_txt, ui_lang == 0 ? "ROUTING: SC 3/4 OK" : "ROUTING: SC 3/4 OK");
+) : routing_state == 3 ? (
+  gfx_set(0.98, 0.76, 0.32, 1);
+  strcpy(#tm_rt_txt, ui_lang == 0 ? "ROUTING: IMPOSTA 4 CANALI" : "ROUTING: SET 4 CHANNELS");
+) : routing_state == 1 ? (
+  gfx_set(0.98, 0.76, 0.32, 1);
+  strcpy(#tm_rt_txt, ui_lang == 0 ? "ROUTING: NESSUN SC SU 3/4" : "ROUTING: NO SC ON 3/4");
+) : (
+  gfx_set(0.98, 0.64, 0.28, 1);
+  strcpy(#tm_rt_txt, ui_lang == 0 ? "ROUTING: SC = STESSO INPUT" : "ROUTING: SC = SAME INPUT");
+);
+(gfx_measurestr(#tm_rt_txt, tm_tw, tm_th); tm_tw /= zp_sc; tm_th /= zp_sc);
+zp_gx = tm_rt_x + (tm_rt_w - tm_tw) * 0.5;
+zp_gy = tm_rt_y + (tm_rt_h - tm_th) * 0.5;
+zp_drawstr(#tm_rt_txt);
+
+// View mode pills FULL | JSFX + ?
+tm_pill_btn(776, 12, 74, 24, "FULL", ui_mode == 0, 0.16, 0.48, 0.82) ? ( set_ui_mode(0); );
+tm_pill_btn(856, 12, 74, 24, "JSFX", ui_mode == 1, 0.16, 0.48, 0.82) ? ( set_ui_mode(1); );
+tm_pill_btn(938, 12, 26, 24, "?", 0, 0.20, 0.38, 0.60) ? ( help_bridge_open(8); );
+
+// ---- WORKFLOW & PRESET STRIP (y = 56..118) ----
+tm_draw_box(16, 56, 948, 62, 0.24, 0.58, 0.86);
+
+// Row 1 (y = 64): Clear | Follow | Capture | Keep | Strict EQ | AB: POST/REF | Monitor
+ui_action_button(26, 63, 72, 24, "CLEAR");
+follow_btn_state = (!idle_mode && profile_mode == 0) ? 2 : 0;
+ui_profile_button(0, 106, 63, 80, 24, "FOLLOW", follow_btn_state);
+capture_state = (!idle_mode && profile_mode == 1) ? (capture_count < capture_target_samples ? 1 : 2) : ((!idle_mode && profile_mode == 2) ? 2 : 0);
+capture_state == 1 ? sprintf(#tm_cap_lbl, "CAP %.0f%%", slider21) : strcpy(#tm_cap_lbl, "CAPTURE");
+ui_profile_button(1, 194, 63, 88, 24, #tm_cap_lbl, capture_state);
+ui_profile_button(2, 290, 63, 78, 24, "KEEP", (!idle_mode && profile_mode == 2) ? 2 : 0);
+
+// Divider
+gfx_set(0.22, 0.26, 0.34, 1);
+zp_rect(380, 64, 1, 22);
+
+tm_pill_btn(392, 63, 108, 24, strict_eq_on ? "STRICT EQ: ON" : "STRICT EQ: OFF", strict_eq_on, 0.16, 0.54, 0.36) ? (
+  slider97 = strict_eq_on ? 0 : 1; tm_changed = 1;
+);
+tm_pill_btn(508, 63, 106, 24, listen_mode ? "LISTEN: REF" : "LISTEN: POST", listen_mode, 0.82, 0.44, 0.14) ? (
+  slider104 = listen_mode ? 0 : 1; tm_changed = 1;
+);
+strcpy(#tm_mon_lbl, monitor_mode == 1 ? "MON: DELTA EQ" : monitor_mode == 2 ? "MON: DELTA HARM" : "MON: PROCESSED");
+tm_pill_btn(622, 63, 134, 24, #tm_mon_lbl, monitor_mode > 0, 0.72, 0.30, 0.52) ? (
+  slider14 = (monitor_mode + 1) % 3; tm_changed = 1;
+);
+
+// Live Diag cycler on right of Row 1
+strcpy(#diag_btn_txt, diag_mode == 1 ? "DIAG: RMS" : diag_mode == 2 ? "DIAG: PERC" : diag_mode == 3 ? "DIAG: NULL" : "DIAG: OFF");
+tm_pill_btn(764, 63, 98, 24, #diag_btn_txt, diag_mode > 0, 0.24, 0.48, 0.78) ? (
+  slider107 = (diag_mode + 1) % 4; tm_changed = 1;
+);
+diag_off_abs = abs(slider108);
+diag_null_db = slider109;
+diag_mode > 0 ? (
+  (diag_off_abs <= 1.0 && diag_null_db <= -12.0) ? (
+    gfx_set(0.32, 0.86, 0.48, 1); strcpy(#tm_dg_st, "OK");
+  ) : (diag_off_abs <= 2.5 && diag_null_db <= -8.0) ? (
+    gfx_set(0.96, 0.76, 0.24, 1); strcpy(#tm_dg_st, "QUASI");
+  ) : (
+    gfx_set(0.94, 0.42, 0.28, 1); strcpy(#tm_dg_st, "REGOLA");
+  );
+  zp_setfont(1, "Arial", 10, 'b');
+  zp_gx = 870; zp_gy = 68;
+  sprintf(#tm_dg_rd, "%s %+.1fdB", #tm_dg_st, slider108);
+  zp_drawstr(#tm_dg_rd);
+) : (
+  zp_setfont(1, "Arial", 10);
+  gfx_set(0.50, 0.56, 0.64, 1);
+  zp_gx = 870; zp_gy = 68;
+  zp_drawstr(idle_mode ? "MODE: IDLE" : profile_mode == 0 ? "MODE: FOLLOW" : profile_mode == 1 ? "MODE: CAPTURE" : "MODE: KEEP");
+);
+
+// Row 2 (y = 92): 5 Preset Guida pills
+zp_setfont(1, "Arial", 10, 'b');
+gfx_set(0.56, 0.64, 0.74, 1);
+zp_gx = 26; zp_gy = 96;
+zp_drawstr(ui_lang == 0 ? "PRESET GUIDA:" : "GUIDE PRESETS:");
+
+tm_pill_btn(126, 92, 108, 20, "Vicino", safe_preset_last == 1, 0.22, 0.50, 0.76) ? ( apply_safe_preset(1); tm_changed = 1; );
+tm_pill_btn(242, 92, 108, 20, "Distante", safe_preset_last == 2, 0.22, 0.50, 0.76) ? ( apply_safe_preset(2); tm_changed = 1; );
+tm_pill_btn(358, 92, 118, 20, "Voce Stabile", safe_preset_last == 3, 0.22, 0.50, 0.76) ? ( apply_safe_preset(3); tm_changed = 1; );
+tm_pill_btn(484, 92, 118, 20, "Basse Ctrl", safe_preset_last == 4, 0.22, 0.50, 0.76) ? ( apply_safe_preset(4); tm_changed = 1; );
+tm_pill_btn(610, 92, 118, 20, "Aria Ctrl", safe_preset_last == 5, 0.22, 0.50, 0.76) ? ( apply_safe_preset(5); tm_changed = 1; );
+
+// Hover tips for presets
+zp_my >= 92 && zp_my <= 112 ? (
+  zp_mx >= 126 && zp_mx < 234 ? tm_hover_tip = 21;
+  zp_mx >= 242 && zp_mx < 350 ? tm_hover_tip = 22;
+  zp_mx >= 358 && zp_mx < 476 ? tm_hover_tip = 23;
+  zp_mx >= 484 && zp_mx < 602 ? tm_hover_tip = 24;
+  zp_mx >= 610 && zp_mx < 728 ? tm_hover_tip = 25;
+);
+
+// ---- HERO SECTION: 31-BAND MATCHING EQ CURVE + STATUS CARD (y = 126..306) ----
+tm_gx = 16; tm_gy = 126; tm_gw = 710; tm_gh = 180;
+tm_draw_box(tm_gx, tm_gy, tm_gw, tm_gh, 0.20, 0.72, 0.86);
+
+// Plot inner area
+tm_px = tm_gx + 40; tm_py = tm_gy + 26; tm_pw = tm_gw - 56; tm_ph = tm_gh - 48;
+tm_mid_y = tm_py + tm_ph * 0.5;
+gfx_set(0.055, 0.064, 0.082, 1);
+zp_rect(tm_px, tm_py, tm_pw, tm_ph);
+
+// Horizontal dB grid (+12, +6, 0, -6, -12 dB)
+tm_db_rng = max(6, slider5);
+tm_j = -2;
+loop(5,
+  tm_db_val = tm_j * (tm_db_rng * 0.5);
+  tm_ly = tm_mid_y - (tm_db_val / tm_db_rng) * (tm_ph * 0.46);
+  tm_j == 0 ? gfx_set(0.32, 0.40, 0.50, 0.9) : gfx_set(0.14, 0.17, 0.22, 0.9);
+  zp_line(tm_px, tm_ly, tm_px + tm_pw, tm_ly, 0);
+  zp_setfont(1, "Arial", 9);
+  gfx_set(0.50, 0.57, 0.66, 1);
+  sprintf(#tm_dbl, "%+.0f", tm_db_val);
+  zp_gx = tm_gx + 8; zp_gy = tm_ly - 5;
+  zp_drawstr(#tm_dbl);
+  tm_j += 1;
+);
+
+// Vertical frequency grid (31, 63, 125, 250, 500, 1k, 2k, 4k, 8k, 16k)
+tm_lmin = log(20); tm_lmax = log(20000);
+tm_fi = 0;
+loop(10,
+  tm_ff = tm_fi == 0 ? 31.5 : tm_fi == 1 ? 63 : tm_fi == 2 ? 125 : tm_fi == 3 ? 250 : tm_fi == 4 ? 500
+        : tm_fi == 5 ? 1000 : tm_fi == 6 ? 2000 : tm_fi == 7 ? 4000 : tm_fi == 8 ? 8000 : 16000;
+  tm_fx = tm_px + ((log(tm_ff) - tm_lmin) / (tm_lmax - tm_lmin)) * tm_pw;
+  gfx_set(0.14, 0.17, 0.22, 0.85);
+  zp_line(tm_fx, tm_py, tm_fx, tm_py + tm_ph, 0);
+  zp_setfont(1, "Arial", 9);
+  gfx_set(0.50, 0.57, 0.66, 1);
+  tm_ff >= 1000 ? sprintf(#tm_fl, "%.0fk", tm_ff * 0.001) : sprintf(#tm_fl, "%.0f", tm_ff);
+  (gfx_measurestr(#tm_fl, tm_tw, tm_th); tm_tw /= zp_sc; tm_th /= zp_sc);
+  zp_gx = tm_fx - tm_tw * 0.5; zp_gy = tm_py + tm_ph + 4;
+  zp_drawstr(#tm_fl);
+  tm_fi += 1;
+);
+
+// HP / LP cutoff markers on plot
+slider106 > 22 ? (
+  tm_hpx = tm_px + ((log(clamp(slider106, 20, 20000)) - tm_lmin) / (tm_lmax - tm_lmin)) * tm_pw;
+  gfx_set(0.92, 0.54, 0.24, 0.55);
+  zp_line(tm_hpx, tm_py, tm_hpx, tm_py + tm_ph, 0);
+);
+slider103 < 19800 ? (
+  tm_lpx = tm_px + ((log(clamp(slider103, 20, 20000)) - tm_lmin) / (tm_lmax - tm_lmin)) * tm_pw;
+  gfx_set(0.92, 0.54, 0.24, 0.55);
+  zp_line(tm_lpx, tm_py, tm_lpx, tm_py + tm_ph, 0);
+);
+
+// Live 31-band EQ curve bars + polyline
+tm_bi = 0; tm_prev_x = 0; tm_prev_y = tm_mid_y;
+tm_bw = max(4, (tm_pw / NUM_BANDS) - 4);
+loop(NUM_BANDS,
+  tm_bf = band_freq[tm_bi];
+  tm_bx = tm_px + ((log(clamp(tm_bf, 20, 20000)) - tm_lmin) / (tm_lmax - tm_lmin)) * tm_pw;
+  tm_bg = clamp(eq_gain_db[tm_bi], -tm_db_rng, tm_db_rng);
+  tm_by = tm_mid_y - (tm_bg / tm_db_rng) * (tm_ph * 0.46);
+  // Translucent fill bar from 0 dB
+  tm_bg >= 0 ? (
+    gfx_set(0.22, 0.74, 0.90, 0.26);
+    zp_rect(tm_bx - tm_bw * 0.5, tm_by, tm_bw, max(1, tm_mid_y - tm_by));
+  ) : (
+    gfx_set(0.94, 0.58, 0.24, 0.26);
+    zp_rect(tm_bx - tm_bw * 0.5, tm_mid_y, tm_bw, max(1, tm_by - tm_mid_y));
+  );
+  // Polyline across bands
+  tm_bi > 0 ? (
+    gfx_set(0.32, 0.84, 0.98, 0.95);
+    zp_line(tm_prev_x, tm_prev_y, tm_bx, tm_by, 1);
+  );
+  gfx_set(0.82, 0.94, 1.0, 0.9);
+  zp_circle(tm_bx, tm_by, 2.2, 1, 1);
+  tm_prev_x = tm_bx; tm_prev_y = tm_by;
+  tm_bi += 1;
+);
+
+// Plot top header labels
+zp_setfont(1, "Arial", 10, 'b');
+gfx_set(0.76, 0.84, 0.92, 1);
+zp_gx = tm_px; zp_gy = tm_gy + 8;
+zp_drawstr(ui_lang == 0 ? "CURVA MATCHING EQ · 31 BANDE ISO (20 Hz – 20 kHz)" : "MATCHING EQ CURVE · 31 ISO BANDS (20 Hz – 20 kHz)");
+zp_setfont(1, "Arial", 10);
+gfx_set(0.58, 0.76, 0.88, 1);
+sprintf(#tm_avg_lbl, "Avg %+.1f dB  |  Max ±%.0f dB", slider15, slider5);
+(gfx_measurestr(#tm_avg_lbl, tm_tw, tm_th); tm_tw /= zp_sc; tm_th /= zp_sc);
+zp_gx = tm_px + tm_pw - tm_tw; zp_gy = tm_gy + 8;
+zp_drawstr(#tm_avg_lbl);
+
+// ---- RIGHT STATUS & TELEMETRY CARD (x = 736..964, y = 126..306) ----
+tm_sx = 736; tm_sy = 126; tm_sw = 228; tm_sh = 180;
+tm_draw_box(tm_sx, tm_sy, tm_sw, tm_sh, 0.28, 0.78, 0.46);
+
+zp_setfont(1, "Arial", 10, 'b');
+gfx_set(0.68, 0.76, 0.84, 1);
+zp_gx = tm_sx + 14; zp_gy = tm_sy + 10;
+zp_drawstr(ui_lang == 0 ? "STATO PREASCOLTO" : "AUDITION STATUS");
+
+// Traffic light LED + label
+gfx_status_state == 0 ? (
+  gfx_set(0.94, 0.30, 0.24, 1);
+  strcpy(#status_txt, ui_lang == 0 ? "Rosso: aspetta" : "Red: waiting");
+) : gfx_status_state == 1 ? (
+  gfx_set(0.96, 0.76, 0.22, 1);
+  strcpy(#status_txt, ui_lang == 0 ? "Giallo: arrivo" : "Yellow: converging");
+) : (
+  gfx_set(0.30, 0.86, 0.46, 1);
+  (gfx_follow_ready_keep && profile_mode == 0) ? (
+    strcpy(#status_txt, ui_lang == 0 ? "Verde: pronto Keep" : "Green: ready Keep");
+  ) : (
+    strcpy(#status_txt, ui_lang == 0 ? "Verde: stabile" : "Green: stable");
+  );
+);
+zp_circle(tm_sx + 24, tm_sy + 42, 8, 1, 1);
+zp_setfont(1, "Arial", 13, 'b');
+gfx_set(0.94, 0.96, 0.99, 1);
+zp_gx = tm_sx + 40; zp_gy = tm_sy + 35;
+zp_drawstr(#status_txt);
+
+// Fill / Capture progress bar
+tm_prog = (!idle_mode && profile_mode == 1) ? (slider21 / 100) : (!idle_mode && profile_mode == 2 && keep_ready) ? 1.0 : gfx_follow_fill;
+ui_bar(tm_sx + 14, tm_sy + 60, tm_sw - 28, 10, tm_prog, 0.24, 0.76, 0.48);
+
+// Clean 2-column telemetry grid inside status card
+zp_setfont(1, "Arial", 10);
+gfx_set(0.58, 0.66, 0.74, 1);
+zp_gx = tm_sx + 14; zp_gy = tm_sy + 80;
+sprintf(#tm_s1, "Fill: %.0f%%", tm_prog * 100); zp_drawstr(#tm_s1);
+zp_gx = tm_sx + 120; zp_gy = tm_sy + 80;
+sprintf(#tm_s2, "EQ: %.2f dB", gfx_match_settle); zp_drawstr(#tm_s2);
+
+zp_gx = tm_sx + 14; zp_gy = tm_sy + 100;
+sprintf(#tm_s3, "Ref: %.1f dB", slider17); zp_drawstr(#tm_s3);
+zp_gx = tm_sx + 120; zp_gy = tm_sy + 100;
+sprintf(#tm_s4, "Out: %.1f dB", slider18); zp_drawstr(#tm_s4);
+
+zp_gx = tm_sx + 14; zp_gy = tm_sy + 120;
+sprintf(#tm_s5, "Match: %+.1f dB", slider16); zp_drawstr(#tm_s5);
+zp_gx = tm_sx + 120; zp_gy = tm_sy + 120;
+sprintf(#tm_s6, "AGC: %+.1f dB", slider93); zp_drawstr(#tm_s6);
+
+zp_gx = tm_sx + 14; zp_gy = tm_sy + 140;
+sprintf(#tm_s7, "Delta: %+.1f dB", slider24); zp_drawstr(#tm_s7);
+zp_gx = tm_sx + 120; zp_gy = tm_sy + 140;
+sprintf(#tm_s8, "Harm: %.2f", gfx_harm_settle); zp_drawstr(#tm_s8);
+
+// Recover / Panic badge if triggered
+recover_flash_counter > 0 ? (
+  gfx_set(0.98, 0.78, 0.30, 1);
+  zp_gx = tm_sx + 14; zp_gy = tm_sy + 160;
+  sprintf(#js4, "DSP Recover x%d", recover_count); zp_drawstr(#js4);
+) : panic_flash_counter > 0 ? (
+  gfx_set(0.96, 0.64, 0.30, 1);
+  zp_gx = tm_sx + 14; zp_gy = tm_sy + 160;
+  sprintf(#js4, "Safety Reset x%d", panic_count); zp_drawstr(#js4);
+);
+
+// ---- BOTTOM 3 HARDWARE PANELS (y = 316..568, h = 252) ----
+tm_py0 = 316; tm_ph0 = 252;
+
+// Panel 1: 1 · MATCH & SHAPE (x = 16..328, w = 312)
+tm_draw_box(16, tm_py0, 312, tm_ph0, 0.22, 0.72, 0.90);
+zp_setfont(1, "Arial", 11, 'b');
+gfx_set(0.86, 0.92, 0.98, 1);
+zp_gx = 30; zp_gy = tm_py0 + 12;
+zp_drawstr("1 · MATCH & SHAPE");
+
+// Panel 1 Row 1 knobs (3)
+sprintf(#kv1, "%.0f%%", slider4);
+tm_nv = tm_knob(1, 74, tm_py0 + 82, 23, slider4, 0, 100, 100, 1, "MATCH %", #kv1, 0.22, 0.76, 0.94, 1);
+tm_nv != slider4 ? ( slider4 = tm_nv; tm_changed = 1; );
+
+sprintf(#kv2, "%.1f dB", slider5);
+tm_nv = tm_knob(2, 172, tm_py0 + 82, 23, slider5, 1, 18, 9, 0.1, "MAX CURVE", #kv2, 0.22, 0.76, 0.94, 2);
+tm_nv != slider5 ? ( slider5 = tm_nv; tm_changed = 1; );
+
+sprintf(#kv3, "%.2f", slider6);
+tm_nv = tm_knob(3, 270, tm_py0 + 82, 23, slider6, 0.35, 1.20, 0.45, 0.01, "BAND Q", #kv3, 0.22, 0.76, 0.94, 3);
+tm_nv != slider6 ? ( slider6 = tm_nv; tm_changed = 1; );
+
+// Panel 1 Row 2 knobs (2)
+sprintf(#kv4, "%.0f s", slider3);
+tm_nv = tm_knob(4, 118, tm_py0 + 188, 22, slider3, 15, 90, 30, 1, "CAPTURE WIN", #kv4, 0.22, 0.76, 0.94, 4);
+tm_nv != slider3 ? ( slider3 = tm_nv; tm_changed = 1; );
+
+sprintf(#kv5, "%+.1f dB", slider1);
+tm_nv = tm_knob(5, 226, tm_py0 + 188, 22, slider1, -24, 24, 0, 0.1, "INPUT TRIM", #kv5, 0.22, 0.76, 0.94, 5);
+tm_nv != slider1 ? ( slider1 = tm_nv; tm_changed = 1; );
+
+// Panel 2: 2 · TONE & HARMONICS (x = 338..650, w = 312)
+tm_draw_box(338, tm_py0, 312, tm_ph0, 0.94, 0.62, 0.22);
+zp_setfont(1, "Arial", 11, 'b');
+gfx_set(0.86, 0.92, 0.98, 1);
+zp_gx = 352; zp_gy = tm_py0 + 12;
+zp_drawstr("2 · TONE & HARMONICS");
+
+// Panel 2 Row 1 knobs (3): Air, LP, HP
+sprintf(#kv6, "%+.1f dB", slider102);
+tm_nv = tm_knob(6, 396, tm_py0 + 82, 23, slider102, -12, 6, 0, 0.1, "AIR 10k+", #kv6, 0.94, 0.64, 0.24, 6);
+tm_nv != slider102 ? ( slider102 = tm_nv; air_params_dirty = 1; tm_changed = 1; );
+
+sprintf(#kv7, "%.1fk", slider103 * 0.001);
+tm_nv = tm_knob(7, 494, tm_py0 + 82, 23, slider103, 5000, 20000, 20000, 100, "AIR LP", #kv7, 0.94, 0.64, 0.24, 7);
+tm_nv != slider103 ? ( slider103 = tm_nv; air_params_dirty = 1; tm_changed = 1; );
+
+sprintf(#kv8, "%.0f Hz", slider106);
+tm_nv = tm_knob(8, 592, tm_py0 + 82, 23, slider106, 20, 240, 20, 5, "AIR HP", #kv8, 0.94, 0.64, 0.24, 8);
+tm_nv != slider106 ? ( slider106 = tm_nv; air_params_dirty = 1; tm_changed = 1; );
+
+// Panel 2 Row 2 knobs (2): Harmonics, Color
+sprintf(#kv9, "%.0f%%", slider7);
+tm_nv = tm_knob(9, 440, tm_py0 + 188, 22, slider7, 0, 100, 0, 1, "HARMONICS", #kv9, 0.94, 0.64, 0.24, 9);
+tm_nv != slider7 ? ( slider7 = tm_nv; tm_changed = 1; );
+
+sprintf(#kv10, "%+.0f", slider8);
+tm_nv = tm_knob(10, 548, tm_py0 + 188, 22, slider8, -100, 100, 10, 1, "HARM COLOR", #kv10, 0.94, 0.64, 0.24, 10);
+tm_nv != slider8 ? ( slider8 = tm_nv; tm_changed = 1; );
+
+// Panel 3: 3 · LEVEL & OUTPUT (x = 660..964, w = 304)
+tm_draw_box(660, tm_py0, 304, tm_ph0, 0.26, 0.78, 0.48);
+zp_setfont(1, "Arial", 11, 'b');
+gfx_set(0.86, 0.92, 0.98, 1);
+zp_gx = 674; zp_gy = tm_py0 + 12;
+zp_drawstr("3 · LEVEL & OUTPUT");
+
+// Top toggles in Panel 3: AutoLvl + AGC
+tm_pill_btn(674, tm_py0 + 34, 134, 22, slider2 >= 0.5 ? "AUTO LVL: ON" : "AUTO LVL: OFF", slider2 >= 0.5, 0.18, 0.58, 0.36) ? (
+  slider2 = slider2 >= 0.5 ? 0 : 1; tm_changed = 1;
+);
+tm_pill_btn(816, tm_py0 + 34, 134, 22, slider11 >= 0.5 ? "AGC RMS: ON" : "AGC RMS: OFF", slider11 >= 0.5, 0.18, 0.58, 0.36) ? (
+  slider11 = slider11 >= 0.5 ? 0 : 1; tm_changed = 1;
+);
+
+// Panel 3 Row 1 knobs (2): AGC Trim, AGC Range
+sprintf(#kv11, "%+.1f dB", slider22);
+tm_nv = tm_knob(11, 742, tm_py0 + 104, 21, slider22, -18, 18, 0, 0.1, "AGC TRIM", #kv11, 0.28, 0.80, 0.50, 11);
+tm_nv != slider22 ? ( slider22 = tm_nv; tm_changed = 1; );
+
+sprintf(#kv12, "%.1f dB", slider23);
+tm_nv = tm_knob(12, 882, tm_py0 + 104, 21, slider23, 3, 24, 12, 0.5, "AGC RANGE", #kv12, 0.28, 0.80, 0.50, 12);
+tm_nv != slider23 ? ( slider23 = tm_nv; tm_changed = 1; );
+
+// Panel 3 Row 2 knobs (2): Dry/Wet, Out Gain
+sprintf(#kv13, "%.0f%%", slider13);
+tm_nv = tm_knob(13, 742, tm_py0 + 196, 21, slider13, 0, 100, 100, 1, "DRY / WET", #kv13, 0.28, 0.80, 0.50, 13);
+tm_nv != slider13 ? ( slider13 = tm_nv; tm_changed = 1; );
+
+sprintf(#kv14, "%+.1f dB", slider12);
+tm_nv = tm_knob(14, 882, tm_py0 + 196, 21, slider12, -18, 18, 0, 0.1, "OUT GAIN", #kv14, 0.28, 0.80, 0.50, 14);
+tm_nv != slider12 ? ( slider12 = tm_nv; tm_changed = 1; );
+
+tm_changed ? ( sliderchange(-1); );
+
+// ---- FOOTER BAR (y = 576..608) ----
+gfx_set(0.088, 0.100, 0.126, 1);
+zp_rect(16, 576, 948, 32);
+gfx_set(0.18, 0.21, 0.26, 0.9);
+zp_rect(16, 576, 948, 1); zp_rect(16, 607, 948, 1);
+zp_rect(16, 576, 1, 32); zp_rect(963, 576, 1, 32);
 
 zp_setfont(1, "Arial", 11);
-routing_state == 0 ? (
-  gfx_r = 0.54; gfx_g = 0.60; gfx_b = 0.68;
-  zp_gx = 24; zp_gy = 76;
-  zp_drawstr("Ingresso audio su 1/2, reference su 3/4, uscita misurata su 1/2.");
+time_precise() < help_warn_until ? (
+  gfx_set(1.0, 0.72, 0.24, 1);
+  strcpy(#tm_foot, ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Studio Suite (33 Benvenuto)." : "Open Cue Navigator or the guide from ZP Studio Suite (33 Welcome).");
+) : tm_hover_tip > 0 ? (
+  gfx_set(0.78, 0.86, 0.96, 1);
+  tm_hover_tip == 1 ? strcpy(#tm_foot, "Match %: intensita' della curva di allineamento timbrico verso il Reference.")
+  : tm_hover_tip == 2 ? strcpy(#tm_foot, "Max Curve (dB): tetto massimo di correzione per banda (valori moderati = suono piu' naturale).")
+  : tm_hover_tip == 3 ? strcpy(#tm_foot, "Band Q: piu' basso = curve larghe e morbide; piu' alto = matching piu' selettivo.")
+  : tm_hover_tip == 4 ? strcpy(#tm_foot, "Capture Win (s): durata della finestra di analisi per Follow e Capture Timed.")
+  : tm_hover_tip == 5 ? strcpy(#tm_foot, "Input Trim (dB): regola il livello di ingresso della traccia 1/2 prima del matching.")
+  : tm_hover_tip == 6 ? strcpy(#tm_foot, "Air 10k+ (dB): rifinitura sulle altissime; valori negativi ammorbidiscono sibilanti/aria.")
+  : tm_hover_tip == 7 ? strcpy(#tm_foot, "Air LP (Hz): filtro passa-basso di rifinitura sulle altissime frequenze.")
+  : tm_hover_tip == 8 ? strcpy(#tm_foot, "Air HP (Hz): filtro passa-alto di rifinitura per controllare il peso sulle basse.")
+  : tm_hover_tip == 9 ? strcpy(#tm_foot, "Harmonics (%): supporto armonico dinamico opzionale post-EQ.")
+  : tm_hover_tip == 10 ? strcpy(#tm_foot, "Harm Color: bilancia armoniche pari (calore) e dispari (presenza).")
+  : tm_hover_tip == 11 ? strcpy(#tm_foot, "AGC Trim (dB): offset manuale applicato al target dell'Automatic Gain Control.")
+  : tm_hover_tip == 12 ? strcpy(#tm_foot, "AGC Range (dB): escursione massima consentita al livellatore automatico di uscita.")
+  : tm_hover_tip == 13 ? strcpy(#tm_foot, "Dry / Wet (%): miscela tra segnale originale e voce allineata al Reference.")
+  : tm_hover_tip == 14 ? strcpy(#tm_foot, "Out Gain (dB): guadagno manuale finale dopo AGC e limiter di sicurezza.")
+  : tm_hover_tip == 21 ? strcpy(#tm_foot, "Preset Vicino: correzione morbida per riprese gia' simili al Reference.")
+  : tm_hover_tip == 22 ? strcpy(#tm_foot, "Preset Distante: piu' margine di correzione per microfoni o stanze molto diversi.")
+  : tm_hover_tip == 23 ? strcpy(#tm_foot, "Preset Voce Stabile: riduce l'inseguimento dei singoli fonemi in Follow.")
+  : tm_hover_tip == 24 ? strcpy(#tm_foot, "Preset Basse Ctrl: limita il gonfiore in gamma bassa durante il matching.")
+  : strcpy(#tm_foot, "Preset Aria Ctrl: contiene 10k+ se emergono sibilanti o brillantezza eccessiva.");
 ) : routing_state == 3 ? (
-  gfx_r = 0.82; gfx_g = 0.84; gfx_b = 0.88;
-  zp_gx = 24; zp_gy = 76;
-  zp_drawstr("Quick fix: imposta Track channels = 4, poi assegna Reference L/R ai canali 3/4.");
+  gfx_set(0.96, 0.78, 0.36, 1);
+  strcpy(#tm_foot, ui_lang == 0 ? "Quick fix: apri il Pin Connector, porta la traccia a 4 canali e invia il Reference sui canali 3/4." : "Quick fix: open Pin Connector, set track to 4 channels, and send Reference to channels 3/4.");
 ) : routing_state == 1 ? (
-  gfx_r = 0.82; gfx_g = 0.84; gfx_b = 0.88;
-  zp_gx = 24; zp_gy = 76;
-  zp_drawstr("Quick fix: send della sorgente verso 3/4, non 1/2. In Keep puoi ancora usare il profilo catturato.");
+  gfx_set(0.96, 0.78, 0.36, 1);
+  strcpy(#tm_foot, ui_lang == 0 ? "Quick fix: manda il send della traccia Reference su 3/4 (in Keep il profilo salvato funziona anche senza SC)." : "Quick fix: route Reference track send to 3/4 (in Keep mode the saved profile works even without live SC).");
+) : routing_state == 2 ? (
+  gfx_set(0.96, 0.68, 0.32, 1);
+  strcpy(#tm_foot, ui_lang == 0 ? "Quick fix: il Reference sta entrando anche su 1/2. Invialo solo su 3/4 lasciando la voce su 1/2." : "Quick fix: Reference is bleeding into 1/2. Send it only to 3/4 and keep target voice on 1/2.");
 ) : (
-  gfx_r = 0.82; gfx_g = 0.84; gfx_b = 0.88;
-  zp_gx = 24; zp_gy = 76;
-  zp_drawstr("Quick fix: lascia il programma su 1/2 e manda il reference solo su 3/4.");
+  gfx_set(0.62, 0.70, 0.78, 1);
+  strcpy(#tm_foot, ui_lang == 0 ? "SHIFT = regolazione fine  ·  Doppio clic = reset pomello  ·  Workflow: FOLLOW fino a Verde -> KEEP  ·  Vista JSFX per OSARA." : "SHIFT = fine tune  ·  Double-click = reset knob  ·  Workflow: FOLLOW until Green -> KEEP  ·  JSFX view for OSARA.");
 );
-
-  jsfx_btn_w = 80;
-  lite_btn_w = 80;
-  ab_btn_w = 92;
-  strict_btn_w = 104;
-  profile_btn_w = 76;
-  top_gap = 10;
-  profile_gap = 8;
-  right_margin = 20;
-  mode_btn_y = 92;
-  lite_title_y = 132;
-  lite_text_y1 = 168;
-  lite_text_y2 = 190;
-  lite_text_y3 = 216;
-  lite_text_y4 = 238;
-  lite_text_y5 = 260;
-  status_y = 176;
-  metrics_box_y = 330;
-  metrics_box_h = 104;
-  metrics_y1 = 352;
-  metrics_y2 = 378;
-  metrics_y3 = 404;
-  metrics_warn_y = 424;
-  preset_btn_y = 286;
-  preset_btn_w = 104;
-  preset_btn_h = 22;
-  preset_btn_gap = 8;
-  preset_1_x = 30;
-  preset_2_x = preset_1_x + preset_btn_w + preset_btn_gap;
-  preset_3_x = preset_2_x + preset_btn_w + preset_btn_gap;
-  preset_row2_y = preset_btn_y + preset_btn_h + 6;
-  preset_4_x = 30;
-  preset_5_x = preset_4_x + preset_btn_w + preset_btn_gap;
-  preset_diag_x = preset_5_x + preset_btn_w + preset_btn_gap;
-  preset_diag_w = 118;
-
-  help_btn_w = 26;
-  help_btn_x = zp_vw - right_margin - help_btn_w;
-  jsfx_btn_x = help_btn_x - top_gap - jsfx_btn_w;
-  strict_btn_x = jsfx_btn_x - top_gap - strict_btn_w;
-  ab_btn_x = strict_btn_x - top_gap - ab_btn_w;
-  lite_btn_x = ab_btn_x - top_gap - lite_btn_w;
-  keep_btn_x = lite_btn_x - 14 - profile_btn_w;
-  capture_btn_x = keep_btn_x - profile_gap - profile_btn_w;
-  follow_btn_x = capture_btn_x - profile_gap - profile_btn_w;
-  clear_btn_x = follow_btn_x - profile_gap - profile_btn_w;
-
-  ui_action_button(clear_btn_x, mode_btn_y, profile_btn_w, 28, "Clear");
-  follow_btn_state = (!idle_mode && profile_mode == 0) ? 2 : 0;
-  ui_profile_button(0, follow_btn_x, mode_btn_y, profile_btn_w, 28, "Follow", follow_btn_state);
-  capture_state = (!idle_mode && profile_mode == 1) ? (
-    capture_count < capture_target_samples ? 1 : 2
-  ) : ((!idle_mode && profile_mode == 2) ? 2 : 0);
-  ui_profile_button(1, capture_btn_x, mode_btn_y, profile_btn_w, 28, "Capture", capture_state);
-  ui_profile_button(2, keep_btn_x, mode_btn_y, profile_btn_w, 28, "Keep", (!idle_mode && profile_mode == 2) ? 2 : 0);
-  ui_toggle_button(strict_btn_x, mode_btn_y, strict_btn_w, 28, strict_eq_on ? "Strict EQ ON" : "Strict EQ OFF", strict_eq_on) ? (
-    slider97 = strict_eq_on ? 0 : 1;
-  );
-  ui_toggle_button(ab_btn_x, mode_btn_y, ab_btn_w, 28, listen_mode ? "AB: REF" : "AB: POST", listen_mode) ? (
-    slider104 = listen_mode ? 0 : 1;
-  );
-  ui_button(0, lite_btn_x, mode_btn_y, lite_btn_w, 28, "Lite", ui_mode == 0);
-  ui_button(1, jsfx_btn_x, mode_btn_y, jsfx_btn_w, 28, "JSFX", ui_mode == 1);
-
-  help_btn_hover = zp_mx >= help_btn_x && zp_mx <= help_btn_x + help_btn_w &&
-                   zp_my >= mode_btn_y && zp_my <= mode_btn_y + 28;
-  help_btn_hover ? (
-    gfx_r = 0.22; gfx_g = 0.38; gfx_b = 0.58; gfx_a = 1;
-  ) : (
-    gfx_r = 0.16; gfx_g = 0.18; gfx_b = 0.22; gfx_a = 1;
-  );
-  zp_rect(help_btn_x, mode_btn_y, help_btn_w, 28);
-  gfx_r = 0.34; gfx_g = 0.52; gfx_b = 0.82; gfx_a = 0.9;
-  zp_rect(help_btn_x, mode_btn_y, help_btn_w, 1); zp_rect(help_btn_x, mode_btn_y + 27, help_btn_w, 1);
-  zp_rect(help_btn_x, mode_btn_y, 1, 28); zp_rect(help_btn_x + help_btn_w - 1, mode_btn_y, 1, 28);
-  zp_setfont(1, "Arial", 14, 'b');
-  gfx_r = 0.92; gfx_g = 0.95; gfx_b = 0.98; gfx_a = 1;
-  (gfx_measurestr("?", h_tw, h_th); h_tw /= zp_sc; h_th /= zp_sc);
-  zp_gx = help_btn_x + floor((help_btn_w - h_tw) * 0.5);
-  zp_gy = mode_btn_y + floor((28 - h_th) * 0.5);
-  zp_drawstr("?");
-  help_btn_hover && help_mouse_click ? ( help_bridge_open(8); );
-
-  zp_setfont(1, "Arial", 22);
-  gfx_r = 0.93; gfx_g = 0.95; gfx_b = 0.98;
-  zp_gx = 28; zp_gy = lite_title_y;
-  zp_drawstr("Lite Mode");
-  zp_setfont(1, "Arial", 15);
-  gfx_r = 0.68; gfx_g = 0.72; gfx_b = 0.78;
-  zp_gx = 30; zp_gy = lite_text_y1;
-  zp_drawstr("I controlli nativi dei slider sono visibili.");
-  zp_gx = 30; zp_gy = lite_text_y2;
-  zp_drawstr("GUI pesante disattivata: usiamo solo il pannello leggero per stabilizzare il DSP.");
-  zp_gx = 30; zp_gy = lite_text_y3;
-  routing_state == 0 ? zp_drawstr("Routing sidechain OK.") : routing_state == 3 ? zp_drawstr("La traccia deve avere 4 canali per usare il sidechain.") : routing_state == 1 ? zp_drawstr("Manca segnale su Reference 3/4.") : zp_drawstr("Reference e Input stanno leggendo la stessa sorgente.");
-  zp_gx = 30; zp_gy = lite_text_y4;
-  idle_mode ? zp_drawstr("Profile memory: Idle") : profile_mode == 0 ? zp_drawstr("Profile memory: Follow") : profile_mode == 1 ? zp_drawstr(sprintf(#,"Profile memory: Capture %.0f%%", slider21)) : zp_drawstr("Profile memory: Keep");
-  zp_gx = 30; zp_gy = lite_text_y5;
-  zp_drawstr("Capture: Timed");
-
-  zp_setfont(1, "Arial", 11);
-  gfx_r = 0.58; gfx_g = 0.64; gfx_b = 0.72;
-  zp_gx = 30; zp_gy = preset_btn_y - 18;
-  zp_drawstr("Preset guida");
-  ui_toggle_button(preset_1_x, preset_btn_y, preset_btn_w, preset_btn_h, "Vicino", safe_preset_last == 1) ? (
-    apply_safe_preset(1);
-  );
-  ui_toggle_button(preset_2_x, preset_btn_y, preset_btn_w, preset_btn_h, "Distante", safe_preset_last == 2) ? (
-    apply_safe_preset(2);
-  );
-  ui_toggle_button(preset_3_x, preset_btn_y, preset_btn_w, preset_btn_h, "Voce Stabile", safe_preset_last == 3) ? (
-    apply_safe_preset(3);
-  );
-  ui_toggle_button(preset_4_x, preset_row2_y, preset_btn_w, preset_btn_h, "Basse Ctrl", safe_preset_last == 4) ? (
-    apply_safe_preset(4);
-  );
-  ui_toggle_button(preset_5_x, preset_row2_y, preset_btn_w, preset_btn_h, "Aria Ctrl", safe_preset_last == 5) ? (
-    apply_safe_preset(5);
-  );
-  strcpy(#diag_btn_txt, diag_mode == 1 ? "Diag RMS" : diag_mode == 2 ? "Diag Perc" : diag_mode == 3 ? "Diag Null" : "Diag Off");
-  ui_toggle_button(preset_diag_x, preset_row2_y, preset_diag_w, preset_btn_h, #diag_btn_txt, diag_mode > 0) ? (
-    slider107 = (diag_mode + 1) % 4;
-  );
-  preset_hover = 0;
-  zp_my >= preset_btn_y && zp_my < preset_btn_y + preset_btn_h ? (
-    zp_mx >= preset_1_x && zp_mx < preset_1_x + preset_btn_w ? preset_hover = 1;
-    zp_mx >= preset_2_x && zp_mx < preset_2_x + preset_btn_w ? preset_hover = 2;
-    zp_mx >= preset_3_x && zp_mx < preset_3_x + preset_btn_w ? preset_hover = 3;
-  );
-  zp_my >= preset_row2_y && zp_my < preset_row2_y + preset_btn_h ? (
-    zp_mx >= preset_4_x && zp_mx < preset_4_x + preset_btn_w ? preset_hover = 4;
-    zp_mx >= preset_5_x && zp_mx < preset_5_x + preset_btn_w ? preset_hover = 5;
-    zp_mx >= preset_diag_x && zp_mx < preset_diag_x + preset_diag_w ? preset_hover = 6;
-  );
-  preset_hover > 0 ? (
-    overlay_y = zp_vh - 96;
-    gfx_r = 0.15; gfx_g = 0.16; gfx_b = 0.19; gfx_a = 0.98;
-    zp_rect(22, overlay_y, zp_vw - 44, 18);
-    zp_setfont(1, "Arial", 10);
-    gfx_r = 0.74; gfx_g = 0.80; gfx_b = 0.88; gfx_a = 1;
-    zp_gx = 30; zp_gy = overlay_y + 2;
-    preset_hover == 1 ? zp_drawstr("Vicino: correzione morbida per materiali gia' simili.");
-    preset_hover == 2 ? zp_drawstr("Distante: piu' spazio di correzione per mismatch evidente.");
-    preset_hover == 3 ? zp_drawstr("Voce Stabile: meno inseguimento dell'articolazione in Follow.");
-    preset_hover == 4 ? zp_drawstr("Basse Controllate: limita gonfiore low-end durante il match.");
-    preset_hover == 5 ? zp_drawstr("Aria Controllata: attenua 10k+ e riduce altissime/sibilanti.");
-    preset_hover == 6 ? zp_drawstr("Diag Match: clic per ciclare Off/RMS/Perceptual/Null Hunter.");
-  );
-
-  status_x = zp_vw - 190;
-  zp_setfont(1, "Arial", 13);
-  gfx_r = 0.72; gfx_g = 0.76; gfx_b = 0.82;
-  zp_gx = status_x + 26; zp_gy = status_y - 2;
-  zp_drawstr("Stato Preascolto");
-  gfx_status_state == 0 ? (
-    gfx_r = 0.94; gfx_g = 0.30; gfx_b = 0.24;
-    strcpy(#status_txt, "Rosso: aspetta");
-  ) : gfx_status_state == 1 ? (
-    gfx_r = 0.96; gfx_g = 0.76; gfx_b = 0.22;
-    strcpy(#status_txt, "Giallo: arrivo");
-  ) : (
-    gfx_r = 0.30; gfx_g = 0.84; gfx_b = 0.42;
-    (gfx_follow_ready_keep && profile_mode == 0) ? (
-      strcpy(#status_txt, "Verde: pronto Keep");
-    ) : (
-      strcpy(#status_txt, "Verde: ascolta");
-    );
-  );
-  gfx_a = 1;
-  zp_circle(status_x + 10, status_y + 8, 8, 1, 1);
-  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96;
-  zp_gx = status_x + 26; zp_gy = status_y + 12;
-  zp_drawstr(#status_txt);
-  zp_setfont(1, "Arial", 11);
-  gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70;
-  zp_gx = status_x + 26; zp_gy = status_y + 32;
-  sprintf(#st1, "Fill %.0f%% | EQ %.2f dB", gfx_follow_fill * 100, gfx_match_settle); zp_drawstr(#st1);
-  zp_gx = status_x + 26; zp_gy = status_y + 48;
-  sprintf(#st2, "Harm %.2f", gfx_harm_settle); zp_drawstr(#st2);
-  // Controlli rapidi tono (piu' spaziosi): Air / LP / HP
-  ctrl_x = status_x + 26;
-  ctrl_y = status_y + 62;
-  ctrl_gap = 28;
-  ctrl_btn_w = 26;
-  ctrl_btn_h = 22;
-  ctrl_plus_x = ctrl_x + 76;
-  // Air
-  air_minus_over = zp_mx >= ctrl_x && zp_mx < ctrl_x + ctrl_btn_w && zp_my >= ctrl_y && zp_my < ctrl_y + ctrl_btn_h;
-  air_plus_over = zp_mx >= ctrl_plus_x && zp_mx < ctrl_plus_x + ctrl_btn_w && zp_my >= ctrl_y && zp_my < ctrl_y + ctrl_btn_h;
-  air_minus_click = air_minus_over && (mouse_cap & 1) && !last_mouse_cap;
-  air_plus_click = air_plus_over && (mouse_cap & 1) && !last_mouse_cap;
-  air_minus_click ? (slider102 = max(-12, slider102 - 0.5); air_params_dirty = 1;);
-  air_plus_click ? (slider102 = min(6, slider102 + 0.5); air_params_dirty = 1;);
-  gfx_r = air_minus_over ? 0.24 : 0.18; gfx_g = air_minus_over ? 0.28 : 0.22; gfx_b = air_minus_over ? 0.34 : 0.28; gfx_a = 1; zp_rect(ctrl_x, ctrl_y, ctrl_btn_w, ctrl_btn_h);
-  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; zp_setfont(1, "Arial", 15); zp_gx = ctrl_x + 9; zp_gy = ctrl_y + 2; zp_drawstr("-");
-  gfx_r = air_plus_over ? 0.24 : 0.18; gfx_g = air_plus_over ? 0.28 : 0.22; gfx_b = air_plus_over ? 0.34 : 0.28; gfx_a = 1; zp_rect(ctrl_plus_x, ctrl_y, ctrl_btn_w, ctrl_btn_h);
-  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; zp_setfont(1, "Arial", 15); zp_gx = ctrl_plus_x + 8; zp_gy = ctrl_y + 2; zp_drawstr("+");
-  zp_setfont(1, "Arial", 11); gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70; zp_gx = ctrl_x + 32; zp_gy = ctrl_y + 4; sprintf(#airtxt, "Air %+.1f dB", slider102); zp_drawstr(#airtxt);
-  // LP
-  lp_y = ctrl_y + ctrl_gap;
-  lp_minus_over = zp_mx >= ctrl_x && zp_mx < ctrl_x + ctrl_btn_w && zp_my >= lp_y && zp_my < lp_y + ctrl_btn_h;
-  lp_plus_over = zp_mx >= ctrl_plus_x && zp_mx < ctrl_plus_x + ctrl_btn_w && zp_my >= lp_y && zp_my < lp_y + ctrl_btn_h;
-  lp_minus_click = lp_minus_over && (mouse_cap & 1) && !last_mouse_cap;
-  lp_plus_click = lp_plus_over && (mouse_cap & 1) && !last_mouse_cap;
-  lp_minus_click ? (slider103 = max(5000, slider103 - 500); air_params_dirty = 1;);
-  lp_plus_click ? (slider103 = min(20000, slider103 + 500); air_params_dirty = 1;);
-  gfx_r = lp_minus_over ? 0.24 : 0.18; gfx_g = lp_minus_over ? 0.28 : 0.22; gfx_b = lp_minus_over ? 0.34 : 0.28; gfx_a = 1; zp_rect(ctrl_x, lp_y, ctrl_btn_w, ctrl_btn_h);
-  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; zp_setfont(1, "Arial", 15); zp_gx = ctrl_x + 9; zp_gy = lp_y + 2; zp_drawstr("-");
-  gfx_r = lp_plus_over ? 0.24 : 0.18; gfx_g = lp_plus_over ? 0.28 : 0.22; gfx_b = lp_plus_over ? 0.34 : 0.28; gfx_a = 1; zp_rect(ctrl_plus_x, lp_y, ctrl_btn_w, ctrl_btn_h);
-  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; zp_setfont(1, "Arial", 15); zp_gx = ctrl_plus_x + 8; zp_gy = lp_y + 2; zp_drawstr("+");
-  zp_setfont(1, "Arial", 11); gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70; zp_gx = ctrl_x + 32; zp_gy = lp_y + 4; sprintf(#lptxt, "LP %.1fk", slider103 * 0.001); zp_drawstr(#lptxt);
-  // HP
-  hp_y = lp_y + ctrl_gap;
-  hp_minus_over = zp_mx >= ctrl_x && zp_mx < ctrl_x + ctrl_btn_w && zp_my >= hp_y && zp_my < hp_y + ctrl_btn_h;
-  hp_plus_over = zp_mx >= ctrl_plus_x && zp_mx < ctrl_plus_x + ctrl_btn_w && zp_my >= hp_y && zp_my < hp_y + ctrl_btn_h;
-  hp_minus_click = hp_minus_over && (mouse_cap & 1) && !last_mouse_cap;
-  hp_plus_click = hp_plus_over && (mouse_cap & 1) && !last_mouse_cap;
-  hp_minus_click ? (slider106 = max(20, slider106 - 5); air_params_dirty = 1;);
-  hp_plus_click ? (slider106 = min(240, slider106 + 5); air_params_dirty = 1;);
-  gfx_r = hp_minus_over ? 0.24 : 0.18; gfx_g = hp_minus_over ? 0.28 : 0.22; gfx_b = hp_minus_over ? 0.34 : 0.28; gfx_a = 1; zp_rect(ctrl_x, hp_y, ctrl_btn_w, ctrl_btn_h);
-  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; zp_setfont(1, "Arial", 15); zp_gx = ctrl_x + 9; zp_gy = hp_y + 2; zp_drawstr("-");
-  gfx_r = hp_plus_over ? 0.24 : 0.18; gfx_g = hp_plus_over ? 0.28 : 0.22; gfx_b = hp_plus_over ? 0.34 : 0.28; gfx_a = 1; zp_rect(ctrl_plus_x, hp_y, ctrl_btn_w, ctrl_btn_h);
-  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96; zp_setfont(1, "Arial", 15); zp_gx = ctrl_plus_x + 8; zp_gy = hp_y + 2; zp_drawstr("+");
-  zp_setfont(1, "Arial", 11); gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70; zp_gx = ctrl_x + 32; zp_gy = hp_y + 4; sprintf(#hptxt, "HP %.0f Hz", slider106); zp_drawstr(#hptxt);
-  
-  // Indicatore di Stabilità Profilo (disabilitato - usare per debug se necessario)
-  // gfx_x = status_x + 26; gfx_y = status_y + 64;
-  // gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70;
-  // gfx_drawstr("Stabilità");
-  // gfx_stability_ratio = clamp(1.0 - gfx_match_settle / 2.0, 0, 1);
-  // gfx_stability_ratio < 0.33 ? (
-  //   gfx_r = 0.94; gfx_g = 0.30; gfx_b = 0.24;
-  // ) : gfx_stability_ratio < 0.66 ? (
-  //   gfx_r = 0.96; gfx_g = 0.76; gfx_b = 0.22;
-  // ) : (
-  //   gfx_r = 0.30; gfx_g = 0.84; gfx_b = 0.42;
-  // );
-  // gfx_a = 1;
-  // gfx_circle(status_x + 10, status_y + 74, 6, 1, 1);
-  // gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96;
-  // gfx_x = status_x + 26; gfx_y = status_y + 78;
-  // sprintf(#st3, "%.0f%%", gfx_stability_ratio * 100); gfx_drawstr(#st3);
-
-  gfx_r = 0.12; gfx_g = 0.13; gfx_b = 0.16; gfx_a = 1;
-  zp_rect(26, metrics_box_y, zp_vw - 52, metrics_box_h);
-  zp_setfont(1, "Arial", 13);
-  gfx_r = 0.90; gfx_g = 0.92; gfx_b = 0.96;
-  zp_gx = 42; zp_gy = metrics_y1; sprintf(#js1, "Match %.0f%%  |  Harm %.0f%%  |  Air %+.1f dB  |  LP %.1fk  |  HP %.0f Hz  |  Win %.0fs", slider4, slider7, slider102, slider103 * 0.001, slider106, slider3); zp_drawstr(#js1);
-  slider2 >= 0.5 ? (
-    strcpy(#lvl1, "AutoLvl:ON");
-  ) : (
-    strcpy(#lvl1, "AutoLvl:OFF");
-  );
-  slider11 >= 0.5 ? (
-    strcpy(#lvl2, sprintf(#,"AGC:ON %+.1fdB", slider93));
-  ) : (
-    strcpy(#lvl2, "AGC:OFF");
-  );
-  strcpy(#strict_lbl, strict_eq_on ? "StrictEQ:ON" : "StrictEQ:OFF");
-  strcpy(#listen_lbl, listen_mode ? "LISTEN:REF" : "LISTEN:POST");
-  strcpy(#diag_mode_lbl, diag_mode == 1 ? "RMS" : diag_mode == 2 ? "Perceptual" : diag_mode == 3 ? "Null" : "Off");
-  diag_off_abs = abs(slider108);
-  diag_null_db = slider109;
-  diag_mode == 0 ? (
-    strcpy(#diag_state_lbl, "Diag OFF");
-  ) : (
-    (diag_off_abs <= 1.0 && diag_null_db <= -12.0) ? (
-      strcpy(#diag_state_lbl, "Diag Buono");
-    ) : (diag_off_abs <= 2.5 && diag_null_db <= -8.0) ? (
-      strcpy(#diag_state_lbl, "Diag Quasi");
-    ) : (
-      strcpy(#diag_state_lbl, "Diag Da regolare");
-    );
-  );
-  zp_gx = 42; zp_gy = metrics_y2; sprintf(#js2, "Ref %.1f dB  |  Out %.1f dB  |  %s | %s | %s | %s", slider17, slider18, #lvl1, #lvl2, #strict_lbl, #listen_lbl); zp_drawstr(#js2);
-  zp_gx = 42; zp_gy = metrics_y3; level_target_mode == 0 ? sprintf(#js3, "Mem %d  |  Cap %.0f%%  |  Curv %.1f dB  |  Diag:%s Off %+0.1f dB N %+0.1f dB | %s", slider20, slider21, slider15, #diag_mode_lbl, slider108, slider109, #diag_state_lbl) : sprintf(#js3, "Mem %d  |  Cap %.0f%%  |  Delta %+0.1f dB  |  Diag:%s Off %+0.1f dB N %+0.1f dB | %s", slider20, slider21, slider24 + slider94, #diag_mode_lbl, slider108, slider109, #diag_state_lbl); zp_drawstr(#js3);
-  recover_flash_counter > 0 ? (
-    gfx_r = 0.98; gfx_g = 0.78; gfx_b = 0.30;
-    zp_gx = 42; zp_gy = metrics_warn_y; sprintf(#js4, "DSP Recover rilevato x%d", recover_count); zp_drawstr(#js4);
-  ) : panic_flash_counter > 0 ? (
-    gfx_r = 0.96; gfx_g = 0.64; gfx_b = 0.30;
-    zp_gx = 42; zp_gy = metrics_warn_y; sprintf(#js4, "Safety Reset rilevato x%d", panic_count); zp_drawstr(#js4);
-  );
-
-gfx_r = 0.12; gfx_g = 0.13; gfx_b = 0.16; gfx_a = 1;
-zp_rect(22, zp_vh - 72, zp_vw - 44, 52);
-zp_setfont(1, "Arial", 12);
-routing_state == 0 ? (
-  gfx_r = 0.82; gfx_g = 0.88; gfx_b = 0.84;
-  zp_gx = 34; zp_gy = zp_vh - 58;
-  zp_drawstr("SC pronto. Per un workflow semplice: traccia a 4 canali, programma su 1/2, reference su 3/4.");
-  gfx_r = 0.56; gfx_g = 0.62; gfx_b = 0.70;
-  zp_gx = 34; zp_gy = zp_vh - 38;
-  zp_drawstr("Se il routing cambia per colpa delle automazioni di REAPER, guarda subito il messaggio colorato in alto.");
-) : routing_state == 3 ? (
-  gfx_r = 0.94; gfx_g = 0.80; gfx_b = 0.44;
-  zp_gx = 34; zp_gy = zp_vh - 58;
-  zp_drawstr("1. Apri il pin connector del plugin e porta la traccia a 4 canali.");
-  gfx_r = 0.78; gfx_g = 0.82; gfx_b = 0.88;
-  zp_gx = 34; zp_gy = zp_vh - 38;
-  zp_drawstr("2. Mappa Reference L/R su 3/4. 3. Invia la sorgente sidechain verso 3/4.");
-) : routing_state == 1 ? (
-  gfx_r = 0.94; gfx_g = 0.80; gfx_b = 0.44;
-  zp_gx = 34; zp_gy = zp_vh - 58;
-  zp_drawstr("1. Verifica che il send della sorgente arrivi su 3/4.");
-  gfx_r = 0.78; gfx_g = 0.82; gfx_b = 0.88;
-  zp_gx = 34; zp_gy = zp_vh - 38;
-  zp_drawstr("2. Se sei in Keep puoi continuare a usare il profilo gia' catturato anche senza SC live.");
-) : (
-  gfx_r = 0.94; gfx_g = 0.80; gfx_b = 0.44;
-  zp_gx = 34; zp_gy = zp_vh - 58;
-  zp_drawstr("1. Il reference sta entrando anche su 1/2 insieme al programma.");
-  gfx_r = 0.78; gfx_g = 0.82; gfx_b = 0.88;
-  zp_gx = 34; zp_gy = zp_vh - 38;
-  zp_drawstr("2. Sposta il reference solo su 3/4, lasciando il materiale da trattare su 1/2.");
-);
+zp_gx = 28; zp_gy = 586;
+zp_drawstr(#tm_foot);
 
 debug_overlay_on ? (
-  dbg_h = 34;
-  dbg_y = zp_vh - dbg_h - 4;
-  gfx_r = 0.10; gfx_g = 0.11; gfx_b = 0.14; gfx_a = 0.96;
-  zp_rect(22, dbg_y, zp_vw - 44, dbg_h);
-  zp_setfont(1, "Arial", 10);
-  gfx_r = 0.64; gfx_g = 0.86; gfx_b = 0.98; gfx_a = 1;
-  zp_gx = 30; zp_gy = dbg_y + 4;
+  gfx_set(0.08, 0.09, 0.12, 0.96);
+  zp_rect(16, 540, 948, 30);
+  zp_setfont(1, "Arial", 9);
+  gfx_set(0.64, 0.86, 0.98, 1);
+  zp_gx = 24; zp_gy = 544;
   sprintf(#dbg, "DBG m:%d p:%d fill:%d%% cap:%d/%d keep:%d live:%d rd:%d rt:%d strict:%d clr:%d sw:%d cdone:%d em:%.2f me:%.2f re:%.2f ct:%.2fs",
     profile_mode, profile_mode_prev, follow_fill_ratio * 100,
     capture_count, capture_target_samples, keep_ready, live_follow_mode, follow_profile_ready, routing_state, strict_eq_on,
     dbg_clear_count, dbg_mode_switch_count, dbg_capture_done_count, slider98, slider99, slider101, slider100);
   zp_drawstr(#dbg);
-  gfx_r = 0.84; gfx_g = 0.88; gfx_b = 0.96; gfx_a = 1;
-  zp_gx = 30; zp_gy = dbg_y + 17;
+  gfx_set(0.84, 0.88, 0.96, 1);
+  zp_gx = 24; zp_gy = 556;
   sprintf(#dbg2, "HF ug:%.2f sh:%.2f rl:%.2f cap10:%+.2f cap12:%+.2f lpEff:%.1fk air:%+.1f hs:%+.2f",
     ultrahigh_guard, ultra_shoulder_guard, ultra_roll_need, dbg_ultrah_cap10_db, dbg_ultrah_cap12_db, air_lp_eff_hz * 0.001, air_trim_db, high_shape_applied);
   zp_drawstr(#dbg2);
-);
-
-time_precise() < help_warn_until ? (
-  zp_setfont(1, "Arial", 11);
-  gfx_r = 1.0; gfx_g = 0.72; gfx_b = 0.24; gfx_a = 0.96;
-  zp_gx = 30; zp_gy = zp_vh - 18;
-  zp_drawstr(ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Studio Suite" : "Open Cue Navigator or ZP Suite help");
 );
 
 last_mouse_cap = mouse_down;

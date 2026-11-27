@@ -26,6 +26,13 @@ do
   end
 end
 local TITLE, SECTION = "ZP Remote · Pacchetto", "ZP_REMOTE_EXPORT"
+-- La regione scelta per l'export appartiene al PROGETTO: nome e posizione di un altro progetto non vanno ripresi.
+local function region_mem_get(key)
+  if reaper.GetExtState(SECTION, key) ~= "" then reaper.DeleteExtState(SECTION, key, true) end
+  local ok, value = reaper.GetProjExtState(0, SECTION, key)
+  return (ok and ok > 0 and value) or ""
+end
+local function region_mem_set(key, value) reaper.SetProjExtState(0, SECTION, key, tostring(value or "")) end
 local HELP = [[Da REAPER a dubbertools.com
 
 1. Scegli la regione da esportare e la cartella di destinazione. Se il progetto è nuovo, genera un ID. Se hai già condiviso un pacchetto, recupera il suo ID per collegare le consegne allo stesso progetto.
@@ -529,9 +536,9 @@ end
 
 refresh_export_regions = function()
   local previous = export_regions[export_region_index]
-  local saved_guid = r.GetExtState(SECTION, "export_region_guid")
-  local saved_name = r.GetExtState(SECTION, "export_region_name")
-  local saved_start = tonumber(r.GetExtState(SECTION, "export_region_start"))
+  local saved_guid = region_mem_get("export_region_guid")
+  local saved_name = region_mem_get("export_region_name")
+  local saved_start = tonumber(region_mem_get("export_region_start"))
   export_regions = {}
   local _, marker_count, region_count = r.CountProjectMarkers(0)
   local count = (marker_count or 0) + (region_count or 0)
@@ -653,9 +660,9 @@ local function sync_export_region_to_reaper()
     export_region_index = target
     local selected = export_regions[target]
     summary, summary_error, completed_zip = nil, nil, nil
-    r.SetExtState(SECTION,"export_region_guid",selected.guid or "",true)
-    r.SetExtState(SECTION,"export_region_name",selected.name or "",true)
-    r.SetExtState(SECTION,"export_region_start",tostring(selected.start),true)
+    region_mem_set("export_region_guid", selected.guid or "")
+    region_mem_set("export_region_name", selected.name or "")
+    region_mem_set("export_region_start", tostring(selected.start))
     status_text = "Regione selezionata in REAPER: " .. selected.name
     status_kind = "info"
   end
@@ -1168,13 +1175,13 @@ local function frame()
   if click("export_region_prev") then
     export_region_index=math.max(1,export_region_index-1); summary=nil; summary_error=nil; completed_zip=nil
     local selected=export_regions[export_region_index]
-    if selected then r.SetExtState(SECTION,"export_region_guid",selected.guid or "",true); r.SetExtState(SECTION,"export_region_name",selected.name or "",true); r.SetExtState(SECTION,"export_region_start",tostring(selected.start),true) end
+    if selected then region_mem_set("export_region_guid", selected.guid or ""); region_mem_set("export_region_name", selected.name or ""); region_mem_set("export_region_start", tostring(selected.start)) end
     status_text="Regione cambiata. Controlla di nuovo prima di creare il pacchetto."; status_kind="info"
   end
   if click("export_region_next") then
     export_region_index=math.min(#export_regions,export_region_index+1); summary=nil; summary_error=nil; completed_zip=nil
     local selected=export_regions[export_region_index]
-    if selected then r.SetExtState(SECTION,"export_region_guid",selected.guid or "",true); r.SetExtState(SECTION,"export_region_name",selected.name or "",true); r.SetExtState(SECTION,"export_region_start",tostring(selected.start),true) end
+    if selected then region_mem_set("export_region_guid", selected.guid or ""); region_mem_set("export_region_name", selected.name or ""); region_mem_set("export_region_start", tostring(selected.start)) end
     status_text="Regione cambiata. Controlla di nuovo prima di creare il pacchetto."; status_kind="info"
   end
   if click("import_check") then if not import_busy then if request_save("import_check") then start_import_preflight() end end end

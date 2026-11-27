@@ -1,35 +1,40 @@
 // @description ZP BUS Chain
-// @version 1.3.2
+// @version 1.3.7
 // @author Paolo Balestri
 // @about
 //   Catena di dinamica e colore per voce parlata, podcast e doppiaggio.
-//   Integra espansore, compressori analogici modellati (1175, LA2, MajorTom),
-//   saturazione bus ANA (CALDO, CORPO, APERTO), Brown Guard e limiter finale.
+//   Integra espansore, compressori analogici modellati (1175, LA2 Clean/Gray, MajorTom),
+//   saturazione bus ANA (CALDO, CORPO, APERTO + PAD -6 dB), Brown Guard e limiter finale 2x oversampled.
 //
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: https://latocardioide.it/strumenti/ o dal pulsante '?'
 //
 //   Dynamics and bus-color processor for spoken voice, podcast and dubbing.
-//   Combines expander, modeled analog compressors (1175, LA2, MajorTom),
-//   ANA bus saturation (CALDO, CORPO, APERTO), Brown Guard and safety limiter.
+//   Combines expander, modeled analog compressors (1175, LA2 Clean/Gray, MajorTom),
+//   ANA bus saturation (CALDO, CORPO, APERTO + -6 dB PAD), Brown Guard and 2x oversampled safety limiter.
 //
 //   Developed from an idea by Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Complete documentation: https://latocardioide.it/strumenti/ or click '?'
 // @license GPL-3.0-or-later
 // @changelog
+//   1.3.7: Taratura strumentale LA2 GRAY su UAD Teletronix LA-2A Gray: eliminata l'opacizzazione HF e la cancellazione di fase in MIX parallelo tramite oversampling 2x sul solo residuo non lineare (0.00 dB roll-off lineare, DC blocker 6 Hz sul solo residuo), risposta trasformatore UTC A-24 con apertura aria +0.81 dB @ 20 kHz, armoniche valvolari 12AX7A/12BH7A ricalibrate (H2 -58.5 dBc @ -18 dBFS, headroom morbida senza schiacciamento), sidechain con enfasi aperta che risparmia i 6-10 kHz e inviluppo cella T4B reale (attacco rapido + rilascio 50% in 60 ms con memoria fosforo). CLEAN invariato al 100%.
+//   1.3.6: Headroom intermedio e oversampling 2x per mix caldi/spot radio (-8 LUFS): LA2 GRAY passa a stadio valvolare 2x oversampled con curva asintotica (rimosso hard clamp), ANA aggiunge guardia morbida pre-folding e pulsante PAD -6 dB auto-compensato (slider81), Voice Limiter usa oversampling 2x sulla saturazione/clipper eliminando l'aliasing sulle medio-alte.
+//   1.3.5: Stadio LA2 con selettore CLEAN | GRAY (nuovo motore opto-valvolare T4B Gray con trasformatori ingresso/uscita sempre in percorso anche a 0 dB GR, armoniche H2/H3 asimmetriche con DC blocker, cella T4B dual-stage con memoria fosforo, soft knee 12 dB e sidechain R37; CLEAN retrocompatibile) + rack auto-compatto con i 7 pulsanti di presenza modulo (clic = accendi/spegni e mostra solo attivi; tasto destro = isola quel solo modulo; rimossi gli ON/OFF duplicati nei pannelli).
+//   1.3.4: Rilevamento cambio samplerate in @block (ext_noinit=1) con aggiornamento finestre meter, azzeramento buffer ANA e compute_dsp_params().
+//   1.3.3: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (1175/LA2/MT/Gate/Brown/ANA/Limiter e RMS in/out).
 //   Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
 //   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
 //     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
 //   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
 //   Brown Guard: separati gli interruttori DYN (correzione che insegue il target Slope)
 //     ed EQ (quattro punti manuali); entrambi restano indipendenti dal master Brown On.
-desc:ZP BUS Chain - Voice/Music Processor - Paolo Balestri
+desc:ZP BUS Chain - Voice/Music Processor · latocardioide.it · dubbertools.com
 options:gmem=ZPVoiceoverSharedBus
-tags: bus compression dynamics multiband voice podcast music paolo balestri zio paolo
+tags: bus compression dynamics multiband voice podcast music paolo balestri lato cardioide
 
-//autore: Paolo Balestri - Zio Paolo
+//autore: Paolo Balestri · Lato Cardioide
 //variant: v1.2.3 - circular threshold meters
-// Contatto: social@paolobalestri.com
+// Contatto: paolo@latocardioide.it
 //
 // Copyright (C) Chris Johnson / Airwindows — original BussColors4 DSP (MIT)
 // Copyright (C) chmaha — Chloe Console Colors JSFX port (GPLv3)
@@ -56,7 +61,7 @@ tags: bus compression dynamics multiband voice podcast music paolo balestri zio 
 
 // ============================================================================
 // MANUALE UTENTE — ZP BUS Chain 1.0
-// Plugin: ZP BUS Chain 1.0 | Autore: Paolo Balestri | Contatto: social@paolobalestri.com
+// Plugin: ZP BUS Chain 1.0 | Autore: Paolo Balestri | Contatto: paolo@latocardioide.it
 // Sezione "living": si aggiorna ad ogni revisione DSP o UI significativa.
 // ============================================================================
 //
@@ -504,6 +509,8 @@ slider76:mt_par_send=0<0,1,1{OFF,ON}>-MT To LIM
 slider77:brn_par_send=0<0,1,1{OFF,ON}>-Brown To LIM
 slider78:brn_slope_on=1<0,1,1{Off,On}>-Brown Slope Dynamics
 slider79:brn_eq_on=1<0,1,1{Off,On}>-Brown Manual EQ
+slider80:la2_char=0<0,1,1{Clean,Gray}>-3 LA2 Character
+slider81:analog_pad=0<0,1,1{0dB,-6dB}>-ZP ANA Headroom Pad
 
 @init
 // ---- ZP Proportional Zoom Engine (GUI-only, zero DSP impact) ----
@@ -821,6 +828,72 @@ function zp_bus_refresh(plugin_id) (
 );
 zp_bus_boot();
 zp_bus_read();
+
+// ---- ZP Shared Bus v3 (telemetria multi-istanza a monte -> Master Pro) ----
+function zp3_boot() (
+  gmem[1000] != 905300 || gmem[1001] < 300 ? (
+    gmem[1000] = 905300;
+    gmem[1001] = 300;
+    gmem[1002] = 64;
+    gmem[1003] = 32;
+  );
+);
+function zp3_clear_slot() local(zp3_cb) (
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_cb = 1024 + zp3_slot * 32;
+    gmem[zp3_cb + 3] == zp3_prev_key ? (
+      gmem[zp3_cb] = 0;
+      gmem[zp3_cb + 2] = 0;
+    );
+  );
+  zp3_slot = -1;
+  zp3_prev_key = -1;
+);
+function zp3_claim(zp3_pt) local(zp3_now, zp3_key, zp3_h, zp3_i, zp3_s, zp3_b, zp3_m, zp3_found) (
+  zp3_boot();
+  zp3_now = time_precise();
+  zp3_fx = 0; zp3_hf = 0;
+  zp3_tr = get_host_placement(zp3_fx, zp3_hf);
+  zp3_key = max(0, zp3_tr + 2) * 1024 + max(0, zp3_fx) * 16 + zp3_pt;
+  zp3_prev_key >= 0 && zp3_prev_key != zp3_key ? zp3_clear_slot();
+  zp3_found = -1;
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_slot;);
+  );
+  zp3_found < 0 ? (
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_b = 1024 + zp3_i * 32;
+        gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_i;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_found < 0 ? (
+    zp3_h = (max(0, zp3_tr + 2) * 13 + max(0, zp3_fx) * 7 + zp3_pt * 3) % 64;
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_s = (zp3_h + zp3_i) % 64;
+        zp3_b = 1024 + zp3_s * 32;
+        zp3_m = gmem[zp3_b];
+        (zp3_m != 905301 || (zp3_now - gmem[zp3_b + 1]) > 2.5) ? (zp3_found = zp3_s;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_slot = zp3_found;
+  zp3_prev_key = zp3_key;
+  zp3_slot >= 0 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    zp3_seq = max(zp3_seq, floor(gmem[zp3_b + 2] + 0.5));
+    zp3_b;
+  ) : -1;
+);
+zp3_prev_key <= 0 ? (zp3_slot = -1; zp3_prev_key = -1;);
+zp3_boot();
 ext_tail_size = -1;
 ext_noinit = 1;
 last_profile = -100;
@@ -831,6 +904,7 @@ ui_scroll_dragging = 0;
 ui_scroll_drag_start_y = 0;
 ui_scroll_drag_start_scroll = 0;
 ui_prev_mouse_down = 0;
+ui_prev_rmouse_down = 0;
 ui_hover_id = 0;
 ui_content_pass = 0;
 ui_host_visibility_state = -1;
@@ -979,7 +1053,7 @@ local(i, page)
       page == 1 ? ( show_slider_range(2, 5); show_slider_range(50, 50); ) :
       page == 2 ? ( show_slider_range(6, 12); slider_show(slider_mask(49), 1); ) :
       page == 3 ? ( show_slider_range(13, 19); slider_show(slider_mask(46), 1); ) :
-      page == 4 ? ( show_slider_range(20, 24); slider_show(slider_mask(48), 1); ) :
+      page == 4 ? ( show_slider_range(20, 24); slider_show(slider_mask(48), 1); slider_show(slider80, 1); ) :
       page == 5 ? ( show_slider_range(25, 33); slider_show(slider_mask(51), 1); ) :
       page == 6 ? ( show_slider_range(57, 63); slider_show(slider78, 1); slider_show(slider79, 1); ) :
       page == 7 ? ( 0; ) :
@@ -1003,6 +1077,27 @@ function tanh_fast(x)
   x > 3 ? 0.995 :
   x < -3 ? -0.995 :
   x*(27 + x*x)/(27 + 9*x*x);
+);
+
+function la2_tube_nl(v) local(v2, q, q2, sat, s2, odd, even)
+(
+  // Residuo non lineare puro f(v) - v calibrato su UAD Teletronix LA-2A Gray (12AX7A/12BH7A + UTC A-24):
+  // zero termine lineare (0.000 dB roll-off fino a Nyquist), H2 = -58.5 dBc @ -18 dBFS (fase 180°),
+  // H3 pulitissima ai livelli medi e soffitto asintotico morbido (+6.85 dBFS) per spot radio spinti.
+  v2 = v * v;
+  q = v * 0.455;
+  q2 = q * q;
+  sat = v / sqrt(sqrt(1.0 + q2 * q2));
+  s2 = sat * sat;
+  odd = -0.00028 * sat * s2 - 0.011 * sat * s2 * s2 / (1.0 + 0.35 * s2 * s2);
+  even = -0.019 * s2 / (1.0 + 0.12 * v2);
+  (sat - v) + even + odd;
+);
+
+function lim_sat_shape(v, ceil_g, drv) local(inv_c)
+(
+  inv_c = 1.0 / max(ceil_g, 0.000000000001);
+  tanh_fast(v * inv_c * drv) * ceil_g / drv;
 );
 
 // ZP ANA — GPLv3 adaptation of Chloe Console Colors (chmaha), which uses
@@ -1246,7 +1341,7 @@ function compute_dsp_params()
   c1175_det_c = exp(-1000/(10*srate));
   c1175_mix_w = c1175_mix*0.01;
   c1175_rel_lin_step = 26/srate;
-  // LA2
+  // LA2 (Clean + Gray T4B tube/transformer engine calibrated on UAD Teletronix LA-2A Gray)
   la2_thr = -40 + (100 - la2_peakred)*0.32 + profile_la2*0.3;
   la2_ratio_eff = la2_mode ? 10 : 3;
   la2_makeup_g = db2gain(la2_gain);
@@ -1254,6 +1349,36 @@ function compute_dsp_params()
   la2_rel_c = exp(-1000/(500*srate));
   la2_det_c = exp(-1000/(40*srate));
   la2_mix_w = la2_mix*0.01;
+  la2_char_i = la2_char >= 0.5 ? 1 : 0;
+  // LA2 Gray: RED=0 apre completamente la cella T4B (0.00 dB GR = puro line-amp valvole + trasformatori)
+  la2_gray_thr = la2_thr + (la2_peakred < 12 ? (12 - la2_peakred) * 1.5 : 0);
+  la2_gray_pr_sc = min(1.0, max(0.0, la2_peakred * 0.25));
+  // Contorno sidechain UAD Gray (Emphasis=0 / R37 aperta: fuoco corpo 120-340 Hz, piatto 1-3.5 kHz, gentile oltre 5 kHz)
+  la2_g_sc_hp_c = exp(-2*$pi*52/srate);
+  la2_g_sc_lm_lp_c = exp(-2*$pi*340/srate);
+  la2_g_sc_lm_hp_c = exp(-2*$pi*90/srate);
+  la2_g_sc_hf_c = exp(-2*$pi*min(8200, srate*0.42)/srate);
+  la2_g_det_c = exp(-1000/(0.80*srate));
+  // Cella ottica T4B dual-stage (attacco rapido + assestamento fotocellula; 50% rilascio in 60 ms + coda fosforo)
+  la2_t4_att_fast_c = exp(-1000/(0.85*srate));
+  la2_t4_att_slow_c = exp(-1000/(20.0*srate));
+  la2_t4_rel_fast_c = exp(-1000/(64.0*srate));
+  la2_t4_mem_att_c = exp(-1000/(450.0*srate));
+  la2_t4_mem_rel_c = exp(-1000/(2600.0*srate));
+  // DC blocker 6 Hz applicato esclusivamente al residuo armonico (0.000 dB perdita/rotazione a 20 Hz)
+  la2_dc_c = exp(-2*$pi*6/srate);
+  // Trasformatore d'uscita UTC A-24: apertura d'aria progressiva (+0.24 dB @ 10k, +0.56 dB @ 15k, +0.81 dB @ 20k)
+  _la2_pa = pow(10, 0.89/40);
+  _la2_pw = 2*$pi*min(13200, srate*0.33)/srate;
+  _la2_pcos = cos(_la2_pw);
+  _la2_psal = (sin(_la2_pw)*0.5) * sqrt((_la2_pa + 1/_la2_pa)*(1/0.68 - 1) + 2);
+  _la2_p2sq = 2 * sqrt(_la2_pa) * _la2_psal;
+  _la2_pa0 = (_la2_pa + 1) - (_la2_pa - 1)*_la2_pcos + _la2_p2sq;
+  la2_pb0 = (_la2_pa * ((_la2_pa + 1) + (_la2_pa - 1)*_la2_pcos + _la2_p2sq)) / _la2_pa0;
+  la2_pb1 = (-2 * _la2_pa * ((_la2_pa - 1) + (_la2_pa + 1)*_la2_pcos)) / _la2_pa0;
+  la2_pb2 = (_la2_pa * ((_la2_pa + 1) + (_la2_pa - 1)*_la2_pcos - _la2_p2sq)) / _la2_pa0;
+  la2_pa1 = (2 * ((_la2_pa - 1) - (_la2_pa + 1)*_la2_pcos)) / _la2_pa0;
+  la2_pa2 = ((_la2_pa + 1) - (_la2_pa - 1)*_la2_pcos - _la2_p2sq) / _la2_pa0;
   // Major Tom
   mt_thr = mt_thresh + profile_mt;
   mt_ratio_eff = max(1, mt_ratio);
@@ -1442,6 +1567,7 @@ meter_s_win_cnt = 30;     // 3 s
 meter_win_len = max(1, floor(METER_UPDATE * srate));
 meter_i_m_win = 1 / max(1, meter_m_win_cnt * meter_win_len);
 meter_i_s_win = 1 / max(1, meter_s_win_cnt * meter_win_len);
+last_srate = srate;
 meter_rms_buf_base = pkh_base + 32;
 meter_lufs_m_buf_base = meter_rms_buf_base + 8;
 meter_lufs_s_buf_base = meter_lufs_m_buf_base + 8;
@@ -1600,6 +1726,17 @@ gate_key = 0;
 
 c1175_env = 0; c1175_gr_db = 0;
 la2_env = 0; la2_gr_db = 0;
+la2_t4_fast = 0; la2_t4_slow = 0; la2_t4_mem = 0;
+la2_g_sc_hp_l = la2_g_sc_hp_r = 0;
+la2_g_sc_lm_lp_l = la2_g_sc_lm_lp_r = 0;
+la2_g_sc_lm_hp_l = la2_g_sc_lm_hp_r = 0;
+la2_sc_hf_l = la2_sc_hf_r = 0;
+la2_dc_l = la2_dc_r = 0;
+la2_dry_d1_l = la2_dry_d1_r = 0;
+la2_pr_z1_l = la2_pr_z2_l = la2_pr_z1_r = la2_pr_z2_r = 0;
+la2_os_px_l = la2_os_px_r = la2_os_ym_l = la2_os_ym_r = la2_os_yc_l = la2_os_yc_r = 0;
+la2_gray_active_prev = 0;
+lim_os_px_l = lim_os_px_r = lim_os_ym_l = lim_os_ym_r = lim_os_yc_l = lim_os_yc_r = 0;
 mt_env = 0; mt_gr_db = 0; mt_fb_det = 0;
 mt_attack_ms = 10;
 mt_attack_base_s = 0.010;
@@ -1939,6 +2076,16 @@ refresh_out_smart_capture_trim();
 dsp_needs_update = 1;
 
 @block
+srate != last_srate ? (
+  meter_win_len = max(1, floor(METER_UPDATE * srate));
+  meter_i_m_win = 1 / max(1, meter_m_win_cnt * meter_win_len);
+  meter_i_s_win = 1 / max(1, meter_s_win_cnt * meter_win_len);
+  memset(analog_bufL, 0, 176); memset(analog_bufR, 0, 176);
+  memset(analog_absL, 0, 90); memset(analog_absR, 0, 90);
+  analog_buf_pos = 0; analog_abs_pos = 44;
+  compute_dsp_params();
+  last_srate = srate;
+);
 gmem[101] = gate_on >= 0.5 ? ui_gate_act_db : 0;
 gmem[102] = c1175_on >= 0.5 ? ui_1175_act_db : 0;
 gmem[103] = la2_on >= 0.5 ? ui_la2_act_db : 0;
@@ -1962,6 +2109,49 @@ gmem[119] = brn_on >= 0.5;
 gmem[120] = lim_on >= 0.5;
 gmem[121] = out_enable >= 0.5 && out_final_lim_on >= 0.5;
 zp_bus_refresh(ZP_BUS_ID);
+
+zp3_b = zp3_claim(1);
+zp3_b >= 0 ? (
+  zp3_1175 = c1175_on >= 0.5 ? ui_1175_act_db : 0;
+  zp3_la2  = la2_on >= 0.5 ? ui_la2_act_db : 0;
+  zp3_mt   = mt_on >= 0.5 ? ui_mt_act_db : 0;
+  zp3_dyneq = brn_on >= 0.5 ? max(max(abs(brn_gd1), abs(brn_gd2)), max(abs(brn_gd3), abs(brn_gd4))) : 0;
+  zp3_harm  = analog_on >= 0.5 ? clamp(analog_drive * analog_mix * 0.01, 0, 100) : 0;
+  la2_on >= 0.5 && la2_char >= 0.5 ? ( zp3_harm = max(zp3_harm, 18 * la2_mix_w); );
+  gmem[zp3_b + 3] = zp3_prev_key;
+  gmem[zp3_b + 4] = 1;
+  gmem[zp3_b + 5] = zp3_tr;
+  gmem[zp3_b + 6] = zp3_fx;
+  gmem[zp3_b + 7] = zp3_hf;
+  gmem[zp3_b + 8] = 1;
+  gmem[zp3_b + 9] = (gate_on >= 0.5 || c1175_on >= 0.5 || la2_on >= 0.5 || mt_on >= 0.5 || brn_on >= 0.5 || lim_on >= 0.5 || analog_on >= 0.5 || (out_enable >= 0.5 && out_final_lim_on >= 0.5)) ? 1 : 2;
+  gmem[zp3_b + 10] = max(zp3_1175, max(zp3_la2, zp3_mt));
+  gmem[zp3_b + 11] = zp3_dyneq;
+  gmem[zp3_b + 12] = max(lim_on >= 0.5 ? ui_lim_act_db : 0, (out_enable >= 0.5 && out_final_lim_on >= 0.5) ? ui_out_act_db : 0);
+  gmem[zp3_b + 13] = brn_on >= 0.5 ? brn_gd1 : 0;
+  gmem[zp3_b + 14] = brn_on >= 0.5 ? 0.5 * (brn_gd2 + brn_gd3) : 0;
+  gmem[zp3_b + 15] = brn_on >= 0.5 ? brn_gd4 : 0;
+  gmem[zp3_b + 16] = zp3_harm;
+  gmem[zp3_b + 17] = in_rms_db;
+  gmem[zp3_b + 18] = ui_global_rms_db;
+  gmem[zp3_b + 19] = ui_out_peak_dbfs;
+  gmem[zp3_b + 20] = in_rms_db > -55 ? clamp(ui_global_rms_db - in_rms_db, -24, 24) : 0;
+  gmem[zp3_b + 21] = clamp((ui_global_rms_db + 55) * 2.5, 0, 100);
+  gmem[zp3_b + 22] = max(0, ui_out_peak_dbfs - ui_global_rms_db);
+  gmem[zp3_b + 23] = max(-30, min(12, bus_air_rel_db));
+  gmem[zp3_b + 24] = zp3_1175;
+  gmem[zp3_b + 25] = zp3_la2;
+  gmem[zp3_b + 26] = zp3_mt;
+  gmem[zp3_b + 27] = gate_on >= 0.5 ? ui_gate_act_db : 0;
+  gmem[zp3_b + 28] = zp3_dyneq;
+  gmem[zp3_b + 29] = zp3_harm;
+  gmem[zp3_b + 30] = 0;
+  gmem[zp3_b + 31] = 0;
+  gmem[zp3_b] = 905301;
+  gmem[zp3_b + 1] = time_precise();
+  zp3_seq += 1;
+  gmem[zp3_b + 2] = zp3_seq;
+);
 
 @sample
 function process_1175()
@@ -2019,24 +2209,130 @@ local(dry_l, dry_r)
 
 
 function process_la2()
-local(detL3, detR3, det3, over3, tgt_gr3, ccoef3, wetL, wetR, la2_sig)
+local(detL3, detR3, det3, over3, tgt_gr3, ccoef3, wetL, wetR, la2_sig,
+      lm_l, lm_r, kn, diff, kt, r_eff, mem_in, slow_ms, slow_c, w_slow,
+      t_cur, t_mid, r_m, r_c, r_os, wet_tube)
 (
   pk_la2_in_env = peak_meter_tick(max(abs(route_in_l), abs(route_in_r)), pk_la2_in_env);
   pk_la2_in_db = gain2db(pk_la2_in_env);
   la2_on ? (
-    detL3 = route_in_l; detR3 = route_in_r;
-    la2_sc_hpf_on ? (
-      la2_sc_lpL = (1-la2_sc_hpf_c)*detL3 + la2_sc_hpf_c*la2_sc_lpL; la2_sc_lpR = (1-la2_sc_hpf_c)*detR3 + la2_sc_hpf_c*la2_sc_lpR;
-      detL3 -= la2_sc_lpL; detR3 -= la2_sc_lpR;
-      la2_sc_lp2L = (1-la2_sc_hpf_c)*detL3 + la2_sc_hpf_c*la2_sc_lp2L; la2_sc_lp2R = (1-la2_sc_hpf_c)*detR3 + la2_sc_hpf_c*la2_sc_lp2R;
-      detL3 -= la2_sc_lp2L; detR3 -= la2_sc_lp2R;
+    la2_char_i >= 0.5 ? (
+      // --- LA2 GRAY: Calibrato su UAD Teletronix LA-2A Gray (T4B dual-stage + 12AX7A/12BH7A + UTC A-24) ---
+      !la2_gray_active_prev ? (
+        la2_os_px_l = route_in_l * db2gain(la2_gr_db) * la2_makeup_g;
+        la2_os_px_r = route_in_r * db2gain(la2_gr_db) * la2_makeup_g;
+        la2_os_ym_l = la2_os_yc_l = la2_os_ym_r = la2_os_yc_r = 0;
+        la2_dc_l = la2_dc_r = 0;
+        la2_dry_d1_l = route_in_l; la2_dry_d1_r = route_in_r;
+        la2_pr_z1_l = la2_pr_z2_l = la2_pr_z1_r = la2_pr_z2_r = 0;
+        la2_t4_fast = la2_gr_db; la2_t4_slow = la2_gr_db;
+        la2_gray_active_prev = 1;
+      );
+
+      // 1. Sidechain ottico con contorno UAD (Emphasis=0 default) + eventuale SC HPF dorato utente
+      detL3 = route_in_l; detR3 = route_in_r;
+      la2_sc_hpf_on ? (
+        la2_sc_lpL = (1-la2_sc_hpf_c)*detL3 + la2_sc_hpf_c*la2_sc_lpL; la2_sc_lpR = (1-la2_sc_hpf_c)*detR3 + la2_sc_hpf_c*la2_sc_lpR;
+        detL3 -= la2_sc_lpL; detR3 -= la2_sc_lpR;
+        la2_sc_lp2L = (1-la2_sc_hpf_c)*detL3 + la2_sc_hpf_c*la2_sc_lp2L; la2_sc_lp2R = (1-la2_sc_hpf_c)*detR3 + la2_sc_hpf_c*la2_sc_lp2R;
+        detL3 -= la2_sc_lp2L; detR3 -= la2_sc_lp2R;
+      );
+      la2_g_sc_hp_l = detL3 + la2_g_sc_hp_c * (la2_g_sc_hp_l - detL3);
+      detL3 -= la2_g_sc_hp_l;
+      la2_g_sc_lm_lp_l = detL3 + la2_g_sc_lm_lp_c * (la2_g_sc_lm_lp_l - detL3);
+      la2_g_sc_lm_hp_l = la2_g_sc_lm_lp_l + la2_g_sc_lm_hp_c * (la2_g_sc_lm_hp_l - la2_g_sc_lm_lp_l);
+      lm_l = la2_g_sc_lm_lp_l - la2_g_sc_lm_hp_l;
+      la2_sc_hf_l = detL3 + la2_g_sc_hf_c * (la2_sc_hf_l - detL3);
+      detL3 = (0.50 * la2_sc_hf_l + 0.50 * detL3) + 0.16 * lm_l;
+
+      la2_g_sc_hp_r = detR3 + la2_g_sc_hp_c * (la2_g_sc_hp_r - detR3);
+      detR3 -= la2_g_sc_hp_r;
+      la2_g_sc_lm_lp_r = detR3 + la2_g_sc_lm_lp_c * (la2_g_sc_lm_lp_r - detR3);
+      la2_g_sc_lm_hp_r = la2_g_sc_lm_lp_r + la2_g_sc_lm_hp_c * (la2_g_sc_lm_hp_r - la2_g_sc_lm_lp_r);
+      lm_r = la2_g_sc_lm_lp_r - la2_g_sc_lm_hp_r;
+      la2_sc_hf_r = detR3 + la2_g_sc_hf_c * (la2_sc_hf_r - detR3);
+      detR3 = (0.50 * la2_sc_hf_r + 0.50 * detR3) + 0.16 * lm_r;
+
+      det3 = 0.5*(detL3*detL3 + detR3*detR3);
+      la2_env = det3 + la2_g_det_c*(la2_env - det3);
+      det3 = sqrt(max(la2_env, 0.000000000001));
+
+      // 2. Soft knee ottico 11 dB + ratio progressivo UAD Gray + cella T4B dual-stage con memoria fosforo
+      kn = 11.0;
+      diff = gain2db(det3) - la2_gray_thr;
+      diff <= -kn * 0.5 ? (
+        over3 = 0;
+      ) : diff < kn * 0.5 ? (
+        kt = (diff + kn * 0.5) / kn;
+        over3 = kt * kt * kn * 0.5;
+      ) : (
+        over3 = diff;
+      );
+      r_eff = la2_mode ? (5.2 + min(9.0, over3 * 0.55)) : (3.2 + min(2.0, over3 * 0.12));
+      tgt_gr3 = -over3 * (r_eff - 1) / r_eff * la2_gray_pr_sc;
+
+      mem_in = min(1.0, abs(tgt_gr3) * 0.065);
+      la2_t4_mem = mem_in + (mem_in > la2_t4_mem ? la2_t4_mem_att_c : la2_t4_mem_rel_c) * (la2_t4_mem - mem_in);
+      slow_ms = 540.0 + la2_t4_mem * 420.0;
+      slow_c = exp(-1000.0 / (slow_ms * srate));
+
+      la2_t4_fast = tgt_gr3 + (tgt_gr3 < la2_t4_fast ? la2_t4_att_fast_c : la2_t4_rel_fast_c) * (la2_t4_fast - tgt_gr3);
+      la2_t4_slow = tgt_gr3 + (tgt_gr3 < la2_t4_slow ? la2_t4_att_slow_c : slow_c) * (la2_t4_slow - tgt_gr3);
+      w_slow = 0.23 + 0.05 * la2_t4_mem;
+      la2_gr_db = (1.0 - w_slow) * la2_t4_fast + w_slow * la2_t4_slow;
+
+      // 3. Stadio 12AX7A/12BH7A 2x oversampled sul solo residuo non lineare (0.00 dB perdita HF) + UTC A-24
+      la2_g = db2gain(la2_gr_db) * la2_makeup_g;
+
+      t_cur = route_in_l * la2_g;
+      t_mid = 0.5 * (la2_os_px_l + t_cur);
+      r_m = la2_tube_nl(t_mid);
+      r_c = la2_tube_nl(t_cur);
+      r_os = 0.25 * la2_os_ym_l + 0.50 * la2_os_yc_l + 0.25 * r_m;
+      la2_os_ym_l = r_m; la2_os_yc_l = r_c;
+      la2_dc_l = r_os + la2_dc_c * (la2_dc_l - r_os);
+      wet_tube = la2_os_px_l + (r_os - la2_dc_l);
+      la2_os_px_l = t_cur;
+      wetL = la2_pb0 * wet_tube + la2_pr_z1_l;
+      la2_pr_z1_l = la2_pb1 * wet_tube - la2_pa1 * wetL + la2_pr_z2_l;
+      la2_pr_z2_l = la2_pb2 * wet_tube - la2_pa2 * wetL;
+
+      t_cur = route_in_r * la2_g;
+      t_mid = 0.5 * (la2_os_px_r + t_cur);
+      r_m = la2_tube_nl(t_mid);
+      r_c = la2_tube_nl(t_cur);
+      r_os = 0.25 * la2_os_ym_r + 0.50 * la2_os_yc_r + 0.25 * r_m;
+      la2_os_ym_r = r_m; la2_os_yc_r = r_c;
+      la2_dc_r = r_os + la2_dc_c * (la2_dc_r - r_os);
+      wet_tube = la2_os_px_r + (r_os - la2_dc_r);
+      la2_os_px_r = t_cur;
+      wetR = la2_pb0 * wet_tube + la2_pr_z1_r;
+      la2_pr_z1_r = la2_pb1 * wet_tube - la2_pa1 * wetR + la2_pr_z2_r;
+      la2_pr_z2_r = la2_pb2 * wet_tube - la2_pa2 * wetR;
+
+      // MIX parallelo sincrono in fase (wet e dry condividono lo stesso centro a 1 campione)
+      route_out_l = wetL*la2_mix_w + la2_dry_d1_l*(1-la2_mix_w);
+      route_out_r = wetR*la2_mix_w + la2_dry_d1_r*(1-la2_mix_w);
+      la2_dry_d1_l = route_in_l;
+      la2_dry_d1_r = route_in_r;
+    ) : (
+      // --- LA2 CLEAN (legacy originale, retrocompatibile al 100%) ---
+      la2_gray_active_prev = 0;
+      detL3 = route_in_l; detR3 = route_in_r;
+      la2_sc_hpf_on ? (
+        la2_sc_lpL = (1-la2_sc_hpf_c)*detL3 + la2_sc_hpf_c*la2_sc_lpL; la2_sc_lpR = (1-la2_sc_hpf_c)*detR3 + la2_sc_hpf_c*la2_sc_lpR;
+        detL3 -= la2_sc_lpL; detR3 -= la2_sc_lpR;
+        la2_sc_lp2L = (1-la2_sc_hpf_c)*detL3 + la2_sc_hpf_c*la2_sc_lp2L; la2_sc_lp2R = (1-la2_sc_hpf_c)*detR3 + la2_sc_hpf_c*la2_sc_lp2R;
+        detL3 -= la2_sc_lp2L; detR3 -= la2_sc_lp2R;
+      );
+      det3 = 0.5*(detL3*detL3 + detR3*detR3); la2_env = det3 + la2_det_c*(la2_env-det3); det3 = sqrt(max(la2_env,0.000000000001));
+      over3 = max(0, gain2db(det3) - la2_thr); tgt_gr3 = -over3*(la2_ratio_eff-1)/la2_ratio_eff;
+      ccoef3 = tgt_gr3 < la2_gr_db ? la2_att_c : la2_rel_c; la2_gr_db = tgt_gr3 + ccoef3*(la2_gr_db-tgt_gr3);
+      la2_g = db2gain(la2_gr_db)*la2_makeup_g; wetL = route_in_l * la2_g; wetR = route_in_r * la2_g;
+      route_out_l = wetL*la2_mix_w + route_in_l*(1-la2_mix_w); route_out_r = wetR*la2_mix_w + route_in_r*(1-la2_mix_w);
     );
-    det3 = 0.5*(detL3*detL3 + detR3*detR3); la2_env = det3 + la2_det_c*(la2_env-det3); det3 = sqrt(max(la2_env,0.000000000001));
-    over3 = max(0, gain2db(det3) - la2_thr); tgt_gr3 = -over3*(la2_ratio_eff-1)/la2_ratio_eff;
-    ccoef3 = tgt_gr3 < la2_gr_db ? la2_att_c : la2_rel_c; la2_gr_db = tgt_gr3 + ccoef3*(la2_gr_db-tgt_gr3);
-    la2_g = db2gain(la2_gr_db)*la2_makeup_g; wetL = route_in_l * la2_g; wetR = route_in_r * la2_g;
-    route_out_l = wetL*la2_mix_w + route_in_l*(1-la2_mix_w); route_out_r = wetR*la2_mix_w + route_in_r*(1-la2_mix_w);
   ) : (
+    la2_gray_active_prev = 0;
     route_out_l = route_in_l; route_out_r = route_in_r;
   );
 
@@ -2453,7 +2749,11 @@ bus_beta_on ? (
   bL = bus_lowL + bus_airL * bus_tone_air_gain; bR = bus_lowR + bus_airR * bus_tone_air_gain;
 );
 analog_on >= 0.5 && analog_mix_w > 0 && analog_drive_n > 0 ? (
-  analog_dryL = bL; analog_dryR = bR; analog_xL = bL*analog_profile_gain; analog_xR = bR*analog_profile_gain;
+  analog_pad_in = analog_pad >= 0.5 ? 0.50118723 : 1.0;
+  analog_pad_out = analog_pad >= 0.5 ? 1.99526231 : 1.0;
+  analog_dryL = bL; analog_dryR = bR;
+  analog_xL = 1.45 * tanh_fast((bL * analog_pad_in * analog_profile_gain) / 1.45);
+  analog_xR = 1.45 * tanh_fast((bR * analog_pad_in * analog_profile_gain) / 1.45);
   analog_absxL = abs(analog_xL); analog_absxR = abs(analog_xR);
   analog_slowdynL = min(1.5,analog_slowdynL*analog_slow_c + analog_absxL); analog_slowdynR = min(1.5,analog_slowdynR*analog_slow_c + analog_absxR);
   analog_dynamicL = 2.5+analog_slowdynL; analog_dynamicR = 2.5+analog_slowdynR;
@@ -2482,7 +2782,7 @@ analog_on >= 0.5 && analog_mix_w > 0 && analog_drive_n > 0 ? (
   analog_wetL = analog_xL+analog_sumL; analog_wetR = analog_xR+analog_sumR;
   analog_rect = abs(analog_wetL); analog_curve = 1-cos(analog_rect); analog_wetL >= 0 ? analog_wetL -= analog_curve : analog_wetL += analog_curve;
   analog_rect = abs(analog_wetR); analog_curve = 1-cos(analog_rect); analog_wetR >= 0 ? analog_wetR -= analog_curve : analog_wetR += analog_curve;
-  analog_wetL *= analog_profile_out; analog_wetR *= analog_profile_out;
+  analog_wetL *= analog_profile_out * analog_pad_out; analog_wetR *= analog_profile_out * analog_pad_out;
   analog_colorL = analog_dryL*(1-analog_drive_n)+analog_wetL*analog_drive_n; analog_colorR = analog_dryR*(1-analog_drive_n)+analog_wetR*analog_drive_n;
   bL = (analog_dryL*(1-analog_mix_w)+analog_colorL*analog_mix_w)*analog_out_gain_g; bR = (analog_dryR*(1-analog_mix_w)+analog_colorR*analog_mix_w)*analog_out_gain_g;
 );
@@ -2515,14 +2815,28 @@ lim_on ? (
   cL *= lim_gain_smooth; cR *= lim_gain_smooth;
   lim_sat_w > 0 ? (
     sat_drive = 1 + lim_sat_w * 3.0;
-    satL = tanh_fast((cL / max(lim_ceiling_g, 0.000000000001)) * sat_drive) * lim_ceiling_g / sat_drive;
-    satR = tanh_fast((cR / max(lim_ceiling_g, 0.000000000001)) * sat_drive) * lim_ceiling_g / sat_drive;
-    cL = cL * (1 - lim_sat_w) + satL * lim_sat_w; cR = cR * (1 - lim_sat_w) + satR * lim_sat_w;
+    // Oversampling 2x sullo stadio saturazione/clipper: elimina aliasing medio-alto su spot a -8 LUFS
+    sat_m_l = 0.5 * (lim_os_px_l + cL); sat_m_r = 0.5 * (lim_os_px_r + cR);
+    lim_os_px_l = cL; lim_os_px_r = cR;
+    sat_ym_l = lim_sat_shape(sat_m_l, lim_ceiling_g, sat_drive);
+    sat_ym_r = lim_sat_shape(sat_m_r, lim_ceiling_g, sat_drive);
+    sat_yc_l = lim_sat_shape(cL, lim_ceiling_g, sat_drive);
+    sat_yc_r = lim_sat_shape(cR, lim_ceiling_g, sat_drive);
+    sat_out_l = 0.25 * lim_os_ym_l + 0.50 * lim_os_yc_l + 0.25 * sat_ym_l;
+    sat_out_r = 0.25 * lim_os_ym_r + 0.50 * lim_os_yc_r + 0.25 * sat_ym_r;
+    lim_os_ym_l = sat_ym_l; lim_os_ym_r = sat_ym_r;
+    lim_os_yc_l = sat_yc_l; lim_os_yc_r = sat_yc_r;
+    cL = cL * (1 - lim_sat_w) + sat_out_l * lim_sat_w;
+    cR = cR * (1 - lim_sat_w) + sat_out_r * lim_sat_w;
+  ) : (
+    lim_os_px_l = cL; lim_os_px_r = cR;
+    lim_os_ym_l = cL; lim_os_ym_r = cR;
+    lim_os_yc_l = cL; lim_os_yc_r = cR;
   );
   pk_post_lim = max(abs(cL), abs(cR));
   pk_post_lim > lim_ceiling_g ? (guard_g = lim_ceiling_g / max(pk_post_lim, 0.000000000001); cL *= guard_g; cR *= guard_g; lim_gain_smooth *= guard_g;);
   lim_gain = lim_gain_smooth;
-) : (lim_gain = 1; lim_gain_smooth = 1;);
+) : (lim_gain = 1; lim_gain_smooth = 1; lim_os_px_l = lim_os_px_r = lim_os_ym_l = lim_os_ym_r = lim_os_yc_l = lim_os_yc_r = 0;);
 pk_lim_env = peak_meter_tick(max(abs(cL), abs(cR)), pk_lim_env); pk_lim_db = gain2db(pk_lim_env);
 lim_sig = 0.5*(cL*cL + cR*cR); dbg_lim_env = lim_sig + dbg_meter_c*(dbg_lim_env - lim_sig); dbg_lim_db = gain2db(sqrt(max(dbg_lim_env,0.000000000001)));
 out_enabled = floor(out_enable+0.5); outL = cL; outR = cR;
@@ -2713,8 +3027,8 @@ lra_needs_reset ? (
   lra_needs_reset = 0;
 );
 
-@gfx 880 1050
-zp_dw = 792.0; zp_sc = max(0.55, min(2.4, gfx_w / zp_dw)); zp_ox = 0.0; zp_vw = zp_dw; zp_vh = max(320.0, gfx_h / zp_sc); zp_mx = (mouse_x - zp_ox) / zp_sc; zp_my = mouse_y / zp_sc;
+@gfx 880 560
+zp_dw = 792.0; zp_sc = max(0.55, min(2.4, gfx_w / zp_dw)); zp_ox = 0.0; zp_vw = zp_dw; zp_vh = max(240.0, gfx_h / zp_sc); zp_mx = (mouse_x - zp_ox) / zp_sc; zp_my = mouse_y / zp_sc;
 
 // Ponte guida: acceso solo se il battito del Cue Navigator (gmem 3900) e' cambiato negli ultimi 3 s
 zp_hb = gmem[3900]; zp_hb_now = time_precise();
@@ -2752,7 +3066,7 @@ zp_hb_ok = zp_hb > 0 && zp_hb_now - zp_hb_t < 3;
 ui_view_init == 0 ? (
   ui_view_mode = 2; // Default 2 = EXPERT
   ui_selected_module = 1; // Default 1 = IN
-  ui_work_preset = 0; // Default 0 = ACTIVE
+  ui_work_preset = 1; // Default 1 = ACTIVE (SOLO ATTIVI)
   ui_work_scroll_y = 0;
   ui_view_init = 1;
 );
@@ -2790,6 +3104,15 @@ function set_ui_slider(sl_idx, new_val) local(mask)(
   ) : sl_idx == 79 ? (
     sliderchange(slider79);
     slider_automate(slider79);
+  ) : sl_idx == 80 ? (
+    sliderchange(slider80);
+    slider_automate(slider80);
+  ) : sl_idx == 81 ? (
+    sliderchange(slider81);
+    slider_automate(slider81);
+  ) : (
+    sliderchange(slider(sl_idx));
+    slider_automate(slider(sl_idx));
   );
   // ANA: la GUI custom modifica slider nascosti; aggiorna subito i coefficienti DSP
   // senza aspettare altri eventi host, altrimenti Drive/Gain/Mix possono sembrare inattivi.
@@ -3046,24 +3369,72 @@ local(hover, _tw, _th, next_ord)
   zp_gx=x+floor((w-_tw)*0.5); zp_gy=y+floor((h-_th)*0.5); zp_drawstr(label);
 );
 
+function clear_all_modules() (
+  set_ui_slider(6, 0);
+  set_ui_slider(13, 0);
+  set_ui_slider(20, 0);
+  set_ui_slider(25, 0);
+  set_ui_slider(57, 0);
+  set_ui_slider(67, 0);
+  set_ui_slider(34, 0);
+  ui_work_preset = 1;
+  ui_work_scroll_y = 0;
+);
+
+function solo_module_slider(target_sl) (
+  set_ui_slider(6,  target_sl == 6  ? 1 : 0);
+  set_ui_slider(13, target_sl == 13 ? 1 : 0);
+  set_ui_slider(20, target_sl == 20 ? 1 : 0);
+  set_ui_slider(25, target_sl == 25 ? 1 : 0);
+  set_ui_slider(57, target_sl == 57 ? 1 : 0);
+  set_ui_slider(67, target_sl == 67 ? 1 : 0);
+  set_ui_slider(34, target_sl == 34 ? 1 : 0);
+  target_sl == 57 && floor(brn_preset + 0.5) == 0 && brn_manual_armed < 0.5 ? apply_brown_manual_flat_gfx();
+  ui_work_preset = 1;
+  ui_work_scroll_y = 0;
+);
+
 function draw_work_buttons(x, y, w, h)
-local(g, bw, ord_w)
+local(g, act_w, clr_w, ord_w, hv_act, hv_clr, is_act, _tw, _th)
 (
   g = 4;
-  ord_w = 70;
-  bw = floor((w - ord_w - g*4) / 4);
+  act_w = 128;
+  clr_w = 78;
+  ord_w = max(70, w - act_w - clr_w - g*2);
 
-  ui_work_preset_btn(0, x + (bw+g)*0, y, bw, h, "ALL",    131);
-  ui_work_preset_btn(1, x + (bw+g)*1, y, bw, h, "ACTIVE", 132);
-  ui_work_preset_btn(2, x + (bw+g)*2, y, bw, h, "TONE",   133);
-  ui_work_preset_btn(3, x + (bw+g)*3, y, bw, h, "LEVEL",  134);
-  
+  // Toggle unico: SOLO ATTIVI (default) <-> MOSTRA TUTTI
+  is_act = (ui_work_preset != 0);
+  hv_act = hit(x, y, act_w, h);
+  hv_act ? ui_set_hover(132);
+  !ui_render_only && hv_act && mouse_click ? (
+    ui_work_preset = is_act ? 0 : 1;
+    ui_work_scroll_y = 0;
+    is_act = (ui_work_preset != 0);
+  );
+  is_act ? gfx_set(0.16, 0.44, 0.64, 1) : gfx_set(0.24, 0.24, 0.28, 1);
+  zp_rect(x, y, act_w, h);
+  gfx_set(0.94, 0.96, 0.98, 1); zp_setfont(1, "Arial", 10, 'b');
+  strcpy(#_actlbl, is_act ? (ui_lang == 1 ? "ACTIVE ONLY" : "SOLO ATTIVI") : (ui_lang == 1 ? "SHOW ALL" : "MOSTRA TUTTI"));
+  (gfx_measurestr(#_actlbl, _tw, _th); _tw /= zp_sc; _th /= zp_sc);
+  zp_gx = x + floor((act_w - _tw)*0.5); zp_gy = y + floor((h - _th)*0.5); zp_drawstr(#_actlbl);
+
+  // TUTTI OFF (pulisce i 7 moduli per partire con 1 solo blocco)
+  hv_clr = hit(x + act_w + g, y, clr_w, h);
+  hv_clr ? ui_set_hover(131);
+  !ui_render_only && hv_clr && mouse_click ? clear_all_modules();
+  hv_clr ? gfx_set(0.36, 0.18, 0.18, 1) : gfx_set(0.18, 0.16, 0.18, 1);
+  zp_rect(x + act_w + g, y, clr_w, h);
+  gfx_set(0.90, 0.84, 0.84, 1); zp_setfont(1, "Arial", 10, 'b');
+  strcpy(#_clrlbl, ui_lang == 1 ? "ALL OFF" : "TUTTI OFF");
+  (gfx_measurestr(#_clrlbl, _tw, _th); _tw /= zp_sc; _th /= zp_sc);
+  zp_gx = x + act_w + g + floor((clr_w - _tw)*0.5); zp_gy = y + floor((h - _th)*0.5); zp_drawstr(#_clrlbl);
+
   route_order == 0 ? strcpy(#_ord, "ORD: CLS") :
   route_order == 1 ? strcpy(#_ord, "ORD: SMTH") :
   route_order == 2 ? strcpy(#_ord, "ORD: TONE") :
   route_order == 3 ? strcpy(#_ord, "ORD: DNS") :
                      strcpy(#_ord, "ORD: BRN");
-  ui_tab_button_route_order(x + (bw+g)*4, y, ord_w, h, #_ord, 135);
+  ui_tab_button_route_order(x + act_w + clr_w + g*2, y, ord_w, h, #_ord, 135);
 );
 
 
@@ -3269,11 +3640,18 @@ local(hover, state, _tw, _th)
   state = floor(slider(sl_idx)+0.5);
   hover = hit(x,y,w,h);
   hover ? ui_set_hover(hover_id);
-  !ui_render_only && hover && mouse_click ? (
-    set_ui_slider(sl_idx, 1-state);
-    state=1-state;
-    // BRN acceso senza preset: forza stato visivo/DSP davvero flat.
-    sl_idx == 57 && state == 1 && floor(brn_preset + 0.5) == 0 && brn_manual_armed < 0.5 ? apply_brown_manual_flat_gfx();
+  !ui_render_only && hover ? (
+    (mouse_rclick || (mouse_click && (mouse_cap & 16))) ? (
+      solo_module_slider(sl_idx);
+      state = 1;
+    ) : mouse_click ? (
+      set_ui_slider(sl_idx, 1-state);
+      state=1-state;
+      // BRN acceso senza preset: forza stato visivo/DSP davvero flat.
+      sl_idx == 57 && state == 1 && floor(brn_preset + 0.5) == 0 && brn_manual_armed < 0.5 ? apply_brown_manual_flat_gfx();
+      ui_work_preset = 1;
+      ui_work_scroll_y = 0;
+    );
   );
   state ? gfx_set(0.18*0.45, 0.68*0.45, 0.42*0.45, 1) : gfx_set(0.14,0.14,0.16,1);
   zp_rect(x,y,w,h);
@@ -4508,7 +4886,6 @@ function draw_panel_gate(px,py,pw)  local(ky,ks,ki,m)
   mod_active = floor(slider(6)+0.5);
   set_mod_color(2);
   draw_shell(px,py,pw,PH,"2  Expander");
-  ui_local_onoff_btn(px + pw - 36, py + 4, 30, 16, 6, 212);
   m=mx(px,pw); ky=py+62; ks=46; ki=px+40;
   ui_knob_col(7, ki,      ky,KR,-70,-10,-46,"THRS",  4001, COL_DYN_R, COL_DYN_G, COL_DYN_B);
   ui_knob_col(8, ki+ks,   ky,KR,-40, 0,  -8,"RANGE", 4002, COL_DYN_R, COL_DYN_G, COL_DYN_B);
@@ -4534,8 +4911,7 @@ function draw_panel_1175(px,py,pw)  local(ky,ks,ki,m)
   mod_active = floor(slider(13)+0.5);
   set_mod_color(3);
   draw_shell(px,py,pw,PH,"3  1175");
-  ui_par_btn(px + pw - 80, py + 4, 40, 16, c1175_par_send, 73, "» LIM", 5011);
-  ui_local_onoff_btn(px + pw - 36, py + 4, 30, 16, 13, 213);
+  ui_par_btn(px + pw - 46, py + 4, 40, 16, c1175_par_send, 73, "» LIM", 5011);
   m=mx(px,pw); ky=py+62; ks=50; ki=px+40;
   ui_knob_red_col(14,ki,  ky,KR,-40, 0,  -24,"RED",  5001, COL_DYN_R, COL_DYN_G, COL_DYN_B);
   ui_knob_col(15,ki+ks,   ky,KR, 1,  20, 4.0,"RATIO",5002, COL_NEU_R, COL_NEU_G, COL_NEU_B);
@@ -4555,13 +4931,13 @@ function draw_panel_1175(px,py,pw)  local(ky,ks,ki,m)
   );
 );
 
-function draw_panel_la2(px,py,pw)  local(ky,ks,ki,m,bx,by,ratio_eff,_tw,_th)
+function draw_panel_la2(px,py,pw)  local(ky,ks,ki,m,bx,by,ratio_eff,is_gray,_tw,_th)
 (
   mod_active = floor(slider(20)+0.5);
+  is_gray = floor(slider(80)+0.5) >= 1;
   set_mod_color(4);
-  draw_shell(px,py,pw,PH,"4  LA2");
-  ui_par_btn(px + pw - 80, py + 4, 40, 16, la2_par_send, 75, "» LIM", 6011);
-  ui_local_onoff_btn(px + pw - 36, py + 4, 30, 16, 20, 214);
+  draw_shell(px,py,pw,PH, is_gray ? "4  LA2  [GRAY T4B]" : "4  LA2  [CLEAN]");
+  ui_par_btn(px + pw - 46, py + 4, 40, 16, la2_par_send, 75, "» LIM", 6011);
   m=mx(px,pw); ky=py+62; ks=56; ki=px+44;
   ui_knob_col(21,ki,      ky,KR, 0,100, 38,"RED",   6001, COL_DYN_R, COL_DYN_G, COL_DYN_B);
   ui_knob_col(23,ki+ks,   ky,KR, 0,15,   0,"MAKEUP",6002, COL_GAIN_R, COL_GAIN_G, COL_GAIN_B);
@@ -4570,11 +4946,14 @@ function draw_panel_la2(px,py,pw)  local(ky,ks,ki,m,bx,by,ratio_eff,_tw,_th)
   ui_sc_hpf_knob(48, bx+4, py+62, 10, 6010);
   ui_opt(22,0,"COMP",bx+62,by,   52,21,6004);
   ui_opt(22,1,"LIM", bx+62,by+26,52,21,6005);
+  ui_opt(80,0,"CLEAN",bx+120,by,   54,21,6006);
+  ui_opt(80,1,"GRAY", bx+120,by+26,54,21,6007);
   ratio_eff = floor(slider(22)+0.5) ? 10 : 3;
-  zp_setfont(1,"Arial",11); gfx_set(0.28,0.82,1.0,0.95);
-  sprintf(#_la2r,"RATIO %d:1",ratio_eff);
+  zp_setfont(1,"Arial",11,'b');
+  is_gray ? gfx_set(0.96,0.74,0.30,0.98) : gfx_set(0.28,0.82,1.0,0.95);
+  is_gray ? strcpy(#_la2r, floor(slider(22)+0.5) ? "T4B LIM" : "T4B GRAY") : sprintf(#_la2r,"RATIO %d:1",ratio_eff);
   (gfx_measurestr(#_la2r, _tw, _th); _tw /= zp_sc; _th /= zp_sc);
-  zp_gx=bx+138; zp_gy=py+58; zp_drawstr(#_la2r);
+  zp_gx=bx+184; zp_gy=py+58; zp_drawstr(#_la2r);
   mod_active ? (
     draw_hsegs(   m,py+MBY0,MW,MBH,ui_la2_in_db, 8,"IN");
     draw_hsegs_gr(m,py+MBY1,MW,MBH,ui_la2_act_db,9,"GR");
@@ -4591,8 +4970,7 @@ function draw_panel_mt(px,py,pw)  local(ky,ks,ki,m,bx,by,bw,bh)
   mod_active = floor(slider(25)+0.5);
   set_mod_color(5);
   draw_shell(px,py,pw,PH,"5  Major Tom");
-  ui_par_btn(px + pw - 80, py + 4, 40, 16, mt_par_send, 76, "» LIM", 7021);
-  ui_local_onoff_btn(px + pw - 36, py + 4, 30, 16, 25, 215);
+  ui_par_btn(px + pw - 46, py + 4, 40, 16, mt_par_send, 76, "» LIM", 7021);
   m=mx(px,pw); ky=py+62; ks=56; ki=px+44;
   ui_knob_red_col(26,ki,  ky,KR,-40, 0,  -14,"RED",  7001, COL_DYN_R, COL_DYN_G, COL_DYN_B);
   ui_knob_col(27,ki+ks,   ky,KR, 1,  20, 2.6,"RATIO",7002, COL_NEU_R, COL_NEU_G, COL_NEU_B);
@@ -4632,8 +5010,7 @@ function draw_panel_brown(px,py,pw)  local(ky1,ky2,ks,ki,m,bx,by,bw,bh,stripx,st
   mod_active = floor(slider(57)+0.5);
   set_mod_color(7);
   draw_shell(px,py,pw,BROWN_H,"6  Brown Guard");
-  ui_par_btn(px + pw - 80, py + 4, 40, 16, brn_par_send, 77, "» LIM", 8117);
-  ui_local_onoff_btn(px + pw - 36, py + 4, 30, 16, 57, 218);
+  ui_par_btn(px + pw - 46, py + 4, 40, 16, brn_par_send, 77, "» LIM", 8117);
   m=mx(px,pw); ky1=py+63; ky2=py+140; ks=72; ki=px+46;
   ui_knob_col(60,ki,    ky1,KR, -3,  8, 1.0,"SLOPE", 8101, COL_TONE_R, COL_TONE_G, COL_TONE_B);
   ui_knob_col(61,ki+ks, ky1,KR, 0,150,  60,"AMT",   8102, COL_GAIN_R, COL_GAIN_G, COL_GAIN_B);
@@ -4664,12 +5041,27 @@ function draw_panel_brown(px,py,pw)  local(ky1,ky2,ks,ki,m,bx,by,bw,bh,stripx,st
   );
 );
 
-function draw_panel_analog(px,py,pw)  local(ky,ks,ki,m,typ_x,typ_y,typ_w,typ_h,i,bx,by,bw,bh)
+function draw_panel_analog(px,py,pw)  local(ky,ks,ki,m,typ_x,typ_y,typ_w,typ_h,i,bx,by,bw,bh,pad_on,pad_x,pad_y,pad_w,pad_h)
 (
   mod_active = floor(slider(67)+0.5);
+  pad_on = floor(slider(81)+0.5) >= 1;
   set_mod_color(8);
   draw_shell(px,py,pw,PH,"7  ANA  ZP Summing Color");
-  ui_local_onoff_btn(px + pw - 36, py + 4, 30, 16, 67, 219);
+  // Pulsante PAD -6 dB auto-compensato in header modulo ANA (headroom pulito su bus spinti)
+  pad_x = px + pw - 64; pad_y = py + 4; pad_w = 58; pad_h = 16;
+  hit(pad_x, pad_y, pad_w, pad_h) ? (
+    !ui_render_only ? ui_set_hover(8208);
+    mouse_click ? set_ui_slider(81, pad_on ? 0 : 1);
+  );
+  pad_on ? gfx_set(0.76,0.40,0.12,0.96) : gfx_set(0.16,0.15,0.16,0.92);
+  zp_rect(pad_x, pad_y, pad_w, pad_h);
+  pad_on ? gfx_set(0.98,0.74,0.38,0.95) : gfx_set(0.32,0.30,0.32,0.85);
+  zp_rect(pad_x, pad_y, pad_w, pad_h, 0);
+  zp_setfont(1,"Arial",10,'b');
+  pad_on ? gfx_set(1,0.97,0.90,1) : gfx_set(0.74,0.72,0.70,0.92);
+  strcpy(#_apad, pad_on ? "PAD -6" : "PAD 0");
+  (gfx_measurestr(#_apad, _tw, _th); _tw /= zp_sc; _th /= zp_sc);
+  zp_gx = pad_x + floor((pad_w - _tw)*0.5); zp_gy = pad_y + floor((pad_h - _th)*0.5); zp_drawstr(#_apad);
   m=mx(px,pw); ky=py+62; ks=62; ki=px+44;
 
   mod_active ? (
@@ -4713,7 +5105,8 @@ function draw_panel_analog(px,py,pw)  local(ky,ks,ki,m,typ_x,typ_y,typ_w,typ_h,i
   (gfx_measurestr(#_ana, _tw, _th); _tw /= zp_sc; _th /= zp_sc);
   zp_gx=px+floor((pw-_tw)*0.5); zp_gy=py+79; zp_drawstr(#_ana);
   zp_setfont(1,"Arial",12); gfx_set(0.78,0.58,0.44,0.96);
-  sprintf(#_ana2,"Drive %.0f%%   Gain %+.1f dB   Mix %.0f%%",analog_drive,analog_out_gain,analog_mix);
+  pad_on ? sprintf(#_ana2,"Drive %.0f%%   Gain %+.1f dB   Mix %.0f%%   PAD -6 dB",analog_drive,analog_out_gain,analog_mix)
+         : sprintf(#_ana2,"Drive %.0f%%   Gain %+.1f dB   Mix %.0f%%",analog_drive,analog_out_gain,analog_mix);
   (gfx_measurestr(#_ana2, _tw, _th); _tw /= zp_sc; _th /= zp_sc);
   zp_gx=px+floor((pw-_tw)*0.5); zp_gy=py+97; zp_drawstr(#_ana2);
 );
@@ -4723,7 +5116,6 @@ function draw_panel_lim(px,py,pw)  local(ky,ks,ki,m,sat_x,sat_l,sat_w,par_any_ac
   mod_active = floor(slider(34)+0.5);
   set_mod_color(6);
   draw_shell(px,py,pw,PH,"8  Voice Limiter");
-  ui_local_onoff_btn(px + pw - 36, py + 4, 30, 16, 34, 216);
   m=mx(px,pw); ky=py+62; ks=56; ki=px+44;
   ui_knob_col(35,ki,      ky,KR,-12, 0,  -1.0,"CEIL", 8001, COL_LIMIT_R, COL_LIMIT_G, COL_LIMIT_B);
   ui_knob_col(36,ki+ks,   ky,KR, 0,  20,  0.0,"SOFT", 8002, COL_TIME_R, COL_TIME_G, COL_TIME_B);
@@ -5277,8 +5669,13 @@ function draw_mobile_panel(mid)
 function draw_tip_bar()
 local(tip_y)
 (
-  tip_y = zp_vh - TIP_H;
+  tip_y = (gfx_view_i == 0 && gui_mode) ? min(zp_vh - TIP_H, max(PANEL_Y0 + 44, PANEL_Y0 + max(44, tot_h) + 2)) : (zp_vh - TIP_H);
+  ui_tip_y = tip_y;
   gfx_set(0.055,0.065,0.075,1); zp_rect(0,tip_y,zp_vw,TIP_H);
+  gfx_set(0.18,0.22,0.28,1); zp_rect(0,tip_y,zp_vw,1);
+  tip_y + TIP_H < zp_vh ? (
+    gfx_set(0.16,0.22,0.30,0.85); zp_rect(0,tip_y+TIP_H,zp_vw,1);
+  );
   time_now < help_warn_until ? (
     gfx_set(0.95,0.65,0.20,1);
     strcpy(#_tip_msg, ui_lang == 1 ? "Guide: open ZP Help > BUS Chain (start Cue Navigator from 33 Welcome to open it from here)" : "Guida: apri Help ZP > BUS Chain (avvia il Cue Navigator dal 33 Benvenuto per aprirla da qui)");
@@ -5287,6 +5684,8 @@ local(tip_y)
   ui_hover_id==101 ? strcpy(#_tip_msg,"GUI: vista grafica pannelli modulo con knob interattivi e meter") :
   ui_hover_id==102 ? strcpy(#_tip_msg,"JSFX: vista host Reaper; Output non ha piu pannello dedicato") :
   ui_hover_id==103 ? strcpy(#_tip_msg,"DBG: overlay diagnostica DSP - valori interni della catena") :
+  ui_hover_id==131 ? strcpy(#_tip_msg,"TUTTI OFF: spegne tutti i 7 moduli per accendere solo quello che serve (o tasto destro su un modulo)") :
+  ui_hover_id==132 ? strcpy(#_tip_msg,"SOLO ATTIVI / MOSTRA TUTTI: nasconde automaticamente i moduli spenti e compatta il rack") :
   ui_hover_id==271 ? strcpy(#_tip_msg,"NAT Natural: preset voiceover naturale bilanciato, compressione moderata") :
   ui_hover_id==272 ? strcpy(#_tip_msg,"BRD Broadcast: preset broadcast, compressione piu' aggressiva e uniforme") :
   ui_hover_id==273 ? strcpy(#_tip_msg,"DNS Dense: preset denso ad alta compressione, adatto per podcast intenso") :
@@ -5294,13 +5693,13 @@ local(tip_y)
   ui_hover_id==275 ? strcpy(#_tip_msg,"MCH Match Chain: preset calibrato su -18 LUFS / -3 dBFS come riferimento bilanciato per mix con tracce pre-masterate") :
   ui_hover_id==276 ? strcpy(#_tip_msg,"FLT Flat: preset flat - azzera tutti i moduli per partire da zero") :
   ui_hover_id==211 ? strcpy(#_tip_msg,"IN on/off: trim d'ingresso manuale; la guida LOW/OK/HOT usa RMS lento a 4 secondi, non i picchi") :
-  ui_hover_id==212 ? strcpy(#_tip_msg,"EXP on/off: attiva o bypassa l'Expander, riduzione rumore di fondo") :
-  ui_hover_id==213 ? strcpy(#_tip_msg,"1175 on/off: attiva o bypassa il compressore FET 1176-style") :
-  ui_hover_id==214 ? strcpy(#_tip_msg,"LA2 on/off: attiva o bypassa il compressore opto LA-2A style") :
-  ui_hover_id==215 ? strcpy(#_tip_msg,"MT on/off: attiva o bypassa Major Tom, compressore program-dependent") :
-  ui_hover_id==216 ? strcpy(#_tip_msg,"LIM on/off: attiva o bypassa il Voice Limiter/Clipper zero-latency") :
-  ui_hover_id==219 ? strcpy(#_tip_msg,"ANA on/off: attiva ZP Summing Color dopo Brown e prima del Limiter; il Limiter contiene gli eventuali picchi") :
-  ui_hover_id==218 ? strcpy(#_tip_msg,"BRN on/off: Brown Guard attiva correzione tonale dinamica, Slope Map XY e AMU post-Brown") :
+  ui_hover_id==212 ? strcpy(#_tip_msg,"EXP: clic = accendi/spegni e mostra solo attivi  |  tasto destro (o Alt+clic) = SOLO Expander") :
+  ui_hover_id==213 ? strcpy(#_tip_msg,"1175: clic = accendi/spegni e mostra solo attivi  |  tasto destro (o Alt+clic) = SOLO 1175") :
+  ui_hover_id==214 ? strcpy(#_tip_msg,"LA2: clic = accendi/spegni e mostra solo attivi  |  tasto destro (o Alt+clic) = SOLO LA2 (Clean/Gray)") :
+  ui_hover_id==215 ? strcpy(#_tip_msg,"MT: clic = accendi/spegni e mostra solo attivi  |  tasto destro (o Alt+clic) = SOLO Major Tom") :
+  ui_hover_id==216 ? strcpy(#_tip_msg,"LIM: clic = accendi/spegni e mostra solo attivi  |  tasto destro (o Alt+clic) = SOLO Limiter") :
+  ui_hover_id==219 ? strcpy(#_tip_msg,"ANA: clic = accendi/spegni e mostra solo attivi  |  tasto destro (o Alt+clic) = SOLO ANA Color") :
+  ui_hover_id==218 ? strcpy(#_tip_msg,"BRN: clic = accendi/spegni e mostra solo attivi  |  tasto destro (o Alt+clic) = SOLO Brown Guard") :
   ui_hover_id==221 ? strcpy(#_tip_msg,"1-IN: pannello ingresso ridotto. Knob IN + meter PRE/RMS4; l'uscita si controlla dal Limiter e dal meter Reaper") :
   ui_hover_id==222 ? strcpy(#_tip_msg,"2-EXP: mostra/nasconde il pannello Expander, non disattiva il DSP") :
   ui_hover_id==223 ? strcpy(#_tip_msg,"3-1175: mostra/nasconde il pannello 1175, non disattiva il DSP") :
@@ -5334,6 +5733,8 @@ local(tip_y)
   ui_hover_id==6003 ? strcpy(#_tip_msg,"MIX: parallel compression LA2") :
   ui_hover_id==6004 ? strcpy(#_tip_msg,"COMP: modalita' compressore opto, ratio automatico e adattivo") :
   ui_hover_id==6005 ? strcpy(#_tip_msg,"LIM: modalita' limiter opto, ratio elevato per protezione hard") :
+  ui_hover_id==6006 ? strcpy(#_tip_msg,"LA2 CLEAN: circuito digitale trasparente originale (retrocompatibile con progetti precedenti)") :
+  ui_hover_id==6007 ? strcpy(#_tip_msg,"LA2 GRAY: tarato su Teletronix LA-2A Gray — valvole 12AX7A/12BH7A (H2 pura 2x OS senza perdita HF), trasformatore UTC A-24 aperto in alto (+0.8 dB @ 20 kHz), cella T4B dual-stage (50% in 60 ms) e MIX in fase") :
   ui_hover_id==6010 ? strcpy(#_tip_msg,"SC dorato LA2: HPF sidechain Off/20 Hz..10 kHz, cambia solo la detection e non filtra l'audio") :
   ui_hover_id==7001 ? strcpy(#_tip_msg,"RED: quantita' di compressione Major Tom; in senso orario aumenta la riduzione") :
   ui_hover_id==7002 ? strcpy(#_tip_msg,"RATIO: rapporto Major Tom") :
@@ -5353,7 +5754,7 @@ local(tip_y)
   ui_hover_id==8002 ? strcpy(#_tip_msg,"Soft: presa del limiter/clipper in ms; 0 = ferma e immediata, senza lookahead") :
   ui_hover_id==8003 ? strcpy(#_tip_msg,"Rel: rilascio limiter in millisecondi") :
   ui_hover_id==8004 ? strcpy(#_tip_msg,"PreG: pre-gain prima del limiter, utile per saturare dolcemente") :
-  ui_hover_id==8005 ? strcpy(#_tip_msg,"SAT: saturazione soft, aggiunge armoniche calde al controllo picchi della voce") :
+  ui_hover_id==8005 ? strcpy(#_tip_msg,"SAT (2x OS): saturazione soft 2x oversampled senza aliasing sulle medio-alte, aggiunge densita' pulita prima del tetto") :
   ui_hover_id==8101 ? strcpy(#_tip_msg,"Slope: target tonale manuale -3..8 dB/oct, anche senza preset; il pulsante DYN abilita la correzione che lo insegue") :
   ui_hover_id==8102 ? strcpy(#_tip_msg,"AMT: scala il Brown dinamico; con DIN acceso scala anche i punti Slope Map") :
   ui_hover_id==8103 ? strcpy(#_tip_msg,"Atk: attacco/reazione del Brown Guard in millisecondi") :
@@ -5377,6 +5778,7 @@ local(tip_y)
   ui_hover_id==8203 ? strcpy(#_tip_msg,"CALDO: profilo Lush, memoria di circuito morbida e corpo nei medio-bassi") :
   ui_hover_id==8204 ? strcpy(#_tip_msg,"CORPO: profilo Punch, risposta piu' compatta e presente sul bus voci") :
   ui_hover_id==8205 ? strcpy(#_tip_msg,"APERTO: profilo Holo, dettaglio e dimensione senza chiudere le alte") :
+  ui_hover_id==8208 ? strcpy(#_tip_msg,"ANA PAD -6 dB: attenua di 6 dB prima del modello console e recupera +6 dB in uscita; mantiene la colorazione pulita su bus spinti da spot radio (-8 LUFS)") :
   ui_hover_id==9001 ? strcpy(#_tip_msg,"LUFS: target LUFS integrati; attivo solo se Auto Trim = LUFS, click sul knob grigio seleziona LUFS") :
   ui_hover_id==9050 ? strcpy(#_tip_msg,"Output Smart Capture: cattura pre-auto con durata 20-90s e blocca il trim finale; i preset ricalcolano senza nuova cattura") :
   ui_hover_id==9051 ? strcpy(#_tip_msg,"NEW: tieni premuto 0.8s per cancellare il Lock e fare una nuova cattura") :
@@ -5528,7 +5930,9 @@ ui_prev_play_state = meter_display_active;
 gfx_set(0.07,0.07,0.08,1); zp_rect(0,0,zp_vw,zp_vh);
 
 btn_down    = mouse_cap & 1;
+rbtn_down   = mouse_cap & 2;
 mouse_click = btn_down && !ui_prev_mouse_down;
+mouse_rclick = rbtn_down && !ui_prev_rmouse_down;
 fine_tune   = (mouse_cap & 8) ? 0.08 : 1.0;
 !btn_down ? knob_active_sl = 0;
 ui_hover_id = 0;
@@ -5577,7 +5981,7 @@ zp_setfont(1,"Arial",19,'b'); gfx_set(0.94,0.96,0.98,1);
 zp_gx=16; zp_gy=HDR_Y+10; zp_drawstr("ZP BUS CHAIN");
 // ZP circle removed to free up header space
 zp_setfont(1,"Arial",12); gfx_set(0.46,0.60,0.76,1);
-zp_gx=16; zp_gy=HDR_Y+38; zp_drawstr("BROWN + ANA - di Paolo Balestri");
+zp_gx=16; zp_gy=HDR_Y+38; zp_drawstr("BROWN + ANA · latocardioide.it · dubbertools.com");
 
 // Module status indicators (colored by active/inactive state)
 zp_setfont(1,"Arial",13);
@@ -5713,6 +6117,14 @@ route_order == 0 ? (
 (current_mask & 128)? ( CY>=in_y0 && CY<=in_y1 ? draw_panel_analog(PX,CY,PW);CY+=PH+PGAP; ) : 0;
 (current_mask & 32) ? ( CY>=in_y0 && CY<=in_y1 ? draw_panel_lim(PX,CY,PW);   CY+=PH+PGAP; ) : 0;
 
+gui_mode && tot_h == 0 ? (
+  gfx_set(0.10,0.11,0.14,1); zp_rect(PX, PANEL_Y0, PW, 38);
+  gfx_set(0.22,0.28,0.36,1); zp_rect(PX, PANEL_Y0, PW, 1); zp_rect(PX, PANEL_Y0+37, PW, 1);
+  zp_setfont(1,"Arial",12); gfx_set(0.66,0.74,0.84,1);
+  strcpy(#_empt, ui_lang == 1 ? "No active modules — click a module above to enable it  |  Right-click = SOLO that module" : "Nessun modulo attivo — clicca un modulo sopra per accenderlo  |  Tasto destro = SOLO quel modulo");
+  zp_gx = PX + 16; zp_gy = PANEL_Y0 + 12; zp_drawstr(#_empt);
+);
+
 max_scroll > 0 && (gui_mode || legacy_expert) ? (
   SBX=zp_vw-6; SBY=PANEL_Y0; SBH=PANEL_H;
   th=max(24,SBH*PANEL_H/max(tot_h,PANEL_H));
@@ -5800,7 +6212,7 @@ gfx_view_i == 0 ? (
   zp_gx=16; zp_gy=HDR_Y+10; zp_drawstr("ZP BUS CHAIN");
   // ZP circle removed to free up header space
   zp_setfont(1,"Arial",12); gfx_set(0.46,0.60,0.76,1);
-  zp_gx=16; zp_gy=HDR_Y+38; zp_drawstr("BROWN + ANA - di Paolo Balestri");
+  zp_gx=16; zp_gy=HDR_Y+38; zp_drawstr("BROWN + ANA · latocardioide.it · dubbertools.com");
 
   // Mod flow rimosso dall'header perché duplicato del Live Monitor
 
@@ -5999,10 +6411,11 @@ MODE_W = 54;
 MODE_H = 18;
 MODE_G = 4;
 MODE_X = zp_vw - (MODE_W_HELP + MODE_G + MODE_W*3 + MODE_G*3) - 12;
-MODE_Y = zp_vh - 26;
+MODE_Y = ui_tip_y + 14;
 ui_help_toggle_btn(MODE_X, MODE_Y, MODE_W_HELP, MODE_H, 100);
 ui_dbg_btn(MODE_X+(MODE_W_HELP+MODE_G), MODE_Y, MODE_W, MODE_H, 103);
 ui_tab_button(52,0,MODE_X+(MODE_W_HELP+MODE_G)+(MODE_W+MODE_G)*1,MODE_Y,MODE_W,MODE_H,"GUI",0.18,0.45,0.90,101);
 ui_tab_button(52,1,MODE_X+(MODE_W_HELP+MODE_G)+(MODE_W+MODE_G)*2,MODE_Y,MODE_W,MODE_H,"JSFX",0.18,0.45,0.90,102);
 
 ui_prev_mouse_down = btn_down;
+ui_prev_rmouse_down = rbtn_down;

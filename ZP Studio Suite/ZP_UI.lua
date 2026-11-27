@@ -19,6 +19,10 @@ local UI = {}
 
 UI.VERSION = "v1.0.0"
 
+-- Punti in piu' per le finestre che NON passano da ZP_GfxScale (i due Gobbo lo impostano a 2).
+-- Nelle finestre con zoom proporzionale resta 0: li' ci pensa ZP_GfxScale.FONT_BONUS.
+UI.font_bonus = 0
+
 -- Firma della Suite (stile "2" scelto da Paolo il 2026-10-09): marchio Lato Cardioide piccolo +
 -- "ZP Studio Suite <versione> · Lato Cardioide". La versione si legge dalla @version del 00,
 -- cosi' non resta indietro. Il marchio e' img/lato_cardioide.png (96x96, dal favicon del sito).
@@ -38,7 +42,7 @@ end
 
 function UI.credit_text()
   local v = UI.suite_version()
-  return "ZP Studio Suite" .. (v ~= "" and (" " .. v) or "") .. " · ", "Lato Cardioide"
+  return "ZP Studio Suite" .. (v ~= "" and (" " .. v) or "") .. " · ", "latocardioide.it · dubbertools.com"
 end
 
 -- Marchio Lato Cardioide quadrato di lato s a x,y. Restituisce false se l'immagine manca.
@@ -137,89 +141,76 @@ local function draw_rect(rect, filled)
   end
 end
 
+-- Stile piatto uniforme (come ZP SRT, deciso il 2026-11-26): fondo pieno, bordo da 1 px, nessun
+-- riflesso. Normale = grigio-blu scuro; acceso = blu con bordo azzurro e testo bold chiaro;
+-- "verde" per azioni pronte (salva/copia/play); rosso per stop/pericolo; ambra per avvisi.
 local function button_colors(style)
   local colors = {
-    normal = {0.13, 0.13, 0.19, 1},
-    hover = {0.30, 0.30, 0.40, 1},
-    active = {0.16, 0.42, 0.60, 1},
-    border = {0.42, 0.44, 0.56, 1},
-    text = {0.92, 0.91, 0.94, 1}
+    normal = {0.13, 0.14, 0.19, 1},
+    hover = {0.20, 0.24, 0.33, 1},
+    active = {0.11, 0.35, 0.54, 1},
+    border = {0.30, 0.32, 0.40, 1},
+    border_hover = {0.56, 0.68, 0.86, 1},
+    border_active = {0.48, 0.84, 1.00, 1},
+    text = {0.86, 0.88, 0.93, 1},
+    bold = false
   }
-  if style == "copy" or style == "save" or style == "play" or style == "play_now" then
-    colors.normal = {0.08, 0.36, 0.18, 1}
-    colors.hover = {0.14, 0.66, 0.28, 1}
-    colors.active = {0.22, 0.92, 0.42, 1}
-    colors.border = {0.52, 1.00, 0.62, 1}
-  elseif style == "play_select" or style == "play_click" then
-    colors.normal = {0.12, 0.24, 0.38, 1}
-    colors.hover = {0.20, 0.54, 0.82, 1}
-    colors.active = {0.20, 0.76, 1.00, 1}
-    colors.border = {0.54, 0.90, 1.00, 1}
-  elseif style == "play_select_contrast" then
-    colors.normal = {0.10, 0.22, 0.34, 1}
-    colors.hover = {0.16, 0.44, 0.64, 1}
-    colors.active = {0.08, 0.39, 0.56, 1}
-    colors.border = {0.48, 0.86, 1.00, 1}
-  elseif style == "tab_contrast" then
-    colors.normal = {0.10, 0.22, 0.34, 1}
-    colors.hover = {0.16, 0.44, 0.64, 1}
-    colors.active = {0.08, 0.39, 0.56, 1}
-    colors.border = {0.48, 0.86, 1.00, 1}
+  if style == "copy" or style == "save" or style == "play" or style == "play_now" or style == "green" then
+    colors.normal = {0.09, 0.36, 0.19, 1}
+    colors.hover = {0.14, 0.50, 0.26, 1}
+    colors.active = {0.14, 0.50, 0.26, 1}
+    colors.border = {0.36, 0.80, 0.48, 1}
+    colors.border_hover = {0.52, 0.96, 0.64, 1}
+    colors.border_active = {0.52, 0.96, 0.64, 1}
+    colors.text = {0.97, 0.98, 1.00, 1}
+    colors.bold = true
   elseif style == "stop" or style == "danger" then
-    colors.normal = {0.48, 0.10, 0.10, 1}
-    colors.hover = {0.76, 0.16, 0.14, 1}
-    colors.active = {1.00, 0.18, 0.12, 1}
-    colors.border = {1.00, 0.46, 0.38, 1}
+    colors.normal = {0.42, 0.10, 0.10, 1}
+    colors.hover = {0.62, 0.15, 0.13, 1}
+    colors.active = {0.78, 0.16, 0.12, 1}
+    colors.border = {0.86, 0.42, 0.36, 1}
+    colors.border_hover = {1.00, 0.56, 0.48, 1}
+    colors.border_active = {1.00, 0.56, 0.48, 1}
+    colors.text = {0.99, 0.95, 0.94, 1}
+    colors.bold = true
   elseif style == "warning" then
     colors.normal = {0.26, 0.17, 0.06, 1}
-    colors.hover = {0.48, 0.30, 0.08, 1}
-    colors.active = {0.40, 0.25, 0.06, 1}
-    colors.border = {0.95, 0.68, 0.22, 1}
-  elseif style == "tab" then
-    colors.normal = {0.13, 0.13, 0.19, 1}
-    colors.hover = {0.22, 0.44, 0.70, 1}
-    colors.active = {0.12, 0.62, 1.00, 1}
-    colors.border = {0.54, 0.86, 1.00, 1}
+    colors.hover = {0.40, 0.26, 0.07, 1}
+    colors.active = {0.40, 0.26, 0.07, 1}
+    colors.border = {0.80, 0.58, 0.20, 1}
+    colors.border_hover = {0.95, 0.70, 0.26, 1}
+    colors.border_active = {0.95, 0.70, 0.26, 1}
+    colors.text = {0.99, 0.95, 0.86, 1}
+  elseif style == "play_select" or style == "play_click" then
+    colors.normal = {0.11, 0.22, 0.34, 1}
+    colors.hover = {0.16, 0.34, 0.52, 1}
   end
   return colors
 end
 
 function UI.draw_button(rect, label, active, enabled, clicked, style)
   enabled = enabled ~= false
-  rect.r = rect.r or 4
+  rect.r = rect.r or 5
   local hover = enabled and UI.point_in_rect(gfx.mouse_x, gfx.mouse_y, rect.x, rect.y, rect.w, rect.h)
   local colors = button_colors(style)
   local fill = active and colors.active or (hover and colors.hover or colors.normal)
-  if not enabled then fill = {0.08, 0.08, 0.11, 1} end
-  gfx.set(0.02, 0.02, 0.03, enabled and 0.55 or 0.30)
-  UI.fill_round(rect.x + 1, rect.y + 2, rect.w, rect.h, rect.r or 4)
+  local border = active and colors.border_active or (hover and colors.border_hover or colors.border)
+  if not enabled then
+    fill = {0.085, 0.09, 0.11, 1}
+    border = {0.20, 0.21, 0.25, 1}
+  elseif active and hover then
+    fill = brighten(fill, 0.03)
+  end
   set_color(fill)
-  draw_rect(rect, true)
-  gfx.set(math.min(1, fill[1] + 0.16), math.min(1, fill[2] + 0.16), math.min(1, fill[3] + 0.18), enabled and 0.42 or 0.16)
-  gfx.rect(rect.x + 2, rect.y + 2, rect.w - 4, math.max(2, math.floor(rect.h * 0.36)), true)
-  if hover and enabled then
-    gfx.set(math.min(1, fill[1] + 0.30), math.min(1, fill[2] + 0.30), math.min(1, fill[3] + 0.34), 0.34)
-    gfx.rect(rect.x + 2, rect.y + math.floor(rect.h * 0.48), rect.w - 4, math.max(2, math.floor(rect.h * 0.35)), true)
-  end
-  if active and enabled and style ~= "play_select_contrast" and style ~= "tab_contrast" then
-    gfx.set(math.min(1, fill[1] + 0.34), math.min(1, fill[2] + 0.34), math.min(1, fill[3] + 0.38), 0.34)
-    gfx.rect(rect.x + 2, rect.y + 2, rect.w - 4, rect.h - 4, true)
-  end
-  set_color(active and brighten(colors.border, 0.18) or (hover and brighten(colors.border, 0.12) or colors.border))
-  draw_rect(rect, false)
-  if hover and not active then
-    gfx.set(0.86, 0.94, 1.0, 1.0)
-    gfx.line(rect.x + 2, rect.y + 1, rect.x + rect.w - 3, rect.y + 1)
-    gfx.line(rect.x + 2, rect.y + rect.h - 2, rect.x + rect.w - 3, rect.y + rect.h - 2)
-  elseif active and enabled then
-    gfx.set(0.96, 0.98, 1.0, 0.95)
-    gfx.line(rect.x + 2, rect.y + 1, rect.x + rect.w - 3, rect.y + 1)
-    gfx.line(rect.x + 2, rect.y + rect.h - 2, rect.x + rect.w - 3, rect.y + rect.h - 2)
-  end
+  UI.fill_round(rect.x, rect.y, rect.w, rect.h, rect.r)
+  set_color(border)
+  if gfx.roundrect then gfx.roundrect(rect.x, rect.y, rect.w - 1, rect.h - 1, rect.r, true)
+  else gfx.rect(rect.x, rect.y, rect.w, rect.h, false) end
 
   local text_x = rect.x + 10
   local text_w = rect.w - 20
   local cy = rect.y + math.floor(rect.h * 0.5)
+  local icon_dim = enabled and 1.0 or 0.42
   if rect.no_icon then
     text_x = rect.x + 4
     text_w = rect.w - 8
@@ -259,12 +250,17 @@ function UI.draw_button(rect, label, active, enabled, clicked, style)
     text_w = rect.w - 38
   end
 
-  local font_size = rect.font or (rect.h <= 24 and 13 or 15)   -- rect.font: dimensione scelta dalla finestra
-  gfx.setfont(1, "Arial", font_size)
-  gfx.set(enabled and colors.text[1] or 0.48, enabled and colors.text[2] or 0.48, enabled and colors.text[3] or 0.48, 1)
-  gfx.x = text_x
-  gfx.y = rect.y + math.max(4, math.floor((rect.h - font_size) * 0.5))
-  gfx.drawstr(UI.fit_text(label, text_w))
+  local font_size = (rect.font or 13) + UI.font_bonus   -- rect.font: dimensione scelta dalla finestra
+  local bold = (active or colors.bold) and "b" or ""
+  gfx.setfont(1, "Arial", font_size, bold)
+  if not enabled then gfx.set(0.44, 0.46, 0.52, 1)
+  elseif active or hover then gfx.set(0.97, 0.98, 1.00, 1)
+  else gfx.set(colors.text[1], colors.text[2], colors.text[3], 1) end
+  local fit = UI.fit_text(label, text_w)
+  local tw, th = gfx.measurestr(fit)
+  gfx.x = rect.align_left and text_x or (text_x + math.max(0, math.floor((text_w - tw) * 0.5)))
+  gfx.y = rect.y + math.floor((rect.h - th) * 0.5)
+  gfx.drawstr(fit)
   return clicked and enabled and hover
 end
 
@@ -439,7 +435,7 @@ function UI.draw_toggle(rect, label, on, enabled, clicked)
     gfx.set(0.22, 0.24, 0.28, 1)
   end
   gfx.circle(cx, cy, r, true, true)
-  gfx.setfont(1, "Arial", 13, on and "b" or "")
+  gfx.setfont(1, "Arial", (rect.font or 13) + UI.font_bonus, on and "b" or "")
   local v = enabled and (on and 0.96 or 0.78) or 0.45
   gfx.set(v, v, v + 0.02, 1)
   local text = UI.fit_text(label, rect.w - 32)

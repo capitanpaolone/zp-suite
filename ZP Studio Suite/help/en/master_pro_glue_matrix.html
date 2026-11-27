@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZP Master Pro 2.52 — Technical Guide (ANALOG, TRANSP, ENHANCE, PRECLIP 2x, 4x True Peak)</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #10100e;
+      --panel: #171916;
+      --line: #2c4f74;
+      --text: #e9edf2;
+      --muted: #a9b4bd;
+      --gold: #e2a03c;
+      --blue: #5c98e8;
+      --green: #6cc7a2;
+      --red: #df6868;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 22px 52px;
+    }
+    h1, h2, h3 {
+      line-height: 1.2;
+      margin: 0 0 12px;
+    }
+    h1 {
+      font-size: 29px;
+      border-bottom: 2px solid var(--line);
+      padding-bottom: 14px;
+    }
+    h2 {
+      color: var(--gold);
+      font-size: 19px;
+      margin-top: 30px;
+    }
+    h3 {
+      color: var(--green);
+      font-size: 16px;
+      margin-top: 20px;
+    }
+    p { margin: 8px 0 14px; }
+    ul { padding-left: 20px; margin: 8px 0 14px; }
+    li { margin: 5px 0; }
+    a { color: var(--blue); }
+    .muted { color: var(--muted); }
+    .path {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin: 14px 0 12px;
+    }
+    .stage {
+      border: 1px solid #34404d;
+      background: var(--panel);
+      padding: 10px;
+      min-height: 78px;
+    }
+    .stage.transp { border-color: #2f6c58; }
+    .stage strong {
+      display: block;
+      color: var(--blue);
+      margin-bottom: 4px;
+    }
+    .stage.transp strong { color: var(--green); }
+    .callout {
+      border-left: 4px solid var(--gold);
+      background: #1c1710;
+      padding: 12px 14px;
+      margin: 18px 0;
+    }
+    .callout.green {
+      border-left-color: var(--green);
+      background: #101d18;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: var(--panel);
+    }
+    th, td {
+      border: 1px solid #303842;
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      color: var(--green);
+      font-weight: 700;
+    }
+    code {
+      color: #f0c26a;
+      background: #0b0d0f;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+    @media (max-width: 760px) {
+      .path { grid-template-columns: 1fr; }
+      main { padding: 24px 16px 36px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>ZP Master Pro — Technical Guide</h1>
+  <p class="muted">Dual mastering engine (<strong>ANALOG</strong> &amp; <strong>TRANSP</strong>), <strong>ENHANCE</strong> upward-density shaper, <strong>4&times; True Peak (ISP)</strong> detection, Glue Matrix, and <strong>Monitor FX Noise</strong> bridge. &middot; <a href="index.html#plugin-master-pro">&larr; ZP Studio Suite Guide</a> &middot; <a href="../master_pro_glue_matrix.html">Italiano</a></p>
+
+  <h2>1. Two Mastering Profiles in One Plugin</h2>
+  <p>The header <code>ANALOG | TRANSP</code> switch toggles instantly between two processing architectures while keeping each profile's parameters independent and sharing <strong>Tone Guard</strong>, <strong>Auto dB / Target</strong>, <strong>Final Safety</strong>, meters, and <strong>Shared Bus v3.1</strong> telemetry.</p>
+
+  <h3>TRANSP Path (Transparent — ENHANCE 2&times; + PRECLIP 2&times; + Precision Limiter 4&times; ISP)</h3>
+  <div class="path">
+    <div class="stage transp"><strong>INPUT</strong>Clean drive (<code>-12..+30 dB</code>), no tape saturation.</div>
+    <div class="stage transp"><strong>ENHANCE 2&times;</strong>Upward-density curve (<code>0..100%</code>, up to <code>+7.5 dB</code>) with <code>-48 dB</code> gate, <code>2.4&ndash;6.2 kHz</code> de-harshness guard, and 2&times; OS shaper.</div>
+    <div class="stage transp"><strong>TONE &amp; PRECLIP 2&times;</strong>Shared Tone Guard + 2&times; OS transparent soft-clipper (<code>0..100%</code>) shaving fast spikes ahead of the limiter.</div>
+    <div class="stage transp"><strong>PLIM 4&times; ISP</strong>Transparent lookahead limiter, <code>0..4 dB</code> Soft Knee, Dual-Stage Auto-Release.</div>
+    <div class="stage transp"><strong>OUTPUT</strong>Shared ceiling, Auto dB, Final Safety, and meters.</div>
+  </div>
+
+  <h3>ANALOG Path (Colored — Tape Glue + Glue Matrix)</h3>
+  <div class="path">
+    <div class="stage"><strong>TAPE</strong>Tape glue, controlled saturation, tilt, head bump, and flutter.</div>
+    <div class="stage"><strong>COMP</strong>Main compressor: threshold, ratio, knee, RMS/Peak, feed mode, and AMU.</div>
+    <div class="stage"><strong>GLUE</strong>Multistage matrix splitting gain reduction across Macro, Micro, and Crest.</div>
+    <div class="stage"><strong>TONE</strong>Static/dynamic Tone Guard and EQ points (with optional Tape Bias).</div>
+    <div class="stage"><strong>LIMITER</strong>Lookahead limiter, Output/Auto dB, and Final Safety.</div>
+  </div>
+
+  <h2>2. TRANSP Profile: ENHANCE and Precision Limiter</h2>
+  <p>In <code>TRANSP</code> mode, <code>TAPE</code> and <code>COMP/GLUE</code> are completely bypassed. Audio enters clean through <code>INPUT</code>, passes through the upward-density shaper (<code>ENHANCE</code>), optional <code>Tone Guard</code>, and into the lookahead Precision Limiter.</p>
+
+  <table>
+    <tr><th>Control</th><th>Range</th><th>Actual DSP Behavior</th></tr>
+    <tr><td><code>INPUT</code></td><td><code>-12..+30 dB</code></td><td>Drives signal level into <code>ENHANCE</code>, <code>PRECLIP</code>, and the Precision Limiter cleanly, with extended <code>+30 dB</code> range (and Auto/LUFS targets up to <code>-6 LUFS</code>) for loud radio spots and demanding sources.</td></tr>
+    <tr><td><code>ENHANCE</code></td><td><code>0..100%</code></td><td>Smooth upward-density curve (up to <code>+7.5 dB</code>): lifts low-to-mid program energy without crushing top transients. Features a <strong><code>-48 dB</code> noise-floor gate</strong>, a <strong>dynamic <code>2.4&ndash;6.2 kHz</code> de-harshness guard</strong> (up to <code>-3.2 dB</code> under heavy drive), and a <strong>2&times; oversampled pre-ceiling shaper</strong> to suppress upper-mid aliasing. The <code>LIFT</code> readout displays real average upward lift in dB.</td></tr>
+    <tr><td><code>PRECLIP</code></td><td><code>0..100%</code></td><td><strong>2&times; oversampled transparent soft-clipper</strong> placed between <code>Tone Guard</code> and <code>PLIM</code>: cleanly shaves short transient spikes (<code>1&ndash;3 dB</code>) without aliasing so the Precision Limiter can reach <code>-10 / -8 LUFS</code> without pumping. At <code>0%</code> it is 100% bypassed; the <code>CLIP</code> readout shows real peak shaving in dB.</td></tr>
+    <tr><td><code>ATK</code></td><td><code>0.1..5.0 ms</code></td><td>Precision Limiter lookahead window (circular delay buffer with automatic PDC). Values around <code>1.0..2.0 ms</code> keep fast transients clean without overshoot.</td></tr>
+    <tr><td><code>REL</code></td><td><code>5..500 ms</code></td><td>Base release time of the limiter.</td></tr>
+    <tr><td><code>KNEE</code></td><td><code>0..100%</code></td><td>Soft limiter knee transition from <code>0 dB</code> (hard brickwall) up to <code>4.0 dB</code> (smooth progressive onset).</td></tr>
+    <tr><td><code>AUTO REL</code></td><td><code>Manual / Auto</code></td><td><strong>Dual-stage release</strong>: isolated peaks recover quickly at the fast <code>REL</code> time without pumping dips, while sustained loud passages engage a slower envelope (<code>3.8&times;</code>, min <code>90 ms</code>) to prevent low-frequency intermodulation distortion.</td></tr>
+    <tr><td><code>CURV</code></td><td>Live graph</td><td>Displays the live combined <code>ENHANCE + PRECLIP + KNEE</code> transfer curve, <code>Clip / Lim / Ceil</code> readouts, and Monitor Noise link status.</td></tr>
+  </table>
+
+  <h2>3. 4&times; True Peak (ISP Guard): Why You Hear the Difference</h2>
+  <div class="callout green">
+    <strong>ISP is not a separate audio coloration stage:</strong> it is a global oversampled peak detector driving the Limiter, Final Safety (and Glue/Comp in <code>ANALOG</code>).
+  </div>
+  <p>A sample-peak limiter (<code>ISP OFF</code>) only sees discrete sample points and allows <em>inter-sample peaks</em> to exceed the ceiling between samples — often by <code>+0.5..+2.0 dBTP</code> on sibilants, plosives, and bright transients. Those inter-sample overs clip consumer DACs and lossy codecs (AAC, Opus, MP3), producing harsh upper-mid grit.</p>
+  <p>With <code>ISP 4x</code> enabled (default), the detector reconstructs inter-sample peaks via 4&times; oversampling ahead of the lookahead ceiling: gain reduction tracks the true analog waveform envelope smoothly instead of hard-clipping reconstructed crests. Audibly, highs stay cleaner, transients remain natural, and output stays strictly compliant with <code>-1.0 dBTP</code> even when pushing <code>INPUT</code> or <code>ENHANCE</code>.</p>
+
+  <h2>4. ANALOG Profile: Glue Matrix &amp; Textures (SM, API, SSA)</h2>
+  <p>The Glue Matrix avoids asking a single compressor to handle every transient at once by splitting gain reduction into three gentle layers:</p>
+  <table>
+    <tr><th>Layer</th><th>Role</th></tr>
+    <tr><td><code>MACRO</code></td><td>Slow, musical body compression that holds the master together without chasing individual spikes.</td></tr>
+    <tr><td><code>MICRO</code></td><td>Fast, bounded peak control that reduces workload on the final limiter.</td></tr>
+    <tr><td><code>CREST</code></td><td>Crest-factor response that steps in progressively when transients protrude too far above RMS body.</td></tr>
+  </table>
+
+  <table>
+    <tr><th>Control</th><th>Practical Use</th></tr>
+    <tr><td><code>COMP</code></td><td>Enables/bypasses the main compressor.</td></tr>
+    <tr><td><code>GLUE</code></td><td>Enables/bypasses the multistage <code>DEP/FRG/micro/crest</code> matrix. When off, only the main compressor runs.</td></tr>
+    <tr><td><code>DEP</code></td><td>Overall Glue Matrix depth.</td></tr>
+    <tr><td><code>FRG</code></td><td>Fragmentation: higher values shift more work toward Micro and Crest, shielding the limiter from sharp peaks.</td></tr>
+    <tr><td><code>Texture</code></td><td>Three behavioral profiles (not official hardware emulations): <code>SM</code> (smooth, clean bus glue for podcast/VO), <code>API</code> (quicker, punchier mid grip), <code>SSA</code> (tighter, broadcast-ready cohesion).</td></tr>
+  </table>
+
+  <div class="callout">
+    <strong>Fair Loudness A/B:</strong> both <code>ENHANCE</code> (in <code>TRANSP</code>) and <code>GLUE</code>/<code>AMU</code> (in <code>ANALOG</code>) raise perceived loudness by reducing crest factor. Match levels via <code>AUTO</code> or inspect <code>MATCH</code> and <code>LIFT</code> when judging tone and transient cleanliness.
+  </div>
+
+  <h2>5. NOISE Remote (ZP Audition Noise Monitor in Monitor FX)</h2>
+  <p>The header <code>NOISE</code> strip never injects noise into the Master Bus: it sends remote commands over shared memory (<code>gmem[3670..3683]</code>) to <a href="index.html#plugin-audition-noise"><strong>ZP Audition Noise Monitor</strong></a> placed in REAPER's <strong>Monitor FX</strong> chain.</p>
+  <ul>
+    <li><strong>Zero render contamination:</strong> simulated environmental noise never enters Master Pro's LUFS/TP/BrownSlope meters and can never print to offline or online renders.</li>
+    <li><strong>4 RMS-calibrated profiles:</strong> <code>CITY</code> (City Car 50 km/h), <code>HWY</code> (Highway 120 km/h), <code>PINK</code> (Pink Room -3 dB/oct), <code>TRAIN</code> (Train / Jet cabin).</li>
+    <li><strong>LUFS-referenced SNR level:</strong> <code>-18 / -12 / -6 / -3 dB</code> below the selected loudness target (e.g. at <code>-16 LUFS</code> with <code>-6 dB</code>, noise sits at <code>-22 dBFS</code> RMS) so you immediately hear whether quiet phrases or podcast tails vanish inside a car.</li>
+    <li><strong>Volatile safety state:</strong> <code>NOISE</code> always boots <strong>OFF</strong> when reopening a project and auto-mutes on Stop (<code>PLAY ONLY</code> default).</li>
+  </ul>
+
+  <h2>6. Auto dB, Target &amp; Shared Bus v3.1</h2>
+  <p><code>TARGET</code> never changes gain; it measures deviation against the selected profile reference. <code>MATCH</code> uses a slow ~<code>4.5 s</code> LUFS/RMS window, ignoring isolated transients. <code>AUTO</code> applies slow trim within <code>MAXTRM</code>: the large readout shows applied trim, while <code>MATCH</code> shows residual error.</p>
+  <p>Master Pro publishes full telemetry to <strong>Shared Bus v3.1</strong> and exposes the <strong>SINTESI</strong> and <strong>CATENA</strong> views in its Navigator (including upstream nodes and the <a href="index.html#tool-39"><strong>39 ZP Telemetry Engine</strong></a> badge). When <strong>Tone Guard</strong> is active, its tonal horizon takes priority as the Telemetry Engine reference; when bypassed, the fixed <strong>Brown -4.5 dB/oct (&plusmn;10%)</strong> frame applies.</p>
+</main>
+</body>
+</html>

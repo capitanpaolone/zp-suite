@@ -95,4 +95,9 @@ check("clic sull'avviso: ack all'helper", tostring(gm[base+3] == gm[base+1]), "t
 voc.items[1].pos = 10; step()
 ext["ZP_HSCreq"] = "realign_all|7"; step()
 check("tasto Riallinea", ml() .. " / " .. tostring(ext["ZP_HSCrep"]), "60 / 7|1")
+-- regressione puntatore MediaTrack stantio (traccia voce eliminata tra due rescan)
+base_reaper.ValidatePtr2 = function(_, ptr, kind) return kind == "MediaTrack*" and ptr ~= voc end
+tracks = {carT}
+local ok_stale = pcall(function() nav.anchors_tick() end)
+check("traccia stantia non crasha", tostring(ok_stale), "true")
 print(fails == 0 and "TUTTI OK" or (fails .. " FALLITI"))

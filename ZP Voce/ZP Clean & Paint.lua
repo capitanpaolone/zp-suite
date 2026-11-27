@@ -1,10 +1,10 @@
--- @description ZP Clean & Paint (BETA) — REAPER 7
+-- @description ZP Clean & Paint — REAPER 7
 -- @version 1.0.1
 -- @author Paolo Balestri / Antigravity
 -- @about
---   IT — BETA. Pannello REAPER per Clean (CoreML/fallback) e Paint (RVC), collegato al motore esterno ZP Voice Model Lab.
+--   IT. Pannello REAPER per Clean (CoreML/fallback) e Paint (RVC), collegato al motore esterno ZP Voice Model Lab.
 --   Il motore, l'ambiente Python, i modelli CoreML/RVC e i preset non sono inclusi nel pacchetto. Configurare lab_root_path.txt; vedi la guida ZP Beta.
---   EN — BETA. REAPER panel for Clean (CoreML/fallback) and Paint (RVC), connected to the separate ZP Voice Model Lab engine.
+--   EN. REAPER panel for Clean (CoreML/fallback) and Paint (RVC), connected to the separate ZP Voice Model Lab engine.
 --   The engine, Python environment, CoreML/RVC models and presets are not included. Configure lab_root_path.txt; see the ZP Beta guide.
 -- @changelog
 --   1.0.1 — prima distribuzione pubblica come BETA nella ZP Studio Suite 2.6.8.
@@ -54,7 +54,7 @@ local LAB_ROOT = resolve_lab_root()
 if not LAB_ROOT or LAB_ROOT == "" then
   reaper.MB(
     "Motore ZP Clean & Paint non configurato.\n\nImposta il percorso di ZP Voice Model Lab in lab_root_path.txt dentro ZP_Clean_Paint.",
-    "ZP Clean & Paint (BETA)",
+    "ZP Clean & Paint",
     0
   )
   return
@@ -75,7 +75,7 @@ end
 if not readable_file(CLI_SCRIPT) or not readable_file(PYTHON_BIN) or not readable_file(PRESETS_PATH) then
   reaper.MB(
     "Il motore Clean & Paint è configurato ma incompleto.\n\nServono CLI, Python dell'ambiente locale e paint_presets.json.",
-    "ZP Clean & Paint (BETA)",
+    "ZP Clean & Paint",
     0
   )
   return
@@ -390,7 +390,7 @@ local function loop()
   gfx.setfont(1, "Helvetica", 15, string.byte("b"))
   set_color(245, 185, 55)
   gfx.x, gfx.y = 14, 10
-  gfx.drawstr("ZP CLEAN & PAINT v1.0")
+  gfx.drawstr("ZP CLEAN & PAINT · latocardioide.it · dubbertools.com")
 
   gfx.setfont(1, "Helvetica", 12, 0)
   set_color(95, 220, 145)
@@ -531,5 +531,5 @@ local function loop()
   reaper.defer(loop)
 end
 
-gfx.init("ZP Clean & Paint — BETA", 472, 345, 0, 220, 180)
+gfx.init("ZP Clean & Paint", 472, 345, 0, 220, 180)
 loop()

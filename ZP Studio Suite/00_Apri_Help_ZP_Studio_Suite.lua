@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.6.8
+-- @version 2.6.9
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -23,6 +23,17 @@
 --   sono disponibili in entrambe le lingue. Il supporto screen reader Windows usa
 --   NVDA Controller Client (LGPL 2.1, NV Access). Dettagli in README.it.md.
 -- @changelog
+--   2.6.9 (in preparazione)
+--   EN — ZP Shared Bus v3 (Master Pro 2.48 + 9 voice/bus/music JSFX + Cue Navigator 1.16): multi-instance telemetry from every active channel and bus ordered upstream->downstream, CATENA view in Master Pro Navigator, upstream DELTA/SOLO/CHECK alerts, Music Probe/Carver context, and click-to-open FX via Cue Navigator.
+--   IT — ZP Shared Bus v3 (Master Pro 2.48 + 9 JSFX voce/bus/musica + Cue Navigator 1.16): telemetria multi-istanza da tutti i canali e bus ordinata da monte a valle, scheda CATENA nel Navigator di Master Pro, alert a monte DELTA/SOLO/CHECK, contesto Music Probe/Carver e apertura diretta FX al clic con Cue Navigator.
+--   EN — Carver 2.6.12 + Cue Navigator 1.16: select a cue when its #HSC marker is clicked while stopped.
+--   IT — Carver 2.6.12 + Cue Navigator 1.16: il cue si seleziona cliccando il suo marker #HSC a trasporto fermo.
+--   EN — Magic Voice LAB 1.2.4: LINK OUTPUT, project-saved A/B memory and ±24 dB output range.
+--   IT — Magic Voice LAB 1.2.4: LEGA OUTPUT, memoria A/B salvata nel progetto e uscita ±24 dB.
+--   EN — The four separate packages (Clean & Paint, Montaggio Parlato, BrownSlope Dynamic Guard, Click & Attack Softener) lose the BETA label; their documented requirements are retained.
+--   IT — I quattro pacchetti separati (Clean & Paint, Montaggio Parlato, BrownSlope Dynamic Guard, Click & Attack Softener) perdono l'etichetta BETA; restano i requisiti documentati.
+--   EN — Two ready-calibrated ZP Suite Project Templates (ZP plugins only): VoiceOver (-18 LUFS) and Mix-Spot (-8 LUFS), offered in 33 Welcome, 23 Chain Builder and REAPER Project Templates.
+--   IT — Due template di progetto ZP già calibrati (solo plugin ZP): VoiceOver (-18 LUFS) e Mix-Spot (-8 LUFS), proposti in 33 Benvenuto, 23 Chain Builder e nei Project Templates di REAPER.
 --   2.6.8 (2026-11-21)
 --   EN — Beta packages: ZP Clean & Paint, ZP Montaggio Parlato, ZP BrownSlope Dynamic Guard, and ZP Click & Attack Softener.
 --   IT — Pacchetti Beta: ZP Clean & Paint, ZP Montaggio Parlato, ZP BrownSlope Dynamic Guard e ZP Click & Attack Softener.
@@ -100,7 +111,10 @@
 --   [main] 35_ZP_Colori.lua
 --   [main] 37_ZP_Consolidate.lua
 --   [main] 38_ZP_Unisci_Battute.lua
+--   [main] 39_ZP_Telemetry_Engine.lua
+--   [nomain] ZP_Telemetry_Engine.lua
 --   [nomain] ZP_SRT_Progetto.lua
+--   [nomain] ZP_SRT_Engine.lua
 --   [main] render_copy/ZP_RenderCopy.lua
 --   render_copy/assets/zp_render_copy.png
 --   [main] remote/ZP_Remote_Crea_Pacchetto.lua
@@ -162,6 +176,7 @@
 --   [nomain] ZP_cerca.lua
 --   [nomain] ZP_Testo_Copione.lua
 --   [nomain] ZP_Xlsx_Copione.lua
+--   [nomain] ZP_Testo_su_Video.lua
 --   [nomain] ZP_Editor_Copione.lua
 --   [nomain] ZP_Colori.lua
 --   [nomain] ZP_Agenti.lua
@@ -189,6 +204,7 @@
 --   help/en/lab.html
 --   help/en/pannello_trascrizione.html
 --   help/en/collega_marker.html
+--   help/en/master_pro_glue_matrix.html
 --   help/en/ffmpeg.html
 --   fxchains/ZP_Bus_VoiceChain.RfxChain
 --   fxchains/ZP_MasterChain.RfxChain
@@ -203,6 +219,10 @@
 --   VideoProcessor_Project_Timecode_Overlay.txt
 --   RB Voice Track.RTrackTemplate
 --   SRT Track.RTrackTemplate
+--   templates/ZP_Setup_VoiceOver_18LUFS.RPP
+--   templates/ZP_Setup_Mix_Spot_8LUFS.RPP
+--   [projecttpl] templates/ZP_Setup_VoiceOver_18LUFS.RPP > ZP Setup VoiceOver (-18 LUFS).RPP
+--   [projecttpl] templates/ZP_Setup_Mix_Spot_8LUFS.RPP > ZP Setup Mix-Spot (-8 LUFS).RPP
 --   [data] icons/ZP_tb_00_Help.png > toolbar_icons/ZP_tb_00_Help.png
 --   [data] icons/ZP_tb_01_Import_Video_SRT.png > toolbar_icons/ZP_tb_01_Import_Video_SRT.png
 --   [data] icons/ZP_tb_02_Gobbo_Verticale.png > toolbar_icons/ZP_tb_02_Gobbo_Verticale.png

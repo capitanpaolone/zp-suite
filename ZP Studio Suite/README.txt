@@ -78,6 +78,7 @@ ZP SHARED BUS / PLUGIN INCLUSI
 
 - ZP BUS Chain
 - ZP Spoken Finish
+- ZP Spoken Finish Pro
 - ZP Harmonic Space Carver
 - ZP Voice-Music Probe
 - ZP Master Pro

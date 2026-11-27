@@ -1,23 +1,28 @@
 // @description ZP Voice-Music Probe
-// @version 1.3
+// @version 1.6
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
 //   ### ZP Voice-Music Probe
-//   Sonda telemetrica passiva per bus voce e musica su memoria condivisa gmem (ZP Shared Bus):
-//   misura RMS, picco, crest factor, densita', brillantezza e speech activity senza toccare l'audio o la latenza.
+//   Sonda telemetrica passiva per canali, bus voce e musica/FX su memoria condivisa gmem (ZP Shared Bus v3):
+//   misura RMS, picco, crest factor, densita', brillantezza, speech activity e bilanciamento 4 zone Brown (-4,5 dB/oct)
+//   con profili distinti VOICE (range espressivo 85-14k Hz + controllo rumble <80 Hz) e FULL/MUS+FX (banda intera 40-14k Hz).
 //
-//   Passive telemetry probe for voice and music buses using gmem shared memory (ZP Shared Bus):
-//   tracks RMS, peak, crest factor, density, brightness, and speech activity with zero latency and no audio alteration.
+//   Passive telemetry probe for channels, voice and music/SFX buses using gmem shared memory (ZP Shared Bus v3):
+//   tracks RMS, peak, crest factor, density, brightness, speech activity and 4-zone Brown (-4.5 dB/oct) balance
+//   with distinct VOICE (expressive 85-14k Hz + sub <80 Hz rumble check) and FULL/MUS+FX (full 40-14k Hz) profiles.
 //
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: ZP Studio Suite/help/index.html#plugin-probe
 // @changelog
+//   1.6: profili acustici distinti VOICE (85-250 / 250-800 / 800-4k / 4k-14k Hz + monitor rumble <80 Hz su gmem +30) e FULL/MUS+FX (40-160 / 160-800 / 800-4k / 4k-14k Hz) per integrarsi con ZP Telemetry Engine e ZP Harmonic Space Carver.
+//   1.5: stato connessione sganciato da ZP BUS Chain (riconosce Master Pro, Telemetry Engine e tutti i nodi Shared Bus v3 vivi senza falsi 'DATI BUS VECCHI'); misura passiva 4 zone Brown (-4,5 dB/oct) e tilt residuo su Shared Bus v3.
+//   1.4: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (supporto completo Voice Probe e Music Probe).
 //   Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
 //   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
 //     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
 //   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
-desc:ZP Voice-Music Probe - Passive Bus Telemetry - Paolo Balestri
+desc:ZP Voice-Music Probe - Passive Bus Telemetry · latocardioide.it · dubbertools.com
 // v1.1 Role Switch Fix: VOICE/MUSIC change works at STOP, from GUI and from Chain Builder.
 tags: analysis meter voice music probe telemetry zp paolo balestri
 options:gmem=ZPVoiceoverSharedBus
@@ -109,16 +114,99 @@ function bus_boot() (
     gmem[50]=gmem[51]=gmem[52]=gmem[60]=gmem[61]=gmem[62]=0;
   );
 );
-function bus_read() local(now) (
+function bus_read() local(now, v3i, v3b, v3m, v3ts, v3peers, te_live, m_live, m_stale) (
   bus_boot(); now=time_precise();
   bus_chain_conn=gmem[10]==905010 ? (now-gmem[11]<=ZP_BUS_FRESH_SEC?2:1) : 0;
-  bus_master_conn=gmem[40]==905040 ? (now-gmem[41]<=ZP_BUS_FRESH_SEC?2:1) : 0;
-  bus_connection_state=(bus_chain_conn==0 || bus_master_conn==0)?0:(bus_chain_conn==2 && bus_master_conn==2?2:1);
+  bus_master_conn=gmem[40]==905040 ? (now-gmem[41]<=3.0?2:(now-gmem[41]<=ZP_BUS_FRESH_SEC?1:0)) : 0;
+  te_live=(gmem[3600]==905360 && (now-gmem[3602])<=3.0) ? 1 : 0;
+  v3peers=0;
+  v3i=0;
+  loop(64,
+    v3i != zp3_slot ? (
+      v3b=1024+v3i*32;
+      v3m=gmem[v3b];
+      v3ts=gmem[v3b+1];
+      (v3m==905301 && (now-v3ts)<=2.5) ? (v3peers+=1;);
+    );
+    v3i+=1;
+  );
+  bus_v3_peers=v3peers;
+  bus_te_conn=te_live;
+  m_live=(bus_master_conn==2 || te_live) ? 1 : 0;
+  m_stale=(bus_master_conn==1) ? 1 : 0;
+  bus_connection_state = m_live ? 2 : ((v3peers>0 || m_stale) ? 1 : 0);
 );
 function bus_publish(base) (
   bus_boot(); gmem[base]=905000+base; gmem[base+1]=time_precise(); gmem[base+2]+=1; bus_read();
 );
+// ---- ZP Shared Bus v3 (telemetria multi-istanza a monte -> Master Pro) ----
+function zp3_boot() (
+  gmem[1000] != 905300 || gmem[1001] < 300 ? (
+    gmem[1000] = 905300;
+    gmem[1001] = 300;
+    gmem[1002] = 64;
+    gmem[1003] = 32;
+  );
+);
+function zp3_clear_slot() local(zp3_cb) (
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_cb = 1024 + zp3_slot * 32;
+    gmem[zp3_cb + 3] == zp3_prev_key ? (
+      gmem[zp3_cb] = 0;
+      gmem[zp3_cb + 2] = 0;
+    );
+  );
+  zp3_slot = -1;
+  zp3_prev_key = -1;
+);
+function zp3_claim(zp3_pt) local(zp3_now, zp3_key, zp3_h, zp3_i, zp3_s, zp3_b, zp3_m, zp3_found) (
+  zp3_boot();
+  zp3_now = time_precise();
+  zp3_fx = 0; zp3_hf = 0;
+  zp3_tr = get_host_placement(zp3_fx, zp3_hf);
+  zp3_key = max(0, zp3_tr + 2) * 1024 + max(0, zp3_fx) * 16 + zp3_pt;
+  zp3_prev_key >= 0 && zp3_prev_key != zp3_key ? zp3_clear_slot();
+  zp3_found = -1;
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_slot;);
+  );
+  zp3_found < 0 ? (
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_b = 1024 + zp3_i * 32;
+        gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_i;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_found < 0 ? (
+    zp3_h = (max(0, zp3_tr + 2) * 13 + max(0, zp3_fx) * 7 + zp3_pt * 3) % 64;
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_s = (zp3_h + zp3_i) % 64;
+        zp3_b = 1024 + zp3_s * 32;
+        zp3_m = gmem[zp3_b];
+        (zp3_m != 905301 || (zp3_now - gmem[zp3_b + 1]) > 2.5) ? (zp3_found = zp3_s;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_slot = zp3_found;
+  zp3_prev_key = zp3_key;
+  zp3_slot >= 0 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    zp3_seq = max(zp3_seq, floor(gmem[zp3_b + 2] + 0.5));
+    zp3_b;
+  ) : -1;
+);
+zp3_prev_key <= 0 ? (zp3_slot = -1; zp3_prev_key = -1;);
+zp3_boot();
+
 function clear_role(role) (
+  zp3_clear_slot();
   role < 0.5 ? (
     gmem[50]=0; gmem[51]=0; gmem[52]=0;
     gmem[501]=0; gmem[502]=0; gmem[503]=0; gmem[504]=0; gmem[505]=0; gmem[506]=0;
@@ -139,6 +227,90 @@ rms_env=fast_env=high_env=low_env=0.000000001;
 peak_hold=0;
 speech_env=0;
 lp=0;
+// Calibrazione analitica 4 zone Brown (-4.5 dB/oct) per 1-pole cascade (passivo):
+//   FULL/MUS+FX: 40-160 / 160-800 / 800-4k / 4k-14k Hz
+//   VOICE:       85-250 / 250-800 / 800-4k / 4k-14k Hz + sub <80 Hz (solo eccesso rumble)
+br_c20=exp(-2*$pi*20/max(8000,srate));
+br_c40=exp(-2*$pi*40/max(8000,srate));
+br_c85=exp(-2*$pi*85/max(8000,srate));
+br_c160=exp(-2*$pi*160/max(8000,srate));
+br_c250=exp(-2*$pi*250/max(8000,srate));
+br_c800=exp(-2*$pi*800/max(8000,srate));
+br_c4k=exp(-2*$pi*4000/max(8000,srate));
+br_c14k=exp(-2*$pi*14000/max(8000,srate));
+br_env_c=exp(-1/(0.300*max(8000,srate)));
+br_lp20=br_lp40=br_lp85=br_lp160=br_lp250=br_lp800=br_lp4k=br_lp14k=br_vlp800=br_vlp4k=br_vlp14k=0;
+br_e1=br_e2=br_e3=br_e4=0.000000000001;
+br_ve1=br_ve2=br_ve3=br_ve4=br_sub_e=0.000000000001;
+probe_z1=probe_z2=probe_z3=probe_z4=0;
+probe_brown_tilt=0;
+probe_sub_excess_db=-12;
+function br_lp_mag2(c, cw) local(d) (
+  d = max(0.000000000001, 1 + c*c - 2*c*cw);
+  ((1 - c)*(1 - c)) / d;
+);
+function br_hp_mag2(c, cw) local(d) (
+  d = max(0.000000000001, 1 + c*c - 2*c*cw);
+  (2*c*c*(1 - cw)) / d;
+);
+function br_calibrate() local(fi, fmin, fmax, lstep, f, w, cw, psd, df, ghp20, ghp40, ghp85, glp85, glp160, ghp160, glp250, ghp250, glp800, ghp800, glp4k, ghp4k, glp14k, p1, p2, p3, p4, vp1, vp2, vp3, vp4, psb, alpha, ln2) (
+  ln2 = log(2);
+  alpha = 4.5 / (10 * ln2 / log(10));
+  fmin = 20; fmax = min(18000, max(4000, srate * 0.45));
+  lstep = log(fmax / fmin) / 160;
+  p1 = p2 = p3 = p4 = 0.000000000001;
+  vp1 = vp2 = vp3 = vp4 = psb = 0.000000000001;
+  fi = 0;
+  loop(160,
+    f = fmin * exp((fi + 0.5) * lstep);
+    df = f * lstep;
+    w = 2 * $pi * f / max(8000, srate);
+    cw = cos(w);
+    psd = pow(f / 1000, -alpha) * df;
+    ghp20  = br_hp_mag2(br_c20,  cw);
+    ghp40  = br_hp_mag2(br_c40,  cw);
+    ghp85  = br_hp_mag2(br_c85,  cw); glp85  = br_lp_mag2(br_c85,  cw);
+    glp160 = br_lp_mag2(br_c160, cw); ghp160 = br_hp_mag2(br_c160, cw);
+    glp250 = br_lp_mag2(br_c250, cw); ghp250 = br_hp_mag2(br_c250, cw);
+    glp800 = br_lp_mag2(br_c800, cw); ghp800 = br_hp_mag2(br_c800, cw);
+    glp4k  = br_lp_mag2(br_c4k,  cw); ghp4k  = br_hp_mag2(br_c4k,  cw);
+    glp14k = br_lp_mag2(br_c14k, cw);
+    // Full-band 40-14k
+    p1 += (ghp40 * glp160) * psd;
+    p2 += (ghp40 * ghp160 * glp800) * psd;
+    p3 += (ghp40 * ghp160 * ghp800 * glp4k) * psd;
+    p4 += (ghp40 * ghp160 * ghp800 * ghp4k * glp14k) * psd;
+    // Voice expressive band 85-14k + sub 20-85 Hz
+    psb += (ghp20 * glp85) * psd;
+    vp1 += (ghp85 * glp250) * psd;
+    vp2 += (ghp85 * ghp250 * glp800) * psd;
+    vp3 += (ghp85 * ghp250 * ghp800 * glp4k) * psd;
+    vp4 += (ghp85 * ghp250 * ghp800 * ghp4k * glp14k) * psd;
+    fi += 1;
+  );
+  br_cal1 = 10 * log(p1) / log(10);
+  br_cal2 = 10 * log(p2) / log(10);
+  br_cal3 = 10 * log(p3) / log(10);
+  br_cal4 = 10 * log(p4) / log(10);
+  br_vcal1 = 10 * log(vp1) / log(10);
+  br_vcal2 = 10 * log(vp2) / log(10);
+  br_vcal3 = 10 * log(vp3) / log(10);
+  br_vcal4 = 10 * log(vp4) / log(10);
+  br_sub_cal = 10 * log(psb) / log(10);
+  br_x1 = log(80 / 1000) / ln2;
+  br_x2 = log(358 / 1000) / ln2;
+  br_x3 = log(1789 / 1000) / ln2;
+  br_x4 = log(7483 / 1000) / ln2;
+  br_xm = 0.25 * (br_x1 + br_x2 + br_x3 + br_x4);
+  br_sxx = (br_x1-br_xm)*(br_x1-br_xm) + (br_x2-br_xm)*(br_x2-br_xm) + (br_x3-br_xm)*(br_x3-br_xm) + (br_x4-br_xm)*(br_x4-br_xm);
+  br_vx1 = log(146 / 1000) / ln2;
+  br_vx2 = log(447 / 1000) / ln2;
+  br_vx3 = log(1789 / 1000) / ln2;
+  br_vx4 = log(7483 / 1000) / ln2;
+  br_vxm = 0.25 * (br_vx1 + br_vx2 + br_vx3 + br_vx4);
+  br_vsxx = (br_vx1-br_vxm)*(br_vx1-br_vxm) + (br_vx2-br_vxm)*(br_vx2-br_vxm) + (br_vx3-br_vxm)*(br_vx3-br_vxm) + (br_vx4-br_vxm)*(br_vx4-br_vxm);
+);
+br_calibrate();
 last_role=-1;
 set_probe_role(slider1);
 
@@ -170,6 +342,77 @@ probe_mode < 0.5 ? (
   bus_publish(60);
 );
 
+probe_rms_db > -65 ? (
+  probe_mode < 0.5 ? (
+    _bz1 = 10 * log(max(br_ve1, 0.000000000001)) / log(10) - br_vcal1;
+    _bz2 = 10 * log(max(br_ve2, 0.000000000001)) / log(10) - br_vcal2;
+    _bz3 = 10 * log(max(br_ve3, 0.000000000001)) / log(10) - br_vcal3;
+    _bz4 = 10 * log(max(br_ve4, 0.000000000001)) / log(10) - br_vcal4;
+    _bzm = 0.25 * (_bz1 + _bz2 + _bz3 + _bz4);
+    probe_z1 = clamp(_bz1 - _bzm, -18, 18);
+    probe_z2 = clamp(_bz2 - _bzm, -18, 18);
+    probe_z3 = clamp(_bz3 - _bzm, -18, 18);
+    probe_z4 = clamp(_bz4 - _bzm, -18, 18);
+    probe_brown_tilt = clamp(((br_vx1 - br_vxm)*probe_z1 + (br_vx2 - br_vxm)*probe_z2 + (br_vx3 - br_vxm)*probe_z3 + (br_vx4 - br_vxm)*probe_z4) / max(0.001, br_vsxx), -12, 12);
+    _bsub = 10 * log(max(br_sub_e, 0.000000000001)) / log(10) - br_sub_cal;
+    probe_sub_excess_db = clamp(_bsub - _bz1, -24, 24);
+  ) : (
+    _bz1 = 10 * log(max(br_e1, 0.000000000001)) / log(10) - br_cal1;
+    _bz2 = 10 * log(max(br_e2, 0.000000000001)) / log(10) - br_cal2;
+    _bz3 = 10 * log(max(br_e3, 0.000000000001)) / log(10) - br_cal3;
+    _bz4 = 10 * log(max(br_e4, 0.000000000001)) / log(10) - br_cal4;
+    _bzm = 0.25 * (_bz1 + _bz2 + _bz3 + _bz4);
+    probe_z1 = clamp(_bz1 - _bzm, -18, 18);
+    probe_z2 = clamp(_bz2 - _bzm, -18, 18);
+    probe_z3 = clamp(_bz3 - _bzm, -18, 18);
+    probe_z4 = clamp(_bz4 - _bzm, -18, 18);
+    probe_brown_tilt = clamp(((br_x1 - br_xm)*probe_z1 + (br_x2 - br_xm)*probe_z2 + (br_x3 - br_xm)*probe_z3 + (br_x4 - br_xm)*probe_z4) / max(0.001, br_sxx), -12, 12);
+    probe_sub_excess_db = 0;
+  );
+) : (
+  probe_z1 = probe_z2 = probe_z3 = probe_z4 = 0;
+  probe_brown_tilt = 0;
+  probe_sub_excess_db = -12;
+);
+
+zp3_pt = probe_mode < 0.5 ? 9 : 10;
+zp3_b = zp3_claim(zp3_pt);
+zp3_b >= 0 ? (
+  gmem[zp3_b + 3] = zp3_prev_key;
+  gmem[zp3_b + 4] = zp3_pt;
+  gmem[zp3_b + 5] = zp3_tr;
+  gmem[zp3_b + 6] = zp3_fx;
+  gmem[zp3_b + 7] = zp3_hf;
+  gmem[zp3_b + 8] = 3;
+  gmem[zp3_b + 9] = 1;
+  gmem[zp3_b + 10] = 0;
+  gmem[zp3_b + 11] = 0;
+  gmem[zp3_b + 12] = 0;
+  gmem[zp3_b + 13] = probe_z1;
+  gmem[zp3_b + 14] = probe_z2;
+  gmem[zp3_b + 15] = probe_z3;
+  gmem[zp3_b + 16] = 0;
+  gmem[zp3_b + 17] = probe_rms_db;
+  gmem[zp3_b + 18] = probe_rms_db;
+  gmem[zp3_b + 19] = probe_peak_db;
+  gmem[zp3_b + 20] = 0;
+  gmem[zp3_b + 21] = probe_mode < 0.5 ? probe_speech : clamp((probe_rms_db + 55) * 2.5, 0, 100);
+  gmem[zp3_b + 22] = probe_crest_db;
+  gmem[zp3_b + 23] = probe_brown_tilt;
+  gmem[zp3_b + 24] = probe_density;
+  gmem[zp3_b + 25] = probe_brightness_db;
+  gmem[zp3_b + 26] = probe_crest_db;
+  gmem[zp3_b + 27] = probe_mode < 0.5 ? probe_speech : clamp((probe_density - 45) * 1.8, 0, 100);
+  gmem[zp3_b + 28] = probe_rms_db;
+  gmem[zp3_b + 29] = probe_z4;
+  gmem[zp3_b + 30] = probe_mode < 0.5 ? probe_sub_excess_db : 0;
+  gmem[zp3_b + 31] = probe_mode < 0.5 ? 1 : 0;
+  gmem[zp3_b] = 905301;
+  gmem[zp3_b + 1] = time_precise();
+  zp3_seq += 1;
+  gmem[zp3_b + 2] = zp3_seq;
+);
+
 @sample
 // Passive detector: spl0/spl1 non vengono mai riscritti.
 mono=0.5*(spl0+spl1);
@@ -196,6 +439,36 @@ probe_brightness_db=clamp(gain2db(sqrt(max(high_env,0.000000000001)))-gain2db(sq
 speech_target=probe_rms_db>-48 && fast_env>0.00000001 ? 1 : 0;
 speech_env=speech_target+(speech_env-speech_target)*speech_c;
 probe_speech=clamp(speech_env*100,0,100);
+// 4 bande Brown passive: FULL (40-14k) + VOICE espressiva (85-14k) + sub <80 Hz
+br_lp20 = mono + br_c20 * (br_lp20 - mono);
+_br_hp20 = mono - br_lp20;
+br_lp40 = mono + br_c40 * (br_lp40 - mono);
+_br_hp40 = mono - br_lp40;
+br_lp160 = _br_hp40 + br_c160 * (br_lp160 - _br_hp40);
+_br_r1 = _br_hp40 - br_lp160;
+br_lp800 = _br_r1 + br_c800 * (br_lp800 - _br_r1);
+_br_r2 = _br_r1 - br_lp800;
+br_lp4k = _br_r2 + br_c4k * (br_lp4k - _br_r2);
+_br_r3 = _br_r2 - br_lp4k;
+br_lp14k = _br_r3 + br_c14k * (br_lp14k - _br_r3);
+br_e1 = br_lp160*br_lp160 + br_env_c*(br_e1 - br_lp160*br_lp160);
+br_e2 = br_lp800*br_lp800 + br_env_c*(br_e2 - br_lp800*br_lp800);
+br_e3 = br_lp4k*br_lp4k   + br_env_c*(br_e3 - br_lp4k*br_lp4k);
+br_e4 = br_lp14k*br_lp14k + br_env_c*(br_e4 - br_lp14k*br_lp14k);
+br_lp85 = _br_hp20 + br_c85 * (br_lp85 - _br_hp20);
+_br_hp85 = _br_hp20 - br_lp85;
+br_lp250 = _br_hp85 + br_c250 * (br_lp250 - _br_hp85);
+_br_vr1 = _br_hp85 - br_lp250;
+br_vlp800 = _br_vr1 + br_c800 * (br_vlp800 - _br_vr1);
+_br_vr2 = _br_vr1 - br_vlp800;
+br_vlp4k = _br_vr2 + br_c4k * (br_vlp4k - _br_vr2);
+_br_vr3 = _br_vr2 - br_vlp4k;
+br_vlp14k = _br_vr3 + br_c14k * (br_vlp14k - _br_vr3);
+br_sub_e = br_lp85*br_lp85   + br_env_c*(br_sub_e - br_lp85*br_lp85);
+br_ve1 = br_lp250*br_lp250   + br_env_c*(br_ve1 - br_lp250*br_lp250);
+br_ve2 = br_vlp800*br_vlp800 + br_env_c*(br_ve2 - br_vlp800*br_vlp800);
+br_ve3 = br_vlp4k*br_vlp4k   + br_env_c*(br_ve3 - br_vlp4k*br_vlp4k);
+br_ve4 = br_vlp14k*br_vlp14k + br_env_c*(br_ve4 - br_vlp14k*br_vlp14k);
 
 @gfx 680 326
 zp_dw = 520.0; zp_dh = 250.0; zp_sc = max(0.55, min(2.8, min(gfx_w / zp_dw, gfx_h / zp_dh))); zp_ox = max(0, (gfx_w - zp_dw * zp_sc) * 0.5); zp_vw = zp_dw; zp_vh = max(zp_dh, gfx_h / zp_sc); zp_mx = (mouse_x - zp_ox) / zp_sc; zp_my = mouse_y / zp_sc;
@@ -222,7 +495,7 @@ probe_mode<0.5 ? gfx_set(0.18,0.52,0.88,1) : gfx_set(0.12,0.14,0.18,1); zp_rect(
 probe_mode>=0.5 ? gfx_set(0.42,0.28,0.72,1) : gfx_set(0.12,0.14,0.18,1); zp_rect(_music_x,_btn_y,_btn_w,_btn_h);
 zp_setfont(1,"Arial",10,'b'); gfx_set(0.92,0.94,0.98,1);
 zp_gx=_voice_x+18; zp_gy=_btn_y+6; zp_drawstr("VOICE");
-zp_gx=_music_x+17; zp_gy=_btn_y+6; zp_drawstr("MUSIC");
+zp_gx=_music_x+9; zp_gy=_btn_y+6; zp_drawstr("FULL/MUS");
 _voice_hit=zp_mx>=_voice_x&&zp_mx<=_voice_x+_btn_w&&zp_my>=_btn_y&&zp_my<=_btn_y+_btn_h;
 _music_hit=zp_mx>=_music_x&&zp_mx<=_music_x+_btn_w&&zp_my>=_btn_y&&zp_my<=_btn_y+_btn_h;
 _mouse_click&&_voice_hit&&probe_mode!=0 ? (set_probe_role(0); sliderchange(slider1););
@@ -250,12 +523,23 @@ last_mouse_cap=mouse_cap;
 bus_read();
 bus_connection_state==2 ? gfx_set(0.25,0.90,0.58,1) : bus_connection_state==1 ? gfx_set(1.0,0.72,0.20,1) : gfx_set(1.0,0.30,0.25,1);
 zp_circle(220,27,5,1); zp_setfont(1,"Arial",10,'b'); zp_gx=232; zp_gy=20;
-bus_connection_state==2 ? zp_drawstr(ui_lang == 0 ? "BUS COLLEGATO" : "BUS CONNECTED") :
-bus_connection_state==1 ? zp_drawstr(ui_lang == 0 ? "DATI BUS VECCHI" : "BUS DATA OLD") :
-                          zp_drawstr(ui_lang == 0 ? "BUS NON ATTIVO" : "BUS OFFLINE");
+bus_connection_state==2 ? (
+  bus_te_conn && bus_master_conn==2 ? sprintf(#probe_conn_s, ui_lang==0 ? "BUS v3 OK · M+TE (%d)" : "BUS v3 OK · M+TE (%d)", bus_v3_peers) :
+  bus_te_conn ? sprintf(#probe_conn_s, ui_lang==0 ? "BUS v3 OK · TE (%d)" : "BUS v3 OK · TE (%d)", bus_v3_peers) :
+                sprintf(#probe_conn_s, ui_lang==0 ? "BUS v3 OK · MASTER (%d)" : "BUS v3 OK · MASTER (%d)", bus_v3_peers);
+  zp_drawstr(#probe_conn_s);
+) :
+bus_connection_state==1 ? (
+  sprintf(#probe_conn_s, ui_lang==0 ? "IN ATTESA MASTER/TE (%d)" : "WAITING MASTER/TE (%d)", bus_v3_peers);
+  zp_drawstr(#probe_conn_s);
+) : (
+  zp_drawstr(ui_lang == 0 ? "NESSUN RICEVITORE" : "NO RECEIVER");
+);
 zp_setfont(1,"Arial",13);
 gfx_set(0.62,0.68,0.78,1); zp_gx=18; zp_gy=54;
-zp_drawstr(ui_lang == 0 ? "Misura passiva post-catena." : "Passive post-chain measurement.");
+probe_mode<0.5 ?
+  zp_drawstr(ui_lang == 0 ? "Profilo VOICE (85-14k Hz + controllo rumble <80 Hz)." : "VOICE profile (85-14k Hz + sub <80 Hz rumble check).")
+: zp_drawstr(ui_lang == 0 ? "Profilo FULL / MUS+FX (intera banda 40-14k Hz)." : "FULL / MUS+FX profile (full band 40-14k Hz).");
 
 function metric(label,val,unit,x,y) (
   gfx_set(0.22,0.25,0.31,1); zp_rect(x,y,150,52);
@@ -275,5 +559,10 @@ time_precise() < help_warn_until ? (
   zp_drawstr(ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Studio Suite" : "Open Cue Navigator or ZP Suite help");
 );
 
-gfx_set(0.40,0.44,0.52,1); zp_setfont(1,"Arial",10); zp_gx=18; zp_gy=zp_vh-20;
-zp_drawstr(ui_lang == 0 ? "ZP Shared Bus v2 | La Probe deve essere l'ultimo FX del bus." : "ZP Shared Bus v2 | Probe must be the last FX in the bus.");
+gfx_set(0.45,0.52,0.62,1); zp_setfont(1,"Arial",10); zp_gx=18; zp_gy=zp_vh-20;
+probe_mode < 0.5 ? (
+  sprintf(#probe_foot_s, "Shared Bus v3 | VOICE 85-14k tilt %+.2f dB/o | Sub<80 %+.1f dB", probe_brown_tilt, probe_sub_excess_db);
+) : (
+  sprintf(#probe_foot_s, "Shared Bus v3 | FULL 40-14k tilt %+.2f dB/o (Z:%+.1f %+.1f %+.1f %+.1f)", probe_brown_tilt, probe_z1, probe_z2, probe_z3, probe_z4);
+);
+zp_drawstr(#probe_foot_s);

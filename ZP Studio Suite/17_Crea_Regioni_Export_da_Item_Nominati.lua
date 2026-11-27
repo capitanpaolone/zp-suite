@@ -205,7 +205,17 @@ local function encode_draft_order(draft)
   return table.concat(lines, "\n"):gsub("\n+$", "")
 end
 
+local DRAFT_KEYS = { "names_text", "draft_names", "draft_order" }
+local function project_draft_get(key)
+  local ok, value = reaper.GetProjExtState(0, EXT_SECTION, "draft_" .. key)
+  return (ok and ok > 0 and value) or ""
+end
+
 local function get_state()
+  -- Eredita' delle versioni precedenti: copie globali (di un progetto qualsiasi) che non vanno piu' mostrate.
+  for _, key in ipairs(DRAFT_KEYS) do
+    if reaper.GetExtState(EXT_SECTION, key) ~= "" then reaper.DeleteExtState(EXT_SECTION, key, true) end
+  end
   return {
     gap = tonumber_locale(reaper.GetExtState(EXT_SECTION, "gap"), 2.0),
     pad_in = tonumber_locale(reaper.GetExtState(EXT_SECTION, "pad_in"), 0.2),
@@ -218,9 +228,11 @@ local function get_state()
     preroll_warmup = bool_from_state(reaper.GetExtState(EXT_SECTION, "preroll_warmup"), false),
     include_video = bool_from_state(reaper.GetExtState(EXT_SECTION, "include_video"), true),
     skip_muted = bool_from_state(reaper.GetExtState(EXT_SECTION, "skip_muted"), false),
-    names_text = reaper.GetExtState(EXT_SECTION, "names_text") or "",
-    draft_names = reaper.GetExtState(EXT_SECTION, "draft_names") or "",
-    draft_order = reaper.GetExtState(EXT_SECTION, "draft_order") or ""
+    -- I nomi in bozza appartengono al PROGETTO (ProjExtState, salvati nel .rpp): nell'ExtState globale
+    -- restavano da un progetto all'altro e "Svuota lista" riportava i nomi dell'ultimo progetto aperto.
+    names_text = project_draft_get("names_text"),
+    draft_names = project_draft_get("draft_names"),
+    draft_order = project_draft_get("draft_order")
   }
 end
 
@@ -236,9 +248,9 @@ local function save_state(state)
   reaper.SetExtState(EXT_SECTION, "preroll_warmup", state.preroll_warmup and "1" or "0", true)
   reaper.SetExtState(EXT_SECTION, "include_video", state.include_video and "1" or "0", true)
   reaper.SetExtState(EXT_SECTION, "skip_muted", state.skip_muted and "1" or "0", true)
-  reaper.SetExtState(EXT_SECTION, "names_text", state.names_text or "", true)
-  reaper.SetExtState(EXT_SECTION, "draft_names", state.draft_names or "", true)
-  reaper.SetExtState(EXT_SECTION, "draft_order", state.draft_order or "", true)
+  reaper.SetProjExtState(0, EXT_SECTION, "draft_names_text", state.names_text or "")
+  reaper.SetProjExtState(0, EXT_SECTION, "draft_draft_names", state.draft_names or "")
+  reaper.SetProjExtState(0, EXT_SECTION, "draft_draft_order", state.draft_order or "")
 end
 
 local function get_clipboard()
@@ -2619,6 +2631,7 @@ local function open_window()
   local pad_out_text = tostring(state.pad_out)
   local active_field = nil
   local last_mouse_down = false
+  local refocus_guard = false
   local preview_scroll = 0
   local selected_preview = 1
   local selected_marker_index = nil
@@ -3301,7 +3314,9 @@ local function open_window()
         local pasted_name = names[region_order]
         if custom_names[key] then
           group.edited_name = custom_names[key]
-        elseif draft_order[region_order] and draft_order[region_order] ~= "" then
+        -- Una regione che esiste gia' si legge dal suo nome (come i marker): la bozza per numero d'ordine
+        -- non la riguarda. Valgono solo il nome scritto proprio su quella regione e l'elenco incollato.
+        elseif not group.existing_region and draft_order[region_order] and draft_order[region_order] ~= "" then
           group.edited_name = draft_order[region_order]
         elseif pasted_name and pasted_name ~= "" then
           group.edited_name = pasted_name
@@ -3335,6 +3350,19 @@ local function open_window()
   function commit_name_edit(groups)
     if not edit_name_index then return end
     local new_name = trim(edit_name_text)
+    -- Testo non cambiato: niente da scrivere. Un commit "vuoto" (per esempio quando il clic che riporta
+    -- il focus alla finestra chiude una riga appena aperta) non deve cancellare il nome di una riga.
+    local original_name = nil
+    if edit_name_source == "names" then
+      original_name = trim((parse_names_preserve_rows(state.names_text))[edit_name_index] or "")
+    elseif edit_name_source == "preview" then
+      local g = groups and groups[edit_name_index]
+      if g and not g.marker_only then original_name = trim(g.edited_name or g.name or "") end
+    end
+    if original_name ~= nil and new_name == original_name then
+      cancel_name_edit()
+      return
+    end
     if edit_name_source == "names" then
       remember_names_before_change()
       state.names_text = set_line_in_text(state.names_text, edit_name_index, new_name)
@@ -3702,6 +3730,12 @@ local function open_window()
 
     local mouse_down = (gfx.mouse_cap & 1) == 1
     local clicked = mouse_down and not last_mouse_down
+    -- Il clic che riporta il focus alla finestra (dopo aver copiato un nome da un'altra app) non e' un
+    -- comando: prima chiudeva la riga in modifica e spostava la selezione, e l'incolla finiva sulla riga sbagliata.
+    local has_focus = ((gfx.getchar(65536) or 0) & 1) == 1
+    if not has_focus then refocus_guard = true
+    elseif refocus_guard and not mouse_down then refocus_guard = false end
+    if refocus_guard and mouse_down then clicked = false end
     local overlay_clicked = clicked
     if show_mixdown_settings then clicked = false end
     last_mouse_down = mouse_down

@@ -13,6 +13,7 @@ M.HEADERS = {
   text     = { 'translation', 'text', 'testo', 'dialogue', 'dialogo' },
   role     = { 'role', 'character', 'personaggio' },
   reaction = { 'reaction sound', 'reaction', 'reazione' },
+  name     = { 'file name', 'filename', 'file', 'nome file', 'clip', 'video', 'nome video' },
 }
 
 local function trim(s) return (s:match('^%s*(.-)%s*$')) end
@@ -220,7 +221,7 @@ function M.text_columns(rows, map, header_row)
   for _, row in ipairs(rows) do if row.number == header_row then header = row break end end
   if not header then return {} end
   local used = {}
-  for _, key in ipairs({ 'start', 'finish', 'role', 'reaction' }) do if map[key] then used[map[key]] = true end end
+  for _, key in ipairs({ 'start', 'finish', 'role', 'reaction', 'name' }) do if map[key] then used[map[key]] = true end end
   local known, others = {}, {}
   for col = 1, max_column(header) do
     local label = trim(header.values[col] or '')
@@ -297,6 +298,76 @@ function M.read(member, opts)
   local cues, err = M.cues(sheet.rows, sheet.map, sheet.header_row + 1, opts)
   if not cues then return nil, 'Foglio «' .. sheet.name .. '»: ' .. err end
   return cues, sheet.name, column.label
+end
+
+-- Copione SENZA tempi, a blocchi: la colonna del nome file/video apre un blocco (di solito e' una cella
+-- unita su piu' righe: solo la prima riga ha il nome) e le righe seguenti con il nome vuoto ne fanno parte.
+-- Restituisce { { name, text, rows = { numeri di riga } }, ... }, nome del foglio, etichetta della colonna.
+-- Il testo di un blocco e' una battuta per riga. opts.choose come in M.read (foglio / colonna di testo).
+function M.read_groups(member, opts)
+  opts = opts or {}
+  local workbook = member('xl/workbook.xml')
+  if not workbook or workbook == '' then return nil, 'Il file non sembra un Excel .xlsx leggibile.' end
+  local sheets = M.sheet_list(workbook, member('xl/_rels/workbook.xml.rels'))
+  local shared = M.shared_strings(member('xl/sharedStrings.xml'))
+  local found = {}
+  for _, sheet in ipairs(sheets) do
+    local xml = sheet.path and member(sheet.path)
+    if xml and xml ~= '' then
+      local rows = M.sheet_rows(xml, shared)
+      local map, header_row = M.detect_columns(rows)
+      if map.name and header_row then
+        local columns = M.text_columns(rows, { name = map.name }, header_row)
+        if #columns > 0 then
+          found[#found + 1] = { name = sheet.name, rows = rows, map = map, header_row = header_row, columns = columns }
+        end
+      end
+    end
+  end
+  if #found == 0 then return nil, 'Nessun foglio con una colonna dei nomi (File name) e una di testo.' end
+  local sheet = found[1]
+  if #found > 1 and opts.choose then
+    local names = {}
+    for i, f in ipairs(found) do names[i] = f.name end
+    local pick = opts.choose('Quale foglio importo?', names)
+    if not pick then return nil, nil end
+    sheet = found[pick]
+  end
+  local column = sheet.columns[1]
+  if #sheet.columns > 1 and opts.choose then
+    local names = {}
+    for i, c in ipairs(sheet.columns) do names[i] = column_name(c.col) .. ' — ' .. c.label end
+    local pick = opts.choose('Quale colonna di testo importo?', names)
+    if not pick then return nil, nil end
+    column = sheet.columns[pick]
+  end
+  local groups, current = {}, nil
+  for _, row in ipairs(sheet.rows) do
+    if row.number > sheet.header_row then
+      local name = trim(row.values[sheet.map.name] or '')
+      if name ~= '' then
+        current = { name = name, lines = {}, rows = {} }
+        groups[#groups + 1] = current
+      end
+      local text = trim((row.values[column.col] or ''):gsub('\r\n', '\n'):gsub('\r', '\n'))
+      if current and text ~= '' then
+        current.lines[#current.lines + 1] = text
+        current.rows[#current.rows + 1] = row.number
+      end
+    end
+  end
+  local out = {}
+  for _, g in ipairs(groups) do
+    if #g.lines > 0 then out[#out + 1] = { name = g.name, text = table.concat(g.lines, '\n'), rows = g.rows } end
+  end
+  if #out == 0 then return nil, 'Nessun testo trovato nella colonna scelta.' end
+  return out, sheet.name, column.label
+end
+
+-- Confronto fra il nome di un blocco e quello di un video: senza estensione, maiuscole e spazi ai bordi.
+function M.match_key(name)
+  name = trim(tostring(name or '')):gsub('%.%w%w?%w?%w?$', ''):lower()
+  return name
 end
 
 -- Menu a comparsa per scegliere foglio o colonna (si apre al puntatore; senza finestra ne usa una provvisoria).

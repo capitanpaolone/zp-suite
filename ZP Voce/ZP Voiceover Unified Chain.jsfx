@@ -1,5 +1,5 @@
 // @description ZP Voiceover Unified Chain
-// @version 4.1.8
+// @version 4.1.10
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
@@ -13,16 +13,18 @@
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: ZP Studio Suite/help/index.html#plugin-unified-chain
 // @changelog
+//   4.1.10: Rilevamento cambio samplerate in @block (ext_noinit=1) con aggiornamento finestre meter e compute_dsp_params().
+//   4.1.9: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro e commit atomico del frame legacy.
 //   Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
 //   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
 //     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
 //   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
-desc:ZP Voiceover Unified Chain - Voice Leveler - Paolo Balestri
+desc:ZP Voiceover Unified Chain - Voice Leveler · latocardioide.it · dubbertools.com
 options:gmem=ZPVoiceoverSharedBus
-tags: voiceover voice leveler compressor limiter gate expander brown guard lufs rms paolo balestri zio paolo
-//autror: Paolo Balestri - Zio Paolo
+tags: voiceover voice leveler compressor limiter gate expander brown guard lufs rms paolo balestri lato cardioide
+//autror: Paolo Balestri · Lato Cardioide
 //variant: v4.1.5-circular-threshold-meters
-// Contatto: social@paolobalestri.com
+// Contatto: paolo@latocardioide.it
 //
 // CHANGELOG v4.1.5-circular-threshold-meters
 // - Live circular detector rings: Gate, 1175, Major Tom and Limiter Ceiling.
@@ -33,7 +35,7 @@ tags: voiceover voice leveler compressor limiter gate expander brown guard lufs 
 
 // ============================================================================
 // MANUALE UTENTE — Voiceover Unified Chain ZP v4.1.0-bus-tone-beta
-// Plugin: Voiceover Unified Chain ZP | Autore: Paolo Balestri | Contatto: social@paolobalestri.com
+// Plugin: Voiceover Unified Chain ZP | Autore: Paolo Balestri | Contatto: paolo@latocardioide.it
 // Sezione "living": si aggiorna ad ogni revisione DSP o UI significativa.
 // ============================================================================
 //
@@ -554,6 +556,72 @@ function zp_bus_refresh(plugin_id) (
   zp_bus_boot(); gmem[plugin_id]=905000+plugin_id; gmem[plugin_id+1]=time_precise(); gmem[plugin_id+2]+=1; zp_bus_read();
 );
 zp_bus_refresh(ZP_BUS_ID);
+
+// ---- ZP Shared Bus v3 (telemetria multi-istanza a monte -> Master Pro) ----
+function zp3_boot() (
+  gmem[1000] != 905300 || gmem[1001] < 300 ? (
+    gmem[1000] = 905300;
+    gmem[1001] = 300;
+    gmem[1002] = 64;
+    gmem[1003] = 32;
+  );
+);
+function zp3_clear_slot() local(zp3_cb) (
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_cb = 1024 + zp3_slot * 32;
+    gmem[zp3_cb + 3] == zp3_prev_key ? (
+      gmem[zp3_cb] = 0;
+      gmem[zp3_cb + 2] = 0;
+    );
+  );
+  zp3_slot = -1;
+  zp3_prev_key = -1;
+);
+function zp3_claim(zp3_pt) local(zp3_now, zp3_key, zp3_h, zp3_i, zp3_s, zp3_b, zp3_m, zp3_found) (
+  zp3_boot();
+  zp3_now = time_precise();
+  zp3_fx = 0; zp3_hf = 0;
+  zp3_tr = get_host_placement(zp3_fx, zp3_hf);
+  zp3_key = max(0, zp3_tr + 2) * 1024 + max(0, zp3_fx) * 16 + zp3_pt;
+  zp3_prev_key >= 0 && zp3_prev_key != zp3_key ? zp3_clear_slot();
+  zp3_found = -1;
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_slot;);
+  );
+  zp3_found < 0 ? (
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_b = 1024 + zp3_i * 32;
+        gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_i;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_found < 0 ? (
+    zp3_h = (max(0, zp3_tr + 2) * 13 + max(0, zp3_fx) * 7 + zp3_pt * 3) % 64;
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_s = (zp3_h + zp3_i) % 64;
+        zp3_b = 1024 + zp3_s * 32;
+        zp3_m = gmem[zp3_b];
+        (zp3_m != 905301 || (zp3_now - gmem[zp3_b + 1]) > 2.5) ? (zp3_found = zp3_s;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_slot = zp3_found;
+  zp3_prev_key = zp3_key;
+  zp3_slot >= 0 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    zp3_seq = max(zp3_seq, floor(gmem[zp3_b + 2] + 0.5));
+    zp3_b;
+  ) : -1;
+);
+zp3_prev_key <= 0 ? (zp3_slot = -1; zp3_prev_key = -1;);
+zp3_boot();
 help_bridge_alive = 0;
 help_warn_until = 0;
 ui_lang = 0;
@@ -1142,6 +1210,7 @@ meter_s_win_cnt = 30;     // 3 s
 meter_win_len = max(1, floor(METER_UPDATE * srate));
 meter_i_m_win = 1 / max(1, meter_m_win_cnt * meter_win_len);
 meter_i_s_win = 1 / max(1, meter_s_win_cnt * meter_win_len);
+last_srate = srate;
 meter_rms_buf_base = pkh_base + 32;
 meter_lufs_m_buf_base = meter_rms_buf_base + 8;
 meter_lufs_s_buf_base = meter_lufs_m_buf_base + 8;
@@ -1577,8 +1646,13 @@ refresh_out_smart_capture_trim();
 dsp_needs_update = 1;
 
 @block
-// Unified presenza + heartbeat. Non controlla il DSP degli altri plugin.
-zp_bus_refresh(ZP_BUS_ID);
+srate != last_srate ? (
+  meter_win_len = max(1, floor(METER_UPDATE * srate));
+  meter_i_m_win = 1 / max(1, meter_m_win_cnt * meter_win_len);
+  meter_i_s_win = 1 / max(1, meter_s_win_cnt * meter_win_len);
+  compute_dsp_params();
+  last_srate = srate;
+);
 // ZP Target Engine: telemetria separata per stadio, solo osservativa.
 gmem[101] = ui_gate_act_db;                                  // expander GR
 gmem[102] = ui_1175_act_db;                                  // 1175 GR
@@ -1592,6 +1666,45 @@ zp_internal_crest = max(0, ui_out_peak_dbfs-ui_global_rms_db);
 gmem[109] = max(0,min(100,100-zp_internal_crest*5));          // density estimate
 gmem[110] = ui_brown_act_db + abs(bus_air_cut_db);            // brightness action estimate
 gmem[111] = floor(out_auto_apply + 0.5);                      // 0 MANUAL, 1 AUTO
+// Unified presenza + heartbeat dopo il payload. Non controlla il DSP degli altri plugin.
+zp_bus_refresh(ZP_BUS_ID);
+
+zp3_b = zp3_claim(2);
+zp3_b >= 0 ? (
+  gmem[zp3_b + 3] = zp3_prev_key;
+  gmem[zp3_b + 4] = 2;
+  gmem[zp3_b + 5] = zp3_tr;
+  gmem[zp3_b + 6] = zp3_fx;
+  gmem[zp3_b + 7] = zp3_hf;
+  gmem[zp3_b + 8] = 1;
+  gmem[zp3_b + 9] = 1;
+  gmem[zp3_b + 10] = max(ui_1175_act_db, max(ui_la2_act_db, ui_mt_act_db));
+  gmem[zp3_b + 11] = ui_brown_act_db;
+  gmem[zp3_b + 12] = max(ui_lim_act_db, ui_out_act_db);
+  gmem[zp3_b + 13] = 0;
+  gmem[zp3_b + 14] = 0;
+  gmem[zp3_b + 15] = -abs(bus_air_cut_db);
+  gmem[zp3_b + 16] = 0;
+  gmem[zp3_b + 17] = -120;
+  gmem[zp3_b + 18] = ui_global_rms_db;
+  gmem[zp3_b + 19] = ui_out_peak_dbfs;
+  gmem[zp3_b + 20] = 0;
+  gmem[zp3_b + 21] = clamp((ui_global_rms_db + 55) * 2.5, 0, 100);
+  gmem[zp3_b + 22] = max(0, ui_out_peak_dbfs - ui_global_rms_db);
+  gmem[zp3_b + 23] = ui_brown_act_db + abs(bus_air_cut_db);
+  gmem[zp3_b + 24] = ui_1175_act_db;
+  gmem[zp3_b + 25] = ui_la2_act_db;
+  gmem[zp3_b + 26] = ui_mt_act_db;
+  gmem[zp3_b + 27] = ui_gate_act_db;
+  gmem[zp3_b + 28] = ui_brown_act_db;
+  gmem[zp3_b + 29] = 0;
+  gmem[zp3_b + 30] = 0;
+  gmem[zp3_b + 31] = 0;
+  gmem[zp3_b] = 905301;
+  gmem[zp3_b + 1] = time_precise();
+  zp3_seq += 1;
+  gmem[zp3_b + 2] = zp3_seq;
+);
 
 @sample
 // Se la GUI ha cambiato uno slider, ricalcola i parametri DSP senza aspettare @slider
@@ -4815,7 +4928,7 @@ zp_bus_read();
 zp_bus_master_conn==2 && zp_bus_probe_conn==2 ? gfx_set(0.30,0.92,0.58,1) : zp_bus_master_conn>0 && zp_bus_probe_conn>0 ? gfx_set(1.0,0.72,0.20,1) : gfx_set(1.0,0.34,0.28,1);
 zp_circle(286,HDR_Y+20,5,1); zp_setfont(1,"Arial",9,'b'); zp_gx=296; zp_gy=HDR_Y+14; zp_drawstr("ZP");
 zp_setfont(1,"Arial",12); gfx_set(0.46,0.60,0.76,1);
-zp_gx=16; zp_gy=HDR_Y+38; zp_drawstr("Voice Leveler | v4.1.5 - di Paolo Balestri");
+zp_gx=16; zp_gy=HDR_Y+38; zp_drawstr("Voice Leveler | v4.1.5 · latocardioide.it · dubbertools.com");
 // Module status indicators (colored by active/inactive state)
 zp_setfont(1,"Arial",13);
 zp_gx=16; zp_gy=HDR_Y+58;
@@ -4932,7 +5045,7 @@ gfx_set(0.18,0.20,0.24,1); zp_rect(0,HDR_H+HDR_Y+2,zp_vw,1);
 zp_setfont(1,"Arial",19,'b'); gfx_set(0.94,0.96,0.98,1);
 zp_gx=16; zp_gy=HDR_Y+10; zp_drawstr("VOICEOVER UNIFIED CHAIN ZP");
 zp_setfont(1,"Arial",12); gfx_set(0.46,0.60,0.76,1);
-zp_gx=16; zp_gy=HDR_Y+38; zp_drawstr("Voice Leveler | v4.1.5 - di Paolo Balestri");
+zp_gx=16; zp_gy=HDR_Y+38; zp_drawstr("Voice Leveler | v4.1.5 · latocardioide.it · dubbertools.com");
 zp_setfont(1,"Arial",13);
 zp_gx=16; zp_gy=HDR_Y+58;
 floor(slider(2) +0.5) ? gfx_set(0.30,0.62,0.92,1) : gfx_set(0.34,0.48,0.62,1); zp_drawstr("IN ");

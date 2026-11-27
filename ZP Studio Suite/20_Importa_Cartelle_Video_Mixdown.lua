@@ -561,8 +561,16 @@ local function create_item_region(name, start_pos, end_pos)
   return reaper.AddProjectMarker2(0, true, start_pos, end_pos, name, -1, COLOR_REGION)
 end
 
+-- La cartella scelta appartiene al PROGETTO (ProjExtState), non a REAPER: un progetto nuovo parte vuoto
+-- e non ripropone la cartella dell'ultimo lavoro. La vecchia copia globale viene eliminata.
+local function project_root_get()
+  if reaper.GetExtState(EXT_SECTION, "last_root") ~= "" then reaper.DeleteExtState(EXT_SECTION, "last_root", true) end
+  local ok, value = reaper.GetProjExtState(0, EXT_SECTION, "root_folder")
+  return (ok and ok > 0 and value) or ""
+end
+
 local function select_root_folder()
-  local last = reaper.GetExtState(EXT_SECTION, "last_root") or ""
+  local last = project_root_get()
   if reaper.JS_Dialog_BrowseForFolder then
     local ok, folder = reaper.JS_Dialog_BrowseForFolder("Scegli cartella con audio/video o cartella madre", last)
     if ok and folder and trim(folder) ~= "" then return trim(folder) end
@@ -745,7 +753,7 @@ local function open_import_window(on_finish)
 
   local state = {
     workflow = MODE_IMPORT_AND_PREPARE,
-    root = reaper.GetExtState(EXT_SECTION, "last_root") or "",
+    root = project_root_get(),
     video_gap = DEFAULT_VIDEO_GAP,
     folder_gap = DEFAULT_FOLDER_GAP,
     copy_files = true,
@@ -786,7 +794,6 @@ local function open_import_window(on_finish)
     local folder = select_root_folder()
     if folder and trim(folder) ~= "" then
       state.root = trim(folder)
-      reaper.SetExtState(EXT_SECTION, "last_root", state.root, true)
       refresh_plan()
     end
   end
@@ -821,13 +828,47 @@ local function open_import_window(on_finish)
     }
   end
 
+  -- Pause in secondi: si scrivono direttamente nella casella (niente finestra di REAPER).
+  -- Clic sulla casella = modifica sul posto; cifre, punto o virgola; Invio o clic fuori conferma; Esc annulla.
+  local function commit_gap_edit()
+    local e = state.gap_edit
+    state.gap_edit = nil
+    if not e then return end
+    local value = tonumber((trim(e.text):gsub(",", ".")))
+    if value then state[e.key] = math.max(0, value) end
+  end
+
+  local function gap_box(rect, prefix, key, enabled, clicked)
+    local e = state.gap_edit
+    if e and e.key == key then
+      e.rect = rect
+      local caret = (math.floor(reaper.time_precise() * 2) % 2 == 0) and "|" or " "
+      draw_button(rect, prefix .. " " .. e.text .. caret .. "s", true, true, false, "tab")
+    elseif draw_button(rect, prefix .. " " .. tostring(state[key]) .. "s", true, enabled, clicked, "tab") then
+      state.gap_edit = { key = key, text = tostring(state[key]), fresh = true, rect = rect }
+    end
+  end
+
   local function loop()
     local ch = gfx.getchar()
     if ch < 0 then gfx.quit() return end
+    local e = state.gap_edit
+    if e then
+      if ch == 27 then state.gap_edit = nil; ch = 0
+      elseif ch == 13 or ch == 10 then commit_gap_edit(); ch = 0
+      elseif ch == 8 then e.text = e.fresh and "" or e.text:sub(1, -2); e.fresh = false; ch = 0
+      elseif (ch >= 48 and ch <= 57) or ch == 46 or ch == 44 then
+        e.text = (e.fresh and "" or e.text) .. (ch == 44 and "." or string.char(ch)); e.fresh = false; ch = 0
+      end
+    end
     if ch == 27 then gfx.quit() return end
 
     local mouse_down = (gfx.mouse_cap & 1) == 1
     local clicked = mouse_down and not state.last_mouse_down
+    local edit_now = state.gap_edit
+    if edit_now and clicked and not (edit_now.rect and ZP_UI.point_in_rect(gfx.mouse_x, gfx.mouse_y, edit_now.rect.x, edit_now.rect.y, edit_now.rect.w, edit_now.rect.h)) then
+      commit_gap_edit()
+    end
     state.last_mouse_down = mouse_down
 
     ZP_UI.fill_background()
@@ -880,20 +921,14 @@ local function open_import_window(on_finish)
     if draw_button({ x = left.x + 12, y = y, w = 42, h = 32 }, "-", false, state.workflow == MODE_IMPORT_AND_PREPARE, clicked) then
       state.video_gap = math.max(0, state.video_gap - 1)
     end
-    if draw_button({ x = left.x + 58, y = y, w = 110, h = 32 }, "File " .. tostring(state.video_gap) .. "s", true, state.workflow == MODE_IMPORT_AND_PREPARE, clicked, "tab") then
-      local ok, value = reaper.GetUserInputs("Pausa tra file", 1, "Secondi:,extrawidth=240", tostring(state.video_gap))
-      if ok then state.video_gap = math.max(0, tonumber(trim(value)) or state.video_gap) end
-    end
+    gap_box({ x = left.x + 58, y = y, w = 110, h = 32 }, "File", "video_gap", state.workflow == MODE_IMPORT_AND_PREPARE, clicked)
     if draw_button({ x = left.x + 172, y = y, w = 42, h = 32 }, "+", false, state.workflow == MODE_IMPORT_AND_PREPARE, clicked) then
       state.video_gap = state.video_gap + 1
     end
     if draw_button({ x = left.x + 236, y = y, w = 42, h = 32 }, "-", false, state.workflow == MODE_IMPORT_AND_PREPARE, clicked) then
       state.folder_gap = math.max(0, state.folder_gap - 1)
     end
-    if draw_button({ x = left.x + 282, y = y, w = 124, h = 32 }, "Cartelle " .. tostring(state.folder_gap) .. "s", true, state.workflow == MODE_IMPORT_AND_PREPARE, clicked, "tab") then
-      local ok, value = reaper.GetUserInputs("Pausa tra cartelle", 1, "Secondi:,extrawidth=240", tostring(state.folder_gap))
-      if ok then state.folder_gap = math.max(0, tonumber(trim(value)) or state.folder_gap) end
-    end
+    gap_box({ x = left.x + 282, y = y, w = 124, h = 32 }, "Cartelle", "folder_gap", state.workflow == MODE_IMPORT_AND_PREPARE, clicked)
     if draw_button({ x = left.x + 410, y = y, w = 42, h = 32 }, "+", false, state.workflow == MODE_IMPORT_AND_PREPARE, clicked) then
       state.folder_gap = state.folder_gap + 1
     end
@@ -1357,7 +1392,6 @@ local function import_plan(root, plan, settings, direct_folder_count, ignored_co
   end
 
   reaper.SetProjExtState(0, EXT_SECTION, "root_folder", root)
-  reaper.SetExtState(EXT_SECTION, "last_root", root, true)
 
   reaper.PreventUIRefresh(-1)
   reaper.UpdateArrange()

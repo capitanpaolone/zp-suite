@@ -1,48 +1,65 @@
-// @description ZP Click & Attack Softener (BETA)
-// @version 0.1
+// @description ZP Click & Attack Softener
+// @version 1.4
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
-//   ### ZP Click & Attack Softener (BETA)
-//   Strumento a doppio stadio con lookahead (6,5 ms, PDC automatico) tarato sulla voce parlata:
-//   1. DE-CLICK: rilevatore simmetrico pre/post a due bande (1-4 kHz lingua/palato, 4+ kHz saliva/altoparlato) con protezione consonanti (p/t/k).
-//   2. ATTACK SOFTENER: arrotonda la punta iniziale degli attacchi vocali solo sopra la frequenza di taglio (crossover SVF coerente di fase).
-//   Include ascolto DELTA con auto-off a 30 s, D·MOLLA per isolare il singolo stadio mentre regoli i controlli e monitor eventi in tempo reale.
+//   ### ZP Click & Attack Softener
+//   Strumento a tre stadi in serie con latenza PDC fissa (~14,7 ms @ 48 kHz, zero salti in automazione):
+//   1A. MACRO CLICK: attenuatore simmetrico pre/post a due bande con Protezione Consonanti (p/t/k).
+//   1B. MICRO-CLICK (motore spettrale STFT attivabile + Micro % automatizzabile): analisi tempo-frequenza a finestra corta (5,3 ms, 75% Hann-COLA) con coerenza locale a tasche (~940 Hz) per catturare anche micro-sfrigolii risonanti ad alta frequenza dentro e tra le consonanti, guardia armonica sulle vocali piene e controllo continuo Freq Skew (Low <-> Air, 380 Hz..2,6 kHz).
+//   2. ATTACK SOFTENER: arrotonda la punta iniziale degli attacchi duri solo sopra la frequenza di taglio (crossover SVF coerente di fase).
+//   Include ascolto DELTA con auto-off a 30 s, D·MOLLA per isolare ogni stadio (Macro, Micro, Attack) e monitor eventi in tempo reale.
 //
-//   Dual-stage voice cleaner and onset rounder with lookahead (6.5 ms, automatic PDC):
-//   symmetric two-band de-clicker with consonant protection plus phase-coherent high-band attack softener.
+//   Three-stage vocal/acoustic cleaner and onset rounder with fixed automatic PDC (~14.7 ms @ 48 kHz, zero latency jumps under automation):
+//   two-band Macro Click attenuator, switchable & automatable STFT spectral Micro-Click cleaner with local ~940 Hz pocket coherence, voiced harmonic guard, and continuous Freq Skew (Low <-> Air), plus phase-coherent Attack Softener.
 //
-//   BETA. Audio processing is self-contained; Cue Navigator is optional and only opens the help page from the ? button.
+//   Audio processing is self-contained; Cue Navigator is optional and only opens the help page from the ? button.
 //
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 // @changelog
-//   v0.1: Prima versione di laboratorio tarata su ripresa microfonica e catena voce di Paolo;
-//     De-Click pre/post con protezione consonanti, Attack Softener selettivo, 4 preset (PRE-CHAIN, POST-CHAIN,
-//     TAKE SPORCO, DELICATO), DELTA con auto-off 30 s, D·MOLLA per stadio, tema Scuro/Chiaro e vista JSFX/OSARA.
-desc:ZP Click & Attack Softener (BETA) - Mouth De-Click & Attack Rounder - Paolo Balestri
+//   v1.4: MICRO-CLICK aggiornato a coerenza locale a tasche scorrevoli (~940 Hz / 5 bin) + guardia glottica sulle vocali piene (< 800 Hz):
+//     cattura anche i micro-sfrigolii risonanti stretti (es. 5-9 kHz tra consonanti come "l -> g") prima diluiti nella media larga 4-16 kHz,
+//     mantenendo 0,00 dB di opacizzazione sul parlato pulito.
+//   v1.3: Nuovo controllo continuo Freq Skew (-10..+10, Low <-> Air, slider22) in stile RX per calibrare pavimento (380 Hz..2,6 kHz)
+//     e bilanciamento spettrale di Macro Click e Micro-Click in base alla ripresa (cattura anche i click bassi 450-1000 Hz senza toccare la fondamentale);
+//     slider5 mantenuto per retrocompatibilita' dei progetti esistenti.
+//   v1.2: Corretta la scala di ricostruzione ifft_real (0.25/N per guadagno unitario 0,00 dB e null DELTA esatto su MICRO-CLICK);
+//     grafica uniformata al linguaggio hardware della ZP Suite (tasti retroilluminati con barra LED, LED gioiello cliccabili, pomelli hardware e pannelli satinati).
+//   v1.1: Sostituito il motore time-domain AR(6) con il nuovo motore spettrale STFT MICRO-CLICK (fft_real/ifft_real 75% Hann-COLA,
+//     banda protetta < 1 kHz per zero micro-distorsioni sulla fondamentale, attenuazione morbida verso il contesto locale per zero opacizzazione);
+//     nomenclatura tecnica trasversale (MACRO CLICK, MICRO-CLICK + Micro %, Focus Mid-High 1-4k / Air 4k+).
+//   v1.0: Primo stadio dedicato ai micro-impulsi nelle consonanti + controllo Amount (%) automatizzabile e uscita dalla beta.
+//   v0.3: Rilevamento cambio samplerate in @block (ext_noinit=1) con azzeramento ring buffer e ricalcolo lookahead/coefficienti SVF.
+//   v0.2: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (Macro Click GR, Attack GR, Click/s e alert DELTA).
+//   v0.1: Prima versione tarata su ripresa microfonica e catena voce di Paolo.
+desc:ZP Click & Attack Softener · latocardioide.it · dubbertools.com
 options:gmem=ZPVoiceoverSharedBus
 in_pin:left input
 in_pin:right input
 out_pin:left output
 out_pin:right output
 
-slider1:1<0,1,1{Off,On}>De-Click Engage
-slider2:62<0,100,1>De-Click Sensibilita (%)
-slider3:14<0,18,0.5>De-Click Max Cut (dB)
-slider4:55<0,100,1>Protezione Consonanti (%)
-slider5:0<0,2,1{Bilanciato,Lingua/Palato 1-4k,Saliva/Alti 4k+}>Focus Banda Click
-slider6:1<0,1,1{Off,On}>Attack Softener Engage
-slider7:40<0,100,1>Attack Soften (%)
-slider8:10<3,25,0.5>Finestra Attacco (ms)
-slider9:1200<600,3500,10>Freq. Taglio Attacco (Hz)
+slider1:1<0,1,1{Off,On}>1A Macro · Engage
+slider2:62<0,100,1>1A/1B · Sensibilita (%)
+slider3:14<0,18,0.5>1A Macro · Max Cut (dB)
+slider4:55<0,100,1>1A/1B · Protezione Consonanti (%)
+slider5:0<0,2,1{Bilanciato,Mid-High 1-4k,Air 4k+}>Focus Banda [Legacy]
+slider6:1<0,1,1{Off,On}>2 Attack · Engage
+slider7:40<0,100,1>2 Attack · Soften (%)
+slider8:10<3,25,0.5>2 Attack · Finestra (ms)
+slider9:1200<600,3500,10>2 Attack · Freq. Taglio (Hz)
 slider10:100<0,100,1>Mix (% Wet)
 slider11:0<0,1,1{Off,On}>DELTA (Ascolta Rimosso)
 slider12:0<0,4,1{Custom,PRE-CHAIN (Pulizia),POST-CHAIN (Morbidezza),TAKE SPORCO,DELICATO (Broadcast)}>Preset Rapido
 slider13:0<0,1,1{Scuro,Chiaro}>Tema UI
 slider14:0<0,1,1{GUI,JSFX (OSARA)}>Vista
-slider16:0<0,18,0.1>[Read] De-Click GR (dB)
-slider17:0<0,12,0.1>[Read] Attack GR (dB)
+slider16:0<0,18,0.1>[Read] 1A Macro GR (dB)
+slider17:0<0,12,0.1>[Read] 2 Attack GR (dB)
 slider18:0<0,60,1>[Read] Click rilevati / s
+slider19:0<0,1,1{Off,On}>1B Micro · Engage (Spettrale)
+slider20:65<0,100,1>1B Micro · Amount % (Autom.)
+slider21:0<0,18,0.1>[Read] 1B Micro GR (dB)
+slider22:0<-10,10,0.5>1A/1B · Freq Skew (Low <-> Air)
 
 @init
 ext_noinit = 1;
@@ -53,27 +70,66 @@ EPS2  = 0.00002;
 EPS3  = 0.00003;
 LN10_20 = 20.0 / log(10.0);
 
-// Mappa memoria completamente disgiunta (max lookahead = 2048 campioni <= 192 kHz)
+// Mappa memoria completamente disgiunta (fft_real in 40960..41983, non attraversa mai 65536)
 r_loL = 0; r_mdL = 2048; r_hiL = 4096;
 r_loR = 6144; r_mdR = 8192; r_hiR = 10240;
 r_am  = 12288; r_ah = 14336; r_al = 16384;
+
 HIST_N = 240;
-h_in = 20000; h_ck = 20256; h_at = 20512;
+h_in = 20000; h_ck = 20256; h_at = 20512; h_mr = 20768;
+
+// Ring buffer Dry esatto (4096 campioni/canale -> fino a 192 kHz)
+r_rawL = 24576;
+r_rawR = 28672;
+
+// Buffer STFT Micro-Click (N <= 1024, tutti dentro 32768..43007)
+st_win   = 32768; // 1024
+st_inL   = 33792; // 1024
+st_inR   = 34816; // 1024
+st_outL  = 35840; // 1024
+st_outR  = 36864; // 1024
+st_wband = 37888; // 514
+st_ex    = 38402; // 514
+st_ref   = 38916; // 514
+st_graw  = 39430; // 514
+st_g     = 39944; // 514
+st_fft   = 40960; // 1024 (40960..41983, lontano dal confine 65536)
+
+// Storia circolare di 9 frame STFT (65536..88575, solo copia/lettura, mai passato a fft_real)
+ST_H = 9;
+st_histL = 65536; // 9 * 1024 = 9216
+st_histR = 74752; // 9 * 1024 = 9216
+st_histM = 83968; // 9 * 512  = 4608
+
+function dsp_reset_state() (
+  memset(0, 0, 18432);
+  memset(24576, 0, 8192);
+  memset(33792, 0, 4096);
+  memset(40960, 0, 1024);
+  memset(65536, 0, 23040);
+  ic11L = ic21L = ic12L = ic22L = 0;
+  ic11R = ic21R = ic12R = ic22R = 0;
+  ring_p = 0; raw_p = 0;
+  st_io_p = 0; st_hop_cnt = 0; st_fwr = 0;
+  st_hop_diff = 0;
+  post_sum1 = post_sum2 = post_lo = 0;
+  cur_mr_db = 0;
+);
 
 !dsp_booted ? (
-  memset(0, 0, 20800);
+  memset(0, 0, 88600);
   f1 = f2 = fa = 0.000001;
   s1 = s2 = sa = 0.00002;
   g_ck1 = g_ck2 = g_att = 1.0;
-  ic11L = ic21L = ic12L = ic22L = 0;
-  ic11R = ic21R = ic12R = ic22R = 0;
-  ring_p = 0; prev_la = 0;
-  post_sum1 = post_sum2 = post_lo = 0;
+  dsp_reset_state();
+  prev_la = 0;
   prev_osara_preset = 0;
   ck_rate_cnt = 0; ck_rate_t = 0; ck_rate_disp = 0;
   ck_cool_spl = 0; ck_prev_trig = 0;
-  ui_ck_gr = 0; ui_at_gr = 0; ui_ck_hold = 0; ui_at_hold = 0;
-  mon_ck_pk = 0; mon_at_pk = 0; mon_in_pk = 0;
+  ui_ck_gr = 0; ui_at_gr = 0; ui_mr_gr = 0;
+  ui_ck_hold = 0; ui_at_hold = 0; ui_mr_hold = 0;
+  mon_ck_pk = 0; mon_at_pk = 0; mon_mr_pk = 0; mon_in_pk = 0;
+  mr_amt_s = max(0, min(1, slider20 * 0.01));
   dsp_booted = 1;
 );
 
@@ -110,26 +166,300 @@ function update_visibility() local(show, n) (
   slider_show(2 ^ 15, show);
   slider_show(2 ^ 16, show);
   slider_show(2 ^ 17, show);
+  slider_show(2 ^ 18, show);
+  slider_show(2 ^ 19, show);
+  slider_show(2 ^ 20, show);
+  slider_show(2 ^ 21, show);
 );
 
-function update_params() local(g1, k1, g2, k2, foc) (
+function stft_build_tables() local(i, k, df, sk_s, f_lo0, f_lo1, f_spl) (
+  st_n = sr_safe <= 52000 ? 256 : (sr_safe <= 104000 ? 512 : 1024);
+  st_hop = st_n / 4;
+  st_half = st_n / 2;
+  st_la = st_n + 4 * st_hop; // 512 @ 48k (10.67 ms), 1024 @ 96k, 2048 @ 192k
+  st_ola_scale = 0.25 / st_n; // ifft_real(fft_real(x,N),N) = 2*N*x, 4-frame sqrt(Hann) OLA = 2.0 -> 1/(4*N) = 0.00 dB!
+  st_eps = 0.0025 * (st_n / 256.0);
+  st_plos_floor = 0.02 * (st_n / 256.0);
+
+  // Finestra sqrt(Hann): analisi + sintesi = Hann esatta, somma 4 frame = 2.000000
+  i = 0;
+  loop(st_n,
+    st_win[i] = sqrt(0.5 * (1.0 - cos(2.0 * $pi * i / st_n)));
+    i += 1;
+  );
+
+  // Maschera spettrale guidata da Freq Skew (-10..+10):
+  //   0 = pavimento 950 Hz (rampa 950..1450 Hz)
+  // -10 = pavimento 380 Hz (rampa 380..620 Hz -> cattura click bassi/umidi restando sopra la fondamentale)
+  // +10 = pavimento 2600 Hz (rampa 2600..3500 Hz -> solo micro-impulsi in aria)
+  sk_s = max(-1.0, min(1.0, skew_eff * 0.1));
+  f_lo0 = sk_s < 0 ? (950.0 + sk_s * 570.0) : (950.0 + sk_s * 1650.0);
+  f_lo1 = sk_s < 0 ? (1450.0 + sk_s * 830.0) : (1450.0 + sk_s * 2050.0);
+  f_spl = sk_s < 0 ? (4000.0 + sk_s * 1600.0) : (4000.0 + sk_s * 1500.0);
+  mr_floor_hz = f_lo0;
+
+  df = sr_safe / st_n;
+  st_k_800 = max(2, floor(800.0 / df + 0.5));
+  st_k_lo0 = max(2, floor(f_lo0 / df + 0.5));
+  st_k_lo1 = max(st_k_lo0 + 1, floor(f_lo1 / df + 0.5));
+  st_k_spl = max(st_k_lo1 + 1, floor(f_spl / df + 0.5));
+  st_k_hi1 = min(st_half - 1, floor(16000.0 / df + 0.5));
+  st_sub_hw = 2; // 5 bin adiacenti (~940 Hz) costanti a tutti i sample rate
+
+  k = 0;
+  loop(st_half,
+    k < st_k_lo0 ? (
+      st_wband[k] = 0.0;
+    ) : k < st_k_lo1 ? (
+      st_wband[k] = (k - st_k_lo0) / (st_k_lo1 - st_k_lo0);
+    ) : k <= st_k_hi1 ? (
+      st_wband[k] = 1.0;
+    ) : (
+      st_wband[k] = max(0.0, 1.0 - (k - st_k_hi1) / max(1.0, st_half - st_k_hi1));
+    );
+    k += 1;
+  );
+);
+
+function stft_process_hop(is_mono_hop) local(
+  i, idx, k, j, ka, kb, b_wr, b_mwr, re, im,
+  c, fm4, fm3, fp3, fp4, b_cL, b_cR, b_mc, b_m4, b_m3, b_p3, b_p4,
+  mc, pre, post, f_bi, f_mn, ex_pre, ex_post, e_bi, e_on, e_off, ex,
+  e_lo_c, e_lo_pre, e_lo_post, loc_sum, loc_avg, fw_k, dom_db, v_guard,
+  sc_k, any_hit, plos_guard, conf_k, wb, g_tgt, b_conf, min_g, red_db, g_k
+) (
+  b_wr  = st_fwr * 1024;
+  b_mwr = st_fwr * 512;
+
+  // 1. Analisi FFT reale canale L
+  i = 0; idx = st_io_p;
+  loop(st_n,
+    st_fft[i] = st_inL[idx] * st_win[i];
+    idx += 1; idx >= st_n ? idx = 0;
+    i += 1;
+  );
+  fft_real(st_fft, st_n);
+  fft_permute(st_fft, st_half);
+  memcpy(st_histL + b_wr, st_fft, st_n);
+
+  // 2. Analisi canale R (copia istantanea se dual-mono)
+  is_mono_hop ? (
+    memcpy(st_histR + b_wr, st_fft, st_n);
+    st_histM[b_mwr] = abs(st_fft[0]);
+    k = 1;
+    loop(st_half - 1,
+      re = st_fft[2 * k]; im = st_fft[2 * k + 1];
+      st_histM[b_mwr + k] = sqrt(re * re + im * im);
+      k += 1;
+    );
+  ) : (
+    i = 0; idx = st_io_p;
+    loop(st_n,
+      st_fft[i] = st_inR[idx] * st_win[i];
+      idx += 1; idx >= st_n ? idx = 0;
+      i += 1;
+    );
+    fft_real(st_fft, st_n);
+    fft_permute(st_fft, st_half);
+    memcpy(st_histR + b_wr, st_fft, st_n);
+    st_histM[b_mwr] = max(abs(st_histL[b_wr]), abs(st_fft[0]));
+    k = 1;
+    loop(st_half - 1,
+      re = st_histL[b_wr + 2 * k]; im = st_histL[b_wr + 2 * k + 1];
+      mc = sqrt(re * re + im * im);
+      re = st_fft[2 * k]; im = st_fft[2 * k + 1];
+      st_histM[b_mwr + k] = max(mc, sqrt(re * re + im * im));
+      k += 1;
+    );
+  );
+
+  // 3. Frame centrale c = (st_fwr - 4) mod 9, fianchi puliti a +-3, +-4 hop (4,0..5,3 ms di distanza)
+  c   = st_fwr - 4; c   < 0 ? c   += ST_H;
+  fm4 = st_fwr - 8; fm4 < 0 ? fm4 += ST_H;
+  fm3 = st_fwr - 7; fm3 < 0 ? fm3 += ST_H;
+  fp3 = st_fwr - 1; fp3 < 0 ? fp3 += ST_H;
+  fp4 = st_fwr;
+
+  b_cL = c * 1024; b_cR = c * 1024;
+  b_mc = c * 512;  b_m4 = fm4 * 512; b_m3 = fm3 * 512; b_p3 = fp3 * 512; b_p4 = fp4 * 512;
+
+  // Guadagno unitario di partenza su tutti i bin
+  k = 0;
+  loop(st_half, st_g[k] = 1.0; k += 1;);
+  cur_mr_db = 0;
+
+  mr_amt_s > 0.001 ? (
+    // Energia fondamentale (< 800 Hz) per guardia glottica sulle vocali piene + Protezione Consonanti (p/t/k)
+    e_lo_c = 0;
+    k = 1;
+    loop(max(0, st_k_800 - 1),
+      e_lo_c += st_histM[b_mc + k];
+      k += 1;
+    );
+    e_lo_c /= max(1, st_k_800 - 1);
+
+    e_lo_pre = 0; e_lo_post = 0;
+    k = 1;
+    loop(max(0, st_k_lo0 - 1),
+      e_lo_pre  += st_histM[b_m3 + k];
+      e_lo_post += st_histM[b_p3 + k];
+      k += 1;
+    );
+    plos_guard = (e_lo_post > 2.2 * e_lo_pre + st_plos_floor) ? (1.0 - 0.65 * gw) : 1.0;
+
+    k = st_k_lo0;
+    loop(st_k_hi1 - st_k_lo0 + 1,
+      mc   = st_histM[b_mc + k];
+      pre  = 0.5 * (st_histM[b_m4 + k] + st_histM[b_m3 + k]);
+      post = 0.5 * (st_histM[b_p3 + k] + st_histM[b_p4 + k]);
+      f_bi = max(pre, post);
+      f_mn = min(pre, post);
+
+      ex_pre  = log((mc + st_eps) / (pre  + st_eps)) * LN10_20;
+      ex_post = log((mc + st_eps) / (post + st_eps)) * LN10_20;
+      e_bi  = min(ex_pre, ex_post);
+      e_on  = min(ex_pre  - 3.5, ex_post + 1.2);
+      e_off = min(ex_post - 3.5, ex_pre  + 1.2);
+      ex = max(0.0, max(e_bi, max(e_on, e_off)));
+      st_ex[k]  = ex;
+      st_ref[k] = e_bi >= max(e_on, e_off) ? (0.5 * (pre + post)) : (0.35 * f_bi + 0.65 * f_mn);
+      k += 1;
+    );
+
+    // Coerenza locale su tasche scorrevoli di 5 bin (~940 Hz): cattura sfrigolii stretti (es. 5-9 kHz) senza opacizzare le 's'
+    k = 0;
+    loop(st_half, st_graw[k] = 1.0; k += 1;);
+    any_hit = 0;
+
+    k = st_k_lo0;
+    loop(st_k_hi1 - st_k_lo0 + 1,
+      ka = max(st_k_lo0, k - st_sub_hw);
+      kb = min(st_k_hi1, k + st_sub_hw);
+      loc_sum = 0;
+      j = ka;
+      loop(kb - ka + 1,
+        loc_sum += st_ex[j];
+        j += 1;
+      );
+      loc_avg = loc_sum / (kb - ka + 1);
+      fw_k = k < st_k_spl ? mr_fw1 : mr_fw2;
+
+      // Guardia armonica sulle vocali piene (< 4 kHz): se la fondamentale < 800 Hz e' > 18 dB sopra, alza la soglia
+      v_guard = 0.0;
+      (k < st_k_spl && e_lo_c > st_plos_floor) ? (
+        dom_db = log((e_lo_c + st_eps) / (st_histM[b_mc + k] + st_eps)) * LN10_20;
+        dom_db > 18.0 ? (v_guard = min(6.0, (dom_db - 18.0) * 0.45););
+      );
+
+      sc_k = loc_avg * fw_k - (mr_base_thr + v_guard);
+      ex = st_ex[k];
+      wb = min(1.0, st_wband[k] * fw_k);
+      (sc_k > 0.0 && ex > 2.0 && wb > 0.0) ? (
+        any_hit = 1;
+        conf_k = min(1.0, 0.55 + sc_k * 0.25) * mr_amt_s * plos_guard;
+        mc = st_histM[b_mc + k];
+        g_tgt = max(0.03, min(1.0, st_ref[k] / max(TINY7, mc)));
+        b_conf = min(1.0, (ex - 2.0) / 4.0) * conf_k * wb;
+        st_graw[k] = 1.0 - b_conf * (1.0 - g_tgt);
+      );
+      k += 1;
+    );
+
+    any_hit ? (
+      // Smoothing spettrale a 3 bin per zero ringing ai bordi di banda
+      min_g = 1.0;
+      k = st_k_lo0;
+      loop(st_k_hi1 - st_k_lo0 + 1,
+        g_k = 0.25 * st_graw[k - 1] + 0.50 * st_graw[k] + 0.25 * st_graw[min(st_half - 1, k + 1)];
+        st_g[k] = g_k;
+        g_k < min_g ? (min_g = g_k;);
+        k += 1;
+      );
+
+      red_db = max(0.0, -log(max(TINY7, min_g)) * LN10_20);
+      cur_mr_db = min(18.0, red_db);
+      (cur_mr_db > 2.0 && ck_cool_spl <= 0) ? (
+        ck_rate_cnt += 1;
+        ck_cool_spl = ck_cool_samples;
+      );
+    );
+  );
+
+  // 4. Sintesi IFFT reale canale L + overlap-add (DC e Nyquist sempre 1.0)
+  st_fft[0] = st_histL[b_cL];
+  st_fft[1] = st_histL[b_cL + 1];
+  k = 1;
+  loop(st_half - 1,
+    g_k = st_g[k];
+    st_fft[2 * k]     = st_histL[b_cL + 2 * k]     * g_k;
+    st_fft[2 * k + 1] = st_histL[b_cL + 2 * k + 1] * g_k;
+    k += 1;
+  );
+  fft_ipermute(st_fft, st_half);
+  ifft_real(st_fft, st_n);
+  i = 0; idx = st_io_p;
+  loop(st_n,
+    st_outL[idx] += st_fft[i] * st_win[i] * st_ola_scale;
+    idx += 1; idx >= st_n ? idx = 0;
+    i += 1;
+  );
+
+  // 5. Sintesi canale R (copia se dual-mono)
+  is_mono_hop ? (
+    i = 0; idx = st_io_p;
+    loop(st_n,
+      st_outR[idx] += st_fft[i] * st_win[i] * st_ola_scale;
+      idx += 1; idx >= st_n ? idx = 0;
+      i += 1;
+    );
+  ) : (
+    st_fft[0] = st_histR[b_cR];
+    st_fft[1] = st_histR[b_cR + 1];
+    k = 1;
+    loop(st_half - 1,
+      g_k = st_g[k];
+      st_fft[2 * k]     = st_histR[b_cR + 2 * k]     * g_k;
+      st_fft[2 * k + 1] = st_histR[b_cR + 2 * k + 1] * g_k;
+      k += 1;
+    );
+    fft_ipermute(st_fft, st_half);
+    ifft_real(st_fft, st_n);
+    i = 0; idx = st_io_p;
+    loop(st_n,
+      st_outR[idx] += st_fft[i] * st_win[i] * st_ola_scale;
+      idx += 1; idx >= st_n ? idx = 0;
+      i += 1;
+    );
+  );
+
+  st_fwr += 1; st_fwr >= ST_H ? st_fwr = 0;
+);
+
+function update_params() local(g1, k1, g2, k2, foc, sk_s) (
   sr_safe = max(8000, srate);
 
-  // Lookahead fisso 6.5 ms (max 2000 campioni); PDC dichiarato SOLO in @init/@slider
-  LA = max(16, min(2000, floor(sr_safe * 0.0065 + 0.5)));
-  LOOK_TRIG = max(4, min(LA - 8, floor(sr_safe * 0.0018 + 0.5)));
-  POST_START = max(LOOK_TRIG + 4, min(LA - 4, floor(sr_safe * 0.0042 + 0.5)));
-  POST_LEN = max(1, LA - POST_START);
+  // Calcolo Freq Skew continuo (-10..+10) con retrocompatibilita' per progetti che usavano slider5 (0/1/2)
+  foc = floor(slider5 + 0.5);
+  skew_eff = max(-10.0, min(10.0, slider22 + (foc == 1 ? -4.0 : foc == 2 ? 4.0 : 0.0)));
+  sk_s = skew_eff * 0.1;
+
+  stft_build_tables();
+
+  // Lookahead a valle per Macro Click + Attack Softener (~4.0 ms) + STFT (~10.67 ms) = PDC fisso ~14.7 ms @ 48 kHz
+  LA_POST = max(32, min(1024, floor(sr_safe * 0.0040 + 0.5)));
+  LA_TOT  = st_la + LA_POST;
+  LOOK_TRIG  = max(4, min(LA_POST - 8, floor(sr_safe * 0.0014 + 0.5)));
+  POST_START = max(LOOK_TRIG + 4, min(LA_POST - 4, floor(sr_safe * 0.0026 + 0.5)));
+  POST_LEN   = max(1, LA_POST - POST_START);
   inv_post_len = 1.0 / POST_LEN;
-  pdc_delay = LA;
+
+  pdc_delay = LA_TOT;
   pdc_bot_ch = 0;
   pdc_top_ch = 2;
 
-  LA != prev_la ? (
-    memset(0, 0, 18432);
-    ring_p = 0;
-    post_sum1 = 0; post_sum2 = 0; post_lo = 0;
-    prev_la = LA;
+  LA_TOT != prev_la ? (
+    dsp_reset_state();
+    prev_la = LA_TOT;
   );
 
   // Crossover SVF coerente di fase a 2 tagli (fc1 = Taglio Attacco, fc2 = 4200 Hz)
@@ -156,6 +486,7 @@ function update_params() local(g1, k1, g2, k2, foc) (
   c_at_att = 1.0 - exp(-1.0 / (sr_safe * 0.0008));
   c_at_rel = 1.0 - exp(-1.0 / (sr_safe * max(0.003, slider8 * 0.001)));
   c_ui_rel = 1.0 - exp(-1.0 / (sr_safe * 0.22));
+  c_mr_amt = 1.0 - exp(-1.0 / (sr_safe * 0.005));
   ck_cool_samples = floor(sr_safe * 0.028);
 
   ck_on = slider1 >= 0.5;
@@ -163,10 +494,17 @@ function update_params() local(g1, k1, g2, k2, foc) (
   ck_max_db = max(0, min(18, slider3));
   gw = max(0, min(100, slider4)) * 0.01;
   ck_thr_db = 16.0 - 0.10 * ck_sens;
-  foc = floor(slider5 + 0.5);
-  foc == 1 ? ( foc_w1 = 1.15; foc_w2 = 0.65; ) :
-  foc == 2 ? ( foc_w1 = 0.65; foc_w2 = 1.15; ) :
-             ( foc_w1 = 1.00; foc_w2 = 1.00; );
+  sk_s < 0 ? (
+    foc_w1 = 1.0 - 0.30 * sk_s; foc_w2 = 1.0 + 0.45 * sk_s;
+    mr_fw1 = 1.0 - 0.30 * sk_s; mr_fw2 = 1.0 + 0.45 * sk_s;
+  ) : (
+    foc_w1 = 1.0 - 0.45 * sk_s; foc_w2 = 1.0 + 0.30 * sk_s;
+    mr_fw1 = 1.0 - 0.45 * sk_s; mr_fw2 = 1.0 + 0.30 * sk_s;
+  );
+
+  mr_on = slider19 >= 0.5;
+  mr_amt_tgt = max(0, min(1, slider20 * 0.01));
+  mr_base_thr = 10.6 - 0.052 * ck_sens;
 
   att_on = slider6 >= 0.5;
   att_amt = max(0, min(100, slider7));
@@ -176,6 +514,7 @@ function update_params() local(g1, k1, g2, k2, foc) (
   ui_theme = floor(slider13 + 0.5);
 
   update_visibility();
+  last_srate = srate;
 );
 
 function set_param_silent(idx, v) (
@@ -190,21 +529,25 @@ function apply_preset(p) (
     set_param_silent(4, 55); set_param_silent(5, 0);
     set_param_silent(6, 1); set_param_silent(7, 20); set_param_silent(8, 8);
     set_param_silent(9, 1200); set_param_silent(10, 100);
+    set_param_silent(19, 1); set_param_silent(20, 65); set_param_silent(22, 0);
   ) : p == 2 ? (
     set_param_silent(1, 1); set_param_silent(2, 58); set_param_silent(3, 12);
     set_param_silent(4, 55); set_param_silent(5, 0);
     set_param_silent(6, 1); set_param_silent(7, 58); set_param_silent(8, 12);
     set_param_silent(9, 1200); set_param_silent(10, 100);
+    set_param_silent(19, 0); set_param_silent(20, 50); set_param_silent(22, 0);
   ) : p == 3 ? (
     set_param_silent(1, 1); set_param_silent(2, 76); set_param_silent(3, 16);
     set_param_silent(4, 35); set_param_silent(5, 0);
     set_param_silent(6, 1); set_param_silent(7, 62); set_param_silent(8, 12);
     set_param_silent(9, 1000); set_param_silent(10, 100);
+    set_param_silent(19, 1); set_param_silent(20, 85); set_param_silent(22, -2);
   ) : p == 4 ? (
     set_param_silent(1, 1); set_param_silent(2, 52); set_param_silent(3, 10);
     set_param_silent(4, 70); set_param_silent(5, 0);
     set_param_silent(6, 1); set_param_silent(7, 32); set_param_silent(8, 10);
     set_param_silent(9, 1400); set_param_silent(10, 100);
+    set_param_silent(19, 1); set_param_silent(20, 40); set_param_silent(22, 1);
   );
   set_param_silent(12, p);
   prev_osara_preset = p;
@@ -249,37 +592,70 @@ function zp_frame(x, y, w, h) (
 
 function set_palette() (
   ui_theme == 0 ? (
-    bg_r = 0.068; bg_g = 0.078; bg_b = 0.098;
-    card_r = 0.108; card_g = 0.120; card_b = 0.150;
-    card2_r = 0.145; card2_g = 0.162; card2_b = 0.200;
-    plot_r = 0.080; plot_g = 0.090; plot_b = 0.112;
-    line_r = 0.245; line_g = 0.275; line_b = 0.335;
-    txt_r = 0.925; txt_g = 0.942; txt_b = 0.962;
-    sub_r = 0.620; sub_g = 0.670; sub_b = 0.750;
-    knob_r = 0.165; knob_g = 0.180; knob_b = 0.215;
-    trk_r = 0.068; trk_g = 0.078; trk_b = 0.098;
-    c_coral_r = 0.98; c_coral_g = 0.42; c_coral_b = 0.36;
-    c_amber_r = 0.98; c_amber_g = 0.68; c_amber_b = 0.20;
-    c_cyan_r  = 0.30; c_cyan_g  = 0.78; c_cyan_b  = 0.96;
-    c_grn_r   = 0.32; c_grn_g   = 0.86; c_grn_b   = 0.56;
-    c_mag_r   = 0.94; c_mag_g   = 0.32; c_mag_b   = 0.58;
-    btn_txt_on_r = 0.05; btn_txt_on_g = 0.07; btn_txt_on_b = 0.09;
+    bg_r = 0.062; bg_g = 0.072; bg_b = 0.090;
+    card_r = 0.098; card_g = 0.112; card_b = 0.138;
+    card2_r = 0.135; card2_g = 0.152; card2_b = 0.186;
+    plot_r = 0.056; plot_g = 0.066; plot_b = 0.084;
+    line_r = 0.235; line_g = 0.268; line_b = 0.325;
+    txt_r = 0.935; txt_g = 0.950; txt_b = 0.972;
+    sub_r = 0.610; sub_g = 0.665; sub_b = 0.745;
+    knob_r = 0.145; knob_g = 0.162; knob_b = 0.195;
+    trk_r = 0.058; trk_g = 0.068; trk_b = 0.088;
+    c_coral_r = 0.96; c_coral_g = 0.42; c_coral_b = 0.34;
+    c_amber_r = 0.96; c_amber_g = 0.68; c_amber_b = 0.22;
+    c_cyan_r  = 0.28; c_cyan_g  = 0.78; c_cyan_b  = 0.95;
+    c_grn_r   = 0.30; c_grn_g   = 0.84; c_grn_b   = 0.54;
+    c_mag_r   = 0.94; c_mag_g   = 0.32; c_mag_b   = 0.56;
+    btn_txt_on_r = 0.96; btn_txt_on_g = 0.97; btn_txt_on_b = 0.99;
   ) : (
-    bg_r = 0.925; bg_g = 0.938; bg_b = 0.958;
-    card_r = 0.980; card_g = 0.985; card_b = 0.995;
-    card2_r = 0.895; card2_g = 0.915; card2_b = 0.945;
-    plot_r = 0.962; plot_g = 0.972; plot_b = 0.988;
-    line_r = 0.745; line_g = 0.785; line_b = 0.845;
-    txt_r = 0.115; txt_g = 0.145; txt_b = 0.195;
-    sub_r = 0.380; sub_g = 0.435; sub_b = 0.525;
-    knob_r = 0.995; knob_g = 0.995; knob_b = 1.000;
-    trk_r = 0.865; trk_g = 0.885; trk_b = 0.920;
-    c_coral_r = 0.84; c_coral_g = 0.24; c_coral_b = 0.18;
-    c_amber_r = 0.80; c_amber_g = 0.46; c_amber_b = 0.04;
+    bg_r = 0.905; bg_g = 0.920; bg_b = 0.942;
+    card_r = 0.965; card_g = 0.972; card_b = 0.985;
+    card2_r = 0.915; card2_g = 0.932; card2_b = 0.955;
+    plot_r = 0.940; plot_g = 0.952; plot_b = 0.972;
+    line_r = 0.720; line_g = 0.762; line_b = 0.822;
+    txt_r = 0.105; txt_g = 0.135; txt_b = 0.185;
+    sub_r = 0.365; sub_g = 0.420; sub_b = 0.505;
+    knob_r = 0.955; knob_g = 0.962; knob_b = 0.975;
+    trk_r = 0.835; trk_g = 0.860; trk_b = 0.898;
+    c_coral_r = 0.82; c_coral_g = 0.24; c_coral_b = 0.18;
+    c_amber_r = 0.80; c_amber_g = 0.46; c_amber_b = 0.05;
     c_cyan_r  = 0.08; c_cyan_g  = 0.50; c_cyan_b  = 0.78;
-    c_grn_r   = 0.08; c_grn_g   = 0.58; c_grn_b   = 0.36;
+    c_grn_r   = 0.08; c_grn_g   = 0.56; c_grn_b   = 0.34;
     c_mag_r   = 0.78; c_mag_g   = 0.16; c_mag_b   = 0.42;
-    btn_txt_on_r = 0.98; btn_txt_on_g = 0.99; btn_txt_on_b = 0.99;
+    btn_txt_on_r = 0.08; btn_txt_on_g = 0.10; btn_txt_on_b = 0.14;
+  );
+);
+
+function draw_hw_panel(x, y, w, h) (
+  gfx_set(card_r, card_g, card_b, 1); zp_rect(x, y, w, h);
+  gfx_set(1, 1, 1, ui_theme == 0 ? 0.05 : 0.45); zp_rect(x + 1, y + 1, w - 2, 1);
+  gfx_set(0, 0, 0, ui_theme == 0 ? 0.35 : 0.08); zp_rect(x + 1, y + h - 2, w - 2, 1);
+  gfx_set(line_r, line_g, line_b, 0.92); zp_frame(x, y, w, h);
+);
+
+function draw_hw_led(cx, cy, r, is_on, is_hov, cr, cg, cb) local(bzr, bzg, bzb, rmr, rmg, rmb, dr, dg, db) (
+  ui_theme == 1 ? (
+    bzr = 0.28; bzg = 0.33; bzb = 0.40; rmr = 0.58; rmg = 0.64; rmb = 0.72;
+  ) : (
+    bzr = 0.03; bzg = 0.04; bzb = 0.05; rmr = 0.34; rmg = 0.38; rmb = 0.45;
+  );
+  gfx_set(bzr, bzg, bzb, 0.98); zp_circle(cx, cy, r + 1.6, 1);
+  gfx_set(rmr, rmg, rmb, 0.82); zp_circle(cx, cy, r + 1.6, 0);
+  is_on ? (
+    gfx_set(cr, cg, cb, ui_theme == 1 ? 0.22 : 0.28); zp_circle(cx, cy, r + 3.8, 1);
+    gfx_set(cr, cg, cb, 0.42); zp_circle(cx, cy, r + 1.9, 1);
+    gfx_set(min(1, cr * 1.15 + 0.08), min(1, cg * 1.15 + 0.08), min(1, cb * 1.15 + 0.08), 1); zp_circle(cx, cy, r, 1);
+    gfx_set(min(1, cr * 0.45 + 0.55), min(1, cg * 0.45 + 0.55), min(1, cb * 0.45 + 0.55), 0.62); zp_circle(cx - r * 0.14, cy - r * 0.14, r * 0.46, 1);
+    gfx_set(1, 1, 1, 0.88); zp_circle(cx - r * 0.34, cy - r * 0.34, max(0.75, r * 0.22), 1);
+  ) : (
+    ui_theme == 1 ? (
+      dr = 0.22 + cr * 0.16; dg = 0.25 + cg * 0.16; db = 0.29 + cb * 0.16;
+    ) : (
+      dr = 0.07 + cr * 0.14; dg = 0.08 + cg * 0.14; db = 0.10 + cb * 0.14;
+    );
+    is_hov ? (dr = min(1, dr + 0.08); dg = min(1, dg + 0.08); db = min(1, db + 0.08););
+    gfx_set(dr, dg, db, 1); zp_circle(cx, cy, r, 1);
+    gfx_set(1, 1, 1, is_hov ? 0.34 : 0.22); zp_circle(cx - r * 0.32, cy - r * 0.32, max(0.65, r * 0.18), 1);
   );
 );
 
@@ -287,35 +663,58 @@ function set_param(idx, v) (
   slider(idx) = v;
   sliderchange(2 ^ (idx - 1));
   slider_automate(2 ^ (idx - 1));
-  idx >= 1 && idx <= 10 && slider12 != 0 ? (
+  idx == 22 && slider5 != 0 ? (
+    slider5 = 0; sliderchange(2 ^ 4);
+  );
+  ((idx >= 1 && idx <= 10) || idx == 19 || idx == 20 || idx == 22) && slider12 != 0 ? (
     slider12 = 0; prev_osara_preset = 0;
     sliderchange(2 ^ 11);
   );
   update_params();
 );
 
-function ui_btn(x, y, w, h, label, is_on, ar, ag, ab, hint, stage_id) local(hov, tw, th) (
+// Tasto hardware retroilluminato stile ZP Suite (barra LED superiore + bordo tattile)
+function ui_btn(x, y, w, h, label, is_on, ar, ag, ab, hint, stage_id) local(hov, tw, th, br, bg, bb, bar_h) (
   hov = zp_mx >= x && zp_mx <= x + w && zp_my >= y && zp_my <= y + h;
   hov ? strcpy(#hint, hint);
   hov && mouse_down && stage_id > 0 && delta_spring_armed ? ( ui_hold_delta_stage = stage_id; );
-  is_on ? (
-    gfx_set(ar, ag, ab, ui_theme == 0 ? 0.90 : 0.92);
-  ) : hov ? (
-    gfx_set(card2_r + (ui_theme == 0 ? 0.05 : -0.05), card2_g + (ui_theme == 0 ? 0.05 : -0.05), card2_b + (ui_theme == 0 ? 0.05 : -0.05), 1);
+  ui_theme == 1 ? (
+    is_on ? (
+      br = min(1, 0.83 + ar * 0.08); bg = min(1, 0.86 + ag * 0.08); bb = min(1, 0.90 + ab * 0.08);
+    ) : (
+      br = 0.93; bg = 0.95; bb = 0.97;
+    );
+    hov ? (br -= 0.04; bg -= 0.04; bb -= 0.04;);
   ) : (
-    gfx_set(card2_r, card2_g, card2_b, 1);
+    is_on ? (
+      br = 0.10 + ar * 0.09; bg = 0.12 + ag * 0.09; bb = 0.16 + ab * 0.09;
+    ) : (
+      br = card2_r - 0.01; bg = card2_g - 0.01; bb = card2_b - 0.01;
+    );
+    hov ? (br += 0.045; bg += 0.045; bb += 0.045;);
   );
-  zp_rect(x, y, w, h);
-  is_on ? gfx_set(ar, ag, ab, 1) : hov ? gfx_set(txt_r, txt_g, txt_b, 0.75) : gfx_set(line_r, line_g, line_b, 1);
+  gfx_set(br, bg, bb, 1); zp_rect(x, y, w, h);
+  bar_h = h < 20 ? 2 : 3;
+  is_on ? (
+    gfx_set(ar, ag, ab, 0.98); zp_rect(x + 1, y + 1, w - 2, bar_h);
+    gfx_set(ar, ag, ab, 0.16); zp_rect(x + 1, y + 1 + bar_h, w - 2, 2);
+  ) : (
+    gfx_set(ar * 0.35 + (ui_theme == 1 ? 0.30 : 0.06), ag * 0.35 + (ui_theme == 1 ? 0.32 : 0.07), ab * 0.35 + (ui_theme == 1 ? 0.35 : 0.08), hov ? 0.65 : 0.34);
+    zp_rect(x + 1, y + 1, w - 2, bar_h);
+  );
+  hov ? gfx_set(min(1, ar + 0.18), min(1, ag + 0.18), min(1, ab + 0.18), 0.92)
+      : is_on ? gfx_set(ar * 0.78, ag * 0.78, ab * 0.78, 0.86)
+              : gfx_set(line_r, line_g, line_b, 0.88);
   zp_frame(x, y, w, h);
-  zp_setfont(1, "Arial", 12, is_on ? 'b' : 0);
+  zp_setfont(1, "Arial", 11, is_on ? 'b' : 0);
   (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc);
-  zp_gx = x + (w - tw) * 0.5; zp_gy = y + (h - th) * 0.5;
-  is_on ? gfx_set(btn_txt_on_r, btn_txt_on_g, btn_txt_on_b, 1) : gfx_set(txt_r, txt_g, txt_b, 1);
+  zp_gx = x + (w - tw) * 0.5; zp_gy = y + (h - th) * 0.5 + 1.0;
+  is_on ? gfx_set(btn_txt_on_r, btn_txt_on_g, btn_txt_on_b, 1) : gfx_set(txt_r, txt_g, txt_b, hov ? 1.0 : 0.86);
   zp_drawstr(label);
   hov && btn_click;
 );
 
+// Pomello hardware tattile stile ZP Suite (anello incassato + arco LED + ghiera metallica)
 function ui_knob(idx, cx, cy, r, minv, maxv, defv, fmt_kind, label, ar, ag, ab, hint, stage_id) local(v, hov, n, sens, a, a0, a1, k, x1, y1, x2, y2, now, tw, th) (
   v = slider(idx);
   hov = zp_mx >= cx - r - 10 && zp_mx <= cx + r + 10 && zp_my >= cy - r - 16 && zp_my <= cy + r + 20;
@@ -335,7 +734,7 @@ function ui_knob(idx, cx, cy, r, minv, maxv, defv, fmt_kind, label, ar, ag, ab, 
       sens = (mouse_cap & 8) ? 450.0 : 150.0;
       n = kn_v + (kn_y - zp_my) * (maxv - minv) / sens;
       n = max(minv, min(maxv, n));
-      fmt_kind == 2 ? (n = floor(n * 2 + 0.5) * 0.5) :
+      fmt_kind == 2 || fmt_kind == 4 ? (n = floor(n * 2 + 0.5) * 0.5) :
       fmt_kind == 3 ? (n = floor(n / 10 + 0.5) * 10) :
                       (n = floor(n + 0.5));
       n != slider(idx) ? set_param(idx, n);
@@ -351,41 +750,64 @@ function ui_knob(idx, cx, cy, r, minv, maxv, defv, fmt_kind, label, ar, ag, ab, 
   a0 = 0.75 * $pi; a1 = 2.25 * $pi;
   a = a0 + (v - minv) / max(0.0001, maxv - minv) * (a1 - a0);
 
-  zp_setfont(1, "Arial", 11, 'b'); gfx_set(sub_r, sub_g, sub_b, 1);
+  zp_setfont(1, "Arial", 10, 'b'); gfx_set(sub_r, sub_g, sub_b, 1);
   (gfx_measurestr(label, tw, th); tw /= zp_sc; th /= zp_sc);
   zp_gx = cx - tw * 0.5; zp_gy = cy - r - 15; zp_drawstr(label);
 
-  (hov || kn_drag == idx) ? (gfx_set(ar, ag, ab, 0.14); zp_circle(cx, cy, r + 6, 1););
-  gfx_set(knob_r, knob_g, knob_b, 1); zp_circle(cx, cy, r, 1);
-  gfx_set(line_r, line_g, line_b, 1); zp_circle(cx, cy, r, 0);
+  // Ombra incassata + alone hover
+  (hov || kn_drag == idx) ? (gfx_set(ar, ag, ab, 0.16); zp_circle(cx, cy, r + 6.5, 1););
+  gfx_set(0, 0, 0, ui_theme == 0 ? 0.45 : 0.14); zp_circle(cx + 0.8, cy + 1.4, r + 2.5, 1);
 
+  // Traccia arco di fondo (spenta) + arco attivo LED
   k = 0;
-  loop(36,
-    x1 = a0 + (a - a0) * k / 36; x2 = a0 + (a - a0) * (k + 1) / 36;
-    gfx_set(ar, ag, ab, 1);
-    zp_line(cx + cos(x1) * (r - 2.5), cy + sin(x1) * (r - 2.5), cx + cos(x2) * (r - 2.5), cy + sin(x2) * (r - 2.5));
-    zp_line(cx + cos(x1) * (r - 3.5), cy + sin(x1) * (r - 3.5), cx + cos(x2) * (r - 3.5), cy + sin(x2) * (r - 3.5));
+  loop(28,
+    x1 = a0 + (a1 - a0) * k / 28; x2 = a0 + (a1 - a0) * (k + 1) / 28;
+    gfx_set(line_r, line_g, line_b, ui_theme == 0 ? 0.42 : 0.65);
+    zp_line(cx + cos(x1) * (r + 2.2), cy + sin(x1) * (r + 2.2), cx + cos(x2) * (r + 2.2), cy + sin(x2) * (r + 2.2));
     k += 1;
   );
-  gfx_set(txt_r, txt_g, txt_b, 0.95);
-  zp_line(cx + cos(a) * (r * 0.22), cy + sin(a) * (r * 0.22), cx + cos(a) * (r - 5), cy + sin(a) * (r - 5));
+  k = 0;
+  loop(32,
+    fmt_kind == 4 ? (
+      x1 = 1.5 * $pi + (a - 1.5 * $pi) * k / 32;
+      x2 = 1.5 * $pi + (a - 1.5 * $pi) * (k + 1) / 32;
+    ) : (
+      x1 = a0 + (a - a0) * k / 32;
+      x2 = a0 + (a - a0) * (k + 1) / 32;
+    );
+    gfx_set(ar, ag, ab, 0.95);
+    zp_line(cx + cos(x1) * (r + 2.2), cy + sin(x1) * (r + 2.2), cx + cos(x2) * (r + 2.2), cy + sin(x2) * (r + 2.2));
+    zp_line(cx + cos(x1) * (r + 1.2), cy + sin(x1) * (r + 1.2), cx + cos(x2) * (r + 1.2), cy + sin(x2) * (r + 1.2));
+    k += 1;
+  );
+
+  // Corpo manopola metallica + ghiera + riflesso
+  gfx_set(knob_r, knob_g, knob_b, 1); zp_circle(cx, cy, r - 1.5, 1);
+  gfx_set(ui_theme == 0 ? 0.24 : 0.82, ui_theme == 0 ? 0.27 : 0.85, ui_theme == 0 ? 0.32 : 0.89, 0.9); zp_circle(cx, cy, r - 1.5, 0);
+  gfx_set(ui_theme == 0 ? 0.10 : 0.88, ui_theme == 0 ? 0.11 : 0.90, ui_theme == 0 ? 0.14 : 0.93, 1); zp_circle(cx, cy, r - 4.5, 1);
+  gfx_set(1, 1, 1, ui_theme == 0 ? 0.08 : 0.55); zp_circle(cx - r * 0.18, cy - r * 0.20, r * 0.32, 1);
+
+  // Lancetta ad alto contrasto
+  gfx_set(txt_r, txt_g, txt_b, 0.96);
+  zp_line(cx + cos(a) * (r * 0.20), cy + sin(a) * (r * 0.20), cx + cos(a) * (r - 3.5), cy + sin(a) * (r - 3.5));
 
   fmt_kind == 0 ? sprintf(#kval, "%.0f%%", v) :
   fmt_kind == 1 ? sprintf(#kval, "%.1f dB", v) :
   fmt_kind == 2 ? sprintf(#kval, "%.1f ms", v) :
+  fmt_kind == 4 ? (v > 0.05 ? sprintf(#kval, "+%.1f AIR", v) : v < -0.05 ? sprintf(#kval, "%.1f LOW", v) : strcpy(#kval, "0.0 BAL")) :
                   sprintf(#kval, "%.0f Hz", v);
-  zp_setfont(1, "Arial", 11); gfx_set(txt_r, txt_g, txt_b, 1);
+  zp_setfont(1, "Arial", 11, 'b'); gfx_set(txt_r, txt_g, txt_b, 0.95);
   (gfx_measurestr(#kval, tw, th); tw /= zp_sc; th /= zp_sc);
-  zp_gx = cx - tw * 0.5; zp_gy = cy + r + 4; zp_drawstr(#kval);
+  zp_gx = cx - tw * 0.5; zp_gy = cy + r + 5; zp_drawstr(#kval);
 );
 
 function draw_help_overlay() local(px, py, pw, ph, cx, cy, hc, ly, tw, th) (
-  pw = min(790, zp_vw - 44); ph = min(450, zp_vh - 64);
-  px = floor((zp_vw - pw) * 0.5); py = 46;
+  pw = min(806, zp_vw - 36); ph = min(468, zp_vh - 52);
+  px = floor((zp_vw - pw) * 0.5); py = 40;
   gfx_set(0.03, 0.035, 0.048, 0.96); zp_rect(px, py, pw, ph);
   gfx_set(c_cyan_r, c_cyan_g, c_cyan_b, 1); zp_frame(px, py, pw, ph); zp_rect(px, py, pw, 3);
   zp_setfont(2, "Arial", 19, 'b'); gfx_set(0.94, 0.96, 0.98, 1);
-  zp_gx = px + 22; zp_gy = py + 15; zp_drawstr("ZP Click & Attack Softener (v0.1 LAB) - guida rapida");
+  zp_gx = px + 22; zp_gy = py + 15; zp_drawstr("ZP Click & Attack Softener (v1.4) - guida rapida");
 
   cx = px + pw - 42; cy = py + 14;
   hc = zp_mx >= cx && zp_mx <= cx + 26 && zp_my >= cy && zp_my <= cy + 26;
@@ -395,22 +817,91 @@ function draw_help_overlay() local(px, py, pw, ph, cx, cy, hc, ly, tw, th) (
   zp_gx = cx + (26 - tw) * 0.5; zp_gy = cy + (26 - th) * 0.5; zp_drawstr("X");
   hc && click ? (help_open = 0);
 
-  ly = py + 52; zp_setfont(1, "Arial", 13);
+  ly = py + 50; zp_setfont(1, "Arial", 13);
   gfx_set(0.96, 0.72, 0.34, 1);
-  zp_gx = px + 22; zp_gy = ly; zp_drawstr("DOVE METTERLO:   PRE-CHAIN prima di Magic Voice per togliere schiocchi puliti;   POST-CHAIN prima dell'uscita per ammorbidire attacchi duri."); ly += 28;
+  zp_gx = px + 22; zp_gy = ly; zp_drawstr("DOVE METTERLO:   PRE-CHAIN prima di Magic Voice per pulire click e micro-impulsi;   POST-CHAIN prima dell'uscita per smussare attacchi."); ly += 26;
   gfx_set(0.86, 0.88, 0.92, 1);
-  zp_gx = px + 22; zp_gy = ly; zp_drawstr("1 · DE-CLICK: rilevatore simmetrico pre/post con lookahead da 6,5 ms (PDC automatico). Cattura impulsi di 0,5-4 ms in due bande."); ly += 22;
-  zp_gx = px + 22; zp_gy = ly; zp_drawstr("Protezione Consonanti: frena il de-click quando subito dopo arriva una vocale (salva p/t/k buone). Focus: Bilanciato, Lingua 1-4k o Saliva 4k+."); ly += 28;
-  zp_gx = px + 22; zp_gy = ly; zp_drawstr("2 · ATTACK SOFTENER: smussa i primi millisecondi dell'attacco SOLO sopra la Freq. Taglio (crossover coerente di fase, basse e corpo intatti)."); ly += 28;
+  zp_gx = px + 22; zp_gy = ly; zp_drawstr("1A · MACRO CLICK: attenuatore simmetrico pre/post (0,5-4 ms) con Protezione Consonanti (p/t/k) e bilanciamento continuo Freq Skew."); ly += 24;
+  gfx_set(0.98, 0.76, 0.32, 1);
+  zp_gx = px + 22; zp_gy = ly; zp_drawstr("1B · MICRO-CLICK (STFT) + Freq Skew (Low <-> Air): negativo abbassa il pavimento fino a 380 Hz (click bassi/umidi), positivo spinge su Air (4-16k)."); ly += 21;
+  zp_gx = px + 22; zp_gy = ly; zp_drawstr("Attivabile ON/OFF e con rotore 'Micro %' (slider20) automatizzabile sulla traccia REAPER per intervenire solo dove serve (PDC fisso)."); ly += 26;
+  gfx_set(0.86, 0.88, 0.92, 1);
+  zp_gx = px + 22; zp_gy = ly; zp_drawstr("2 · ATTACK SOFTENER: smussa i primi millisecondi dell'attacco SOLO sopra la Freq. Taglio (crossover coerente di fase, corpo intatto)."); ly += 26;
   gfx_set(0.55, 0.90, 0.70, 1);
-  zp_gx = px + 22; zp_gy = ly; zp_drawstr("DELTA: ascolti tutto cio' che viene tolto dal suono (lampeggia e si spegne da solo dopo 30 s per sicurezza)."); ly += 22;
-  zp_gx = px + 22; zp_gy = ly; zp_drawstr("D·MOLLA: armalo, poi tieni premuto o trascina qualsiasi controllo di Stadio 1 o 2 per sentire SOLO lo scarto di quello stadio; al rilascio torna l'audio."); ly += 28;
+  zp_gx = px + 22; zp_gy = ly; zp_drawstr("DELTA: ascolti tutto cio' che viene tolto dal suono (lampeggia e si spegne da solo dopo 30 s per sicurezza)."); ly += 21;
+  zp_gx = px + 22; zp_gy = ly; zp_drawstr("D·MOLLA: armalo, poi tieni premuto/trascina un controllo di Macro Click, Micro-Click o Attack per ascoltare SOLO lo scarto di quello stadio."); ly += 26;
   gfx_set(0.65, 0.75, 0.86, 1);
-  zp_gx = px + 22; zp_gy = ly; zp_drawstr("Monitor in basso: le punte corallo mostrano i click tagliati, le onde ciano l'arrotondamento degli attacchi. Doppio clic/destro = default, Shift = fine."); ly += 22;
-  zp_gx = px + 22; zp_gy = ly; zp_drawstr("Vista JSFX espone tutti i controlli e le letture [Read] (Click GR, Attack GR, Click/s) per OSARA.");
+  zp_gx = px + 22; zp_gy = ly; zp_drawstr("Monitor: punte corallo = Macro Click, punte ambra = Micro-Click, onde ciano = Attack Softener. Doppio clic/destro = default, Shift = fine."); ly += 21;
+  zp_gx = px + 22; zp_gy = ly; zp_drawstr("Vista JSFX espone tutti i controlli e le letture [Read] (Macro Click GR, Micro-Click GR, Attack GR, Click/s) per OSARA.");
 );
 
 update_params();
+
+// ---- ZP Shared Bus v3 (telemetria multi-istanza a monte -> Master Pro) ----
+function zp3_boot() (
+  gmem[1000] != 905300 || gmem[1001] < 300 ? (
+    gmem[1000] = 905300;
+    gmem[1001] = 300;
+    gmem[1002] = 64;
+    gmem[1003] = 32;
+  );
+);
+function zp3_clear_slot() local(zp3_cb) (
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_cb = 1024 + zp3_slot * 32;
+    gmem[zp3_cb + 3] == zp3_prev_key ? (
+      gmem[zp3_cb] = 0;
+      gmem[zp3_cb + 2] = 0;
+    );
+  );
+  zp3_slot = -1;
+  zp3_prev_key = -1;
+);
+function zp3_claim(zp3_pt) local(zp3_now, zp3_key, zp3_h, zp3_i, zp3_s, zp3_b, zp3_m, zp3_found) (
+  zp3_boot();
+  zp3_now = time_precise();
+  zp3_fx = 0; zp3_hf = 0;
+  zp3_tr = get_host_placement(zp3_fx, zp3_hf);
+  zp3_key = max(0, zp3_tr + 2) * 1024 + max(0, zp3_fx) * 16 + zp3_pt;
+  zp3_prev_key >= 0 && zp3_prev_key != zp3_key ? zp3_clear_slot();
+  zp3_found = -1;
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_slot;);
+  );
+  zp3_found < 0 ? (
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_b = 1024 + zp3_i * 32;
+        gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_i;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_found < 0 ? (
+    zp3_h = (max(0, zp3_tr + 2) * 13 + max(0, zp3_fx) * 7 + zp3_pt * 3) % 64;
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_s = (zp3_h + zp3_i) % 64;
+        zp3_b = 1024 + zp3_s * 32;
+        zp3_m = gmem[zp3_b];
+        (zp3_m != 905301 || (zp3_now - gmem[zp3_b + 1]) > 2.5) ? (zp3_found = zp3_s;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_slot = zp3_found;
+  zp3_prev_key = zp3_key;
+  zp3_slot >= 0 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    zp3_seq = max(zp3_seq, floor(gmem[zp3_b + 2] + 0.5));
+    zp3_b;
+  ) : -1;
+);
+zp3_prev_key <= 0 ? (zp3_slot = -1; zp3_prev_key = -1;);
+zp3_boot();
 
 @slider
 osara_p = floor(slider12 + 0.5);
@@ -422,6 +913,11 @@ osara_p > 0 && osara_p != prev_osara_preset ? (
 );
 
 @block
+srate != last_srate ? (
+  dsp_reset_state();
+  prev_la = -1;
+  update_params();
+);
 blk_now = time_precise();
 // Auto-off DELTA globale dopo 30 s di inattivita' (anche a GUI chiusa)
 slider11 >= 0.5 ? (
@@ -454,38 +950,121 @@ blk_now - ck_rate_t >= 1.0 ? (
   slider16 = floor(ui_ck_hold * 10 + 0.5) * 0.1;
   slider17 = floor(ui_at_hold * 10 + 0.5) * 0.1;
   slider18 = min(60, ck_rate_disp);
+  slider21 = floor(ui_mr_hold * 10 + 0.5) * 0.1;
   sliderchange(2 ^ 15);
   sliderchange(2 ^ 16);
   sliderchange(2 ^ 17);
+  sliderchange(2 ^ 20);
+);
+
+zp3_b = zp3_claim(6);
+zp3_b >= 0 ? (
+  zp3_pk_db = mon_in_pk > 0.000001 ? 20 * log10(mon_in_pk) : -120;
+  zp3_ck_tot = max(slider1 >= 0.5 ? ui_ck_hold : 0, slider19 >= 0.5 ? ui_mr_hold : 0);
+  gmem[zp3_b + 3] = zp3_prev_key;
+  gmem[zp3_b + 4] = 6;
+  gmem[zp3_b + 5] = zp3_tr;
+  gmem[zp3_b + 6] = zp3_fx;
+  gmem[zp3_b + 7] = zp3_hf;
+  gmem[zp3_b + 8] = 0;
+  gmem[zp3_b + 9] = ((slider1 >= 0.5 || slider6 >= 0.5 || slider19 >= 0.5) ? 1 : 2)
+    + ((slider11 >= 0.5 || delta_spring_stage > 0) ? 4 : 0);
+  gmem[zp3_b + 10] = slider6 >= 0.5 ? ui_at_hold : 0;
+  gmem[zp3_b + 11] = zp3_ck_tot;
+  gmem[zp3_b + 12] = 0;
+  gmem[zp3_b + 13] = 0;
+  gmem[zp3_b + 14] = 0;
+  gmem[zp3_b + 15] = 0;
+  gmem[zp3_b + 16] = 0;
+  gmem[zp3_b + 17] = -120;
+  gmem[zp3_b + 18] = -120;
+  gmem[zp3_b + 19] = zp3_pk_db;
+  gmem[zp3_b + 20] = 0;
+  gmem[zp3_b + 21] = max(0, min(100, (zp3_pk_db + 55) * 2.5));
+  gmem[zp3_b + 22] = -1;
+  gmem[zp3_b + 23] = -99;
+  gmem[zp3_b + 24] = max(ui_ck_hold, ui_mr_hold);
+  gmem[zp3_b + 25] = ui_at_hold;
+  gmem[zp3_b + 26] = ck_rate_disp;
+  gmem[zp3_b + 27] = slider10;
+  gmem[zp3_b + 28] = slider1;
+  gmem[zp3_b + 29] = slider6;
+  gmem[zp3_b + 30] = ui_mr_hold;
+  gmem[zp3_b + 31] = slider19;
+  gmem[zp3_b] = 905301;
+  gmem[zp3_b + 1] = time_precise();
+  zp3_seq += 1;
+  gmem[zp3_b + 2] = zp3_seq;
 );
 
 @sample
 inL = spl0;
 inR = num_ch > 1 ? spl1 : spl0;
 
-// 1. Crossover SVF a 2 stadi coerente di fase (lo + md + hi === in)
-v3 = inL - ic21L; v1 = a1_1 * ic11L + a2_1 * v3; v2 = ic21L + a2_1 * ic11L + a3_1 * v3;
+// Smoothing continuo di Micro % per automazione in timeline priva di click/zipper
+mr_amt_s += c_mr_amt * (mr_amt_tgt - mr_amt_s);
+
+// 0A. Ring buffer Dry esatto (ritardo totale LA_TOT = st_la + LA_POST)
+d_dryL = r_rawL[raw_p];
+d_dryR = r_rawR[raw_p];
+r_rawL[raw_p] = inL;
+r_rawR[raw_p] = inR;
+
+// 0B. Stadio 1B: MICRO-CLICK spettrale STFT (ritardo esatto st_la campioni; bypass bit-exact quando OFF)
+mr_on ? (
+  svf_inL = st_outL[st_io_p];
+  svf_inR = st_outR[st_io_p];
+  st_outL[st_io_p] = 0;
+  st_outR[st_io_p] = 0;
+  st_inL[st_io_p] = inL;
+  st_inR[st_io_p] = inR;
+  st_hop_diff = max(st_hop_diff, abs(inL - inR));
+  st_io_p += 1; st_io_p >= st_n ? st_io_p = 0;
+  st_hop_cnt += 1;
+  st_hop_cnt >= st_hop ? (
+    st_hop_cnt = 0;
+    stft_process_hop(num_ch <= 1 || st_hop_diff < 0.0000005);
+    st_hop_diff = 0;
+  );
+) : (
+  // Bypass a zero CPU con lo stesso identico ritardo st_la campioni (zero salti di fase o PDC)
+  st_bp = raw_p - st_la; st_bp < 0 ? st_bp += LA_TOT;
+  svf_inL = r_rawL[st_bp];
+  svf_inR = r_rawR[st_bp];
+  // Mantiene comunque st_inL/R aggiornati per riaccensione pulita
+  st_inL[st_io_p] = inL;
+  st_inR[st_io_p] = inR;
+  st_outL[st_io_p] = 0;
+  st_outR[st_io_p] = 0;
+  st_io_p += 1; st_io_p >= st_n ? st_io_p = 0;
+  cur_mr_db = 0;
+);
+
+raw_p += 1; raw_p >= LA_TOT ? raw_p = 0;
+
+// 1. Crossover SVF coerente di fase a valle di Micro-Click (lo + md + hi === svf_in)
+v3 = svf_inL - ic21L; v1 = a1_1 * ic11L + a2_1 * v3; v2 = ic21L + a2_1 * ic11L + a3_1 * v3;
 ic11L = 2 * v1 - ic11L; ic21L = 2 * v2 - ic21L;
-loL = v2; hi1L = inL - loL;
+loL = v2; hi1L = svf_inL - loL;
 
 v3 = hi1L - ic22L; v1 = a1_2 * ic12L + a2_2 * v3; v2 = ic22L + a2_2 * ic12L + a3_2 * v3;
 ic12L = 2 * v1 - ic12L; ic22L = 2 * v2 - ic22L;
 mdL = v2; hiL = hi1L - mdL;
 
-v3 = inR - ic21R; v1 = a1_1 * ic11R + a2_1 * v3; v2 = ic21R + a2_1 * ic11R + a3_1 * v3;
+v3 = svf_inR - ic21R; v1 = a1_1 * ic11R + a2_1 * v3; v2 = ic21R + a2_1 * ic11R + a3_1 * v3;
 ic11R = 2 * v1 - ic11R; ic21R = 2 * v2 - ic21R;
-loR = v2; hi1R = inR - loR;
+loR = v2; hi1R = svf_inR - loR;
 
 v3 = hi1R - ic22R; v1 = a1_2 * ic12R + a2_2 * v3; v2 = ic22R + a2_2 * ic12R + a3_2 * v3;
 ic12R = 2 * v1 - ic12R; ic22R = 2 * v2 - ic22R;
 mdR = v2; hiR = hi1R - mdR;
 
-// 2. Lettura lookahead + manutenzione finestra post (+2.4..+4.7 ms oltre il trigger)
+// 2. Lookahead a valle (LA_POST campioni -> ritardo complessivo esatto = LA_TOT)
 d_loL = r_loL[ring_p]; d_mdL = r_mdL[ring_p]; d_hiL = r_hiL[ring_p];
 d_loR = r_loR[ring_p]; d_mdR = r_mdR[ring_p]; d_hiR = r_hiR[ring_p];
 
-pt = ring_p + LOOK_TRIG; pt >= LA ? pt -= LA;
-ps = ring_p + POST_START; ps >= LA ? ps -= LA;
+pt = ring_p + LOOK_TRIG; pt >= LA_POST ? pt -= LA_POST;
+ps = ring_p + POST_START; ps >= LA_POST ? ps -= LA_POST;
 t_loL = r_loL[pt]; t_mdL = r_mdL[pt]; t_hiL = r_hiL[pt];
 t_loR = r_loR[pt]; t_mdR = r_mdR[pt]; t_hiR = r_hiR[pt];
 
@@ -494,14 +1073,13 @@ ah_new = max(abs(hiL), abs(hiR));
 al_new = max(abs(loL), abs(loR));
 
 ring_p == 0 ? (
-  // Azzeramento di deriva periodico ogni giro dell'anello
   post_sum1 = 0; post_sum2 = 0; post_lo = 0;
   pj = POST_START;
   loop(POST_LEN,
     post_sum1 += r_am[pj];
     post_sum2 += r_ah[pj];
     post_lo   += r_al[pj];
-    pj += 1; pj >= LA ? pj = 0;
+    pj += 1; pj >= LA_POST ? pj = 0;
   );
 );
 post_sum1 += am_new - r_am[ps];
@@ -514,9 +1092,9 @@ plo   = max(0, post_lo)   * inv_post_len;
 r_loL[ring_p] = loL; r_mdL[ring_p] = mdL; r_hiL[ring_p] = hiL;
 r_loR[ring_p] = loR; r_mdR[ring_p] = mdR; r_hiR[ring_p] = hiR;
 r_am[ring_p] = am_new; r_ah[ring_p] = ah_new; r_al[ring_p] = al_new;
-ring_p += 1; ring_p >= LA ? ring_p = 0;
+ring_p += 1; ring_p >= LA_POST ? ring_p = 0;
 
-// 3. Stadio 1: DE-CLICK simmetrico pre/post + protezione consonanti
+// 3. Stadio 1A: MACRO CLICK simmetrico pre/post + protezione consonanti
 am = max(abs(t_mdL), abs(t_mdR));
 ah = max(abs(t_hiL), abs(t_hiR));
 f1 += c_fck * (am - f1); s1 += c_sck * (am - s1);
@@ -568,12 +1146,15 @@ cur_ck_db = max(0, -log(max(TINY7, min(g_ck1, g_ck2))) * LN10_20);
 cur_at_db = max(0, -log(max(TINY7, g_att)) * LN10_20);
 ui_ck_gr = max(cur_ck_db, ui_ck_gr * (1 - c_ui_rel));
 ui_at_gr = max(cur_at_db, ui_at_gr * (1 - c_ui_rel));
+ui_mr_gr = max(cur_mr_db, ui_mr_gr * (1 - c_ui_rel));
 ui_ck_hold = max(cur_ck_db, ui_ck_hold * (1 - c_ui_rel * 0.45));
 ui_at_hold = max(cur_at_db, ui_at_hold * (1 - c_ui_rel * 0.45));
+ui_mr_hold = max(cur_mr_db, ui_mr_hold * (1 - c_ui_rel * 0.45));
 
 mon_ck_pk = max(mon_ck_pk, cur_ck_db);
 mon_at_pk = max(mon_at_pk, cur_at_db);
-mon_in_pk = max(mon_in_pk, max(abs(d_loL + d_mdL + d_hiL), abs(d_loR + d_mdR + d_hiR)));
+mon_mr_pk = max(mon_mr_pk, cur_mr_db);
+mon_in_pk = max(mon_in_pk, max(abs(d_dryL), abs(d_dryR)));
 
 ck_cool_spl > 0 ? (ck_cool_spl -= 1);
 (cur_ck_db > 2.5 && !ck_prev_trig && ck_cool_spl <= 0) ? (
@@ -582,17 +1163,20 @@ ck_cool_spl > 0 ? (ck_cool_spl -= 1);
 );
 ck_prev_trig = cur_ck_db > 2.5;
 
-// 6. Ricombinazione e instradamento Mix / DELTA globale / D·MOLLA per stadio
-d_dryL = d_loL + d_mdL + d_hiL;
-d_dryR = d_loR + d_mdR + d_hiR;
+// 6. Ricombinazione al campione e instradamento Mix / DELTA globale / D·MOLLA (1=Macro, 2=Attack, 3=Globale, 4=Micro)
+mrep_outL = d_loL + d_mdL + d_hiL;
+mrep_outR = d_loR + d_mdR + d_hiR;
 ck_outL = d_loL + d_mdL * g_ck1 + d_hiL * g_ck2;
 ck_outR = d_loR + d_mdR * g_ck1 + d_hiR * g_ck2;
 wetL = d_loL + d_mdL * (g_ck1 * g_att) + d_hiL * (g_ck2 * g_att);
 wetR = d_loR + d_mdR * (g_ck1 * g_att) + d_hiR * (g_ck2 * g_att);
 
-delta_spring_stage == 1 ? (
-  outL = d_dryL - ck_outL;
-  outR = d_dryR - ck_outR;
+delta_spring_stage == 4 ? (
+  outL = d_dryL - mrep_outL;
+  outR = d_dryR - mrep_outR;
+) : delta_spring_stage == 1 ? (
+  outL = mrep_outL - ck_outL;
+  outR = mrep_outR - ck_outR;
 ) : delta_spring_stage == 2 ? (
   outL = ck_outL - wetL;
   outR = ck_outR - wetR;
@@ -631,40 +1215,42 @@ time_now - hist_t >= 0.033 ? (
   h_in[hist_pos] = min(1, max(0, (log(max(TINY7, mon_in_pk)) * LN10_20 + 48) / 48));
   h_ck[hist_pos] = min(18, mon_ck_pk);
   h_at[hist_pos] = min(12, mon_at_pk);
+  h_mr[hist_pos] = min(18, mon_mr_pk);
   hist_pos += 1; hist_pos >= HIST_N ? hist_pos = 0;
-  mon_ck_pk = 0; mon_at_pk = 0; mon_in_pk = 0;
+  mon_ck_pk = 0; mon_at_pk = 0; mon_mr_pk = 0; mon_in_pk = 0;
 );
 
-// ---- Testata ----
+// ---- Testata (stile hardware ZP Suite) ----
+draw_hw_panel(0, 0, zp_vw, 42);
+gfx_set(c_cyan_r, c_cyan_g, c_cyan_b, 0.95); zp_rect(0, 0, zp_vw, 2);
 zp_setfont(2, "Arial", 17, 'b'); gfx_set(txt_r, txt_g, txt_b, 1);
 zp_gx = 14; zp_gy = 11; zp_drawstr("ZP Click & Attack Softener");
-gfx_set(card2_r, card2_g, card2_b, 1); zp_rect(256, 13, 62, 20);
-gfx_set(c_cyan_r, c_cyan_g, c_cyan_b, 0.8); zp_frame(256, 13, 62, 20);
+gfx_set(card2_r, card2_g, card2_b, 1); zp_rect(256, 13, 46, 18);
+gfx_set(c_cyan_r, c_cyan_g, c_cyan_b, 0.75); zp_frame(256, 13, 46, 18);
 zp_setfont(1, "Arial", 10, 'b'); gfx_set(c_cyan_r, c_cyan_g, c_cyan_b, 1);
-(gfx_measurestr("v0.1 LAB", tw, th); tw /= zp_sc; th /= zp_sc);
-zp_gx = 256 + (62 - tw) * 0.5; zp_gy = 13 + (20 - th) * 0.5; zp_drawstr("v0.1 LAB");
+(gfx_measurestr("v1.4", tw, th); tw /= zp_sc; th /= zp_sc);
+zp_gx = 256 + (46 - tw) * 0.5; zp_gy = 13 + (18 - th) * 0.5; zp_drawstr("v1.4");
 
-ui_btn(676, 10, 62, 26, ui_theme == 0 ? "Scuro" : "Chiaro", ui_theme == 1, c_cyan_r, c_cyan_g, c_cyan_b,
+ui_btn(676, 8, 62, 26, ui_theme == 0 ? "CHIARO" : "SCURO", ui_theme == 1, c_cyan_r, c_cyan_g, c_cyan_b,
   "Alterna tema cromatico Scuro e Chiaro.", 0) ? set_param(13, ui_theme == 0 ? 1 : 0);
-ui_btn(744, 10, 72, 26, slider14 >= 0.5 ? "JSFX" : "GUI", slider14 >= 0.5, c_grn_r, c_grn_g, c_grn_b,
+ui_btn(744, 8, 72, 26, slider14 >= 0.5 ? "JSFX" : "GUI", slider14 >= 0.5, c_grn_r, c_grn_g, c_grn_b,
   "Mostra o nasconde gli slider nativi di REAPER e le letture [Read] per OSARA.", 0) ? set_param(14, slider14 >= 0.5 ? 0 : 1);
 btn_click = click;
-ui_btn(822, 10, 24, 26, "?", help_open, c_amber_r, c_amber_g, c_amber_b,
+ui_btn(822, 8, 24, 26, "?", help_open, c_amber_r, c_amber_g, c_amber_b,
   "Apre la guida rapida di ZP Click & Attack Softener.", 0) ? (help_open = !help_open);
 btn_click = click && !help_open;
 
 // ---- Barra Preset + DELTA / D·MOLLA ----
-gfx_set(card_r, card_g, card_b, 1); zp_rect(14, 48, 832, 36);
-gfx_set(line_r, line_g, line_b, 1); zp_frame(14, 48, 832, 36);
+draw_hw_panel(14, 48, 832, 36);
 cur_p = floor(slider12 + 0.5);
 ui_btn(22,  54, 104, 24, "PRE-CHAIN",   cur_p == 1, c_coral_r, c_coral_g, c_coral_b,
-  "Prima di Magic Voice: priorita' alla rimozione schiocchi sul suono pulito.", 0) ? apply_preset(1);
+  "Prima di Magic Voice: Macro Click + Micro-Click spettrale (65%) per pulizia chirurgica sul pulito.", 0) ? apply_preset(1);
 ui_btn(132, 54, 110, 24, "POST-CHAIN",  cur_p == 2, c_cyan_r,  c_cyan_g,  c_cyan_b,
-  "Dopo il processo, prima dell'uscita: ammorbidisce gli attacchi esaltati.", 0) ? apply_preset(2);
+  "Dopo il processo, prima dell'uscita: ammorbidisce gli attacchi esaltati (Micro-Click OFF).", 0) ? apply_preset(2);
 ui_btn(248, 54, 112, 24, "TAKE SPORCO", cur_p == 3, c_amber_r, c_amber_g, c_amber_b,
-  "Taratura piu' incisiva per take ricchi di schiocchi di saliva e attacchi secchi.", 0) ? apply_preset(3);
+  "Taratura incisiva con Micro-Click all'85% per riprese ricche di micro-impulsi nelle consonanti.", 0) ? apply_preset(3);
 ui_btn(366, 54, 96,  24, "DELICATO",    cur_p == 4, c_grn_r,   c_grn_g,   c_grn_b,
-  "Intervento leggero per voiceover gia' pulito o lettura intima broadcast.", 0) ? apply_preset(4);
+  "Intervento leggero (Micro-Click 40%) per voiceover gia' pulito o lettura intima broadcast.", 0) ? apply_preset(4);
 
 gfx_set(line_r, line_g, line_b, 0.75); zp_line(640, 53, 640, 79);
 
@@ -677,7 +1263,7 @@ delta_on_ui ? (
   );
 ) : (
   ui_btn(652, 54, 88, 24, "DELTA", 0, c_mag_r, c_mag_g, c_mag_b,
-    "Attiva il DELTA globale (auto-off a 30 s) per ascoltare click e attacchi rimossi.", 0) ? (
+    "Attiva il DELTA globale (auto-off a 30 s) per ascoltare Macro Click, Micro-Click e attacchi rimossi.", 0) ? (
     set_param(11, 1);
     delta_arm_time = time_now;
     delta_spring_armed = 0; delta_spring_stage = 0; ui_hold_delta_stage = 0;
@@ -685,7 +1271,7 @@ delta_on_ui ? (
 );
 
 ui_btn(748, 54, 90, 24, "D·MOLLA", delta_spring_armed, delta_spring_stage > 0 ? c_amber_r : c_mag_r, delta_spring_stage > 0 ? c_amber_g : c_mag_g, delta_spring_stage > 0 ? c_amber_b : c_mag_b,
-  "Delta a molla: armalo, poi tocca/trascina un controllo di Stadio 1 o 2 per isolarne lo scarto.", 0) ? (
+  "Delta a molla: armalo, poi tocca/trascina un controllo di Macro Click, Micro-Click o Attack per isolarne lo scarto.", 0) ? (
   delta_spring_armed = !delta_spring_armed;
   delta_spring_armed ? (
     delta_spring_time = time_now;
@@ -695,93 +1281,137 @@ ui_btn(748, 54, 90, 24, "D·MOLLA", delta_spring_armed, delta_spring_stage > 0 ?
   );
 );
 
-// ---- Pannello 1: DE-CLICK ----
-gfx_set(card_r, card_g, card_b, 1); zp_rect(14, 92, 444, 192);
-gfx_set(line_r, line_g, line_b, 1); zp_frame(14, 92, 444, 192);
+// ---- Pannello 1: MACRO CLICK + MICRO-CLICK (Spettrale) ----
+draw_hw_panel(14, 92, 472, 192);
 gfx_set(slider1 >= 0.5 ? c_coral_r : line_r, slider1 >= 0.5 ? c_coral_g : line_g, slider1 >= 0.5 ? c_coral_b : line_b, 0.95);
-zp_rect(14, 92, 444, 3);
+zp_rect(14, 92, 234, 3);
+gfx_set(slider19 >= 0.5 ? c_amber_r : line_r, slider19 >= 0.5 ? c_amber_g : line_g, slider19 >= 0.5 ? c_amber_b : line_b, 0.95);
+zp_rect(248, 92, 238, 3);
 
-ui_btn(24, 100, 52, 22, slider1 >= 0.5 ? "ON" : "OFF", slider1 >= 0.5, c_coral_r, c_coral_g, c_coral_b,
-  "Attiva o bypassa lo stadio De-Click.", 1) ? set_param(1, slider1 >= 0.5 ? 0 : 1);
-zp_setfont(2, "Arial", 13, 'b'); gfx_set(txt_r, txt_g, txt_b, 1);
-zp_gx = 84; zp_gy = 103; zp_drawstr("1 · DE-CLICK  Schiocchi Lingua");
+// LED gioiello cliccabile + titolo 1 · MACRO CLICK
+led1_hov = zp_mx >= 22 && zp_mx <= 44 && zp_my >= 100 && zp_my <= 122;
+led1_hov ? strcpy(#hint, "Clic per attivare o bypassare lo stadio 1A Macro Click (impulsi macro 0,5-4 ms).");
+led1_hov && mouse_down && delta_spring_armed ? (ui_hold_delta_stage = 1;);
+draw_hw_led(33, 111, 5.0, slider1 >= 0.5, led1_hov, c_coral_r, c_coral_g, c_coral_b);
+led1_hov && btn_click ? set_param(1, slider1 >= 0.5 ? 0 : 1);
+zp_setfont(2, "Arial", 13, 'b'); gfx_set(txt_r, txt_g, txt_b, slider1 >= 0.5 ? 1 : 0.55);
+zp_gx = 46; zp_gy = 103; zp_drawstr("1 · MACRO CLICK");
 sprintf(#g1s, "-%.1f dB", ui_ck_hold);
-zp_setfont(1, "Arial", 12, 'b'); gfx_set(ui_ck_hold > 0.3 ? c_coral_r : sub_r, ui_ck_hold > 0.3 ? c_coral_g : sub_g, ui_ck_hold > 0.3 ? c_coral_b : sub_b, 1);
+zp_setfont(1, "Arial", 11, 'b'); gfx_set(ui_ck_hold > 0.3 ? c_coral_r : sub_r, ui_ck_hold > 0.3 ? c_coral_g : sub_g, ui_ck_hold > 0.3 ? c_coral_b : sub_b, 1);
 (gfx_measurestr(#g1s, tw, th); tw /= zp_sc; th /= zp_sc);
-zp_gx = 448 - tw; zp_gy = 104; zp_drawstr(#g1s);
+zp_gx = 238 - tw; zp_gy = 105; zp_drawstr(#g1s);
 
-ui_knob(2, 76,  166, 20, 0, 100, 62, 0, "Sensibilita'", c_coral_r, c_coral_g, c_coral_b,
-  "Piu' alto = intercetta anche micro-schiocchi leggeri.", 1);
-ui_knob(3, 172, 166, 20, 0, 18,  14, 1, "Max Cut",      c_coral_r, c_coral_g, c_coral_b,
-  "Massima attenuazione applicata sulla banda del singolo schiocco.", 1);
-ui_knob(4, 268, 166, 20, 0, 100, 55, 0, "Prot. Cons.",  c_coral_r, c_coral_g, c_coral_b,
-  "Protezione consonanti (p/t/k): richiede che lo schiocco scenda prima della vocale.", 1);
+gfx_set(line_r, line_g, line_b, 0.7); zp_line(246, 100, 246, 122);
+mr_on_ui = slider19 >= 0.5;
+// LED gioiello cliccabile + pulsante MICRO-CLICK
+led4_hov = zp_mx >= 254 && zp_mx <= 274 && zp_my >= 100 && zp_my <= 122;
+led4_hov ? strcpy(#hint, "Clic per attivare o spegnere MICRO-CLICK spettrale (>1 kHz, zero micro-distorsioni).");
+led4_hov && mouse_down && delta_spring_armed ? (ui_hold_delta_stage = 4;);
+draw_hw_led(264, 111, 5.0, mr_on_ui, led4_hov, c_amber_r, c_amber_g, c_amber_b);
+led4_hov && btn_click ? set_param(19, mr_on_ui ? 0 : 1);
+ui_btn(278, 100, 104, 22, mr_on_ui ? "MICRO-CLICK" : "MICRO: OFF", mr_on_ui, c_amber_r, c_amber_g, c_amber_b,
+  "Attiva il motore spettrale STFT (>1 kHz) per i micro-impulsi dentro e ai bordi delle consonanti.", 4) ? set_param(19, mr_on_ui ? 0 : 1);
+sprintf(#g4s, "-%.1f dB", ui_mr_hold);
+zp_setfont(1, "Arial", 11, 'b'); gfx_set((mr_on_ui && ui_mr_hold > 0.3) ? c_amber_r : sub_r, (mr_on_ui && ui_mr_hold > 0.3) ? c_amber_g : sub_g, (mr_on_ui && ui_mr_hold > 0.3) ? c_amber_b : sub_b, 1);
+(gfx_measurestr(#g4s, tw, th); tw /= zp_sc; th /= zp_sc);
+zp_gx = 476 - tw; zp_gy = 105; zp_drawstr(#g4s);
+
+ui_knob(2, 58,  166, 19, 0, 100, 62, 0, "Sensibilita'", c_coral_r, c_coral_g, c_coral_b,
+  "Sensibilita' rilevamento (guida sia Macro Click sia la soglia spettrale di Micro-Click).", 1);
+ui_knob(3, 132, 166, 19, 0, 18,  14, 1, "Max Cut",      c_coral_r, c_coral_g, c_coral_b,
+  "Massima attenuazione applicata dallo stadio Macro Click.", 1);
+ui_knob(4, 206, 166, 19, 0, 100, 55, 0, "Prot. Cons.",  c_coral_r, c_coral_g, c_coral_b,
+  "Protezione consonanti esplosive (p/t/k) su Macro Click e Micro-Click.", 1);
+
+gfx_set(line_r, line_g, line_b, 0.7); zp_line(246, 134, 246, 220);
+
+ui_knob(20, 296, 166, 19, 0, 100, 65, 0, "Micro %",
+  mr_on_ui ? c_amber_r : sub_r, mr_on_ui ? c_amber_g : sub_g, mr_on_ui ? c_amber_b : sub_b,
+  "Intensita' Micro-Click spettrale (slider20): automatizzabile in REAPER per agire solo dove serve!", 4);
+zp_setfont(1, "Arial", 9); gfx_set(mr_on_ui ? c_amber_r : sub_r, mr_on_ui ? c_amber_g : sub_g, mr_on_ui ? c_amber_b : sub_b, 0.85);
+(gfx_measurestr("autom.", tw, th); tw /= zp_sc; th /= zp_sc);
+zp_gx = 296 - tw * 0.5; zp_gy = 205; zp_drawstr("autom.");
+
+gfx_set(line_r, line_g, line_b, 0.7); zp_line(348, 134, 348, 220);
+
+sk_col_r = skew_eff > 0.05 ? c_cyan_r : skew_eff < -0.05 ? c_coral_r : c_amber_r;
+sk_col_g = skew_eff > 0.05 ? c_cyan_g : skew_eff < -0.05 ? c_coral_g : c_amber_g;
+sk_col_b = skew_eff > 0.05 ? c_cyan_b : skew_eff < -0.05 ? c_coral_b : c_amber_b;
+ui_knob(22, 414, 166, 19, -10, 10, 0, 4, "Freq Skew", sk_col_r, sk_col_g, sk_col_b,
+  "Bilanciamento continuo Low <-> Air (-10..+10): negativo scende fino a 380 Hz (click bassi/umidi), positivo spinge su Air (4-16 kHz).", mr_on_ui ? 4 : 1);
+mr_floor_hz >= 1000 ? sprintf(#skhz, "da %.1f kHz", mr_floor_hz * 0.001) : sprintf(#skhz, "da %.0f Hz", mr_floor_hz);
+zp_setfont(1, "Arial", 9); gfx_set(sub_r, sub_g, sub_b, 0.9);
+(gfx_measurestr(#skhz, tw, th); tw /= zp_sc; th /= zp_sc);
+zp_gx = 414 - tw * 0.5; zp_gy = 205; zp_drawstr(#skhz);
 
 zp_setfont(1, "Arial", 10, 'b'); gfx_set(sub_r, sub_g, sub_b, 1);
-zp_gx = 324; zp_gy = 132; zp_drawstr("FOCUS BANDA");
-foc_cur = floor(slider5 + 0.5);
-ui_btn(324, 148, 124, 22, "Bilanciato",  foc_cur == 0, c_coral_r, c_coral_g, c_coral_b,
-  "Agisce in modo uguale su schiocchi di lingua (1-4 kHz) e saliva acuta (4k+).", 1) ? set_param(5, 0);
-ui_btn(324, 174, 124, 22, "Lingua 1-4k", foc_cur == 1, c_coral_r, c_coral_g, c_coral_b,
-  "Privilegia gli schiocchi medio-alti di palato e lingua (1-4 kHz).", 1) ? set_param(5, 1);
-ui_btn(324, 200, 124, 22, "Saliva 4k+",  foc_cur == 2, c_coral_r, c_coral_g, c_coral_b,
-  "Privilegia i micro-ticchetti secchi sopra i 4 kHz.", 1) ? set_param(5, 2);
-
-zp_setfont(1, "Arial", 10, 'b'); gfx_set(sub_r, sub_g, sub_b, 1);
-zp_gx = 24; zp_gy = 236; zp_drawstr("RIDUZIONE CLICK (0..18 dB)");
-gfx_set(trk_r, trk_g, trk_b, 1); zp_rect(24, 252, 424, 12);
-gfx_set(line_r, line_g, line_b, 1); zp_frame(24, 252, 424, 12);
-ck_w = min(422, max(0, (ui_ck_gr / 18.0) * 422));
+zp_gx = 24; zp_gy = 236; zp_drawstr("MACRO CLICK (0..18 dB)");
+gfx_set(trk_r, trk_g, trk_b, 1); zp_rect(24, 252, 214, 12);
+gfx_set(line_r, line_g, line_b, 1); zp_frame(24, 252, 214, 12);
+ck_w = min(212, max(0, (ui_ck_gr / 18.0) * 212));
 ck_w > 0 ? (gfx_set(c_coral_r, c_coral_g, c_coral_b, 0.92); zp_rect(25, 253, ck_w, 10););
-ck_hw = min(422, max(0, (ui_ck_hold / 18.0) * 422));
+ck_hw = min(212, max(0, (ui_ck_hold / 18.0) * 212));
 ck_hw > 1 ? (gfx_set(c_amber_r, c_amber_g, c_amber_b, 1); zp_rect(25 + ck_hw - 1, 251, 2, 14););
 
-// ---- Pannello 2: ATTACK SOFTENER ----
-gfx_set(card_r, card_g, card_b, 1); zp_rect(468, 92, 378, 192);
-gfx_set(line_r, line_g, line_b, 1); zp_frame(468, 92, 378, 192);
-gfx_set(slider6 >= 0.5 ? c_cyan_r : line_r, slider6 >= 0.5 ? c_cyan_g : line_g, slider6 >= 0.5 ? c_cyan_b : line_b, 0.95);
-zp_rect(468, 92, 378, 3);
+zp_setfont(1, "Arial", 10, 'b'); gfx_set(mr_on_ui ? txt_r : sub_r, mr_on_ui ? txt_g : sub_g, mr_on_ui ? txt_b : sub_b, mr_on_ui ? 0.9 : 0.65);
+zp_gx = 254; zp_gy = 236; zp_drawstr("MICRO-CLICK (0..18 dB)");
+gfx_set(trk_r, trk_g, trk_b, 1); zp_rect(254, 252, 222, 12);
+gfx_set(line_r, line_g, line_b, 1); zp_frame(254, 252, 222, 12);
+mr_w = min(220, max(0, (ui_mr_gr / 18.0) * 220));
+mr_w > 0 ? (gfx_set(c_amber_r, c_amber_g, c_amber_b, 0.94); zp_rect(255, 253, mr_w, 10););
+mr_hw_px = min(220, max(0, (ui_mr_hold / 18.0) * 220));
+mr_hw_px > 1 ? (gfx_set(c_coral_r, c_coral_g, c_coral_b, 1); zp_rect(255 + mr_hw_px - 1, 251, 2, 14););
 
-ui_btn(478, 100, 52, 22, slider6 >= 0.5 ? "ON" : "OFF", slider6 >= 0.5, c_cyan_r, c_cyan_g, c_cyan_b,
-  "Attiva o bypassa lo stadio Attack Softener.", 2) ? set_param(6, slider6 >= 0.5 ? 0 : 1);
-zp_setfont(2, "Arial", 13, 'b'); gfx_set(txt_r, txt_g, txt_b, 1);
-zp_gx = 538; zp_gy = 103; zp_drawstr("2 · ATTACK SOFTENER");
+// ---- Pannello 2: ATTACK SOFTENER ----
+draw_hw_panel(496, 92, 350, 192);
+gfx_set(slider6 >= 0.5 ? c_cyan_r : line_r, slider6 >= 0.5 ? c_cyan_g : line_g, slider6 >= 0.5 ? c_cyan_b : line_b, 0.95);
+zp_rect(496, 92, 350, 3);
+
+// LED gioiello cliccabile + titolo 2 · ATTACK SOFTENER
+led2_hov = zp_mx >= 504 && zp_mx <= 526 && zp_my >= 100 && zp_my <= 122;
+led2_hov ? strcpy(#hint, "Clic per attivare o bypassare lo stadio 2 Attack Softener.");
+led2_hov && mouse_down && delta_spring_armed ? (ui_hold_delta_stage = 2;);
+draw_hw_led(515, 111, 5.0, slider6 >= 0.5, led2_hov, c_cyan_r, c_cyan_g, c_cyan_b);
+led2_hov && btn_click ? set_param(6, slider6 >= 0.5 ? 0 : 1);
+zp_setfont(2, "Arial", 13, 'b'); gfx_set(txt_r, txt_g, txt_b, slider6 >= 0.5 ? 1 : 0.55);
+zp_gx = 528; zp_gy = 103; zp_drawstr("2 · ATTACK SOFTENER");
 sprintf(#g2s, "-%.1f dB", ui_at_hold);
 zp_setfont(1, "Arial", 12, 'b'); gfx_set(ui_at_hold > 0.3 ? c_cyan_r : sub_r, ui_at_hold > 0.3 ? c_cyan_g : sub_g, ui_at_hold > 0.3 ? c_cyan_b : sub_b, 1);
 (gfx_measurestr(#g2s, tw, th); tw /= zp_sc; th /= zp_sc);
 zp_gx = 836 - tw; zp_gy = 104; zp_drawstr(#g2s);
 
-ui_knob(7,  516, 166, 20, 0,    100,  40,   0, "Soften",   c_cyan_r, c_cyan_g, c_cyan_b,
+ui_knob(7,  540, 166, 19, 0,    100,  40,   0, "Soften",   c_cyan_r, c_cyan_g, c_cyan_b,
   "Quanto smussa i primi millisecondi dell'attacco esaltato.", 2);
-ui_knob(8,  602, 166, 20, 3,    25,   10,   2, "Finestra", c_cyan_r, c_cyan_g, c_cyan_b,
+ui_knob(8,  616, 166, 19, 3,    25,   10,   2, "Finestra", c_cyan_r, c_cyan_g, c_cyan_b,
   "Durata dell'ammorbidimento dell'attacco (ms).", 2);
-ui_knob(9,  688, 166, 20, 600,  3500, 1200, 3, "Taglio",   c_cyan_r, c_cyan_g, c_cyan_b,
+ui_knob(9,  692, 166, 19, 600,  3500, 1200, 3, "Taglio",   c_cyan_r, c_cyan_g, c_cyan_b,
   "Frequenza sopra la quale agisce l'Attack Softener (corpo sotto intatto).", 2);
-gfx_set(line_r, line_g, line_b, 0.7); zp_line(738, 134, 738, 220);
-ui_knob(10, 792, 166, 20, 0,    100,  100,  0, "Mix",      c_grn_r,  c_grn_g,  c_grn_b,
+gfx_set(line_r, line_g, line_b, 0.7); zp_line(742, 134, 742, 220);
+ui_knob(10, 794, 166, 19, 0,    100,  100,  0, "Mix",      c_grn_r,  c_grn_g,  c_grn_b,
   "Miscela tra suono intatto (0%) e processato (100%).", 3);
 
 zp_setfont(1, "Arial", 10, 'b'); gfx_set(sub_r, sub_g, sub_b, 1);
-zp_gx = 478; zp_gy = 236; zp_drawstr("ARROTONDAMENTO ATTACCHI (0..12 dB)");
-gfx_set(trk_r, trk_g, trk_b, 1); zp_rect(478, 252, 358, 12);
-gfx_set(line_r, line_g, line_b, 1); zp_frame(478, 252, 358, 12);
-at_w = min(356, max(0, (ui_at_gr / 12.0) * 356));
-at_w > 0 ? (gfx_set(c_cyan_r, c_cyan_g, c_cyan_b, 0.92); zp_rect(479, 253, at_w, 10););
-at_hw = min(356, max(0, (ui_at_hold / 12.0) * 356));
-at_hw > 1 ? (gfx_set(c_grn_r, c_grn_g, c_grn_b, 1); zp_rect(479 + at_hw - 1, 251, 2, 14););
+zp_gx = 506; zp_gy = 236; zp_drawstr("ARROTONDAMENTO ATTACCHI (0..12 dB)");
+gfx_set(trk_r, trk_g, trk_b, 1); zp_rect(506, 252, 330, 12);
+gfx_set(line_r, line_g, line_b, 1); zp_frame(506, 252, 330, 12);
+at_w = min(328, max(0, (ui_at_gr / 12.0) * 328));
+at_w > 0 ? (gfx_set(c_cyan_r, c_cyan_g, c_cyan_b, 0.92); zp_rect(507, 253, at_w, 10););
+at_hw = min(328, max(0, (ui_at_hold / 12.0) * 328));
+at_hw > 1 ? (gfx_set(c_grn_r, c_grn_g, c_grn_b, 1); zp_rect(507 + at_hw - 1, 251, 2, 14););
 
 // ---- Monitor eventi in tempo reale ----
-gfx_set(card_r, card_g, card_b, 1); zp_rect(14, 294, 832, 210);
-gfx_set(line_r, line_g, line_b, 1); zp_frame(14, 294, 832, 210);
+draw_hw_panel(14, 294, 832, 210);
 zp_setfont(1, "Arial", 11, 'b'); gfx_set(txt_r, txt_g, txt_b, 1);
 zp_gx = 24; zp_gy = 302; zp_drawstr("MONITOR INTERVENTI IN TEMPO REALE (~8 s)");
 
-gfx_set(c_coral_r, c_coral_g, c_coral_b, 0.95); zp_rect(526, 304, 10, 10);
-zp_setfont(1, "Arial", 10); gfx_set(sub_r, sub_g, sub_b, 1); zp_gx = 540; zp_gy = 303; zp_drawstr("Click tagliati");
-gfx_set(c_cyan_r, c_cyan_g, c_cyan_b, 0.95); zp_rect(636, 304, 10, 10);
-gfx_set(sub_r, sub_g, sub_b, 1); zp_gx = 650; zp_gy = 303; zp_drawstr("Attacchi smussati");
-gfx_set(sub_r, sub_g, sub_b, 0.45); zp_rect(766, 304, 10, 10);
-gfx_set(sub_r, sub_g, sub_b, 1); zp_gx = 780; zp_gy = 303; zp_drawstr("Voce in");
+gfx_set(c_coral_r, c_coral_g, c_coral_b, 0.95); zp_rect(412, 304, 10, 10);
+zp_setfont(1, "Arial", 10); gfx_set(sub_r, sub_g, sub_b, 1); zp_gx = 426; zp_gy = 303; zp_drawstr("Macro Click");
+gfx_set(c_amber_r, c_amber_g, c_amber_b, 0.95); zp_rect(506, 304, 10, 10);
+gfx_set(sub_r, sub_g, sub_b, 1); zp_gx = 520; zp_gy = 303; zp_drawstr("Micro-Click");
+gfx_set(c_cyan_r, c_cyan_g, c_cyan_b, 0.95); zp_rect(612, 304, 10, 10);
+gfx_set(sub_r, sub_g, sub_b, 1); zp_gx = 626; zp_gy = 303; zp_drawstr("Attacchi smussati");
+gfx_set(sub_r, sub_g, sub_b, 0.45); zp_rect(760, 304, 10, 10);
+gfx_set(sub_r, sub_g, sub_b, 1); zp_gx = 774; zp_gy = 303; zp_drawstr("Voce in");
 
 mx0 = 48; mx1 = 834; my0 = 326; my1 = 474; mw = mx1 - mx0; mh = my1 - my0;
 gfx_set(plot_r, plot_g, plot_b, 1); zp_rect(mx0, my0, mw, mh);
@@ -808,6 +1438,7 @@ loop(HIST_N,
   vi = h_in[idx_h];
   vc = h_ck[idx_h];
   va = h_at[idx_h];
+  vm = h_mr[idx_h];
   vi > 0.02 ? (
     ih = vi * mh * 0.55;
     gfx_set(sub_r, sub_g, sub_b, ui_theme == 0 ? 0.14 : 0.18);
@@ -823,18 +1454,25 @@ loop(HIST_N,
     gfx_set(c_coral_r, c_coral_g, c_coral_b, 0.92);
     zp_rect(hx, my0, max(1.3, cw * 0.85), ch_px);
   );
+  vm > 0.15 ? (
+    mh_px = min(mh, (vm / 18.0) * mh);
+    gfx_set(c_amber_r, c_amber_g, c_amber_b, 0.95);
+    zp_rect(hx + cw * 0.15, my0, max(1.3, cw * 0.75), mh_px);
+  );
   ci += 1;
 );
 gfx_set(line_r, line_g, line_b, 1); zp_frame(mx0, my0, mw, mh);
 
 zp_setfont(1, "Arial", 10); gfx_set(sub_r, sub_g, sub_b, 1);
-sprintf(#mstat, "Click/s: %d   ·   Picco De-Click: -%.1f dB   ·   Picco Attacco: -%.1f dB   ·   Latenza PDC: %d campioni (%.1f ms)",
-        ck_rate_disp, ui_ck_hold, ui_at_hold, LA, LA * 1000.0 / max(1, srate));
+sprintf(#mstat, "Click/s: %d  ·  Macro: -%.1f dB  ·  Micro: -%.1f dB (%.0f%%)  ·  Attacco: -%.1f dB  ·  PDC: %d camp. (%.1f ms)",
+        ck_rate_disp, ui_ck_hold, ui_mr_hold, mr_amt_s * 100.0, ui_at_hold, LA_TOT, LA_TOT * 1000.0 / max(1, srate));
 zp_gx = 48; zp_gy = 482; zp_drawstr(#mstat);
 
 // ---- Risoluzione D·MOLLA e badge in testata ----
 delta_spring_armed && mouse_down ? (
   drag_st = (kn_drag >= 2 && kn_drag <= 4) ? 1 :
+            (kn_drag == 20) ? 4 :
+            (kn_drag == 22) ? (mr_on_ui ? 4 : 1) :
             (kn_drag >= 7 && kn_drag <= 9) ? 2 :
             (kn_drag == 10) ? 3 : 0;
   delta_spring_stage = drag_st > 0 ? drag_st : ui_hold_delta_stage;
@@ -865,7 +1503,7 @@ delta_on_ui ? (
   delta_blink ? gfx_set(1.0, 0.58, 0.12, 0.96) : gfx_set(0.94, 0.24, 0.50, 0.96);
   zp_rect(342, 10, 210, 26);
   gfx_set(1.0, 0.90, 0.65, 0.9); zp_frame(342, 10, 210, 26);
-  sprintf(#dpill, delta_spring_stage == 1 ? "DELTA: DE-CLICK" : delta_spring_stage == 2 ? "DELTA: ATTACK" : "DELTA: GLOBALE");
+  sprintf(#dpill, delta_spring_stage == 1 ? "DELTA: MACRO" : delta_spring_stage == 4 ? "DELTA: MICRO" : delta_spring_stage == 2 ? "DELTA: ATTACK" : "DELTA: GLOBALE");
   zp_setfont(1, "Arial", 12, 'b'); gfx_set(0.04, 0.05, 0.07, 1);
   (gfx_measurestr(#dpill, tw, th); tw /= zp_sc; th /= zp_sc);
   zp_gx = 342 + (210 - tw) * 0.5; zp_gy = 10 + (26 - th) * 0.5; zp_drawstr(#dpill);
@@ -884,8 +1522,8 @@ delta_on_ui ? (
   );
 ) : (
   zp_setfont(1, "Arial", 11); gfx_set(sub_r, sub_g, sub_b, 0.95);
-  zp_gx = 328; zp_gy = 17;
-  zp_drawstr_clip("PRE = prima di Magic Voice · POST = prima dell'uscita", 668, 38);
+  zp_gx = 318; zp_gy = 17;
+  zp_drawstr_clip("latocardioide.it · dubbertools.com · MICRO % automatizzabile", 668, 38);
 );
 
 // ---- Barra guida inferiore ----

@@ -384,13 +384,21 @@ local function open_export_settings_visual(tracks, on_done)
   local track_index = default_track_index(tracks)
   local mode = suggested_mode()
   -- la destinazione scelta l'ultima volta (cartella compresa) resta per la prossima
-  local destination_mode = reaper.GetExtState("ZP_STUDIO_SUITE", "SRT08_dest")
+  -- destinazione e cartella appartengono al PROGETTO (ProjExtState): un progetto nuovo non eredita quelle dell'ultimo lavoro.
+  for _, key in ipairs({ "SRT08_dest", "SRT08_dir" }) do
+    if reaper.GetExtState("ZP_STUDIO_SUITE", key) ~= "" then reaper.DeleteExtState("ZP_STUDIO_SUITE", key, true) end
+  end
+  local function proj_get(key)
+    local ok, value = reaper.GetProjExtState(0, "ZP_STUDIO_SUITE", key)
+    return (ok and ok > 0 and value) or ""
+  end
+  local destination_mode = proj_get("SRT08_dest")
   if destination_mode ~= "project" and destination_mode ~= "custom" then destination_mode = "srt_export" end
-  local custom_out_dir = reaper.GetExtState("ZP_STUDIO_SUITE", "SRT08_dir")
+  local custom_out_dir = proj_get("SRT08_dir")
   if destination_mode == "custom" and custom_out_dir == "" then destination_mode = "srt_export" end
   local function remember()
-    reaper.SetExtState("ZP_STUDIO_SUITE", "SRT08_dest", destination_mode, true)
-    reaper.SetExtState("ZP_STUDIO_SUITE", "SRT08_dir", custom_out_dir, true)
+    reaper.SetProjExtState(0, "ZP_STUDIO_SUITE", "SRT08_dest", destination_mode)
+    reaper.SetProjExtState(0, "ZP_STUDIO_SUITE", "SRT08_dir", custom_out_dir)
   end
   local last_mouse_down = false
 
@@ -427,7 +435,7 @@ local function open_export_settings_visual(tracks, on_done)
     gfx.set(0.56, 0.72, 0.86, 1)
     gfx.x = 66
     gfx.y = 42
-    gfx.drawstr("ZP Studio Suite v1.0.5 - Paolo Balestri")
+    gfx.drawstr("ZP Studio Suite · latocardioide.it · dubbertools.com")
 
     gfx.setfont(1, "Arial", 15)
     gfx.set(0.68, 0.66, 0.74, 1)

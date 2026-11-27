@@ -1050,7 +1050,11 @@ local function button(x, y, w, h, text, active, style, enabled, disabled_reason,
     setc(c, 1)
   end
   gfx.rect(x, y, w, h, 1)
-  setc(COLORS.line, enabled and 1 or 0.28); gfx.rect(x, y, w, h, 0)
+  if not enabled then setc(COLORS.line, 0.28)
+  elseif active then gfx.set(0.48, 0.84, 1.00, 1)
+  elseif hover then gfx.set(0.56, 0.68, 0.86, 1)
+  else gfx.set(0.30, 0.32, 0.40, 1) end
+  gfx.rect(x, y, w, h, 0)
   centered_label(text, x, y + math.floor((h - 16) / 2), w, 16, enabled and COLORS.text or COLORS.muted, true)
   return enabled and hover and mouse_clicked()
 end

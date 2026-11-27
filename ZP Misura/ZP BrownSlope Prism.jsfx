@@ -1,5 +1,5 @@
 // @description ZP BrownSlope Prism
-// @version 1.1
+// @version 1.2
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
@@ -16,15 +16,18 @@
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: ZP Studio Suite/help/index.html#plugin-brownslope-prism
 // @changelog
+//   1.2: Telemetria passiva ZP Shared Bus v3.1 (ptype=11: 4 zone Brown, pendenza residua, livello, esito) con rilevatore
+//     cepstrale reale di comb filtering (0.33-8 ms, gmem[zp3_b+30/+31], badge COMB in testata e alert verso Telemetry Engine);
+//     ricalcolo tabelle e pulizia buffer al cambio samplerate (rebuild_sr_tables) e griglia spettro moderna con crosshair al passaggio mouse.
 //   1.1: Restyling grafico comunicativo: corridoio di tolleranza ±1,5 e ±3 dB intorno al riferimento, curva smussata
 //     con riempimento differenziale caldo (eccesso) / freddo (carenza), traccia Live opzionale dietro la media lunga,
 //     etichette di zona nel grafico, barre bipolari nei 4 box inferiori, livella per la pendenza residua, badge esito,
 //     bugfix griglia verticale adattiva a ogni Scala e selettore tema Scuro / Chiaro. DSP passivo e slider OSARA invariati.
 //   Prima versione distribuita: analizzatore passivo con riferimenti a -18 e -24 LUFS, confronto Livello o Forma,
 //     pomelli Media, Pendenza e Scala, Calibra sul proprio file di riferimento, guida con ? e vista JSFX per OSARA.
-desc:ZP BrownSlope Prism - Passive Brown Slope Analyzer - Paolo Balestri
+desc:ZP BrownSlope Prism - Passive Brown Slope Analyzer · latocardioide.it · dubbertools.com
 // Autore: Paolo Balestri
-// Versione: 1.1
+// Versione: 1.2
 //
 // Analizzatore PASSIVO: l'audio passa intatto. Mostra lo spettro del programma
 // come TDR Prism con "Slope 4.5 dB/oct": compensando 4,5 dB per ottava, un rumore
@@ -164,6 +167,10 @@ live_avg = 7 * N;
 live_bdb = 8 * N;
 sm_bdb = live_bdb + 64;
 sm_live = sm_bdb + 64;
+// Array v1.2 per rilevatore cepstrale di comb filtering (disgiunti da buf FFT in 16384..24575)
+cep_win = 10 * N;
+cep_log = 11 * N;
+cep_avg = 12 * N;
 REF24_OFFSET = 5.91;
 LOG2 = log(2);
 
@@ -190,33 +197,69 @@ ref[i] = -59.61; i += 1; ref[i] = -59.64; i += 1; ref[i] = -59.68;
 // finestra di Hann simmetrica e sua energia
 wsum2 = 0; i = 0;
 loop(N, win[i] = 0.5 - 0.5 * cos(2 * $pi * i / (N - 1)); wsum2 += win[i] * win[i]; i += 1;);
-psd_scale = 2 / (srate * wsum2) * 0.5;   // densita' unilaterale per Hz, media L/R
-
-// bande da 1/6 di ottava: bin compresi in [fc*2^-1/12, fc*2^1/12)
-binw = srate / N; b = 0;
-loop(NB,
-  fc = 1000 * 2 ^ ((b + KMIN) / 6);
-  bfc[b] = fc;
-  lo = max(1, ceil(fc * 2 ^ (-1 / 12) / binw));
-  hi = min(half - 1, ceil(fc * 2 ^ (1 / 12) / binw) - 1);
-  hi < lo ? (lo = max(1, min(half - 1, floor(fc / binw + 0.5))); hi = lo;);
-  blo[b] = lo; bhi[b] = hi;
-  b += 1;
-);
-
-pos = 0; hopc = 0; frames = 0; seconds = 0; have_data = 0; live_last_t = -10;
-memset(avg, 0, half + 1);
-memset(live_avg, 0, half + 1);
-!cal_init ? (cal18_ok = 0; cal24_ok = 0; cal_init = 1;);
-!ui_init ? (live_on = 1; ui_theme = 0; ui_init = 1;);
 
 function slope_db() ( slopesel == 0 ? 0 : slopesel == 1 ? 3 : slopesel == 2 ? 4.5 : 6; );
 
 function reset_avg() (
   memset(avg, 0, half + 1);
   memset(live_avg, 0, half + 1);
+  memset(cep_avg, 0, 512);
   frames = 0; seconds = 0; have_data = 0; live_last_t = -10;
+  comb_ms = 0; comb_est = 0; comb_z = 0; comb_state = 0; comb_frames = 0;
 );
+
+function rebuild_sr_tables() local(sr_ok, b_idx, fc, lo, hi, cep_i, den_w, w_v, num_mean) (
+  sr_ok = max(8000, srate);
+  psd_scale = 2 / (sr_ok * wsum2) * 0.5;   // densita' unilaterale per Hz, media L/R
+
+  // bande da 1/6 di ottava: bin compresi in [fc*2^-1/12, fc*2^1/12)
+  binw = sr_ok / N; b_idx = 0;
+  loop(NB,
+    fc = 1000 * 2 ^ ((b_idx + KMIN) / 6);
+    bfc[b_idx] = fc;
+    lo = max(1, ceil(fc * 2 ^ (-1 / 12) / binw));
+    hi = min(half - 1, ceil(fc * 2 ^ (1 / 12) / binw) - 1);
+    hi < lo ? (lo = max(1, min(half - 1, floor(fc / binw + 0.5))); hi = lo;);
+    blo[b_idx] = lo; bhi[b_idx] = hi;
+    b_idx += 1;
+  );
+
+  // Tabelle cepstrali (200 Hz..12 kHz su FFT lunghezza N pari simmetrica)
+  cep_k_lo = max(4, floor(200.0 / binw + 0.5));
+  cep_k_hi = min(half - 2, floor(min(12000.0, sr_ok * 0.42) / binw));
+  cep_len = max(0, cep_k_hi - cep_k_lo + 1);
+  cep_w_sum = 0; num_mean = 0;
+  cep_len >= 2 ? (
+    den_w = max(1, cep_len - 1);
+    cep_i = 0;
+    loop(cep_len,
+      w_v = 0.5 - 0.5 * cos(2 * $pi * cep_i / den_w);
+      cep_win[cep_i] = w_v;
+      cep_w_sum += w_v;
+      num_mean += w_v * cep_i;
+      cep_i += 1;
+    );
+    cep_k_mean = num_mean / max(cep_w_sum, EPSDEN);
+    cep_wxx_sum = 0;
+    cep_i = 0;
+    loop(cep_len,
+      cep_wxx_sum += cep_win[cep_i] * (cep_i - cep_k_mean) * (cep_i - cep_k_mean);
+      cep_i += 1;
+    );
+  ) : (
+    cep_k_mean = 0; cep_wxx_sum = 1;
+  );
+  cep_q_min = max(16, floor(0.00033 * sr_ok + 0.5));
+  cep_q_max = min(511, min(half - 2, floor(0.008 * sr_ok + 0.5)));
+
+  memset(ringL, 0, N * 2);
+  pos = 0; hopc = 0;
+  reset_avg();
+  last_srate = srate;
+);
+rebuild_sr_tables();
+!cal_init ? (cal18_ok = 0; cal24_ok = 0; cal_init = 1;);
+!ui_init ? (live_on = 1; ui_theme = 0; ui_init = 1;);
 
 function do_channel(ring) local(i, j, re, im, k) (
   i = 0; j = pos;
@@ -225,6 +268,79 @@ function do_channel(ring) local(i, j, re, im, k) (
   fft_permute(buf, N / 2);
   k = 1;
   loop(half - 1, re = buf[2 * k]; im = buf[2 * k + 1]; cur[k] += re * re + im * im; k += 1;);
+);
+
+function analyze_comb() local(cep_i, cep_k, cep_ym, cep_sl, cep_sxy, cep_sy, cep_val, cep_q, c_alp, c_inv2w, pk_q, pk_abs, pk_val, ns_sum, ns_cnt, ns_rms, comb_v, cep_dx, sr_c) (
+  (cep_len >= 8 && cep_q_max > cep_q_min + 4) ? (
+    cep_sy = 0; cep_sxy = 0;
+    cep_i = 0;
+    loop(cep_len,
+      cep_k = cep_k_lo + cep_i;
+      comb_v = log(max(cur[cep_k] * psd_scale, TINY));
+      cep_log[cep_i] = comb_v;
+      cep_sy += cep_win[cep_i] * comb_v;
+      cep_i += 1;
+    );
+    cep_ym = cep_sy / max(cep_w_sum, EPSDEN);
+    cep_i = 0;
+    loop(cep_len,
+      cep_dx = cep_i - cep_k_mean;
+      cep_sxy += cep_win[cep_i] * cep_dx * (cep_log[cep_i] - cep_ym);
+      cep_i += 1;
+    );
+    cep_sl = cep_sxy / max(cep_wxx_sum, EPSDEN);
+    memset(buf, 0, N);
+    cep_i = 0;
+    loop(cep_len,
+      cep_dx = cep_i - cep_k_mean;
+      cep_val = (cep_log[cep_i] - cep_ym - cep_sl * cep_dx) * cep_win[cep_i];
+      cep_k = cep_k_lo + cep_i;
+      buf[cep_k] = cep_val;
+      buf[N - cep_k] = cep_val;
+      cep_i += 1;
+    );
+    fft_real(buf, N);
+    fft_permute(buf, N / 2);
+    comb_frames += 1;
+    c_alp = comb_frames == 1 ? 1.0 : 0.18;
+    c_inv2w = 1.0 / max(2.0 * cep_w_sum, EPSDEN);
+    cep_q = cep_q_min;
+    loop(cep_q_max - cep_q_min + 1,
+      cep_avg[cep_q] += c_alp * (buf[2 * cep_q] * c_inv2w - cep_avg[cep_q]);
+      cep_q += 1;
+    );
+    pk_q = cep_q_min; pk_abs = -1; pk_val = 0;
+    cep_q = cep_q_min;
+    loop(cep_q_max - cep_q_min + 1,
+      comb_v = cep_avg[cep_q];
+      abs(comb_v) > pk_abs ? (pk_abs = abs(comb_v); pk_val = comb_v; pk_q = cep_q;);
+      cep_q += 1;
+    );
+    ns_sum = 0; ns_cnt = 0;
+    cep_q = cep_q_min;
+    loop(cep_q_max - cep_q_min + 1,
+      abs(cep_q - pk_q) > 3 ? (
+        comb_v = cep_avg[cep_q];
+        ns_sum += comb_v * comb_v;
+        ns_cnt += 1;
+      );
+      cep_q += 1;
+    );
+    ns_rms = sqrt(ns_sum / max(1, ns_cnt));
+    comb_z = pk_abs / max(ns_rms, EPSDEN);
+    sr_c = max(8000, srate);
+    comb_frames >= 3 ? (
+      (comb_z >= 10.0 && abs(pk_val) >= 0.22) ? (
+        comb_state = 2; comb_ms = pk_q * 1000.0 / sr_c; comb_est = pk_val;
+      ) : (comb_z >= 7.5 && abs(pk_val) >= 0.12) ? (
+        comb_state = 1; comb_ms = pk_q * 1000.0 / sr_c; comb_est = pk_val;
+      ) : (
+        comb_state = 0; comb_ms = 0; comb_est = 0;
+      );
+    ) : (
+      comb_state = 0; comb_ms = 0; comb_est = 0;
+    );
+  );
 );
 
 // riferimento attivo per la banda b, con la stessa pendenza del grafico
@@ -293,6 +409,7 @@ function analyze() local(k, tot, alpha, alpha_live, p) (
       k += 1;
     );
     compute_bands();
+    analyze_comb();
   );
 );
 
@@ -472,10 +589,10 @@ function fill_diff_seg(x0, x1, ya0, ya1, yr0, yr1, d0_db, d1_db) local(da0, da1,
 
 // guida sovrapposta, come nei pannelli di Master Pro
 function help_overlay() local(px, py, pw, ph, cx, cy, hc, ly, tw, th) (
-  pw = min(820, max(540, zp_vw - 48)); px = floor((zp_vw - pw) / 2); py = 54; ph = min(490, zp_vh - 82);
+  pw = min(820, max(540, zp_vw - 48)); px = floor((zp_vw - pw) / 2); py = 46; ph = min(520, zp_vh - 68);
   gfx_set(0.03, 0.035, 0.045, 0.96); zp_rect(px, py, pw, ph);
   gfx_set(0.36, 0.86, 0.58, 1); zp_rect(px, py, pw, 2); zp_rect(px, py + ph - 2, pw, 2); zp_rect(px, py, 2, ph); zp_rect(px + pw - 2, py, 2, ph);
-  zp_setfont(2, "Arial", 21, 'b'); gfx_set(0.94, 0.96, 0.98, 1); zp_gx = px + 24; zp_gy = py + 15; zp_drawstr("ZP BrownSlope Prism v1.1 - come si legge");
+  zp_setfont(2, "Arial", 21, 'b'); gfx_set(0.94, 0.96, 0.98, 1); zp_gx = px + 24; zp_gy = py + 15; zp_drawstr("ZP BrownSlope Prism v1.2 - come si legge");
   cx = px + pw - 44; cy = py + 15;
   hc = zp_mx >= cx && zp_mx <= cx + 28 && zp_my >= cy && zp_my <= cy + 28;
   hc ? gfx_set(0.28, 0.12, 0.10, 1) : gfx_set(0.14, 0.12, 0.12, 1); zp_rect(cx, cy, 28, 28);
@@ -499,12 +616,13 @@ function help_overlay() local(px, py, pw, ph, cx, cy, hc, ly, tw, th) (
   zp_gx = px + 24; zp_gy = ly; zp_drawstr("Box delle 4 zone: scarto in dB + barra bipolare (±6 dB) centrata sulla finestra verde ±1,5 dB."); ly += 23;
   zp_gx = px + 24; zp_gy = ly; zp_drawstr("Livella pendenza: centro verde entro ±0,5 dB/oct; a sinistra = piu' scuro, a destra = piu' brillante."); ly += 23;
   zp_gx = px + 24; zp_gy = ly; zp_drawstr("Forma (EQ): toglie la differenza di volume; Livello: confronta anche i dB assoluti e i due target."); ly += 30;
+  gfx_set(0.98, 0.74, 0.32, 1);
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Pillola COMB (0,33-8 ms): analizza periodicita' cepstrali da comb filtering e invia alert a Telemetry Engine."); ly += 23;
   gfx_set(0.72, 0.92, 0.82, 1);
   zp_gx = px + 24; zp_gy = ly; zp_drawstr("Media lunga: integra tutto il brano finche' non premi Reset (ferma nei silenzi sotto -80 dB)."); ly += 23;
-  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Calibra: suona il tuo riferimento con media lunga e premi Calibra (salvato nel progetto; Default lo toglie)."); ly += 30;
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Calibra: suona il tuo riferimento con media lunga e premi Calibra (salvato nel progetto; Default lo toglie)."); ly += 28;
   gfx_set(0.62, 0.72, 0.82, 1);
-  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Scuro/Chiaro cambia i colori GUI; Vista JSFX espone parametri e letture [Read] per OSARA."); ly += 23;
-  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Pomelli: trascina in verticale; doppio clic o clic destro = valore iniziale. Passivo: audio intatto.");
+  zp_gx = px + 24; zp_gy = ly; zp_drawstr("Crosshair mouse sullo spettro: legge Hz e scarto dB esatti; Scuro/Chiaro e Vista JSFX (OSARA) in testata.");
 );
 
 update_visibility();
@@ -512,6 +630,14 @@ update_visibility();
 // funzioni del grafico (definite qui, usate in @gfx)
 function xf(f) ( gx0 + (log(f / 15) / log(20000 / 15)) * (gx1 - gx0); );
 function yv(v) ( gy0 + (RANGE - (v - ymid)) / (2 * RANGE) * (gy1 - gy0); );
+function draw_dashed_vline(dx, dy0, dy1) local(yy, steps) (
+  steps = max(0, ceil((dy1 - dy0) / 10));
+  yy = dy0;
+  loop(steps,
+    zp_line(dx, yy, dx, min(dy1, yy + 5));
+    yy += 10;
+  );
+);
 
 function zone_box(x, y, w, h, title, freq_lbl, v) local(c, bx, bw, by, bh, cx, tol_w, fill_w, px_v, tw, th, tag) (
   c = !have_data ? 3 : abs(v) <= 1.5 ? 0 : abs(v) <= 3 ? 1 : 2;
@@ -565,11 +691,78 @@ function zone_box(x, y, w, h, title, freq_lbl, v) local(c, bx, bw, by, bh, cx, t
   (gfx_measurestr("+6", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = bx + bw - tw; zp_gy = y + 84; zp_drawstr("+6");
 );
 
+// ---- ZP Shared Bus v3.1 (telemetria passiva BrownSlope Prism, ptype=11) ----
+function zp3_boot() (
+  gmem[1000] != 905300 || gmem[1001] < 300 ? (
+    gmem[1000] = 905300;
+    gmem[1001] = 300;
+    gmem[1002] = 64;
+    gmem[1003] = 32;
+  );
+);
+function zp3_clear_slot() local(zp3_cb) (
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_cb = 1024 + zp3_slot * 32;
+    gmem[zp3_cb + 3] == zp3_prev_key ? (
+      gmem[zp3_cb] = 0;
+      gmem[zp3_cb + 2] = 0;
+    );
+  );
+  zp3_slot = -1;
+  zp3_prev_key = -1;
+);
+function zp3_claim(zp3_pt) local(zp3_now, zp3_key, zp3_h, zp3_i, zp3_s, zp3_b, zp3_m, zp3_found) (
+  zp3_boot();
+  zp3_now = time_precise();
+  zp3_fx = 0; zp3_hf = 0;
+  zp3_tr = get_host_placement(zp3_fx, zp3_hf);
+  zp3_key = max(0, zp3_tr + 2) * 1024 + max(0, zp3_fx) * 16 + zp3_pt;
+  zp3_prev_key >= 0 && zp3_prev_key != zp3_key ? zp3_clear_slot();
+  zp3_found = -1;
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_slot;);
+  );
+  zp3_found < 0 ? (
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_b = 1024 + zp3_i * 32;
+        gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_i;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_found < 0 ? (
+    zp3_h = (max(0, zp3_tr + 2) * 13 + max(0, zp3_fx) * 7 + zp3_pt * 3) % 64;
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_s = (zp3_h + zp3_i) % 64;
+        zp3_b = 1024 + zp3_s * 32;
+        zp3_m = gmem[zp3_b];
+        (zp3_m != 905301 || (zp3_now - gmem[zp3_b + 1]) > 2.5) ? (zp3_found = zp3_s;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_slot = zp3_found;
+  zp3_prev_key = zp3_key;
+  zp3_slot >= 0 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    zp3_seq = max(zp3_seq, floor(gmem[zp3_b + 2] + 0.5));
+    zp3_b;
+  ) : -1;
+);
+zp3_prev_key <= 0 ? (zp3_slot = -1; zp3_prev_key = -1;);
+zp3_boot();
+
 @slider
 slider5 ? (reset_avg(); slider5 = 0; sliderchange(slider5););
 sync_params();
 
 @block
+srate != last_srate ? rebuild_sr_tables();
 // letture per OSARA e per la vista a parametri, aggiornate ~4 volte al secondo
 (rd_t += samplesblock) >= srate * 0.25 ? (
   rd_t = 0;
@@ -577,6 +770,42 @@ sync_params();
   slider14 = tilt; slider15 = level; slider16 = verdict;
   sliderchange(slider10); sliderchange(slider11); sliderchange(slider12); sliderchange(slider13);
   sliderchange(slider14); sliderchange(slider15); sliderchange(slider16);
+);
+zp3_b = zp3_claim(11);
+zp3_b >= 0 ? (
+  gmem[zp3_b + 3] = zp3_prev_key;
+  gmem[zp3_b + 4] = 11;
+  gmem[zp3_b + 5] = zp3_tr;
+  gmem[zp3_b + 6] = zp3_fx;
+  gmem[zp3_b + 7] = zp3_hf;
+  gmem[zp3_b + 8] = 3;
+  gmem[zp3_b + 9] = have_data ? 1 : 2;
+  gmem[zp3_b + 10] = 0;
+  gmem[zp3_b + 11] = 0;
+  gmem[zp3_b + 12] = 0;
+  gmem[zp3_b + 13] = zb;
+  gmem[zp3_b + 14] = zlm;
+  gmem[zp3_b + 15] = zmh;
+  gmem[zp3_b + 16] = 0;
+  gmem[zp3_b + 17] = -120;
+  gmem[zp3_b + 18] = -120;
+  gmem[zp3_b + 19] = -120;
+  gmem[zp3_b + 20] = level;
+  gmem[zp3_b + 21] = have_data ? 100 : 0;
+  gmem[zp3_b + 22] = -1;
+  gmem[zp3_b + 23] = tilt;
+  gmem[zp3_b + 24] = level;
+  gmem[zp3_b + 25] = verdict;
+  gmem[zp3_b + 26] = have_data;
+  gmem[zp3_b + 27] = target;
+  gmem[zp3_b + 28] = compare;
+  gmem[zp3_b + 29] = zh;
+  gmem[zp3_b + 30] = comb_state > 0 ? comb_ms : 0;
+  gmem[zp3_b + 31] = comb_state > 0 ? comb_est : 0;
+  gmem[zp3_b] = 905301;
+  gmem[zp3_b + 1] = time_precise();
+  zp3_seq += 1;
+  gmem[zp3_b + 2] = zp3_seq;
 );
 
 @sample
@@ -610,8 +839,36 @@ zp_drawstr("ZP BrownSlope Prism");
 gfx_set(card2_r, card2_g, card2_b, 1); zp_rect(206, 13, 36, 20);
 gfx_set(acc_g_r, acc_g_g, acc_g_b, 0.75); draw_frame(206, 13, 36, 20);
 zp_setfont(1, "Arial", 11, 'b'); gfx_set(acc_g_r, acc_g_g, acc_g_b, 1);
-(gfx_measurestr("v1.1", tw, th); tw /= zp_sc; th /= zp_sc);
-zp_gx = 206 + (36 - tw) * 0.5; zp_gy = 13 + (20 - th) * 0.5; zp_drawstr("v1.1");
+(gfx_measurestr("v1.2", tw, th); tw /= zp_sc; th /= zp_sc);
+zp_gx = 206 + (36 - tw) * 0.5; zp_gy = 13 + (20 - th) * 0.5; zp_drawstr("v1.2");
+
+// Pillola rilevatore Comb cepstrale in testata (x = 526..674)
+_cb_hov = !help_open && zp_mx >= 526 && zp_mx <= 674 && zp_my >= 10 && zp_my <= 36;
+_cb_hov ? (
+  comb_state > 0
+    ? sprintf(#hint, "Comb filter cepstrale: %.2f ms (~%+.0f%%, z=%.1f). Verifica fase, dry/wet o PDC.", comb_ms, comb_est * 100, comb_z)
+    : strcpy(#hint, "Rilevatore comb cepstrale (0,33-8 ms): segnala ritardi e cancellazioni di fase.");
+);
+comb_state == 2 ? (
+  gfx_set(acc_r_r, acc_r_g, acc_r_b, 0.22); zp_rect(526, 10, 148, 26);
+  gfx_set(acc_r_r, acc_r_g, acc_r_b, 0.95); draw_frame(526, 10, 148, 26);
+  sprintf(#comb_s, "COMB %.2fms %+.0f%%", comb_ms, comb_est * 100);
+  gfx_set(acc_r_r, acc_r_g, acc_r_b, 1);
+) : comb_state == 1 ? (
+  gfx_set(acc_w_r, acc_w_g, acc_w_b, 0.20); zp_rect(526, 10, 148, 26);
+  gfx_set(acc_w_r, acc_w_g, acc_w_b, 0.90); draw_frame(526, 10, 148, 26);
+  sprintf(#comb_s, "COMB %.2fms %+.0f%%", comb_ms, comb_est * 100);
+  gfx_set(acc_w_r, acc_w_g, acc_w_b, 1);
+) : (
+  gfx_set(card2_r, card2_g, card2_b, 1); zp_rect(526, 10, 148, 26);
+  gfx_set(line_r, line_g, line_b, 0.85); draw_frame(526, 10, 148, 26);
+  strcpy(#comb_s, have_data ? "COMB: OK" : "COMB: --");
+  have_data ? gfx_set(acc_g_r, acc_g_g, acc_g_b, 0.95) : gfx_set(sub_r, sub_g, sub_b, 0.9);
+);
+zp_setfont(1, "Arial", 10, 'b');
+(gfx_measurestr(#comb_s, tw, th); tw /= zp_sc; th /= zp_sc);
+zp_gx = 526 + (148 - tw) * 0.5; zp_gy = 10 + (26 - th) * 0.5;
+zp_drawstr(#comb_s);
 
 // Pulsanti in alto a destra
 ui_button(682, 10, 66, 26, ui_theme == 0 ? "Scuro" : "Chiaro", ui_theme == 1,
@@ -683,15 +940,15 @@ zp_setfont(1, "Arial", 10); gfx_set(cal_act ? acc_g_r : sub_r, cal_act ? acc_g_g
 zp_gx = 686; zp_gy = cy0 + 54;
 zp_drawstr(cal_act ? (target == 0 ? "Custom -18 attiva" : "Custom -24 attiva") : "Curva di serie (-4.5 dB/oct)");
 
-// Stato / Tooltip in testata (dopo tutti i controlli cosi' #hint e' gia' popolato)
+// Stato / Tooltip in testata (clippato a x=520 per lasciare spazio alla pillola COMB)
 zp_setfont(1, "Arial", 12); zp_gx = 252; zp_gy = 17;
 strlen(#hint) ? (
   gfx_set(acc_c_r, acc_c_g, acc_c_b, 1);
-  zp_drawstr_clip(#hint, 672, 42);
+  zp_drawstr_clip(#hint, 520, 42);
 ) : (
   gfx_set(sub_r, sub_g, sub_b, 1);
   sprintf(#st, "Passivo · %.0f s analizzati%s", seconds, cal_act ? " · calibrato" : "");
-  zp_drawstr_clip(#st, 672, 42);
+  zp_drawstr_clip(#st, 520, 42);
 );
 
 // ---- Riquadro Spettro ----
@@ -705,7 +962,7 @@ gfx_set(plot_r, plot_g, plot_b, 1); zp_rect(gx0, gy0, gx1 - gx0, gy1 - gy0);
 
 // Sfondo alternato leggero sulle 4 zone ed etichette in cima al grafico
 zx40 = xf(40); zx160 = xf(160); zx800 = xf(800); zx4k = xf(4000); zx14k = xf(14000);
-gfx_set(txt_r, txt_g, txt_b, ui_theme == 0 ? 0.025 : 0.030);
+gfx_set(txt_r, txt_g, txt_b, ui_theme == 0 ? 0.022 : 0.026);
 zp_rect(zx160, gy0, zx800 - zx160, gy1 - gy0);
 zp_rect(zx4k, gy0, zx14k - zx4k, gy1 - gy0);
 
@@ -715,39 +972,59 @@ zp_setfont(1, "Arial", 10, 'b'); gfx_set(sub_r, sub_g, sub_b, 0.92);
 (gfx_measurestr("MEDIO-ALTI", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = (zx800 + zx4k) * 0.5 - tw * 0.5; zp_gy = spec_y + 7; zp_drawstr("MEDIO-ALTI");
 (gfx_measurestr("ALTI", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = (zx4k + zx14k) * 0.5 - tw * 0.5; zp_gy = spec_y + 7; zp_drawstr("ALTI");
 
-// Griglia verticale adattiva (sempre simmetrica intorno a 0 per qualsiasi Scala 6..30)
+// Griglia verticale adattiva (suddivisioni secondarie + linee maggiori intorno a 0)
 step_db = RANGE <= 8 ? 2 : RANGE <= 14 ? 3 : RANGE <= 24 ? 6 : 10;
+_k_half = step_db * 0.5;
+_dy_i = _k_half;
+loop(floor(RANGE / _k_half),
+  _dy_i % step_db != 0 ? (
+    gfx_set(grid_r, grid_g, grid_b, ui_theme == 0 ? 0.34 : 0.28);
+    y = yv(ymid + _dy_i); zp_line(gx0, y, gx1, y);
+    y = yv(ymid - _dy_i); zp_line(gx0, y, gx1, y);
+  );
+  _dy_i += _k_half;
+);
 zp_setfont(1, "Arial", 11);
 y = yv(ymid);
-gfx_set(grid0_r, grid0_g, grid0_b, 0.95); zp_line(gx0, y, gx1, y);
+gfx_set(grid0_r, grid0_g, grid0_b, 0.92); zp_line(gx0, y, gx1, y);
 gfx_set(sub_r, sub_g, sub_b, 1);
 (gfx_measurestr("0", tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = gx0 - 6 - tw; zp_gy = y - th * 0.5; zp_drawstr("0");
 k = step_db;
 loop(floor(RANGE / step_db),
   y = yv(ymid + k);
-  gfx_set(grid_r, grid_g, grid_b, 1); zp_line(gx0, y, gx1, y);
+  gfx_set(grid_r, grid_g, grid_b, ui_theme == 0 ? 0.72 : 0.65); zp_line(gx0, y, gx1, y);
   gfx_set(sub_r, sub_g, sub_b, 0.92); sprintf(#lb, "+%d", k);
   (gfx_measurestr(#lb, tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = gx0 - 6 - tw; zp_gy = y - th * 0.5; zp_drawstr(#lb);
   y = yv(ymid - k);
-  gfx_set(grid_r, grid_g, grid_b, 1); zp_line(gx0, y, gx1, y);
+  gfx_set(grid_r, grid_g, grid_b, ui_theme == 0 ? 0.72 : 0.65); zp_line(gx0, y, gx1, y);
   gfx_set(sub_r, sub_g, sub_b, 0.92); sprintf(#lb, "-%d", k);
   (gfx_measurestr(#lb, tw, th); tw /= zp_sc; th /= zp_sc); zp_gx = gx0 - 6 - tw; zp_gy = y - th * 0.5; zp_drawstr(#lb);
   k += step_db;
 );
 
-// Griglia frequenze
+// Suddivisioni logaritmiche secondarie delle frequenze + griglia principale
+_f_i = 0;
+loop(13,
+  _f_m = _f_i == 0 ? 30 : _f_i == 1 ? 40 : _f_i == 2 ? 60 : _f_i == 3 ? 80 :
+         _f_i == 4 ? 300 : _f_i == 5 ? 400 : _f_i == 6 ? 600 : _f_i == 7 ? 800 :
+         _f_i == 8 ? 3000 : _f_i == 9 ? 4000 : _f_i == 10 ? 6000 : _f_i == 11 ? 8000 : 15000;
+  x = xf(_f_m);
+  gfx_set(grid_r, grid_g, grid_b, ui_theme == 0 ? 0.28 : 0.24);
+  zp_line(x, gy0, x, gy1);
+  _f_i += 1;
+);
 f = 20;
 loop(10,
-  x = xf(f); gfx_set(grid_r, grid_g, grid_b, 1); zp_line(x, gy0, x, gy1);
+  x = xf(f); gfx_set(grid_r, grid_g, grid_b, ui_theme == 0 ? 0.68 : 0.62); zp_line(x, gy0, x, gy1);
   gfx_set(sub_r, sub_g, sub_b, 0.92);
   f >= 1000 ? sprintf(#lb, "%dk", f / 1000) : sprintf(#lb, "%d", f);
   (gfx_measurestr(#lb, tw, th); tw /= zp_sc; th /= zp_sc);
   zp_gx = min(gx1 - tw, max(gx0, x - tw * 0.5)); zp_gy = gy1 + 4; zp_drawstr(#lb);
   f = f == 20 ? 50 : f == 50 ? 100 : f == 100 ? 200 : f == 200 ? 500 : f == 500 ? 1000 : f == 1000 ? 2000 : f == 2000 ? 5000 : f == 5000 ? 10000 : 20000;
 );
-// Separatori di zona verticali
-gfx_set(grid0_r, grid0_g, grid0_b, 0.55);
-zp_line(zx160, gy0, zx160, gy1); zp_line(zx800, gy0, zx800, gy1); zp_line(zx4k, gy0, zx4k, gy1);
+// Separatori di zona verticali tratteggiati
+gfx_set(grid0_r, grid0_g, grid0_b, 0.65);
+draw_dashed_vline(zx160, gy0, gy1); draw_dashed_vline(zx800, gy0, gy1); draw_dashed_vline(zx4k, gy0, gy1);
 gfx_set(line_r, line_g, line_b, 0.9); draw_frame(gx0, gy0, gx1 - gx0, gy1 - gy0);
 
 // Corridoio target ±3 dB e ±1,5 dB attorno al riferimento selezionato
@@ -860,6 +1137,26 @@ have_data ? (
   (gfx_measurestr("In attesa di segnale (sotto -80 dB la misura resta in pausa)", tw, th); tw /= zp_sc; th /= zp_sc);
   zp_gx = (gx0 + gx1 - tw) * 0.5; zp_gy = (gy0 + gy1 - th) * 0.5;
   zp_drawstr("In attesa di segnale (sotto -80 dB la misura resta in pausa)");
+);
+
+// Crosshair interattivo al passaggio mouse dentro lo spettro
+(!help_open && zp_mx >= gx0 && zp_mx <= gx1 && zp_my >= gy0 && zp_my <= gy1) ? (
+  _hz_m = 15 * exp((zp_mx - gx0) / max(1, gx1 - gx0) * log(20000 / 15));
+  _db_m = RANGE - (zp_my - gy0) / max(1, gy1 - gy0) * (2 * RANGE);
+  gfx_set(txt_r, txt_g, txt_b, 0.24);
+  zp_line(zp_mx, gy0, zp_mx, gy1);
+  zp_line(gx0, zp_my, gx1, zp_my);
+  _hz_m >= 1000 ? sprintf(#_xh, "%.2fk Hz  %+.1f dB", _hz_m / 1000, _db_m)
+                : sprintf(#_xh, "%.0f Hz  %+.1f dB", _hz_m, _db_m);
+  zp_setfont(1, "Arial", 10, 'b');
+  (gfx_measurestr(#_xh, tw, th); tw /= zp_sc; th /= zp_sc);
+  _bw_m = tw + 12; _bh_m = th + 8;
+  _bx_m = min(gx1 - _bw_m - 4, max(gx0 + 4, zp_mx + 10));
+  _by_m = max(gy0 + 4, min(gy1 - _bh_m - 4, zp_my - _bh_m - 6));
+  gfx_set(card_r, card_g, card_b, 0.94); zp_rect(_bx_m, _by_m, _bw_m, _bh_m);
+  gfx_set(line_r, line_g, line_b, 0.9); draw_frame(_bx_m, _by_m, _bw_m, _bh_m);
+  gfx_set(txt_r, txt_g, txt_b, 0.96);
+  zp_gx = _bx_m + 6; zp_gy = _by_m + 4; zp_drawstr(#_xh);
 );
 
 // ---- Letture in basso: 4 box zona + Card pendenza/esito ----

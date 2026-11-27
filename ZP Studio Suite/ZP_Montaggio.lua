@@ -94,6 +94,55 @@ function M.words_from_transcript(doc, offset)
   return out
 end
 
+-- Parole da un file SRT gia' esistente accanto al WAV (evita di ritrascrivere se .zpwords.json manca).
+-- Distribuisce i tempi di ciascuna parola in proporzione ai caratteri dentro la durata del cue.
+local function parse_srt_ts(ts)
+  local h, m, s, ms = ts:match("(%d+):(%d+):(%d+)[,%.:](%d+)")
+  if not h then return nil end
+  return tonumber(h) * 3600 + tonumber(m) * 60 + tonumber(s) + tonumber(ms) / 1000
+end
+
+function M.words_from_srt(srt_text, offset)
+  local out = {}
+  offset = offset or 0
+  local norm = tostring(srt_text or ""):gsub("^\239\187\191", ""):gsub("\r\n?", "\n")
+  for block in (norm .. "\n\n"):gmatch("(.-)\n\n+") do
+    local lines = {}
+    for l in (block .. "\n"):gmatch("([^\n]*)\n") do
+      local c = l:gsub("^%s+", ""):gsub("%s+$", "")
+      if c ~= "" then lines[#lines + 1] = c end
+    end
+    local ts_idx, t0, t1
+    for i = 1, math.min(2, #lines) do
+      local a, b = lines[i]:match("([%d:,%.]+)%s*%-%->%s*([%d:,%.]+)")
+      if a and b then
+        t0, t1 = parse_srt_ts(a), parse_srt_ts(b)
+        if t0 and t1 and t1 > t0 then ts_idx = i; break end
+      end
+    end
+    if ts_idx then
+      local txt = table.concat(lines, " ", ts_idx + 1):gsub("<[^>]+>", " ")
+      local raw_words, total_chars = {}, 0
+      for w in txt:gmatch("%S+") do
+        local wlen = math.max(1, #w)
+        raw_words[#raw_words + 1] = { text = w, len = wlen }
+        total_chars = total_chars + wlen
+      end
+      if #raw_words > 0 then
+        local dur = math.max(0.05, t1 - t0)
+        local cur = t0
+        for _, rw in ipairs(raw_words) do
+          local wd = dur * (rw.len / total_chars)
+          out[#out + 1] = { s = cur + offset, e = cur + wd + offset, text = rw.text }
+          cur = cur + wd
+        end
+      end
+    end
+  end
+  table.sort(out, function(a, b) return a.s < b.s end)
+  return out
+end
+
 ---------------------------------------------------------------------------
 -- Testo: normalizzazione e parole
 ---------------------------------------------------------------------------
@@ -638,6 +687,79 @@ function M.set_tieni(p, iv, tieni)
   if iv.cut then iv.cut.off = tieni and true or nil end
   if iv.tipo == "alternativa" and iv.altref then iv.altref.off = tieni and true or nil end
   M.compute_keep(p)
+end
+
+-- Taglio manuale dal testo: marca/ripristina un intervallo di gettoni i1..i2 e aggiorna p.interventi + p.keep.
+function M.set_manual_cut(p, i1, i2, cut_on)
+  if not p or not p.toks or #p.toks == 0 then return nil end
+  i1 = math.max(1, math.min(#p.toks, math.floor(i1 or 1)))
+  i2 = math.max(1, math.min(#p.toks, math.floor(i2 or i1)))
+  if i1 > i2 then i1, i2 = i2, i1 end
+  for i = i1, i2 do
+    p.stato[i] = cut_on and "manuale" or "testo"
+  end
+  -- Ricostruisce gli interventi manuali contigui dai gettoni in stato "manuale"
+  local kept_iv = {}
+  for _, iv in ipairs(p.interventi or {}) do
+    if iv.tipo ~= "manuale" then kept_iv[#kept_iv + 1] = iv end
+  end
+  local first_iv = nil
+  local i = 1
+  while i <= #p.toks do
+    if p.stato[i] == "manuale" then
+      local a = i
+      while i < #p.toks and p.stato[i + 1] == "manuale" do i = i + 1 end
+      local b = i
+      local parts, lw, stati = {}, nil, {}
+      for k = a, b do
+        stati[k] = "manuale"
+        local tk = p.toks[k]
+        if tk.w ~= lw then lw = tk.w; parts[#parts + 1] = p.words[tk.w].text end
+      end
+      local iv = {
+        tipo = "manuale",
+        s = p.toks[a].s,
+        e = p.toks[b].e,
+        i1 = a,
+        i2 = b,
+        testo = table.concat(parts, " "),
+        sicurezza = "alta",
+        stati = stati,
+      }
+      kept_iv[#kept_iv + 1] = iv
+      if a <= i1 and b >= i1 then first_iv = iv end
+    end
+    i = i + 1
+  end
+  table.sort(kept_iv, function(a, b) return (a.s or -1) < (b.s or -1) end)
+  for n, iv in ipairs(kept_iv) do iv.id = n end
+  p.interventi = kept_iv
+  M.compute_keep(p)
+  return first_iv
+end
+
+function M.serialize_manual_cuts(p)
+  if not p or not p.toks then return "" end
+  local out, i = {}, 1
+  while i <= #p.toks do
+    if p.stato[i] == "manuale" then
+      local a = i
+      while i < #p.toks and p.stato[i + 1] == "manuale" do i = i + 1 end
+      out[#out + 1] = string.format("%d-%d", a, i)
+    end
+    i = i + 1
+  end
+  return table.concat(out, ",")
+end
+
+function M.restore_manual_cuts(p, str)
+  if not p or not str or str == "" then return 0 end
+  local n = 0
+  for a, b in tostring(str):gmatch("(%d+)%-(%d+)") do
+    M.set_manual_cut(p, tonumber(a), tonumber(b), true)
+    n = n + 1
+  end
+  return n
 end
 
 -- Ripresa di un piano in testo (per controlli e note): "12.34-15.00 tieni" ...

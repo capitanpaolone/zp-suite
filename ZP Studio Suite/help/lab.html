@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ZP Suite — Beta 2.6.8</title>
+<title>ZP Suite — Beta</title>
 <style>
 :root{
   --carta:#f7f6f3; --inchiostro:#1f2b35; --tenue:#5d6a74;
@@ -59,8 +59,8 @@ a{color:var(--accento)}
 </head><body>
 <main>
 <!-- lc-testata --><div class="lc-testata"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><a href="https://latocardioide.it/strumenti/">Lato Cardioide</a> &middot; Strumenti</div><!-- /lc-testata -->
-<h1>ZP Beta</h1>
-<p class="occhiello">Questi strumenti sono distribuiti come pacchetti BETA separati nella ZP Studio Suite 2.6.8. Possono cambiare mentre li proviamo insieme.</p><!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
+<h1>ZP Lab</h1>
+<p class="occhiello">Questi strumenti sono pacchetti separati della ZP Studio Suite. Dalla 2.6.9 non sono più in beta; i requisiti e i limiti indicati sotto restano validi.</p><!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
 
 
 <h2 id="plugin-brownslope-guard">ZP BrownSlope Dynamic Guard</h2>
@@ -71,23 +71,31 @@ a{color:var(--accento)}
 <li><strong>BIAS</strong> sceglie Cut-only, Balanced o Gentle Boost; <strong>MID Focus</strong> d&agrave; pi&ugrave; peso alle zone medio-basse e medio-alte.</li>
 <li><strong>Analisi stereo e M/S</strong> visibile: L, R, Mid, Side, Width e differenza L/R. La correzione resta collegata L/R per non cambiare l'immagine stereo.</li>
 <li>In testata: riquadri IN, OUT e W/D (dry/wet). Il <strong>?</strong> accanto apre questa pagina (serve il Cue Navigator acceso).</li>
+<li><strong>Telemetria Shared Bus v3.1 (2.6.9):</strong> pubblica lo stato del guardiano dinamico, il mix W/D e il guadagno di uscita verso <em>ZP Master Pro</em> (scheda <code>CATENA</code>) e <em>39 ZP Telemetry Engine</em>.</li>
 </ul>
-<p class="nota"><strong>BETA.</strong> Da provare in sessioni reali; non usare come passaggio non verificato in una consegna.</p>
+<p class="nota">Verificalo in sessioni reali prima di usarlo in una consegna.</p>
 
 <h2 id="plugin-click-attack">ZP Click &amp; Attack Softener</h2>
-<p><strong>BETA.</strong> De-Click e arrotondamento degli attacchi vocali con lookahead e compensazione PDC. Il Cue Navigator &egrave; facoltativo e serve solo al pulsante <code>?</code> per aprire questa guida.</p>
-<p class="nota">Provalo su copie di riprese vocali e confronta il risultato con il bypass prima di usarlo in una consegna.</p>
+<p>Pulizia impulsi e arrotondamento degli attacchi in tre stadi in serie con compensazione PDC fissa (<code>~14,7 ms</code> a 48 kHz, zero salti di latenza in automazione):</p>
+<ul>
+<li><strong>1A &middot; MACRO CLICK:</strong> attenuatore simmetrico pre/post a due bande per gli impulsi macro (<code>0,5&ndash;4 ms</code>), con <em>Protezione Consonanti</em> per preservare <code>p/t/k</code> prima delle vocali.</li>
+<li><strong>1B &middot; MICRO-CLICK (v1.3 &mdash; motore spettrale STFT + Freq Skew):</strong> stadio attivabile (<code>MICRO-CLICK: ON/OFF</code>) con analisi tempo-frequenza a finestra corta (<code>5,3 ms</code>, overlap <code>75%</code> Hann-COLA). Il controllo continuo <strong><code>Freq Skew</code></strong> (<code>-10..+10</code>, <code>LOW &harr; AIR</code>) calibra sia il pavimento spettrale (da <code>380 Hz</code> per i click bassi e umidi fino a <code>2,6 kHz</code> per i soli micro-impulsi in aria, lasciando sempre intatta la fondamentale vocale) sia il peso tra bande su Macro e Micro-Click. Il rotore <strong><code>Micro %</code></strong> (<code>slider20</code>) &egrave; pensato per l'<strong>automazione in timeline su REAPER</strong>, cos&igrave; da farlo intervenire solo dove serve.</li>
+<li><strong>2 &middot; ATTACK SOFTENER:</strong> smussa i primi millisecondi degli attacchi duri solo sopra la frequenza di taglio (crossover SVF coerente di fase, basse e corpo intatti).</li>
+<li><strong>DELTA, D&middot;MOLLA e Telemetria:</strong> ascolto <code>DELTA</code> globale (auto-off a <code>30 s</code>), <code>D&middot;MOLLA</code> per isolare al volo lo scarto del singolo stadio (<code>MACRO</code>, <code>MICRO</code> o <code>ATTACK</code>) e telemetria <strong>Shared Bus v3.1</strong> verso <em>ZP Master Pro</em> e <em>39 ZP Telemetry Engine</em>. Il Cue Navigator &egrave; facoltativo e serve solo al pulsante <code>?</code>.</li>
+</ul>
+<p class="nota">Provalo su copie di riprese vocali e confronta il risultato con il bypass o col DELTA prima di usarlo in una consegna.</p>
 
 <h2 id="montaggio-parlato">ZP Montaggio Parlato</h2>
-<p><strong>BETA.</strong> Analizza item audio WAV, trascrive con ZP Speech e propone una bozza di montaggio. La decisione resta all'utente; APPLICA lavora sugli item con split e note di montaggio in un solo Undo.</p>
+<p>Analizza item audio WAV, trascrive con ZP Speech e propone una bozza di montaggio. La decisione resta all'utente; APPLICA lavora sugli item con split e note di montaggio in un solo Undo.</p>
 <p>Richiede ZP Studio Suite e ZP Speech installato dal <strong>33 Benvenuto</strong>, con un provider pronto: MacWhisper oppure OpenAI Whisper locale con un modello. Al momento e' collaudato su macOS. Per importare PDF serve <code>pdftotext</code> (Poppler); gli altri formati usano <code>textutil</code>. Incolla e' facoltativo e richiede SWS; senza SWS puoi caricare il copione da file.</p>
 
 <h2 id="clean-paint">ZP Clean &amp; Paint</h2>
-<p><strong>BETA.</strong> Il pacchetto ReaPack contiene le action REAPER, non il motore AI. Serve un'installazione separata di <em>ZP Voice Model Lab</em>, con CLI <code>engines/rvc_local/zp_clean_paint_cli.py</code>, Python nel suo ambiente locale, <code>data/paint_presets.json</code> e i modelli necessari alla modalita' scelta.</p>
+<p>Il pacchetto ReaPack contiene le action REAPER, non il motore AI. Serve un'installazione separata di <em>ZP Voice Model Lab</em>, con CLI <code>engines/rvc_local/zp_clean_paint_cli.py</code>, Python nel suo ambiente locale, <code>data/paint_presets.json</code> e i modelli necessari alla modalita' scelta.</p>
 <p>Configura il percorso assoluto del progetto esterno in <code>~/Library/Application Support/ZP_Clean_Paint/lab_root_path.txt</code> (macOS) o <code>%APPDATA%/ZP_Clean_Paint/lab_root_path.txt</code> (Windows). Per PAINT servono il modello RVC e i relativi indici; il controllo del 33 verifica CLI, Python e preset, non i modelli. Il motore resta in sviluppo.</p>
 
+<p class="nota"><strong>Esclusione di garanzia (GPLv3):</strong> tutti gli strumenti della ZP Suite — e in particolare questi pacchetti — sono forniti <em>&laquo;cos&igrave; com'&egrave;&raquo;</em> senza alcuna garanzia espressa o implicita. Usali sempre su copie di lavoro e conserva backup dei progetti.</p>
 <p class="nota"><a href="index.html">Torna alla guida completa</a></p>
-<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Sviluppata su un'idea di Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
+<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; <a href="https://latocardioide.it/strumenti/">latocardioide.it</a> &middot; <a href="https://dubbertools.com/">dubbertools.com</a></span></p><!-- /lc-piede -->
 </main>
 </body>
 </html>

@@ -31,6 +31,12 @@ M.CHAINS = {
   { "fxchains/ZP_MasterChain.RfxChain", "ZP MasterChain.RfxChain" },
 }
 
+-- template di progetto calibrati (solo plugin ZP): file nel pacchetto -> nome in REAPER/ProjectTemplates
+M.TEMPLATES = {
+  { "templates/ZP_Setup_VoiceOver_18LUFS.RPP", "ZP Setup VoiceOver (-18 LUFS).RPP" },
+  { "templates/ZP_Setup_Mix_Spot_8LUFS.RPP", "ZP Setup Mix-Spot (-8 LUFS).RPP" },
+}
+
 -- preset dei JSFX: file nel pacchetto -> stesso nome in REAPER/presets (unione per nome)
 M.PRESETS = {
   "js-ZP Suite_ZP Voce_ZP BUS Chain_jsfx.ini",
@@ -50,6 +56,7 @@ M.LAYOUT = {
   { "19_Report_Minuti_Voce.lua", "Report minuti voce", "ZP_tbB_19_Report_Minuti.png", "toolbar_misc_calculate_numeric.png" },
   "-",
   { "29_ZP_Trascrizione.lua", "ZP Trascrizione", "ZP_tbB_29_Trascrizione.png", "ZP_tb_29_Pannello_Trascrizione.png" },
+  { "36_ZP_Montaggio_Parlato.lua", "Montaggio Parlato", "ZP_tbB_36_Montaggio_Parlato.png", "toolbar_misc_brush_broom_clean.png" },
   "-",
   { "02_Gobbo_Verticale.lua", "Gobbo verticale", "ZP_tbB_02_Gobbo_Verticale.png", "toolbar_item_selected_move_vertical_track.png" },
   { "03_Gobbo_Orizzontale.lua", "Gobbo orizzontale", "ZP_tbB_03_Gobbo_Orizzontale.png", "toolbar_item_selected_move_horizontal_position_time.png" },
@@ -431,6 +438,27 @@ for _, c in ipairs(M.CHAINS) do
   end
 end
 
+-- template di progetto in REAPER/ProjectTemplates (senza sovrascrivere eventuali personalizzazioni)
+local tpl_dir = resource .. sep .. "ProjectTemplates"
+reaper.RecursiveCreateDirectory(tpl_dir, 0)
+local tpl_lines = {}
+for _, t in ipairs(M.TEMPLATES) do
+  local data = read(here .. sep .. t[1]:gsub("/", sep))
+  local dest = tpl_dir .. sep .. t[2]
+  local existing = read(dest)
+  if not data then
+    tpl_lines[#tpl_lines + 1] = t[2] .. ": non trovato nel pacchetto"
+  elseif existing == data then
+    tpl_lines[#tpl_lines + 1] = t[2] .. ": gia' aggiornato"
+  elseif existing then
+    tpl_lines[#tpl_lines + 1] = t[2] .. ": presente, non toccato"
+  else
+    local out = io.open(dest, "wb")
+    if out then out:write(data); out:close(); tpl_lines[#tpl_lines + 1] = t[2] .. ": installato"
+    else tpl_lines[#tpl_lines + 1] = t[2] .. ": non riesco a scriverlo" end
+  end
+end
+
 -- preset dei JSFX in REAPER/presets
 local preset_dir = resource .. sep .. "presets"
 reaper.RecursiveCreateDirectory(preset_dir, 0)
@@ -484,6 +512,7 @@ msg = msg .. "\n\n" .. colori_msg
 if #registered > 0 then msg = msg .. "\n\nRegistrati ora nell'Action List: " .. table.concat(registered, ", ") end
 if #missing > 0 then msg = msg .. "\n\nNON trovati (pulsante saltato): " .. table.concat(missing, ", ") end
 msg = msg .. "\n\nCatene di effetti per il SOLO Recorder (REAPER/FXChains):\n" .. table.concat(chain_lines, "\n")
+msg = msg .. "\n\nTemplate di progetto calibrati (REAPER/ProjectTemplates):\n" .. table.concat(tpl_lines, "\n")
 msg = msg .. "\n\nPreset per il Chain Builder (REAPER/presets):\n" .. table.concat(preset_lines, "\n")
 if marker_msg then msg = msg .. "\n\nMarker degli item: " .. marker_msg end
 reaper.MB(msg, "ZP Installa toolbar ed effetti", 0)
