@@ -178,7 +178,9 @@ end
 -- inventate.
 -- ---------------------------------------------------------------------
 
-local STRONG_MARKERS = { "paolo balestri", "zio paolo", "paolobalestri.com" }
+-- Le firme storiche (zio paolo, paolobalestri.com) restano: riconoscono i file delle vecchie installazioni.
+-- Le firme attuali (Lato Cardioide) riconoscono quelli nuovi.
+local STRONG_MARKERS = { "paolo balestri", "zio paolo", "paolobalestri.com", "latocardioide.it", "lato cardioide" }
 
 local function has_strong_signature(text)
   local low = text:lower()

@@ -1,0 +1,617 @@
+// @description ZP Audition Noise Monitor (Monitor FX)
+// @version 1.1
+// @author Paolo Balestri
+// @license GPL-3.0-or-later
+// @about
+//   ### ZP Audition Noise Monitor (Monitor FX)
+//   Simulatore di ascolto in auto e ambienti rumorosi + simulatore diffusori da inserire nella catena Monitor FX di REAPER
+//   (non entra mai nel mix ne' nei render). Offre 4 profili acustici calibrati a 0 dBFS RMS (Auto Citta', Autostrada,
+//   Ambiente Rosa, Treno/Aereo), livello riferito al programma (SNR -24..+6 dB), 4 profili diffusore Monitor FX
+//   (Studio Flat, Auto / Furgone, Soffitto / Ufficio mono, Cuffiette Open con filtro passivo sul rumore),
+//   gate automatico allo stop, soft-limiter di sicurezza (-0.3 dBFS) e telecomando da ZP Master Pro via gmem[3670..3683].
+//
+//   Car and noisy-environment audition simulator + Monitor FX speaker simulator for REAPER's Monitor FX chain
+//   (never printed to the mix or renders). Features 4 RMS-calibrated acoustic profiles (City Car, Highway,
+//   Pink Environment, Train/Cabin), program-referenced SNR (-24..+6 dB), 4 Monitor FX speaker sims
+//   (Studio Flat, Car / Van, Ceiling / Office mono, Open Earbuds), stop auto-mute, -0.3 dBFS safety soft-limiter
+//   and remote control from ZP Master Pro over ZP Shared Bus (gmem[3670..3683]).
+//
+//   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
+// @changelog
+//   1.1: Calibrazione RMS reale 0 dBFS per i 4 profili ambiente (+24.8 dB di allineamento al target LUFS/dBFS),
+//     range SNR esteso a +6 dB (tasti -18..-3, 0, +3 dB), simulazione diffusori in Monitor FX (Studio Flat,
+//     Auto / Furgone, Soffitto / Ufficio mono, Cuffiette Open con attenuazione passiva -3.5 dB @ 2.5 kHz sul rumore),
+//     soft-limiter protettivo Monitor FX (-1.0..-0.3 dBFS), banner ambra con ascolto simulato attivo e controllo srate.
+//   1.0: Prima versione — 4 profili calibrati (Auto Citta', Autostrada, Ambiente Rosa, Treno/Aereo),
+//     stereofonia decorrelata, calibrazione SNR rispetto al target LUFS, gate allo stop e ponte gmem con ZP Master Pro.
+
+desc:ZP Audition Noise Monitor (Monitor FX) · latocardioide.it · dubbertools.com
+tags: monitor audition noise car speaker pink highway reference zp paolo balestri
+options:gmem=ZPVoiceoverSharedBus
+
+slider1:noise_on=0<0,1,1{Off,On}>Audition Noise
+slider2:noise_profile=1<0,3,1{Auto Citta',Autostrada,Ambiente Rosa,Treno / Aereo}>Environment Profile
+slider3:noise_snr_db=-12<-24,6,0.5>Noise vs Program [dB]
+slider4:ref_lufs=-16<-30,-9,0.5>Program Ref [LUFS]
+slider5:play_only=1<0,1,1{Continuo,Solo in Play}>Play Gate
+slider6:spk_profile=0<0,3,1{Studio Flat,Auto / Furgone,Soffitto / Ufficio,Cuffiette Open}>Playback / Speaker Sim
+
+@init
+ext_noinit = 1;
+// ---- ZP Proportional Zoom Engine (GUI-only, zero DSP impact) ----
+zp_sc = 1.0; zp_ox = 0.0; zp_vw = 560.0; zp_vh = 374.0; zp_gx = 0.0; zp_gy = 0.0; zp_mx = 0.0; zp_my = 0.0;
+function zp_rect(x, y, w, h) (
+  (x <= 0 && y <= 0 && w >= zp_vw && h >= zp_vh - 1) ? gfx_rect(0, 0, gfx_w, gfx_h) :
+  gfx_rect(floor(zp_ox + (x) * zp_sc + 0.5), floor((y) * zp_sc + 0.5), max(1, floor((w) * zp_sc + 0.5)), max(1, floor((h) * zp_sc + 0.5)));
+);
+function zp_circle(x, y, r, fill) (
+  gfx_circle(zp_ox + (x) * zp_sc, (y) * zp_sc, max(1, (r) * zp_sc), fill, 1);
+);
+function zp_setfont(idx, fname, sz) ( gfx_setfont(idx, fname, max(7, floor((sz) * zp_sc + 0.5))); );
+function zp_setfont(idx, fname, sz, flg) ( gfx_setfont(idx, fname, max(7, floor((sz) * zp_sc + 0.5)), flg); );
+function zp_drawstr(s) (
+  gfx_x = floor(zp_ox + zp_gx * zp_sc + 0.5);
+  gfx_y = floor(zp_gy * zp_sc + 0.5);
+  gfx_drawstr(s);
+  zp_gx = (gfx_x - zp_ox) / zp_sc;
+  zp_gy = gfx_y / zp_sc;
+);
+
+function clamp(v, lo, hi) ( v < lo ? lo : (v > hi ? hi : v); );
+function db2lin(d) ( exp(d * 0.11512925464970229); );
+function lin2db(x) ( 20 * log(max(x, 0.000000000001)) / log(10); );
+
+// Biquad stereofonici per simulazione diffusori Monitor FX e filtro passivo cuffiette
+function anm_bq_bypass() (
+  this.b0 = 1; this.b1 = 0; this.b2 = 0; this.a1 = 0; this.a2 = 0;
+);
+function anm_bq_reset() (
+  this.x1l = 0; this.x2l = 0; this.y1l = 0; this.y2l = 0;
+  this.x1r = 0; this.x2r = 0; this.y1r = 0; this.y2r = 0;
+);
+function anm_bq_hp(freq, qv) local(sr, w0, cw, sw, al, a0) (
+  sr = max(8000, srate);
+  w0 = 2 * $pi * min(sr * 0.45, max(10, freq)) / sr;
+  cw = cos(w0); sw = sin(w0); al = sw / (2 * max(0.1, qv));
+  a0 = 1 + al;
+  this.b0 = (1 + cw) * 0.5 / a0;
+  this.b1 = -(1 + cw) / a0;
+  this.b2 = this.b0;
+  this.a1 = -2 * cw / a0;
+  this.a2 = (1 - al) / a0;
+);
+function anm_bq_lp(freq, qv) local(sr, w0, cw, sw, al, a0) (
+  sr = max(8000, srate);
+  w0 = 2 * $pi * min(sr * 0.45, max(10, freq)) / sr;
+  cw = cos(w0); sw = sin(w0); al = sw / (2 * max(0.1, qv));
+  a0 = 1 + al;
+  this.b0 = (1 - cw) * 0.5 / a0;
+  this.b1 = (1 - cw) / a0;
+  this.b2 = this.b0;
+  this.a1 = -2 * cw / a0;
+  this.a2 = (1 - al) / a0;
+);
+function anm_bq_pk(freq, qv, dbg) local(sr, amp_g, w0, cw, sw, al, a0) (
+  sr = max(8000, srate);
+  amp_g = exp(dbg * 0.05756462732485114);
+  w0 = 2 * $pi * min(sr * 0.45, max(10, freq)) / sr;
+  cw = cos(w0); sw = sin(w0); al = sw / (2 * max(0.1, qv));
+  a0 = 1 + al / amp_g;
+  this.b0 = (1 + al * amp_g) / a0;
+  this.b1 = -2 * cw / a0;
+  this.b2 = (1 - al * amp_g) / a0;
+  this.a1 = this.b1;
+  this.a2 = (1 - al / amp_g) / a0;
+);
+function anm_bq_hs(freq, sq, dbg) local(sr, amp_g, sq_a, w0, cw, sw, al, a0) (
+  sr = max(8000, srate);
+  amp_g = exp(dbg * 0.05756462732485114);
+  sq_a = sqrt(amp_g);
+  w0 = 2 * $pi * min(sr * 0.45, max(10, freq)) / sr;
+  cw = cos(w0); sw = sin(w0); al = sw / (2 * max(0.1, sq));
+  a0 = (amp_g + 1) - (amp_g - 1) * cw + 2 * sq_a * al;
+  this.b0 = amp_g * ((amp_g + 1) + (amp_g - 1) * cw + 2 * sq_a * al) / a0;
+  this.b1 = -2 * amp_g * ((amp_g - 1) + (amp_g + 1) * cw) / a0;
+  this.b2 = amp_g * ((amp_g + 1) + (amp_g - 1) * cw - 2 * sq_a * al) / a0;
+  this.a1 = 2 * ((amp_g - 1) - (amp_g + 1) * cw) / a0;
+  this.a2 = ((amp_g + 1) - (amp_g - 1) * cw - 2 * sq_a * al) / a0;
+);
+function anm_bq_proc_l(xin) local(yout) (
+  yout = this.b0 * xin + this.b1 * this.x1l + this.b2 * this.x2l - this.a1 * this.y1l - this.a2 * this.y2l;
+  this.x2l = this.x1l; this.x1l = xin; this.y2l = this.y1l; this.y1l = yout;
+  yout;
+);
+function anm_bq_proc_r(xin) local(yout) (
+  yout = this.b0 * xin + this.b1 * this.x1r + this.b2 * this.x2r - this.a1 * this.y1r - this.a2 * this.y2r;
+  this.x2r = this.x1r; this.x1r = xin; this.y2r = this.y1r; this.y1r = yout;
+  yout;
+);
+
+// Nascondi slider nativi (GUI dedicata zoomabile)
+slider_show(slider1, 0); slider_show(slider2, 0); slider_show(slider3, 0);
+slider_show(slider4, 0); slider_show(slider5, 0); slider_show(slider6, 0);
+
+// Generatore PRNG leggero indipendente L/R (LCG 24-bit sicuro in EEL2)
+rng_l = 1234567;
+rng_r = 7654321;
+function rand_l() (
+  rng_l = (rng_l * 1664525 + 1013904223) & 16777215;
+  (rng_l / 8388608.0) - 1.0;
+);
+function rand_r() (
+  rng_r = (rng_r * 1664525 + 1013904223) & 16777215;
+  (rng_r / 8388608.0) - 1.0;
+);
+
+// Paul Kellet pink filter state (L/R)
+pb0L=pb1L=pb2L=pb3L=pb4L=pb5L=pb6L=0;
+pb0R=pb1R=pb2R=pb3R=pb4R=pb5R=pb6R=0;
+
+// Filtri 1-pole di modellazione acustica ambienti (L/R)
+lp_subL=lp_subR=0;
+lp_lowL=lp_lowR=0;
+lp_midL=lp_midR=0;
+lp_hiL=lp_hiR=0;
+hp_dcL=hp_dcR=0;
+
+env_g = 0;
+prog_rms_env = 0.000000000001;
+noise_rms_env = 0.000000000001;
+ui_prog_db = -90;
+ui_noise_db = -90;
+ui_snr_real = 0;
+last_cmd_seq = -1;
+ui_lang = 0;
+last_cap = 0;
+host_warn_non_master = 0;
+cur_spk = clamp(floor(spk_profile + 0.5), 0, 3);
+spk_act = cur_spk;
+spk_wet = cur_spk > 0 ? 1.0 : 0.0;
+spk_tgt_wet = spk_wet;
+spk_mk = 1.0;
+spk_mono = 0;
+spk_xf = 0;
+
+function spk_reset_filters() (
+  spk_f1.anm_bq_reset();
+  spk_f2.anm_bq_reset();
+  spk_f3.anm_bq_reset();
+  spk_f4.anm_bq_reset();
+  spk_f5.anm_bq_reset();
+  amb_ear_hs.anm_bq_reset();
+);
+
+function spk_apply_coefs(ps) (
+  ps == 1 ? (
+    // Auto / Furgone: cassa portiera/cruscotto 85 Hz - 10.5 kHz + leggero crossfeed abitacolo
+    spk_f1.anm_bq_hp(85, 0.75);
+    spk_f2.anm_bq_pk(135, 1.10, 3.0);
+    spk_f3.anm_bq_pk(380, 0.90, -3.5);
+    spk_f4.anm_bq_pk(2800, 1.00, 2.5);
+    spk_f5.anm_bq_lp(10500, 0.7071);
+    spk_mk = 1.004; spk_mono = 0; spk_xf = 0.08;
+  ) : ps == 2 ? (
+    // Soffitto / Ufficio: altoparlante mono incassato 250 Hz - 5.2 kHz
+    spk_f1.anm_bq_hp(250, 0.85);
+    spk_f2.anm_bq_pk(1800, 1.10, 3.5);
+    spk_f3.anm_bq_lp(5200, 0.80);
+    spk_f4.anm_bq_bypass();
+    spk_f5.anm_bq_bypass();
+    spk_mk = 1.04; spk_mono = 1; spk_xf = 0;
+  ) : ps == 3 ? (
+    // Cuffiette Open: driver aperto + leggera presenza 3.2 kHz
+    spk_f1.anm_bq_hp(105, 0.65);
+    spk_f2.anm_bq_pk(3200, 0.90, 2.0);
+    spk_f3.anm_bq_lp(14500, 0.7071);
+    spk_f4.anm_bq_bypass();
+    spk_f5.anm_bq_bypass();
+    spk_mk = 1.015; spk_mono = 0; spk_xf = 0;
+  ) : (
+    // Studio Flat: bypass bit-identico
+    spk_f1.anm_bq_bypass();
+    spk_f2.anm_bq_bypass();
+    spk_f3.anm_bq_bypass();
+    spk_f4.anm_bq_bypass();
+    spk_f5.anm_bq_bypass();
+    spk_mk = 1.0; spk_mono = 0; spk_xf = 0;
+  );
+);
+
+function update_speaker_coefs() (
+  amb_ear_hs.anm_bq_hs(2500, 0.7071, -3.5);
+  spk_apply_coefs(spk_act);
+);
+
+function update_coefs() local(sr) (
+  sr = max(8000, srate);
+  c_dc  = exp(-2 * $pi * 28 / sr);
+  c_sub = exp(-2 * $pi * 165 / sr);
+  c_low = exp(-2 * $pi * 320 / sr);
+  c_mid = exp(-2 * $pi * 1600 / sr);
+  c_hi  = exp(-2 * $pi * 4200 / sr);
+  c_fade = exp(-1 / (0.030 * sr));
+  c_spk_fade = exp(-1 / (0.008 * sr));
+  c_meter = exp(-1 / (0.300 * sr));
+);
+update_coefs();
+update_speaker_coefs();
+spk_reset_filters();
+last_srate = srate;
+
+function sync_profile_params() local(pr) (
+  pr = clamp(floor(noise_profile + 0.5), 0, 3);
+  cur_prof = pr;
+  // Pesi spettrali + norm_g calibrato a 0 dBFS RMS reale (verificato 48/96 kHz)
+  pr == 0 ? (
+    // Auto Citta': rotolamento moderato + corpo urbano + rolloff dolci alti
+    w_sub = 1.65; w_low = 0.85; w_mid = 0.45; w_hi = 0.16; norm_g = 5.90;
+  ) : pr == 1 ? (
+    // Autostrada: forti bassi rotolamento 40-250 Hz + fruscio aerodinamico 500-2500 Hz
+    w_sub = 2.50; w_low = 1.10; w_mid = 0.62; w_hi = 0.22; norm_g = 4.01;
+  ) : pr == 2 ? (
+    // Ambiente Rosa: rumore rosa classico -3 dB/oct a banda intera
+    w_sub = 0.72; w_low = 0.72; w_mid = 0.72; w_hi = 0.72; norm_g = 8.75;
+  ) : (
+    // Treno / Aereo: drone basso profondo + soffio cabina pressurizzata
+    w_sub = 2.85; w_low = 0.65; w_mid = 0.48; w_hi = 0.44; norm_g = 3.81;
+  );
+  cur_spk = clamp(floor(spk_profile + 0.5), 0, 3);
+  tgt_noise_dbfs = clamp(ref_lufs + noise_snr_db, -60, 0);
+  tgt_noise_lin = db2lin(tgt_noise_dbfs);
+);
+sync_profile_params();
+help_warn_until = 0; zp_hb_seen = 0; zp_hb_last = 0; zp_hb_t = -10;
+
+@slider
+update_coefs();
+sync_profile_params();
+
+@block
+srate != last_srate ? (
+  update_coefs();
+  update_speaker_coefs();
+  spk_reset_filters();
+  last_srate = srate;
+);
+
+// Verifica se siamo su traccia ordinaria (warning visivo: va messo in Monitor FX!)
+_hfx = 0; _hfl = 0;
+_htr = get_host_placement(_hfx, _hfl);
+host_warn_non_master = (_htr >= 0) ? 1 : 0;
+
+// Ricezione comandi da ZP Master Pro via gmem[3670..3676]
+_now = time_precise();
+(gmem[3670] == 905367 && (_now - gmem[3676]) <= 4.0) ? (
+  _cseq = floor(gmem[3671] + 0.5);
+  _cseq != last_cmd_seq ? (
+    last_cmd_seq = _cseq;
+    noise_on = clamp(floor(gmem[3672] + 0.5), 0, 1);
+    noise_profile = clamp(floor(gmem[3673] + 0.5), 0, 3);
+    noise_snr_db = clamp(gmem[3674], -24, 6);
+    _rl = gmem[3675];
+    (_rl > -40 && _rl < -3) ? (ref_lufs = clamp(_rl, -30, -9););
+    sliderchange(slider1); sliderchange(slider2); sliderchange(slider3); sliderchange(slider4);
+  );
+  master_link_ok = 1;
+) : (
+  master_link_ok = 0;
+);
+
+sync_profile_params();
+gate_open = (noise_on >= 0.5) && (play_only < 0.5 || (play_state & 1)) ? 1 : 0;
+target_env = gate_open ? tgt_noise_lin : 0;
+
+// Pubblica stato e heartbeat verso ZP Master Pro su gmem[3678..3683]
+gmem[3678] = 905368;
+gmem[3679] = _now;
+gmem[3680] = noise_on >= 0.5 ? 1 : 0;
+gmem[3681] = cur_prof;
+gmem[3682] = noise_snr_db;
+gmem[3683] = tgt_noise_dbfs;
+
+@sample
+// Misura programma in ingresso (prima di simulazione diffusore o rumore)
+_pp = 0.5 * (spl0 * spl0 + spl1 * spl1);
+prog_rms_env = _pp + c_meter * (prog_rms_env - _pp);
+
+// Transizione click-free del profilo diffusore (Monitor FX only)
+cur_spk != spk_act ? (
+  spk_wet = c_spk_fade * spk_wet;
+  spk_wet < 0.001 ? (
+    spk_wet = 0;
+    spk_act = cur_spk;
+    spk_apply_coefs(spk_act);
+    spk_reset_filters();
+  );
+) : (
+  spk_tgt_wet = spk_act > 0 ? 1.0 : 0.0;
+  spk_wet = spk_tgt_wet + c_spk_fade * (spk_wet - spk_tgt_wet);
+  (spk_tgt_wet == 0 && spk_wet < 0.000001) ? (spk_wet = 0;);
+);
+
+spk_wet > 0.000001 ? (
+  _spl_fx = spl0; _spr_fx = spl1;
+  spk_mono ? (
+    _spm_fx = 0.5 * (_spl_fx + _spr_fx);
+    _spl_fx = _spm_fx; _spr_fx = _spm_fx;
+  ) : spk_xf > 0 ? (
+    _spm_fx = _spl_fx;
+    _spl_fx = _spl_fx * (1.0 - spk_xf) + _spr_fx * spk_xf;
+    _spr_fx = _spr_fx * (1.0 - spk_xf) + _spm_fx * spk_xf;
+  );
+  _spl_fx = spk_f1.anm_bq_proc_l(_spl_fx); _spr_fx = spk_f1.anm_bq_proc_r(_spr_fx);
+  _spl_fx = spk_f2.anm_bq_proc_l(_spl_fx); _spr_fx = spk_f2.anm_bq_proc_r(_spr_fx);
+  _spl_fx = spk_f3.anm_bq_proc_l(_spl_fx); _spr_fx = spk_f3.anm_bq_proc_r(_spr_fx);
+  spk_act == 1 ? (
+    _spl_fx = spk_f4.anm_bq_proc_l(_spl_fx); _spr_fx = spk_f4.anm_bq_proc_r(_spr_fx);
+    _spl_fx = spk_f5.anm_bq_proc_l(_spl_fx); _spr_fx = spk_f5.anm_bq_proc_r(_spr_fx);
+  );
+  _spl_fx *= spk_mk; _spr_fx *= spk_mk;
+  spl0 = spl0 + spk_wet * (_spl_fx - spl0);
+  spl1 = spl1 + spk_wet * (_spr_fx - spl1);
+);
+
+// Fade click-free del livello rumore
+env_g = target_env + c_fade * (env_g - target_env);
+
+env_g > 0.000001 ? (
+  // Rumore bianco decorrelato L/R -> filtro Rosa Paul Kellet
+  _wL = rand_l();
+  pb0L = 0.99886 * pb0L + _wL * 0.0555179;
+  pb1L = 0.99332 * pb1L + _wL * 0.0750759;
+  pb2L = 0.96900 * pb2L + _wL * 0.1538520;
+  pb3L = 0.86650 * pb3L + _wL * 0.3104856;
+  pb4L = 0.55000 * pb4L + _wL * 0.5329522;
+  pb5L = -0.7616 * pb5L - _wL * 0.0168980;
+  _pkL = (pb0L + pb1L + pb2L + pb3L + pb4L + pb5L + pb6L + _wL * 0.5362) * 0.11;
+  pb6L = _wL * 0.115926;
+
+  _wR = rand_r();
+  pb0R = 0.99886 * pb0R + _wR * 0.0555179;
+  pb1R = 0.99332 * pb1R + _wR * 0.0750759;
+  pb2R = 0.96900 * pb2R + _wR * 0.1538520;
+  pb3R = 0.86650 * pb3R + _wR * 0.3104856;
+  pb4R = 0.55000 * pb4R + _wR * 0.5329522;
+  pb5R = -0.7616 * pb5R - _wR * 0.0168980;
+  _pkR = (pb0R + pb1R + pb2R + pb3R + pb4R + pb5R + pb6R + _wR * 0.5362) * 0.11;
+  pb6R = _wR * 0.115926;
+
+  // Rimozione DC (< 28 Hz) e modellazione 4 bande ambiente
+  hp_dcL = _pkL + c_dc * (hp_dcL - _pkL); _sL = _pkL - hp_dcL;
+  lp_subL = _sL + c_sub * (lp_subL - _sL); _r1L = _sL - lp_subL;
+  lp_lowL = _r1L + c_low * (lp_lowL - _r1L); _r2L = _r1L - lp_lowL;
+  lp_midL = _r2L + c_mid * (lp_midL - _r2L); _r3L = _r2L - lp_midL;
+  lp_hiL  = _r3L + c_hi  * (lp_hiL  - _r3L);
+  _nL = (lp_subL * w_sub + lp_lowL * w_low + lp_midL * w_mid + lp_hiL * w_hi) * norm_g * env_g;
+
+  hp_dcR = _pkR + c_dc * (hp_dcR - _pkR); _sR = _pkR - hp_dcR;
+  lp_subR = _sR + c_sub * (lp_subR - _sR); _r1R = _sR - lp_subR;
+  lp_lowR = _r1R + c_low * (lp_lowR - _r1R); _r2R = _r1R - lp_lowR;
+  lp_midR = _r2R + c_mid * (lp_midR - _r2R); _r3R = _r2R - lp_midR;
+  lp_hiR  = _r3R + c_hi  * (lp_hiR  - _r3R);
+  _nR = (lp_subR * w_sub + lp_lowR * w_low + lp_midR * w_mid + lp_hiR * w_hi) * norm_g * env_g;
+
+  // Leggera coerenza centrale (abitacolo reale)
+  _nM = 0.25 * (_nL + _nR);
+  _nL = _nL * 0.75 + _nM;
+  _nR = _nR * 0.75 + _nM;
+
+  // Cuffiette Open: attenuazione passiva alta frequenza del rumore esterno (-3.5 dB @ 2.5 kHz) sincronizzata al crossfade spk_wet
+  (spk_act == 3 && spk_wet > 0.000001) ? (
+    _nL = _nL + spk_wet * (amb_ear_hs.anm_bq_proc_l(_nL) - _nL);
+    _nR = _nR + spk_wet * (amb_ear_hs.anm_bq_proc_r(_nR) - _nR);
+  );
+
+  _np = 0.5 * (_nL * _nL + _nR * _nR);
+  noise_rms_env = _np + c_meter * (noise_rms_env - _np);
+  spl0 += _nL;
+  spl1 += _nR;
+) : (
+  noise_rms_env = 0.000000000001 + c_meter * (noise_rms_env - 0.000000000001);
+);
+
+// Soft-limiter di protezione Monitor FX (-1.0 dBFS knee -> -0.3 dBFS tetto), bypass se inattivo
+(env_g > 0.000001 || spk_wet > 0.000001) ? (
+  _pk_lim = max(abs(spl0), abs(spl1));
+  _pk_lim > 0.8912509381337456 ? (
+    _ex_lim = (_pk_lim - 0.8912509381337456) / 0.0747999408560678;
+    _sc_lim = (0.8912509381337456 + 0.0747999408560678 * (_ex_lim / (1.0 + _ex_lim))) / _pk_lim;
+    spl0 *= _sc_lim;
+    spl1 *= _sc_lim;
+  );
+);
+
+ui_prog_db = lin2db(sqrt(max(prog_rms_env, 0.000000000001)));
+ui_noise_db = lin2db(sqrt(max(noise_rms_env, 0.000000000001)));
+ui_snr_real = ui_prog_db - ui_noise_db;
+
+@gfx 560 374
+zp_dw = 560.0; zp_dh = 374.0;
+zp_sc = max(0.55, min(2.8, min(gfx_w / zp_dw, gfx_h / zp_dh)));
+zp_ox = max(0, (gfx_w - zp_dw * zp_sc) * 0.5);
+zp_vw = zp_dw; zp_vh = max(zp_dh, gfx_h / zp_sc);
+zp_mx = (mouse_x - zp_ox) / zp_sc; zp_my = mouse_y / zp_sc;
+ui_lang = (gmem[3901] == 1) ? 1 : 0;
+zp_hb = gmem[3900]; zp_hb_now = time_precise();
+!zp_hb_seen ? (zp_hb_last = zp_hb; zp_hb_seen = 1; zp_hb_t = -10;) : zp_hb != zp_hb_last ? (zp_hb_last = zp_hb; zp_hb_t = zp_hb_now;);
+zp_hb_ok = zp_hb > 0 && zp_hb_now - zp_hb_t < 3;
+click = (mouse_cap & 1) && !(last_cap & 1);
+last_cap = mouse_cap;
+
+function hit(x, y, w, h) ( zp_mx >= x && zp_mx <= x + w && zp_my >= y && zp_my <= y + h; );
+
+// Sfondo
+gfx_set(0.06, 0.07, 0.09, 1); zp_rect(0, 0, zp_vw, zp_vh);
+
+// Banner di sicurezza Monitor FX (rosso se su traccia normale, ambra se simulazione attiva, verde a riposo)
+host_warn_non_master ? (
+  gfx_set(0.58, 0.14, 0.12, 1); zp_rect(0, 0, zp_vw, 24);
+  zp_setfont(1, "Arial", 11, 'b'); gfx_set(1, 0.92, 0.88, 1);
+  zp_gx = 14; zp_gy = 6;
+  zp_drawstr(ui_lang == 0 ? "ATTENZIONE: SPOSTAMI NELLA CATENA MONITOR FX (qui rischi di renderizzare il rumore!)" : "WARNING: MOVE TO REAPER MONITOR FX CHAIN (do not leave on regular track!)");
+) : (noise_on >= 0.5 || cur_spk > 0) ? (
+  gfx_set(0.52, 0.30, 0.05, 1); zp_rect(0, 0, zp_vw, 24);
+  zp_setfont(1, "Arial", 10, 'b'); gfx_set(1.0, 0.90, 0.62, 1);
+  zp_gx = 14; zp_gy = 6;
+  zp_drawstr(ui_lang == 0 ? "MONITOR FX ATTIVO — ASCOLTO SIMULATO (rumore o diffusore inserito solo in ascolto)" : "MONITOR FX ACTIVE — AUDITION COLORED (noise or speaker sim active in monitoring)");
+) : (
+  gfx_set(0.10, 0.24, 0.18, 1); zp_rect(0, 0, zp_vw, 24);
+  zp_setfont(1, "Arial", 10, 'b'); gfx_set(0.52, 0.94, 0.72, 1);
+  zp_gx = 14; zp_gy = 6;
+  zp_drawstr(ui_lang == 0 ? "MONITOR FX — ASCOLTO SIMULATO (non entra nel mix ne' nei render)" : "MONITOR FX — AUDITION SIMULATOR (never printed to mix or renders)");
+);
+
+// Titolo + link stato Master Pro
+zp_setfont(1, "Arial", 18, 'b'); gfx_set(0.92, 0.95, 0.99, 1);
+zp_gx = 16; zp_gy = 34; zp_drawstr("ZP AUDITION NOISE");
+master_link_ok ? gfx_set(0.28, 0.90, 0.58, 1) : gfx_set(0.62, 0.68, 0.76, 0.8);
+zp_circle(248, 44, 4, 1);
+zp_setfont(1, "Arial", 10, 'b'); zp_gx = 258; zp_gy = 38;
+zp_drawstr(master_link_ok ? "MASTER PRO LINK OK" : (ui_lang == 0 ? "AUTONOMO (Monitor FX)" : "STANDALONE (Monitor FX)"));
+
+// Tasto guida ? (ponte Cue Navigator -> #plugin-audition-noise)
+_hqx = zp_vw - 150; _hqy = 34; _hqw = 26; _hqh = 30;
+hit(_hqx, _hqy, _hqw, _hqh) ? gfx_set(0.20, 0.34, 0.56, 1) : gfx_set(0.12, 0.15, 0.21, 1);
+zp_rect(_hqx, _hqy, _hqw, _hqh);
+zp_setfont(1, "Arial", 13, 'b'); gfx_set(0.86, 0.93, 1.0, 1);
+zp_gx = _hqx + 9; zp_gy = _hqy + 7; zp_drawstr("?");
+click && hit(_hqx, _hqy, _hqw, _hqh) ? (
+  zp_hb_ok ? (
+    gmem[3902] = 15;
+    gmem[3903] += 1;
+    help_warn_until = 0;
+  ) : (
+    help_warn_until = time_precise() + 4.0;
+  );
+);
+
+// Grande tasto ON/OFF
+_onx = zp_vw - 118; _ony = 34; _onw = 102; _onh = 30;
+noise_on >= 0.5 ? gfx_set(0.84, 0.34, 0.18, 1) : gfx_set(0.14, 0.17, 0.22, 1);
+zp_rect(_onx, _ony, _onw, _onh);
+zp_setfont(1, "Arial", 12, 'b'); gfx_set(0.98, 0.98, 0.99, 1);
+zp_gx = _onx + (noise_on >= 0.5 ? 14 : 26); zp_gy = _ony + 8;
+zp_drawstr(noise_on >= 0.5 ? "NOISE ON" : "OFF");
+click && hit(_onx, _ony, _onw, _onh) ? (noise_on = 1 - (noise_on >= 0.5 ? 1 : 0); sliderchange(slider1); sync_profile_params(););
+
+// 4 Profili acustici calibrati
+_py = 76; _pw = 126; _ph = 44; _pg = 8;
+_pi = 0;
+loop(4,
+  _px = 16 + _pi * (_pw + _pg);
+  cur_prof == _pi ? gfx_set(0.18, 0.48, 0.86, 1) : gfx_set(0.12, 0.14, 0.19, 1);
+  zp_rect(_px, _py, _pw, _ph);
+  zp_setfont(1, "Arial", 11, 'b'); gfx_set(0.95, 0.97, 1.0, 1);
+  zp_gx = _px + 10; zp_gy = _py + 8;
+  _pi == 0 ? zp_drawstr(ui_lang == 0 ? "AUTO CITTA'" : "CITY CAR") :
+  _pi == 1 ? zp_drawstr(ui_lang == 0 ? "AUTOSTRADA" : "HIGHWAY") :
+  _pi == 2 ? zp_drawstr(ui_lang == 0 ? "AMBIENTE ROSA" : "PINK ROOM") :
+             zp_drawstr(ui_lang == 0 ? "TRENO / AEREO" : "TRAIN / JET");
+  zp_setfont(1, "Arial", 9); gfx_set(0.72, 0.80, 0.90, 0.9);
+  zp_gx = _px + 10; zp_gy = _py + 25;
+  _pi == 0 ? zp_drawstr("50 km/h · urban") :
+  _pi == 1 ? zp_drawstr("120 km/h · sub+wind") :
+  _pi == 2 ? zp_drawstr("-3 dB/oct ref") :
+             zp_drawstr("cabin drone + air");
+  click && hit(_px, _py, _pw, _ph) ? (noise_profile = _pi; sliderchange(slider2); sync_profile_params(););
+  _pi += 1;
+);
+
+// Controlli SNR / Livello (-18..-3, 0, +3 dB) + Play Gate
+_sy = 132;
+zp_setfont(1, "Arial", 10, 'b'); gfx_set(0.62, 0.70, 0.80, 1);
+zp_gx = 16; zp_gy = _sy + 6;
+zp_drawstr(ui_lang == 0 ? "RUMORE:" : "NOISE:");
+
+_si = 0;
+loop(6,
+  _sv = _si == 0 ? -18 : _si == 1 ? -12 : _si == 2 ? -6 : _si == 3 ? -3 : _si == 4 ? 0 : 3;
+  _sx = 78 + _si * 55;
+  abs(noise_snr_db - _sv) < 0.6 ? gfx_set(0.20, 0.56, 0.82, 1) : gfx_set(0.12, 0.14, 0.19, 1);
+  zp_rect(_sx, _sy, 50, 24);
+  zp_setfont(1, "Arial", 10, 'b'); gfx_set(0.95, 0.97, 1.0, 1);
+  sprintf(#_sl, _sv > 0 ? "+%d dB" : "%d dB", _sv);
+  zp_gx = _sx + (_sv <= -10 ? 7 : _sv < 0 ? 11 : _sv > 0 ? 9 : 13); zp_gy = _sy + 6; zp_drawstr(#_sl);
+  click && hit(_sx, _sy, 50, 24) ? (noise_snr_db = _sv; sliderchange(slider3); sync_profile_params(););
+  _si += 1;
+);
+
+// Toggle Play Gate
+_gx = zp_vw - 140;
+play_only >= 0.5 ? gfx_set(0.14, 0.36, 0.28, 1) : gfx_set(0.28, 0.22, 0.12, 1);
+zp_rect(_gx, _sy, 124, 24);
+zp_setfont(1, "Arial", 10, 'b'); gfx_set(0.92, 0.96, 0.98, 1);
+zp_gx = _gx + 14; zp_gy = _sy + 6;
+zp_drawstr(play_only >= 0.5 ? (ui_lang == 0 ? "SOLO IN PLAY" : "PLAY ONLY") : (ui_lang == 0 ? "CONTINUO" : "ALWAYS ON"));
+click && hit(_gx, _sy, 124, 24) ? (play_only = 1 - (play_only >= 0.5 ? 1 : 0); sliderchange(slider5););
+
+// 4 Profili diffusore / playback (solo in Monitor FX)
+_sply = 166;
+zp_setfont(1, "Arial", 10, 'b'); gfx_set(0.62, 0.70, 0.80, 1);
+zp_gx = 16; zp_gy = _sply;
+zp_drawstr(ui_lang == 0 ? "SIMULAZIONE DIFFUSORE (solo Monitor FX):" : "SPEAKER SIMULATION (Monitor FX only):");
+
+_spy = 182;
+_ki = 0;
+loop(4,
+  _kx = 16 + _ki * (_pw + _pg);
+  cur_spk == _ki ? (
+    _ki == 0 ? gfx_set(0.18, 0.44, 0.34, 1) : gfx_set(0.74, 0.46, 0.14, 1);
+  ) : (
+    gfx_set(0.12, 0.14, 0.19, 1);
+  );
+  zp_rect(_kx, _spy, _pw, _ph);
+  zp_setfont(1, "Arial", 11, 'b'); gfx_set(0.95, 0.97, 1.0, 1);
+  zp_gx = _kx + 10; zp_gy = _spy + 8;
+  _ki == 0 ? zp_drawstr("STUDIO FLAT") :
+  _ki == 1 ? zp_drawstr(ui_lang == 0 ? "AUTO / FURGONE" : "CAR / VAN") :
+  _ki == 2 ? zp_drawstr(ui_lang == 0 ? "SOFFITTO MONO" : "CEILING MONO") :
+             zp_drawstr(ui_lang == 0 ? "CUFFIETTE OPEN" : "OPEN EARBUDS");
+  zp_setfont(1, "Arial", 9); gfx_set(0.76, 0.82, 0.90, 0.9);
+  zp_gx = _kx + 10; zp_gy = _spy + 25;
+  _ki == 0 ? zp_drawstr("bypass · full range") :
+  _ki == 1 ? zp_drawstr("85Hz-10.5k · cab") :
+  _ki == 2 ? zp_drawstr("250Hz-5.2k · mono") :
+             zp_drawstr("-3.5dB amb · open fit");
+  click && hit(_kx, _spy, _pw, _ph) ? (spk_profile = _ki; sliderchange(slider6); sync_profile_params(););
+  _ki += 1;
+);
+
+// Meter reali (Programma vs Rumore vs SNR effettivo)
+_my = 238; _mw = 168; _mh = 68;
+gfx_set(0.11, 0.13, 0.17, 1);
+zp_rect(16, _my, _mw, _mh); zp_rect(196, _my, _mw, _mh); zp_rect(376, _my, _mw, _mh);
+
+zp_setfont(1, "Arial", 10, 'b'); gfx_set(0.58, 0.66, 0.78, 1);
+zp_gx = 26; zp_gy = _my + 10; zp_drawstr(ui_lang == 0 ? "PROGRAMMA IN" : "PROGRAM IN");
+zp_gx = 206; zp_gy = _my + 10; zp_drawstr(ui_lang == 0 ? "RUMORE AMBIENTE" : "ENV NOISE RMS");
+zp_gx = 386; zp_gy = _my + 10; zp_drawstr(ui_lang == 0 ? "MARGINE REALE (SNR)" : "REAL MARGIN (SNR)");
+
+zp_setfont(1, "Arial", 18, 'b');
+gfx_set(0.88, 0.94, 0.98, 1);
+sprintf(#_m1, "%.1f dB", ui_prog_db); zp_gx = 26; zp_gy = _my + 32; zp_drawstr(#_m1);
+
+noise_on >= 0.5 && gate_open ? gfx_set(0.98, 0.72, 0.30, 1) : gfx_set(0.45, 0.50, 0.58, 1);
+sprintf(#_m2, "%.1f dB", noise_on >= 0.5 && gate_open ? ui_noise_db : tgt_noise_dbfs); zp_gx = 206; zp_gy = _my + 32; zp_drawstr(#_m2);
+
+(noise_on >= 0.5 && gate_open && ui_prog_db > -65) ? (
+  ui_snr_real < 4 ? gfx_set(0.98, 0.34, 0.28, 1) : ui_snr_real < 9 ? gfx_set(0.98, 0.74, 0.26, 1) : gfx_set(0.32, 0.92, 0.58, 1);
+  sprintf(#_m3, "%+.1f dB", ui_snr_real);
+) : (
+  gfx_set(0.48, 0.54, 0.62, 1);
+  strcpy(#_m3, "--");
+);
+zp_gx = 386; zp_gy = _my + 32; zp_drawstr(#_m3);
+
+// Footer guida rapida
+zp_setfont(1, "Arial", 10); gfx_set(0.52, 0.60, 0.70, 1);
+zp_gx = 16; zp_gy = zp_vh - 40;
+sprintf(#_ft1, ui_lang == 0 ? "Rif: %.1f LUFS  |  Target rumore: %.1f dBFS  |  Limiter prot: -0.3 dBFS  |  gmem[3670..3683]" : "Ref: %.1f LUFS  |  Noise target: %.1f dBFS  |  Safe limiter: -0.3 dBFS  |  gmem[3670..3683]", ref_lufs, tgt_noise_dbfs);
+zp_drawstr(#_ft1);
+zp_gx = 16; zp_gy = zp_vh - 22;
+time_precise() < help_warn_until ? (
+  gfx_set(0.98, 0.78, 0.32, 1);
+  zp_drawstr(ui_lang == 0 ? "Apri Cue Navigator o la guida da ZP Studio Suite (00 Help)." : "Open Cue Navigator or ZP Studio Suite help (00 Help).");
+) : (
+  zp_drawstr(ui_lang == 0 ? "Mettilo una volta in Monitor FX di REAPER: lo comandi direttamente da ZP Master Pro." : "Insert once in REAPER Monitor FX: control it directly from ZP Master Pro.");
+);

@@ -1,13 +1,13 @@
-desc:ZP BrownSlope Dynamic Guard (BETA) - Paolo Balestri
-// @description ZP BrownSlope Dynamic Guard (BETA)
+desc:ZP BrownSlope Dynamic Guard · latocardioide.it · dubbertools.com
+// @description ZP BrownSlope Dynamic Guard
 // @version 0.5.1-assist-dev
 // @author Paolo Balestri
 // @changelog
 //   v0.5.1-assist-dev: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (correzioni dinamiche 4 bande, trim e bypass).
 // @about
-//   BETA. Dynamic four-band tonal guard for voice/music chains.
+//   Dynamic four-band tonal guard for voice/music chains.
 //   Audio processing is self-contained; ZP Harmonic Space Carver Cue Navigator is optional and only opens the help page from the ? button.
-// Contatto: social@paolobalestri.com
+// Contatto: paolo@latocardioide.it
 //tags: dynamics eq broadcast brown slope multiband limiter-prep
 //
 // 4-band dynamic tonal guard for the end of a voice/music chain, intended

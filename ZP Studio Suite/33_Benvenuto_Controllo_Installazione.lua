@@ -755,6 +755,55 @@ local function check_all()
     },
   }
 
+  -- 1c Setup progetto ZP (-18 LUFS VoiceOver e -8 LUFS Mix/Spot, solo plugin della Suite)
+  do
+    local tpl_dir = P(resource, "ProjectTemplates")
+    local vo_dst = P(tpl_dir, "ZP Setup VoiceOver (-18 LUFS).RPP")
+    local mix_dst = P(tpl_dir, "ZP Setup Mix-Spot (-8 LUFS).RPP")
+    local vo_src = P(here, "templates", "ZP_Setup_VoiceOver_18LUFS.RPP")
+    local mix_src = P(here, "templates", "ZP_Setup_Mix_Spot_8LUFS.RPP")
+    local tpl_ok = exists(vo_dst) and exists(mix_dst)
+    local function open_tpl(dst, src, label)
+      local chosen = exists(dst) and dst or (exists(src) and src or nil)
+      if not chosen then speak(T("Template di progetto non trovato nel pacchetto.")); return end
+      local dirty = reaper.IsProjectDirty and reaper.IsProjectDirty(0) > 0
+      if dirty or reaper.CountTracks(0) > 0 or reaper.CountMediaItems(0) > 0 then
+        reaper.Main_OnCommand(40859, 0) -- New project tab
+      end
+      reaper.Main_openProject("template:" .. chosen)
+      speak(label)
+    end
+    local function install_tpls()
+      reaper.RecursiveCreateDirectory(tpl_dir, 0)
+      local ok_count = 0
+      for _, pair in ipairs({ { vo_src, vo_dst }, { mix_src, mix_dst } }) do
+        if exists(pair[2]) then
+          ok_count = ok_count + 1
+        else
+          local data = read(pair[1])
+          if data and write(pair[2], data) then ok_count = ok_count + 1 end
+        end
+      end
+      if ok_count == 2 then speak(T("Setup progetto ZP pronti in ProjectTemplates."))
+      else speak(T("Impossibile copiare tutti i setup in ProjectTemplates.")) end
+    end
+    out[#out + 1] = {
+      title = T("Setup progetto ZP (-18 / -8 LUFS)"),
+      state = tpl_ok and "ok" or "manca",
+      line = tpl_ok
+        and T("Pronti in File > Project templates (solo plugin ZP, livelli di punta): VoiceOver a -18 LUFS e Mix-Spot fino a -8 LUFS.")
+        or T("Due setup completi con soli plugin ZP, calibrati ai livelli di punta: VoiceOver (-18 LUFS) e Mix-Spot (-8 LUFS)."),
+      buttons = tpl_ok and {
+        { T("VO -18 LUFS"), function() open_tpl(vo_dst, vo_src, T("Aperto setup ZP VoiceOver (-18 LUFS).")) end, w = 112 },
+        { T("Mix -8 LUFS"), function() open_tpl(mix_dst, mix_src, T("Aperto setup ZP Mix-Spot (-8 LUFS).")) end, w = 112 },
+      } or {
+        { T("Installa"), install_tpls, w = 96 },
+        { T("VO -18 LUFS"), function() open_tpl(vo_dst, vo_src, T("Aperto setup ZP VoiceOver (-18 LUFS).")) end, w = 108 },
+        { T("Mix -8 LUFS"), function() open_tpl(mix_dst, mix_src, T("Aperto setup ZP Mix-Spot (-8 LUFS).")) end, w = 108 },
+      },
+    }
+  end
+
   -- 2 Cue Navigator del Carver
   local hp = helper_path()
   if not hp then
@@ -882,16 +931,16 @@ local function check_all()
     local presets = root and P(root, "data", "paint_presets.json")
     local line
     if not action then
-      line = T("BETA: azione Lua non installata.")
+      line = T("azione Lua non installata.")
     elseif root and exists(py) and exists(cli) and exists(presets) then
-      line = T("BETA: CLI, Python e preset presenti; motore AI in sviluppo.")
+      line = T("CLI, Python e preset presenti; motore AI in sviluppo.")
     elseif root then
-      line = T("BETA: motore esterno configurato ma incompleto; motore AI in sviluppo.")
+      line = T("motore esterno configurato ma incompleto; motore AI in sviluppo.")
     else
-      line = T("BETA: motore esterno non configurato; motore AI in sviluppo.")
+      line = T("motore esterno non configurato; motore AI in sviluppo.")
     end
     out[#out + 1] = {
-      title = T("ZP Clean & Paint (BETA)"),
+      title = T("ZP Clean & Paint"),
       state = "beta",
       line = line,
       buttons = {},
@@ -1125,7 +1174,7 @@ local function draw()
   gfx.drawstr(T("Benvenuto nella ZP Studio Suite"))
   -- firma in alto a destra: marchio + "Sviluppata su un'idea di Paolo Balestri · Lato Cardioide" (clic: sito)
   do
-    local idea, lc = T("Sviluppata su un'idea di Paolo Balestri") .. " · ", "Lato Cardioide"
+    local idea, lc = "ZP Studio Suite · ", "latocardioide.it · dubbertools.com"
     gfx.setfont(1, "Arial", 13)
     local w = 21 + gfx.measurestr(idea .. lc)
     local cx, cy = gfx.w - 20 - w, 22

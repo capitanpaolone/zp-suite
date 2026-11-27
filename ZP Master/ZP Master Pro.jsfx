@@ -1,18 +1,26 @@
 // @description ZP Master Pro
-// @version 2.48
+// @version 2.52
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
 //   ### ZP Master Pro
-//   Processore di mastering integrato con Tape Glue, Compressore Glue Matrix, Tone Guard dinamico,
-//   Limiter lookahead brickwall, metering broadcast LUFS/LRA/True-Peak e Auto dB Target.
+//   Processore di mastering integrato con doppio profilo (ANALOG: Tape Glue + Glue Matrix + Tone Guard + Lookahead Limiter;
+//   TRANSPARENT: Input fino a +30 dB + ENHANCE 2x oversampled con protezione medio-alte + Pre-Clipper 2x oversampled +
+//   Precision Limiter dual-stage Auto-Release + True Peak 4x + Tone Guard),
+//   metering broadcast LUFS/LRA/True-Peak con linee Target/Ceiling e peak-hold, Auto dB Target (fino a -6 LUFS) e telecomando Monitor FX Audition Noise.
 //
-//   Integrated master processor featuring Tape Glue, Glue Matrix compressor, dynamic Tone Guard,
-//   brickwall lookahead limiter, broadcast LUFS/LRA/True-Peak metering, and Auto dB Target leveling.
+//   Integrated master processor with dual profiles (ANALOG: Tape Glue + Glue Matrix + Tone Guard + Lookahead Limiter;
+//   TRANSPARENT: Input up to +30 dB + 2x oversampled ENHANCE with upper-mid guard + 2x oversampled Pre-Clipper +
+//   dual-stage Auto-Release Precision Limiter + 4x True Peak + Tone Guard),
+//   broadcast LUFS/LRA/True-Peak metering with Target/Ceiling lines & peak-hold, Auto dB Target (up to -6 LUFS) and Monitor FX Audition Noise remote control.
 //
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: ZP Studio Suite/help/index.html#plugin-master-pro
 // @changelog
+//   2.52: Aggiornamento meter LIVE e target alta loudness (fino a -6 LUFS): barre M/S/I/RMS/TP/IN allineate esattamente alla scala dB non lineare dell'asse, soglie colore adattate al Target attivo (niente falso giallo a -8 LUFS), linee orizzontali verdi di Target su M/S/I/RMS e linea rossa Ceiling + peak-hold flottante su TP stereo, preset rapido SPT (-8 LUFS) accanto a POD/AUD/MIX/BRD/RAD e lettura I/PK colorata rispetto a Target/Ceiling.
+//   2.51: Profilo TRANSPARENT potenziato per spot radio e alta loudness (fino a -8 LUFS): nuovo Pre-Clipper trasparente 2x oversampled prima del Precision Limiter (slider74 PRECLIP 0-100%, retrocompatibile a 0), oversampling 2x sullo shaper ENHANCE (fino a +7.5 dB, zero aliasing medio-alte) con guardia anti-asprezza 2.4-6.2 kHz (fino a -3.2 dB), Input esteso fino a +30 dB e Target LUFS/RMS/L+R fino a -6 dB.
+//   2.50: Doppio profilo mastering ANALOG | TRANSPARENT (nuovo motore trasparente con Precision Limiter dual-stage Auto-Release, Soft Knee, ISP 4x e dosatore ENHANCE per densita' percepita senza colorazione analogica; profilo ANALOG invariato) + controllo diretto via gmem[3670..3683] del simulatore Monitor FX ZP Audition Noise (Auto Citta', Autostrada, Ambiente Rosa, Treno/Aereo — mai renderizzato nel mix).
+//   2.49: ZP Shared Bus v3.1 — connessione verde anche senza BUS Chain quando sono attivi nodi v3 (Magic Voice LAB, Spoken Finish, Probe) senza falsi 'DATI PARZIALI / VECCHI'; pubblicazione riferimento Master Tone/Output (gmem[410..425] e nodo ptype=13) e lettura sintesi ZP Telemetry Engine (gmem[3600..3619]). DSP e slider invariati.
 //   2.48: ZP Shared Bus v3 — telemetria multi-istanza da tutti i canali e bus verso Master Pro, nuova scheda CATENA nel Navigator (ordine monte->valle, alert DELTA/SOLO/CHECK, Music Probe/Carver e click-per-aprire FX via Cue Navigator).
 //   Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
 //   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
@@ -33,10 +41,10 @@
 // Sliders 1-21: ENGINE   Sliders 22-34: OUTPUT/VIEW   Sliders 35-55: PRO
 // ============================================================
 
-desc:ZP Master Pro Glue Matrix - Master Processor - Paolo Balestri
-tags: mastering master processor tape compressor tone guard limiter lufs rms true peak paolo balestri zio paolo
+desc:ZP Master Pro Glue Matrix - Master Processor · latocardioide.it · dubbertools.com
+tags: mastering master processor tape compressor tone guard limiter lufs rms true peak paolo balestri lato cardioide
 options:gmem=ZPVoiceoverSharedBus
-//autror: Paolo Balestri - Zio Paolo
+//autror: Paolo Balestri · Lato Cardioide
 //variant: v2.45 - live detector rings for compressor threshold and limiter ceiling
 //
 // Glue Matrix:
@@ -44,7 +52,7 @@ options:gmem=ZPVoiceoverSharedBus
 //   FRG frammenta il lavoro fra macro, micro e crest glue.
 //   Texture sceglie il carattere: SM morbido, API punch, SSA compatto.
 //   ISP Guard usa picchi interpolati 2x/4x per tenere limiter e safety lontani dal soffitto.
-// Contatto: social@paolobalestri.com
+// Contatto: paolo@latocardioide.it
 
 // ─── ENGINE ────────────────────────────────────────────────────
 slider1:tape_drive=0.5<0,1,0.01>Tape Drive
@@ -71,13 +79,13 @@ slider21:tape_bump_hz=68.75<25,200,0.01>Head Frequency [Hz]
 
 // ─── OUTPUT ────────────────────────────────────────────────────
 slider22:out_mode=0<0,3,1{Off,LUFS,RMS,L+R}>Auto Trim Mode
-slider23:out_target_lufs=-16<-30,-9,0.1>Target LUFS
-slider24:out_target_rms=-18<-40,-9,0.1>Target RMS
+slider23:out_target_lufs=-16<-30,-6,0.1>Target LUFS
+slider24:out_target_rms=-18<-40,-6,0.1>Target RMS
 slider25:out_trim_max=6<0,12,0.1>Max Auto Trim [dB]
 slider26:out_makeup=0<-12,12,0.1>Gain Out [dB]
 slider27:out_speed=1.2<0.1,10,0.1>Trim Speed [s]
 slider28:out_intrim=0<-12,12,0.1>Gain In [dB]
-slider29:out_target_lr=-17<-29,-9,0.1>Target L+R [dB]
+slider29:out_target_lr=-17<-29,-6,0.1>Target L+R [dB]
 slider30:out_final_lim_on=1<0,1,1{Off,On}>Final Limiter
 slider31:out_capture_seconds=30<20,90,1>Capture Time [s]
 slider32:out_cal_state=0<0,2,1{Off,Prime,Lock}>Auto dB Cal
@@ -119,6 +127,14 @@ slider63:target_crest_max=17<0,30,0.5>[Target] Crest max [dB]
 slider64:target_limiter_warn=2<0,8,0.1>-[Target] Limiter warning [dB]
 slider65:nav_measure_time=20<0,60,1>-Navigator Measure Time [s]
 slider66:nav_measure_mode=0<0,2,1{MANUAL,LIVE,AUTO}>-Navigator Measure Mode
+slider67:master_profile=0<0,1,1{Analog,Transparent}>-Master Profile
+slider68:ox_input_db=0<-12,30,0.1>-Transparent Input [dB]
+slider69:ox_enhance=0<0,100,1>-Transparent Enhance [%]
+slider70:ox_attack_ms=1.5<0.1,5.0,0.1>-Transparent Attack [ms]
+slider71:ox_release_ms=80<5,500,1>-Transparent Release [ms]
+slider72:ox_knee=35<0,100,1>-Transparent Knee [%]
+slider73:ox_auto_rel=1<0,1,1{Manual,Auto}>-Transparent Auto Release
+slider74:ox_clip=0<0,100,1>-Transparent Pre-Clip [%]
 
 @init
 // ---- ZP Proportional Zoom Engine (GUI-only, zero DSP impact) ----
@@ -312,8 +328,8 @@ function gain2db(x)  ( 20*log(max(x,0.000000000001))/log(10) );
 function clamp(x,lo,hi) ( x<lo?lo:(x>hi?hi:x) );
 function slider_mask(n) ( 2^(n-1) );
 function mono_lufs_comp() ( num_ch < 2 ? 3.0 : 0.0 );
-function out_lr_lufs_target() ( clamp(out_target_lr + 1, -30, -9) );
-function out_lr_rms_target()  ( clamp(out_target_lr - 1, -40, -9) );
+function out_lr_lufs_target() ( clamp(out_target_lr + 1, -30, -6) );
+function out_lr_rms_target()  ( clamp(out_target_lr - 1, -40, -6) );
 function tone_onepole_coef(freq) local(f) ( f=clamp(freq,5,srate*0.45); 1-exp(-2*$pi*f/srate); );
 function tone_oct_from_1k(freq) ( log(max(freq,1)/1000)/log(2) );
 function out_capture_target_db() local(m,lc)(
@@ -389,6 +405,12 @@ function clear_lim_buf() local(i)(
   i=0;loop(max_look_spl,bufL[i]=0;bufR[i]=0;
   bufPeak[i]=max(db2gain(lim_ceiling),0.000000000001);i+=1;);
   writepos=0;lim_gain=1;
+  lim_rel_start=max(db2gain(lim_ceiling),0.000000000001);
+  lim_rel_idx=srate;
+);
+function clear_lim_peak_buf() local(i)(
+  i=0;loop(max_look_spl,bufPeak[i]=max(db2gain(lim_ceiling),0.000000000001);i+=1;);
+  lim_gain=1;
   lim_rel_start=max(db2gain(lim_ceiling),0.000000000001);
   lim_rel_idx=srate;
 );
@@ -488,17 +510,46 @@ function compute_params()(
   gm_micro_thr_g=mt_thr_g*db2gain(3.0-4.0*gm_frag_eff);
   gm_crest_db=5.5-2.5*gm_frag_eff;
 
-  // Limiter
+  // Transparent Precision Limiter + Enhance 2x + Pre-Clip 2x (profilo 1)
+  ox_prof = floor(master_profile + 0.5);
+  ox_in_g = db2gain(ox_input_db);
+  ox_enh_w = clamp(ox_enhance * 0.01, 0, 1);
+  ox_clip_w = clamp(ox_clip * 0.01, 0, 1);
+  ox_knee_db = clamp(ox_knee * 0.01, 0, 1) * 4.0;
+  ox_auto_on = ox_auto_rel >= 0.5 ? 1 : 0;
+  ox_att_spl = floor(max(1, min(max_look_spl - 2, ceil(ox_attack_ms * srate * 0.001))));
+  ox_rel_fast_c = exp(-1 / (max(0.005, ox_release_ms * 0.001) * srate));
+  ox_rel_slow_c = exp(-1 / (max(0.090, ox_release_ms * 0.0038) * srate));
+  ox_rel_slow_att_c = exp(-1 / (0.040 * srate));
+  ox_enh_att_c = exp(-1 / (0.004 * srate));
+  ox_enh_rel_c = exp(-1 / (0.065 * srate));
+  ox_gain_att_c = exp(-1 / (max(0.00015, ox_attack_ms * 0.00045) * srate));
+  // Protezione dinamica medio-alte 2.4-6.2 kHz su Enhance + Pre-Clipper 2x oversampled
+  ox_hm_lp1_c = 1 - exp(-2 * $pi * min(6200, srate * 0.42) / srate);
+  ox_hm_lp2_c = 1 - exp(-2 * $pi * min(2400, srate * 0.40) / srate);
+  ox_hm_env_c = exp(-1 / (0.045 * srate));
+  ox_clip_gr_rel_c = exp(-1 / (0.140 * srate));
+
+  // Limiter (condiviso tra profilo Analog e Transparent)
   lim_ceiling_g=db2gain(lim_ceiling);
-  lim_look_spl =floor(max(1,min(max_look_spl-2,ceil(lim_look*srate*0.001))));
+  ox_clip_ceil_g = lim_ceiling_g * db2gain(0.35 - 0.30 * ox_clip_w);
+  ox_clip_thr_g = lim_ceiling_g * db2gain(-(0.3 + ox_clip_w * 5.7));
+  lim_look_spl = ox_prof >= 0.5 ? ox_att_spl : (lim_look <= 0.001 ? 1 : floor(max(1,min(max_look_spl-2,ceil(lim_look*srate*0.001)))));
   pdc_delay=lim_on?max(0,lim_look_spl-1):0;
   pdc_bot_ch=0;pdc_top_ch=2;
   lim_rel_spl=ceil(max(1,lim_rel)*srate*0.001);
   lim_pre_g  =db2gain(lim_pregain);
   lim_sat_w  =0;
-  (lim_look_spl!=last_lim_look||lim_on!=last_lim_on)?(
+  (lim_on!=last_lim_on||ox_prof!=last_ox_prof||last_lim_look<0)?(
     clear_lim_buf();
-    last_lim_look=lim_look_spl;last_lim_on=lim_on;
+    ox_gr_fast_db=0; ox_gr_slow_db=0; ox_gr_smooth_db=0; ox_enh_env=0.000000000001; ui_ox_enh_lift_db=0;
+    ui_ox_clip_gr_db=0; ox_os_pxL=ox_os_pxR=ox_os_ymL=ox_os_ymR=ox_os_ycL=ox_os_ycR=0;
+    ox_cl_pxL=ox_cl_pxR=ox_cl_ymL=ox_cl_ymR=ox_cl_ycL=ox_cl_ycR=0;
+    ox_hm_lp1L=ox_hm_lp1R=ox_hm_lp2L=ox_hm_lp2R=0; ox_hm_env=0.000000000001; ox_full_env=0.000000000001;
+    last_lim_look=lim_look_spl;last_lim_on=lim_on;last_ox_prof=ox_prof;
+  ) : lim_look_spl!=last_lim_look ? (
+    clear_lim_peak_buf();
+    last_lim_look=lim_look_spl;
   );
 
   // Gain In
@@ -565,7 +616,7 @@ function compute_params()(
 );
 
 // ── Memory ────────────────────────────────────────────────────
-max_look_spl=ceil(srate*0.08)+8;
+max_look_spl=12000;
 bufL=0;bufR=bufL+max_look_spl;bufPeak=bufR+max_look_spl;
 writepos=0;last_lim_look=-1;last_lim_on=-1;
 clear_lim_buf();
@@ -630,6 +681,107 @@ zp3_top_dyneq_idx = -1; zp3_top_dyneq_val = 0;
 zp3_top_lim_idx = -1; zp3_top_lim_val = 0;
 zp3_top_gain_idx = -1; zp3_top_gain_val = 0;
 zp3_alert_count = 0; zp3_alert_flags = 0; zp3_alert_idx = -1;
+zp3_m_prev_key <= 0 ? (zp3_m_slot = -1; zp3_m_prev_key = -1;);
+zp3_te_ok = 0; zp3_te_status = 0; zp3_te_issues = 0; zp3_te_ref_slope = 4.5; zp3_te_ref_mode = 0; zp3_te_useful = 0; zp3_te_conflicts = 0;
+// Stato volatile del telecomando Monitor FX Audition Noise (parte sempre OFF; non salvato nei progetti)
+aud_noise_on = 0; aud_noise_prof = 1; aud_noise_snr = -12; aud_cmd_seq = 0;
+aud_mon_ok = 0; aud_mon_on = 0; aud_mon_prof = 1; aud_mon_snr = -12; aud_mon_dbfs = -28;
+ox_gr_fast_db = 0; ox_gr_slow_db = 0; ox_gr_smooth_db = 0; ox_enh_env = 0.000000000001; ui_ox_enh_lift_db = 0; ui_ox_clip_gr_db = 0; last_ox_prof = -1;
+ox_os_pxL = ox_os_pxR = ox_os_ymL = ox_os_ymR = ox_os_ycL = ox_os_ycR = 0;
+ox_cl_pxL = ox_cl_pxR = ox_cl_ymL = ox_cl_ymR = ox_cl_ycL = ox_cl_ycR = 0;
+ox_hm_lp1L = ox_hm_lp1R = ox_hm_lp2L = ox_hm_lp2R = 0; ox_hm_env = 0.000000000001; ox_full_env = 0.000000000001;
+
+function ox_enh_shaper(v, kt, span, kstr) local(av, ex, sh) (
+  av = abs(v);
+  av > kt ? (
+    ex = (av - kt) / span;
+    sh = kt + span * (ex / (1 + kstr * ex));
+    v >= 0 ? sh : -sh;
+  ) : v;
+);
+
+function ox_clip_shaper(v, thr, ceil_g) local(av, span, sh) (
+  av = abs(v);
+  av > thr ? (
+    span = max(0.0001, ceil_g - thr);
+    sh = thr + span * tanh_fast((av - thr) / span);
+    v >= 0 ? sh : -sh;
+  ) : v;
+);
+
+function aud_send_cmd() (
+  aud_cmd_seq += 1;
+  gmem[3670] = 905367;
+  gmem[3672] = aud_noise_on >= 0.5 ? 1 : 0;
+  gmem[3673] = clamp(floor(aud_noise_prof + 0.5), 0, 3);
+  gmem[3674] = clamp(aud_noise_snr, -24, 6);
+  gmem[3675] = out_target_lufs;
+  gmem[3676] = time_precise();
+  gmem[3671] = aud_cmd_seq;
+);
+
+function zp3_m_boot() (
+  gmem[1000] != 905300 || gmem[1001] < 300 ? (
+    gmem[1000] = 905300;
+    gmem[1001] = 300;
+    gmem[1002] = 64;
+    gmem[1003] = 32;
+  );
+);
+function zp3_m_clear_slot() local(zp3_cb) (
+  zp3_m_slot >= 0 && zp3_m_slot < 64 ? (
+    zp3_cb = 1024 + zp3_m_slot * 32;
+    gmem[zp3_cb + 3] == zp3_m_prev_key ? (
+      gmem[zp3_cb] = 0;
+      gmem[zp3_cb + 2] = 0;
+    );
+  );
+  zp3_m_slot = -1;
+  zp3_m_prev_key = -1;
+);
+function zp3_m_claim(zp3_pt) local(zp3_now, zp3_key, zp3_h, zp3_i, zp3_s, zp3_b, zp3_m, zp3_found) (
+  zp3_m_boot();
+  zp3_now = time_precise();
+  zp3_m_fx = 0; zp3_m_hf = 0;
+  zp3_m_tr = get_host_placement(zp3_m_fx, zp3_m_hf);
+  zp3_key = max(0, zp3_m_tr + 2) * 1024 + max(0, zp3_m_fx) * 16 + zp3_pt;
+  zp3_m_prev_key >= 0 && zp3_m_prev_key != zp3_key ? zp3_m_clear_slot();
+  zp3_found = -1;
+  zp3_m_slot >= 0 && zp3_m_slot < 64 ? (
+    zp3_b = 1024 + zp3_m_slot * 32;
+    gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_m_slot;);
+  );
+  zp3_found < 0 ? (
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_b = 1024 + zp3_i * 32;
+        gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_i;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_found < 0 ? (
+    zp3_h = (max(0, zp3_m_tr + 2) * 13 + max(0, zp3_m_fx) * 7 + zp3_pt * 3) % 64;
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_s = (zp3_h + zp3_i) % 64;
+        zp3_b = 1024 + zp3_s * 32;
+        zp3_m = gmem[zp3_b];
+        (zp3_m != 905301 || (zp3_now - gmem[zp3_b + 1]) > 2.5) ? (zp3_found = zp3_s;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_m_slot = zp3_found;
+  zp3_m_prev_key = zp3_key;
+  zp3_m_slot >= 0 ? (
+    zp3_b = 1024 + zp3_m_slot * 32;
+    zp3_m_seq = max(zp3_m_seq, floor(gmem[zp3_b + 2] + 0.5));
+    zp3_b;
+  ) : -1;
+);
 
 function zp3_plugin_name(zp3_pt) (
   zp3_pt == 1 ? strcpy(#zp3_pl_name, "BUS Chain") :
@@ -642,6 +794,9 @@ function zp3_plugin_name(zp3_pt) (
   zp3_pt == 8 ? strcpy(#zp3_pl_name, "Space Carver") :
   zp3_pt == 9 ? strcpy(#zp3_pl_name, "Voice Probe") :
   zp3_pt == 10 ? strcpy(#zp3_pl_name, "Music Probe") :
+  zp3_pt == 11 ? strcpy(#zp3_pl_name, "BrownSlope Prsm") :
+  zp3_pt == 12 ? strcpy(#zp3_pl_name, "Loudness Meter") :
+  zp3_pt == 13 ? strcpy(#zp3_pl_name, "Master Pro") :
   strcpy(#zp3_pl_name, "ZP Plugin");
 );
 
@@ -695,13 +850,24 @@ function zp3_scan_bus() local(zp3_now, zp3_i, zp3_b, zp3_m, zp3_ts, zp3_s0, zp3_
   zp3_now = time_precise();
   zp3_last_scan_t = zp3_now;
   zp3_dir_ok = gmem[1004] > 0 && (zp3_now - gmem[1005]) <= 3.0;
+  zp3_te_ok = (gmem[3600] == 905360 && (zp3_now - gmem[3602]) <= 3.0) ? 1 : 0;
+  zp3_te_ok ? (
+    zp3_te_ref_slope = gmem[3603];
+    zp3_te_ref_mode = floor(gmem[3604] + 0.5);
+    zp3_te_useful = gmem[3605];
+    zp3_te_status = floor(gmem[3606] + 0.5);
+    zp3_te_issues = floor(gmem[3607] + 0.5);
+    zp3_te_conflicts = floor(gmem[3618] + 0.5);
+  ) : (
+    zp3_te_status = 0; zp3_te_issues = 0; zp3_te_conflicts = 0;
+  );
   zp3_cnt = 0;
   zp3_i = 0;
   loop(64,
     zp3_b = 1024 + zp3_i * 32;
     zp3_m = gmem[zp3_b];
     zp3_ts = gmem[zp3_b + 1];
-    (zp3_m == 905301 && (zp3_now - zp3_ts) <= 2.5 && zp3_cnt < 64) ? (
+    (zp3_m == 905301 && floor(gmem[zp3_b + 4] + 0.5) != 13 && (zp3_now - zp3_ts) <= 2.5 && zp3_cnt < 64) ? (
       zp3_s0 = gmem[zp3_b + 2];
       zp3_dst = zp3_nodes + zp3_cnt * 32;
       zp3_k = 0;
@@ -865,6 +1031,7 @@ pk_in_env=0.000000001;in_rms_env=0.000000001;pk_comp_env=0.000000001;
 pk_lim_env=0.000000001;pk_out_env=0.000000001;pk_pre_env=0.000000001;
 outL_prev=0;outR_prev=0;out_peak_dbfs=-100;out_peak_hold_dbfs=-100;out_peak_max_dbfs=-100;out_peak_hold_spl=0;
 out_peak_l_dbfs=-100;out_peak_r_dbfs=-100;ui_out_peak_l_dbfs=-100;ui_out_peak_r_dbfs=-100;
+tp_hold_l=-100;tp_hold_r=-100;tp_hold_tl=0;tp_hold_tr=0;tp_hold_last_t=0;
 ui_comp_gr=0;ui_lim_gr=0;ui_in_db=-100;ui_out_db=-100;ui_pre_db=-100;
 ui_out_trim_db=0;ui_out_pre_auto_dbfs=-100;ui_out_peak_dbfs=-100;
 ui_target_err_db=0;ui_target_valid=0;ui_target_mode=0;
@@ -1042,6 +1209,74 @@ zp_bus_spoken_frame_ok && zp_bus_spoken_bright>45 && zp_bus_voice_probe_ok && zp
 zp_bus_voice_probe_ok && zp_bus_voice_speech>5 && zp_bus_voice_density>target_density_max && zp_bus_unified_comp<1.5 && zp_bus_unified_lim<0.5 && zp3_v3_voice_work<1.5 && (!zp_bus_spoken_frame_ok || (zp_bus_spoken_harm<10 && zp_bus_spoken_drive<10)) ? zp_raise_finding(6,1);
 zp_bus_warning==0 && zp_bus_voice_probe_ok && zp_bus_voice_speech>5 && zp_bus_voice_density>=target_density_min && zp_bus_voice_density<=target_density_max && zp_bus_voice_peak<-0.5 ? (zp_bus_warning=7;);
 gmem[401]=zp_bus_warning; gmem[402]=zp_bus_severity; gmem[403]=zp_bus_findings; gmem[404]=zp_target_effective_profile;
+// Blocco riferimento Master Tone/Output per ZP Telemetry Engine (gmem[410..425]) e nodo v3 (ptype=13)
+gmem[410] = 905410;
+gmem[411] = time_precise();
+gmem[412] = tone_on >= 0.5 ? 1 : 0;
+gmem[413] = tone_dyn_on >= 0.5 ? 1 : 0;
+gmem[414] = tone_slope;
+gmem[415] = tone_gain1;
+gmem[416] = tone_gain2;
+gmem[417] = tone_gain3;
+gmem[418] = tone_gain4;
+gmem[419] = floor(out_mode + 0.5);
+gmem[420] = out_target_lufs;
+gmem[421] = lim_ceiling;
+gmem[422] = ui_global_lufs_s;
+gmem[423] = ui_global_lufs_i;
+gmem[424] = ui_out_peak_dbfs;
+gmem[425] = zp_target_effective_profile;
+zp3_mb = zp3_m_claim(13);
+zp3_mb >= 0 ? (
+  gmem[zp3_mb + 3] = zp3_m_prev_key;
+  gmem[zp3_mb + 4] = 13;
+  gmem[zp3_mb + 5] = zp3_m_tr;
+  gmem[zp3_mb + 6] = zp3_m_fx;
+  gmem[zp3_mb + 7] = zp3_m_hf;
+  gmem[zp3_mb + 8] = 4;
+  gmem[zp3_mb + 9] = (ox_prof >= 0.5 ? (lim_on >= 0.5 || ox_enhance > 0.5 || tone_on >= 0.5 || out_final_lim_on >= 0.5) : (tape_on >= 0.5 || comp_on >= 0.5 || tone_on >= 0.5 || lim_on >= 0.5 || out_final_lim_on >= 0.5)) ? 1 : 2;
+  gmem[zp3_mb + 10] = ox_prof >= 0.5 ? 0 : (comp_on >= 0.5 ? max(0, ui_comp_gr) : 0);
+  gmem[zp3_mb + 11] = tone_on >= 0.5 ? max(0, ui_tone_gr) : 0;
+  gmem[zp3_mb + 12] = (lim_on >= 0.5 ? max(0, ui_lim_gr) : 0) + (out_final_lim_on >= 0.5 ? max(0, ui_final_gr) : 0);
+  gmem[zp3_mb + 13] = tone_on >= 0.5 ? tone_gain1_eff : 0;
+  gmem[zp3_mb + 14] = tone_on >= 0.5 ? tone_gain2_eff : 0;
+  gmem[zp3_mb + 15] = tone_on >= 0.5 ? tone_gain3_eff : 0;
+  gmem[zp3_mb + 16] = ox_prof >= 0.5 ? clamp(ox_enhance * 0.25, 0, 25) : (tape_on >= 0.5 ? clamp(ui_tape_amt * 50, 0, 100) : 0);
+  gmem[zp3_mb + 17] = ui_in_db;
+  gmem[zp3_mb + 18] = ui_global_rms_db;
+  gmem[zp3_mb + 19] = ui_out_peak_dbfs;
+  gmem[zp3_mb + 20] = (ox_prof >= 0.5 ? ox_input_db + ui_ox_enh_lift_db : 0) + out_intrim + out_makeup + ui_out_trim_db;
+  gmem[zp3_mb + 21] = clamp((ui_global_rms_db + 55) * 2.5, 0, 100);
+  gmem[zp3_mb + 22] = ui_final_crest;
+  gmem[zp3_mb + 23] = tone_on >= 0.5 ? -tone_slope : 0;
+  gmem[zp3_mb + 24] = ui_global_lufs_s;
+  gmem[zp3_mb + 25] = ui_global_lufs_i;
+  gmem[zp3_mb + 26] = out_target_lufs;
+  gmem[zp3_mb + 27] = tone_on >= 0.5 ? 1 : 0;
+  gmem[zp3_mb + 28] = tone_slope;
+  gmem[zp3_mb + 29] = tone_on >= 0.5 ? tone_gain4_eff : 0;
+  gmem[zp3_mb + 30] = 0;
+  gmem[zp3_mb + 31] = 0;
+  gmem[zp3_mb] = 905301;
+  gmem[zp3_mb + 1] = time_precise();
+  zp3_m_seq += 1;
+  gmem[zp3_mb + 2] = zp3_m_seq;
+);
+// Keepalive e lettura stato Monitor FX Audition Noise (gmem[3670..3683])
+_aud_now = time_precise();
+gmem[3670] = 905367;
+gmem[3675] = out_target_lufs;
+gmem[3676] = _aud_now;
+aud_mon_ok = (gmem[3678] == 905368 && (_aud_now - gmem[3679]) <= 3.0) ? 1 : 0;
+aud_mon_ok ? (
+  aud_mon_on = gmem[3680] >= 0.5 ? 1 : 0;
+  aud_mon_prof = clamp(floor(gmem[3681] + 0.5), 0, 3);
+  aud_mon_snr = gmem[3682];
+  aud_mon_dbfs = gmem[3683];
+  aud_noise_on = aud_mon_on;
+  aud_noise_prof = aud_mon_prof;
+  aud_noise_snr = aud_mon_snr;
+);
 
 // Navigator: accumula solo tempo di segnale utile. Gli eventi isolati entrano
 // nella media ma non generano messaggi autonomi.
@@ -1314,6 +1549,11 @@ nav_flag_density||nav_flag_density_low||nav_flag_crest||nav_flag_rms ? (nav_prim
 nav_avg_density>(target_density_min+target_density_max)*0.5 && nav_avg_comp<1.5 && nav_avg_vog<10 && zp3_v3_voice_work<1.5 ? (nav_primary_code=7;nav_gravity=1;) :
 nav_primary_code=8;
 last_srate!=srate?(
+  meter_hpL.biquad_set_hp(60,0.707);meter_hsL.biquad_set_hs(4000,0.707,4.0);
+  meter_hpR.biquad_set_hp(60,0.707);meter_hsR.biquad_set_hs(4000,0.707,4.0);
+  lra_tick_rate=max(1,floor(srate/10));
+  clear_lim_buf();
+  tape_clear_delay();
   compute_params();
   last_srate=srate;
 );
@@ -1327,6 +1567,7 @@ meter_play_state&&!meter_prev_play_state?(
   out_fast_remaining=out_fast_samples;
   out_peak_hold_dbfs=-100;out_peak_max_dbfs=-100;out_peak_hold_spl=0;
   out_peak_l_dbfs=-100;out_peak_r_dbfs=-100;ui_out_peak_l_dbfs=-100;ui_out_peak_r_dbfs=-100;
+tp_hold_l=-100;tp_hold_r=-100;tp_hold_tl=0;tp_hold_tr=0;tp_hold_last_t=0;
   ms_m_env=0.000000001;ms_s_env=0.000000001;ui_ms_mid_db=-100;ui_ms_side_db=-100;ui_ms_width_db=-100;
   outL_prev=spl0;outR_prev=spl1;
   gm_prevL=spl0;gm_prevR=spl1;gm_lim_prevL=spl0;gm_lim_prevR=spl1;gm_out_prevL=spl0;gm_out_prevR=spl1;
@@ -1351,8 +1592,8 @@ in_rms_env=in_sig_rms+meter_rms_c*(in_rms_env-in_sig_rms);
 ui_bus_local_crest=max(0,gain2db(max(pk_in_env,0.000000000001))-gain2db(sqrt(max(in_rms_env,0.000000000001))));
 ui_bus_local_density=min(100,max(0,100-ui_bus_local_crest*3.5));
 
-// 1. TAPE GLUE
-tape_on>=0.5?(
+// 1. TAPE GLUE (solo profilo ANALOG)
+ox_prof<0.5 && tape_on>=0.5?(
   inputSampleL=xL*tape_input_gain;
   inputSampleR=xR*tape_input_gain;
 
@@ -1484,8 +1725,8 @@ tape_on>=0.5?(
   tape_fpdL=rand(tape_UINT32_MAX); tape_fpdR=rand(tape_UINT32_MAX);
 );
 
-// 2. GLUE MATRIX COMPRESSOR
-comp_on>=0.5?(
+// 2. GLUE MATRIX COMPRESSOR (solo profilo ANALOG)
+ox_prof<0.5 && comp_on>=0.5?(
   mt_sc_hpf_on?(_scL=xL-mt_sc_lpL;mt_sc_lpL+=mt_sc_hpf_c*(xL-mt_sc_lpL);_scR=xR-mt_sc_lpR;mt_sc_lpR+=mt_sc_hpf_c*(xR-mt_sc_lpR);):(_scL=xL;_scR=xR;);
   _isp_det=isp_peak(_scL,_scR,gm_prevL,gm_prevR,gm_isp_mode);
   comp_ff>=0.5?(_det=max(0.5*(abs(_scL)+abs(_scR)),_isp_det)):( _det=abs(mt_fb_det); );
@@ -1530,6 +1771,58 @@ comp_on>=0.5?(
 ):(
   mt_gr_db=0;gm_macro_gr_db=0;gm_micro_gr_db=0;gm_crest_gr_db=0;gm_prevL=xL;gm_prevR=xR;
   pk_comp_env=pk_decay(max(abs(xL),abs(xR)),pk_comp_env);
+);
+
+// 2B. TRANSPARENT INPUT DRIVE + ENHANCE 2x OVERSAMPLED + GUARDIA MEDIO-ALTE (solo profilo TRANSPARENT)
+ox_prof>=0.5?(
+  xL*=ox_in_g; xR*=ox_in_g;
+  ox_enh_w>0.001?(
+    _ox_pk=max(abs(xL),abs(xR));
+    _ox_ec=_ox_pk>ox_enh_env ? ox_enh_att_c : ox_enh_rel_c;
+    ox_enh_env=_ox_pk+_ox_ec*(ox_enh_env-_ox_pk);
+    _ox_rel_db=gain2db(max(ox_enh_env,0.000000000001))-lim_ceiling;
+    // Gate morbido sotto -48 dB per non sollevare mai il rumore di fondo o i respiri nel silenzio
+    _ox_gate=clamp((_ox_rel_db+52)/14,0,1);
+    // Curva continua upward density: solleva corpo e sillabe deboli (-38..-4 dB sotto ceiling), azzerandosi sui picchi
+    _ox_t=clamp((-_ox_rel_db-2.5)/32.0,0,1);
+    _ox_bell=sin(_ox_t*$pi);
+    _ox_lift_db=7.5*ox_enh_w*_ox_gate*_ox_bell*_ox_bell;
+    _ox_lift_g=db2gain(_ox_lift_db);
+    xL*=_ox_lift_g; xR*=_ox_lift_g;
+    // Guardia dinamica anti-asprezza medio-alte (2.4-6.2 kHz): contiene solo gli eccessi quando spingi verso -8 LUFS
+    ox_hm_lp1L += ox_hm_lp1_c * (xL - ox_hm_lp1L); ox_hm_lp1R += ox_hm_lp1_c * (xR - ox_hm_lp1R);
+    ox_hm_lp2L += ox_hm_lp2_c * (xL - ox_hm_lp2L); ox_hm_lp2R += ox_hm_lp2_c * (xR - ox_hm_lp2R);
+    _ox_hmL = ox_hm_lp1L - ox_hm_lp2L; _ox_hmR = ox_hm_lp1R - ox_hm_lp2R;
+    _ox_hmp = 0.5 * (_ox_hmL * _ox_hmL + _ox_hmR * _ox_hmR);
+    _ox_flp = 0.5 * (xL * xL + xR * xR);
+    ox_hm_env = _ox_hmp + ox_hm_env_c * (ox_hm_env - _ox_hmp);
+    ox_full_env = _ox_flp + ox_hm_env_c * (ox_full_env - _ox_flp);
+    _ox_hm_rel = gain2db(sqrt(max(ox_hm_env, 0.000000000001))) - gain2db(sqrt(max(ox_full_env, 0.000000000001)));
+    _ox_hm_cut_db = clamp(-max(0, _ox_hm_rel + 11.0) * 0.30 * ox_enh_w * clamp(_ox_lift_db * 0.32 + ox_clip_w * 0.55, 0, 1.35), -3.2, 0);
+    _ox_hm_g = db2gain(_ox_hm_cut_db) - 1.0;
+    xL += _ox_hmL * _ox_hm_g; xR += _ox_hmR * _ox_hm_g;
+    // Arrotondamento continuo dolce 2x oversampled negli ultimi 3 dB sotto ceiling (zero aliasing medio-alte, zero DC)
+    _ox_kt=lim_ceiling_g*0.707945784;
+    _ox_span=max(0.0001,lim_ceiling_g-_ox_kt);
+    _ox_kstr=0.45*ox_enh_w;
+    _ox_mL = 0.5 * (ox_os_pxL + xL); _ox_mR = 0.5 * (ox_os_pxR + xR);
+    _ox_ymL = ox_enh_shaper(_ox_mL, _ox_kt, _ox_span, _ox_kstr);
+    _ox_ycL = ox_enh_shaper(xL,     _ox_kt, _ox_span, _ox_kstr);
+    _ox_ymR = ox_enh_shaper(_ox_mR, _ox_kt, _ox_span, _ox_kstr);
+    _ox_ycR = ox_enh_shaper(xR,     _ox_kt, _ox_span, _ox_kstr);
+    ox_os_pxL = xL; ox_os_pxR = xR;
+    xL = 0.25 * ox_os_ymL + 0.50 * ox_os_ycL + 0.25 * _ox_ymL;
+    xR = 0.25 * ox_os_ymR + 0.50 * ox_os_ycR + 0.25 * _ox_ymR;
+    ox_os_ymL = _ox_ymL; ox_os_ycL = _ox_ycL;
+    ox_os_ymR = _ox_ymR; ox_os_ycR = _ox_ycR;
+    ui_ox_enh_lift_db=_ox_lift_db;
+  ):(
+    ox_os_pxL = xL; ox_os_pxR = xR; ox_os_ymL = ox_os_ycL = xL; ox_os_ymR = ox_os_ycR = xR;
+    ui_ox_enh_lift_db=0;
+  );
+  pk_comp_env=pk_decay(max(abs(xL),abs(xR)),pk_comp_env);
+):(
+  ui_ox_enh_lift_db=0;
 );
 
 // 3. TONE GUARD
@@ -1653,12 +1946,75 @@ tone_on>=0.5?(
   tone_gr_db=0;
 );
 
-// 4. LIMITER pre-gain
-xL*=lim_pre_g;xR*=lim_pre_g;
+// 4. LIMITER pre-gain (ANALOG) / PRE-CLIPPER 2x OVERSAMPLED (TRANSPARENT, prima di PLIM 4x TP)
+ox_prof<0.5?(
+  xL*=lim_pre_g;xR*=lim_pre_g;
+  ui_ox_clip_gr_db=0;
+):(
+  ox_clip_w>0.001?(
+    _cl_in_pk=max(abs(xL),abs(xR));
+    _cl_mL=0.5*(ox_cl_pxL+xL); _cl_mR=0.5*(ox_cl_pxR+xR);
+    _cl_ymL=ox_clip_shaper(_cl_mL, ox_clip_thr_g, ox_clip_ceil_g);
+    _cl_ycL=ox_clip_shaper(xL,     ox_clip_thr_g, ox_clip_ceil_g);
+    _cl_ymR=ox_clip_shaper(_cl_mR, ox_clip_thr_g, ox_clip_ceil_g);
+    _cl_ycR=ox_clip_shaper(xR,     ox_clip_thr_g, ox_clip_ceil_g);
+    ox_cl_pxL=xL; ox_cl_pxR=xR;
+    xL=0.25*ox_cl_ymL+0.50*ox_cl_ycL+0.25*_cl_ymL;
+    xR=0.25*ox_cl_ymR+0.50*ox_cl_ycR+0.25*_cl_ymR;
+    ox_cl_ymL=_cl_ymL; ox_cl_ycL=_cl_ycL;
+    ox_cl_ymR=_cl_ymR; ox_cl_ycR=_cl_ycR;
+    _cl_out_pk=max(abs(xL),abs(xR));
+    _cl_gr=_cl_in_pk>_cl_out_pk && _cl_in_pk>0.0001 ? max(0, gain2db(_cl_in_pk/max(_cl_out_pk,0.000000000001))) : 0;
+    ui_ox_clip_gr_db=_cl_gr>ui_ox_clip_gr_db ? _cl_gr : ui_ox_clip_gr_db*ox_clip_gr_rel_c;
+  ):(
+    ox_cl_pxL=xL; ox_cl_pxR=xR; ox_cl_ymL=ox_cl_ycL=xL; ox_cl_ymR=ox_cl_ycR=xR;
+    ui_ox_clip_gr_db*=ox_clip_gr_rel_c;
+  );
+);
 _lim_detL=xL;_lim_detR=xR;
 
-// 5. LIMITER (lookahead)
+// 5. LIMITER (lookahead — ANALOG classico o TRANSPARENT Precision Dual-Stage Auto-Release)
 lim_on>=0.5?(
+  ox_prof>=0.5?(
+    // TRANSPARENT PRECISION LIMITER (4x ISP + Soft Knee + Dual-Stage Auto-Release + Lookahead)
+    _tp=isp_peak(_lim_detL,_lim_detR,gm_lim_prevL,gm_lim_prevR,gm_isp_mode);
+    _tp_db=gain2db(max(_tp,0.000000000001));
+    _over_db=_tp_db-lim_ceiling;
+    ox_knee_db>0.05?(
+      _hk=ox_knee_db*0.5;
+      _over_db<=-_hk?(_req_db=0;):
+      _over_db>=_hk?(_req_db=_over_db;):
+      (_u=_over_db+_hk; _req_db=(_u*_u)/(2*ox_knee_db););
+    ):(
+      _req_db=max(0,_over_db);
+    );
+    // Dual-stage release: veloce su transienti brevi, lento sul sostenuto (zero distorsione bassi voce)
+    ox_gr_fast_db=_req_db>ox_gr_fast_db ? _req_db : ox_gr_fast_db*ox_rel_fast_c;
+    ox_auto_on?(
+      ox_gr_slow_db=_req_db>ox_gr_slow_db ? (ox_gr_slow_db*ox_rel_slow_att_c+_req_db*(1-ox_rel_slow_att_c)) : ox_gr_slow_db*ox_rel_slow_c;
+      _tgt_gr_db=max(ox_gr_fast_db,ox_gr_slow_db);
+    ):(
+      ox_gr_slow_db=0;
+      _tgt_gr_db=ox_gr_fast_db;
+    );
+    // Lookahead ring buffer con orizzonte di picco massimo per attacco morbido senza overshoot
+    bufL[writepos]=xL; bufR[writepos]=xR; bufPeak[writepos]=_tgt_gr_db;
+    writepos+=1; writepos>=max_look_spl?writepos=0;
+    _max_gr=0;
+    _li=0;
+    loop(lim_look_spl,
+      _rp2=writepos-1-_li; _rp2<0?_rp2+=max_look_spl;
+      bufPeak[_rp2]>_max_gr?(_max_gr=bufPeak[_rp2];);
+      _li+=1;
+    );
+    ox_gr_smooth_db=_max_gr>ox_gr_smooth_db ? (ox_gr_smooth_db*ox_gain_att_c+_max_gr*(1-ox_gain_att_c)) : (ox_gr_smooth_db*ox_rel_fast_c+_max_gr*(1-ox_rel_fast_c));
+    rpos=writepos-lim_look_spl; rpos<0?rpos+=max_look_spl;
+    lim_gain=db2gain(-ox_gr_smooth_db);
+    xL=bufL[rpos]*lim_gain; xR=bufR[rpos]*lim_gain;
+    // Garanzia brickwall True Peak / ceiling
+    _pk=max(abs(xL),abs(xR));
+    _pk>lim_ceiling_g?(_sc=lim_ceiling_g/_pk; xL*=_sc; xR*=_sc; lim_gain*=_sc;);
+  ):(
   _tp=isp_peak(_lim_detL,_lim_detR,gm_lim_prevL,gm_lim_prevR,gm_isp_mode);
   _rp=lim_ceiling_g;
   lim_rel_idx<lim_rel_spl?(_rp=lim_ceiling_g+(lim_rel_start-lim_ceiling_g)*lim_rel_win(lim_rel_idx/lim_rel_spl);lim_rel_idx+=1;);
@@ -1685,7 +2041,8 @@ lim_on>=0.5?(
   xL=lim_dist(bufL[rpos]);xR=lim_dist(bufR[rpos]);
   lim_sat_w>0?(_op=max(abs(xL),abs(xR));_ip=max(abs(bufL[rpos]),abs(bufR[rpos]));lim_gain=_op/max(_ip,0.000000000001);):(lim_gain=lim_ceiling_g/op;);
   _pk=max(abs(xL),abs(xR));_pk>lim_ceiling_g?(_sc=lim_ceiling_g/_pk;xL*=_sc;xR*=_sc;);
-):(lim_gain=1;);
+  );
+):(lim_gain=1;ox_gr_fast_db=0;ox_gr_slow_db=0;ox_gr_smooth_db=0;);
 gm_lim_prevL=_lim_detL;gm_lim_prevR=_lim_detR;
 pk_lim_env=pk_decay(max(abs(xL),abs(xR)),pk_lim_env);
 
@@ -1798,6 +2155,7 @@ meter_reset_pending?(
   target_lufs_db=-100;target_rms_db=-100;target_meter_prime=1;
   out_peak_hold_dbfs=-100;out_peak_max_dbfs=-100;out_peak_hold_spl=0;
   out_peak_l_dbfs=-100;out_peak_r_dbfs=-100;ui_out_peak_l_dbfs=-100;ui_out_peak_r_dbfs=-100;
+tp_hold_l=-100;tp_hold_r=-100;tp_hold_tl=0;tp_hold_tr=0;tp_hold_last_t=0;
   ms_m_env=0.000000001;ms_s_env=0.000000001;ui_ms_mid_db=-100;ui_ms_side_db=-100;ui_ms_width_db=-100;
   meter_prime_pending=1;meter_just_primed=0;
   memset(lra_hist,0,LRA_BINS);lra_tick_cnt=0;lra_reco_cnt=0;ui_lra=0;
@@ -1938,6 +2296,8 @@ function set_ui_slider(sl_idx,v) local(m)(
   // perche' @slider esegue compute_params() e reinizializza variabili GUI/mouse.
   sl_idx==66 ? (
     nav_measure_mode=max(0,min(2,floor(nav_mode_selected+0.5)));
+  ) : sl_idx>64 ? (
+    slider(sl_idx)=v;sliderchange(slider(sl_idx));slider_automate(slider(sl_idx));dsp_needs_update=1;
   ) : (
     slider(sl_idx)=v;m=slider_mask(sl_idx);sliderchange(m);slider_automate(m);dsp_needs_update=1;
   );
@@ -1983,6 +2343,7 @@ function request_meter_refresh() local(j)(
   disp_lufs_m=-999;disp_lufs_s=-999;disp_lra=-999;avg_hold_frames=4;
   out_peak_hold_dbfs=-100;out_peak_max_dbfs=-100;out_peak_hold_spl=0;
   out_peak_l_dbfs=-100;out_peak_r_dbfs=-100;ui_out_peak_l_dbfs=-100;ui_out_peak_r_dbfs=-100;
+tp_hold_l=-100;tp_hold_r=-100;tp_hold_tl=0;tp_hold_tr=0;tp_hold_last_t=0;
   ms_m_env=0.000000001;ms_s_env=0.000000001;ui_ms_mid_db=-100;ui_ms_side_db=-100;ui_ms_width_db=-100;
   ui_out_peak_dbfs=-100;ui_out_peak_max_dbfs=-100;ui_lra=0;
   j=0;loop(20,pkh_base[j]=-90;j+=1;);
@@ -2501,14 +2862,15 @@ local(i,db,yy,_tw,_th)(
   );
 );
 
-function draw_vseg_dense(bx,by,bw,bh,db,label,nr,ng,nb)
-local(ns,gap,sh,i,sv,ion,sr,sg,sb,_tw,_th,_yy,_fillh)(
+function draw_vseg_dense(bx,by,bw,bh,db,label,nr,ng,nb,warn_db,ref_db)
+local(ns,gap,sh,i,sv,ion,sr,sg,sb,_tw,_th,_yy,_fillh,_ry)(
   ns=42;gap=1;sh=max(1,floor((bh-(ns-1)*gap)/ns));
   gfx_set(0.035,0.040,0.046,1);zp_rect(bx-1,by-1,bw+2,bh+2);
   i=0;
   loop(ns,
-    sv=-60.0+(i/(ns-1.0))*66.0;
-    sv>0?(sr=0.94;sg=0.14;sb=0.14;):sv>-9?(sr=0.90;sg=0.74;sb=0.10;):(sr=nr;sg=ng;sb=nb;);
+    // Inversa esatta di zp_meter_db_norm: ogni LED combacia al pixel con l'asse dB (0, -6, -12, -24...)
+    sv=-60.0+pow((i+0.5)/ns,1.0/1.35)*66.0;
+    sv>0?(sr=0.94;sg=0.14;sb=0.14;):sv>warn_db?(sr=0.92;sg=0.72;sb=0.12;):(sr=nr;sg=ng;sb=nb;);
     ion=db>=sv;
     gfx_r=sr*(ion?1.0:0.10);gfx_g=sg*(ion?1.0:0.10);gfx_b=sb*(ion?1.0:0.10);gfx_a=ion?0.96:0.32;
     _yy=by+bh-(i+1)*(sh+gap)+gap;
@@ -2517,20 +2879,31 @@ local(ns,gap,sh,i,sv,ion,sr,sg,sb,_tw,_th,_yy,_fillh)(
   );
   _fillh=floor(zp_meter_db_norm(db)*bh);
   _fillh>0?(gfx_set(nr,ng,nb,0.12);zp_rect(bx,by+bh-_fillh,bw,_fillh););
+  // Linea orizzontale verde del Target attivo (es. -16 podcast, -8 spot radio)
+  ref_db>-59?(
+    _ry=by+bh-floor(zp_meter_db_norm(ref_db)*bh);
+    gfx_set(0.28,0.96,0.52,0.94);zp_rect(bx-1,_ry,bw+2,2);
+  );
   zp_setfont(1,"Arial",9,'b');gfx_set(0.58,0.68,0.64,0.98);
   (gfx_measurestr(label, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx+floor((bw-_tw)*0.5);zp_gy=by+bh+5;zp_drawstr(label);
 );
 
-function draw_vseg_dense_stereo_tp(bx,by,bw,bh,dbL,dbR,label,nr,ng,nb)
-local(ns,gap,sh,i,sv,ionL,ionR,sr,sg,sb,_tw,_th,_yy,_lw,_rw,_rx)(
+function draw_vseg_dense_stereo_tp(bx,by,bw,bh,dbL,dbR,label,nr,ng,nb,ceil_db)
+local(ns,gap,sh,i,sv,ionL,ionR,sr,sg,sb,_tw,_th,_yy,_lw,_rw,_rx,_now,_dt,_cy,_hyl,_hyr)(
   ns=42;gap=1;sh=max(1,floor((bh-(ns-1)*gap)/ns));
   _lw=max(3,floor((bw-1)*0.5));_rw=max(3,bw-_lw-1);_rx=bx+_lw+1;
+  // Peak-hold flottante L/R (1.8 s hold + decadimento 14 dB/s)
+  _now=time_precise();
+  _dt=tp_hold_last_t>0 ? clamp(_now-tp_hold_last_t,0.001,0.25) : 0.033;
+  tp_hold_last_t=_now;
+  dbL>=tp_hold_l ? (tp_hold_l=dbL; tp_hold_tl=_now;) : ((_now-tp_hold_tl)>1.8 ? tp_hold_l=max(dbL,tp_hold_l-14.0*_dt););
+  dbR>=tp_hold_r ? (tp_hold_r=dbR; tp_hold_tr=_now;) : ((_now-tp_hold_tr)>1.8 ? tp_hold_r=max(dbR,tp_hold_r-14.0*_dt););
   gfx_set(0.035,0.040,0.046,1);zp_rect(bx-1,by-1,bw+2,bh+2);
   gfx_set(0.18,0.22,0.20,0.90);zp_rect(bx+_lw,by,1,bh);
   i=0;
   loop(ns,
-    sv=-60.0+(i/(ns-1.0))*66.0;
-    sv>0?(sr=0.94;sg=0.14;sb=0.14;):sv>-9?(sr=0.90;sg=0.74;sb=0.10;):(sr=nr;sg=ng;sb=nb;);
+    sv=-60.0+pow((i+0.5)/ns,1.0/1.35)*66.0;
+    sv>ceil_db?(sr=0.94;sg=0.14;sb=0.14;):sv>(ceil_db-2.0)?(sr=0.92;sg=0.72;sb=0.12;):(sr=nr;sg=ng;sb=nb;);
     _yy=by+bh-(i+1)*(sh+gap)+gap;
     ionL=dbL>=sv;
     gfx_r=sr*(ionL?1.0:0.10);gfx_g=sg*(ionL?1.0:0.10);gfx_b=sb*(ionL?1.0:0.10);gfx_a=ionL?0.96:0.32;
@@ -2539,6 +2912,20 @@ local(ns,gap,sh,i,sv,ionL,ionR,sr,sg,sb,_tw,_th,_yy,_lw,_rw,_rx)(
     gfx_r=sr*(ionR?1.0:0.10);gfx_g=sg*(ionR?1.0:0.10);gfx_b=sb*(ionR?1.0:0.10);gfx_a=ionR?0.96:0.32;
     zp_rect(_rx,_yy,_rw,sh);
     i+=1;
+  );
+  // Linea rossa Ceiling attivo (lim_ceiling, es. -1.0 dBTP)
+  _cy=by+bh-floor(zp_meter_db_norm(ceil_db)*bh);
+  gfx_set(0.96,0.26,0.24,0.90);zp_rect(bx-1,_cy,bw+2,1);
+  // Tacche peak-hold flottanti L/R
+  tp_hold_l>-59?(
+    _hyl=by+bh-floor(zp_meter_db_norm(tp_hold_l)*bh);
+    tp_hold_l>ceil_db?gfx_set(1.0,0.30,0.26,0.98):tp_hold_l>(ceil_db-2.0)?gfx_set(1.0,0.82,0.24,0.96):gfx_set(0.72,1.0,0.78,0.94);
+    zp_rect(bx,_hyl,_lw,2);
+  );
+  tp_hold_r>-59?(
+    _hyr=by+bh-floor(zp_meter_db_norm(tp_hold_r)*bh);
+    tp_hold_r>ceil_db?gfx_set(1.0,0.30,0.26,0.98):tp_hold_r>(ceil_db-2.0)?gfx_set(1.0,0.82,0.24,0.96):gfx_set(0.72,1.0,0.78,0.94);
+    zp_rect(_rx,_hyr,_rw,2);
   );
   zp_setfont(1,"Arial",7,'b');gfx_set(0.76,0.90,0.78,0.95);
   (gfx_measurestr("L", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx+floor((_lw-_tw)*0.5);zp_gy=by+2;zp_drawstr("L");
@@ -2698,7 +3085,7 @@ local(hover,sel,_tw,_th)(
   hover=hit(x,y,w,h);hover?ui_set_hover(hid);
   !ui_render_only&&hover&&mouse_click?(
     set_ui_slider(23,lufs);set_ui_slider(24,rms);set_ui_slider(25,maxtrm);
-    set_ui_slider(29,clamp((lufs+rms)*0.5,-29,-9));
+    set_ui_slider(29,clamp((lufs+rms)*0.5,-29,-6));
     set_ui_slider(27,speed);set_ui_slider(26,mkp);
     set_ui_slider(22,mode);
     out_link_on=0;
@@ -2736,7 +3123,7 @@ floor(gfx_view+0.5)==1?(
   zp_setfont(1,"Arial",16,'b');gfx_set(0.90,0.92,0.96,1);
   zp_gx=PX;zp_gy=11;zp_drawstr("ZP Master Pro");
   zp_setfont(1,"Arial",10);gfx_set(0.38,0.50,0.72,1);
-zp_gx=PX;zp_gy=36;zp_drawstr("Master Processor | v2.45 Circular Threshold Meters - di Paolo Balestri");
+zp_gx=PX;zp_gy=36;zp_drawstr("Master Processor | v2.45 Circular Threshold Meters · latocardioide.it · dubbertools.com");
 
   // View tabs header
   _bx2=PX+PW-63;_byt=12;
@@ -2897,17 +3284,49 @@ gfx_set(0.18,0.20,0.24,1);zp_rect(0,_sy+HDR_H-1,zp_vw,1);
 zp_setfont(1,"Arial",21,'b');gfx_set(0.94,0.96,0.98,1);
 zp_gx=PX;zp_gy=8+_sy;zp_drawstr("ZP Master Pro");
 zp_setfont(1,"Arial",13,'b');gfx_set(0.50,0.66,0.92,1);
-zp_gx=PX;zp_gy=39+_sy;zp_drawstr("Master Processor | v2.45 Circular Threshold Meters - di Paolo Balestri");
+zp_gx=PX;zp_gy=39+_sy;zp_drawstr("Master Processor | v2.50 Analog / Transparent+Enhance · latocardioide.it · dubbertools.com");
+
+// Selettore profilo ANALOG | TRANSP + telecomando Monitor FX Audition Noise (x=208..520, y=12..32)
+_p0x=PX+200;_pyh=12+_sy;_p0w=60;_p1x=_p0x+_p0w+2;_p1w=62;
+_cur_prof=floor(slider(67)+0.5);
+_cur_prof==0?gfx_set(0.76,0.46,0.14,1):gfx_set(0.14,0.15,0.18,1);zp_rect(_p0x,_pyh,_p0w,20);
+_cur_prof==1?gfx_set(0.16,0.58,0.88,1):gfx_set(0.14,0.15,0.18,1);zp_rect(_p1x,_pyh,_p1w,20);
+zp_setfont(1,"Arial",10,'b');
+_cur_prof==0?gfx_set(1,0.96,0.90,1):gfx_set(0.62,0.66,0.74,1);zp_gx=_p0x+8;zp_gy=_pyh+5;zp_drawstr("ANALOG");
+_cur_prof==1?gfx_set(1,0.98,1,1):gfx_set(0.62,0.66,0.74,1);zp_gx=_p1x+8;zp_gy=_pyh+5;zp_drawstr("TRANSP");
+hit(_p0x,_pyh,_p0w,20)?(ui_set_hover(9210);mouse_click&&_cur_prof!=0?set_ui_slider(67,0););
+hit(_p1x,_pyh,_p1w,20)?(ui_set_hover(9211);mouse_click&&_cur_prof!=1?set_ui_slider(67,1););
+
+// Monitor FX Audition Noise remote bar (mai renderizzato nel mix)
+_nx=_p1x+_p1w+10;_nw=64;_npx=_nx+_nw+3;_npw=62;_nsx=_npx+_npw+3;_nsw=44;
+aud_noise_on>=0.5?gfx_set(0.76,0.30,0.16,1):gfx_set(0.14,0.16,0.20,1);zp_rect(_nx,_pyh,_nw,20);
+aud_mon_ok?gfx_set(0.28,0.92,0.58,1):gfx_set(0.96,0.68,0.22,0.90);zp_circle(_nx+9,_pyh+10,3.5,1);
+zp_setfont(1,"Arial",9,'b');gfx_set(0.95,0.96,0.98,1);zp_gx=_nx+17;zp_gy=_pyh+5;zp_drawstr("NOISE");
+hit(_nx,_pyh,_nw,20)?(ui_set_hover(9212);mouse_click?(aud_noise_on=1-(aud_noise_on>=0.5?1:0);aud_send_cmd();););
+
+gfx_set(0.14,0.16,0.21,1);zp_rect(_npx,_pyh,_npw,20);
+zp_setfont(1,"Arial",9,'b');gfx_set(0.84,0.90,0.96,1);zp_gx=_npx+6;zp_gy=_pyh+5;
+aud_noise_prof==0?zp_drawstr("CITTA'"):aud_noise_prof==1?zp_drawstr("AUTOST"):aud_noise_prof==2?zp_drawstr("ROSA"):zp_drawstr("TRENO");
+hit(_npx,_pyh,_npw,20)?(ui_set_hover(9213);mouse_click?(aud_noise_prof=(floor(aud_noise_prof+0.5)+1)%4;aud_send_cmd();););
+
+gfx_set(0.14,0.16,0.21,1);zp_rect(_nsx,_pyh,_nsw,20);
+sprintf(#_ns_lbl,"%.0fdB",aud_noise_snr);
+zp_setfont(1,"Arial",9,'b');gfx_set(0.84,0.90,0.96,1);zp_gx=_nsx+5;zp_gy=_pyh+5;zp_drawstr(#_ns_lbl);
+hit(_nsx,_pyh,_nsw,20)?(ui_set_hover(9214);mouse_click?(
+  aud_noise_snr = aud_noise_snr <= -17 ? -12 : aud_noise_snr <= -11 ? -6 : aud_noise_snr <= -5 ? -3 : -18;
+  aud_send_cmd();
+););
 
 // Header module ON buttons
 ui_enable=1;
 _bx=PX+PW-363;_by=12+_sy;
 mod_r=0.66;mod_g=0.68;mod_b=0.70;
+ui_enable=_cur_prof==0;
 ui_toggle_btn(13,_bx,     _by,52,20,"TAPE",0.66,0.68,0.70,501);
 mod_r=0.86;mod_g=0.54;mod_b=0.14;
 ui_toggle_btn(14,_bx+57,  _by,60,20,"COMP",0.86,0.54,0.14,502);
 mod_r=0.98;mod_g=0.68;mod_b=0.22;
-ui_enable=_comp_on;
+ui_enable=_cur_prof==0 && _comp_on;
 ui_toggle_btn(55,_bx+122, _by,54,20,"GLUE",0.98,0.68,0.22,505);
 ui_enable=1;
 mod_r=0.18;mod_g=0.78;mod_b=0.68;
@@ -2949,11 +3368,13 @@ _tape_on=floor(slider(13)+0.5);
 _comp_on=floor(slider(14)+0.5);
 _lim_on=floor(slider(15)+0.5);
 
-// Engine rows: four equal bands from top content to the utility buttons.
+// Engine rows: profilo ANALOG (Tape/Comp/Tone/Lim) oppure TRANSPARENT (Enhance/Prec Lim/Tone/Curve)
 ERX=PX+5; ERY0=ENG_Y+34; ERW=395; ERH=77; ERC=39;
 ky1=ERY0+ERC; ky2=ERY0+ERH+ERC; ky3=ERY0+ERH*2+COMP_GR_GAP+ERC; ky4=ERY0+ERH*3+COMP_GR_GAP+TONE_ACT_GAP+ERC;
 ki=PX+82;KS=64;
+_eng_prof=floor(slider(67)+0.5);
 
+_eng_prof==0 ? (
 // Row 1 (TAPE): Drive · Tilt · Shape · Flutter · Bump
 draw_engine_row_band(ERX,ERY0,ERW,ERH,"TAPE",0.66,0.68,0.70);
 ui_enable=_tape_on;mod_r=0.66;mod_g=0.68;mod_b=0.70;
@@ -2980,8 +3401,54 @@ gfx_set(0.12,0.09,0.06,1);zp_rect(ERX+48,_cmpgry-2,ERW-50,14);
 mod_r=0.86;mod_g=0.54;mod_b=0.14;
 draw_hsegs_gr(ERX+58,_cmpgry,ERW-72,9,ui_comp_gr,0,"CMP");
 gfx_set(0.86*0.62+0.34,0.54*0.62+0.34,0.14*0.62+0.34,0.78);zp_rect(ERX+48,_cmpgry+12,ERW-50,1);
+) : (
+// PROFILO TRANSPARENT — Row 1: INPUT (+30 dB) + ENHANCE 2x + PRECLIP 2x + KNEE + ISP 4x
+draw_engine_row_band(ERX,ERY0,ERW,ERH,"ENHA",0.20,0.78,0.94);
+ui_enable=1;mod_r=0.20;mod_g=0.78;mod_b=0.94;
+ui_knob(68, ki,      ky1,KR, -12,  30,  0,"INPUT",  9220);
+ui_knob(69, ki+KS,   ky1,KR,   0, 100,  0,"ENHANCE",9221);
+mod_r=0.96;mod_g=0.68;mod_b=0.22;
+ui_knob(74, ki+KS*2, ky1,KR,   0, 100,  0,"PRECLIP",9227);
+mod_r=0.20;mod_g=0.78;mod_b=0.94;
+ui_knob(72, ki+KS*3, ky1,KR,   0, 100, 35,"KNEE",   9222);
+_oxbx=ki+KS*4-24; _oxby=ERY0+14;
+gfx_set(0.08,0.13,0.17,1); zp_rect(_oxbx,_oxby,82,22);
+zp_setfont(1,"Arial",10,'b');
+ox_clip_w>0.001 && ui_ox_clip_gr_db>0.05 ? (
+  gfx_set(0.98,0.76,0.28,1);
+  sprintf(#_ox_lf,"CLIP -%.1f", ui_ox_clip_gr_db);
+) : (
+  gfx_set(0.36,0.90,0.98,1);
+  sprintf(#_ox_lf,"LIFT +%.1f", ui_ox_enh_lift_db);
+);
+zp_gx=_oxbx+6; zp_gy=_oxby+5; zp_drawstr(#_ox_lf);
+_isp_m=floor(slider(53)+0.5);
+_isp_m==2?gfx_set(0.16,0.56,0.78,1):_isp_m==1?gfx_set(0.24,0.44,0.62,1):gfx_set(0.16,0.17,0.20,1);
+zp_rect(_oxbx,_oxby+26,82,20);
+zp_setfont(1,"Arial",10,'b'); gfx_set(0.94,0.97,1,1);
+zp_gx=_oxbx+10; zp_gy=_oxby+31;
+_isp_m==2?zp_drawstr("TP 4x ISP"):_isp_m==1?zp_drawstr("TP 2x ISP"):zp_drawstr("TP OFF");
+hit(_oxbx,_oxby+26,82,20)?(ui_set_hover(9225);mouse_click?set_ui_slider(53,(_isp_m+1)%3););
 
-// Row 3 (TONE): Tone Guard + Tape Bias
+// PROFILO TRANSPARENT — Row 2: PRECISION LIMITER (CEIL · ATTACK · RELEASE · AUTO REL)
+draw_engine_row_band(ERX,ERY0+ERH,ERW,ERH,"PLIM",0.26,0.58,0.98);
+ui_enable=_lim_on;mod_r=0.26;mod_g=0.58;mod_b=0.98;
+ui_knob(2,  ki,      ky2,KR,  -9,-0.1, -1,"CEIL",   1002);
+ui_knob(70, ki+KS,   ky2,KR, 0.1, 5.0,1.5,"ATTACK", 9223);
+ui_knob(71, ki+KS*2, ky2,KR,   5, 500, 80,"RELEASE",9224);
+_cbw=114;_cbh=20;_cbx=ki+KS*3-16;_cby=ERY0+ERH+16;
+ui_enable=_lim_on;mod_r=0.24;mod_g=0.72;mod_b=0.96;
+ui_toggle_btn(73,_cbx,_cby,_cbw,_cbh,"AUTO REL",0.24,0.72,0.96,9226);
+ui_enable=1;
+ui_toggle_btn(15,_cbx,_cby+25,_cbw,_cbh,"PREC LIM",0.28,0.56,0.96,503);
+_cmpgry=ERY0+ERH*2+2;
+gfx_set(0.06,0.10,0.14,1);zp_rect(ERX+48,_cmpgry-2,ERW-50,14);
+mod_r=0.24;mod_g=0.78;mod_b=0.96;
+draw_hsegs_gr(ERX+58,_cmpgry,ERW-72,9,ui_ox_enh_lift_db*2.5,0,"ENH");
+gfx_set(0.24,0.78,0.96,0.72);zp_rect(ERX+48,_cmpgry+12,ERW-50,1);
+);
+
+// Row 3 (TONE): Tone Guard (+ Tape Bias solo in ANALOG)
 draw_engine_row_band(ERX,ERY0+ERH*2+COMP_GR_GAP,ERW,ERH,"TONE",0.18,0.78,0.68);
 ui_enable=floor(slider(35)+0.5);mod_r=0.18;mod_g=0.78;mod_b=0.68;
 ui_knob(36, ki,       ky3,KR, -3,    8, 0.0,"SLOPE", 1041);
@@ -2989,8 +3456,14 @@ ui_enable=floor(slider(35)+0.5) && (tone_points_dyn>=0.5 || tone_eq_dyn>=0.5);mo
 ui_knob(37, ki+KS,    ky3,KR,  0,  100,  35,"AMT",   1042);
 ui_knob(38, ki+KS*2,  ky3,KR, 20, 2000, 250,"ATK",   1043);
 ui_knob(39, ki+KS*3,  ky3,KR,100, 6000,1800,"REL",   1044);
-ui_enable=_tape_on;mod_r=0.66;mod_g=0.68;mod_b=0.70;
-ui_knob(20, ki+KS*4,  ky3,KR,  0,    1, 0.5,"BIAS",  1024);
+_eng_prof==0 ? (
+  ui_enable=_tape_on;mod_r=0.66;mod_g=0.68;mod_b=0.70;
+  ui_knob(20, ki+KS*4,  ky3,KR,  0,    1, 0.5,"BIAS",  1024);
+) : (
+  zp_setfont(1,"Arial",9,'b'); gfx_set(0.32,0.76,0.88,0.90);
+  zp_gx=ki+KS*4-24; zp_gy=ky3-10; zp_drawstr("CLEAN");
+  zp_gx=ki+KS*4-24; zp_gy=ky3+2;  zp_drawstr("PATH");
+);
 _toneacty=ERY0+ERH*3+COMP_GR_GAP+4;
 _toneon_read=floor(slider(35)+0.5);
 _tonedyn_read=_toneon_read*((tone_points_dyn>=0.5 || tone_eq_dyn>=0.5)?1:0);
@@ -3015,20 +3488,66 @@ zp_gx=ERX+52;zp_gy=_tonedyny-1;zp_drawstr("DYN");
 gfx_set(0.88,0.96,0.94,1);zp_gx=ERX+ERW-76;zp_gy=_toneeqy+3;zp_drawstr("ACT");
 hit(_tonecx-_tonehalfw,_toneacty-2,_tonebw,16)?ui_set_hover(1034);
 
-// Row 4 (LIM): Ceil · PreGain · Look · Rel
+// Row 4 (LIM in ANALOG | CURVA & MONITOR in TRANSPARENT)
 _limy=ERY0+ERH*3+COMP_GR_GAP+TONE_ACT_GAP;
-draw_engine_row_band(ERX,_limy,ERW,ERH,"LIM",0.90,0.34,0.30);
-gfx_set(0.18*0.62+0.34,0.78*0.62+0.34,0.68*0.62+0.34,0.78);zp_rect(ERX+48,_limy+1,ERW-50,1);
-ui_enable=_lim_on;mod_r=0.90;mod_g=0.34;mod_b=0.30;
-ui_knob(2,  ki,      ky4,KR, -9, -0.1,  -1,"CEIL",   1002);
-ui_knob(5,  ki+KS,   ky4,KR,-12,   12,   0,"PREGAIN",1005);
-ui_knob(4,  ki+KS*2, ky4,KR,  0,   60,   8,"LOOK",   1004);
-ui_knob(3,  ki+KS*3, ky4,KR,  5,  500,  90,"REL",    1003);
+_eng_prof==0 ? (
+  draw_engine_row_band(ERX,_limy,ERW,ERH,"LIM",0.90,0.34,0.30);
+  gfx_set(0.18*0.62+0.34,0.78*0.62+0.34,0.68*0.62+0.34,0.78);zp_rect(ERX+48,_limy+1,ERW-50,1);
+  ui_enable=_lim_on;mod_r=0.90;mod_g=0.34;mod_b=0.30;
+  ui_knob(2,  ki,      ky4,KR, -9, -0.1,  -1,"CEIL",   1002);
+  ui_knob(5,  ki+KS,   ky4,KR,-12,   12,   0,"PREGAIN",1005);
+  ui_knob(4,  ki+KS*2, ky4,KR,  0,   60,   8,"LOOK",   1004);
+  ui_knob(3,  ki+KS*3, ky4,KR,  5,  500,  90,"REL",    1003);
+) : (
+  draw_engine_row_band(ERX,_limy,ERW,ERH,"CURV",0.20,0.72,0.92);
+  gfx_set(0.20,0.72,0.92,0.70);zp_rect(ERX+48,_limy+1,ERW-50,1);
+  // Grafico curva di trasferimento ENHANCE + KNEE (input -42..0 dB -> output -42..0 dB)
+  _cgx=ERX+56;_cgy=_limy+8;_cgw=134;_cgh=62;
+  gfx_set(0.05,0.08,0.11,1);zp_rect(_cgx,_cgy,_cgw,_cgh);
+  gfx_set(0.22,0.30,0.38,0.8);zp_line(_cgx,_cgy+_cgh,_cgx+_cgw,_cgy);
+  _ci=0;_cpx=_cgx;_cpy=_cgy+_cgh;
+  loop(28,
+    _in_db=-42+(_ci/27)*42;
+    _rel_c=_in_db-lim_ceiling;
+    _gt_c=clamp((_rel_c+52)/14,0,1);
+    _tt_c=clamp((-_rel_c-2.5)/32.0,0,1);
+    _bl_c=sin(_tt_c*$pi);
+    _out_db=_in_db+7.5*ox_enh_w*_gt_c*_bl_c*_bl_c;
+    _ov_c=_out_db-lim_ceiling;
+    ox_knee_db>0.05?(
+      _hk_c=ox_knee_db*0.5;
+      _ov_c<=-_hk_c?(_rd_c=0;):_ov_c>=_hk_c?(_rd_c=_ov_c;):(_uc=_ov_c+_hk_c;_rd_c=(_uc*_uc)/(2*ox_knee_db););
+    ):(_rd_c=max(0,_ov_c););
+    _out_db=min(lim_ceiling,_out_db-_rd_c);
+    _nx_c=_cgx+((_in_db+42)/42)*_cgw;
+    _ny_c=_cgy+_cgh-clamp((_out_db+42)/42,0,1)*_cgh;
+    _ci>0?(gfx_set(0.26,0.84,0.98,0.95);zp_line(_cpx,_cpy,_nx_c,_ny_c););
+    _cpx=_nx_c;_cpy=_ny_c;
+    _ci+=1;
+  );
+  // Riepilogo testuale profilo Transparent + stato Monitor FX Noise
+  _tsx=_cgx+_cgw+10;
+  zp_setfont(1,"Arial",10,'b');gfx_set(0.46,0.88,0.98,1);
+  zp_gx=_tsx;zp_gy=_limy+10;zp_drawstr("PROFILO TRANSPARENT");
+  zp_setfont(1,"Arial",10);gfx_set(0.80,0.86,0.92,1);
+  sprintf(#_ox_s1,"In %+.1f · Enh %.0f%% (+%.1f) · Clip %.0f%%",ox_input_db,ox_enhance,ui_ox_enh_lift_db,ox_clip);
+  zp_gx=_tsx;zp_gy=_limy+26;zp_drawstr(#_ox_s1);
+  sprintf(#_ox_s2,"Clip -%.1f · Lim -%.1f · Ceil %.1f",ui_ox_clip_gr_db,ui_lim_gr,lim_ceiling);
+  zp_gx=_tsx;zp_gy=_limy+41;zp_drawstr(#_ox_s2);
+  aud_mon_ok?(
+    gfx_set(0.32,0.90,0.58,1);
+    sprintf(#_ox_s3,"Monitor Noise: %s (%.0f dB)",aud_mon_on?"ON":"OFF",aud_mon_snr);
+  ):(
+    gfx_set(0.95,0.72,0.28,0.92);
+    strcpy(#_ox_s3,"Metti ZP Audition Noise in MonFX");
+  );
+  zp_gx=_tsx;zp_gy=_limy+56;zp_drawstr(#_ox_s3);
+);
 _limgry=ERY0+ERH*4+COMP_GR_GAP+TONE_ACT_GAP+2;
-gfx_set(0.12,0.05,0.05,1);zp_rect(ERX+48,_limgry-2,ERW-50,14);
-mod_r=0.90;mod_g=0.24;mod_b=0.24;
-draw_hsegs_gr(ERX+58,_limgry,ERW-72,9,ui_lim_gr,1,"LIM");
-gfx_set(0.90*0.62+0.34,0.24*0.62+0.34,0.24*0.62+0.34,0.78);zp_rect(ERX+48,_limgry+12,ERW-50,1);
+gfx_set(_eng_prof==0?0.12:0.06,_eng_prof==0?0.05:0.09,_eng_prof==0?0.05:0.14,1);zp_rect(ERX+48,_limgry-2,ERW-50,14);
+_eng_prof==0?(mod_r=0.90;mod_g=0.24;mod_b=0.24;):(mod_r=0.26;mod_g=0.62;mod_b=0.98;);
+draw_hsegs_gr(ERX+58,_limgry,ERW-72,9,ui_lim_gr,1,_eng_prof==0?"LIM":"PLM");
+gfx_set(mod_r*0.62+0.34,mod_g*0.62+0.34,mod_b*0.62+0.34,0.78);zp_rect(ERX+48,_limgry+12,ERW-50,1);
 
 // Utility row: Final safety limiter + Engine reset directly under LIM.
 ty=_limgry+20;
@@ -3095,6 +3614,14 @@ _hcr&&mouse_click?(
   set_ui_slider(43,425);   // Tone low-mid point
   set_ui_slider(44,2120);  // Tone mid-high point
   set_ui_slider(45,20000); // Tone high point
+  // Transparent profile defaults
+  set_ui_slider(68,0);     // Transparent Input
+  set_ui_slider(69,0);     // Transparent Enhance
+  set_ui_slider(70,1.5);   // Transparent Attack
+  set_ui_slider(71,80);    // Transparent Release
+  set_ui_slider(72,35);    // Transparent Knee
+  set_ui_slider(73,1);     // Transparent Auto Release ON
+  set_ui_slider(74,0);     // Transparent Pre-Clip OFF
   set_ui_slider(47,0);     // Tone low gain
   set_ui_slider(48,0);     // Tone low-mid gain
   set_ui_slider(49,0);     // Tone mid-high gain
@@ -3245,13 +3772,14 @@ gfx_set(0.18,0.20,0.24,1);zp_rect(PX+4,py+36,PW-8,1);
 // TARGET background
 gfx_set(0.12,0.11,0.10,1);zp_rect(tx+2,py+37,vx-tx-4,oh-40);
 
-// Preset buttons
-pbw=floor((vx-tx-16)/5)-2;
+// Preset buttons (6 preset: POD, AUD, MIX, BRD, RAD, SPT -8 LUFS)
+pbw=floor((vx-tx-18)/6)-2;
 ui_out_preset(1,"POD",tx+9,           py+40,pbw,16,9020,-16,-18,10,0.8,0,1);
 ui_out_preset(2,"AUD",tx+9+(pbw+2),   py+40,pbw,16,9021,-19,-21,10,0.8,0,1);
 ui_out_preset(3,"MIX",tx+9+(pbw+2)*2, py+40,pbw,16,9022,-14,-16,10,0.8,0,3);
 ui_out_preset(4,"BRD",tx+9+(pbw+2)*3, py+40,pbw,16,9023,-23,-25,12,0.6,0,1);
 ui_out_preset(5,"RAD",tx+9+(pbw+2)*4, py+40,pbw,16,9024,-12,-14,10,0.8,0,3);
+ui_out_preset(6,"SPT",tx+9+(pbw+2)*5, py+40,pbw,16,9025, -8,-10,10,0.8,0,3);
 
 gfx_set(0.28,0.36,0.54,0.22);zp_rect(tx+4,py+63,vx-tx-8,1);
 
@@ -3305,11 +3833,11 @@ ui_knob(25,ki_o+ks_o*3, ky1_o,KR,  0,12,  6,"MAXTRM",9002);
 mod_r=0.20;mod_g=0.54;mod_b=0.92;
 draw_output_row_band(tx+5,ky2_o-44,vx-tx-10,80,"REG",0.20,0.54,0.92);
 ui_enable=auto_tm==1;
-ui_knob(23,ki_o,        ky2_o,KR,-30,-9,-16,"LUFS",  9001);
+ui_knob(23,ki_o,        ky2_o,KR,-30,-6,-16,"LUFS",  9001);
 ui_enable=auto_tm==2;
-ui_knob(24,ki_o+ks_o,   ky2_o,KR,-40,-9,-18,"RMS",   9004);
+ui_knob(24,ki_o+ks_o,   ky2_o,KR,-40,-6,-18,"RMS",   9004);
 ui_enable=auto_tm==3;
-ui_knob(29,ki_o+ks_o*2, ky2_o,KR,-29,-9,-17,"L+R",   9014);
+ui_knob(29,ki_o+ks_o*2, ky2_o,KR,-29,-6,-17,"L+R",   9014);
 ui_enable=auto_apply&&auto_tm>0;
 ui_knob(27,ki_o+ks_o*3, ky2_o,KR,0.1,10,1.2,"SPEED", 9005);
 ui_knob_value_font=0;ui_knob_label_font=0;ui_enable=1;
@@ -3398,13 +3926,15 @@ ui_phase_level_db>-80?(
 ):gfx_set(0.50,0.56,0.60,0.90);
 (gfx_measurestr(#_phs, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_phx+_phw-_tw-4;zp_gy=_phy+1;zp_drawstr(#_phs);
 
-// LIVE meters: elastic area, centered group, right-side dB scale.
+// LIVE meters: elastic area, centered group, right-side dB scale (allineati alla scala non lineare + linee Target/Ceiling).
 draw_live_ms_indicator(live_x+8,py+36,max(60,live_area_w-16),24);
-draw_vseg_dense(_lmx,                                      vy,mi,vh,ui_global_lufs_m, "M",  0.18,0.50,0.90);
-draw_vseg_dense(_lmx+(mi+meter_gap),                       vy,mi,vh,ui_global_lufs_s, "S",  0.18,0.50,0.90);
-draw_vseg_dense(_lmx+(mi+meter_gap)*2,                     vy,mi,vh,ui_global_lufs_i, "I",  0.22,0.60,0.96);
-draw_vseg_dense(_lmx+(mi+meter_gap)*3,                     vy,mi,vh,ui_global_rms_db, "RMS",0.10,0.56,0.22);
-draw_vseg_dense_stereo_tp(_lmx+mi*4+meter_gap*4,            vy,tp_w,vh,ui_out_peak_l_dbfs,ui_out_peak_r_dbfs, "TP", 0.16,0.80,0.36);
+_m_lufs_tgt = auto_tm==3 ? out_lr_lufs_target() : out_target_lufs;
+_m_rms_tgt  = auto_tm==3 ? out_lr_rms_target()  : out_target_rms;
+draw_vseg_dense(_lmx,                                      vy,mi,vh,ui_global_lufs_m, "M",  0.18,0.50,0.90, _m_lufs_tgt+1.0, _m_lufs_tgt);
+draw_vseg_dense(_lmx+(mi+meter_gap),                       vy,mi,vh,ui_global_lufs_s, "S",  0.18,0.50,0.90, _m_lufs_tgt+1.0, _m_lufs_tgt);
+draw_vseg_dense(_lmx+(mi+meter_gap)*2,                     vy,mi,vh,ui_global_lufs_i, "I",  0.22,0.60,0.96, _m_lufs_tgt+1.0, _m_lufs_tgt);
+draw_vseg_dense(_lmx+(mi+meter_gap)*3,                     vy,mi,vh,ui_global_rms_db, "RMS",0.10,0.56,0.22, _m_rms_tgt+1.0,  _m_rms_tgt);
+draw_vseg_dense_stereo_tp(_lmx+mi*4+meter_gap*4,            vy,tp_w,vh,ui_out_peak_l_dbfs,ui_out_peak_r_dbfs, "TP", 0.16,0.80,0.36, lim_ceiling);
 draw_meter_db_axis(live_axis_x,vy,vh);
 
 // IN meter: post Gain In, before Tape/Comp/Tone/Limiter.
@@ -3415,7 +3945,7 @@ hit(ix,bx_y,in_w,bx_h)?ui_set_hover(9071);
 zp_setfont(1,"Arial",10,'b');gfx_set(0.78,0.66,0.94,0.96);zp_gx=ix+8;zp_gy=bx_y+6;zp_drawstr("IN");
 _in_meter_x=ix+8;_in_meter_w=18;
 _in_meter_y=vy;_in_meter_h=vh;
-draw_vseg_dense(_in_meter_x,_in_meter_y,_in_meter_w,_in_meter_h,ui_in_db,"IN",0.58,0.34,0.92);
+draw_vseg_dense(_in_meter_x,_in_meter_y,_in_meter_w,_in_meter_h,ui_in_db,"IN",0.58,0.34,0.92, -3.0, -100);
 draw_meter_db_axis(ix+34,_in_meter_y,_in_meter_h);
 ui_in_db>-60?sprintf(#_inv,"%.1f",ui_in_db):strcpy(#_inv,"--");
 zp_setfont(1,"Arial",10,'b');gfx_set(0.90,0.86,0.98,0.95);
@@ -3572,7 +4102,12 @@ gfx_set(0.18,0.50,0.90,0.18);zp_rect(bx_m,_ry+measure_row_h,bw_m,1);
 // I
 _ry+=measure_row_h;avg_lufs_disp>-998?sprintf(#_d3,"%.1f",avg_lufs_disp):sprintf(#_d3,"--");
 zp_setfont(1,"Arial",12,'b');gfx_set(0.50,0.64,0.60,1);zp_gx=bx_m+9;zp_gy=_ry+floor(measure_row_h*0.34);zp_drawstr("I");
-zp_setfont(1,"Arial",min(21,max(17,floor(measure_row_h*0.48))),'b');gfx_set(0.22,0.72,0.98,1);(gfx_measurestr(#_d3, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx_m+bw_m-_tw-9;zp_gy=_ry+floor((measure_row_h-_th)*0.5);zp_drawstr(#_d3);
+zp_setfont(1,"Arial",min(21,max(17,floor(measure_row_h*0.48))),'b');
+avg_lufs_disp>-998 && auto_tm>0 ? (
+  _idiff = avg_lufs_disp - _m_lufs_tgt;
+  abs(_idiff)<=1.0 ? gfx_set(0.32,0.94,0.52,1) : _idiff<-1.0 ? gfx_set(0.22,0.72,0.98,1) : _idiff<=2.2 ? gfx_set(0.98,0.82,0.28,1) : gfx_set(1.00,0.42,0.36,1);
+) : gfx_set(0.22,0.72,0.98,1);
+(gfx_measurestr(#_d3, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx_m+bw_m-_tw-9;zp_gy=_ry+floor((measure_row_h-_th)*0.5);zp_drawstr(#_d3);
 gfx_set(0.18,0.50,0.90,0.18);zp_rect(bx_m,_ry+measure_row_h,bw_m,1);
 
 // LRA
@@ -3590,7 +4125,11 @@ gfx_set(0.18,0.50,0.90,0.18);zp_rect(bx_m,_ry+measure_row_h,bw_m,1);
 // PK
 _ry+=measure_row_h;avg_peak_disp>-998?sprintf(#_d6,"%.1f",avg_peak_disp):sprintf(#_d6,"--");
 zp_setfont(1,"Arial",12,'b');gfx_set(0.50,0.64,0.60,1);zp_gx=bx_m+9;zp_gy=_ry+floor(measure_row_h*0.34);zp_drawstr("PK");
-zp_setfont(1,"Arial",min(21,max(17,floor(measure_row_h*0.48))),'b');gfx_set(0.88,0.94,0.90,1);(gfx_measurestr(#_d6, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx_m+bw_m-_tw-9;zp_gy=_ry+floor((measure_row_h-_th)*0.5);zp_drawstr(#_d6);
+zp_setfont(1,"Arial",min(21,max(17,floor(measure_row_h*0.48))),'b');
+avg_peak_disp>-998 ? (
+  avg_peak_disp>(lim_ceiling+0.05) ? gfx_set(1.00,0.40,0.34,1) : avg_peak_disp>(lim_ceiling-1.0) ? gfx_set(0.98,0.82,0.30,1) : gfx_set(0.88,0.94,0.90,1);
+) : gfx_set(0.88,0.94,0.90,1);
+(gfx_measurestr(#_d6, _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=bx_m+bw_m-_tw-9;zp_gy=_ry+floor((measure_row_h-_th)*0.5);zp_drawstr(#_d6);
 
 ); // end METER visibility
 
@@ -3609,11 +4148,12 @@ nav_measure_state==1?strcpy(#nav_state_text,"STO CALCOLANDO"):
 nav_measure_state==2?strcpy(#nav_state_text,"MISURA IN CORSO"):
 nav_measure_state==3?strcpy(#nav_state_text,"MISURA STABILE"):nav_has_valid_measure?strcpy(#nav_state_text,"ULTIMA MISURA VALIDA"):strcpy(#nav_state_text,"ULTIMA MISURA");
 nav_target_state==0?strcpy(#nav_target_state_text,"BASSO"):nav_target_state==1?strcpy(#nav_target_state_text,"OTTIMALE"):nav_target_state==2?strcpy(#nav_target_state_text,"ALTO"):strcpy(#nav_target_state_text,"ECCESSIVO");
-nav_conn_state=(zp_bus_unified_conn==2&&(nav_probe_ui_fresh||zp3_vprobe_ok)&&(nav_spoken_ui_fresh||zp3_voice_n>0))?2:
-               ((zp_bus_unified_conn>0||nav_probe_ui_fresh||zp3_voice_n>0||zp3_vprobe_ok)?1:0);
-nav_conn_state==2?strcpy(#nav_connection_label,"DATI COMPLETI E RECENTI"):
-zp_bus_unified_conn==0&&zp3_voice_n>0?sprintf(#nav_connection_label,"CATENA ZP v3 (%d nodi)",zp3_active_n):
-nav_probe_ui_fresh&&zp_bus_unified_conn==0?strcpy(#nav_connection_label,"PROBE DIRETTO - BUS CHAIN ASSENTE"):
+nav_conn_state=((zp_bus_unified_conn==2||(zp3_voice_n>0))&&(nav_probe_ui_fresh||zp3_vprobe_ok||zp3_te_ok))?2:
+               ((zp3_voice_n>0||nav_probe_ui_fresh||zp3_vprobe_ok||zp_bus_unified_conn>0||zp3_te_ok)?1:0);
+nav_conn_state==2&&zp_bus_unified_conn==2?strcpy(#nav_connection_label,"DATI COMPLETI E RECENTI"):
+nav_conn_state==2?sprintf(#nav_connection_label,"CATENA ZP v3 ATTIVA (%d nodi)",zp3_active_n):
+zp3_voice_n>0?sprintf(#nav_connection_label,"CATENA ZP v3 (%d nodi)",zp3_active_n):
+(nav_probe_ui_fresh||zp3_vprobe_ok)?strcpy(#nav_connection_label,"PROBE DIRETTO ATTIVO"):
 nav_conn_state==1?(nav_has_valid_measure?strcpy(#nav_connection_label,"DATI PARZIALI - MISURA VALIDA MANTENUTA"):strcpy(#nav_connection_label,"DATI PARZIALI / VECCHI")):
 strcpy(#nav_connection_label,"NESSUNA SORGENTE TELEMETRICA");
 nav_draw_mode=max(0,min(2,floor(nav_mode_selected+0.5)));
@@ -3715,14 +4255,29 @@ ui_show_nav ? (
     zp_circle(zp3_t2x + zp3_t2w - 11, zp3_ty + 10, 4, 1);
   );
 
-  // Stato Track Directory / feedback apertura FX
+  // Stato Track Directory / Telemetry Engine / feedback apertura FX
   zp_setfont(1,"Arial",11,'b');
   time_precise() < zp3_open_msg_t ? (
-    zp3_dir_ok ? (gfx_set(0.35,0.90,0.60,1); zp_gx = zp3_t2x + zp3_t2w + 14; zp_gy = nav_y + 7; zp_drawstr("Apertura FX richiesta a Cue Navigator...");)
-    : (gfx_set(1.0,0.72,0.20,1); zp_gx = zp3_t2x + zp3_t2w + 14; zp_gy = nav_y + 7; zp_drawstr("Avvia Cue Navigator per aprire i plugin a monte"););
+    zp3_dir_ok ? (gfx_set(0.35,0.90,0.60,1); zp_gx = zp3_t2x + zp3_t2w + 14; zp_gy = nav_y + 7; zp_drawstr("Apertura FX richiesta...");)
+    : (gfx_set(1.0,0.72,0.20,1); zp_gx = zp3_t2x + zp3_t2w + 14; zp_gy = nav_y + 7; zp_drawstr("Avvia Cue Navigator o Telemetry Engine per aprire FX"););
   ) : (
-    zp3_dir_ok ? (gfx_set(0.36,0.82,0.56,0.95); zp_gx = zp3_t2x + zp3_t2w + 14; zp_gy = nav_y + 7; zp_drawstr("Cue Nav OK · clic su riga apre FX");)
-    : (gfx_set(0.55,0.62,0.70,0.85); zp_gx = zp3_t2x + zp3_t2w + 14; zp_gy = nav_y + 7; zp_drawstr("Autonomo (Tr/FX · senza Cue Nav)"););
+    zp3_dir_ok ? (gfx_set(0.36,0.82,0.56,0.95); zp_gx = zp3_t2x + zp3_t2w + 14; zp_gy = nav_y + 7; zp_drawstr("Directory OK · clic apre FX");)
+    : (gfx_set(0.55,0.62,0.70,0.85); zp_gx = zp3_t2x + zp3_t2w + 14; zp_gy = nav_y + 7; zp_drawstr("Autonomo (Tr/FX)"););
+  );
+  zp3_te_ok ? (
+    zp3_tex = nav_x + nav_w - 238; zp3_tey = nav_y + 4; zp3_tew = 226; zp3_teh = 20;
+    hit(zp3_tex, zp3_tey, zp3_tew, zp3_teh) ? ui_set_hover(9207);
+    zp3_te_status >= 3 ? gfx_set(0.45,0.14,0.12,0.95) :
+    zp3_te_status == 2 ? gfx_set(0.42,0.28,0.08,0.95) :
+    zp3_te_status == 1 ? gfx_set(0.10,0.30,0.20,0.95) : gfx_set(0.14,0.17,0.22,0.92);
+    zp_rect(zp3_tex, zp3_tey, zp3_tew, zp3_teh);
+    zp3_te_status >= 3 ? gfx_set(1.0,0.84,0.80,1) :
+    zp3_te_status == 2 ? gfx_set(1.0,0.86,0.52,1) :
+    zp3_te_status == 1 ? gfx_set(0.55,0.96,0.72,1) : gfx_set(0.75,0.82,0.90,1);
+    zp3_te_issues > 0 ? sprintf(#zp3_te_lbl, "TE: %d note (Ref %.1f dB/o)", zp3_te_issues, zp3_te_ref_slope) :
+    zp3_te_status == 1 ? sprintf(#zp3_te_lbl, "TE OK · Ref %.1f dB/o", zp3_te_ref_slope) :
+                         sprintf(#zp3_te_lbl, "TE attesa · Ref %.1f dB/o", zp3_te_ref_slope);
+    zp_setfont(1,"Arial",10,'b'); zp_gx = zp3_tex + 8; zp_gy = zp3_tey + 5; zp_drawstr(#zp3_te_lbl);
   );
 
   zp3_nav_tab < 0.5 ? (
@@ -4042,18 +4597,24 @@ ui_show_nav ? (
 
 ); // end NAV visibility
 
-// Glue Matrix help overlay.
+// Master Pro quick help overlay (profile-aware: ANALOG / TRANSPARENT).
 glue_help_open>=0.5?(
   _hpw=min(820,max(520,zp_vw-48));
   _hpx=floor((zp_vw-_hpw)*0.5);
   _hpy=78;
   _hph=min(500,zp_vh-130);
   gfx_set(0.025,0.027,0.030,0.96);zp_rect(_hpx,_hpy,_hpw,_hph);
-  gfx_set(0.16,0.44,0.86,1);zp_rect(_hpx,_hpy,_hpw,2);zp_rect(_hpx,_hpy+_hph-2,_hpw,2);zp_rect(_hpx,_hpy,2,_hph);zp_rect(_hpx+_hpw-2,_hpy,2,_hph);
+  ox_prof>=0.5 ? gfx_set(0.20,0.72,0.58,1) : gfx_set(0.16,0.44,0.86,1);
+  zp_rect(_hpx,_hpy,_hpw,2);zp_rect(_hpx,_hpy+_hph-2,_hpw,2);zp_rect(_hpx,_hpy,2,_hph);zp_rect(_hpx+_hpw-2,_hpy,2,_hph);
   gfx_set(0.86,0.54,0.14,0.70);zp_rect(_hpx+22,_hpy+62,_hpw-44,1);
 
   zp_setfont(1,"Arial",26,'b');gfx_set(0.94,0.96,0.98,1);
-  zp_gx=_hpx+24;zp_gy=_hpy+18;zp_drawstr("Glue Matrix");
+  zp_gx=_hpx+24;zp_gy=_hpy+18;
+  ox_prof>=0.5 ? (
+    zp_drawstr(ui_lang==0 ? "Master Pro — Profilo TRANSP" : "Master Pro — TRANSP Profile");
+  ) : (
+    zp_drawstr(ui_lang==0 ? "Master Pro — Profilo ANALOG (Glue Matrix)" : "Master Pro — ANALOG Profile (Glue Matrix)");
+  );
 
   _hcx=_hpx+_hpw-44;_hcy=_hpy+18;_hcw=28;_hch=28;
   _hclose=hit(_hcx,_hcy,_hcw,_hch);
@@ -4063,16 +4624,43 @@ glue_help_open>=0.5?(
   (gfx_measurestr("X", _tw, _th); _tw /= zp_sc; _th /= zp_sc);zp_gx=_hcx+floor((_hcw-_tw)*0.5);zp_gy=_hcy+floor((_hch-_th)*0.5);zp_drawstr("X");
   _hclose&&mouse_click?(glue_help_open=0;);
 
-  zp_setfont(1,"Arial",17,'b');
-  gfx_set(0.78,0.88,0.94,1);zp_gx=_hpx+24;zp_gy=_hpy+82;zp_drawstr("Percorso: Tape -> Compressor/Glue -> Tone -> Limiter -> Output safety.");
-  zp_setfont(1,"Arial",16);
-  gfx_set(0.84,0.86,0.86,1);zp_gx=_hpx+34;zp_gy=_hpy+118;zp_drawstr("COMP accende il compressore principale: soglia, ratio, knee, RMS/Peak e AMU.");
-  zp_gx=_hpx+34;zp_gy=_hpy+150;zp_drawstr("GLUE aggiunge macro lento, micro picchi e crest transienti.");
-  zp_gx=_hpx+34;zp_gy=_hpy+182;zp_drawstr("Con GLUE OFF resta il compressore base, senza DEP/FRG/micro/crest.");
-  gfx_set(0.98,0.74,0.32,1);zp_gx=_hpx+24;zp_gy=_hpy+226;zp_drawstr("DEP = quantita' di glue. FRG = piu' lavoro verso micro e crest.");
-  gfx_set(0.72,0.82,0.92,1);zp_gx=_hpx+24;zp_gy=_hpy+258;zp_drawstr("Texture: SM morbido, API punch, SSA piu' compatto.");
-  gfx_set(0.72,0.92,0.82,1);zp_gx=_hpx+24;zp_gy=_hpy+290;zp_drawstr("ISP OFF/2x/4x e' detection interpolata globale, non uno stadio audio.");
-  gfx_set(0.88,0.78,0.62,1);zp_gx=_hpx+24;zp_gy=_hpy+334;zp_drawstr("A/B: AMU e Glue possono alzare la loudness percepita.");
+  ox_prof>=0.5 ? (
+    zp_setfont(1,"Arial",17,'b');
+    gfx_set(0.72,0.94,0.86,1);zp_gx=_hpx+24;zp_gy=_hpy+82;
+    zp_drawstr(ui_lang==0 ? "Percorso: Input (+30 dB) -> ENHANCE 2x -> Tone -> PRECLIP 2x -> Precision Limiter 4x ISP." : "Path: Input (+30 dB) -> ENHANCE 2x -> Tone -> PRECLIP 2x -> Precision Limiter 4x ISP.");
+    zp_setfont(1,"Arial",15);
+    gfx_set(0.86,0.90,0.92,1);zp_gx=_hpx+28;zp_gy=_hpy+118;
+    zp_drawstr(ui_lang==0 ? "ENHANCE 2x: densita' verso l'alto (+6 dB, gate -48 dB) con guardia anti-asprezza 2.4-6.2 kHz." : "ENHANCE 2x: upward density (+6 dB, -48 dB gate) with 2.4-6.2 kHz de-harshness guard.");
+    zp_gx=_hpx+28;zp_gy=_hpy+150;
+    zp_drawstr(ui_lang==0 ? "PRECLIP 2x: soft-clipper oversampled prima del Limiter per tosare picchi rapidi fino a -8 LUFS." : "PRECLIP 2x: oversampled pre-limiter soft-clipper shaving fast spikes cleanly down to -8 LUFS.");
+    gfx_set(0.98,0.78,0.34,1);zp_gx=_hpx+24;zp_gy=_hpy+190;
+    zp_drawstr(ui_lang==0 ? "PLIM: Lookahead ATK (0.1..5 ms), Soft KNEE (0..4 dB), Dual-Stage AUTO REL e ceiling rigido." : "PLIM: Lookahead ATK (0.1..5 ms), Soft KNEE (0..4 dB), Dual-Stage AUTO REL & strict ceiling.");
+    gfx_set(0.68,0.92,0.82,1);zp_gx=_hpx+24;zp_gy=_hpy+226;
+    zp_drawstr(ui_lang==0 ? "ISP 4x: rilevamento True Peak interpolato 4x (evita inter-sample peak e asprezze sui picchi)." : "ISP 4x: 4x interpolated True Peak detection (prevents inter-sample peaks & harshness).");
+    gfx_set(0.76,0.84,0.94,1);zp_gx=_hpx+24;zp_gy=_hpy+262;
+    zp_drawstr(ui_lang==0 ? "NOISE (header): comanda ZP Audition Noise Monitor in Monitor FX (mai nel mix/render)." : "NOISE (header): remote-controls ZP Audition Noise Monitor in Monitor FX (never rendered).");
+    gfx_set(0.88,0.78,0.62,1);zp_gx=_hpx+24;zp_gy=_hpy+298;
+    zp_drawstr(ui_lang==0 ? "Switch ANALOG | TRANSP: A/B istantaneo senza perdere i parametri dell'altro profilo." : "ANALOG | TRANSP switch: instant A/B while keeping both profiles' settings intact.");
+  ) : (
+    zp_setfont(1,"Arial",17,'b');
+    gfx_set(0.78,0.88,0.94,1);zp_gx=_hpx+24;zp_gy=_hpy+82;
+    zp_drawstr(ui_lang==0 ? "Percorso: Tape -> Compressor/Glue -> Tone -> Limiter -> Output safety." : "Path: Tape -> Compressor/Glue -> Tone -> Limiter -> Output safety.");
+    zp_setfont(1,"Arial",16);
+    gfx_set(0.84,0.86,0.86,1);zp_gx=_hpx+34;zp_gy=_hpy+118;
+    zp_drawstr(ui_lang==0 ? "COMP accende il compressore principale: soglia, ratio, knee, RMS/Peak e AMU." : "COMP engages main compressor: threshold, ratio, knee, RMS/Peak & AMU.");
+    zp_gx=_hpx+34;zp_gy=_hpy+150;
+    zp_drawstr(ui_lang==0 ? "GLUE aggiunge macro lento, micro picchi e crest transienti." : "GLUE adds slow macro body, fast micro peaks and crest-factor control.");
+    zp_gx=_hpx+34;zp_gy=_hpy+182;
+    zp_drawstr(ui_lang==0 ? "Con GLUE OFF resta il compressore base, senza DEP/FRG/micro/crest." : "With GLUE OFF only the main compressor runs (no DEP/FRG/micro/crest).");
+    gfx_set(0.98,0.74,0.32,1);zp_gx=_hpx+24;zp_gy=_hpy+226;
+    zp_drawstr(ui_lang==0 ? "DEP = quantita' di glue. FRG = piu' lavoro verso micro e crest." : "DEP = glue depth. FRG = shifts more work toward micro and crest.");
+    gfx_set(0.72,0.82,0.92,1);zp_gx=_hpx+24;zp_gy=_hpy+258;
+    zp_drawstr(ui_lang==0 ? "Texture: SM morbido, API punch, SSA piu' compatto." : "Texture: SM smooth, API punchy, SSA tighter & bus-glued.");
+    gfx_set(0.72,0.92,0.82,1);zp_gx=_hpx+24;zp_gy=_hpy+290;
+    zp_drawstr(ui_lang==0 ? "ISP OFF/2x/4x e' detection interpolata globale (True Peak 4x consigliato)." : "ISP OFF/2x/4x is global interpolated detection (4x True Peak recommended).");
+    gfx_set(0.88,0.78,0.62,1);zp_gx=_hpx+24;zp_gy=_hpy+334;
+    zp_drawstr(ui_lang==0 ? "Switch ANALOG | TRANSP in alto per passare al Precision Limiter + ENHANCE." : "Use ANALOG | TRANSP at top to switch to Precision Limiter + ENHANCE.");
+  );
 
   // Pulsante Guida Completa HTML
   _og_w = 150; _og_h = 24; _og_x = _hpx + 24; _og_y = _hpy + _hph - 38;
@@ -4242,6 +4830,7 @@ ui_hover_id==9021?zp_drawstr("AUD — Audiolibro/ACX: LUFS -19, Auto LUFS"):
 ui_hover_id==9022?zp_drawstr("MIX — Mix Ready: LUFS -14, Auto L+R"):
 ui_hover_id==9023?zp_drawstr("BRD — Broadcast EBU R128: LUFS -23, Auto LUFS"):
 ui_hover_id==9024?zp_drawstr("RAD — Radio Spot: LUFS -12, Auto L+R"):
+ui_hover_id==9025?zp_drawstr("SPT — Spot Radio Loud: LUFS -8, Auto L+R"):
 ui_hover_id==9040?zp_drawstr("Final LIM: limiter finale di sicurezza post-output; ON/OFF nel pulsante, GR nel mini meter"):
 ui_hover_id==9041?zp_drawstr("LINK: aggancia GAIN IN e GAIN OUT in opposizione dal punto corrente; guida da GAIN IN"):
 ui_hover_id==9016?zp_drawstr("Sec: durata della cattura Output, da 20 a 90 secondi"):
@@ -4263,7 +4852,21 @@ ui_hover_id==9202?zp_drawstr("Filtro TUTTI: mostra canali, Voice Bus, Music Bus 
 ui_hover_id==9203?zp_drawstr("Filtro VOCE: mostra solo processori e sonde della catena voce"):
 ui_hover_id==9204?zp_drawstr("Filtro BUS/MUS: mostra BUS voce, Harmonic Space Carver, Music Probe e Master"):
 ui_hover_id==9205?zp_drawstr("ALERT A MONTE: DELTA, SOLO o CHECK attivo in un plugin a monte — clicca per aprire il plugin"):
-ui_hover_id==9206?zp_drawstr(zp3_dir_ok ? "Clicca sulla riga per aprire direttamente questo plugin a monte" : "Avvia Cue Navigator per aprire questo plugin con un clic"):
+ui_hover_id==9206?zp_drawstr(zp3_dir_ok ? "Clicca sulla riga per aprire direttamente questo plugin a monte" : "Avvia Cue Navigator o ZP Telemetry Engine per aprire questo plugin con un clic"):
+ui_hover_id==9207?zp_drawstr("ZP Telemetry Engine attivo: metro Brown 4.5 ±10% (o Master Tone se acceso) con analisi medie e conflitti a monte"):
+ui_hover_id==9210?zp_drawstr("Profilo ANALOG: catena colorata classica (Tape Glue + Glue Matrix Comp + Tone Guard + Lookahead Limiter)"):
+ui_hover_id==9211?zp_drawstr("Profilo TRANSPARENT: percorso pulito senza colore analogico (Input + ENHANCE + Precision Limiter Auto-Release + ISP 4x + Tone)"):
+ui_hover_id==9212?zp_drawstr(aud_mon_ok ? "NOISE ON/OFF: attiva/disattiva il simulatore Monitor FX (non entra mai nel mix ne' nei render)" : "Carica ZP Audition Noise Monitor nella catena Monitor FX di REAPER per attivare l'ascolto simulato"):
+ui_hover_id==9213?zp_drawstr("Profilo ambiente Monitor FX: Auto Citta', Autostrada (rotolamento+vento), Ambiente Rosa (-3 dB/o), Treno/Aereo"):
+ui_hover_id==9214?zp_drawstr("Livello rumore ambiente rispetto al target LUFS (-18 / -12 / -6 / -3 dB SNR)"):
+ui_hover_id==9220?zp_drawstr("TRANSPARENT INPUT: guadagno lineare pulito (-12..+30 dB) verso Enhance, Pre-Clip e Precision Limiter"):
+ui_hover_id==9221?zp_drawstr("ENHANCE (0-100%): upward density 2x oversampled (fino a +7.5 dB) con guardia anti-asprezza medio-alte 2.4-6.2 kHz e gate -48 dB"):
+ui_hover_id==9222?zp_drawstr("SOFT KNEE (0-100%): ampiezza ginocchio morbido (0..4 dB) del Precision Limiter prima del brickwall"):
+ui_hover_id==9223?zp_drawstr("ATTACK (0.1-5.0 ms): lookahead di precisione del limiter trasparente"):
+ui_hover_id==9224?zp_drawstr("RELEASE (5-500 ms): tempo di rilascio rapido del Precision Limiter"):
+ui_hover_id==9225?zp_drawstr("TRUE PK (Off/2x/4x): sovracampionamento inter-sample peak per il ceiling brickwall"):
+ui_hover_id==9226?zp_drawstr("AUTO REL: rilascio dual-stage (veloce sui transienti brevi, morbido sui passaggi sostenuti per zero distorsione sui bassi)"):
+ui_hover_id==9227?zp_drawstr("PRECLIP (0-100%): soft-clipper 2x oversampled prima del Limiter; tosa 2-4 dB di micro-picchi senza aliasing per arrivare pulito a -8 LUFS"):
 zp_drawstr(ui_lang == 0 ? "ZP MASTER PRO · Processore di Mastering Integrato" : "ZP MASTER PRO · Integrated Mastering Processor");
 
 // ZP Target Engine: il LED indica solo connessione, mai livello audio.

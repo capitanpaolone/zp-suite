@@ -193,8 +193,10 @@ Regola di Paolo, 2026-10-18. Vale per tutti gli agenti (Codex, Claude, altri).
   16384-49151 lookahead).
 - gmem del Carver: 72 celle per FX (`base+0..71`), mai oltre `+71` (sarebbe l'FX successivo). `+71` = routing SC (helper).
 - Mappa gmem complessiva (options:gmem=ZPVoiceoverSharedBus):
-  - 0..606: Shared Bus v2.20 legacy telemetria / profili (Probe, BUS Chain, Spoken Finish, Unified Chain, Master Pro)
-  - 1000..3583: Shared Bus v3 telemetria multi-istanza a monte -> Master Pro (1000..1015 header/mailbox Open-FX, 1024..3071 tabella 64 nodi x 32 float, 3072..3583 Track Directory Cue Navigator 64 tracce x 8 float) — specifica in `docs/SHARED_BUS_V3.md`
+  - 0..606: Shared Bus v2.20 legacy telemetria / profili (Probe, BUS Chain, Spoken Finish, Unified Chain, Master Pro; 410..425 Master Reference Block v3.1 Tone/Target)
+  - 1000..3583: Shared Bus v3 telemetria multi-istanza a monte -> Master Pro (1000..1015 header/mailbox Open-FX, 1024..3071 tabella 64 nodi x 32 float tipi 1..13, 3072..3583 Track Directory 64 tracce x 8 float) — specifica in `docs/SHARED_BUS_V3.md`
+  - 3600..3663: ZP Telemetry Engine summary (3600..3619 stato metro Brown 4.5 / Master Tone, medie e diagnosi)
+  - 3670..3683: Monitor FX Audition Noise bridge (3670..3676 comandi Master Pro magic 905367; 3678..3683 heartbeat/stato ZP Audition Noise Monitor magic 905368)
   - 3800..3899: casella comune comandi HSC Carver (3800 destinatario, 3801 comando, 3802 pos, 3803 seq, 3804 ack)
   - 3900..3919: casella PONTE HELP / LINGUA (3900 ponte vivo / heartbeat incrementale, 3901 lingua 0=IT 1=EN, 3902 req_plugin 1..11, 3903 req_seq, 3904 ack_seq, 3905 ack_status; 3906..3919 riserva)
   - 4032..4095: maschere cue per-traccia Carver

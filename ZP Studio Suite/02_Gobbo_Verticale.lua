@@ -20,6 +20,7 @@ local gobbo_state_section = "RythmoBand_Gobbo_State"
 local gobbo_state_key = "vertical_ts"
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
 local ZP_UI = dofile(SCRIPT_DIR .. 'ZP_UI.lua')
+ZP_UI.font_bonus = 2   -- il Gobbo non ha lo zoom proporzionale: caratteri dei pulsanti +2
 local ZP_TESTO = dofile(SCRIPT_DIR .. 'ZP_Testo_Copione.lua')
 local ZP_EDITOR = dofile(SCRIPT_DIR .. 'ZP_Editor_Copione.lua')
 local ZP_LINGUA
@@ -137,7 +138,7 @@ local show_settings_timer = 0
 local document_margin_x = 54
 local speaker_shoulder_w = 116
 local scroll_follow = 0.045
-local side_panel_w = 210
+local side_panel_w = 232
 local theme_mode = "medium"
 local full_contrast = false
 local sfumato_pre_roll = 5.0
@@ -2532,7 +2533,18 @@ function InlineLoadFile()
         -- Copione Excel con i tempi: una battuta per riga, PERSONAGGIO: testo.
         local xlsx=dofile(SCRIPT_DIR..'ZP_Xlsx_Copione.lua')
         local cues,info=xlsx.read(function(name) return ZP_TESTO.zip_member(path,name,reaper.GetOS()) end,{choose=xlsx.menu})
-        if cues then text,terms=xlsx.to_text(cues),{} elseif info then terms=info else return end
+        if cues then text,terms=xlsx.to_text(cues),{}
+        elseif info then
+            -- Senza tempi ma a blocchi per file (colonna File name): un item di testo per ogni video/audio in timeline.
+            local TV=dofile(SCRIPT_DIR..'ZP_Testo_su_Video.lua')
+            if TV.can_run(path) then
+                if reaper.ShowMessageBox(T('Questo copione non ha i tempi, ma è diviso per file.')..'\n\n'..T('Creo un item di testo per ogni video/audio in timeline, con lo stesso nome del blocco?'),T('Importazione copione'),4)==6 then
+                    TV.run(path); UpdateItems()
+                end
+                return
+            end
+            terms=info
+        else return end
     else
         text,terms=ZP_TESTO.read_file(path,reaper.GetOS())
     end
@@ -3581,7 +3593,7 @@ end
 
 function SidebarLabel(x, y, text)
     if sidebar_clip_top and (y + 16 < sidebar_clip_top or y > sidebar_clip_bottom) then return end
-    gfx.setfont(3, "Arial", 13)
+    gfx.setfont(3, "Arial", 15)
     SetThemeColor("dim", 1)
     gfx.x, gfx.y = x, y
     gfx.drawstr(text)
@@ -3603,7 +3615,7 @@ function SidebarSection(x, y, title, key)
     if visible then
         SetThemeColor("panel_line", 1)
         gfx.rect(x + pad, y, side_panel_w - pad * 2, 1, 1)
-        gfx.setfont(3, "Arial", 12, 'b')
+        gfx.setfont(3, "Arial", 14, 'b')
         SetThemeColor("dim", 1)
         gfx.x, gfx.y = x + pad, y + 6
         gfx.drawstr(title)
@@ -3747,7 +3759,7 @@ function DrawSidePanelBody(w, h, tc_position)
                 SaveSettings()
                 RecalculateDocumentLayout()
             end
-            gfx.setfont(3, "Arial", 17, 'b')
+            gfx.setfont(3, "Arial", 19, 'b')
             SetThemeColor("active", 0.95)
             local font_value = tostring(master_font_size)
             local fw = gfx.measurestr(font_value)
@@ -3809,7 +3821,7 @@ function DrawSidePanelBody(w, h, tc_position)
             if beep.on then
                 SidebarLabel(x + pad, y + 6, T("Volume bip"))
                 if DrawButton(x + pad + 86, y, 36, 26, "−", 0.45, 0.20, 0.20) then SetBeepVolume(beep.db - 3) end
-                gfx.setfont(3, "Arial", 15, 'b')
+                gfx.setfont(3, "Arial", 17, 'b')
                 SetThemeColor("active", 0.95)
                 local beep_value = string.format("%d dB", beep.db)
                 local beep_w = gfx.measurestr(beep_value)
@@ -3890,13 +3902,13 @@ function DrawSidePanelBody(w, h, tc_position)
                 OpenGobboAccessibleMenu()
             end
             y = y + 36
-            gfx.setfont(3, "Arial", 11)
+            gfx.setfont(3, "Arial", 13)
             SetThemeColor("dim", 0.9)
             if y >= (sidebar_clip_top or 0) then
                 gfx.x, gfx.y = x + pad, y
                 ZP_UI.draw_credit(x+pad,y,10)
                 gfx.x, gfx.y = x + pad, y + 14
-                gfx.drawstr("Paolo Balestri & Nicola Lanci")
+                gfx.drawstr("latocardioide.it · dubbertools.com")
             end
             y = y + 36
         
@@ -3940,7 +3952,7 @@ function DrawSidePanelBody(w, h, tc_position)
     
         
         
-            gfx.setfont(3, "Arial", 15, 'b')
+            gfx.setfont(3, "Arial", 17, 'b')
             SetThemeColor("text", 0.95)
             gfx.x, gfx.y = x + pad, 12
             gfx.drawstr("GOBBO")

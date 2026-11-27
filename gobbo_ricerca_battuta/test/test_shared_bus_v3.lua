@@ -163,6 +163,8 @@ local producers = {
   { path = "ZP Lab/ZP BrownSlope Dynamic Guard.jsfx", ptypes = { 7 } },
   { path = "ZP Voce/ZP Harmonic Space Carver.jsfx", ptypes = { 8 } },
   { path = "ZP Misura/ZP Voice-Music Probe.jsfx", ptypes = { 9, 10 } },
+  { path = "ZP Misura/ZP BrownSlope Prism.jsfx", ptypes = { 11 } },
+  { path = "ZP Misura/ZP Loudness Meter Multichannel.jsfx", ptypes = { 12 } },
 }
 local seen_pt = {}
 for _, pr in ipairs(producers) do
@@ -179,17 +181,106 @@ for _, pr in ipairs(producers) do
       "Manca scrittura plugin_type in " .. pr.path)
   end
 end
-for pt = 1, 10 do
+for pt = 1, 12 do
   assert(seen_pt[pt], "Manca produttore per ptype " .. tostring(pt))
 end
+
+local pf = assert(io.open(root_dir .. "ZP Misura/ZP Voice-Music Probe.jsfx", "r"))
+local ptxt = pf:read("*a"); pf:close()
+assert(ptxt:find("probe_brown_tilt", 1, true), "Manca misura Brown tilt in Probe")
+assert(ptxt:find("905360", 1, true), "Probe non rileva Telemetry Engine (905360)")
 
 local mf = assert(io.open(root_dir .. "ZP Master/ZP Master Pro.jsfx", "r"))
 local mtxt = mf:read("*a"); mf:close()
 assert(mtxt:find("function zp3_scan_bus()", 1, true), "Manca zp3_scan_bus in Master Pro")
 assert(mtxt:find("function zp3_read_track_name(", 1, true), "Manca zp3_read_track_name in Master Pro")
 assert(mtxt:find("function zp3_request_open_fx(", 1, true), "Manca zp3_request_open_fx in Master Pro")
+assert(mtxt:find("gmem[410] = 905410", 1, true), "Manca Master Reference Block 410..425 in Master Pro")
+assert(mtxt:find("gmem[zp3_mb + 4] = 13", 1, true), "Manca pubblicazione ptype=13 in Master Pro")
+assert(mtxt:find("gmem[3600] == 905360", 1, true), "Manca lettura Telemetry Engine in Master Pro")
 assert(mtxt:find('"SINTESI"', 1, true) and mtxt:find('"CATENA (%d)"', 1, true), "Mancano schede SINTESI/CATENA in Master Pro")
 assert(mtxt:find("gmem[10]==905010", 1, true) and mtxt:find("gmem[50]==905050", 1, true) and mtxt:find("gmem[60]==905060", 1, true),
   "Compatibilita' legacy v2.20 alterata in Master Pro")
+assert(mtxt:find("slider67:master_profile=", 1, true) and mtxt:find("slider68:ox_input_db=0<-12,30,0.1>", 1, true)
+  and mtxt:find("slider69:ox_enhance=", 1, true) and mtxt:find("slider73:ox_auto_rel=", 1, true)
+  and mtxt:find("slider74:ox_clip=", 1, true) and mtxt:find("slider23:out_target_lufs=-16<-30,-6,0.1>", 1, true),
+  "Mancano slider Transparent/Enhance/PreClip (+30 dB / Target -6) in Master Pro")
+assert(mtxt:find("function ox_enh_shaper(", 1, true) and mtxt:find("function ox_clip_shaper(", 1, true),
+  "Mancano shaper 2x oversampled ENHANCE/PRECLIP in Master Pro")
+assert(mtxt:find("function aud_send_cmd()", 1, true) and mtxt:find("905367", 1, true) and mtxt:find("905368", 1, true),
+  "Manca bridge Monitor FX Audition Noise in Master Pro")
+assert(mtxt:find("gmem[3674] = clamp(aud_noise_snr, -24, 6)", 1, true),
+  "Clamp gmem[3674] deve arrivare fino a +6 dB in Master Pro")
+
+local af = assert(io.open(root_dir .. "ZP Master/ZP Audition Noise Monitor.jsfx", "r"), "Manca ZP Audition Noise Monitor.jsfx")
+local atxt = af:read("*a"); af:close()
+assert(atxt:find("options:gmem=ZPVoiceoverSharedBus", 1, true), "Manca gmem namespace in Audition Noise Monitor")
+assert(atxt:find("905367", 1, true) and atxt:find("905368", 1, true), "Mancano magic 905367/905368 in Audition Noise Monitor")
+assert(atxt:find("host_warn_non_master", 1, true), "Manca guardia anti-traccia ordinaria in Audition Noise Monitor")
+assert(atxt:find("slider3:noise_snr_db=-12<-24,6,0.5>", 1, true), "Range slider3 SNR +6 dB mancante in Audition Noise Monitor")
+assert(atxt:find("slider6:spk_profile=0<0,3,1{", 1, true), "Manca slider6 simulazione diffusore in Audition Noise Monitor")
+assert(atxt:find("srate != last_srate", 1, true), "Manca controllo srate != last_srate in Audition Noise Monitor")
+
+local prf = assert(io.open(root_dir .. "ZP Misura/ZP BrownSlope Prism.jsfx", "r"), "Manca ZP BrownSlope Prism.jsfx")
+local prtxt = prf:read("*a"); prf:close()
+assert(prtxt:find("function analyze_comb()", 1, true) and prtxt:find("gmem[zp3_b + 30] = comb_state > 0 ? comb_ms : 0;", 1, true)
+  and prtxt:find("gmem[zp3_b + 31] = comb_state > 0 ? comb_est : 0;", 1, true),
+  "Manca pubblicazione comb cepstrale (slot +30/+31) in BrownSlope Prism")
+assert(prtxt:find("function rebuild_sr_tables()", 1, true), "Manca rebuild_sr_tables in BrownSlope Prism")
+
+local cf = assert(io.open(root_dir .. "ZP Voce/ZP Harmonic Space Carver.jsfx", "r"), "Manca ZP Harmonic Space Carver.jsfx")
+local ctxt = cf:read("*a"); cf:close()
+assert(ctxt:find("function la_update_pdc()", 1, true) and ctxt:find("la_audio_tgt", 1, true) and ctxt:find("la_sc_tgt", 1, true),
+  "Manca lookahead dual-tap / PDC onesto in Harmonic Space Carver")
+
+local skf = assert(io.open(root_dir .. "ZP Voce/ZP Stagekeeper Dialogue Director.jsfx", "r"), "Manca ZP Stagekeeper Dialogue Director.jsfx")
+local sktxt = skf:read("*a"); skf:close()
+assert(sktxt:find("LIM_BUF_CAP = 2048", 1, true) and sktxt:find("G_BUF_CAP = 100000", 1, true) and sktxt:find("pdc_delay   = gate_la_samp", 1, true),
+  "Manca fissaggio capacita' buffer / PDC onesto in Stagekeeper")
+
+local bcf = assert(io.open(root_dir .. "ZP Voce/ZP BUS Chain.jsfx", "r"), "Manca ZP BUS Chain.jsfx")
+local bctxt = bcf:read("*a"); bcf:close()
+assert(bctxt:find("slider80:la2_char=", 1, true) and bctxt:find("slider81:analog_pad=", 1, true),
+  "Mancano slider80 (LA2 Character) o slider81 (ANA PAD -6 dB) in BUS Chain")
+assert(bctxt:find("function la2_tube_nl(", 1, true) and bctxt:find("la2_dry_d1_l", 1, true) and bctxt:find("function lim_sat_shape(", 1, true),
+  "Mancano shaper 2x residuo LA2 GRAY (la2_tube_nl / dry_d1 in fase) o Voice Limiter in BUS Chain")
+
+local lmf = assert(io.open(root_dir .. "ZP Misura/ZP Loudness Meter Multichannel.jsfx", "r"), "Manca ZP Loudness Meter Multichannel.jsfx")
+local lmtxt = lmf:read("*a"); lmf:close()
+assert(lmtxt:find("function draw_target_rotor(", 1, true) and lmtxt:find("function tgt_step_val(", 1, true),
+  "Manca rotore target 9 scatti in Loudness Meter Multichannel")
+
+local mvf = assert(io.open(root_dir .. "ZP Voce/ZP Magic Voice LAB.jsfx", "r"), "Manca ZP Magic Voice LAB.jsfx")
+local mvtxt = mvf:read("*a"); mvf:close()
+assert(mvtxt:find("function pre_shape(", 1, true) and mvtxt:find("function dbal_sat_shape(", 1, true) and mvtxt:find("function tp_isp4_chan(", 1, true),
+  "Mancano shaper 2x / True Peak 4x cubico in Magic Voice LAB")
+
+-- Verifica affiancamento Spoken Finish classico (3.10.2, 100% recall) + Spoken Finish Pro (1.0.0, Chebyshev + MAGIC)
+local sfc = assert(io.open(root_dir .. "ZP Voce/ZP Spoken Finish.jsfx", "r"), "Manca ZP Spoken Finish.jsfx")
+local sfctxt = sfc:read("*a"); sfc:close()
+assert(sfctxt:find("@version 3.10.2", 1, true) and not sfctxt:find("slider34:", 1, true),
+  "ZP Spoken Finish.jsfx classico deve restare al DSP 3.10.2 senza slider34 per recall sessioni")
+
+local sfp = assert(io.open(root_dir .. "ZP Voce/ZP Spoken Finish Pro.jsfx", "r"), "Manca ZP Spoken Finish Pro.jsfx")
+local sfptxt = sfp:read("*a"); sfp:close()
+assert(sfptxt:find("function zp3_boot()", 1, true) and sfptxt:find("function zp3_claim(", 1, true)
+  and sfptxt:find("get_host_placement(", 1, true) and sfptxt:find("905301", 1, true)
+  and sfptxt:find("gmem[zp3_b + 4] = 4", 1, true),
+  "Telemetria Shared Bus v3 mancante in ZP Spoken Finish Pro.jsfx")
+assert(sfptxt:find("slider34:0<0,1,1{Off,On}>-Magic Signature", 1, true)
+  and sfptxt:find("function sf_cheb_harm(", 1, true),
+  "Motore Chebyshev / MAGIC mancante in ZP Spoken Finish Pro.jsfx")
+
+-- Verifica matematica curva ENHANCE 2.51 (silenzio non sollevato, sillabe deboli sollevate fino a 7.5 dB, picchi protetti)
+local function enhance_lift(in_db, ceil_db, enh_w)
+  local rel = in_db - ceil_db
+  local gate = math.max(0, math.min(1, (rel + 52) / 14))
+  local t = math.max(0, math.min(1, (-rel - 2.5) / 32.0))
+  local bell = math.sin(t * math.pi)
+  return 7.5 * enh_w * gate * bell * bell
+end
+assert(enhance_lift(-60, -1, 1.0) < 0.01, "ENHANCE non deve alzare il rumore di fondo nel silenzio")
+assert(enhance_lift(-20, -1, 1.0) > 5.5, "ENHANCE deve sollevare il corpo/sillabe deboli intorno a -20 dB")
+assert(enhance_lift(-1.5, -1, 1.0) < 0.05, "ENHANCE deve azzerare il lift vicino al ceiling per preservare i transienti")
 
 print("TUTTI OK")

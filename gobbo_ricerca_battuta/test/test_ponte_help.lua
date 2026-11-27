@@ -54,8 +54,14 @@ assert(en_url:find("/en/index%.html"), "en_url deve puntare a en/index.html")
 -- 4. Fallback per plugin inesistente o percorso non trovato
 -- Prism (12) sta nella guida principale; ZP Lab (13) va alla pagina a parte lab.html
 assert(Bridge.PLUGIN_IDS[12] == "plugin-brownslope-prism" and Bridge.PLUGIN_IDS[13] == "plugin-brownslope-guard", "id ZP Lab")
-assert(Bridge.PLUGIN_PAGES[13] == "lab.html" and Bridge.PLUGIN_PAGES[12] == nil and Bridge.PLUGIN_PAGES[2] == nil, "pagina ZP Lab")
+assert(Bridge.PLUGIN_IDS[15] == "plugin-audition-noise", "id Audition Noise Monitor")
+assert(Bridge.PLUGIN_IDS[16] == "plugin-spoken-finish-pro", "id Spoken Finish Pro")
+assert(Bridge.PLUGIN_PAGES[13] == "lab.html" and Bridge.PLUGIN_PAGES[12] == nil and Bridge.PLUGIN_PAGES[2] == nil and Bridge.PLUGIN_PAGES[15] == nil and Bridge.PLUGIN_PAGES[16] == nil, "pagina ZP Lab")
 assert(Bridge.resolve_url(12, "it", nil, script_source):find("/help/index%.html#plugin%-brownslope%-prism"), "Prism nella guida principale")
+assert(Bridge.resolve_url(15, "it", nil, script_source):find("/help/index%.html#plugin%-audition%-noise"), "Audition Noise nella guida IT")
+assert(Bridge.resolve_url(15, "en", nil, script_source):find("/help/en/index%.html#plugin%-audition%-noise"), "Audition Noise nella guida EN")
+assert(Bridge.resolve_url(16, "it", nil, script_source):find("/help/index%.html#plugin%-spoken%-finish%-pro"), "Spoken Finish Pro nella guida IT")
+assert(Bridge.resolve_url(16, "en", nil, script_source):find("/help/en/index%.html#plugin%-spoken%-finish%-pro"), "Spoken Finish Pro nella guida EN")
 local fallback_url = Bridge.resolve_url(99, "it", nil, script_source)
 assert(fallback_url == Bridge.FALLBACK_URL, "Fallback per plugin 99 fallito")
 

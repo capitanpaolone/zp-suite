@@ -34,30 +34,32 @@ La 2.6.7 distribuisce **ZP Magic Voice LAB 1.2.0-lab3**, l’unica versione corr
 
 La versione 2.6.8 include: **Fissa negli item** trasferirà solo i marker selezionati sulla timeline; quelli operativi, come i cue `#HSC` di Harmonic Space Carver, resteranno al loro posto. Include inoltre **ZP Magic Voice LAB 1.2.3** (rotori DRC `FREQ` centro + `OCT` ottave retrocompatibili, monitor reali continui su `DRC`, `DYN EQ` `±5 / ±12 dB` e `DYN BAL` `±6 / ±12 dB`, delta globale lampeggiante con auto-off a 30 s, `D·MOLLA` esteso per singolo stadio, suggerimenti su blocchi da 4 s di parlato attivo, tema solo cromatico `CHIARO / SCURO` e controlli DRC sempre visibili), **ZP BrownSlope Prism 1.1** (corridoio verde `±1,5 / ±3 dB`, riempimento differenziale caldo/freddo, traccia `Live`, barre bipolari per zona, livella pendenza e tema Scuro/Chiaro), **ZP Loudness Meter Multichannel 45.0** (GUI vertical-first anti-deriva con `TARGET` libero + `SEGUI QUI` / `LOCK NOW`, fascia verde `±LU`, nastro `DERIVA 60s` congelato in pausa, peak-hold reale, 4 viste responsive incluso embedded TCP/MCP con `LUFS-I`/`TP` e tema Scuro/Chiaro) e lo **storico scorrevole** nel pannello `STATO` di **ZP Render & Copy**.
 
-La candidata locale 2.6.9 introduce lo **ZP Shared Bus v3** (`ZP Master Pro 2.48`, `Voice-Music Probe 1.4`, `BUS Chain 1.3.3`, `Unified Chain 4.1.9`, `Spoken Finish 3.10.2`, `Stagekeeper 2.5.3`, `Magic Voice LAB 1.2.4`, `Harmonic Space Carver 2.6.12` + `Cue Navigator 1.16`, `BrownSlope Dynamic Guard 0.5.1-assist-dev` e `Click & Attack Softener 0.2`) per leggere su Master Pro chi sta comprimendo, limitando o colorando a monte (nuova scheda **CATENA**, alert **DELTA/SOLO/CHECK**, contesto Music Probe/Carver e click-per-aprire con Cue Navigator), oltre ai bump ReaPack per la selezione cue su `#HSC` e per LEGA OUTPUT / memoria A/B / uscita ±24 dB in Magic Voice LAB. La candidata non è pubblicata.
+La versione 2.6.9 introduce lo **ZP Shared Bus v3.1**, il nuovo **`39 ZP Telemetry Engine`**, il nuovo **`ZP Spoken Finish Pro 1.0.0`** (affiancato al classico `ZP Spoken Finish 3.10.2` con modulo `MAGIC` `VELVET · AIR SILK · 3D FOCUS`), **`30 ZP SRT 2.0`** (stazione sottotitoli unificata a 4 schede con `Accorpa item brevi`), due **Project Templates** calibrati (`-18 LUFS` VoiceOver e `-8 LUFS` Mix-Spot), **`ZP Master Pro 2.52`** (profilo trasparente `TRANSP` + `ENHANCE` + `PRECLIP 2×` + preset `SPT -8 LUFS` e scheda **CATENA**), **`ZP BUS Chain 1.3.7`** (`LA2 GRAY` calibrato su Teletronix LA-2A Gray + `PAD -6` + oversampling `2×`), **`ZP Magic Voice LAB 1.2.7`** (trasparenza lineare `20 kHz` con 2× sul solo residuo e 5 cartucce hardware calibrate su riferimenti UAD), **`ZP Click & Attack Softener 1.4`** (stadio spettrale STFT `MICRO-CLICK` a tasche locali `~940 Hz`, controllo continuo `Freq Skew` `Low ↔ Air` e `Micro %` automatizzabile), **`ZP Loudness Meter Multichannel 45.3`**, **`ZP BrownSlope Prism 1.2`** (rilevamento comb filtering cepstrale), **`ZP Audition Noise Monitor 1.1`** (Monitor FX) e l'identità grafica unificata di prodotto (`latocardioide.it · dubbertools.com`) su tutte le finestre Lua, JSFX e guide IT/EN.
 
 La ZP Studio Suite 2.6.7 aggiunge ZP Consolidate, che raccoglie in Media le sorgenti dei take e gli SRT/VTT registrati nel progetto senza convertire i media. L’elenco completo delle modifiche è nel [changelog](CHANGELOG.md).
 
-## Pacchetti BETA
+## Pacchetti separati
 
-La release 2.6.8 su GitHub ha introdotto questi pacchetti separati. Restano BETA nella candidata locale 2.6.9, ancora in preparazione e non pubblicata.
+Dalla versione 2.6.9 questi pacchetti sono usciti dalla BETA (2026-11-26); requisiti e limiti restano quelli indicati.
 
-- **ZP Clean & Paint (BETA)**: ReaPack installa le action REAPER. Il motore ZP Voice Model Lab, l'ambiente Python, i preset e i modelli restano esterni; servono installazione e percorso configurato.
-- **ZP Montaggio Parlato (BETA)**: richiede ZP Studio Suite e ZP Speech dal 33 Benvenuto; la versione corrente è collaudata su macOS. PDF: `pdftotext` (Poppler). Incolla: SWS.
-- **ZP BrownSlope Dynamic Guard (BETA)** e **ZP Click & Attack Softener (BETA)**: effetti separati, da provare su sessioni e copie di lavoro. Il Cue Navigator serve solo per il pulsante `?` e la guida.
+- **ZP Clean & Paint**: ReaPack installa le action REAPER. Il motore ZP Voice Model Lab, l'ambiente Python, i preset e i modelli restano esterni; servono installazione e percorso configurato.
+- **ZP Montaggio Parlato**: richiede ZP Studio Suite e ZP Speech dal 33 Benvenuto; la versione corrente è collaudata su macOS. PDF: `pdftotext` (Poppler). Incolla: SWS.
+- **ZP BrownSlope Dynamic Guard** e **ZP Click & Attack Softener**: effetti separati, da provare su sessioni e copie di lavoro. Il Cue Navigator serve solo per il pulsante `?` e la guida.
 
 ZP Speech (il motore di trascrizione usato da Trascrivi, 29) non è nel pacchetto ReaPack: si installa dal Benvenuto (33), che lo scarica da GitHub. Su macOS usa MacWhisper o OpenAI Whisper; su Windows e Linux usa OpenAI Whisper locale ed è ancora **sperimentale**.
 
 ## Guide e sorgenti
 
 - [Guida italiana della Suite](ZP%20Studio%20Suite/help/index.html)
-- [Guida dei pacchetti BETA](ZP%20Studio%20Suite/help/lab.html)
+- [Guida dei pacchetti separati](ZP%20Studio%20Suite/help/lab.html)
 - [English Suite guide](ZP%20Studio%20Suite/help/en/index.html)
 - [Lato Cardioide — Strumenti](https://latocardioide.it/strumenti/)
 - [Indice del repository ReaPack](https://github.com/capitanpaolone/zp-suite/raw/master/index.xml)
 
 La descrizione del pacchetto ReaPack e le note di rilascio sono in italiano e in inglese. Il README principale di GitHub è in inglese; chi preferisce l’italiano può scegliere questo file e impostare la lingua della Suite da **33 Benvenuto**.
 
-## Licenze
+## Licenze e manleva di responsabilità
 
-La maggior parte dei componenti è GPL-3.0-or-later; alcuni meter derivati da REAPER sono LGPL-2.1-or-later. Vedi [LICENSE](LICENSE), [LICENSE-LGPL-2.1.txt](LICENSE-LGPL-2.1.txt) e [NOTICE.md](NOTICE.md).
+La maggior parte dei componenti è distribuita con licenza **GPL-3.0-or-later**; alcuni meter derivati da REAPER sono **LGPL-2.1-or-later**. Vedi [LICENSE](LICENSE), [LICENSE-LGPL-2.1.txt](LICENSE-LGPL-2.1.txt) e [NOTICE.md](NOTICE.md).
+
+**Esclusione di garanzia (software fornito «così com'è»):** la ZP Suite è software gratuito e open source distribuito **senza alcuna garanzia**, espressa o implicita, incluse le garanzie implicite di commerciabilità o idoneità a uno scopo particolare (ai sensi delle sez. 15–16 della GNU GPLv3). L'uso in produzione avviene sotto la responsabilità dell'utente: prima di operare su sessioni o consegne importanti, conserva sempre copie di sicurezza dei progetti e verifica i file esportati. L'autore non risponde di eventuali danni diretti o indiretti, interruzioni di lavoro o perdite di dati derivanti dall'uso o dall'impossibilità d'uso della Suite.

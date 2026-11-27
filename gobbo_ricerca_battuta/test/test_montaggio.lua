@@ -105,5 +105,23 @@ assert(M.wav_fragment(tmp, frag, 0.25, 0.75))
 local fi = assert(M.wav_open(frag)); eq("frammento lungo mezzo secondo", fi.frames, 4000); M.wav_close(fi)
 os.remove(tmp); os.remove(frag)
 
+-- riuso SRT esistente + taglio manuale dal testo + persistenza tagli
+local srt = "1\n00:00:01,000 --> 00:00:02,000\nCiao mondo nuovo\n\n2\n00:00:03,000 --> 00:00:04,000\nAltra frase\n"
+local sw = M.words_from_srt(srt)
+eq("SRT -> parole", #sw, 5)
+near("SRT prima parola", sw[1].s, 1.0)
+near("SRT ultima parola fine", sw[5].e, 4.0)
+local pm = M.plan({ words = words_of({ "prima", "parola", "da", "togliere", "subito", "fine" }), frasi = {}, len = 10 })
+eq("inizialmente 1 blocco tenuto", #pm.keep, 1)
+M.set_manual_cut(pm, 3, 4, true)
+eq("stato manuale impostato", pm.stato[3] == "manuale" and pm.stato[4] == "manuale", true)
+eq("keep diviso in 2 blocchi", #pm.keep, 2)
+local ser = M.serialize_manual_cuts(pm)
+eq("serializzazione tagli manuali", ser, "3-4")
+M.set_manual_cut(pm, 3, 4, false)
+eq("ripristino manuale", pm.stato[3], "testo")
+eq("restore tagli manuali", M.restore_manual_cuts(pm, ser), 1)
+eq("stato ripristinato da stringa", pm.stato[4], "manuale")
+
 if failures > 0 then error(failures .. " test falliti") end
 print("TUTTI OK")

@@ -50,8 +50,8 @@ check("icona di serie tenuta, mancante -> riserva ZP, azione nativa col suo nume
   and t8:find("item_3=50125 Video", 1, true) and t8:find("icon_3=toolbar_video_screen.png", 1, true))
 local full = M.menu_text(M.LAYOUT, setmetatable({}, { __index = function() return "_RSx" end }), nil, function(n) return M.STOCK[n] end)
 local nitems = select(2, full:gsub("\nitem_", ""))
-check("layout completo con ZP Consolidate, Render & Copy e ZP Remote (28 voci)", nitems == 28 and full:find("item_19=50125", 1, true)
-  and full:find("item_20=42653", 1, true) and full:find("icon_1=ZP_tb_17_Regioni_Item.png", 1, true) and full:find("ZP_tb_23_Catena_FX.png", 1, true))
+check("layout completo con ZP Consolidate, Montaggio Parlato, Render & Copy e ZP Remote (29 voci)", nitems == 29 and full:find("item_20=50125", 1, true)
+  and full:find("item_21=42653", 1, true) and full:find("icon_1=ZP_tb_17_Regioni_Item.png", 1, true) and full:find("ZP_tb_23_Catena_FX.png", 1, true))
 -- scrittura diretta in reaper-menu.ini
 local ini = "[Main toolbar]\nitem_0=40001\n\n[Floating toolbar 1]\nitem_0=1 A\n\n[Floating toolbar 3]\nitem_0=2 B\ntitle=Mia\n\n[MIDI piano roll]\nitem_0=5\n"
 check("slot: primo libero fra 1 e 16", M.pick_slot(ini) == 2)
@@ -65,13 +65,14 @@ check("slot: titolo simile non vale", M.pick_slot("[Floating toolbar 1]\nitem_0=
 local withB = M.menu_text(M.LAYOUT, setmetatable({}, { __index = function() return "_RSx" end }), nil, function() return true end)
 check("icone B quando sono installate", withB:find("icon_0=ZP_tbB_18_Project_Viewer.png", 1, true)
   and withB:find("icon_2=ZP_tbB_37_Consolidate.png", 1, true)
-  and withB:find("icon_19=ZP_tbB_Video.png", 1, true) and withB:find("icon_27=ZP_tbB_00_Help.png", 1, true)
-  and withB:find("icon_23=ZP_tbB_35_Colori.png", 1, true) and withB:find("icon_24=ZP_tbB_34_Set_Comandi.png", 1, true)
-  and withB:find("icon_25=ZP_RenderCopy.png", 1, true) and withB:find("icon_26=ZP_Remote_Crea_Pacchetto.png", 1, true)
+  and withB:find("icon_6=ZP_tbB_36_Montaggio_Parlato.png", 1, true)
+  and withB:find("icon_20=ZP_tbB_Video.png", 1, true) and withB:find("icon_28=ZP_tbB_00_Help.png", 1, true)
+  and withB:find("icon_24=ZP_tbB_35_Colori.png", 1, true) and withB:find("icon_25=ZP_tbB_34_Set_Comandi.png", 1, true)
+  and withB:find("icon_26=ZP_RenderCopy.png", 1, true) and withB:find("icon_27=ZP_Remote_Crea_Pacchetto.png", 1, true)
   and withB:find("ZP_tb_25_SOLO_Recorder.png", 1, true))
 check("senza icone B: azione nativa usa la sua riserva", full:find("icon_2=toolbar_color_load_disk.png", 1, true) ~= nil
-  and full:find("icon_19=toolbar_video_screen.png", 1, true) ~= nil
-  and full:find("icon_20=ZP_tb_Importa_SRT_1_video.png", 1, true) ~= nil)
+  and full:find("icon_20=toolbar_video_screen.png", 1, true) ~= nil
+  and full:find("icon_21=ZP_tb_Importa_SRT_1_video.png", 1, true) ~= nil)
 local sec = "[Floating toolbar 2]\nitem_0=_RS1 X\ntitle=ZP Studio Suite\n"
 local w1 = M.put_section(ini, sec)
 check("sezione nuova in coda, il resto intatto", w1:sub(1, #ini) == ini and w1:find("[Floating toolbar 2]", 1, true))

@@ -1,5 +1,5 @@
 // @description ZP Stagekeeper Dialogue Director
-// @version 2.5.3
+// @version 2.5.4
 // @author Paolo Balestri
 // @about
 //   Automixer per dialoghi a due voci per broadcast, podcast e doppiaggio.
@@ -17,17 +17,19 @@
 //   Complete documentation: https://latocardioide.it/strumenti/ or click '?'
 // @license GPL-3.0-or-later
 // @changelog
+//   2.5.4: Lookahead Gate e Limiter con buffer ring a capacita' fissa (G_BUF_CAP / LIM_BUF_CAP disgiunti con memset su @init)
+//     e dichiarazione PDC onesta in refresh_runtime() senza aliasing L/R.
 //   2.5.3: telemetria ZP Shared Bus v3 in sola lettura verso Master Pro (stato L/R/Neutral, riduzione, limiter, alert CHECK L/R); DSP e preset invariati.
 //   Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
 //   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
 //     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
 //   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
-desc:ZP Stagekeeper Dialogue Director AutoMixer - Paolo Balestri
+desc:ZP Stagekeeper Dialogue Director AutoMixer · latocardioide.it · dubbertools.com
 options:gmem=ZPVoiceoverSharedBus
-tags:dialogue gate utility paolo balestri zio ziopaolo stagekeeper voice spoken automatic mixer
-// Autore: Paolo Balestri - Zio Paolo
+tags:dialogue gate utility paolo balestri lato cardioide stagekeeper voice spoken automatic mixer
+// Autore: Paolo Balestri · Lato Cardioide
 //variant: v2.3 circular threshold meters
-// Contatto: social@paolobalestri.com
+// Contatto: paolo@latocardioide.it
 about:
 // -------------------------------------------------------------------------
 // FUNZIONAMENTO – Caso d'uso tipico: due microfoni, due attori
@@ -227,17 +229,22 @@ hold_r = 0;
 
 lim_gain = lim_seekgain = 1;
 lim_under = 0;
+LIM_BUF_CAP = 2048;
+lim_buf_l = 0;
+lim_buf_r = 2048;
+memset(lim_buf_l, 0, LIM_BUF_CAP * 2);
 lim_bufPos = 0;
 lim_preclip_peak = 0;
 lim_det_gui = 0; // telemetria GUI esplicita del detector pre-limiter, distinta da lim_preclip_peak (pre-clip)
 
 // Gate lookahead buffer: L a 10000, R a 110000 (100.000 campioni per canale, >500 ms a 192 kHz)
 // Spazio libero isolato prima della memoria preset a 1010000.
+G_BUF_CAP = 100000;
 g_buf_l = 10000;
 g_buf_r = 110000;
 g_buf_pos = 0;
-memset(g_buf_l, 0, 100000);
-memset(g_buf_r, 0, 100000);
+memset(g_buf_l, 0, G_BUF_CAP);
+memset(g_buf_r, 0, G_BUF_CAP);
 
 // Dominance fader smoothing (dominio dB con 1-pole / 2-pole calibrato)
 slider35 = 50;
@@ -983,13 +990,16 @@ function refresh_runtime()
   gate_rel = gate_rel_p1;
 
   hold_samp    = slider13/1000*srate;
-  gate_la_samp = max(1, min(100000, floor(slider14/1000*srate)));
+  gate_la_samp = max(0, min(G_BUF_CAP - 1, floor(slider14/1000*srate)));
   // NOTA: g_buf_pos NON va resettato qui – il ring buffer deve continuare
   // a scorrere durante il playback; resettarlo causa click immediati.
 
   lim_treshdB = min(slider20, -0.1);
   lim_tresh   = exp(lim_treshdB/c_ampdB);
-  lim_look    = floor(max(min(slider21/1000000*srate, 500000), 1));
+  lim_look    = max(0, min(LIM_BUF_CAP - 1, floor(slider21/1000000*srate)));
+  pdc_delay   = gate_la_samp + (slider19 >= 0.5 ? lim_look : 0);
+  pdc_bot_ch  = 0;
+  pdc_top_ch  = 2;
   lim_att_c   = exp(-lim_treshdB/max(slider22/1000000*srate, 1)/c_ampdB);
   lim_hold_s  = slider23/1000*srate;
   lim_rel_c   = exp(-lim_treshdB/max(slider24/1000*srate, 1)/c_ampdB);
@@ -2391,9 +2401,10 @@ idle_now ? (
 // ---- Gate Lookahead Buffer ----
 g_buf_l[g_buf_pos] = ctrl_in_l;
 g_buf_r[g_buf_pos] = ctrl_in_r;
-(g_buf_pos += 1) >= gate_la_samp ? g_buf_pos = 0;
-dry0 = g_buf_l[g_buf_pos];
-dry1 = g_buf_r[g_buf_pos];
+g_rd = g_buf_pos - gate_la_samp; g_rd < 0 ? (g_rd += G_BUF_CAP;);
+dry0 = g_buf_l[g_rd];
+dry1 = g_buf_r[g_rd];
+(g_buf_pos += 1) >= G_BUF_CAP ? (g_buf_pos = 0;);
 s0 = dry0;
 s1 = dry1;
 
@@ -2565,9 +2576,10 @@ s0 *= out_l_cur; s1 *= out_r_cur;
 // ---- Limiter ----
 slider19 ? (
   det=max(abs(s0),abs(s1));
-  lim_bufPos[0]=s0; lim_bufPos[lim_look]=s1;
-  (lim_bufPos+=1)>=lim_look ? lim_bufPos=0;
-  s0=lim_bufPos[0]; s1=lim_bufPos[lim_look];
+  lim_buf_l[lim_bufPos]=s0; lim_buf_r[lim_bufPos]=s1;
+  lim_rd = lim_bufPos - lim_look; lim_rd < 0 ? (lim_rd += LIM_BUF_CAP;);
+  s0=lim_buf_l[lim_rd]; s1=lim_buf_r[lim_rd];
+  (lim_bufPos+=1)>=LIM_BUF_CAP ? (lim_bufPos=0;);
   det=max(max(abs(s0),abs(s1)),det);
   det>lim_tresh ? (
     lim_under=0;
@@ -2788,7 +2800,7 @@ zp_drawstr("Dual-mic dialogue control: dominance gate, scene hold and output saf
 zp_setfont(5); gfx_r = grp_gate_r; gfx_g = grp_gate_g; gfx_b = grp_gate_b;
 zp_gx = header_x + 16; zp_gy = header_sy + 68; zp_drawstr("v2.5.0");
 gfx_r = grp_out_r; gfx_g = grp_out_g; gfx_b = grp_out_b;
-zp_gx = header_x + 82; zp_gy = header_sy + 68; zp_drawstr("Paolo Balestri");
+zp_gx = header_x + 82; zp_gy = header_sy + 68; zp_drawstr("latocardioide.it · dubbertools.com");
 
 view_box_w = 244; view_box_h = 28;
 view_box_x = header_x + header_w - view_box_w - 14; view_box_y = header_y + 10;

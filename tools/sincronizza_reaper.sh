@@ -105,6 +105,12 @@ while IFS= read -r -d '' f; do
     "ZP Studio Suite/icons/"*.png)
       copia_file "$src" "Data/toolbar_icons/${f#ZP Studio Suite/icons/}"
       ;;
+    "ZP Studio Suite/templates/ZP_Setup_VoiceOver_18LUFS.RPP")
+      copia_file "$src" "ProjectTemplates/ZP Setup VoiceOver (-18 LUFS).RPP"
+      ;;
+    "ZP Studio Suite/templates/ZP_Setup_Mix_Spot_8LUFS.RPP")
+      copia_file "$src" "ProjectTemplates/ZP Setup Mix-Spot (-8 LUFS).RPP"
+      ;;
   esac
 done < <(git -C "$REPO" ls-files -co --exclude-standard -z -- \
   "ZP Studio Suite" "ZP Voce" "ZP Master" "ZP Misura" "ZP Lab" \

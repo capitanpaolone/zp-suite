@@ -159,7 +159,21 @@ local function send_width(src)
   return (w == 0) and 2 or ((w == 1) and 1 or w * 2)
 end
 
+local function track_valid(t)
+  if not t then return false end
+  if reaper and reaper.ValidatePtr2 then
+    local ok = reaper.ValidatePtr2(0, t, "MediaTrack*")
+    if ok ~= nil then return ok end
+  end
+  if reaper and reaper.ValidatePtr then
+    local ok = reaper.ValidatePtr(t, "MediaTrack*")
+    if ok ~= nil then return ok end
+  end
+  return true
+end
+
 function HSC.sc_channels(track, fx)
+  if not track_valid(track) then return {}, false end
   local nchan = math.floor(reaper.GetMediaTrackInfo_Value(track, "I_NCHAN"))
   local set, any = {}, false
   for i = 0, 2 do
@@ -183,18 +197,19 @@ function HSC.sc_channels(track, fx)
 end
 
 function HSC.voice_tracks(track, fx)
+  if not track_valid(track) then return {} end
   local channels = HSC.sc_channels(track, fx)
   local found, list, visited = {}, {}, {}
   local function children_of(parent)
     local out = {}
     for i = 0, reaper.CountTracks(0) - 1 do
       local t = reaper.GetTrack(0, i)
-      if reaper.GetParentTrack(t) == parent and reaper.GetMediaTrackInfo_Value(t, "B_MAINSEND") == 1 then out[#out + 1] = t end
+      if track_valid(t) and reaper.GetParentTrack(t) == parent and reaper.GetMediaTrackInfo_Value(t, "B_MAINSEND") == 1 then out[#out + 1] = t end
     end
     return out
   end
   local function add_tree(t)
-    if visited[t] then return end
+    if not track_valid(t) or visited[t] then return end
     visited[t] = true
     if reaper.GetMediaTrackInfo_Value(t, "B_MUTE") == 1 then return end
     if not found[t] then found[t] = true; list[#list + 1] = t end
@@ -370,6 +385,8 @@ local Bridge = {
     -- ZP Lab (plugin in lavorazione, non pubblicati): pagina a parte, help/lab.html
     [13] = "plugin-brownslope-guard",
     [14] = "plugin-magic-voice-lab",   -- pagina dedicata, sotto
+    [15] = "plugin-audition-noise",
+    [16] = "plugin-spoken-finish-pro",
   },
   PLUGIN_PAGES = { [13] = "lab.html", [14] = "magic_voice_lab.html" },   -- di serie index.html
   FALLBACK_URL = "https://latocardioide.it/strumenti/"
@@ -991,23 +1008,31 @@ end
 
 local function collect_voice_items()
   local items = {}
+  local stale = false
   for _, t in ipairs(voice_list) do
-    local tn = reaper.GetMediaTrackInfo_Value(t, "IP_TRACKNUMBER")
-    for i = 0, reaper.CountTrackMediaItems(t) - 1 do
-      local item = reaper.GetTrackMediaItem(t, i)
-      local take = reaper.GetActiveTake(item)
-      if take and reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 0 and not reaper.TakeIsMIDI(take) then
-        local f = source_file(take)
-        if f ~= "" then
-          local _, item_guid = reaper.GetSetMediaItemInfo_String(item, "GUID", "", false)
-          items[#items + 1] = { guid = item_guid or "", file = f, track = tn,
-            pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION"), len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH"),
-            offs = reaper.GetMediaItemTakeInfo_Value(take, "D_STARTOFFS"),
-            rate = math.max(0.0001, reaper.GetMediaItemTakeInfo_Value(take, "D_PLAYRATE")) }
+    if track_valid(t) then
+      local tn = reaper.GetMediaTrackInfo_Value(t, "IP_TRACKNUMBER")
+      for i = 0, reaper.CountTrackMediaItems(t) - 1 do
+        local item = reaper.GetTrackMediaItem(t, i)
+        if item then
+          local take = reaper.GetActiveTake(item)
+          if take and reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 0 and not reaper.TakeIsMIDI(take) then
+            local f = source_file(take)
+            if f ~= "" then
+              local _, item_guid = reaper.GetSetMediaItemInfo_String(item, "GUID", "", false)
+              items[#items + 1] = { guid = item_guid or "", file = f, track = tn,
+                pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION"), len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH"),
+                offs = reaper.GetMediaItemTakeInfo_Value(take, "D_STARTOFFS"),
+                rate = math.max(0.0001, reaper.GetMediaItemTakeInfo_Value(take, "D_PLAYRATE")) }
+            end
+          end
         end
       end
+    else
+      stale = true
     end
   end
+  if stale then rescan() end
   return items
 end
 
@@ -1433,12 +1458,17 @@ local function serve_bridge()
   end
 end
 
+local last_scan_proj, last_scan_ntrk = nil, -1
 local function run()
   if not i_am_owner() then return end     -- un helper piu' nuovo ha preso il posto: questo si ferma
   serve_bridge()
   local now = reaper.time_precise()
+  local cur_proj = reaper.EnumProjects and reaper.EnumProjects(-1) or nil
+  local cur_ntrk = reaper.CountTracks and reaper.CountTracks(0) or -1
   if not last_dir_tick or (now - last_dir_tick >= 0.5) then serve_telemetry_dir(); last_dir_tick = now end
-  if now - last_scan >= 1.0 then rescan(); last_scan = now end
+  if (now - last_scan >= 1.0) or cur_proj ~= last_scan_proj or cur_ntrk ~= last_scan_ntrk then
+    rescan(); last_scan = now; last_scan_proj = cur_proj; last_scan_ntrk = cur_ntrk
+  end
   for _, base in ipairs(bases) do handle(base) end
   if now - last_prefs_tick >= 0.05 then prefs_tick(); last_prefs_tick = now end
   if now - last_sync >= 0.25 then anchors_tick(); sync(); serve_requests(); last_sync = now end

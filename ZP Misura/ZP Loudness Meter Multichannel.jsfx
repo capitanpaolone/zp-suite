@@ -1,25 +1,33 @@
 // @description ZP Loudness Meter Multichannel
-// @version 45.0
+// @version 45.3
 // @author Paolo Balestri
 // @license LGPL-2.1-or-later
 // @about
 //   ### ZP Loudness Meter Multichannel
 //   Meter loudness e True Peak multicanale (fino a 64 ch) progettato in formato verticale anti-deriva
 //   da tenere a lato in sessione: LUFS-I, LUFS-S, LUFS-M, LRA, True Peak 4x e RMS-M.
-//   Include TARGET libero + pulsante SEGUI QUI (LOCK NOW) per bloccare il livello di riferimento,
-//   fascia verde di tolleranza +/-LU, nastro storico 60s (congelato in pausa), peak-hold reale,
-//   4 layout automatici (Side Dock, Barra orizzontale, Vista Studio, Embedded TCP/MCP con LUFS-I/TP)
-//   e selettore tema Scuro/Chiaro.
+//   Include TARGET libero + pulsante SEGUI QUI (LOCK NOW) + rotore a 9 scatti (-24 / -21 / -18 / -16 / -14 / -12 / -10 / -8 / -6 LUFS),
+//   fascia verde di tolleranza +/-LU, nastro storico DERIVA 60s attivabile/disattivabile (OFF di default),
+//   numeri grandi scalabili con la finestra, peak-hold reale, 4 layout automatici e tema Chiaro/Scuro.
 //
 //   Vertical-first multichannel loudness & True Peak meter (up to 64 ch) designed for side-dock
 //   anti-drift monitoring: LUFS-I, LUFS-S, LUFS-M, LRA, 4x True Peak and RMS-M.
-//   Includes free TARGET + one-click LOCK NOW (SEGUI QUI), green +/-LU tolerance corridor,
-//   60s drift ribbon (freezes on pause/silence), real peak-hold, 4 responsive layouts
-//   (Side Dock, Horizontal Strip, Wide Studio, Embedded TCP/MCP with LUFS-I/TP) and Dark/Light themes.
+//   Includes free TARGET + one-click LOCK NOW (SEGUI QUI) + 9-step detented target rotor (-24 / -21 / -18 / -16 / -14 / -12 / -10 / -8 / -6 LUFS),
+//   green +/-LU corridor, optional toggleable 60s drift ribbon (OFF by default), large window-scaled
+//   readouts, real peak-hold, 4 responsive layouts and Light/Dark themes.
 //
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: ZP Studio Suite/help/index.html#plugin-loudness-meter
 // @changelog
+//   45.3 — Rotore target a 9 scatti discreti (-24..-6 LUFS) al posto dei pulsanti preset (DSP/slider invariati):
+//     - Nuovo selettore rotativo a scatti con trascinamento, rotella mouse, tasti -/+ e scala cliccabile su -24, -21, -18, -16, -14, -12, -10, -8 e -6 LUFS.
+//     - TARGET libero (drag/doppio clic/rotella) e SEGUI QUI (LOCK NOW) restano sempre attivi per valori intermedi personalizzati (es. -23.0).
+//   45.2 — Miglioramento leggibilita' e comandi UX (DSP BS.1770-4 / Shared Bus v3.1 invariati):
+//     - Numeri grandi e scalabili proporzionalmente con larghezza e altezza finestra (LUFS-I, LUFS-S, TRUE PK, LUFS-M, LRA, RMS-M).
+//     - Finestra DERIVA 60s ora opzionale (OFF di default) con pulsante diretto DERIVA in testata (oltre al cassetto) e legenda/tooltip espliciti.
+//     - Aggiunta scorciatoia target -10 LUFS (-23 / -18 / -16 / -14 / -10) in tutte le viste.
+//     - Pulsante tema Chiaro/Scuro orientato all'azione (mostra CHIARO quando sei in tema scuro e SCURO quando sei in tema chiaro).
+//   45.1 — Telemetria passiva ZP Shared Bus v3.1 (ptype=12: LUFS-S, LUFS-I, LUFS-M, True Peak, LRA e target/tolleranza verso Master Pro e ZP Telemetry Engine). DSP, grafica e slider invariati.
 //   45.0 — Restyling grafico completo vertical-first anti-deriva (motore BS.1770-4 / 4x TP / 64 ch invariato):
 //     - Nuova vista predefinita Side Dock (268x580, leggibile fino a 180 px): LUFS-I hero, griglia S/TP/M/LRA sempre visibile, barra livella +/-6 LU e nastro deriva 60s.
 //     - TARGET libero (drag/doppio clic/rotella) + pulsante SEGUI QUI / LOCK NOW + 4 scorciatoie (-23 / -18 / -16 / -14).
@@ -29,10 +37,10 @@
 // Mod Paolo Balestri v45.0 - 20-11-2026
 // License: LGPL - http://www.gnu.org/licenses/lgpl.html
 
-desc:ZP Loudness Meter Multichannel - Paolo Balestri
+desc:ZP Loudness Meter Multichannel · latocardioide.it · dubbertools.com
 //tags: analysis loudness meter cockos
 // Autore: Cockos/Paolo Balestri 2026
-// Contatto: social@paolobalestri.com
+// Contatto: paolo@latocardioide.it
 about:
   # =========================================================
   # ZP LOUDNESS METER MULTICHANNEL v45
@@ -43,7 +51,7 @@ about:
   ## TARGET E SEGUI QUI
   - SEGUI QUI (LOCK NOW): aggancia in 1 click il LUFS attuale come riferimento.
   - TARGET: trascina su/giu' (Shift = fine), rotella mouse o doppio clic per digitare.
-  - Scorciatoie rapide: -23, -18, -16, -14 LUFS.
+  - Rotore target a 9 scatti: -24, -21, -18, -16, -14, -12, -10, -8, -6 LUFS.
   - Fascia verde +/-LU attorno al target su barra, livella e nastro deriva 60s.
 
   ## COMANDI RAPIDI
@@ -106,7 +114,7 @@ slider35:outparm_lufs_i=-100<-100,0,1>-LUFS-I (output)
 slider36:outparm_lufs_lra=0<0,100,1>-LRA (output)
 slider43:cfg_theme=1<0,1,1{Light,Dark}>-UI Theme
 slider44:cfg_tol_lu=1.0<0.5,2.5,0.5>-Target Tolerance (LU)
-slider45:cfg_show_history=1<0,1,1{off,on}>-Show Drift History
+slider45:cfg_show_history=0<0,1,1{off,on}>-Show Drift History
 
 options:no_meter gmem=ZPVoiceoverSharedBus
 
@@ -501,6 +509,72 @@ function reset_peaks_only() local(i) (
 
 Reset();
 
+// ---- ZP Shared Bus v3.1 (telemetria passiva Loudness Meter, ptype=12) ----
+function zp3_boot() (
+  gmem[1000] != 905300 || gmem[1001] < 300 ? (
+    gmem[1000] = 905300;
+    gmem[1001] = 300;
+    gmem[1002] = 64;
+    gmem[1003] = 32;
+  );
+);
+function zp3_clear_slot() local(zp3_cb) (
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_cb = 1024 + zp3_slot * 32;
+    gmem[zp3_cb + 3] == zp3_prev_key ? (
+      gmem[zp3_cb] = 0;
+      gmem[zp3_cb + 2] = 0;
+    );
+  );
+  zp3_slot = -1;
+  zp3_prev_key = -1;
+);
+function zp3_claim(zp3_pt) local(zp3_now, zp3_key, zp3_h, zp3_i, zp3_s, zp3_b, zp3_m, zp3_found) (
+  zp3_boot();
+  zp3_now = time_precise();
+  zp3_fx = 0; zp3_hf = 0;
+  zp3_tr = get_host_placement(zp3_fx, zp3_hf);
+  zp3_key = max(0, zp3_tr + 2) * 1024 + max(0, zp3_fx) * 16 + zp3_pt;
+  zp3_prev_key >= 0 && zp3_prev_key != zp3_key ? zp3_clear_slot();
+  zp3_found = -1;
+  zp3_slot >= 0 && zp3_slot < 64 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_slot;);
+  );
+  zp3_found < 0 ? (
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_b = 1024 + zp3_i * 32;
+        gmem[zp3_b] == 905301 && gmem[zp3_b + 3] == zp3_key ? (zp3_found = zp3_i;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_found < 0 ? (
+    zp3_h = (max(0, zp3_tr + 2) * 13 + max(0, zp3_fx) * 7 + zp3_pt * 3) % 64;
+    zp3_i = 0;
+    loop(64,
+      zp3_found < 0 ? (
+        zp3_s = (zp3_h + zp3_i) % 64;
+        zp3_b = 1024 + zp3_s * 32;
+        zp3_m = gmem[zp3_b];
+        (zp3_m != 905301 || (zp3_now - gmem[zp3_b + 1]) > 2.5) ? (zp3_found = zp3_s;);
+      );
+      zp3_i += 1;
+    );
+  );
+  zp3_slot = zp3_found;
+  zp3_prev_key = zp3_key;
+  zp3_slot >= 0 ? (
+    zp3_b = 1024 + zp3_slot * 32;
+    zp3_seq = max(zp3_seq, floor(gmem[zp3_b + 2] + 0.5));
+    zp3_b;
+  ) : -1;
+);
+zp3_prev_key <= 0 ? (zp3_slot = -1; zp3_prev_key = -1;);
+zp3_boot();
+
 
 @block
 
@@ -541,6 +615,48 @@ cfg_out_auto ? slider_automate(
   cfg_out_auto > 2 ? (2^(29 + floor((cfg_out_auto-3)/2))) : (
     2^29 | 2^30 | 2^31 | 2^32 | 2^33 | 2^34 | 2^35 | 0
   )
+);
+
+zp3_b = zp3_claim(12);
+zp3_b >= 0 ? (
+  zp3_mo = cfg_mono ? -3 : 0;
+  zp3_ls = lufs_s_db + zp3_mo;
+  zp3_li = lufs_i_db + zp3_mo;
+  zp3_lm = lufs_m_db + zp3_mo;
+  zp3_tp = global_peak > 0 ? log(global_peak) * 20 / log(10) : -150;
+  gmem[zp3_b + 3] = zp3_prev_key;
+  gmem[zp3_b + 4] = 12;
+  gmem[zp3_b + 5] = zp3_tr;
+  gmem[zp3_b + 6] = zp3_fx;
+  gmem[zp3_b + 7] = zp3_hf;
+  gmem[zp3_b + 8] = 3;
+  gmem[zp3_b + 9] = (zp3_tp > cfg_tp_red ? 33 : 1);
+  gmem[zp3_b + 10] = 0;
+  gmem[zp3_b + 11] = 0;
+  gmem[zp3_b + 12] = 0;
+  gmem[zp3_b + 13] = 0;
+  gmem[zp3_b + 14] = 0;
+  gmem[zp3_b + 15] = 0;
+  gmem[zp3_b + 16] = 0;
+  gmem[zp3_b + 17] = zp3_ls;
+  gmem[zp3_b + 18] = zp3_li;
+  gmem[zp3_b + 19] = zp3_tp;
+  gmem[zp3_b + 20] = zp3_li > -90 ? (zp3_li - cfg_lufs_red) : 0;
+  gmem[zp3_b + 21] = zp3_lm > -55 ? min(100, max(0, (zp3_lm + 55) * 2.5)) : 0;
+  gmem[zp3_b + 22] = -1;
+  gmem[zp3_b + 23] = -99;
+  gmem[zp3_b + 24] = zp3_lm;
+  gmem[zp3_b + 25] = lra_db_diff;
+  gmem[zp3_b + 26] = cfg_lufs_red;
+  gmem[zp3_b + 27] = cfg_tol_lu;
+  gmem[zp3_b + 28] = cfg_tp_red;
+  gmem[zp3_b + 29] = cfg_mono;
+  gmem[zp3_b + 30] = 0;
+  gmem[zp3_b + 31] = 0;
+  gmem[zp3_b] = 905301;
+  gmem[zp3_b + 1] = time_precise();
+  zp3_seq += 1;
+  gmem[zp3_b + 2] = zp3_seq;
 );
 
 
@@ -731,6 +847,60 @@ function l_txtc(cx, y, s) ( l_txt(cx - l_tw(s) * 0.5, y, s); );
 function l_txtr(xr, y, s) ( l_txt(xr - l_tw(s), y, s); );
 function l_txtclip(x, y, r_lim, b_lim, s) ( gfx_x = l_px(x); gfx_y = l_px(y); gfx_drawstr(s, 0, l_px(r_lim), l_px(b_lim)); );
 function l_hit(x, y, w, h) ( mx >= x && mx <= x + w && my >= y && my <= y + h; );
+
+function draw_tooltip_box(win_w, win_h, tip_s, dark)
+local(slen, max_tw, lh, pos, rem, cut, best_sp, ci, ch_c, nlines, bx, by, bw, bh, li, max_lw) (
+  l_font(4, 12, 'b');
+  lh = max(15, ceil(l_th() + 3));
+  max_tw = max(120, win_w - 32);
+  slen = strlen(tip_s);
+  nlines = 0; max_lw = 0; pos = 0;
+  strcpy(#_tl0, ""); strcpy(#_tl1, ""); strcpy(#_tl2, "");
+  while (pos < slen && nlines < 3) (
+    while (pos < slen && str_getchar(tip_s, pos) == 32) ( pos += 1; );
+    rem = slen - pos;
+    rem > 0 ? (
+      strcpy_substr(#_tcur, tip_s, pos, rem);
+      (l_tw(#_tcur) <= max_tw || nlines == 2) ? (
+        cut = rem;
+      ) : (
+        cut = rem; best_sp = -1; ci = 1;
+        while (ci < rem) (
+          ch_c = str_getchar(tip_s, pos + ci);
+          ch_c == 32 ? (
+            strcpy_substr(#_ttmp, tip_s, pos, ci);
+            l_tw(#_ttmp) <= max_tw ? ( best_sp = ci; ) : ( ci = rem; );
+          );
+          ci += 1;
+        );
+        best_sp > 0 ? ( cut = best_sp; ) : (
+          // nessun spazio: taglia per larghezza
+          cut = max(1, floor(rem * max_tw / max(1, l_tw(#_tcur))));
+        );
+      );
+      strcpy_substr(#_tcur, tip_s, pos, cut);
+      max_lw = max(max_lw, l_tw(#_tcur));
+      nlines == 0 ? strcpy(#_tl0, #_tcur) : nlines == 1 ? strcpy(#_tl1, #_tcur) : strcpy(#_tl2, #_tcur);
+      nlines += 1;
+      pos += cut;
+    );
+  );
+  nlines > 0 ? (
+    bw = min(win_w - 12, max_lw + 22);
+    bh = nlines * lh + 12;
+    bx = floor((win_w - bw) * 0.5);
+    by = max(4, win_h - bh - 6);
+    gfx_r = 0; gfx_g = 0; gfx_b = 0; gfx_a = dark ? 0.55 : 0.22; l_rect(bx + 2, by + 3, bw, bh);
+    gfx_r = pn_r; gfx_g = pn_g; gfx_b = pn_b; gfx_a = 0.98; l_rect(bx, by, bw, bh);
+    gfx_r = acc_r; gfx_g = acc_g; gfx_b = acc_b; gfx_a = 0.95; l_frame(bx, by, bw, bh);
+    gfx_r = txt_r; gfx_g = txt_g; gfx_b = txt_b; gfx_a = 1.0;
+    li = 0;
+    loop(nlines,
+      l_txtclip(bx + 11, by + 6 + li * lh, bx + bw - 8, by + bh - 4, li == 0 ? #_tl0 : li == 1 ? #_tl1 : #_tl2);
+      li += 1;
+    );
+  );
+);
 
 function set_palette(dark) (
   dark ? (
@@ -977,7 +1147,202 @@ function draw_lock_btn(x, y, w, h, allow_i, dark) local(hov, fl_ok, fl_wrn, cr, 
   has_click && hov ? ( lock_current_target(); has_click = 0; );
 );
 
-function draw_hero_card(x, y, w, h, val_i, tgt, tol, dark, compact) local(diff, has_v, bx, bw, pad_h, tr_x, tr_w, tr_y, tr_h, g0, g1, nx, nw, nh) (
+function tgt_step_val(idx) (
+  idx <= 0 ? -24.0 :
+  idx == 1 ? -21.0 :
+  idx == 2 ? -18.0 :
+  idx == 3 ? -16.0 :
+  idx == 4 ? -14.0 :
+  idx == 5 ? -12.0 :
+  idx == 6 ? -10.0 :
+  idx == 7 ?  -8.0 : -6.0;
+);
+
+function tgt_nearest_idx(val) local(ti, best_i, best_d, td) (
+  best_i = 0; best_d = 999.0; ti = 0;
+  loop(9,
+    td = abs(val - tgt_step_val(ti));
+    td < best_d ? ( best_d = td; best_i = ti; );
+    ti += 1;
+  );
+  best_i;
+);
+
+function tgt_step_down(val) local(ti, out_i) (
+  out_i = 0; ti = 8;
+  loop(9,
+    tgt_step_val(ti) < val - 0.05 && out_i == 0 ? ( out_i = ti + 1; );
+    ti -= 1;
+  );
+  out_i > 0 ? out_i - 1 : 0;
+);
+
+function tgt_step_up(val) local(ti, out_i) (
+  out_i = -1; ti = 0;
+  loop(9,
+    tgt_step_val(ti) > val + 0.05 && out_i < 0 ? ( out_i = ti; );
+    ti += 1;
+  );
+  out_i >= 0 ? out_i : 8;
+);
+
+function draw_target_rotor(x, y, w, h, tgt, allow_i, dark)
+local(hov, cur_i, exact, ang0, ang_span, pos_f, ang_cur, cx, cy, kr,
+      ti, ta, tx_t, ty_t, px0, py0, px1, py1, rx, rw, bw_s, bh_s, by_s,
+      hov_m, hov_p, ni, th, sx_b, sw_b, sy_b, sh_b, seg_w, sx_i, hov_s, clicked_sub) (
+  cur_i = tgt_nearest_idx(tgt);
+  exact = abs(tgt - tgt_step_val(cur_i)) < 0.05;
+  // Arco rotore 259 gradi: -24 a ore 7:30 (0.78*pi), -14 a ore 12 (1.50*pi), -6 a ore 4:30 (2.22*pi)
+  ang0 = $pi * 0.78;
+  ang_span = $pi * 1.44;
+  // Posizione continua approssimata se target e' fuori scatto (es. -23.0 o SEGUI QUI)
+  pos_f = exact ? cur_i : clamp((tgt + 24.0) / 18.0 * 8.0, 0.0, 8.0);
+  ang_cur = ang0 + (pos_f / 8.0) * ang_span;
+
+  hov = allow_i && l_hit(x, y, w, h);
+  hov ? (
+    tip_active = 1;
+    #tip_msg = msg("ROTORE TARGET (9 scatti): trascina, rotella o -/+ per -24, -21, -18, -16, -14, -12, -10, -8, -6 LUFS (clic destro = -18).",
+                   "TARGET ROTOR (9 steps): drag, wheel or -/+ for -24, -21, -18, -16, -14, -12, -10, -8, -6 LUFS (right-click = -18).");
+  );
+
+  gfx_r = well_r; gfx_g = well_g; gfx_b = well_b; gfx_a = 1.0; l_rect(x, y, w, h);
+  gfx_r = hov || ui_drag == 40 ? acc_r : brd_r;
+  gfx_g = hov || ui_drag == 40 ? acc_g : brd_g;
+  gfx_b = hov || ui_drag == 40 ? acc_b : brd_b;
+  gfx_a = hov || ui_drag == 40 ? 0.95 : 0.80; l_frame(x, y, w, h);
+
+  clicked_sub = 0;
+
+  h < 28 ? (
+    // Modalita' compatta inline (Barra Orizzontale Bassa, h ~ 20)
+    kr = clamp(h * 0.36, 6.0, 8.0);
+    cx = x + kr + 5; cy = y + h * 0.5;
+    gfx_r = btn_r; gfx_g = btn_g; gfx_b = btn_b; gfx_a = 1.0; l_circ(cx, cy, kr, 1);
+    gfx_r = exact ? grn_r : acc_r; gfx_g = exact ? grn_g : acc_g; gfx_b = exact ? grn_b : acc_b; gfx_a = 0.85; l_circ(cx, cy, kr, 0);
+    l_line(cx + cos(ang_cur) * (kr * 0.20), cy + sin(ang_cur) * (kr * 0.20),
+           cx + cos(ang_cur) * (kr * 0.88), cy + sin(ang_cur) * (kr * 0.88));
+
+    rx = cx + kr + 5; rw = max(40, x + w - rx - 3);
+    bw_s = 16; bh_s = max(14, h - 4); by_s = y + (h - bh_s) * 0.5;
+    hov_m = allow_i && l_hit(rx, by_s, bw_s, bh_s);
+    hov_p = allow_i && l_hit(rx + rw - bw_s, by_s, bw_s, bh_s);
+    draw_btn(rx, by_s, bw_s, bh_s, "-", 10, 0, acc_r, acc_g, acc_b, allow_i && tgt > -23.95) ? (
+      set_sl(39, tgt_step_val(tgt_step_down(tgt))); has_click = 0; clicked_sub = 1;
+    );
+    draw_btn(rx + rw - bw_s, by_s, bw_s, bh_s, "+", 10, 0, acc_r, acc_g, acc_b, allow_i && tgt < -6.05) ? (
+      set_sl(39, tgt_step_val(tgt_step_up(tgt))); has_click = 0; clicked_sub = 1;
+    );
+    exact ? sprintf(#_rt_s, "%.0f LU", tgt) : sprintf(#_rt_s, "%.1f LU", tgt);
+    l_font(3, 9.5, 'b');
+    gfx_r = exact ? grn_r : acc_r; gfx_g = exact ? grn_g : acc_g; gfx_b = exact ? grn_b : acc_b; gfx_a = 1.0;
+    th = l_th();
+    l_txtc(rx + rw * 0.5, y + (h - th) * 0.5, #_rt_s);
+  ) : (
+    // Modalita' hardware completa (Studio Larga / Side Dock, h ~ 34..38)
+    kr = clamp(h * 0.31, 9.5, 12.5);
+    cx = x + kr + 10; cy = y + h * 0.5 + 0.5;
+
+    // 9 tacche luminose attorno all'arco del rotore
+    ti = 0;
+    loop(9,
+      ta = ang0 + (ti / 8.0) * ang_span;
+      tx_t = cx + cos(ta) * (kr + 3.4);
+      ty_t = cy + sin(ta) * (kr + 3.4);
+      ti == cur_i && exact ? (
+        gfx_r = grn_r; gfx_g = grn_g; gfx_b = grn_b; gfx_a = 1.0;
+        l_circ(tx_t, ty_t, 1.8, 1);
+      ) : (
+        ti <= cur_i ? ( gfx_r = grn_r; gfx_g = grn_g; gfx_b = grn_b; gfx_a = dark ? 0.55 : 0.45; )
+                    : ( gfx_r = dim_r; gfx_g = dim_g; gfx_b = dim_b; gfx_a = dark ? 0.65 : 0.55; );
+        l_circ(tx_t, ty_t, 1.15, 1);
+      );
+      ti += 1;
+    );
+
+    // Corpo rotore + ghiera + lancetta
+    gfx_r = dark ? 0.14 : 0.88; gfx_g = dark ? 0.16 : 0.90; gfx_b = dark ? 0.19 : 0.93; gfx_a = 1.0;
+    l_circ(cx, cy, kr, 1);
+    gfx_r = hov || ui_drag == 40 ? acc_r : (exact ? grn_r : brd_r);
+    gfx_g = hov || ui_drag == 40 ? acc_g : (exact ? grn_g : brd_g);
+    gfx_b = hov || ui_drag == 40 ? acc_b : (exact ? grn_b : brd_b);
+    gfx_a = 0.92; l_circ(cx, cy, kr, 0);
+    gfx_r = dark ? 0.22 : 0.78; gfx_g = dark ? 0.25 : 0.81; gfx_b = dark ? 0.29 : 0.85; gfx_a = 0.90;
+    l_circ(cx, cy, max(2.2, kr * 0.26), 1);
+
+    px0 = cx + cos(ang_cur) * (kr * 0.24); py0 = cy + sin(ang_cur) * (kr * 0.24);
+    px1 = cx + cos(ang_cur) * (kr * 0.88); py1 = cy + sin(ang_cur) * (kr * 0.88);
+    gfx_r = exact ? grn_r : acc_r; gfx_g = exact ? grn_g : acc_g; gfx_b = exact ? grn_b : acc_b; gfx_a = 1.0;
+    l_line(px0, py0, px1, py1);
+    l_circ(px1, py1, 1.2, 1);
+
+    // Zona destra: riga superiore (-  VALORE LUFS  +) + riga inferiore (scala cliccabile 9 tacche -24..-6)
+    rx = cx + kr + 10; rw = max(72, x + w - rx - 5);
+    bw_s = 20; bh_s = 16; by_s = y + 3;
+    draw_btn(rx, by_s, bw_s, bh_s, "-", 11, 0, acc_r, acc_g, acc_b, allow_i && tgt > -23.95) ? (
+      set_sl(39, tgt_step_val(tgt_step_down(tgt))); has_click = 0; clicked_sub = 1;
+    );
+    draw_btn(rx + rw - bw_s, by_s, bw_s, bh_s, "+", 11, 0, acc_r, acc_g, acc_b, allow_i && tgt < -6.05) ? (
+      set_sl(39, tgt_step_val(tgt_step_up(tgt))); has_click = 0; clicked_sub = 1;
+    );
+
+    exact ? sprintf(#_rt_s, "%.0f LUFS", tgt) : sprintf(#_rt_s, "%.1f LUFS", tgt);
+    l_font(3, rw >= 136 ? 11.5 : 10.5, 'b');
+    gfx_r = exact ? grn_r : acc_r; gfx_g = exact ? grn_g : acc_g; gfx_b = exact ? grn_b : acc_b; gfx_a = 1.0;
+    th = l_th();
+    l_txtc(rx + rw * 0.5, by_s + (bh_s - th) * 0.5, #_rt_s);
+
+    // Scala inferiore 9 scatti cliccabili (-24 ... -6)
+    sy_b = y + h - 12; sh_b = 9;
+    l_font(4, 7.5, 'b');
+    gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 0.85;
+    l_txt(rx, sy_b, "-24");
+    l_txtr(rx + rw, sy_b, "-6");
+
+    sx_b = rx + 20; sw_b = max(36, rw - 35);
+    seg_w = sw_b / 9.0;
+    ti = 0;
+    loop(9,
+      sx_i = sx_b + ti * seg_w;
+      hov_s = allow_i && l_hit(sx_i, sy_b - 1, seg_w, sh_b + 2);
+      hov_s && has_click ? (
+        set_sl(39, tgt_step_val(ti)); has_click = 0; clicked_sub = 1;
+      );
+      ti == cur_i && exact ? (
+        gfx_r = grn_r; gfx_g = grn_g; gfx_b = grn_b; gfx_a = 1.0;
+        l_rect(sx_i + 1, sy_b + 1, max(2, seg_w - 2), sh_b - 2);
+      ) : hov_s ? (
+        gfx_r = acc_r; gfx_g = acc_g; gfx_b = acc_b; gfx_a = 0.85;
+        l_rect(sx_i + 1, sy_b + 2, max(2, seg_w - 2), sh_b - 4);
+      ) : (
+        ti < cur_i ? ( gfx_r = grn_r; gfx_g = grn_g; gfx_b = grn_b; gfx_a = dark ? 0.34 : 0.28; )
+                   : ( gfx_r = dim_r; gfx_g = dim_g; gfx_b = dim_b; gfx_a = dark ? 0.45 : 0.38; );
+        l_rect(sx_i + 1, sy_b + 3, max(2, seg_w - 2), max(2, sh_b - 6));
+      );
+      ti += 1;
+    );
+  );
+
+  // Interazioni dirette sul rotore: rotella, trascinamento a scatti, clic destro reset (-18)
+  allow_i && hov && mouse_wheel != 0 ? (
+    ni = mouse_wheel > 0 ? tgt_step_up(tgt) : tgt_step_down(tgt);
+    set_sl(39, tgt_step_val(ni));
+    mouse_wheel = 0;
+  );
+  allow_i && !clicked_sub && has_click && hov ? (
+    ui_drag = 40; ui_drag_y0 = my; ui_drag_v0 = cur_i;
+    has_click = 0;
+  );
+  allow_i && ui_drag == 40 && (mouse_cap & 1) ? (
+    ni = clamp(floor(ui_drag_v0 + (ui_drag_y0 - my) / 14.0 + 0.5), 0, 8);
+    abs(tgt_step_val(ni) - cfg_lufs_red) >= 0.05 ? set_sl(39, tgt_step_val(ni));
+  );
+  allow_i && has_rclick && hov ? ( set_sl(39, -18.0); );
+);
+
+function draw_hero_card(x, y, w, h, val_i, tgt, tol, dark, compact)
+local(diff, has_v, bx, bw, bh_s, pad_h, tr_x, tr_w, tr_y, tr_h, g0, g1, nx, nw, nh,
+      lbl_sz, bdg_sz, h_sz, d_sz, dw_d, avail_mid, sc_m, top_y0, bot_y1, mid_y, dh_d) (
   has_v = val_i > -95;
   diff = val_i - tgt;
 
@@ -992,41 +1357,64 @@ function draw_hero_card(x, y, w, h, val_i, tgt, tol, dark, compact) local(diff, 
   diff <= (tol + 1.5) ? strcpy(#_st_s, msg("ALTO", "WARM")) :
                         strcpy(#_st_s, msg("OLTRE", "OVER"));
 
+  // Dimensioni font proporzionali a larghezza e altezza della card
+  lbl_sz = clamp(min(h * 0.145, w * 0.056), 9.5, 14.5);
+  bdg_sz = clamp(lbl_sz * 0.90, 8.5, 13.0);
+  h_sz = compact ? clamp(min(h * 0.42, w * 0.175), 18, 34) : clamp(min(h * 0.46, w * 0.21), 22, 60);
+  d_sz = clamp(h_sz * 0.56, 13, 32);
+
   // Top row: LUFS-I label + badge stato
-  l_font(4, 9.5, 'b');
+  l_font(4, lbl_sz, 'b');
   gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 1.0;
   w >= 210 ? sprintf(#_hlbl, "LUFS-I  (±%.1f)", tol) : strcpy(#_hlbl, "LUFS-I");
   l_txt(x + pad_h, y + 5, #_hlbl);
 
-  l_font(4, 8.5, 'b');
-  bw = l_tw(#_st_s) + 10; bx = x + w - pad_h - bw;
-  set_target_col(val_i, tgt, tol); gfx_a = dark ? 0.22 : 0.14; l_rect(bx, y + 4, bw, 14);
-  gfx_a = 0.88; l_frame(bx, y + 4, bw, 14);
-  gfx_a = 1.0; l_txtc(bx + bw * 0.5, y + 5.5, #_st_s);
+  l_font(4, bdg_sz, 'b');
+  bw = l_tw(#_st_s) + 12; bh_s = max(14, ceil(bdg_sz + 6));
+  bx = x + w - pad_h - bw;
+  set_target_col(val_i, tgt, tol); gfx_a = dark ? 0.22 : 0.14; l_rect(bx, y + 4, bw, bh_s);
+  gfx_a = 0.88; l_frame(bx, y + 4, bw, bh_s);
+  gfx_a = 1.0; l_txtc(bx + bw * 0.5, y + 4 + (bh_s - l_th()) * 0.5, #_st_s);
 
-  // Middle row: numero HERO + delta scarto
+  // Middle row: numero HERO + delta scarto (adattati per non sovrapporsi mai)
   has_v ? sprintf(#_hval, "%.1f", val_i) : strcpy(#_hval, "--");
-  l_font(1, compact || w < 200 ? 20 : 23, 'b');
+  has_v ? sprintf(#_hdl, "%+.1f", diff) : strcpy(#_hdl, "--");
+  l_font(1, h_sz, 'b');
+  nw = l_tw(#_hval);
+  l_font(2, d_sz, 'b');
+  dw_d = l_tw(#_hdl);
+  avail_mid = max(60, w - pad_h * 2 - 14);
+  (nw + dw_d) > avail_mid ? (
+    sc_m = avail_mid / max(1, nw + dw_d);
+    h_sz = max(16, h_sz * sc_m);
+    d_sz = max(11, d_sz * sc_m);
+  );
+  tr_h = h >= 54 ? clamp(floor(h * 0.095), 7, 11) : 0;
+  top_y0 = y + bh_s + 5;
+  bot_y1 = h >= 54 ? (y + h - tr_h - 8) : (y + h - 4);
+  l_font(1, h_sz, 'b');
+  nh = l_th();
+  mid_y = top_y0 + max(0, (bot_y1 - top_y0 - nh) * 0.5);
   set_target_col(val_i, tgt, tol); gfx_a = 1.0;
-  l_txt(x + pad_h, y + (compact ? 19 : 21), #_hval);
-  w >= 225 ? (
-    nw = l_tw(#_hval); nh = l_th();
-    l_font(4, 9.5, 0); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 0.85;
-    l_txt(x + pad_h + nw + 4, y + (compact ? 25 : 29), "LUFS");
+  l_txt(x + pad_h, mid_y, #_hval);
+  nw = l_tw(#_hval);
+  (w >= 250 && (nw + dw_d + 42) < avail_mid) ? (
+    l_font(4, clamp(lbl_sz, 9.5, 13.5), 0); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 0.85;
+    l_txt(x + pad_h + nw + 5, mid_y + nh - l_th() - 2, "LUFS");
   );
 
-  has_v ? sprintf(#_hdl, "%+.1f", diff) : strcpy(#_hdl, "--");
-  l_font(2, compact || w < 200 ? 13 : 14.5, 'b');
+  l_font(2, d_sz, 'b');
+  dh_d = l_th();
   set_target_col(val_i, tgt, tol); gfx_a = 1.0;
-  l_txtr(x + w - pad_h, y + (compact ? 23 : 26), #_hdl);
-  w >= 195 ? (
-    l_font(4, 8.5, 0); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 0.80;
-    l_txtr(x + w - pad_h, y + (compact ? 38 : 42), w >= 220 ? "scarto Δ LU" : "Δ LU");
+  l_txtr(x + w - pad_h, mid_y + (nh - dh_d) * 0.35, #_hdl);
+  (w >= 195 && (bot_y1 - (mid_y + (nh - dh_d) * 0.35 + dh_d)) >= 9) ? (
+    l_font(4, clamp(lbl_sz * 0.85, 8.5, 11.5), 0); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 0.80;
+    l_txtr(x + w - pad_h, mid_y + (nh - dh_d) * 0.35 + dh_d + 1, w >= 230 ? "scarto Δ LU" : "Δ LU");
   );
 
   // Bottom spirit level bar (±6 LU)
   h >= 54 ? (
-    tr_x = x + pad_h; tr_w = w - pad_h * 2; tr_h = 7; tr_y = y + h - 12;
+    tr_x = x + pad_h; tr_w = w - pad_h * 2; tr_y = y + h - tr_h - 5;
     gfx_r = well_r; gfx_g = well_g; gfx_b = well_b; gfx_a = 1.0; l_rect(tr_x, tr_y, tr_w, tr_h);
     g0 = clamp((-tol + 6.0) / 12.0, 0.0, 1.0);
     g1 = clamp((tol + 6.0) / 12.0, 0.0, 1.0);
@@ -1042,24 +1430,35 @@ function draw_hero_card(x, y, w, h, val_i, tgt, tol, dark, compact) local(diff, 
   );
 );
 
-function draw_stat_card(x, y, w, h, lbl, val_s, cr, cg, cb, badge_s, br, bg, bb, allow_i, dark) local(hov, pad_s, bw, bdw, th) (
+function draw_stat_card(x, y, w, h, lbl, val_s, cr, cg, cb, badge_s, br, bg, bb, allow_i, dark)
+local(hov, pad_s, bdw, th, l_sz, v_sz, l_h, avail_w, avail_h, vw) (
   hov = allow_i && l_hit(x, y, w, h);
   gfx_r = pn_r; gfx_g = pn_g; gfx_b = pn_b; gfx_a = 1.0; l_rect(x, y, w, h);
   gfx_r = hov ? br : brd_r; gfx_g = hov ? bg : brd_g; gfx_b = hov ? bb : brd_b; gfx_a = hov ? 0.90 : 0.80; l_frame(x, y, w, h);
-  pad_s = w < 90 ? 5 : 7;
-  l_font(4, 8.5, 'b'); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 1.0;
+  pad_s = w < 90 ? 5 : 8;
+  l_sz = clamp(min(h * 0.22, w * 0.11), 8.5, 14.0);
+  l_font(4, l_sz, 'b'); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 1.0;
+  l_h = l_th();
   l_txt(x + pad_s, y + 3.5, lbl);
   strlen(badge_s) > 0 ? (
-    l_font(4, 7.5, 'b'); bdw = l_tw(badge_s) + 6;
+    l_font(4, clamp(l_sz * 0.85, 7.5, 11.5), 'b'); bdw = l_tw(badge_s) + 8;
     gfx_r = br; gfx_g = bg; gfx_b = bb; gfx_a = dark ? 0.90 : 0.85;
-    l_rect(x + w - pad_s - bdw, y + 3, bdw, 11);
+    l_rect(x + w - pad_s - bdw, y + 3, bdw, max(11, ceil(l_h)));
     gfx_r = 0.98; gfx_g = 0.98; gfx_b = 0.99; gfx_a = 1.0;
     l_txtc(x + w - pad_s - bdw * 0.5, y + 3.5, badge_s);
   );
-  l_font(2, h < 30 ? 12 : 14, 'b');
+  avail_w = max(36, w - pad_s * 2);
+  avail_h = max(14, h - l_h - 8);
+  v_sz = clamp(min(avail_h * 0.82, avail_w * 0.28), 13.5, 42.0);
+  l_font(2, v_sz, 'b');
+  vw = l_tw(val_s);
+  vw > avail_w ? (
+    v_sz = max(11.5, v_sz * (avail_w / max(1, vw)));
+    l_font(2, v_sz, 'b');
+  );
   gfx_r = cr; gfx_g = cg; gfx_b = cb; gfx_a = 1.0;
   th = l_th();
-  l_txt(x + pad_s, y + h - th - 3, val_s);
+  l_txt(x + pad_s, y + l_h + 4 + max(0, (avail_h - th) * 0.5), val_s);
   hov && has_click;
 );
 
@@ -1312,18 +1711,35 @@ local(ch_n, row_h, gap_r, i, ch, ry, lbl_w, val_w, bx, bw, pv, cur_db, nv, hx, t
 
 function draw_history_ribbon(x, y, w, h, tgt, tol, val_i, dark, rng_lu, show_time_ticks)
 local(px, py, pw, ph, cy_t, y_top_g, y_bot_g, y_li, mono_off, k, idx, vs, vm, cx, cy, pm_x, pm_y, ps_x, ps_y,
-      live_ok, x_tick, gt) (
+      live_ok, x_tick, gt, hdr_x2) (
   gfx_r = pn_r; gfx_g = pn_g; gfx_b = pn_b; gfx_a = 1.0; l_rect(x, y, w, h);
   gfx_r = brd_r; gfx_g = brd_g; gfx_b = brd_b; gfx_a = 0.82; l_frame(x, y, w, h);
 
+  l_hit(x, y, w, h) ? (
+    tip_active = 1;
+    #tip_msg = msg("DERIVA 60s: andamento LUFS-S (media 3s) rispetto al TARGET. Fascia verde = in target (±tol); sopra stai spingendo, sotto stai calando; linea sottile = LUFS-I.",
+                   "DRIFT 60s: 3s Short-Term LUFS vs TARGET over the last 60s. Green band = on target (±tol); above = too hot, below = dropping; thin line = LUFS-I.");
+  );
+
   l_font(4, 8.5, 'b');
   gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 1.0;
-  l_txt(x + 8, y + 3.5, "DERIVA 60s");
+  l_txt(x + 8, y + 3.5, msg("DERIVA 60s", "DRIFT 60s"));
   live_ok = (t - hist_active_t) < 0.6;
   gfx_r = live_ok ? grn_r : amb_r; gfx_g = live_ok ? grn_g : amb_g; gfx_b = live_ok ? grn_b : amb_b; gfx_a = 0.95;
   l_circ(x + 76, y + 8, 2.5, 1);
-  !live_ok && hist_cnt > 0 ? (
-    l_font(4, 8, 'b'); l_txt(x + 83, y + 3.5, msg("PAUSA", "HOLD"));
+  hdr_x2 = x + 84;
+  !live_ok ? (
+    l_font(4, 8, 'b');
+    l_txt(hdr_x2, y + 3.5, hist_cnt > 0 ? msg("FERMO", "PAUSED") : msg("IN ATTESA", "WAITING"));
+    hdr_x2 += 56;
+  ) : (
+    l_font(4, 8, 'b');
+    l_txt(hdr_x2, y + 3.5, "LIVE");
+    hdr_x2 += 32;
+  );
+  w >= 260 ? (
+    l_font(4, 8, 0); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 0.82;
+    l_txtclip(hdr_x2, y + 3.5, x + w - 48, y + 16, msg("LUFS-S 3s vs Target · verde ±tol", "3s LUFS-S vs Target · green ±tol"));
   );
   l_font(4, 8, 0); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 0.85;
   sprintf(#_drng, "±%.0f LU", rng_lu);
@@ -1332,13 +1748,19 @@ local(px, py, pw, ph, cy_t, y_top_g, y_bot_g, y_li, mono_off, k, idx, vs, vm, cx
   px = x + 6; py = y + 17; pw = max(20, w - 12); ph = max(18, h - 22 - (show_time_ticks ? 12 : 0));
   gfx_r = well_r; gfx_g = well_g; gfx_b = well_b; gfx_a = 1.0; l_rect(px, py, pw, ph);
 
-  // Griglia +/- meta' scala
+  // Griglia +/- meta' scala + etichette + / TGT / - sul lato sinistro
   gt = rng_lu * 0.5;
   y_top_g = py + ph * (0.5 - gt / (2.0 * rng_lu));
   y_bot_g = py + ph * (0.5 + gt / (2.0 * rng_lu));
   gfx_r = txt_r; gfx_g = txt_g; gfx_b = txt_b; gfx_a = 0.08;
   l_line(px, y_top_g, px + pw, y_top_g);
   l_line(px, y_bot_g, px + pw, y_bot_g);
+  ph >= 46 ? (
+    l_font(4, 7.5, 0); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 0.65;
+    l_txt(px + 3, py + 2, msg("+ ALTO", "+ HOT"));
+    l_txt(px + 3, py + ph * 0.5 - 5, "TGT");
+    l_txt(px + 3, py + ph - 11, msg("- BASSO", "- LOW"));
+  );
 
   show_time_ticks ? (
     l_font(4, 8, 0);
@@ -1503,10 +1925,10 @@ local(ncols, dw, dh, dx, dy, rh, gap_y, rows_n, col_w, i_row, c_x, c_y,
     set_sl(45, cfg_show_history >= 0.5 ? 0 : 1); has_click = 0;
   );
 
-  // 8: TEMA SCURO / CHIARO
+  // 8: TEMA (etichetta orientata all'azione: dice a quale tema passi premendolo)
   i_row += 1; c_x = dx + 7 + (i_row % ncols) * (col_w + 6); c_y = dy + 5 + floor(i_row / ncols) * (rh + gap_y);
-  l_font(4, 9, 'b'); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 1; l_txt(c_x, c_y + 3, msg("TEMA", "THEME"));
-  draw_btn(c_x + col_w - 92, c_y, 92, rh, cfg_theme >= 0.5 ? msg("SCURO", "DARK") : msg("CHIARO", "LIGHT"), 9.5, 1, acc_r, acc_g, acc_b, 1) ? (
+  l_font(4, 9, 'b'); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b; gfx_a = 1; l_txt(c_x, c_y + 3, msg("PASSA A", "SWITCH TO"));
+  draw_btn(c_x + col_w - 92, c_y, 92, rh, cfg_theme >= 0.5 ? msg("CHIARO", "LIGHT") : msg("SCURO", "DARK"), 9.5, 0, acc_r, acc_g, acc_b, 1) ? (
     set_sl(43, cfg_theme >= 0.5 ? 0 : 1); has_click = 0;
   );
 
@@ -1733,17 +2155,28 @@ is_side ? (
   hx_q = W - pad - hw_q;
   hx_g = hx_q - 4 - hw_g;
   hx_r = hx_g - 4 - hw_r;
+  W >= 246 ? (
+    hw_d = 48; hx_d = hx_r - 4 - hw_d;
+    ui_allow && l_hit(hx_d, by_h, hw_d, bw_h) ? (
+      tip_active = 1;
+      #tip_msg = msg("DERIVA: attiva/nasconde il grafico storico 60s (LUFS-S vs Target).",
+                     "DRIFT: show/hide the 60s history graph (LUFS-S vs Target).");
+    );
+    draw_btn(hx_d, by_h, hw_d, bw_h, msg("DERIVA", "DRIFT"), 8, cfg_show_history >= 0.5, grn_r, grn_g, grn_b, ui_allow) ? (
+      set_sl(45, cfg_show_history >= 0.5 ? 0 : 1); has_click = 0;
+    );
+  );
   draw_rst_btn(hx_r, by_h, hw_r, bw_h, ui_allow, is_dark);
   draw_gear_btn(hx_g, by_h, hw_g, bw_h, ui_allow, is_dark);
   draw_help_btn(hx_q, by_h, hw_q, bw_h, ui_allow, is_dark);
 
   l_font(3, W < 220 ? 11 : 12, 'b');
   gfx_r = txt_r; gfx_g = txt_g; gfx_b = txt_b; gfx_a = 1.0;
-  l_txt(pad, 9, W < 215 ? "ZP LUFS" : "ZP LOUDNESS");
+  l_txt(pad, 9, W < 275 ? "ZP LUFS" : "ZP LOUDNESS");
 
-  // Barra Target libero + SEGUI QUI + 4 scorciatoie
+  // Barra Target libero + SEGUI QUI + Rotore 9 scatti (-24 / -21 / -18 / -16 / -14 / -12 / -10 / -8 / -6)
   tgt_y = hdr_h + 5;
-  tgt_h = 48;
+  tgt_h = 66;
   gfx_r = pn_r; gfx_g = pn_g; gfx_b = pn_b; gfx_a = 1.0; l_rect(pad, tgt_y, iw, tgt_h);
   gfx_r = brd_r; gfx_g = brd_g; gfx_b = brd_b; gfx_a = 0.80; l_frame(pad, tgt_y, iw, tgt_h);
 
@@ -1752,28 +2185,17 @@ is_side ? (
   draw_target_pill(pad + 4, tgt_y + 4, tp_w, 21, tgt, ui_allow, is_dark);
   draw_lock_btn(pad + 8 + tp_w, tgt_y + 4, lk_w, 21, ui_allow, is_dark);
 
-  // 4 scorciatoie discrete (-23 / -18 / -16 / -14)
-  pw_4 = (iw - 8 - 9) / 4.0;
-  py_4 = tgt_y + 28;
-  pi = 0;
-  loop(4,
-    pval = pi == 0 ? -23.0 : pi == 1 ? -18.0 : pi == 2 ? -16.0 : -14.0;
-    sprintf(#_ps4, "%.0f", pval);
-    p_act = abs(tgt - pval) < 0.05;
-    draw_btn(pad + 4 + pi * (pw_4 + 3), py_4, pw_4, 16, #_ps4, 9, p_act, grn_r, grn_g, grn_b, ui_allow) ? (
-      set_sl(39, pval); has_click = 0;
-    );
-    pi += 1;
-  );
+  // Rotore a scatti discreti (-24..-6 LUFS)
+  draw_target_rotor(pad + 4, tgt_y + 28, iw - 8, 34, tgt, ui_allow, is_dark);
 
-  // Card Hero LUFS-I
+  // Card Hero LUFS-I (scala con altezza finestra)
   hero_y = tgt_y + tgt_h + gap;
-  hero_h = H < 460 ? 58 : 70;
+  hero_h = H < 460 ? 60 : clamp(floor(H * 0.16), 72, 132);
   draw_hero_card(pad, hero_y, iw, hero_h, _hdr_lufs_i, tgt, tol, is_dark, H < 460);
 
   // Griglia 2x2 sempre visibile (LUFS-S, TRUE PK, LUFS-M, LRA)
   stat_y = hero_y + hero_h + gap;
-  stat_h = H < 460 ? 30 : 34;
+  stat_h = H < 460 ? 34 : clamp(floor(H * 0.092), 38, 82);
   cw2 = (iw - gap) * 0.5;
   set_target_col(_hdr_lufs_s, tgt, tol); scr = gfx_r; scg = gfx_g; scb = gfx_b;
   draw_stat_card(pad, stat_y, cw2, stat_h, "LUFS-S", #hdr_s, scr, scg, scb, "", 0, 0, 0, 0, is_dark);
@@ -1824,29 +2246,21 @@ is_strip ? (
   draw_gear_btn(W - pad - 44, 4, 20, 20, ui_allow, is_dark);
   draw_rst_btn(W - pad - 88, 4, 40, 20, ui_allow, is_dark);
 
-  // Target + SEGUI QUI + scorciatoie in testata
+  // Target + SEGUI QUI + rotore 9 scatti in testata
   sx = pad + 96;
   draw_target_pill(sx, 4, 92, 20, tgt, ui_allow, is_dark);
   draw_lock_btn(sx + 96, 4, 72, 20, ui_allow, is_dark);
   sx += 174;
-  W >= 570 ? (
-    pi = 0;
-    loop(4,
-      pval = pi == 0 ? -23.0 : pi == 1 ? -18.0 : pi == 2 ? -16.0 : -14.0;
-      sprintf(#_ps4, "%.0f", pval);
-      draw_btn(sx + pi * 33, 5, 30, 18, #_ps4, 8.5, abs(tgt - pval) < 0.05, grn_r, grn_g, grn_b, ui_allow) ? (
-        set_sl(39, pval); has_click = 0;
-      );
-      pi += 1;
-    );
+  W >= 540 ? (
+    draw_target_rotor(sx, 4, 134, 20, tgt, ui_allow, is_dark);
   );
 
   // Corpo console strip
   cy = hdr_h + 5; ch = max(44, H - cy - 5);
-  hw_s = clamp(floor(W * 0.25), 140, 195);
+  hw_s = clamp(floor(W * 0.27), 150, 310);
   draw_hero_card(pad, cy, hw_s, ch, _hdr_lufs_i, tgt, tol, is_dark, ch < 62);
 
-  sw_blk = clamp(floor(W * 0.34), 175, 290);
+  sw_blk = clamp(floor(W * 0.36), 190, 440);
   sx0 = pad + hw_s + gap;
   cw4 = (sw_blk - gap) * 0.5;
   sh2 = (ch - 4) * 0.5;
@@ -1883,46 +2297,53 @@ is_strip ? (
   draw_gear_btn(W - pad - 48, 7, 22, 20, ui_allow, is_dark);
   draw_rst_btn(W - pad - 96, 7, 44, 20, ui_allow, is_dark);
   thm_x = W - pad - 156;
-  draw_btn(thm_x, 7, 56, 20, is_dark ? msg("SCURO", "DARK") : msg("CHIARO", "LIGHT"), 8.5, 0, acc_r, acc_g, acc_b, ui_allow) ? (
+  ui_allow && l_hit(thm_x, 7, 56, 20) ? (
+    tip_active = 1;
+    #tip_msg = is_dark ? msg("Clic per passare al tema CHIARO.", "Click to switch to LIGHT theme.") : msg("Clic per passare al tema SCURO.", "Click to switch to DARK theme.");
+  );
+  draw_btn(thm_x, 7, 56, 20, is_dark ? msg("CHIARO", "LIGHT") : msg("SCURO", "DARK"), 8.5, 0, acc_r, acc_g, acc_b, ui_allow) ? (
     set_sl(43, is_dark ? 0 : 1); has_click = 0;
   );
-
-  // Target + SEGUI QUI + 4 preset al centro testata
-  sx = pad + 108;
-  draw_target_pill(sx, 7, 104, 20, tgt, ui_allow, is_dark);
-  draw_lock_btn(sx + 108, 7, 74, 20, ui_allow, is_dark);
-  sx += 188;
-  sx + 136 < thm_x ? (
-    pi = 0;
-    loop(4,
-      pval = pi == 0 ? -23.0 : pi == 1 ? -18.0 : pi == 2 ? -16.0 : -14.0;
-      sprintf(#_ps4, "%.0f", pval);
-      draw_btn(sx + pi * 33, 8, 30, 18, #_ps4, 8.5, abs(tgt - pval) < 0.05, grn_r, grn_g, grn_b, ui_allow) ? (
-        set_sl(39, pval); has_click = 0;
-      );
-      pi += 1;
-    );
+  drv_x = thm_x - 58;
+  ui_allow && l_hit(drv_x, 7, 54, 20) ? (
+    tip_active = 1;
+    #tip_msg = msg("DERIVA: mostra o nasconde il grafico storico 60s (LUFS-S vs Target).",
+                   "DRIFT: show or hide the 60s history graph (LUFS-S vs Target).");
+  );
+  draw_btn(drv_x, 7, 54, 20, msg("DERIVA", "DRIFT"), 8.5, cfg_show_history >= 0.5, grn_r, grn_g, grn_b, ui_allow) ? (
+    set_sl(45, cfg_show_history >= 0.5 ? 0 : 1); has_click = 0;
   );
 
-  // Area contenuto 3 colonne
-  cy = hdr_h + 8; ch = max(120, H - cy - 8);
-  left_w = clamp(floor(W * 0.27), 192, 232);
-  right_w = clamp(vis_ch <= 2 ? 156 : 120 + vis_ch * 18, 150, floor(W * 0.34));
-  show_hist_w = cfg_show_history >= 0.5 && (W - pad * 2 - left_w - right_w - gap * 2) >= 140;
+  // Target + SEGUI QUI in testata (il rotore 9 scatti sta fisso sopra la colonna sinistra, sempre visibile)
+  sx = pad + 106;
+  draw_target_pill(sx, 7, 102, 20, tgt, ui_allow, is_dark);
+  draw_lock_btn(sx + 106, 7, 72, 20, ui_allow, is_dark);
 
-  // Colonna sinistra: Hero LUFS-I + griglia S/TP/M/LRA/RMS
-  hero_hw = H < 290 ? 58 : 72;
-  draw_hero_card(pad, cy, left_w, hero_hw, _hdr_lufs_i, tgt, tol, is_dark, H < 290);
-  sy_w = cy + hero_hw + 6;
-  rem_h = ch - hero_hw - 6;
-  row3_h = clamp(floor((rem_h - 12) / 3), 26, 40);
+  // Area contenuto: colonna sinistra FISSA (numeri stabili) + eventuale DERIVA + meter canali che si allargano
+  cy = hdr_h + 8; ch = max(120, H - cy - 8);
+  left_w = clamp(floor(min(248, W * 0.48)), 198, 248);
+  right_min_w = clamp(vis_ch <= 2 ? 156 : 112 + vis_ch * 18, 150, floor((W - pad * 2 - left_w - gap * 2) * 0.60));
+  show_hist_w = cfg_show_history >= 0.5 && (W - pad * 2 - left_w - right_min_w - gap * 2) >= 130;
+
+  // Rotore target a 9 scatti fisso in cima alla colonna sinistra (-24 / -21 / -18 / -16 / -14 / -12 / -10 / -8 / -6)
+  p5_h = 36;
+  draw_target_rotor(pad, cy, left_w, p5_h, tgt, ui_allow, is_dark);
+
+  // Colonna sinistra: Hero LUFS-I + griglia S/TP/M/LRA/RMS (larghezza fissa, mai galleggiante)
+  cy_l = cy + p5_h + 5;
+  ch_l = max(100, ch - p5_h - 5);
+  hero_hw = H < 300 ? 60 : clamp(floor(ch_l * 0.30), 68, 108);
+  draw_hero_card(pad, cy_l, left_w, hero_hw, _hdr_lufs_i, tgt, tol, is_dark, H < 300);
+  sy_w = cy_l + hero_hw + 6;
+  rem_h = ch_l - hero_hw - 6;
+  row3_h = clamp(floor((rem_h - 12) / 3), 36, 68);
   cw_l = (left_w - 6) * 0.5;
 
   set_target_col(_hdr_lufs_s, tgt, tol);
   draw_stat_card(pad, sy_w, cw_l, row3_h, "LUFS-S", #hdr_s, gfx_r, gfx_g, gfx_b, "", 0, 0, 0, 0, is_dark);
   set_tp_col(_hdr_tp, any_clip > 0);
   ui_allow && l_hit(pad + cw_l + 6, sy_w, cw_l, row3_h) ? (
-    tip_active = 1; #tip_msg = msg("TRUE PK: clicca per azzerare solo picchi/clip.", "TRUE PK: click to clear peaks/clips.");
+    tip_active = 1; #tip_msg = msg("TRUE PK: clicca per azzerare solo picchi/clip senza perdere LUFS-I.", "TRUE PK: click to clear peaks/clips without resetting LUFS-I.");
   );
   draw_stat_card(pad + cw_l + 6, sy_w, cw_l, row3_h, "TRUE PK", #hdr_tp, gfx_r, gfx_g, gfx_b, any_clip > 0 ? "CLIP" : "", red_r, red_g, red_b, ui_allow, is_dark) ? (
     reset_peaks_only(); has_click = 0;
@@ -1934,14 +2355,14 @@ is_strip ? (
   draw_stat_card(pad + cw_l + 6, sy_w, cw_l, row3_h, "LRA", #hdr_lra, acc_r, acc_g, acc_b, "", 0, 0, 0, 0, is_dark);
 
   sy_w += row3_h + 6;
-  draw_stat_card(pad, sy_w, left_w, max(24, ch - (sy_w - cy)), "RMS-M", #hdr_rms_m, sub_r, sub_g, sub_b, "", 0, 0, 0, 0, is_dark);
+  draw_stat_card(pad, sy_w, left_w, max(28, ch - (sy_w - cy)), "RMS-M", #hdr_rms_m, sub_r, sub_g, sub_b, "", 0, 0, 0, 0, is_dark);
 
-  // Centro + Destra
+  // Centro (Deriva opzionale) + Destra (Meter canali: unica zona che si allarga per multicanale)
   show_hist_w ? (
     mid_x = pad + left_w + gap;
-    mid_w = W - pad * 2 - left_w - right_w - gap * 2;
+    mid_w = W - pad * 2 - left_w - right_min_w - gap * 2;
     draw_history_ribbon(mid_x, cy, mid_w, ch, tgt, tol, _hdr_lufs_i, is_dark, 10.0, 1);
-    draw_v_meters(W - pad - right_w, cy, right_w, ch, vis_ch, chan_start, full_ch, tgt, tol, _hdr_lufs_s, _hdr_lufs_i, is_dark, ui_allow);
+    draw_v_meters(W - pad - right_min_w, cy, right_min_w, ch, vis_ch, chan_start, full_ch, tgt, tol, _hdr_lufs_s, _hdr_lufs_i, is_dark, ui_allow);
   ) : (
     vm_x = pad + left_w + gap;
     draw_v_meters(vm_x, cy, W - pad - vm_x, ch, vis_ch, chan_start, full_ch, tgt, tol, _hdr_lufs_s, _hdr_lufs_i, is_dark, ui_allow);
@@ -1953,20 +2374,13 @@ gear_open && !is_embedded ? (
   draw_gear_drawer(g_btn_x + g_btn_w, g_btn_y + g_btn_h, is_dark, vis_ch, full_ch, is_strip);
 );
 
-// Avviso guida o tooltip fluttuante in basso (non sposta il layout)
+// Avviso guida o tooltip fluttuante leggibile in basso (con ritorno a capo automatico)
 (t < help_warn_until) ? (
   tip_active = 1;
   #tip_msg = msg("Apri Cue Navigator o la guida da ZP Studio Suite", "Open Cue Navigator or ZP Suite help");
 );
 !is_embedded && !gear_open && tip_active && strlen(#tip_msg) > 0 ? (
-  l_font(4, 9, 0);
-  _twt = min(W - 16, l_tw(#tip_msg) + 16);
-  _tx0 = floor((W - _twt) * 0.5);
-  _ty0 = H - 22;
-  gfx_r = pn_r; gfx_g = pn_g; gfx_b = pn_b; gfx_a = 0.96; l_rect(_tx0, _ty0, _twt, 18);
-  gfx_r = acc_r; gfx_g = acc_g; gfx_b = acc_b; gfx_a = 0.85; l_frame(_tx0, _ty0, _twt, 18);
-  gfx_r = txt_r; gfx_g = txt_g; gfx_b = txt_b; gfx_a = 1.0;
-  l_txtclip(_tx0 + 8, _ty0 + 3, _tx0 + _twt - 6, _ty0 + 17, #tip_msg);
+  draw_tooltip_box(W, H, #tip_msg, is_dark);
 );
 
 // ============================================================

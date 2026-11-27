@@ -59,7 +59,7 @@ do
     table.concat({ tostring(c[2]), tostring(c[3]), tostring(c[4]), tostring(c[5]) }, ","))
   g.setfont(1, "Arial", 16, 98)
   c = calls[#calls]
-  check("s=1.5: font 16 -> 24", c[1] == "setfont" and c[4] == 24 and c[5] == 98, c[4])
+  check("s=1.5: font 16 -> 24 + FONT_BONUS", c[1] == "setfont" and c[4] == 24 + load_mod().FONT_BONUS and c[5] == 98, c[4])
   g.setfont(1)
   check("s=1.5: setfont(idx) invariato", calls[#calls][1] == "setfont" and calls[#calls][3] == nil)
   g.x, g.y = 40, 60

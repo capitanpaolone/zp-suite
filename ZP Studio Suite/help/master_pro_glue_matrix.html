@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ZP Master Pro - Glue Matrix Help</title>
+  <title>ZP Master Pro 2.52 — Guida tecnica (ANALOG, TRANSP, ENHANCE, PRECLIP 2x, 4x True Peak)</title>
   <style>
     :root {
       color-scheme: dark;
@@ -21,38 +21,42 @@
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     main {
-      max-width: 920px;
+      max-width: 960px;
       margin: 0 auto;
-      padding: 32px 22px 48px;
+      padding: 32px 22px 52px;
     }
-    h1, h2 {
-      line-height: 1.15;
+    h1, h2, h3 {
+      line-height: 1.2;
       margin: 0 0 12px;
     }
     h1 {
-      font-size: 30px;
+      font-size: 29px;
       border-bottom: 2px solid var(--line);
       padding-bottom: 14px;
     }
     h2 {
       color: var(--gold);
       font-size: 19px;
-      margin-top: 28px;
+      margin-top: 30px;
     }
-    p {
-      margin: 8px 0 14px;
+    h3 {
+      color: var(--green);
+      font-size: 16px;
+      margin-top: 20px;
     }
-    .muted {
-      color: var(--muted);
-    }
+    p { margin: 8px 0 14px; }
+    ul { padding-left: 20px; margin: 8px 0 14px; }
+    li { margin: 5px 0; }
+    a { color: var(--blue); }
+    .muted { color: var(--muted); }
     .path {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 8px;
-      margin: 18px 0 10px;
+      margin: 14px 0 12px;
     }
     .stage {
       border: 1px solid #34404d;
@@ -60,16 +64,22 @@
       padding: 10px;
       min-height: 78px;
     }
+    .stage.transp { border-color: #2f6c58; }
     .stage strong {
       display: block;
       color: var(--blue);
       margin-bottom: 4px;
     }
+    .stage.transp strong { color: var(--green); }
     .callout {
       border-left: 4px solid var(--gold);
       background: #1c1710;
       padding: 12px 14px;
       margin: 18px 0;
+    }
+    .callout.green {
+      border-left-color: var(--green);
+      background: #101d18;
     }
     table {
       width: 100%;
@@ -90,7 +100,8 @@
     code {
       color: #f0c26a;
       background: #0b0d0f;
-      padding: 1px 4px;
+      padding: 1px 5px;
+      border-radius: 3px;
     }
     @media (max-width: 760px) {
       .path { grid-template-columns: 1fr; }
@@ -100,74 +111,86 @@
 </head>
 <body>
 <main>
-  <h1>ZP Master Pro - Glue Matrix</h1>
-  <p class="muted">Guida rapida al modulo Glue Matrix e alla detection ISP. <a href="index.html#plugin-master-pro" style="color:var(--blue)">&larr; Guida ZP Studio Suite</a></p>
+  <h1>ZP Master Pro — Guida tecnica</h1>
+  <p class="muted">Doppio motore di mastering <strong>ANALOG</strong> e <strong>TRANSP</strong>, dosatore <strong>ENHANCE</strong>, rilevamento <strong>True Peak 4&times; (ISP)</strong>, Glue Matrix e ponte <strong>Monitor FX Noise</strong>. &middot; <a href="index.html#plugin-master-pro">&larr; Guida ZP Studio Suite</a> &middot; <a href="en/master_pro_glue_matrix.html">English</a></p>
 
-  <h2>Percorso del segnale</h2>
+  <h2>1. Due profili di mastering nello stesso plugin</h2>
+  <p>Lo switch <code>ANALOG | TRANSP</code> in testata commuta istantaneamente tra due architetture di elaborazione, mantenendo separati i parametri di ciascun profilo e condividendo <strong>Tone Guard</strong>, <strong>Auto dB / Target</strong>, <strong>Final Safety</strong>, meter e telemetria <strong>Shared Bus v3.1</strong>. Questo permette un A/B immediato sullo stesso master senza ricostruire la catena.</p>
+
+  <h3>Percorso TRANSP (trasparente — ENHANCE 2&times; + PRECLIP 2&times; + Precision Limiter 4&times; ISP)</h3>
+  <div class="path">
+    <div class="stage transp"><strong>INPUT</strong>Drive pulito (<code>-12..+30 dB</code>), senza saturazione nastro.</div>
+    <div class="stage transp"><strong>ENHANCE 2&times;</strong>Densit&agrave; verso l'alto (<code>0..100%</code>, fino a <code>+7.5 dB</code>) con gate <code>-48 dB</code>, guardia medio-alte <code>2.4&ndash;6.2 kHz</code> e shaper 2&times; OS.</div>
+    <div class="stage transp"><strong>TONE &amp; PRECLIP 2&times;</strong>Tone Guard condiviso + soft-clipper trasparente 2&times; OS (<code>0..100%</code>) per smussare i picchi rapidi prima del limiter.</div>
+    <div class="stage transp"><strong>PLIM 4&times; ISP</strong>Lookahead Limiter trasparente, Soft Knee <code>0..4 dB</code>, Dual-Stage Auto-Release.</div>
+    <div class="stage transp"><strong>OUTPUT</strong>Ceiling, Auto dB, Final Safety e meter condivisi.</div>
+  </div>
+
+  <h3>Percorso ANALOG (colorato — Tape Glue + Glue Matrix)</h3>
   <div class="path">
     <div class="stage"><strong>TAPE</strong>Tape glue, saturazione controllata, tilt, bump e flutter.</div>
     <div class="stage"><strong>COMP</strong>Compressore principale: threshold, ratio, knee, RMS/Peak, feed mode e AMU.</div>
-    <div class="stage"><strong>GLUE</strong>Matrice multistadio che frammenta la compressione in macro, micro e crest.</div>
-    <div class="stage"><strong>TONE</strong>Tone Guard statico/dinamico e punti EQ.</div>
-    <div class="stage"><strong>LIMITER</strong>Limiter lookahead, output/auto dB e final safety.</div>
+    <div class="stage"><strong>GLUE</strong>Matrice multistadio che frammenta la compressione in Macro, Micro e Crest.</div>
+    <div class="stage"><strong>TONE</strong>Tone Guard statico/dinamico e punti EQ (con eventuale Tape Bias).</div>
+    <div class="stage"><strong>LIMITER</strong>Limiter lookahead, Output/Auto dB e Final Safety.</div>
   </div>
 
-  <div class="callout">
-    <strong>ISP non e' uno stadio audio separato.</strong>
-    E' una detection interpolata globale: quando e' attivo puo' guidare Glue/Comp, Limiter e Final Safety.
-  </div>
+  <h2>2. Profilo TRANSP: come funzionano ENHANCE e il Precision Limiter</h2>
+  <p>Nel profilo <code>TRANSP</code> gli stadi <code>TAPE</code> e <code>COMP/GLUE</code> vengono bypassati completamente: il segnale entra pulito in <code>INPUT</code> e attraversa un blocco di densificazione percepita (<code>ENHANCE</code>) seguito da un limiter di precisione a lookahead.</p>
 
-  <h2>Come lavora la Glue Matrix</h2>
-  <p>La Glue Matrix nasce per evitare che un solo compressore faccia tutto il lavoro sui transienti. Divide la riduzione di gain in tre reazioni leggere:</p>
+  <table>
+    <tr><th>Controllo</th><th>Gamma</th><th>Funzione DSP reale</th></tr>
+    <tr><td><code>INPUT</code></td><td><code>-12..+30 dB</code></td><td>Spinge il segnale verso <code>ENHANCE</code>, <code>PRECLIP</code> e il Precision Limiter senza aggiungere armoniche di nastro (escursione estesa a <code>+30 dB</code> e target Auto/LUFS fino a <code>-6 LUFS</code> per spot radio e sorgenti difficili).</td></tr>
+    <tr><td><code>ENHANCE</code></td><td><code>0..100%</code></td><td>Curva smooth di densificazione verso l'alto (fino a <code>+7.5 dB</code>): solleva corpo e dettagli medio-bassi lasciando intatti i picchi alti. Integra un <strong>gate sul rumore di fondo a <code>-48 dB</code></strong>, una <strong>guardia dinamica anti-asprezza <code>2.4&ndash;6.2 kHz</code></strong> (fino a <code>-3.2 dB</code> quando la spinta cresce) e uno <strong>shaper pre-ceiling 2&times; oversampled</strong> anti-aliasing. Il readout <code>LIFT</code> mostra il sollevamento medio reale in dB.</td></tr>
+    <tr><td><code>PRECLIP</code></td><td><code>0..100%</code></td><td><strong>Soft-clipper trasparente 2&times; oversampled</strong> posto tra <code>Tone Guard</code> e <code>PLIM</code>: taglia dolcemente gli spike brevissimi (<code>1&ndash;3 dB</code>) senza aliasing sulle medio-alte, alleggerendo il Precision Limiter cos&igrave; da raggiungere <code>-10 / -8 LUFS</code> senza pompaggio. A <code>0%</code> &egrave; bypassato al 100%; il readout <code>CLIP</code> mostra i dB effettivi tagliati.</td></tr>
+    <tr><td><code>ATK</code></td><td><code>0.1..5.0 ms</code></td><td>Finestra di lookahead del Precision Limiter (buffer circolare con compensazione PDC). Valori attorno a <code>1.0..2.0 ms</code> preservano l'impatto dei transienti senza overshoot.</td></tr>
+    <tr><td><code>REL</code></td><td><code>5..500 ms</code></td><td>Tempo di rilascio base del limiter.</td></tr>
+    <tr><td><code>KNEE</code></td><td><code>0..100%</code></td><td>Transizione morbida del limiter da <code>0 dB</code> (hard brickwall) fino a <code>4.0 dB</code> (soft knee progressivo).</td></tr>
+    <tr><td><code>AUTO REL</code></td><td><code>Manual / Auto</code></td><td>Rilascio a <strong>doppio stadio (Dual-Stage)</strong>: i picchi isolati recuperano rapidamente con il rilascio veloce (<code>REL</code>) senza "buchi", mentre i passaggi sostenuti attivano un secondo inviluppo pi&ugrave; lento (<code>3.8&times;</code>, min <code>90 ms</code>) che evita il pompaggio e la distorsione intermodulare sulle basse frequenze.</td></tr>
+    <tr><td><code>CURV</code></td><td>Vista grafica</td><td>Disegna in tempo reale la curva di trasferimento combinata <code>ENHANCE + PRECLIP + KNEE</code>, i readout <code>Clip / Lim / Ceil</code> e lo stato del ponte <strong>Monitor Noise</strong>.</td></tr>
+  </table>
+
+  <h2>3. True Peak 4&times; (ISP Guard): perch&eacute; si sente la differenza</h2>
+  <div class="callout green">
+    <strong>ISP non &egrave; un filtro o uno stadio di saturazione separato:</strong> &egrave; il rilevatore di picco interpolato globale che guida il Limiter, il Final Safety (e, in <code>ANALOG</code>, Glue/Comp).
+  </div>
+  <p>Un limiter che legge solo i campioni discreti (<code>ISP OFF</code>) lascia passare gli <em>inter-sample peak</em>: picchi analogici reali che superano il ceiling tra un campione digitale e il successivo, spesso di <code>+0.5..+2.0 dBTP</code> su sibilanti, consonanti esplosive e transienti rapidi. Quando quei picchi arrivano al DAC o a un codec di distribuzione (AAC, Opus, MP3, podcast/streaming), generano clipping duro e asprezza sulle medio-alte.</p>
+  <p>Con <code>ISP 4x</code> attivo (default), il detector ricostruisce i picchi tra i campioni con oversampling 4&times; prima che il segnale raggiunga il ceiling del lookahead: la riduzione di gain lavora in anticipo sull'inviluppo vero dell'onda invece di tagliare di colpo il picco ricostruito. Il risultato all'ascolto &egrave; una gamma alta pi&ugrave; pulita, transienti meno "vetrosi" e un margine reale conforme a <code>-1.0 dBTP</code> anche quando si spinge <code>INPUT</code> o <code>ENHANCE</code>.</p>
+
+  <h2>4. Profilo ANALOG: Glue Matrix e Texture (SM, API, SSA)</h2>
+  <p>La Glue Matrix nasce per evitare che un solo compressore faccia tutto il lavoro sui transienti. Divide la riduzione di gain in tre reazioni leggere e complementari:</p>
   <table>
     <tr><th>Parte</th><th>Ruolo</th></tr>
     <tr><td><code>MACRO</code></td><td>Compressione lenta e musicale, basata sul corpo del segnale. Tiene insieme il master senza inseguire ogni picco.</td></tr>
-    <tr><td><code>MICRO</code></td><td>Controllo rapido e limitato sui picchi. Aiuta il limiter a non dover schiacciare troppo in un colpo solo.</td></tr>
+    <tr><td><code>MICRO</code></td><td>Controllo rapido e limitato sui picchi. Alleggerisce il limiter finale.</td></tr>
     <tr><td><code>CREST</code></td><td>Reazione al crest factor: quando i transienti sporgono troppo rispetto al corpo, interviene in modo progressivo.</td></tr>
   </table>
 
-  <h2>Controlli</h2>
   <table>
     <tr><th>Controllo</th><th>Uso pratico</th></tr>
     <tr><td><code>COMP</code></td><td>Accende o spegne il compressore principale.</td></tr>
-    <tr><td><code>GLUE</code></td><td>Accende o spegne la parte multistadio DEP/FRG/micro/crest. Con GLUE off resta il compressore principale.</td></tr>
-    <tr><td><code>DEP</code></td><td>Profondita' complessiva della Glue Matrix. Aumenta la quantita' di lavoro distribuito.</td></tr>
-    <tr><td><code>FRG</code></td><td>Frammentazione. Valori alti spostano piu' lavoro verso micro e crest, proteggendo i transienti dal limiter.</td></tr>
-    <tr><td><code>Texture</code></td><td>Fa parte di GLUE. <code>SM</code> morbido, <code>API</code> piu' punch, <code>SSA</code> piu' compatto e levigato.</td></tr>
-    <tr><td><code>ISP</code></td><td>Selettore unico della detection interpolata globale: <code>Off</code> la bypassa, <code>2x</code>/<code>4x</code> aumentano la risoluzione di controllo.</td></tr>
+    <tr><td><code>GLUE</code></td><td>Accende o spegne la matrice multistadio <code>DEP/FRG/micro/crest</code>. Con <code>GLUE OFF</code> resta solo il compressore principale.</td></tr>
+    <tr><td><code>DEP</code></td><td>Profondit&agrave; complessiva della Glue Matrix.</td></tr>
+    <tr><td><code>FRG</code></td><td>Frammentazione: valori alti spostano pi&ugrave; lavoro verso Micro e Crest proteggendo i transienti dal limiter.</td></tr>
+    <tr><td><code>Texture</code></td><td>Tre profili di comportamento (non emulazioni ufficiali): <code>SM</code> (morbido, trasparente, podcast/VO), <code>API</code> (pi&ugrave; pronto e punchy sul medio), <code>SSA</code> (pi&ugrave; compatto e levigato, broadcast/radio).</td></tr>
   </table>
 
-  <h2>Texture: SM, API, SSA</h2>
-  <p>Le Texture non sono emulazioni ufficiali di macchine specifiche: sono tre profili di comportamento ispirati a famiglie di compressione da mix/master. Cambiano soprattutto tempi, densita' della riduzione e distribuzione fra macro, micro e crest.</p>
-  <table>
-    <tr><th>Texture</th><th>Ispirazione</th><th>Comportamento</th><th>Uso tipico</th></tr>
-    <tr>
-      <td><code>SM</code></td>
-      <td>Glue moderno da stereo bus e mastering pulito.</td>
-      <td>Attacco e rilascio piu' morbidi, minore aggressivita' sui transienti, immagine piu' naturale.</td>
-      <td>Podcast, voiceover, musica gia' compressa, mastering trasparente.</td>
-    </tr>
-    <tr>
-      <td><code>API</code></td>
-      <td>Compressori VCA/API-style da bus, con risposta piu' fisica e punchy.</td>
-      <td>Reazione piu' pronta, piu' grip sul medio, transienti presenti ma controllati.</td>
-      <td>Mix bus, rock/pop, materiale che deve restare avanti senza diventare piatto.</td>
-    </tr>
-    <tr>
-      <td><code>SSA</code></td>
-      <td>Solid State / SSL-style bus glue, compatto e levigato.</td>
-      <td>Compressione piu' ordinata, densita' maggiore, crest piu' controllato e finale piu' compatto.</td>
-      <td>Master loud, broadcast, radio, contenuti dove serve stabilita' e percezione piu' finita.</td>
-    </tr>
-  </table>
+  <div class="callout">
+    <strong>Loudness e A/B onesto:</strong> sia <code>ENHANCE</code> (in <code>TRANSP</code>) sia <code>GLUE</code>/<code>AMU</code> (in <code>ANALOG</code>) alzano la loudness percepita riducendo il crest factor. Per valutare solo il timbro e la tenuta sui transienti, pareggia prima con <code>AUTO</code> o confronta guardando <code>MATCH</code> e <code>LIFT</code>.
+  </div>
 
-  <h2>Loudness e A/B</h2>
-  <p>La Glue Matrix puo' far salire la loudness percepita perche' riduce il crest factor: i picchi scendono, il corpo resta piu' stabile e il meter LUFS puo' leggere piu' alto. Anche <code>AMU</code> del compressore aggiunge make-up gain.</p>
-  <p>Per confronti rapidi: prova prima <code>GLUE OFF</code>, poi <code>AMU OFF</code>, infine <code>ISP OFF</code>. In questo modo si capisce se il salto di loudness viene dalla matrice, dal make-up o dalla detection del limiter/safety.</p>
+  <h2>5. Telecomando NOISE (ZP Audition Noise Monitor in Monitor FX)</h2>
+  <p>La barra <code>NOISE</code> in testata non genera rumore dentro il Master Bus: invia comandi via memoria condivisa (<code>gmem[3670..3683]</code>) a <a href="index.html#plugin-audition-noise"><strong>ZP Audition Noise Monitor</strong></a> caricato nella catena <strong>Monitor FX</strong> di REAPER.</p>
+  <ul>
+    <li><strong>Isolamento totale:</strong> il rumore simulato non passa mai dai meter LUFS/TP/BrownSlope di Master Pro e non pu&ograve; finire nei render (n&eacute; offline n&eacute; online).</li>
+    <li><strong>4 profili tarati RMS:</strong> <code>CITTA'</code> (Auto Citt&agrave; 50 km/h), <code>AUTOST</code> (Autostrada 120 km/h), <code>ROSA</code> (Ambiente Rosa -3 dB/oct), <code>TRENO</code> (Treno / Aereo).</li>
+    <li><strong>Livello agganciato al target LUFS:</strong> selettore SNR <code>-18 / -12 / -6 / -3 dB</code> sotto il target del profilo (es. a <code>-16 LUFS</code> con <code>-6 dB</code> il rumore sta a <code>-22 dBFS</code> RMS). Serve a verificare subito se voci basse, code o dettagli di un podcast spariscono in auto.</li>
+    <li><strong>Sicurezza stato volatile:</strong> <code>NOISE</code> riparte sempre <strong>OFF</strong> a ogni apertura del progetto e si silenzia automaticamente allo Stop (Modalit&agrave; <code>SOLO IN PLAY</code> attiva di default).</li>
+  </ul>
 
-  <h2>Auto dB e Target</h2>
-  <p><code>TARGET</code> non cambia il gain: mostra solo quanto il segnale e' sopra o sotto il riferimento scelto. La lettura <code>MATCH</code> usa una media lenta di circa 4,5 secondi su energia LUFS/RMS, quindi ignora molti transienti isolati.</p>
-  <p><code>AUTO</code> usa lo stesso riferimento, ma applica correzione di gain entro il limite <code>MAXTRM</code>. Il numero grande nel riquadro Auto dB indica la correzione applicata; <code>MATCH</code> indica l'errore residuo rispetto al target.</p>
+  <h2>6. Auto dB, Target e Shared Bus v3.1</h2>
+  <p><code>TARGET</code> non cambia il gain: misura lo scarto rispetto al riferimento del profilo. La lettura <code>MATCH</code> usa una media lenta di circa <code>4,5 s</code> su energia LUFS/RMS, ignorando i transienti isolati. <code>AUTO</code> applica una correzione lenta entro <code>MAXTRM</code>: il numero grande indica la correzione applicata, <code>MATCH</code> l'errore residuo.</p>
+  <p>Master Pro pubblica il proprio stato completo sullo <strong>Shared Bus v3.1</strong> e ospita nel pannello Navigator le schede <strong>SINTESI</strong> e <strong>CATENA</strong> (con i nodi reali a monte e il badge di <a href="index.html#tool-39"><strong>39 ZP Telemetry Engine</strong></a>). Quando <strong>Tone Guard</strong> &egrave; acceso, il suo orizzonte tonale diventa il riferimento prioritario per il Telemetry Engine; quando &egrave; spento vale il metro fisso <strong>Brown -4,5 dB/oct (&plusmn;10%)</strong>.</p>
 </main>
 </body>
 </html>

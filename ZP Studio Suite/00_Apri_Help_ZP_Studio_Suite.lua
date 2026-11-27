@@ -30,7 +30,10 @@
 --   IT — Carver 2.6.12 + Cue Navigator 1.16: il cue si seleziona cliccando il suo marker #HSC a trasporto fermo.
 --   EN — Magic Voice LAB 1.2.4: LINK OUTPUT, project-saved A/B memory and ±24 dB output range.
 --   IT — Magic Voice LAB 1.2.4: LEGA OUTPUT, memoria A/B salvata nel progetto e uscita ±24 dB.
---   EN/IT — The four separate BETA packages and their documented requirements are retained.
+--   EN — The four separate packages (Clean & Paint, Montaggio Parlato, BrownSlope Dynamic Guard, Click & Attack Softener) lose the BETA label; their documented requirements are retained.
+--   IT — I quattro pacchetti separati (Clean & Paint, Montaggio Parlato, BrownSlope Dynamic Guard, Click & Attack Softener) perdono l'etichetta BETA; restano i requisiti documentati.
+--   EN — Two ready-calibrated ZP Suite Project Templates (ZP plugins only): VoiceOver (-18 LUFS) and Mix-Spot (-8 LUFS), offered in 33 Welcome, 23 Chain Builder and REAPER Project Templates.
+--   IT — Due template di progetto ZP già calibrati (solo plugin ZP): VoiceOver (-18 LUFS) e Mix-Spot (-8 LUFS), proposti in 33 Benvenuto, 23 Chain Builder e nei Project Templates di REAPER.
 --   2.6.8 (2026-11-21)
 --   EN — Beta packages: ZP Clean & Paint, ZP Montaggio Parlato, ZP BrownSlope Dynamic Guard, and ZP Click & Attack Softener.
 --   IT — Pacchetti Beta: ZP Clean & Paint, ZP Montaggio Parlato, ZP BrownSlope Dynamic Guard e ZP Click & Attack Softener.
@@ -108,7 +111,10 @@
 --   [main] 35_ZP_Colori.lua
 --   [main] 37_ZP_Consolidate.lua
 --   [main] 38_ZP_Unisci_Battute.lua
+--   [main] 39_ZP_Telemetry_Engine.lua
+--   [nomain] ZP_Telemetry_Engine.lua
 --   [nomain] ZP_SRT_Progetto.lua
+--   [nomain] ZP_SRT_Engine.lua
 --   [main] render_copy/ZP_RenderCopy.lua
 --   render_copy/assets/zp_render_copy.png
 --   [main] remote/ZP_Remote_Crea_Pacchetto.lua
@@ -170,6 +176,7 @@
 --   [nomain] ZP_cerca.lua
 --   [nomain] ZP_Testo_Copione.lua
 --   [nomain] ZP_Xlsx_Copione.lua
+--   [nomain] ZP_Testo_su_Video.lua
 --   [nomain] ZP_Editor_Copione.lua
 --   [nomain] ZP_Colori.lua
 --   [nomain] ZP_Agenti.lua
@@ -197,6 +204,7 @@
 --   help/en/lab.html
 --   help/en/pannello_trascrizione.html
 --   help/en/collega_marker.html
+--   help/en/master_pro_glue_matrix.html
 --   help/en/ffmpeg.html
 --   fxchains/ZP_Bus_VoiceChain.RfxChain
 --   fxchains/ZP_MasterChain.RfxChain
@@ -211,6 +219,10 @@
 --   VideoProcessor_Project_Timecode_Overlay.txt
 --   RB Voice Track.RTrackTemplate
 --   SRT Track.RTrackTemplate
+--   templates/ZP_Setup_VoiceOver_18LUFS.RPP
+--   templates/ZP_Setup_Mix_Spot_8LUFS.RPP
+--   [projecttpl] templates/ZP_Setup_VoiceOver_18LUFS.RPP > ZP Setup VoiceOver (-18 LUFS).RPP
+--   [projecttpl] templates/ZP_Setup_Mix_Spot_8LUFS.RPP > ZP Setup Mix-Spot (-8 LUFS).RPP
 --   [data] icons/ZP_tb_00_Help.png > toolbar_icons/ZP_tb_00_Help.png
 --   [data] icons/ZP_tb_01_Import_Video_SRT.png > toolbar_icons/ZP_tb_01_Import_Video_SRT.png
 --   [data] icons/ZP_tb_02_Gobbo_Verticale.png > toolbar_icons/ZP_tb_02_Gobbo_Verticale.png

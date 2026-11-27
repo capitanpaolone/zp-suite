@@ -1,5 +1,5 @@
 // @description ZP Subliminal Presence Layer White
-// @version 3.2.3
+// @version 3.2.4
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
@@ -17,10 +17,10 @@
 //   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
 //     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
 //   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
-desc:ZP Subliminal Presence Layer White - Paolo Balestri
+desc:ZP Subliminal Presence Layer White · latocardioide.it · dubbertools.com
 options:no_menu gmem=ZPVoiceoverSharedBus
-// Autore: Paolo Balestri - Zio Paolo
-// Contatto: social@paolobalestri.com
+// Autore: Paolo Balestri · Lato Cardioide
+// Contatto: paolo@latocardioide.it
 /**
  * Subliminal Presence Layer (SPL) - DOCUMENTAZIONE TECNICA
  * ---------------------------------------------------------------------------

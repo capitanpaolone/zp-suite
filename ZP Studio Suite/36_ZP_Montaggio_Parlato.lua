@@ -1,17 +1,17 @@
--- @description ZP Montaggio Parlato (BETA)
--- @version 0.1.0
+-- @description ZP Montaggio Parlato
+-- @version 0.2.1
 -- @author Paolo Balestri
 -- @about
---   BETA. Richiede ZP Studio Suite e ZP Speech installato dal 33 Benvenuto.
+--   Richiede ZP Studio Suite e ZP Speech installato dal 33 Benvenuto.
 --   ZP Speech deve avere un provider pronto (MacWhisper o OpenAI Whisper locale con modello).
---   BETA. Requires ZP Studio Suite and ZP Speech installed from 33 Welcome.
+--   Requires ZP Studio Suite and ZP Speech installed from 33 Welcome.
 --   ZP Speech needs a ready provider (MacWhisper or local OpenAI Whisper with a model).
 --   Currently tested on macOS. PDF import optionally needs pdftotext (Poppler); clipboard paste optionally needs SWS.
 -- @provides
 --   [nomain] ZP_Montaggio.lua
 --
 -- ZP Studio Suite for REAPER
--- ZP Montaggio Parlato (BETA): lo sgrossatore del parlato.
+-- ZP Montaggio Parlato: lo sgrossatore del parlato.
 --
 -- Legge gli item audio (selezionati, o tutta la traccia selezionata), li trascrive con ZP Speech
 -- (parole con i tempi, in cache accanto al WAV: <nome>.zpwords.json), ascolta il file (click,
@@ -44,7 +44,7 @@ local UI = dofile(SCRIPT_DIR .. "ZP_UI.lua")
 local M = dofile(SCRIPT_DIR .. "ZP_Montaggio.lua")
 local T = UI.T
 
-local TITLE = "ZP Montaggio Parlato — BETA"
+local TITLE = "ZP Montaggio Parlato"
 local EXT = "ZP_MONTAGGIO"
 local W0, H0 = 1240, 820
 
@@ -95,6 +95,10 @@ local S = {
   status = T("Seleziona gli item (o una traccia), carica il copione se c'e', poi ANALIZZA."),
   busy = nil,                                -- coroutine dell'analisi
   sel = nil,                                 -- { b = blocco, iv = intervento }
+  word_sel = nil,                            -- { b = blocco, anchor = ti, i1 = ti1, i2 = ti2 }
+  dragging_words = false,
+  last_sel_sig = "",
+  last_check_t = 0,
   scroll = 0, page_h = 0,
   layout = nil, layout_w = 0,
   stop_at = nil,
@@ -228,34 +232,69 @@ local function run_speech(wav, out_json)
 end
 
 local function cache_path(wav) return (wav:gsub("%.[^./\\]+$", "")) .. ".zpwords.json" end
+local function srt_sidecar_path(wav) return (wav:gsub("%.[^./\\]+$", "")) .. ".srt" end
+
+local function save_item_manual_cuts(b)
+  if not b or not b.plan or not b.item or not reaper.ValidatePtr(b.item, "MediaItem*") then return end
+  reaper.GetSetMediaItemInfo_String(b.item, "P_EXT:ZP_MONTAGGIO_CUTS", M.serialize_manual_cuts(b.plan), true)
+end
+
+local function load_item_manual_cuts(b)
+  if not b or not b.plan or not b.item or not reaper.ValidatePtr(b.item, "MediaItem*") then return 0 end
+  local _, s = reaper.GetSetMediaItemInfo_String(b.item, "P_EXT:ZP_MONTAGGIO_CUTS", "", false)
+  if s and s ~= "" then return M.restore_manual_cuts(b.plan, s) end
+  return 0
+end
+
+local function load_cached_words_for(p)
+  local cp = cache_path(p)
+  if exists(cp) then
+    local ok, doc = pcall(M.json_decode, read_file(cp) or "")
+    if ok and doc then return M.words_from_transcript(doc), "json" end
+  end
+  local sp = srt_sidecar_path(p)
+  if exists(sp) then
+    local words = M.words_from_srt(read_file(sp) or "")
+    if #words > 0 then return words, "srt" end
+  end
+  return nil, nil
+end
 
 ---------------------------------------------------------------------------
 -- analisi (coroutine: non blocca la finestra)
 ---------------------------------------------------------------------------
-local function analyze_job()
+local function analyze_job(cache_only)
   local items, err = collect_items()
-  if err then S.status = err; return end
-  if not exists(speech_cli()) then
-    S.status = T("ZP Speech non e' installato: nel repo zp-suite lancia speech-engine/install_macos.sh.")
-    return
-  end
+  if err then if not cache_only then S.status = err end return end
   local frasi = S.copione and M.parse_copione(S.copione) or {}
   local by_path, paths = {}, {}
   for _, it in ipairs(items) do
     if not by_path[it.path] then by_path[it.path] = { path = it.path }; paths[#paths + 1] = it.path end
   end
-  -- 1. trascrizioni (in cache accanto al WAV)
+  -- 1. trascrizioni: riusa .zpwords.json o .srt gia' esistenti; trascrive solo se manca tutto
+  local used_srt, used_json = 0, 0
   for i, p in ipairs(paths) do
     local src = by_path[p]
     if not p:lower():match("%.wav$") then src.err = T("non e' un WAV") else
-      local cp = cache_path(p)
-      if not exists(cp) then
+      local words, kind = load_cached_words_for(p)
+      if words then
+        src.words = words
+        src.from_cache = kind
+        if kind == "srt" then used_srt = used_srt + 1 else used_json = used_json + 1 end
+      elseif cache_only then
+        return
+      else
+        if not exists(speech_cli()) then
+          S.status = T("ZP Speech non e' installato: installalo da 33 Benvenuto.")
+          return
+        end
+        local cp = cache_path(p)
         S.status = string.format(T("Trascrivo %d di %d: %s (la prima volta; poi resta in cache)"), i, #paths, p:match("([^/\\]+)$"))
         if not run_speech(p, cp) then src.err = T("trascrizione non riuscita") end
-      end
-      if not src.err then
-        local ok, doc = pcall(M.json_decode, read_file(cp) or "")
-        if ok and doc then src.words = M.words_from_transcript(doc) else src.err = T("trascrizione illeggibile") end
+        if not src.err then
+          local ok, doc = pcall(M.json_decode, read_file(cp) or "")
+          if ok and doc then src.words = M.words_from_transcript(doc) else src.err = T("trascrizione illeggibile") end
+        end
       end
     end
   end
@@ -270,7 +309,7 @@ local function analyze_job()
         while true do
           local got = M.wav_read_env(info, env, 24000)
           if got == 0 then break end
-          if now() - t0 > 0.03 then
+          if not cache_only and now() - t0 > 0.03 then
             S.status = string.format(T("Ascolto il file %d di %d: %d%%"), i, #paths, math.floor(100 * info.pos / info.frames))
             coroutine.yield(); t0 = now()
           end
@@ -282,33 +321,36 @@ local function analyze_job()
       end
     end
   end
-  -- 3. voce che Whisper ha saltato: ritrascrivo solo quei pezzi (solo dentro le parti usate)
-  for _, p in ipairs(paths) do
-    local src = by_path[p]
-    if not src.err then
-      local frs = M.fragments_needed(src.env, src.words, src.clicks, { min_voice = 0.8 })
-      local used = {}
-      for _, it in ipairs(items) do
-        if it.path == p then used[#used + 1] = { s = it.offs, e = it.offs + it.len * it.rate } end
-      end
-      local todo = {}
-      for _, f in ipairs(frs) do
-        for _, u in ipairs(used) do if f.e > u.s and f.s < u.e then todo[#todo + 1] = f; break end end
-      end
-      for n, f in ipairs(todo) do
-        S.status = string.format(T("Whisper ha saltato della voce: ritrascrivo il pezzo %d di %d (%s)"), n, #todo, fmt_t(f.s))
-        local fw = jobs_dir() .. sep .. "frammento.wav"
-        local fj = jobs_dir() .. sep .. "frammento.json"
-        os.remove(fj)
-        if M.wav_fragment(p, fw, f.s, f.e) and run_speech(fw, fj) then
-          local ok, doc = pcall(M.json_decode, read_file(fj) or "")
-          if ok and doc then src.words = M.merge_fragment(src.words, M.words_from_transcript(doc, f.s), f) end
+  -- 3. voce che Whisper ha saltato: ritrascrivo solo quei pezzi (solo in analisi completa con json)
+  if not cache_only and exists(speech_cli()) then
+    for _, p in ipairs(paths) do
+      local src = by_path[p]
+      if not src.err and src.from_cache ~= "srt" then
+        local frs = M.fragments_needed(src.env, src.words, src.clicks, { min_voice = 0.8 })
+        local used = {}
+        for _, it in ipairs(items) do
+          if it.path == p then used[#used + 1] = { s = it.offs, e = it.offs + it.len * it.rate } end
+        end
+        local todo = {}
+        for _, f in ipairs(frs) do
+          for _, u in ipairs(used) do if f.e > u.s and f.s < u.e then todo[#todo + 1] = f; break end end
+        end
+        for n, f in ipairs(todo) do
+          S.status = string.format(T("Whisper ha saltato della voce: ritrascrivo il pezzo %d di %d (%s)"), n, #todo, fmt_t(f.s))
+          local fw = jobs_dir() .. sep .. "frammento.wav"
+          local fj = jobs_dir() .. sep .. "frammento.json"
+          os.remove(fj)
+          if M.wav_fragment(p, fw, f.s, f.e) and run_speech(fw, fj) then
+            local ok, doc = pcall(M.json_decode, read_file(fj) or "")
+            if ok and doc then src.words = M.merge_fragment(src.words, M.words_from_transcript(doc, f.s), f) end
+          end
         end
       end
     end
   end
-  -- 4. piano per item
+  -- 4. piano per item + ripristino tagli manuali salvati sull'item
   local blocks = {}
+  local restored_cuts = 0
   for _, it in ipairs(items) do
     local src = by_path[it.path]
     local b = it
@@ -321,6 +363,7 @@ local function analyze_job()
       for _, g in ipairs(src.clicks) do if g.s >= s0 and g.e <= s1 then sigs[#sigs + 1] = g end end
       b.plan = M.plan({ words = words, env = src.env, frasi = frasi, signals = sigs, segnale = S.segnale,
                         dict = M.DIZIONARIO, len = math.min(src.len, s1) })
+      restored_cuts = restored_cuts + load_item_manual_cuts(b)
       -- il tenuto non esce dalla parte usata dell'item
       for _, k in ipairs(b.plan.keep) do k.s = math.max(k.s, s0); k.e = math.min(k.e, s1) end
     end
@@ -329,20 +372,62 @@ local function analyze_job()
   S.blocks = blocks
   S.layout = nil
   S.sel = nil
+  S.word_sel = nil
   local n_iv, n_low, n_err = 0, 0, 0
   for _, b in ipairs(blocks) do
     if b.err then n_err = n_err + 1 else
       for _, iv in ipairs(b.plan.interventi) do n_iv = n_iv + 1; if iv.sicurezza == "bassa" then n_low = n_low + 1 end end
     end
   end
-  S.status = string.format(T("Analisi fatta: %d item, %d interventi, %d da controllare."), #blocks, n_iv, n_low)
+  local prefix = cache_only and T("Caricato dalla cache: ") or T("Analisi fatta: ")
+  S.status = prefix .. string.format(T("%d item, %d interventi, %d da controllare."), #blocks, n_iv, n_low)
+  if used_srt > 0 then S.status = S.status .. " " .. T("(riusato .srt esistente)") end
+  if restored_cuts > 0 then S.status = S.status .. " " .. string.format(T("Ripristinati %d tagli salvati."), restored_cuts) end
   if n_err > 0 then S.status = S.status .. " " .. string.format(T("%d item saltati (vedi la pagina)."), n_err) end
-  if #frasi == 0 then S.status = S.status .. " " .. T("Senza copione: trovo solo rifacimenti e comandi.") end
 end
 
 local function start_analysis()
   if S.busy then return end
-  S.busy = coroutine.create(analyze_job)
+  S.busy = coroutine.create(function() analyze_job(false) end)
+end
+
+local function selection_signature()
+  local items, err = collect_items()
+  if err or #items == 0 then return "" end
+  local parts = { S.scope }
+  for _, it in ipairs(items) do
+    parts[#parts + 1] = string.format("%s|%.3f|%.3f|%.3f", tostring(it.path), it.pos, it.offs, it.len)
+  end
+  return table.concat(parts, ";")
+end
+
+local function try_autoload_cached(is_live_follow)
+  local sig = selection_signature()
+  S.last_sel_sig = sig
+  local items, err = collect_items()
+  if err or #items == 0 then return end
+  for _, it in ipairs(items) do
+    if not it.path:lower():match("%.wav$") then return end
+    if not exists(cache_path(it.path)) and not exists(srt_sidecar_path(it.path)) then
+      if is_live_follow then
+        S.blocks, S.layout, S.sel, S.word_sel = nil, nil, nil, nil
+        S.status = T("Seleziona gli item (o una traccia), carica il copione se c'e', poi ANALIZZA.")
+      end
+      return
+    end
+  end
+  analyze_job(true)
+end
+
+local function poll_selection_follow()
+  if S.busy then return end
+  local t = now()
+  if t - S.last_check_t < 0.25 then return end
+  S.last_check_t = t
+  local sig = selection_signature()
+  if sig ~= "" and sig ~= S.last_sel_sig then
+    try_autoload_cached(true)
+  end
 end
 
 ---------------------------------------------------------------------------
@@ -442,6 +527,7 @@ local function iv_title(iv)
   elseif iv.tipo == "comando" then return T("Comando")
   elseif iv.tipo == "alternativa" then return T("Alternativa")
   elseif iv.tipo == "omessa" then return T("Non letta")
+  elseif iv.tipo == "manuale" then return T("Taglio dal testo")
   elseif iv.tipo == "click_solo" then return T("Click senza ripresa") end
   return iv.tipo
 end
@@ -540,6 +626,7 @@ local function apply_all()
   for bi = #S.blocks, 1, -1 do
     local b = S.blocks[bi]
     if not b.err and b.plan and reaper.ValidatePtr(b.item, "MediaItem*") then
+      reaper.GetSetMediaItemInfo_String(b.item, "P_EXT:ZP_MONTAGGIO_CUTS", "", true)
       local removed, orig_end = apply_block(b)
       done = done + 1
       if S.modo == "timeline" and removed > 0.001 then
@@ -569,6 +656,7 @@ local LINE_H = 34
 local STYLE = {
   testo = { fg = { 0.08, 0.09, 0.11 } },
   rifatto = { fg = { 0.74, 0.12, 0.10 }, strike = true },
+  manuale = { fg = { 0.78, 0.10, 0.14 }, bg = { 1.00, 0.88, 0.88 }, strike = true },
   superato = { fg = { 0.45, 0.45, 0.48 }, strike = true },
   fuori = { fg = { 0.66, 0.22, 0.12 }, strike = true },
   comando = { fg = { 0.04, 0.22, 0.48 }, bg = { 0.80, 0.89, 1.00 } },
@@ -593,11 +681,11 @@ local function build_layout(w)
   local runs, x, y = {}, 0, 0
   local space = gfx.measurestr(" ")
   local function newline() x = 0; y = y + LINE_H end
-  local function put(text, style, b, iv, s)
+  local function put(text, style, b, iv, s, ti1, ti2)
     local tw = gfx.measurestr(text)
     local pad = (STYLE[style] and STYLE[style].bg) and 8 or 0
     if x > 0 and x + tw + pad > w then newline() end
-    runs[#runs + 1] = { x = x, y = y, w = tw + pad, text = text, style = style, b = b, iv = iv, s = s, pad = pad }
+    runs[#runs + 1] = { x = x, y = y, w = tw + pad, text = text, style = style, b = b, iv = iv, s = s, pad = pad, ti1 = ti1, ti2 = ti2 }
     x = x + tw + pad + space
   end
   for _, b in ipairs(S.blocks or {}) do
@@ -618,8 +706,10 @@ local function build_layout(w)
         while clicks[ci] and not clicks[ci].cut and clicks[ci].s <= tk.s do put("CLICK ?", "chip", b, clicks[ci], clicks[ci].s); ci = ci + 1 end
         if tk.w ~= last_w then
           last_w = tk.w
+          local ti2 = ti
+          while p.toks[ti2 + 1] and p.toks[ti2 + 1].w == tk.w do ti2 = ti2 + 1 end
           local st = p.stato[ti]
-          put(p.words[tk.w].text, st, b, iv_of_token(b, ti), tk.s)
+          put(p.words[tk.w].text, st, b, iv_of_token(b, ti), tk.s, ti, ti2)
         end
       end
       for _, iv in ipairs(p.interventi) do
@@ -665,16 +755,60 @@ local function select_step(dir)
   end
 end
 
+local function toggle_word_sel_cut(cut_on)
+  local ws = S.word_sel
+  if not ws or not ws.b or not ws.b.plan then return end
+  local b = ws.b
+  local s0, s1 = b.offs, b.offs + b.len * b.rate
+  local iv = M.set_manual_cut(b.plan, ws.i1, ws.i2, cut_on)
+  for _, k in ipairs(b.plan.keep) do k.s = math.max(k.s, s0); k.e = math.min(k.e, s1) end
+  save_item_manual_cuts(b)
+  S.layout = nil
+  if cut_on and iv then
+    S.sel = { b = b, iv = iv }
+    S.word_sel = nil
+    S.status = T("Taglio dal testo segnato (barrato rosso). Premi APPLICA quando sei pronto.")
+  else
+    S.sel = nil
+    S.status = T("Parole ripristinate nel montato.")
+  end
+end
+
 local function draw_side(x, y, w, h, clicked)
   UI.draw_panel({ x = x, y = y, w = w, h = h }, T("Qui"))
   local yy = y + 40
   local sel = S.sel
+  local ws = S.word_sel
   local function btn(rx, ry, rw, label, active, enabled, style)
     return UI.draw_button({ x = rx, y = ry, w = rw, h = 34 }, label, active, enabled, clicked, style)
   end
-  if not sel then
-    for _, line in ipairs(UI.wrap_text(T("Clicca una parola segnata nella pagina, o usa le frecce per scorrere gli interventi."), w - 28)) do
-      text(line, x + 14, yy, 16, C.muted); yy = yy + 22
+  if ws and ws.b and ws.b.plan and ws.b.plan.toks[ws.i1] and ws.b.plan.toks[ws.i2] then
+    local p = ws.b.plan
+    local t1, t2 = p.toks[ws.i1].s, p.toks[ws.i2].e
+    local parts, lw = {}, nil
+    local has_cut = false
+    for i = ws.i1, ws.i2 do
+      if p.stato[i] == "manuale" then has_cut = true end
+      local tk = p.toks[i]
+      if tk.w ~= lw then lw = tk.w; parts[#parts + 1] = p.words[tk.w].text end
+    end
+    text(T("Selezione testo"), x + 14, yy, 20, C.title); yy = yy + 28
+    text(fmt_t(t1) .. "  →  " .. fmt_t(t2), x + 14, yy, 15, C.muted); yy = yy + 24
+    for _, line in ipairs(UI.wrap_text("«" .. table.concat(parts, " ") .. "»", w - 36)) do
+      if yy > y + h - 290 then break end
+      text(line, x + 14, yy, 15, C.text); yy = yy + 20
+    end
+    yy = yy + 10
+    if btn(x + 14, yy, w - 28, "▶ " .. T("Ascolta selezione"), false, true, "play") then play_range(ws.b, t1, t2) end
+    yy = yy + 40
+    if btn(x + 14, yy, w - 28, "✂ " .. T("Taglia dal testo (Canc)"), true, true, "tab") then toggle_word_sel_cut(true) end
+    yy = yy + 40
+    if has_cut and btn(x + 14, yy, w - 28, "↩ " .. T("Ripristina selezione"), false, true, "tab") then toggle_word_sel_cut(false) end
+    if has_cut then yy = yy + 40 end
+    if btn(x + 14, yy, w - 28, T("Deseleziona"), false, true) then S.word_sel = nil end
+  elseif not sel then
+    for _, line in ipairs(UI.wrap_text(T("Clicca o trascina sulle parole per selezionarle e tagliarle dal testo (o premi Canc)."), w - 36)) do
+      text(line, x + 14, yy, 15, C.muted); yy = yy + 22
     end
   else
     local iv = sel.iv
@@ -690,14 +824,24 @@ local function draw_side(x, y, w, h, clicked)
       for i = iv.i1, iv.i2 do local tk = sel.b.plan.toks[i]; if tk.w ~= lw then lw = tk.w; parts[#parts + 1] = sel.b.plan.words[tk.w].text end end
       desc = table.concat(parts, " ")
     end
-    for _, line in ipairs(UI.wrap_text("«" .. tostring(desc or "") .. "»", w - 28)) do
+    for _, line in ipairs(UI.wrap_text("«" .. tostring(desc or "") .. "»", w - 36)) do
       if yy > y + h - 260 then break end
       text(line, x + 14, yy, 16, C.text); yy = yy + 22
     end
     yy = yy + 10
     if iv.s and btn(x + 14, yy, w - 28, "▶ " .. T("Ascolta"), false, true, "play") then play_range(sel.b, iv.s, iv.e) end
     yy = yy + 42
-    if iv.i1 or iv.cut then
+    if iv.tipo == "manuale" then
+      if btn(x + 14, yy, w - 28, "↩ " .. T("Ripristina nel montato"), false, true, "tab") then
+        local b = sel.b
+        local s0, s1 = b.offs, b.offs + b.len * b.rate
+        M.set_manual_cut(b.plan, iv.i1, iv.i2, false)
+        for _, k in ipairs(b.plan.keep) do k.s = math.max(k.s, s0); k.e = math.min(k.e, s1) end
+        save_item_manual_cuts(b)
+        S.sel = nil; S.layout = nil
+      end
+      yy = yy + 42
+    elseif iv.i1 or iv.cut then
       local is_alt = iv.tipo == "alternativa"
       local half = math.floor((w - 36) / 2)
       if btn(x + 14, yy, half, is_alt and T("In corsia") or T("Togli"), not iv.tieni, true, "tab") and iv.tieni then
@@ -713,14 +857,14 @@ local function draw_side(x, y, w, h, clicked)
   local ly = y + h - 200
   text(T("Legenda"), x + 14, ly, 15, C.muted); ly = ly + 24
   local leg = {
-    { T("barrato rosso: si toglie"), { 0.95, 0.40, 0.36 } },
+    { T("barrato rosso: si toglie (anche manuale)"), { 0.95, 0.40, 0.36 } },
+    { T("evidenziato blu: selezione testo"), { 0.48, 0.78, 1.00 } },
     { T("barrato grigio: lettura superata"), { 0.70, 0.70, 0.74 } },
     { T("azzurro: comando detto"), { 0.55, 0.78, 1.00 } },
     { T("viola: alternativa, corsia sotto"), { 0.78, 0.68, 1.00 } },
-    { T("CLICK: segnale di rifacimento"), { 1.00, 0.45, 0.42 } },
-    { T("arancio: frase non letta"), { 1.00, 0.70, 0.40 } },
+    { T("CLICK / arancio: rifacimento / non letta"), { 1.00, 0.65, 0.40 } },
   }
-  for _, l in ipairs(leg) do text(l[1], x + 14, ly, 15, l[2]); ly = ly + 22 end
+  for _, l in ipairs(leg) do text(l[1], x + 14, ly, 14, l[2]); ly = ly + 21 end
 end
 
 local function draw_page(x, y, w, h, clicked)
@@ -738,13 +882,34 @@ local function draw_page(x, y, w, h, clicked)
   S.scroll = math.max(0, math.min(S.scroll, math.max(0, S.page_h - h + 40)))
   gfx.setfont(1, "Arial", PAGE_FONT)
   local ox, oy = x + 22, y + 18 - S.scroll
-  local hover_hit
+  local playing = (reaper.GetPlayState() & 1) == 1
+  local cur_pos = playing and reaper.GetPlayPosition() or reaper.GetCursorPosition()
+  local hover_hit, active_y
   for _, r in ipairs(S.layout) do
     local ry = oy + r.y
+    local is_cur_word = false
+    if r.b and r.b.plan and r.ti1 and r.ti2 then
+      local tk1, tk2 = r.b.plan.toks[r.ti1], r.b.plan.toks[r.ti2]
+      if tk1 and tk2 then
+        local ps, pe = src_to_proj(r.b, tk1.s), src_to_proj(r.b, tk2.e)
+        if cur_pos >= ps - 0.03 and cur_pos <= pe + 0.05 then
+          is_cur_word = true
+          active_y = r.y
+        end
+      end
+    end
     if ry > y - LINE_H and ry < y + h then
       local st = STYLE[r.style] or STYLE.testo
       local rx = ox + r.x
       if st.bg and ry >= y then setc(st.bg); gfx.rect(rx, ry - 3, r.w, LINE_H - 8, 1) end
+      if is_cur_word and ry >= y then
+        gfx.set(0.96, 0.72, 0.14, 0.42); gfx.rect(rx - 2, ry - 4, r.w + 4, LINE_H - 6, 1)
+      end
+      local in_ws = S.word_sel and r.b == S.word_sel.b and r.ti1 and r.ti2
+        and r.ti2 >= S.word_sel.i1 and r.ti1 <= S.word_sel.i2
+      if in_ws and ry >= y then
+        gfx.set(0.20, 0.56, 0.95, 0.32); gfx.rect(rx - 2, ry - 4, r.w + 4, LINE_H - 6, 1)
+      end
       if S.sel and r.iv and r.iv == S.sel.iv and ry >= y then
         gfx.set(0.11, 0.44, 0.88, 1); gfx.rect(rx - 3, ry - 5, r.w + 6, LINE_H - 4, 0); gfx.rect(rx - 2, ry - 4, r.w + 4, LINE_H - 6, 0)
       end
@@ -759,11 +924,32 @@ local function draw_page(x, y, w, h, clicked)
       if UI.point_in_rect(gfx.mouse_x, gfx.mouse_y, rx, ry - 4, r.w, LINE_H - 6) and gfx.mouse_y >= y and gfx.mouse_y <= y + h then hover_hit = r end
     end
   end
+  local down = (gfx.mouse_cap & 1) == 1
+  if not down then S.dragging_words = false end
   if clicked and hover_hit then
-    if hover_hit.iv then S.sel = { b = hover_hit.b, iv = hover_hit.iv }
-    elseif hover_hit.s and hover_hit.b and hover_hit.b.plan then
+    local shift = (gfx.mouse_cap & 8) ~= 0
+    if hover_hit.iv and not shift then
+      S.sel = { b = hover_hit.b, iv = hover_hit.iv }
+      S.word_sel = nil
+    elseif hover_hit.ti1 and hover_hit.b and hover_hit.b.plan then
+      if shift and S.word_sel and S.word_sel.b == hover_hit.b then
+        local a1 = math.min(S.word_sel.anchor1, hover_hit.ti1)
+        local a2 = math.max(S.word_sel.anchor2, hover_hit.ti2)
+        S.word_sel.i1, S.word_sel.i2 = a1, a2
+      else
+        S.word_sel = { b = hover_hit.b, anchor1 = hover_hit.ti1, anchor2 = hover_hit.ti2, i1 = hover_hit.ti1, i2 = hover_hit.ti2 }
+        S.dragging_words = true
+      end
       S.sel = nil
       reaper.SetEditCurPos(src_to_proj(hover_hit.b, hover_hit.s), true, false)
+    end
+  elseif down and S.dragging_words and hover_hit and hover_hit.ti1 and S.word_sel and hover_hit.b == S.word_sel.b then
+    S.word_sel.i1 = math.min(S.word_sel.anchor1, hover_hit.ti1)
+    S.word_sel.i2 = math.max(S.word_sel.anchor2, hover_hit.ti2)
+  end
+  if playing and active_y then
+    if active_y - S.scroll < 20 or active_y - S.scroll > h - 80 then
+      S.scroll = math.max(0, active_y - math.floor(h * 0.35))
     end
   end
   -- scorrimento
@@ -853,10 +1039,22 @@ local function loop()
     elseif coroutine.status(S.busy) == "dead" then S.busy = nil end
   end
   check_stop()
+  poll_selection_follow()
   draw()
   gfx.update()
   local ch = gfx.getchar()
-  if ch == 27 or ch < 0 then
+  if ch == 8 or ch == 6579564 then -- Backspace / Delete: taglia la selezione dal testo
+    if S.word_sel then toggle_word_sel_cut(true) end
+  elseif ch == 32 then -- Spazio: ascolta selezione o Play/Stop
+    if S.word_sel and S.word_sel.b and S.word_sel.b.plan then
+      local p = S.word_sel.b.plan
+      if p.toks[S.word_sel.i1] and p.toks[S.word_sel.i2] then
+        play_range(S.word_sel.b, p.toks[S.word_sel.i1].s, p.toks[S.word_sel.i2].e)
+      end
+    else
+      reaper.Main_OnCommand(40044, 0)
+    end
+  elseif ch == 27 or ch < 0 then
     local zr = gfx._real or gfx; set_ext("w", zr.w); set_ext("h", zr.h)   -- misure vere, non logiche
     gfx.quit(); return
   end
@@ -864,5 +1062,6 @@ local function loop()
 end
 
 load_saved_copione()
+try_autoload_cached()
 gfx.init(TITLE, tonumber(get_ext("w", W0)) or W0, tonumber(get_ext("h", H0)) or H0)
 loop()

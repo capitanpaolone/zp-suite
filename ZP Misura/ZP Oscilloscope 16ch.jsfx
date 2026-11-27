@@ -1,5 +1,5 @@
 // @description ZP Oscilloscope 16ch
-// @version 12.2
+// @version 12.3
 // @author Paolo Balestri
 // @license LGPL-2.1-or-later
 // @about
@@ -21,10 +21,10 @@
 // Copyright (C) 2007 Cockos Incorporated
 // Mod Paolo Balestri V12 - 2026
 // License: LGPL - http://www.gnu.org/licenses/lgpl.html
-desc:ZP Oscilloscope 16ch - Paolo Balestri
+desc:ZP Oscilloscope 16ch · latocardioide.it · dubbertools.com
 //tags: analysis scope meter multichannel cockos
 // Autore: Cockos/Paolo Balestri 2026
-// Contatto: social@paolobalestri.com
+// Contatto: paolo@latocardioide.it
 
 /* Storia delle versioni
 
@@ -662,7 +662,7 @@ time_precise() < help_warn_until ? (
 gfx_setfont(1,"Arial",max(10*rs,min(13*rs,HDR_H*0.25)),'b');
 gfx_set(0.50,0.68,0.94,1);
 gfx_x=10*rs; gfx_y=max(24*rs,HDR_H-gfx_texth-7*rs);
-gfx_drawstr("Waveform Monitor | v12 beta3 - di Paolo Balestri");
+gfx_drawstr("Waveform Monitor | v12 · latocardioide.it · dubbertools.com");
 
 gfx_setfont(1,"Arial",max(10*rs,min(13*rs,HDR_H*0.25)),'b');
 gfx_set(0.72,0.82,0.90,0.98);

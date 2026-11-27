@@ -17,6 +17,11 @@
 local M = {}
 local floor, max = math.floor, math.max
 
+-- Punti in piu' aggiunti a OGNI carattere delle finestre (richiesta di Paolo, 2026-11-26: su display 3K
+-- a grandezza normale il testo era troppo piccolo). Si applica anche a fattore di scala 1.
+-- Per cambiare la leggibilita' di tutta la Suite basta questo numero (0 = come prima).
+M.FONT_BONUS = 2
+
 function M.wrap(real)
   if type(real) ~= "table" then return real end
   local fn = rawget(_G, "ZP_GFX_SCALE_FN")
@@ -87,7 +92,7 @@ function M.wrap(real)
   W.setfont = function(idx, name, size, ...)
     if name == nil or size == nil then return real.setfont(idx, name, size, ...) end
     local s = sc()
-    return real.setfont(idx, name, max(6, P(size, s)), ...)
+    return real.setfont(idx, name, max(6, P(size, s) + M.FONT_BONUS), ...)
   end
   W.drawstr = function(str, flags, right, bottom)
     if right ~= nil or bottom ~= nil then
@@ -123,7 +128,7 @@ function M.wrap(real)
     __index = function(_, k)
       if k == "_real" then return real end   -- misure vere della finestra (da salvare, non in logiche)
       local s = sc()
-      if s == 1 then return real[k] end
+      if s == 1 and k ~= "setfont" then return real[k] end
       local f = W[k]; if f then return f end
       local v = V[k]; if v then return v(s) end
       return real[k]

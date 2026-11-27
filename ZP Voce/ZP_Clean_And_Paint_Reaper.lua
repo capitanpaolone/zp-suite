@@ -1,5 +1,5 @@
 -- @noindex
--- @description ZP Clean & Paint (BETA) — Restauro CoreML, Riverniciatura e Voice Morphing RVC per REAPER 7
+-- @description ZP Clean & Paint — Restauro CoreML, Riverniciatura e Voice Morphing RVC per REAPER 7
 -- @version 1.0.1
 -- @author Paolo Balestri / Antigravity
 -- @about
@@ -52,7 +52,7 @@ local LAB_ROOT = resolve_lab_root()
 if not LAB_ROOT or LAB_ROOT == "" then
   reaper.MB(
     "Motore ZP Clean & Paint non configurato.\n\nImposta il percorso di ZP Voice Model Lab in lab_root_path.txt dentro ZP_Clean_Paint.",
-    "ZP Clean & Paint (BETA)",
+    "ZP Clean & Paint",
     0
   )
   return
@@ -73,7 +73,7 @@ end
 if not readable_file(CLI_SCRIPT) or not readable_file(PYTHON_BIN) or not readable_file(PRESETS_PATH) then
   reaper.MB(
     "Il motore Clean & Paint è configurato ma incompleto.\n\nServono CLI, Python dell'ambiente locale e paint_presets.json.",
-    "ZP Clean & Paint (BETA)",
+    "ZP Clean & Paint",
     0
   )
   return
@@ -529,5 +529,5 @@ local function loop()
   reaper.defer(loop)
 end
 
-gfx.init("ZP Clean & Paint — BETA", 472, 345, 0, 220, 180)
+gfx.init("ZP Clean & Paint", 472, 345, 0, 220, 180)
 loop()

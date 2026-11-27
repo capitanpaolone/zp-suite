@@ -542,19 +542,30 @@ local function fit_text(text, max_w)
 end
 
 local function draw_button(rect, label, active, enabled, clicked)
+  -- Stile piatto uniforme della Suite (come ZP_UI.draw_button / ZP SRT)
   local x, y, w, h = rect.x, rect.y, rect.w, rect.h
+  enabled = enabled ~= false
   local hover = enabled and point_in_rect(gfx.mouse_x, gfx.mouse_y, x, y, w, h)
-  if active then gfx.set(0.18, 0.34, 0.72, 1)
-  elseif hover then gfx.set(0.25, 0.24, 0.34, 1)
-  else gfx.set(0.16, 0.15, 0.22, 1) end
-  if not enabled then gfx.set(0.10, 0.10, 0.12, 1) end
+  if not enabled then gfx.set(0.085, 0.09, 0.11, 1)
+  elseif active then gfx.set(0.11, 0.35, 0.54, 1)
+  elseif hover then gfx.set(0.20, 0.24, 0.33, 1)
+  else gfx.set(0.13, 0.14, 0.19, 1) end
   gfx.rect(x, y, w, h, true)
-  gfx.set(0.42, 0.39, 0.55, 1)
+  if not enabled then gfx.set(0.20, 0.21, 0.25, 1)
+  elseif active then gfx.set(0.48, 0.84, 1.00, 1)
+  elseif hover then gfx.set(0.56, 0.68, 0.86, 1)
+  else gfx.set(0.30, 0.32, 0.40, 1) end
   gfx.rect(x, y, w, h, false)
-  gfx.set(enabled and 0.92 or 0.45, enabled and 0.90 or 0.45, enabled and 0.95 or 0.45, 1)
-  gfx.x = x + 12
-  gfx.y = y + 9
-  gfx.drawstr(fit_text(label, w - 24))
+  gfx.setfont(1, "Arial", 15, active and "b" or "")
+  if not enabled then gfx.set(0.44, 0.46, 0.52, 1)
+  elseif active or hover then gfx.set(0.97, 0.98, 1.00, 1)
+  else gfx.set(0.86, 0.88, 0.93, 1) end
+  local fit = fit_text(label, w - 24)
+  local tw, th = gfx.measurestr(fit)
+  gfx.x = x + math.floor((w - tw) * 0.5)
+  gfx.y = y + math.floor((h - th) * 0.5)
+  gfx.drawstr(fit)
+  gfx.setfont(1, "Arial", 16)
   return clicked and enabled and hover
 end
 
@@ -641,7 +652,7 @@ local function choose_settings_visual()
     gfx.set(0.56, 0.72, 0.86, 1)
     gfx.x = 66
     gfx.y = 42
-    gfx.drawstr("ZP Studio Suite v1.0.5 - Paolo Balestri")
+    gfx.drawstr("ZP Studio Suite · latocardioide.it · dubbertools.com")
 
     gfx.setfont(1, "Arial", 15)
     gfx.set(0.68, 0.66, 0.74, 1)

@@ -460,7 +460,7 @@ local function prompt_roles_visual(default_role, on_done)
     gfx.set(0.56, 0.72, 0.86, 1)
     gfx.x = 78
     gfx.y = 58
-    gfx.drawstr("ZP Studio Suite v1.0.5 - Paolo Balestri")
+    gfx.drawstr("ZP Studio Suite · latocardioide.it · dubbertools.com")
     gfx.set(0.72, 0.70, 0.78, 1)
     gfx.x = 34
     gfx.y = 84

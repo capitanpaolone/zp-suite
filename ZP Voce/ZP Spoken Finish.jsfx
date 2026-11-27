@@ -22,12 +22,12 @@
 //   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
 //     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
 //   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
-desc:ZP Spoken Finish - Voice Harmonic Exciter / De-Exciter - Paolo Balestri
+desc:ZP Spoken Finish - Voice Harmonic Exciter / De-Exciter · latocardioide.it · dubbertools.com
 options:gmem=ZPVoiceoverSharedBus
-tags: exciter utility harmonics harmonic paolo balestri zio paolo voice tool VOG AIR
-//autror: Paolo Balestri - Zio Paolo
+tags: exciter utility harmonics harmonic paolo balestri lato cardioide voice tool VOG AIR
+//autror: Paolo Balestri · Lato Cardioide
 //variant: v3.9.8 circular true-peak ceiling meter
-// Contatto: social@paolobalestri.com
+// Contatto: paolo@latocardioide.it
 // ----------------------------------------------------------------------------
 // MANUALE OPERATIVO & SCHEMA LOGICO - SPOKEN FINISH
 // Voice Harmonic Exciter / De-Exciter (v3.9.8)
@@ -1945,7 +1945,7 @@ zp_bus_master_conn==2 && zp_bus_probe_conn==2 ? (gfx_r=0.30;gfx_g=0.92;gfx_b=0.5
 zp_circle(head_x+175,head_y+22,5,1); zp_setfont(5); zp_gx=head_x+185; zp_gy=head_y+15; zp_drawstr("ZP");
 !head_ultra ? (
   zp_setfont(2); gfx_r = sub_r; gfx_g = sub_g; gfx_b = sub_b;
-  zp_gx = head_x + 16; zp_gy = head_y + 40; zp_drawstr("Voice Harmonic Exciter / De-Exciter  |  v3.9.8 - di Paolo Balestri");
+  zp_gx = head_x + 16; zp_gy = head_y + 40; zp_drawstr("Voice Harmonic Exciter / De-Exciter  |  v3.9.8 · latocardioide.it · dubbertools.com");
 );
 
 show_simple ? (

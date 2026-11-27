@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ZP Suite — Beta</title>
+<title>ZP Suite — Lab</title>
 <style>
 :root{
   --carta:#f7f6f3; --inchiostro:#1f2b35; --tenue:#5d6a74;
@@ -59,8 +59,8 @@ a{color:var(--accento)}
 </head><body>
 <main>
 <!-- lc-testata --><div class="lc-testata"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><a href="https://latocardioide.it/strumenti/">Lato Cardioide</a> &middot; Tools</div><!-- /lc-testata -->
-<h1>ZP Beta</h1>
-<p class="occhiello">These tools are distributed as separate BETA packages in ZP Studio Suite. They may change as we test them together.</p><!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
+<h1>ZP Lab</h1>
+<p class="occhiello">These tools are separate packages of ZP Studio Suite. As of 2.6.9 they are no longer in beta; the requirements and limits below still apply.</p><!-- lc-filetto --><hr class="lc-filetto"><!-- /lc-filetto -->
 
 
 <h2 id="plugin-brownslope-guard">ZP BrownSlope Dynamic Guard</h2>
@@ -71,23 +71,31 @@ a{color:var(--accento)}
 <li><strong>BIAS</strong> chooses Cut-only, Balanced or Gentle Boost; <strong>MID Focus</strong> gives more weight to the low-mid and high-mid zones.</li>
 <li><strong>Stereo and M/S analysis</strong>: L, R, Mid, Side, Width and L/R difference. Correction stays L/R linked so the stereo image does not change.</li>
 <li>Header: IN, OUT and W/D (dry/wet) tiles. The <strong>?</strong> next to them opens this page (Cue Navigator must be running).</li>
+<li><strong>Shared Bus v3.1 telemetry (2.6.9):</strong> publishes dynamic guard activity, W/D mix, and output trim to <em>ZP Master Pro</em> (<code>CATENA</code> tab) and <em>39 ZP Telemetry Engine</em>.</li>
 </ul>
-<p class="nota"><strong>BETA.</strong> Test it in real sessions; do not rely on an unverified pass in a delivery.</p>
+<p class="nota">Check it in real sessions before relying on it in a delivery.</p>
 
 <h2 id="plugin-click-attack">ZP Click &amp; Attack Softener</h2>
-<p><strong>BETA.</strong> Voice de-clicking and onset softening with lookahead and automatic PDC. Cue Navigator is optional; it is only needed by the <code>?</code> button to open this guide.</p>
-<p class="nota">Try it on copies of vocal recordings and compare with bypass before using it in a delivery.</p>
+<p>Three-stage transient/click cleaner and onset rounder with fixed automatic PDC (<code>~14.7 ms</code> at 48 kHz, zero latency jumps under automation):</p>
+<ul>
+<li><strong>1A &middot; MACRO CLICK:</strong> symmetric two-band pre/post attenuator for macro clicks (<code>0.5&ndash;4 ms</code>), with <em>Consonant Protection</em> to spare healthy <code>p/t/k</code> bursts before vowels.</li>
+<li><strong>1B &middot; MICRO-CLICK (v1.3 &mdash; STFT spectral engine + Freq Skew):</strong> switchable spectral stage (<code>MICRO-CLICK: ON/OFF</code>) using short-window STFT analysis (<code>5.3 ms</code>, <code>75%</code> Hann-COLA overlap). The continuous <strong><code>Freq Skew</code></strong> control (<code>-10..+10</code>, <code>LOW &harr; AIR</code>) smoothly adjusts both the spectral floor (down to <code>380 Hz</code> for low/wet clicks or up to <code>2.6 kHz</code> for fine air ticks, always sparing the vocal fundamental) and band weighting across Macro and Micro-Click. The <strong><code>Micro %</code></strong> knob (<code>slider20</code>) is smoothed for artifact-free <strong>REAPER track automation</strong> so it acts strictly where needed.</li>
+<li><strong>2 &middot; ATTACK SOFTENER:</strong> rounds the first milliseconds of hard onsets strictly above the cutoff frequency (phase-coherent SVF crossover, keeping chest and body intact).</li>
+<li><strong>DELTA, D&middot;MOLLA &amp; Telemetry:</strong> global <code>DELTA</code> audition (<code>30 s</code> auto-off), spring-loaded <code>D&middot;MOLLA</code> per-stage delta (<code>MACRO</code>, <code>MICRO</code>, or <code>ATTACK</code>), and <strong>Shared Bus v3.1</strong> telemetry to <em>ZP Master Pro</em> and <em>39 ZP Telemetry Engine</em>. Cue Navigator is optional and only needed by the <code>?</code> button to open this guide.</li>
+</ul>
+<p class="nota">Try it on copies of vocal recordings and compare with bypass or DELTA before using it in a delivery.</p>
 
 <h2 id="montaggio-parlato">ZP Montaggio Parlato</h2>
-<p><strong>BETA.</strong> Analyzes WAV items, transcribes them with ZP Speech and proposes an editing draft. The user makes the decisions; Apply creates splits and editing notes with one Undo.</p>
+<p>Analyzes WAV items, transcribes them with ZP Speech and proposes an editing draft. The user makes the decisions; Apply creates splits and editing notes with one Undo.</p>
 <p>Requires ZP Studio Suite and ZP Speech installed from <strong>33 Welcome</strong>, with a ready provider: MacWhisper or local OpenAI Whisper with a model. It is currently tested on macOS. PDF import needs <code>pdftotext</code> (Poppler); other document formats use <code>textutil</code>. Clipboard paste is optional and requires SWS; without SWS, load the script from a file.</p>
 
 <h2 id="clean-paint">ZP Clean &amp; Paint</h2>
-<p><strong>BETA.</strong> The ReaPack package contains the REAPER actions, not the AI engine. It requires a separate <em>ZP Voice Model Lab</em> installation with CLI <code>engines/rvc_local/zp_clean_paint_cli.py</code>, Python in its local environment, <code>data/paint_presets.json</code> and the models needed by the selected mode.</p>
+<p>The ReaPack package contains the REAPER actions, not the AI engine. It requires a separate <em>ZP Voice Model Lab</em> installation with CLI <code>engines/rvc_local/zp_clean_paint_cli.py</code>, Python in its local environment, <code>data/paint_presets.json</code> and the models needed by the selected mode.</p>
 <p>Set the absolute path to the external project in <code>~/Library/Application Support/ZP_Clean_Paint/lab_root_path.txt</code> (macOS) or <code>%APPDATA%/ZP_Clean_Paint/lab_root_path.txt</code> (Windows). PAINT also needs the RVC model and related index files; Welcome (33) checks for the CLI, Python and presets, not the models. The engine remains in development.</p>
 
+<p class="nota"><strong>No Warranty (GPLv3):</strong> all ZP Suite tools — and especially these packages — are provided <em>"as is"</em> without any expressed or implied warranty. Always test on working copies and keep project backups.</p>
 <p class="nota"><a href="index.html">Back to the full guide</a></p>
-<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; Developed from an idea by Paolo Balestri &middot; <a href="https://latocardioide.it/strumenti/">Lato Cardioide</a></span></p><!-- /lc-piede -->
+<!-- lc-piede --><p class="lc-piede"><svg class="lc-logo" viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="23" stroke="#d8b37a" stroke-width="2" fill="#1e293b"/><path d="M24 9 C16 9 11 15 11 22 C11 29 20 36 24 40 C28 36 37 29 37 22 C37 15 32 9 24 9 Z" stroke="#a33f28" stroke-width="2.5"/><circle cx="24" cy="23" r="6.5" stroke="#d8b37a" stroke-width="1.5" stroke-dasharray="2 2"/><circle cx="24" cy="23" r="2.5" fill="#f6f2e8"/></svg><span>ZP Studio Suite &middot; <a href="https://latocardioide.it/strumenti/">latocardioide.it</a> &middot; <a href="https://dubbertools.com/">dubbertools.com</a></span></p><!-- /lc-piede -->
 </main>
 </body>
 </html>

@@ -1057,7 +1057,7 @@ local function open_import_bridge(on_done)
     gfx.set(0.56, 0.72, 0.86, 1)
     gfx.x = 66
     gfx.y = 42
-    gfx.drawstr("ZP Studio Suite v1.0.5 - Paolo Balestri & Fabio Loi")
+    gfx.drawstr("ZP Studio Suite · latocardioide.it · dubbertools.com")
     gfx.setfont(1, "Arial", 15)
     gfx.set(0.68, 0.66, 0.74, 1)
     gfx.x = 22

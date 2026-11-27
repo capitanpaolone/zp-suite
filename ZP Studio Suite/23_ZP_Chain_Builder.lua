@@ -666,7 +666,32 @@ local HELP_TEXT =
   "ADR / DOPPIAGGIO\n" ..
   "VIDEO AUDIO non invia al Master ed esce su hardware 1/2, per non entrare nel bounce.\n\n" ..
   "PROBE GUARD\n" ..
-  "Viene rilevato e avviato automaticamente se disponibile nella stessa cartella."
+  "Viene rilevato e avviato automaticamente se disponibile nella stessa cartella.\n\n" ..
+  "TEMPLATE DI PROGETTO ZP (-18 / -8 LUFS)\n" ..
+  "Per partire da un progetto nuovo gia' cablato e calibrato con soli plugin ZP (livelli di punta: " ..
+  "-18 LUFS per il Voiceover, fino a -8 LUFS per Mix e Spot), usa i due pulsanti Apri Template qui sotto."
+
+local function open_zp_template(src_file, installed_name)
+  local sep = package.config:sub(1, 1)
+  local installed = reaper.GetResourcePath() .. sep .. "ProjectTemplates" .. sep .. installed_name
+  local bundled = SCRIPT_DIR .. "templates" .. sep .. src_file
+  local chosen = nil
+  local f = io.open(installed, "rb")
+  if f then f:close(); chosen = installed else
+    local b = io.open(bundled, "rb")
+    if b then b:close(); chosen = bundled end
+  end
+  if not chosen then
+    reaper.ShowMessageBox("Template non trovato:\n" .. bundled, TITLE, 0)
+    return false
+  end
+  local dirty = reaper.IsProjectDirty and reaper.IsProjectDirty(0) > 0
+  if dirty or reaper.CountTracks(0) > 0 or reaper.CountMediaItems(0) > 0 then
+    reaper.Main_OnCommand(40859, 0) -- New project tab
+  end
+  reaper.Main_openProject("template:" .. chosen)
+  return true
+end
 
 local function run_ui()
   local profile_index = 1
@@ -724,13 +749,30 @@ local function run_ui()
     gfx.drawstr("Cosa fa il profilo")
 
     gfx.set(0.10, 0.10, 0.14, 1)
-    gfx.rect(22, 236, gfx.w - 44, 300, true)
+    gfx.rect(22, 236, gfx.w - 44, 248, true)
     gfx.set(0.32, 0.31, 0.42, 1)
-    gfx.rect(22, 236, gfx.w - 44, 300, false)
+    gfx.rect(22, 236, gfx.w - 44, 248, false)
     gfx.setfont(1, "Arial", 14)
     gfx.set(0.92, 0.91, 0.94, 1)
-    gfx.x, gfx.y = 36, 252
-    gfx.drawstr(report_text, 5, 36, 252, gfx.w - 36, 522)
+    gfx.x, gfx.y = 36, 250
+    gfx.drawstr(report_text, 5, 36, 250, gfx.w - 36, 474)
+
+    gfx.setfont(1, "Arial", 13)
+    gfx.set(0.68, 0.66, 0.74, 1)
+    gfx.x, gfx.y = 22, 494
+    gfx.drawstr("Oppure apri un progetto nuovo da Template ZP calibrato (solo plugin ZP, livelli di punta):")
+
+    local tw = math.floor((gfx.w - 54) * 0.5)
+    if ZP_UI.draw_button({ x = 22, y = 516, w = tw, h = 36 }, "Apri Template VO (-18 LUFS)", false, true, clicked, "tab") then
+      if open_zp_template("ZP_Setup_VoiceOver_18LUFS.RPP", "ZP Setup VoiceOver (-18 LUFS).RPP") then
+        report_text = "Aperto in una nuova scheda il setup ZP VoiceOver (-18 LUFS, solo plugin ZP).\nSalva il progetto con un nuovo nome prima di registrare."
+      end
+    end
+    if ZP_UI.draw_button({ x = 32 + tw, y = 516, w = gfx.w - 54 - tw, h = 36 }, "Apri Template Mix-Spot (-8 LUFS)", false, true, clicked, "tab") then
+      if open_zp_template("ZP_Setup_Mix_Spot_8LUFS.RPP", "ZP Setup Mix-Spot (-8 LUFS).RPP") then
+        report_text = "Aperto in una nuova scheda il setup ZP Mix-Spot (-8 LUFS, solo plugin ZP).\nSalva il progetto con un nuovo nome prima di lavorare."
+      end
+    end
 
     if ZP_UI.draw_button({ x = 22, y = 570, w = 230, h = 40 }, "Trasforma progetto", false, true, clicked, "save") then
       report_text = apply_profile(PROFILES[profile_index])

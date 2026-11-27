@@ -20,6 +20,7 @@ local speech_lead_key = "accessibility_speech_lead"
 local studio_mode_key = "studio_edit_mode"
 local SCRIPT_DIR = (debug.getinfo(1, "S").source:sub(2):match("^(.*[/\\])") or "")
 local ZP_UI = dofile(SCRIPT_DIR .. 'ZP_UI.lua')
+ZP_UI.font_bonus = 2   -- il Gobbo non ha lo zoom proporzionale: caratteri dei pulsanti +2
 local ZP_TESTO = dofile(SCRIPT_DIR .. 'ZP_Testo_Copione.lua')
 local ZP_EDITOR = dofile(SCRIPT_DIR .. 'ZP_Editor_Copione.lua')
 local TimedTextDuration
@@ -1922,7 +1923,18 @@ function InlineLoadFile()
         -- Copione Excel con i tempi: una battuta per riga, PERSONAGGIO: testo.
         local xlsx=dofile(SCRIPT_DIR..'ZP_Xlsx_Copione.lua')
         local cues,info=xlsx.read(function(name) return ZP_TESTO.zip_member(path,name,reaper.GetOS()) end,{choose=xlsx.menu})
-        if cues then text,terms=xlsx.to_text(cues),{} elseif info then terms=info else return end
+        if cues then text,terms=xlsx.to_text(cues),{}
+        elseif info then
+            -- Senza tempi ma a blocchi per file (colonna File name): un item di testo per ogni video/audio in timeline.
+            local TV=dofile(SCRIPT_DIR..'ZP_Testo_su_Video.lua')
+            if TV.can_run(path) then
+                if reaper.ShowMessageBox(T('Questo copione non ha i tempi, ma è diviso per file.')..'\n\n'..T('Creo un item di testo per ogni video/audio in timeline, con lo stesso nome del blocco?'),T('Importazione copione'),4)==6 then
+                    TV.run(path); UpdateItems()
+                end
+                return
+            end
+            terms=info
+        else return end
     else
         text,terms=ZP_TESTO.read_file(path,reaper.GetOS())
     end
@@ -2183,7 +2195,7 @@ function DrawSettingsPanel(w, h)
     local alpha = panel_anim
     if alpha < 0.05 then return panel_y end
 
-    gfx.setfont(3, "Arial", 15, 'b')
+    gfx.setfont(3, "Arial", 17, 'b')
     gfx.set(0.5, 0.5, 0.8, alpha)
     gfx.x, gfx.y = 14, panel_y + 8
     gfx.drawstr(T("IMPOSTAZIONI GOBBO ORIZZONTALE"))
@@ -2198,12 +2210,12 @@ function DrawSettingsPanel(w, h)
     local changed = false
 
     -- === SCALA: velocita, larghezza item e corpo testo insieme ===
-    gfx.setfont(3, "Arial", 14, 'b')
+    gfx.setfont(3, "Arial", 16, 'b')
     gfx.set(0.6, 0.7, 1.0, alpha)
     gfx.x, gfx.y = col1_x, row_y
     gfx.drawstr(T("SCALA / VELOCITA"))
     
-    gfx.setfont(3, "Arial", 20, 'b')
+    gfx.setfont(3, "Arial", 22, 'b')
     gfx.set(1, 1, 1, alpha)
     local zoom_val = string.format("%d", pixels_per_second)
     gfx.x, gfx.y = col1_x + 132, row_y - 3
@@ -2222,12 +2234,12 @@ function DrawSettingsPanel(w, h)
     if b_z3 then SetHorizontalScale(350); changed = true end
 
     -- === CORPO RISULTANTE ===
-    gfx.setfont(3, "Arial", 14, 'b')
+    gfx.setfont(3, "Arial", 16, 'b')
     gfx.set(0.6, 0.7, 1.0, alpha)
     gfx.x, gfx.y = col2_x, row_y
     gfx.drawstr(T("CORPO TESTO"))
     
-    gfx.setfont(3, "Arial", 20, 'b')
+    gfx.setfont(3, "Arial", 22, 'b')
     gfx.set(1, 1, 1, alpha)
     local font_val = string.format("%d", master_font_size)
     gfx.x, gfx.y = col2_x + 106, row_y - 3
@@ -2246,12 +2258,12 @@ function DrawSettingsPanel(w, h)
     if b_f3 then SetFontSize(56); changed = true end
 
     if col3_x + 190 < w then
-        gfx.setfont(3, "Arial", 14, 'b')
+        gfx.setfont(3, "Arial", 16, 'b')
         gfx.set(0.6, 0.7, 1.0, alpha)
         gfx.x, gfx.y = col3_x, row_y
         gfx.drawstr(T("ANTICIPO VOCE"))
 
-        gfx.setfont(3, "Arial", 20, 'b')
+        gfx.setfont(3, "Arial", 22, 'b')
         gfx.set(1, 1, 1, alpha)
         local lead_val = string.format("%.1fs", accessibility_speech_lead)
         gfx.x, gfx.y = col3_x + 132, row_y - 3
@@ -2271,7 +2283,7 @@ function DrawSettingsPanel(w, h)
         if b_l5 then SetAccessibilitySpeechLead(5) end
         if b_l10 then SetAccessibilitySpeechLead(10) end
 
-        gfx.setfont(3, "Arial", 12)
+        gfx.setfont(3, "Arial", 14)
         gfx.set(0.78, 0.80, 0.92, alpha * 0.85)
         gfx.x, gfx.y = col3_x, row_y + 54
         gfx.drawstr(T("Solo OSARA/NVDA, max 10 s"))
@@ -2313,7 +2325,7 @@ function DrawAlertStrip(w, strip_h, play_pos, attack_x)
     gfx.set(0.45, 0.34, 0.15, 0.85)
     gfx.rect(0, strip_h - 1, w, 1, 1)
 
-    gfx.setfont(3, "Arial", 15, 'b')
+    gfx.setfont(3, "Arial", 17, 'b')
     gfx.set(0.95, 0.82, 0.40, 1)
     gfx.x, gfx.y = 12, 8
     gfx.drawstr(T("GOBBO ORIZZONTALE"))
@@ -2321,7 +2333,7 @@ function DrawAlertStrip(w, strip_h, play_pos, attack_x)
     local tc_box_x, tc_box_w = nil, 0
     if show_timecode then
         local tc = FormatVideoTimecode(play_pos)
-        gfx.setfont(3, "Arial", 20, 'b')
+        gfx.setfont(3, "Arial", 22, 'b')
         local tw = gfx.measurestr(tc)
         tc_box_w = tw + 28
         tc_box_x = math.floor((attack_x or (w / 2)) - (tc_box_w / 2))
@@ -2329,10 +2341,10 @@ function DrawAlertStrip(w, strip_h, play_pos, attack_x)
         if tc_box_x + tc_box_w > w - 12 then tc_box_x = w - tc_box_w - 12 end
     end
 
-    gfx.setfont(3, "Arial", 11)
+    gfx.setfont(3, "Arial", 13)
     gfx.set(0.56, 0.72, 0.86, 1)
     local suite_label = ("ZP Studio Suite " .. ZP_UI.suite_version())
-    local credit_label = " - Paolo Balestri & Nicola Lanci"
+    local credit_label = " · latocardioide.it · dubbertools.com"
     local label = suite_label .. credit_label
     local label_x = 190
     local max_label_w = (tc_box_x and (tc_box_x - label_x - 12)) or (w - label_x - 320)
@@ -2361,7 +2373,7 @@ function DrawAlertStrip(w, strip_h, play_pos, attack_x)
     local flow_label = CurrentTextFlowLabel()
     if #flow_label > 20 then flow_label = flow_label:sub(1, 19) .. "." end
     -- flusso a tendina: un clic apre l'elenco delle tracce testo e "Tutti"
-    gfx.setfont(3, "Arial", 16, 'b')
+    gfx.setfont(3, "Arial", 18, 'b')
     local flow_text = T("Testi:") .. " " .. flow_label .. "  ▾"
     local flow_w = math.max(120, gfx.measurestr(flow_text) + 20)
     if DrawButton(12, 30, flow_w, 22, flow_text, 0.22, 0.30, 0.42) then ShowTextFlowMenu(12, 52) end
@@ -2375,7 +2387,7 @@ function DrawAlertStrip(w, strip_h, play_pos, attack_x)
 
     if show_timecode then
         local tc = FormatVideoTimecode(play_pos)
-        gfx.setfont(3, "Arial", 20, 'b')
+        gfx.setfont(3, "Arial", 22, 'b')
         local tw, th = gfx.measurestr(tc)
         local box_w = tc_box_w
         local box_h = 34
@@ -2411,12 +2423,12 @@ function DrawAlertStrip(w, strip_h, play_pos, attack_x)
             else gfx.set(note.r, note.g, note.b, 0.45) end
             gfx.rect(card_x, 8, card_w, strip_h - 16, 1)
 
-            gfx.setfont(3, "Arial", 11, 'b')
+            gfx.setfont(3, "Arial", 13, 'b')
             SetReadableTextColor(note.r, note.g, note.b, alpha)
             gfx.x, gfx.y = card_x + 8, 11
             gfx.drawstr(FormatVideoTimecode(note.pos))
 
-            gfx.setfont(3, "Arial", 14, 'b')
+            gfx.setfont(3, "Arial", 16, 'b')
             SetReadableTextColor(note.r, note.g, note.b, math.min(1, alpha + 0.20))
             local text = note.text:gsub("[\r\n]+", " ")
             if #text > 42 then text = text:sub(1, 39) .. "..." end

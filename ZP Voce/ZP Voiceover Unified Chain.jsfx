@@ -1,5 +1,5 @@
 // @description ZP Voiceover Unified Chain
-// @version 4.1.9
+// @version 4.1.10
 // @author Paolo Balestri
 // @license GPL-3.0-or-later
 // @about
@@ -13,17 +13,18 @@
 //   Sviluppata su un'idea di Paolo Balestri · Lato Cardioide (latocardioide.it)
 //   Guida completa: ZP Studio Suite/help/index.html#plugin-unified-chain
 // @changelog
+//   4.1.10: Rilevamento cambio samplerate in @block (ext_noinit=1) con aggiornamento finestre meter e compute_dsp_params().
 //   4.1.9: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro e commit atomico del frame legacy.
 //   Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
 //   Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
 //     altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
 //   Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
-desc:ZP Voiceover Unified Chain - Voice Leveler - Paolo Balestri
+desc:ZP Voiceover Unified Chain - Voice Leveler · latocardioide.it · dubbertools.com
 options:gmem=ZPVoiceoverSharedBus
-tags: voiceover voice leveler compressor limiter gate expander brown guard lufs rms paolo balestri zio paolo
-//autror: Paolo Balestri - Zio Paolo
+tags: voiceover voice leveler compressor limiter gate expander brown guard lufs rms paolo balestri lato cardioide
+//autror: Paolo Balestri · Lato Cardioide
 //variant: v4.1.5-circular-threshold-meters
-// Contatto: social@paolobalestri.com
+// Contatto: paolo@latocardioide.it
 //
 // CHANGELOG v4.1.5-circular-threshold-meters
 // - Live circular detector rings: Gate, 1175, Major Tom and Limiter Ceiling.
@@ -34,7 +35,7 @@ tags: voiceover voice leveler compressor limiter gate expander brown guard lufs 
 
 // ============================================================================
 // MANUALE UTENTE — Voiceover Unified Chain ZP v4.1.0-bus-tone-beta
-// Plugin: Voiceover Unified Chain ZP | Autore: Paolo Balestri | Contatto: social@paolobalestri.com
+// Plugin: Voiceover Unified Chain ZP | Autore: Paolo Balestri | Contatto: paolo@latocardioide.it
 // Sezione "living": si aggiorna ad ogni revisione DSP o UI significativa.
 // ============================================================================
 //
@@ -1209,6 +1210,7 @@ meter_s_win_cnt = 30;     // 3 s
 meter_win_len = max(1, floor(METER_UPDATE * srate));
 meter_i_m_win = 1 / max(1, meter_m_win_cnt * meter_win_len);
 meter_i_s_win = 1 / max(1, meter_s_win_cnt * meter_win_len);
+last_srate = srate;
 meter_rms_buf_base = pkh_base + 32;
 meter_lufs_m_buf_base = meter_rms_buf_base + 8;
 meter_lufs_s_buf_base = meter_lufs_m_buf_base + 8;
@@ -1644,6 +1646,13 @@ refresh_out_smart_capture_trim();
 dsp_needs_update = 1;
 
 @block
+srate != last_srate ? (
+  meter_win_len = max(1, floor(METER_UPDATE * srate));
+  meter_i_m_win = 1 / max(1, meter_m_win_cnt * meter_win_len);
+  meter_i_s_win = 1 / max(1, meter_s_win_cnt * meter_win_len);
+  compute_dsp_params();
+  last_srate = srate;
+);
 // ZP Target Engine: telemetria separata per stadio, solo osservativa.
 gmem[101] = ui_gate_act_db;                                  // expander GR
 gmem[102] = ui_1175_act_db;                                  // 1175 GR
@@ -4919,7 +4928,7 @@ zp_bus_read();
 zp_bus_master_conn==2 && zp_bus_probe_conn==2 ? gfx_set(0.30,0.92,0.58,1) : zp_bus_master_conn>0 && zp_bus_probe_conn>0 ? gfx_set(1.0,0.72,0.20,1) : gfx_set(1.0,0.34,0.28,1);
 zp_circle(286,HDR_Y+20,5,1); zp_setfont(1,"Arial",9,'b'); zp_gx=296; zp_gy=HDR_Y+14; zp_drawstr("ZP");
 zp_setfont(1,"Arial",12); gfx_set(0.46,0.60,0.76,1);
-zp_gx=16; zp_gy=HDR_Y+38; zp_drawstr("Voice Leveler | v4.1.5 - di Paolo Balestri");
+zp_gx=16; zp_gy=HDR_Y+38; zp_drawstr("Voice Leveler | v4.1.5 · latocardioide.it · dubbertools.com");
 // Module status indicators (colored by active/inactive state)
 zp_setfont(1,"Arial",13);
 zp_gx=16; zp_gy=HDR_Y+58;
@@ -5036,7 +5045,7 @@ gfx_set(0.18,0.20,0.24,1); zp_rect(0,HDR_H+HDR_Y+2,zp_vw,1);
 zp_setfont(1,"Arial",19,'b'); gfx_set(0.94,0.96,0.98,1);
 zp_gx=16; zp_gy=HDR_Y+10; zp_drawstr("VOICEOVER UNIFIED CHAIN ZP");
 zp_setfont(1,"Arial",12); gfx_set(0.46,0.60,0.76,1);
-zp_gx=16; zp_gy=HDR_Y+38; zp_drawstr("Voice Leveler | v4.1.5 - di Paolo Balestri");
+zp_gx=16; zp_gy=HDR_Y+38; zp_drawstr("Voice Leveler | v4.1.5 · latocardioide.it · dubbertools.com");
 zp_setfont(1,"Arial",13);
 zp_gx=16; zp_gy=HDR_Y+58;
 floor(slider(2) +0.5) ? gfx_set(0.30,0.62,0.92,1) : gfx_set(0.34,0.48,0.62,1); zp_drawstr("IN ");

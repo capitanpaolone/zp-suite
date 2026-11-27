@@ -1011,11 +1011,42 @@ Volume bip %d dB.	Beep volume %d dB.
 22 Volume bip -	22 Beep volume -
 23 Volume bip +	23 Beep volume +
 Per il bip serve l'estensione SWS.	The beep needs the SWS extension.
-ZP Clean & Paint (BETA)	ZP Clean & Paint (BETA)
-BETA: azione Lua non installata.	BETA: Lua action is not installed.
-BETA: CLI, Python e preset presenti; motore AI in sviluppo.	BETA: CLI, Python and presets found; AI engine under development.
-BETA: motore esterno configurato ma incompleto; motore AI in sviluppo.	BETA: external engine configured but incomplete; AI engine under development.
-BETA: motore esterno non configurato; motore AI in sviluppo.	BETA: external engine not configured; AI engine under development.
+ZP Clean & Paint	ZP Clean & Paint
+azione Lua non installata.	Lua action is not installed.
+CLI, Python e preset presenti; motore AI in sviluppo.	CLI, Python and presets found; AI engine under development.
+motore esterno configurato ma incompleto; motore AI in sviluppo.	external engine configured but incomplete; AI engine under development.
+motore esterno non configurato; motore AI in sviluppo.	external engine not configured; AI engine under development.
 Come installare FFmpeg…	How to install FFmpeg…
 Scegli FFmpeg…	Choose FFmpeg…
 FFmpeg trovato ma non parte:	FFmpeg found but it does not run:
+Questo copione non ha i tempi, ma è diviso per file.	This script has no timecodes, but it is split by file.
+Creo un item di testo per ogni video/audio in timeline, con lo stesso nome del blocco?	Create one text item for each video/audio on the timeline, with the same name as the block?
+Template di progetto non trovato nel pacchetto.	Project template not found in package.
+Setup progetto ZP pronti in ProjectTemplates.	ZP project setups ready in ProjectTemplates.
+Impossibile copiare tutti i setup in ProjectTemplates.	Unable to copy all setups to ProjectTemplates.
+Setup progetto ZP (-18 / -8 LUFS)	ZP Project Setups (-18 / -8 LUFS)
+Pronti in File > Project templates (solo plugin ZP, livelli di punta): VoiceOver a -18 LUFS e Mix-Spot fino a -8 LUFS.	Ready in File > Project templates (ZP plugins only, peak targets): VoiceOver at -18 LUFS and Mix-Spot up to -8 LUFS.
+Due setup completi con soli plugin ZP, calibrati ai livelli di punta: VoiceOver (-18 LUFS) e Mix-Spot (-8 LUFS).	Two complete setups using ZP plugins only, calibrated to peak targets: VoiceOver (-18 LUFS) and Mix-Spot (-8 LUFS).
+VO -18 LUFS	VO -18 LUFS
+Mix -8 LUFS	Mix -8 LUFS
+Aperto setup ZP VoiceOver (-18 LUFS).	Opened ZP VoiceOver setup (-18 LUFS).
+Aperto setup ZP Mix-Spot (-8 LUFS).	Opened ZP Mix-Spot setup (-8 LUFS).
+ZP Speech non e' installato: installalo da 33 Benvenuto.	ZP Speech is not installed: install it from 33 Welcome.
+Caricato dalla cache: 	Loaded from cache: 
+Analisi fatta: 	Analysis complete: 
+%d item, %d interventi, %d da controllare.	%d items, %d edits, %d to review.
+(riusato .srt esistente)	(reused existing .srt)
+Ripristinati %d tagli salvati.	Restored %d saved cuts.
+Taglio dal testo	Text edit cut
+Taglio dal testo segnato (barrato rosso). Premi APPLICA quando sei pronto.	Text cut marked (red strikethrough). Click APPLY when ready.
+Parole ripristinate nel montato.	Words restored to the edit.
+Selezione testo	Text selection
+Ascolta selezione	Play selection
+Taglia dal testo (Canc)	Cut from text (Del)
+Ripristina selezione	Restore selection
+Deseleziona	Clear selection
+Clicca o trascina sulle parole per selezionarle e tagliarle dal testo (o premi Canc).	Click or drag across words to select and cut them from text (or press Del).
+Ripristina nel montato	Restore to edit
+barrato rosso: si toglie (anche manuale)	red strikethrough: removed (auto & manual)
+evidenziato blu: selezione testo	blue highlight: text selection
+CLICK / arancio: rifacimento / non letta	CLICK / orange: retake / skipped line
