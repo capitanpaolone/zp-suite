@@ -1,32 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" name="ZP Suite" commit="47d68a4ab9b08365e3294978fddd2ffbc23938ac">
+<index version="1" name="ZP Suite" commit="2430765bcabd1119159cf072e107807cadd4e0c0">
   <category name="ZP Lab">
-    <reapack name="ZP BrownSlope Dynamic Guard.jsfx" type="effect" desc="ZP BrownSlope Dynamic Guard (BETA) - Paolo Balestri">
+    <reapack name="ZP BrownSlope Dynamic Guard.jsfx" type="effect" desc="ZP BrownSlope Dynamic Guard · latocardioide.it · dubbertools.com">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
 \widowctrl\hyphauto
 
-{\pard \ql \f0 \sa180 \li0 \fi0 BETA. Dynamic four-band tonal guard for voice/music chains. Audio processing is self-contained; ZP Harmonic Space Carver Cue Navigator is optional and only opens the help page from the ? button.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Dynamic four-band tonal guard for voice/music chains. Audio processing is self-contained; ZP Harmonic Space Carver Cue Navigator is optional and only opens the help page from the ? button.\par}
 }
 ]]></description>
       </metadata>
       <version name="0.5-assist-dev" author="Paolo Balestri" time="2026-11-21T21:49:20Z">
         <source>https://github.com/capitanpaolone/zp-suite/raw/47d68a4ab9b08365e3294978fddd2ffbc23938ac/ZP%20Lab/ZP%20BrownSlope%20Dynamic%20Guard.jsfx</source>
       </version>
+      <version name="0.5.1-assist-dev" author="Paolo Balestri" time="2026-11-22T11:49:46Z">
+        <changelog><![CDATA[v0.5.1-assist-dev: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (correzioni dinamiche 4 bande, trim e bypass).]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Lab/ZP%20BrownSlope%20Dynamic%20Guard.jsfx</source>
+      </version>
     </reapack>
-    <reapack name="ZP Click &amp; Attack Softener.jsfx" type="effect" desc="ZP Click &amp; Attack Softener (BETA) - Mouth De-Click &amp; Attack Rounder - Paolo Balestri">
+    <reapack name="ZP Click &amp; Attack Softener.jsfx" type="effect" desc="ZP Click &amp; Attack Softener · latocardioide.it · dubbertools.com">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
 \widowctrl\hyphauto
 
-{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 ZP Click & Attack Softener (BETA)\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Strumento a doppio stadio con lookahead (6,5 ms, PDC automatico) tarato sulla voce parlata:\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 1.\tx360\tab DE-CLICK: rilevatore simmetrico pre/post a due bande (1-4 kHz lingua/palato, 4+ kHz saliva/altoparlato) con protezione consonanti (p/t/k).\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 2.\tx360\tab ATTACK SOFTENER: arrotonda la punta iniziale degli attacchi vocali solo sopra la frequenza di taglio (crossover SVF coerente di fase). Include ascolto DELTA con auto-off a 30 s, D\u183 ?MOLLA per isolare il singolo stadio mentre regoli i controlli e monitor eventi in tempo reale.\sa180\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Dual-stage voice cleaner and onset rounder with lookahead (6.5 ms, automatic PDC): symmetric two-band de-clicker with consonant protection plus phase-coherent high-band attack softener.\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 BETA. Audio processing is self-contained; Cue Navigator is optional and only opens the help page from the ? button.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 ZP Click & Attack Softener\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Strumento a tre stadi in serie con latenza PDC fissa (~14,7 ms @ 48 kHz, zero salti in automazione): 1A. MACRO CLICK: attenuatore simmetrico pre/post a due bande con Protezione Consonanti (p/t/k). 1B. MICRO-CLICK (motore spettrale STFT attivabile + Micro % automatizzabile): analisi tempo-frequenza a finestra corta (5,3 ms, 75% Hann-COLA) con coerenza locale a tasche (~940 Hz) per catturare anche micro-sfrigolii risonanti ad alta frequenza dentro e tra le consonanti, guardia armonica sulle vocali piene e controllo continuo Freq Skew (Low <-> Air, 380 Hz..2,6 kHz). 2. ATTACK SOFTENER: arrotonda la punta iniziale degli attacchi duri solo sopra la frequenza di taglio (crossover SVF coerente di fase). Include ascolto DELTA con auto-off a 30 s, D\u183 ?MOLLA per isolare ogni stadio (Macro, Micro, Attack) e monitor eventi in tempo reale.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Three-stage vocal/acoustic cleaner and onset rounder with fixed automatic PDC (~14.7 ms @ 48 kHz, zero latency jumps under automation): two-band Macro Click attenuator, switchable & automatable STFT spectral Micro-Click cleaner with local ~940 Hz pocket coherence, voiced harmonic guard, and continuous Freq Skew (Low <-> Air), plus phase-coherent Attack Softener.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Audio processing is self-contained; Cue Navigator is optional and only opens the help page from the ? button.\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 Sviluppata su un'idea di Paolo Balestri \u183 ? Lato Cardioide (latocardioide.it)\par}
 }
 ]]></description>
@@ -37,9 +39,57 @@
   TAKE SPORCO, DELICATO), DELTA con auto-off 30 s, D·MOLLA per stadio, tema Scuro/Chiaro e vista JSFX/OSARA.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/47d68a4ab9b08365e3294978fddd2ffbc23938ac/ZP%20Lab/ZP%20Click%20&amp;%20Attack%20Softener.jsfx</source>
       </version>
+      <version name="0.2" author="Paolo Balestri" time="2026-11-22T11:49:46Z">
+        <changelog><![CDATA[v0.2: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (De-Click GR, Attack GR, Click/s e alert DELTA).
+v0.1: Prima versione di laboratorio tarata su ripresa microfonica e catena voce di Paolo;
+  De-Click pre/post con protezione consonanti, Attack Softener selettivo, 4 preset (PRE-CHAIN, POST-CHAIN,
+  TAKE SPORCO, DELICATO), DELTA con auto-off 30 s, D·MOLLA per stadio, tema Scuro/Chiaro e vista JSFX/OSARA.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Lab/ZP%20Click%20&amp;%20Attack%20Softener.jsfx</source>
+      </version>
+      <version name="1.4" author="Paolo Balestri" time="2026-11-27T23:24:46Z">
+        <changelog><![CDATA[v1.4: MICRO-CLICK aggiornato a coerenza locale a tasche scorrevoli (~940 Hz / 5 bin) + guardia glottica sulle vocali piene (< 800 Hz):
+  cattura anche i micro-sfrigolii risonanti stretti (es. 5-9 kHz tra consonanti come "l -> g") prima diluiti nella media larga 4-16 kHz,
+  mantenendo 0,00 dB di opacizzazione sul parlato pulito.
+v1.3: Nuovo controllo continuo Freq Skew (-10..+10, Low <-> Air, slider22) in stile RX per calibrare pavimento (380 Hz..2,6 kHz)
+  e bilanciamento spettrale di Macro Click e Micro-Click in base alla ripresa (cattura anche i click bassi 450-1000 Hz senza toccare la fondamentale);
+  slider5 mantenuto per retrocompatibilita' dei progetti esistenti.
+v1.2: Corretta la scala di ricostruzione ifft_real (0.25/N per guadagno unitario 0,00 dB e null DELTA esatto su MICRO-CLICK);
+  grafica uniformata al linguaggio hardware della ZP Suite (tasti retroilluminati con barra LED, LED gioiello cliccabili, pomelli hardware e pannelli satinati).
+v1.1: Sostituito il motore time-domain AR(6) con il nuovo motore spettrale STFT MICRO-CLICK (fft_real/ifft_real 75% Hann-COLA,
+  banda protetta < 1 kHz per zero micro-distorsioni sulla fondamentale, attenuazione morbida verso il contesto locale per zero opacizzazione);
+  nomenclatura tecnica trasversale (MACRO CLICK, MICRO-CLICK + Micro %, Focus Mid-High 1-4k / Air 4k+).
+v1.0: Primo stadio dedicato ai micro-impulsi nelle consonanti + controllo Amount (%) automatizzabile e uscita dalla beta.
+v0.3: Rilevamento cambio samplerate in @block (ext_noinit=1) con azzeramento ring buffer e ricalcolo lookahead/coefficienti SVF.
+v0.2: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (Macro Click GR, Attack GR, Click/s e alert DELTA).
+v0.1: Prima versione tarata su ripresa microfonica e catena voce di Paolo.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Lab/ZP%20Click%20&amp;%20Attack%20Softener.jsfx</source>
+      </version>
     </reapack>
   </category>
   <category name="ZP Master">
+    <reapack name="ZP Audition Noise Monitor.jsfx" type="effect" desc="ZP Audition Noise Monitor (Monitor FX)">
+      <metadata>
+        <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
+{\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
+\widowctrl\hyphauto
+
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 ZP Audition Noise Monitor (Monitor FX)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Simulatore di ascolto in auto e ambienti rumorosi + simulatore diffusori da inserire nella catena Monitor FX di REAPER (non entra mai nel mix ne' nei render). Offre 4 profili acustici calibrati a 0 dBFS RMS (Auto Citta', Autostrada, Ambiente Rosa, Treno/Aereo), livello riferito al programma (SNR -24..+6 dB), 4 profili diffusore Monitor FX (Studio Flat, Auto / Furgone, Soffitto / Ufficio mono, Cuffiette Open con filtro passivo sul rumore), gate automatico allo stop, soft-limiter di sicurezza (-0.3 dBFS) e telecomando da ZP Master Pro via gmem[3670..3683].\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Car and noisy-environment audition simulator + Monitor FX speaker simulator for REAPER's Monitor FX chain (never printed to the mix or renders). Features 4 RMS-calibrated acoustic profiles (City Car, Highway, Pink Environment, Train/Cabin), program-referenced SNR (-24..+6 dB), 4 Monitor FX speaker sims (Studio Flat, Car / Van, Ceiling / Office mono, Open Earbuds), stop auto-mute, -0.3 dBFS safety soft-limiter and remote control from ZP Master Pro over ZP Shared Bus (gmem[3670..3683]).\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Sviluppata su un'idea di Paolo Balestri \u183 ? Lato Cardioide (latocardioide.it)\par}
+}
+]]></description>
+      </metadata>
+      <version name="1.1" author="Paolo Balestri" time="2026-11-27T23:24:46Z">
+        <changelog><![CDATA[1.1: Calibrazione RMS reale 0 dBFS per i 4 profili ambiente (+24.8 dB di allineamento al target LUFS/dBFS),
+  range SNR esteso a +6 dB (tasti -18..-3, 0, +3 dB), simulazione diffusori in Monitor FX (Studio Flat,
+  Auto / Furgone, Soffitto / Ufficio mono, Cuffiette Open con attenuazione passiva -3.5 dB @ 2.5 kHz sul rumore),
+  soft-limiter protettivo Monitor FX (-1.0..-0.3 dBFS), banner ambra con ascolto simulato attivo e controllo srate.
+1.0: Prima versione — 4 profili calibrati (Auto Citta', Autostrada, Ambiente Rosa, Treno/Aereo),
+  stereofonia decorrelata, calibrazione SNR rispetto al target LUFS, gate allo stop e ponte gmem con ZP Master Pro.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Master/ZP%20Audition%20Noise%20Monitor.jsfx</source>
+      </version>
+    </reapack>
     <reapack name="ZP Master Pro.jsfx" type="effect" desc="ZP Master Pro">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
@@ -47,8 +97,8 @@
 \widowctrl\hyphauto
 
 {\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 ZP Master Pro\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Processore di mastering integrato con Tape Glue, Compressore Glue Matrix, Tone Guard dinamico, Limiter lookahead brickwall, metering broadcast LUFS/LRA/True-Peak e Auto dB Target.\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Integrated master processor featuring Tape Glue, Glue Matrix compressor, dynamic Tone Guard, brickwall lookahead limiter, broadcast LUFS/LRA/True-Peak metering, and Auto dB Target leveling.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Processore di mastering integrato con doppio profilo (ANALOG: Tape Glue + Glue Matrix + Tone Guard + Lookahead Limiter; TRANSPARENT: Input fino a +30 dB + ENHANCE 2x oversampled con protezione medio-alte + Pre-Clipper 2x oversampled + Precision Limiter dual-stage Auto-Release + True Peak 4x + Tone Guard), metering broadcast LUFS/LRA/True-Peak con linee Target/Ceiling e peak-hold, Auto dB Target (fino a -6 LUFS) e telecomando Monitor FX Audition Noise.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Integrated master processor with dual profiles (ANALOG: Tape Glue + Glue Matrix + Tone Guard + Lookahead Limiter; TRANSPARENT: Input up to +30 dB + 2x oversampled ENHANCE with upper-mid guard + 2x oversampled Pre-Clipper + dual-stage Auto-Release Precision Limiter + 4x True Peak + Tone Guard), broadcast LUFS/LRA/True-Peak metering with Target/Ceiling lines & peak-hold, Auto dB Target (up to -6 LUFS) and Monitor FX Audition Noise remote control.\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 Sviluppata su un'idea di Paolo Balestri \u183 ? Lato Cardioide (latocardioide.it) Guida completa: ZP Studio Suite/help/index.html#plugin-master-pro\par}
 }
 ]]></description>
@@ -71,8 +121,28 @@ Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suit
 Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/bf4eaded02fbfb08f46e1cbc411b88c28da3f677/ZP%20Master/ZP%20Master%20Pro.jsfx</source>
       </version>
+      <version name="2.48" author="Paolo Balestri" time="2026-11-22T11:49:46Z">
+        <changelog><![CDATA[2.48: ZP Shared Bus v3 — telemetria multi-istanza da tutti i canali e bus verso Master Pro, nuova scheda CATENA nel Navigator (ordine monte->valle, alert DELTA/SOLO/CHECK, Music Probe/Carver e click-per-aprire FX via Cue Navigator).
+Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
+Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+  altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Master/ZP%20Master%20Pro.jsfx</source>
+      </version>
+      <version name="2.52" author="Paolo Balestri" time="2026-11-27T23:24:46Z">
+        <changelog><![CDATA[2.52: Aggiornamento meter LIVE e target alta loudness (fino a -6 LUFS): barre M/S/I/RMS/TP/IN allineate esattamente alla scala dB non lineare dell'asse, soglie colore adattate al Target attivo (niente falso giallo a -8 LUFS), linee orizzontali verdi di Target su M/S/I/RMS e linea rossa Ceiling + peak-hold flottante su TP stereo, preset rapido SPT (-8 LUFS) accanto a POD/AUD/MIX/BRD/RAD e lettura I/PK colorata rispetto a Target/Ceiling.
+2.51: Profilo TRANSPARENT potenziato per spot radio e alta loudness (fino a -8 LUFS): nuovo Pre-Clipper trasparente 2x oversampled prima del Precision Limiter (slider74 PRECLIP 0-100%, retrocompatibile a 0), oversampling 2x sullo shaper ENHANCE (fino a +7.5 dB, zero aliasing medio-alte) con guardia anti-asprezza 2.4-6.2 kHz (fino a -3.2 dB), Input esteso fino a +30 dB e Target LUFS/RMS/L+R fino a -6 dB.
+2.50: Doppio profilo mastering ANALOG | TRANSPARENT (nuovo motore trasparente con Precision Limiter dual-stage Auto-Release, Soft Knee, ISP 4x e dosatore ENHANCE per densita' percepita senza colorazione analogica; profilo ANALOG invariato) + controllo diretto via gmem[3670..3683] del simulatore Monitor FX ZP Audition Noise (Auto Citta', Autostrada, Ambiente Rosa, Treno/Aereo — mai renderizzato nel mix).
+2.49: ZP Shared Bus v3.1 — connessione verde anche senza BUS Chain quando sono attivi nodi v3 (Magic Voice LAB, Spoken Finish, Probe) senza falsi 'DATI PARZIALI / VECCHI'; pubblicazione riferimento Master Tone/Output (gmem[410..425] e nodo ptype=13) e lettura sintesi ZP Telemetry Engine (gmem[3600..3619]). DSP e slider invariati.
+2.48: ZP Shared Bus v3 — telemetria multi-istanza da tutti i canali e bus verso Master Pro, nuova scheda CATENA nel Navigator (ordine monte->valle, alert DELTA/SOLO/CHECK, Music Probe/Carver e click-per-aprire FX via Cue Navigator).
+Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
+Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+  altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Master/ZP%20Master%20Pro.jsfx</source>
+      </version>
     </reapack>
-    <reapack name="ZP Reference Tone Mirror EQ Pro.jsfx" type="effect" desc="ZP Reference Tone Mirror EQ Pro - Paolo Balestri">
+    <reapack name="ZP Reference Tone Mirror EQ Pro.jsfx" type="effect" desc="ZP Reference Tone Mirror EQ Pro · latocardioide.it · dubbertools.com">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
@@ -103,10 +173,14 @@ Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suit
 Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/bf4eaded02fbfb08f46e1cbc411b88c28da3f677/ZP%20Master/ZP%20Reference%20Tone%20Mirror%20EQ%20Pro.jsfx</source>
       </version>
+      <version name="1.0.0" author="Paolo Balestri" time="2026-11-27T23:24:46Z">
+        <changelog><![CDATA[v1.0.0: Interfaccia hardware ZP Suite completa (vista FULL senza slider nativi sovrapposti + vista JSFX per OSARA), grafico live della curva EQ a 31 bande, 3 pannelli con pomelli rotativi (Match & Shape, Tone & Harmonics, Level & Output), Debug Overlay spento di default. DSP e slider 1..109 invariati.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Master/ZP%20Reference%20Tone%20Mirror%20EQ%20Pro.jsfx</source>
+      </version>
     </reapack>
   </category>
   <category name="ZP Misura">
-    <reapack name="ZP BrownSlope Prism.jsfx" type="effect" desc="ZP BrownSlope Prism - Passive Brown Slope Analyzer - Paolo Balestri">
+    <reapack name="ZP BrownSlope Prism.jsfx" type="effect" desc="ZP BrownSlope Prism - Passive Brown Slope Analyzer · latocardioide.it · dubbertools.com">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
@@ -133,6 +207,18 @@ Prima versione distribuita: analizzatore passivo con riferimenti a -18 e -24 LUF
   pomelli Media, Pendenza e Scala, Calibra sul proprio file di riferimento, guida con ? e vista JSFX per OSARA.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/729506eb3a5ddcb2b4ad6acea6d9158d63c42d35/ZP%20Misura/ZP%20BrownSlope%20Prism.jsfx</source>
       </version>
+      <version name="1.2" author="Paolo Balestri" time="2026-11-27T23:24:46Z">
+        <changelog><![CDATA[1.2: Telemetria passiva ZP Shared Bus v3.1 (ptype=11: 4 zone Brown, pendenza residua, livello, esito) con rilevatore
+  cepstrale reale di comb filtering (0.33-8 ms, gmem[zp3_b+30/+31], badge COMB in testata e alert verso Telemetry Engine);
+  ricalcolo tabelle e pulizia buffer al cambio samplerate (rebuild_sr_tables) e griglia spettro moderna con crosshair al passaggio mouse.
+1.1: Restyling grafico comunicativo: corridoio di tolleranza ±1,5 e ±3 dB intorno al riferimento, curva smussata
+  con riempimento differenziale caldo (eccesso) / freddo (carenza), traccia Live opzionale dietro la media lunga,
+  etichette di zona nel grafico, barre bipolari nei 4 box inferiori, livella per la pendenza residua, badge esito,
+  bugfix griglia verticale adattiva a ogni Scala e selettore tema Scuro / Chiaro. DSP passivo e slider OSARA invariati.
+Prima versione distribuita: analizzatore passivo con riferimenti a -18 e -24 LUFS, confronto Livello o Forma,
+  pomelli Media, Pendenza e Scala, Calibra sul proprio file di riferimento, guida con ? e vista JSFX per OSARA.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Misura/ZP%20BrownSlope%20Prism.jsfx</source>
+      </version>
     </reapack>
     <reapack name="ZP Loudness Meter Multichannel.jsfx" type="effect" desc="ZP Loudness Meter Multichannel">
       <metadata>
@@ -141,8 +227,8 @@ Prima versione distribuita: analizzatore passivo con riferimenti a -18 e -24 LUF
 \widowctrl\hyphauto
 
 {\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 ZP Loudness Meter Multichannel\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Meter loudness e True Peak multicanale (fino a 64 ch) progettato in formato verticale anti-deriva da tenere a lato in sessione: LUFS-I, LUFS-S, LUFS-M, LRA, True Peak 4x e RMS-M. Include TARGET libero + pulsante SEGUI QUI (LOCK NOW) per bloccare il livello di riferimento, fascia verde di tolleranza +/-LU, nastro storico 60s (congelato in pausa), peak-hold reale, 4 layout automatici (Side Dock, Barra orizzontale, Vista Studio, Embedded TCP/MCP con LUFS-I/TP) e selettore tema Scuro/Chiaro.\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Vertical-first multichannel loudness & True Peak meter (up to 64 ch) designed for side-dock anti-drift monitoring: LUFS-I, LUFS-S, LUFS-M, LRA, 4x True Peak and RMS-M. Includes free TARGET + one-click LOCK NOW (SEGUI QUI), green +/-LU tolerance corridor, 60s drift ribbon (freezes on pause/silence), real peak-hold, 4 responsive layouts (Side Dock, Horizontal Strip, Wide Studio, Embedded TCP/MCP with LUFS-I/TP) and Dark/Light themes.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Meter loudness e True Peak multicanale (fino a 64 ch) progettato in formato verticale anti-deriva da tenere a lato in sessione: LUFS-I, LUFS-S, LUFS-M, LRA, True Peak 4x e RMS-M. Include TARGET libero + pulsante SEGUI QUI (LOCK NOW) + rotore a 9 scatti (-24 / -21 / -18 / -16 / -14 / -12 / -10 / -8 / -6 LUFS), fascia verde di tolleranza +/-LU, nastro storico DERIVA 60s attivabile/disattivabile (OFF di default), numeri grandi scalabili con la finestra, peak-hold reale, 4 layout automatici e tema Chiaro/Scuro.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Vertical-first multichannel loudness & True Peak meter (up to 64 ch) designed for side-dock anti-drift monitoring: LUFS-I, LUFS-S, LUFS-M, LRA, 4x True Peak and RMS-M. Includes free TARGET + one-click LOCK NOW (SEGUI QUI) + 9-step detented target rotor (-24 / -21 / -18 / -16 / -14 / -12 / -10 / -8 / -6 LUFS), green +/-LU corridor, optional toggleable 60s drift ribbon (OFF by default), large window-scaled readouts, real peak-hold, 4 responsive layouts and Light/Dark themes.\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 Sviluppata su un'idea di Paolo Balestri \u183 ? Lato Cardioide (latocardioide.it) Guida completa: ZP Studio Suite/help/index.html#plugin-loudness-meter\par}
 }
 ]]></description>
@@ -172,8 +258,25 @@ Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]
   - Cassetto impostazioni a comparsa, tema Scuro/Chiaro, Barra Orizzontale Bassa, Vista Studio Larga e Embedded TCP/MCP con LUFS-I e True Peak.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/729506eb3a5ddcb2b4ad6acea6d9158d63c42d35/ZP%20Misura/ZP%20Loudness%20Meter%20Multichannel.jsfx</source>
       </version>
+      <version name="45.3" author="Paolo Balestri" time="2026-11-27T23:24:46Z">
+        <changelog><![CDATA[45.3 — Rotore target a 9 scatti discreti (-24..-6 LUFS) al posto dei pulsanti preset (DSP/slider invariati):
+  - Nuovo selettore rotativo a scatti con trascinamento, rotella mouse, tasti -/+ e scala cliccabile su -24, -21, -18, -16, -14, -12, -10, -8 e -6 LUFS.
+  - TARGET libero (drag/doppio clic/rotella) e SEGUI QUI (LOCK NOW) restano sempre attivi per valori intermedi personalizzati (es. -23.0).
+45.2 — Miglioramento leggibilita' e comandi UX (DSP BS.1770-4 / Shared Bus v3.1 invariati):
+  - Numeri grandi e scalabili proporzionalmente con larghezza e altezza finestra (LUFS-I, LUFS-S, TRUE PK, LUFS-M, LRA, RMS-M).
+  - Finestra DERIVA 60s ora opzionale (OFF di default) con pulsante diretto DERIVA in testata (oltre al cassetto) e legenda/tooltip espliciti.
+  - Aggiunta scorciatoia target -10 LUFS (-23 / -18 / -16 / -14 / -10) in tutte le viste.
+  - Pulsante tema Chiaro/Scuro orientato all'azione (mostra CHIARO quando sei in tema scuro e SCURO quando sei in tema chiaro).
+45.1 — Telemetria passiva ZP Shared Bus v3.1 (ptype=12: LUFS-S, LUFS-I, LUFS-M, True Peak, LRA e target/tolleranza verso Master Pro e ZP Telemetry Engine). DSP, grafica e slider invariati.
+45.0 — Restyling grafico completo vertical-first anti-deriva (motore BS.1770-4 / 4x TP / 64 ch invariato):
+  - Nuova vista predefinita Side Dock (268x580, leggibile fino a 180 px): LUFS-I hero, griglia S/TP/M/LRA sempre visibile, barra livella +/-6 LU e nastro deriva 60s.
+  - TARGET libero (drag/doppio clic/rotella) + pulsante SEGUI QUI / LOCK NOW + 4 scorciatoie (-23 / -18 / -16 / -14).
+  - Meter canali con peak-hold reale (1.8 s + decadimento), linea TP RED, clic su TRUE PK per azzerare solo picchi/clip e colonna LUFS-S/I dedicata centrata sul target.
+  - Cassetto impostazioni a comparsa, tema Scuro/Chiaro, Barra Orizzontale Bassa, Vista Studio Larga e Embedded TCP/MCP con LUFS-I e True Peak.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Misura/ZP%20Loudness%20Meter%20Multichannel.jsfx</source>
+      </version>
     </reapack>
-    <reapack name="ZP Oscilloscope 16ch.jsfx" type="effect" desc="ZP Oscilloscope 16ch - Paolo Balestri">
+    <reapack name="ZP Oscilloscope 16ch.jsfx" type="effect" desc="ZP Oscilloscope 16ch · latocardioide.it · dubbertools.com">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
@@ -219,16 +322,23 @@ Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suit
 Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/bf4eaded02fbfb08f46e1cbc411b88c28da3f677/ZP%20Misura/ZP%20Oscilloscope%2016ch.jsfx</source>
       </version>
+      <version name="12.3" author="Paolo Balestri" time="2026-11-27T23:24:46Z">
+        <changelog><![CDATA[La grafica scala in proporzione alla finestra del plugin; finestra predefinita 980x620. Solo grafica: audio invariato.
+Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+  altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Misura/ZP%20Oscilloscope%2016ch.jsfx</source>
+      </version>
     </reapack>
-    <reapack name="ZP Voice-Music Probe.jsfx" type="effect" desc="ZP Voice-Music Probe - Passive Bus Telemetry - Paolo Balestri">
+    <reapack name="ZP Voice-Music Probe.jsfx" type="effect" desc="ZP Voice-Music Probe - Passive Bus Telemetry · latocardioide.it · dubbertools.com">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
 \widowctrl\hyphauto
 
 {\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 ZP Voice-Music Probe\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Sonda telemetrica passiva per bus voce e musica su memoria condivisa gmem (ZP Shared Bus): misura RMS, picco, crest factor, densita', brillantezza e speech activity senza toccare l'audio o la latenza.\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Passive telemetry probe for voice and music buses using gmem shared memory (ZP Shared Bus): tracks RMS, peak, crest factor, density, brightness, and speech activity with zero latency and no audio alteration.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Sonda telemetrica passiva per canali, bus voce e musica/FX su memoria condivisa gmem (ZP Shared Bus v3): misura RMS, picco, crest factor, densita', brillantezza, speech activity e bilanciamento 4 zone Brown (-4,5 dB/oct) con profili distinti VOICE (range espressivo 85-14k Hz + controllo rumble <80 Hz) e FULL/MUS+FX (banda intera 40-14k Hz).\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Passive telemetry probe for channels, voice and music/SFX buses using gmem shared memory (ZP Shared Bus v3): tracks RMS, peak, crest factor, density, brightness, speech activity and 4-zone Brown (-4.5 dB/oct) balance with distinct VOICE (expressive 85-14k Hz + sub <80 Hz rumble check) and FULL/MUS+FX (full 40-14k Hz) profiles.\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 Sviluppata su un'idea di Paolo Balestri \u183 ? Lato Cardioide (latocardioide.it) Guida completa: ZP Studio Suite/help/index.html#plugin-probe\par}
 }
 ]]></description>
@@ -249,6 +359,24 @@ Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suit
   altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
 Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/bf4eaded02fbfb08f46e1cbc411b88c28da3f677/ZP%20Misura/ZP%20Voice-Music%20Probe.jsfx</source>
+      </version>
+      <version name="1.4" author="Paolo Balestri" time="2026-11-22T11:49:46Z">
+        <changelog><![CDATA[1.4: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (supporto completo Voice Probe e Music Probe).
+Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
+Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+  altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Misura/ZP%20Voice-Music%20Probe.jsfx</source>
+      </version>
+      <version name="1.6" author="Paolo Balestri" time="2026-11-27T23:24:46Z">
+        <changelog><![CDATA[1.6: profili acustici distinti VOICE (85-250 / 250-800 / 800-4k / 4k-14k Hz + monitor rumble <80 Hz su gmem +30) e FULL/MUS+FX (40-160 / 160-800 / 800-4k / 4k-14k Hz) per integrarsi con ZP Telemetry Engine e ZP Harmonic Space Carver.
+1.5: stato connessione sganciato da ZP BUS Chain (riconosce Master Pro, Telemetry Engine e tutti i nodi Shared Bus v3 vivi senza falsi 'DATI BUS VECCHI'); misura passiva 4 zone Brown (-4,5 dB/oct) e tilt residuo su Shared Bus v3.
+1.4: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (supporto completo Voice Probe e Music Probe).
+Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
+Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+  altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Misura/ZP%20Voice-Music%20Probe.jsfx</source>
       </version>
     </reapack>
   </category>
@@ -5427,14 +5555,325 @@ Report Minuti Voce esporta in CSV. ZP Colori gestisce item, tracce, marker e reg
         <source type="data" file="toolbar_icons/ZP_tbB_35_Colori.png">https://github.com/capitanpaolone/zp-suite/raw/6e4c2ec633072db6b26a906073cd1cb41dbe2d84/ZP%20Studio%20Suite/icons/ZP_tbB_35_Colori.png</source>
         <source type="data" file="toolbar_icons/200/ZP_tbB_35_Colori.png">https://github.com/capitanpaolone/zp-suite/raw/6e4c2ec633072db6b26a906073cd1cb41dbe2d84/ZP%20Studio%20Suite/icons/200/ZP_tbB_35_Colori.png</source>
       </version>
+      <version name="2.6.9" author="Paolo Balestri" time="2026-11-22T11:49:46Z">
+        <changelog><![CDATA[2.6.9 (in preparazione)
+EN — ZP Shared Bus v3 (Master Pro 2.48 + 9 voice/bus/music JSFX + Cue Navigator 1.16): multi-instance telemetry from every active channel and bus ordered upstream->downstream, CATENA view in Master Pro Navigator, upstream DELTA/SOLO/CHECK alerts, Music Probe/Carver context, and click-to-open FX via Cue Navigator.
+IT — ZP Shared Bus v3 (Master Pro 2.48 + 9 JSFX voce/bus/musica + Cue Navigator 1.16): telemetria multi-istanza da tutti i canali e bus ordinata da monte a valle, scheda CATENA nel Navigator di Master Pro, alert a monte DELTA/SOLO/CHECK, contesto Music Probe/Carver e apertura diretta FX al clic con Cue Navigator.
+EN — Carver 2.6.12 + Cue Navigator 1.16: select a cue when its #HSC marker is clicked while stopped.
+IT — Carver 2.6.12 + Cue Navigator 1.16: il cue si seleziona cliccando il suo marker #HSC a trasporto fermo.
+EN — Magic Voice LAB 1.2.4: LINK OUTPUT, project-saved A/B memory and ±24 dB output range.
+IT — Magic Voice LAB 1.2.4: LEGA OUTPUT, memoria A/B salvata nel progetto e uscita ±24 dB.
+EN/IT — The four separate BETA packages and their documented requirements are retained.
+2.6.8 (2026-11-21)
+EN — Beta packages: ZP Clean & Paint, ZP Montaggio Parlato, ZP BrownSlope Dynamic Guard, and ZP Click & Attack Softener.
+IT — Pacchetti Beta: ZP Clean & Paint, ZP Montaggio Parlato, ZP BrownSlope Dynamic Guard e ZP Click & Attack Softener.
+EN — ZP Render & Copy: scrollable STATO message log (mouse wheel, keyboard, draggable scrollbar, per-tab position and jump-to-top counter).
+IT — ZP Render & Copy: storico messaggi nel pannello STATO ora scorrevole con rotella, tastiera e barra laterale trascinabile (posizione per tab e salto rapido in cima).
+EN — ZP Loudness Meter Multichannel 45.0: vertical-first anti-drift UI with free TARGET + LOCK NOW, ±LU green band, 60s drift ribbon, peak-hold, clickable TRUE PK reset, 4 responsive layouts (incl. LUFS-I/TP embedded), settings drawer & Dark/Light themes (BS.1770-4 core preserved).
+IT — ZP Loudness Meter Multichannel 45.0: interfaccia vertical-first anti-deriva con TARGET libero + SEGUI QUI, fascia verde ±LU, nastro deriva 60s, peak-hold, azzeramento clip da TRUE PK, 4 viste responsive (incluso embedded LUFS-I/TP), cassetto impostazioni e tema Scuro/Chiaro (motore BS.1770-4 invariato).
+EN — Marker embedding now uses only selected timeline markers; operational markers such as #HSC remain on the timeline.
+IT — Fissa negli item usa solo i marker selezionati sulla timeline; i marker operativi come #HSC restano in timeline.
+EN — ZP Magic Voice LAB 1.2.3: DYN EQ and DYN BAL monitors now render exact continuous complex transfer-function curves with centered ±5/±12 dB and ±6/±12 dB zoom.
+IT — ZP Magic Voice LAB 1.2.3: monitor DYN EQ e DYN BAL con curve reali continue delle funzioni di trasferimento complesse e zoom centrato ±5/±12 dB e ±6/±12 dB.
+EN — ZP Magic Voice LAB 1.2.2: DRC FREQ (center Hz) and OCT (octave width) knobs mapped to existing HP/LP sliders, plus real dynamic SVF bell curves in DRC monitor.
+IT — ZP Magic Voice LAB 1.2.2: rotori DRC FREQ (centro Hz) e OCT (ampiezza in ottave) retrocompatibili su HP/LP, piu' curve a campana SVF reali dinamiche nel monitor DRC.
+EN — ZP Magic Voice LAB 1.2.1: flashing DELTA with 30 s auto-off, extended spring-loaded S·DELTA per stage, 4 s speech-block suggestions, zoomable DYN EQ monitor (±5/±12 dB), color-only LIGHT/DARK theme, straight auto-compensated INPUT and recalibrated DRC.
+IT — ZP Magic Voice LAB 1.2.1: DELTA lampeggiante con auto-off 30 s, D·MOLLA per stadio, suggerimenti su blocchi da 4 s, monitor DYN EQ zoomabile (±5/±12 dB), tema solo cromatico CHIARO/SCURO, INPUT dritto auto-compensato e DRC ritarato.
+EN — ZP BrownSlope Prism 1.1: ±1.5/±3 dB green target corridor, smoothed curve with warm/cool differential fill, optional Live trace, bipolar zone bars, residual slope level, adaptive dB grid and Dark/Light toggle (DSP unchanged).
+IT — ZP BrownSlope Prism 1.1: corridoio verde ±1,5/±3 dB, curva smussata con riempimento caldo/freddo, traccia Live, barre bipolari per zona, livella pendenza residua, griglia adattiva e tema Scuro/Chiaro (DSP invariato).
+2.6.7 (2026-11-19)
+EN — Proportional zoom across all Lua tool windows (ZP_GfxScale.lua), redesigned Project Viewer (fixed Tipo column, auto-fit resizable columns, balanced 3x2 tool grid without Scroll), spacing fix in 07 Note Personaggio, and automatic installation of missing toolbar PNG icons in 32.
+IT — Zoom proporzionale su tutte le finestre Lua (ZP_GfxScale.lua), Project Viewer ridisegnato (colonna Tipo fissa, colonne auto-adattate e ridimensionabili, griglia 3x2 senza pulsante Scroll), correzione spaziatura in 07 Note Personaggio e copia automatica icone toolbar mancanti in 32.
+EN — Local REAPER reference updates: safer project-region selection, Voice Minutes 1.0.6, ZP Remote import/export updates, Harmonic Space Carver 2.6.10 and Cue Navigator 1.14.
+IT — Aggiornamenti dalla REAPER locale: selezione più sicura delle regioni, Report Minuti 1.0.6, aggiornamenti ZP Remote, Harmonic Space Carver 2.6.10 e Cue Navigator 1.14.
+EN — ZP Magic Voice LAB 1.2.0-lab3 is the distributed version; ZP Magic Voice 1.2.0 without LAB is an archived prototype and is excluded.
+IT — Si distribuisce ZP Magic Voice LAB 1.2.0-lab3; ZP Magic Voice 1.2.0 senza LAB è il prototipo archiviato ed è escluso.
+EN — ZP Consolidate copies referenced take sources and project-registered SRT/VTT files into Media without converting them; the 33 Welcome list now scrolls with bounded, damped motion.
+IT — ZP Consolidate raccoglie in Media le sorgenti dei take e gli SRT/VTT registrati nel progetto senza conversioni; lo scroll del 33 Benvenuto è smussato e limitato ai bordi.
+EN
+Render & Copy supports automatic copying and Sync now on Windows (js_ReaScriptAPI) and Linux (find and stat).
+Solo Recorder guide now explains that ZP Remote packages are intended for Dubbertools and distinguishes package delivery from the Web Remote recording controls.
+Added direct synchronization of the native REAPER pre-roll toolbar indicator when toggled from ZP SOLO Recorder or its web remote.
+Gobbo speaker colors can be applied from selected voice items and their paired Character Notes items.
+Italian REAPER language pack keeps the top-level Help label for native macOS menu search.
+Added Render & Copy, the ZP Remote REAPER tools for Dubbertools, and a Dubbertools link in SOLO Web.
+Voice Minutes Report exports CSV, and ZP Colors supports items, tracks, markers and regions.
+IT
+Render & Copy supporta la copia automatica e Sincronizza ora anche su Windows (js_ReaScriptAPI) e Linux (find e stat).
+La guida del Solo Recorder spiega che i pacchetti ZP Remote sono destinati a Dubbertools e distingue la consegna pacchetti dal telecomando web di registrazione.
+Il PRE di ZP SOLO Recorder e del telecomando web aggiorna anche la spia del pre-roll nella toolbar nativa di REAPER.
+I colori speaker del Gobbo si possono applicare selezionando item voce o note personaggio associate.
+Il language pack italiano mantiene la voce principale Help per la ricerca nativa nei menu di macOS.
+Aggiunti Render & Copy, lo strumento REAPER di ZP Remote per Dubbertools e il link in SOLO Web.
+Report Minuti Voce esporta in CSV. ZP Colori gestisce item, tracce, marker e regioni.]]></changelog>
+        <source main="main">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/00_Apri_Help_ZP_Studio_Suite.lua</source>
+        <source type="langpack" file="Italiano (ZP).ReaperLangPack">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/REAPER_Italiano/Italiano%20(ZP).ReaperLangPack</source>
+        <source main="main" file="01_Importa_Video_SRT.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/01_Importa_Video_SRT.lua</source>
+        <source main="main" file="02_Gobbo_Verticale.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/02_Gobbo_Verticale.lua</source>
+        <source main="main" file="03_Gobbo_Orizzontale.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/03_Gobbo_Orizzontale.lua</source>
+        <source main="main" file="04_Crea_Marker_Item.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/04_Crea_Marker_Item.lua</source>
+        <source main="main" file="05_Aggiorna_SRT_Video.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/05_Aggiorna_SRT_Video.lua</source>
+        <source main="main" file="06_Importa_SRT_Reference.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/06_Importa_SRT_Reference.lua</source>
+        <source main="main" file="07_Note_Personaggio.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/07_Note_Personaggio.lua</source>
+        <source main="main" file="08_Esporta_SRT.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/08_Esporta_SRT.lua</source>
+        <source main="main" file="09_OSARA_Battuta_Corrente.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/09_OSARA_Battuta_Corrente.lua</source>
+        <source main="main" file="10_OSARA_Battuta_Successiva.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/10_OSARA_Battuta_Successiva.lua</source>
+        <source main="main" file="11_OSARA_Battuta_Precedente.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/11_OSARA_Battuta_Precedente.lua</source>
+        <source main="main" file="12_OSARA_Lettura_Automatica.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/12_OSARA_Lettura_Automatica.lua</source>
+        <source main="main" file="13_Info_Item_SRT.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/13_Info_Item_SRT.lua</source>
+        <source main="main" file="14_Marker_da_Timeline_a_Item.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/14_Marker_da_Timeline_a_Item.lua</source>
+        <source main="main" file="17_Crea_Regioni_Export_da_Item_Nominati.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/17_Crea_Regioni_Export_da_Item_Nominati.lua</source>
+        <source main="main" file="18_Project_Viewer.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/18_Project_Viewer.lua</source>
+        <source main="main" file="19_Report_Minuti_Voce.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/19_Report_Minuti_Voce.lua</source>
+        <source main="main" file="20_Importa_Cartelle_Video_Mixdown.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/20_Importa_Cartelle_Video_Mixdown.lua</source>
+        <source main="main" file="22_Pulisci_Code_Silenzi_e_Separa_Item.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/22_Pulisci_Code_Silenzi_e_Separa_Item.lua</source>
+        <source main="main" file="23_ZP_Chain_Builder.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/23_ZP_Chain_Builder.lua</source>
+        <source main="main" file="24_ZP_Probe_Guard.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/24_ZP_Probe_Guard.lua</source>
+        <source main="main" file="25_ZP_SOLO_Recorder.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/25_ZP_SOLO_Recorder.lua</source>
+        <source main="main" file="26_SRT_Tools.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/26_SRT_Tools.lua</source>
+        <source main="main" file="27_Pulisci_Installazione_Precedente.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/27_Pulisci_Installazione_Precedente.lua</source>
+        <source main="main" file="29_ZP_Trascrizione.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/29_ZP_Trascrizione.lua</source>
+        <source main="main" file="30_ZP_SRT.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/30_ZP_SRT.lua</source>
+        <source main="main" file="31_SRT_da_Marker_Audio.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/31_SRT_da_Marker_Audio.lua</source>
+        <source main="main" file="32_Installa_Toolbar_ZP.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/32_Installa_Toolbar_ZP.lua</source>
+        <source main="main" file="33_Benvenuto_Controllo_Installazione.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/33_Benvenuto_Controllo_Installazione.lua</source>
+        <source main="main" file="34_ZP_Set_Comandi.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/34_ZP_Set_Comandi.lua</source>
+        <source main="main" file="35_ZP_Colori.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/35_ZP_Colori.lua</source>
+        <source main="main" file="37_ZP_Consolidate.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/37_ZP_Consolidate.lua</source>
+        <source main="main" file="38_ZP_Unisci_Battute.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/38_ZP_Unisci_Battute.lua</source>
+        <source file="ZP_SRT_Progetto.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/ZP_SRT_Progetto.lua</source>
+        <source main="main" file="render_copy/ZP_RenderCopy.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/render_copy/ZP_RenderCopy.lua</source>
+        <source file="render_copy/assets/zp_render_copy.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/render_copy/assets/zp_render_copy.png</source>
+        <source main="main" file="remote/ZP_Remote_Crea_Pacchetto.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/remote/ZP_Remote_Crea_Pacchetto.lua</source>
+        <source main="main" file="remote/ZP_Remote_Importa_Consegna.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/remote/ZP_Remote_Importa_Consegna.lua</source>
+        <source main="main" file="remote/ZP_Remote_Imposta_ID_Progetto.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/remote/ZP_Remote_Imposta_ID_Progetto.lua</source>
+        <source main="main" file="remote/ZP_Remote_Importa_WAV_senza_manifest.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/remote/ZP_Remote_Importa_WAV_senza_manifest.lua</source>
+        <source file="remote/zp_remote_character_ids.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/remote/zp_remote_character_ids.lua</source>
+        <source file="remote/zp_remote_json.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/remote/zp_remote_json.lua</source>
+        <source file="remote/zp_remote_importer.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/remote/zp_remote_importer.lua</source>
+        <source file="remote/zp_remote_import_logic.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/remote/zp_remote_import_logic.lua</source>
+        <source file="remote/zp_remote_recupero.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/remote/zp_remote_recupero.lua</source>
+        <source file="remote/zp_remote_recupero_logic.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/remote/zp_remote_recupero_logic.lua</source>
+        <source file="remote/zp_remote_esporta.py">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/remote/zp_remote_esporta.py</source>
+        <source file="remote/zp_ffmpeg.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/remote/zp_ffmpeg.lua</source>
+        <source file="remote/zp_remote_identity.py">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/remote/zp_remote_identity.py</source>
+        <source file="remote/zp_remote_preflight.py">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/remote/zp_remote_preflight.py</source>
+        <source file="remote/assets/zp_remote_pacchetto.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/remote/assets/zp_remote_pacchetto.png</source>
+        <source type="data" file="toolbar_icons/ZP_RenderCopy.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_RenderCopy.png</source>
+        <source type="data" file="toolbar_icons/150/ZP_RenderCopy.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/150/ZP_RenderCopy.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_RenderCopy.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_RenderCopy.png</source>
+        <source type="data" file="toolbar_icons/ZP_Remote_Crea_Pacchetto.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_Remote_Crea_Pacchetto.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_37_Consolidate.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_37_Consolidate.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_37_Consolidate.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_37_Consolidate.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_Remote_Crea_Pacchetto.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_Remote_Crea_Pacchetto.png</source>
+        <source main="main" file="web/ZP_SOLO_Web_Motore.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/web/ZP_SOLO_Web_Motore.lua</source>
+        <source main="main" file="colori/ZP_Colori_01_Verde_lime.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_01_Verde_lime.lua</source>
+        <source main="main" file="colori/ZP_Colori_02_Crema.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_02_Crema.lua</source>
+        <source main="main" file="colori/ZP_Colori_03_Arancio.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_03_Arancio.lua</source>
+        <source main="main" file="colori/ZP_Colori_04_Rosa.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_04_Rosa.lua</source>
+        <source main="main" file="colori/ZP_Colori_05_Lilla.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_05_Lilla.lua</source>
+        <source main="main" file="colori/ZP_Colori_06_Viola.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_06_Viola.lua</source>
+        <source main="main" file="colori/ZP_Colori_07_Blu.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_07_Blu.lua</source>
+        <source main="main" file="colori/ZP_Colori_08_Azzurro.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_08_Azzurro.lua</source>
+        <source main="main" file="colori/ZP_Colori_09_Acqua.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_09_Acqua.lua</source>
+        <source main="main" file="colori/ZP_Colori_10_Verde.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_10_Verde.lua</source>
+        <source main="main" file="colori/ZP_Colori_11_Giallo.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_11_Giallo.lua</source>
+        <source main="main" file="colori/ZP_Colori_12_Salmone.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_12_Salmone.lua</source>
+        <source main="main" file="colori/ZP_Colori_13_Glicine.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_13_Glicine.lua</source>
+        <source main="main" file="colori/ZP_Colori_14_Celeste.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_14_Celeste.lua</source>
+        <source main="main" file="colori/ZP_Colori_15_Turchese.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_15_Turchese.lua</source>
+        <source main="main" file="colori/ZP_Colori_16_Salvia.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_16_Salvia.lua</source>
+        <source main="main" file="colori/ZP_Colori_17_Bianco.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_17_Bianco.lua</source>
+        <source main="main" file="colori/ZP_Colori_18_Nero.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_18_Nero.lua</source>
+        <source main="main" file="colori/ZP_Colori_19_Grigio.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_19_Grigio.lua</source>
+        <source main="main" file="colori/ZP_Colori_20_Rosso.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_20_Rosso.lua</source>
+        <source main="main" file="colori/ZP_Colori_Modo_Item.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_Modo_Item.lua</source>
+        <source main="main" file="colori/ZP_Colori_Modo_Traccia.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_Modo_Traccia.lua</source>
+        <source main="main" file="colori/ZP_Colori_Modo_Tutto.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_Modo_Tutto.lua</source>
+        <source main="main" file="colori/ZP_Colori_Modo_Marker.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_Modo_Marker.lua</source>
+        <source main="main" file="colori/ZP_Colori_Modo_Regione.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_Modo_Regione.lua</source>
+        <source main="main" file="colori/ZP_Colori_Auto.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_Auto.lua</source>
+        <source main="main" file="colori/ZP_Colori_Togli.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/colori/ZP_Colori_Togli.lua</source>
+        <source file="04_worker_Crea_Marker_Item.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/04_worker_Crea_Marker_Item.lua</source>
+        <source file="05_worker_Gestione_SRT.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/05_worker_Gestione_SRT.lua</source>
+        <source file="28_Collega_Marker.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/28_Collega_Marker.lua</source>
+        <source file="ZP_UI.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/ZP_UI.lua</source>
+        <source file="ZP_GfxScale.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/ZP_GfxScale.lua</source>
+        <source file="ZP_sincronizza_aggancio.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/ZP_sincronizza_aggancio.lua</source>
+        <source file="ZP_cerca.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/ZP_cerca.lua</source>
+        <source file="ZP_Testo_Copione.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/ZP_Testo_Copione.lua</source>
+        <source file="ZP_Xlsx_Copione.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/ZP_Xlsx_Copione.lua</source>
+        <source file="ZP_Editor_Copione.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/ZP_Editor_Copione.lua</source>
+        <source file="ZP_Colori.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/ZP_Colori.lua</source>
+        <source file="ZP_Agenti.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/ZP_Agenti.lua</source>
+        <source file="ZP_Lingua.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/ZP_Lingua.lua</source>
+        <source file="lib_RythmoBand_Accessibile.lua">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/lib_RythmoBand_Accessibile.lua</source>
+        <source file="web/zp_solo.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/web/zp_solo.html</source>
+        <source file="lang/en.txt">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/lang/en.txt</source>
+        <source file="img/lato_cardioide.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/img/lato_cardioide.png</source>
+        <source file="help/index.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/index.html</source>
+        <source file="help/toolbar.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/toolbar.html</source>
+        <source file="help/solo_recorder.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/solo_recorder.html</source>
+        <source file="help/voice_cleaner.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/voice_cleaner.html</source>
+        <source file="help/magic_voice_lab.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/magic_voice_lab.html</source>
+        <source file="help/pannello_trascrizione.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/pannello_trascrizione.html</source>
+        <source file="help/collega_marker.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/collega_marker.html</source>
+        <source file="help/master_pro_glue_matrix.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/master_pro_glue_matrix.html</source>
+        <source file="help/lab.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/lab.html</source>
+        <source file="help/ffmpeg.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/ffmpeg.html</source>
+        <source file="icons/ZP_tb_28_Collega_Marker.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_28_Collega_Marker.png</source>
+        <source file="help/en/index.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/en/index.html</source>
+        <source file="help/en/toolbar.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/en/toolbar.html</source>
+        <source file="help/en/solo_recorder.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/en/solo_recorder.html</source>
+        <source file="help/en/voice_cleaner.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/en/voice_cleaner.html</source>
+        <source file="help/en/magic_voice_lab.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/en/magic_voice_lab.html</source>
+        <source file="help/en/lab.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/en/lab.html</source>
+        <source file="help/en/pannello_trascrizione.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/en/pannello_trascrizione.html</source>
+        <source file="help/en/collega_marker.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/en/collega_marker.html</source>
+        <source file="help/en/ffmpeg.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/help/en/ffmpeg.html</source>
+        <source file="fxchains/ZP_Bus_VoiceChain.RfxChain">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/fxchains/ZP_Bus_VoiceChain.RfxChain</source>
+        <source file="fxchains/ZP_MasterChain.RfxChain">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/fxchains/ZP_MasterChain.RfxChain</source>
+        <source file="presets/js-ZP Suite_ZP Voce_ZP BUS Chain_jsfx.ini">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/presets/js-ZP%20Suite_ZP%20Voce_ZP%20BUS%20Chain_jsfx.ini</source>
+        <source file="presets/js-ZP Suite_ZP Master_ZP Master Pro_jsfx.ini">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/presets/js-ZP%20Suite_ZP%20Master_ZP%20Master%20Pro_jsfx.ini</source>
+        <source file="tools/srt_tools.html">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/tools/srt_tools.html</source>
+        <source file="tools/LICENSE-SheetJS-Apache-2.0.txt">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/tools/LICENSE-SheetJS-Apache-2.0.txt</source>
+        <source file="toolbar/ZP_StudioSuite.ReaperMenu">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/toolbar/ZP_StudioSuite.ReaperMenu</source>
+        <source file="ZP_NVDA_Speech.py">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/ZP_NVDA_Speech.py</source>
+        <source file="nvdaControllerClient64.dll">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/nvdaControllerClient64.dll</source>
+        <source file="README.txt">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/README.txt</source>
+        <source file="VideoProcessor_Project_Timecode_Overlay.txt">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/VideoProcessor_Project_Timecode_Overlay.txt</source>
+        <source file="RB Voice Track.RTrackTemplate">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/RB%20Voice%20Track.RTrackTemplate</source>
+        <source file="SRT Track.RTrackTemplate">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/SRT%20Track.RTrackTemplate</source>
+        <source type="data" file="toolbar_icons/ZP_tb_00_Help.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_00_Help.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_01_Import_Video_SRT.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_01_Import_Video_SRT.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_02_Gobbo_Verticale.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_02_Gobbo_Verticale.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_03_Gobbo_Orizzontale.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_03_Gobbo_Orizzontale.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_04_Marker_Item.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_04_Marker_Item.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_05_Gestione_SRT.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_05_Gestione_SRT.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_06_Import_SRT_Reference.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_06_Import_SRT_Reference.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_07_Actor_Note.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_07_Actor_Note.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_08_Export_SRT.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_08_Export_SRT.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_09_OSARA_Corrente.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_09_OSARA_Corrente.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_10_OSARA_Successiva.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_10_OSARA_Successiva.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_11_OSARA_Precedente.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_11_OSARA_Precedente.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_12_OSARA_Auto.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_12_OSARA_Auto.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_13_Info_Item_SRT.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_13_Info_Item_SRT.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_14_Marker_TL_Item.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_14_Marker_TL_Item.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_17_Gestore_Progetto.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_17_Gestore_Progetto.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_18_Project_Viewer.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_18_Project_Viewer.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_19_Report_Minuti.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_19_Report_Minuti.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_20_Importa_Cartelle.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_20_Importa_Cartelle.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_22_Voice_Cleaner.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_22_Voice_Cleaner.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_23_Chain_Builder.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_23_Chain_Builder.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_24_Probe_Guard.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_24_Probe_Guard.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_25_SOLO_Recorder.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_25_SOLO_Recorder.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_26_SRT_Tools.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_26_SRT_Tools.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_29_Pannello_Trascrizione.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_29_Pannello_Trascrizione.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_30_ZP_SRT.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_30_ZP_SRT.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_Importa_SRT_1_video.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_Importa_SRT_1_video.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_17_Regioni_Item.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_17_Regioni_Item.png</source>
+        <source type="data" file="toolbar_icons/ZP_tb_23_Catena_FX.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tb_23_Catena_FX.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tb_17_Regioni_Item.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tb_17_Regioni_Item.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tb_23_Catena_FX.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tb_23_Catena_FX.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_00_Help.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_00_Help.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_02_Gobbo_Verticale.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_02_Gobbo_Verticale.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_03_Gobbo_Orizzontale.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_03_Gobbo_Orizzontale.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_04_Marker.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_04_Marker.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_07_Actor_Note.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_07_Actor_Note.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_17_Gestore_Progetto.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_17_Gestore_Progetto.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_18_Project_Viewer.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_18_Project_Viewer.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_19_Report_Minuti.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_19_Report_Minuti.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_20_Importa_Cartelle.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_20_Importa_Cartelle.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_22_Voice_Cleaner.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_22_Voice_Cleaner.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_23_Chain_Builder.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_23_Chain_Builder.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_24_Probe_Guard.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_24_Probe_Guard.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_29_Trascrizione.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_29_Trascrizione.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_30_ZP_SRT.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_30_ZP_SRT.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_Video.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_Video.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_Video_Sfondo.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_Video_Sfondo.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_00_Help.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_00_Help.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_02_Gobbo_Verticale.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_02_Gobbo_Verticale.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_03_Gobbo_Orizzontale.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_03_Gobbo_Orizzontale.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_04_Marker.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_04_Marker.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_07_Actor_Note.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_07_Actor_Note.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_17_Gestore_Progetto.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_17_Gestore_Progetto.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_18_Project_Viewer.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_18_Project_Viewer.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_19_Report_Minuti.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_19_Report_Minuti.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_20_Importa_Cartelle.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_20_Importa_Cartelle.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_22_Voice_Cleaner.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_22_Voice_Cleaner.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_23_Chain_Builder.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_23_Chain_Builder.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_24_Probe_Guard.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_24_Probe_Guard.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_29_Trascrizione.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_29_Trascrizione.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_30_ZP_SRT.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_30_ZP_SRT.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_Video.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_Video.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_Video_Sfondo.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_Video_Sfondo.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_01.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_01.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_02.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_02.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_03.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_03.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_04.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_04.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_05.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_05.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_06.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_06.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_07.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_07.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_08.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_08.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_09.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_09.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_10.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_10.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_11.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_11.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_12.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_12.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_13.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_13.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_14.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_14.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_15.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_15.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_16.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_16.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_17.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_17.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_18.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_18.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_19.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_19.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_20.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_20.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_Item.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_Item.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_Togli.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_Togli.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_Traccia.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_Traccia.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_Tutto.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_Tutto.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_Marker.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_Marker.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_Regione.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_Regione.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbC_Auto.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbC_Auto.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_Marker.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_Marker.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_Regione.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_Regione.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_Auto.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_Auto.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_01.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_01.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_02.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_02.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_03.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_03.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_04.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_04.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_05.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_05.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_06.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_06.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_07.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_07.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_08.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_08.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_09.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_09.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_10.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_10.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_11.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_11.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_12.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_12.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_13.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_13.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_14.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_14.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_15.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_15.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_16.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_16.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_17.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_17.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_18.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_18.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_19.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_19.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_20.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_20.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_Item.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_Item.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_Togli.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_Togli.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_Traccia.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_Traccia.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbC_Tutto.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbC_Tutto.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_34_Set_Comandi.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_34_Set_Comandi.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_34_Set_Comandi.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_34_Set_Comandi.png</source>
+        <source type="data" file="toolbar_icons/ZP_tbB_35_Colori.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/ZP_tbB_35_Colori.png</source>
+        <source type="data" file="toolbar_icons/200/ZP_tbB_35_Colori.png">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Studio%20Suite/icons/200/ZP_tbB_35_Colori.png</source>
+      </version>
     </reapack>
-    <reapack name="36_ZP_Montaggio_Parlato.lua" type="script" desc="ZP Montaggio Parlato (BETA)">
+    <reapack name="36_ZP_Montaggio_Parlato.lua" type="script" desc="ZP Montaggio Parlato">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
 \widowctrl\hyphauto
 
-{\pard \ql \f0 \sa180 \li0 \fi0 BETA. Richiede ZP Studio Suite e ZP Speech installato dal 33 Benvenuto. ZP Speech deve avere un provider pronto (MacWhisper o OpenAI Whisper locale con modello). BETA. Requires ZP Studio Suite and ZP Speech installed from 33 Welcome. ZP Speech needs a ready provider (MacWhisper or local OpenAI Whisper with a model). Currently tested on macOS. PDF import optionally needs pdftotext (Poppler); clipboard paste optionally needs SWS.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Richiede ZP Studio Suite e ZP Speech installato dal 33 Benvenuto. ZP Speech deve avere un provider pronto (MacWhisper o OpenAI Whisper locale con modello). Requires ZP Studio Suite and ZP Speech installed from 33 Welcome. ZP Speech needs a ready provider (MacWhisper or local OpenAI Whisper with a model). Currently tested on macOS. PDF import optionally needs pdftotext (Poppler); clipboard paste optionally needs SWS.\par}
 }
 ]]></description>
       </metadata>
@@ -5442,18 +5881,22 @@ Report Minuti Voce esporta in CSV. ZP Colori gestisce item, tracce, marker e reg
         <source main="main">https://github.com/capitanpaolone/zp-suite/raw/47d68a4ab9b08365e3294978fddd2ffbc23938ac/ZP%20Studio%20Suite/36_ZP_Montaggio_Parlato.lua</source>
         <source file="ZP_Montaggio.lua">https://github.com/capitanpaolone/zp-suite/raw/47d68a4ab9b08365e3294978fddd2ffbc23938ac/ZP%20Studio%20Suite/ZP_Montaggio.lua</source>
       </version>
+      <version name="0.2.1" author="Paolo Balestri" time="2026-11-27T23:24:46Z">
+        <source main="main">https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Studio%20Suite/36_ZP_Montaggio_Parlato.lua</source>
+        <source file="ZP_Montaggio.lua">https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Studio%20Suite/ZP_Montaggio.lua</source>
+      </version>
     </reapack>
   </category>
   <category name="ZP Voce">
-    <reapack name="ZP BUS Chain.jsfx" type="effect" desc="ZP BUS Chain - Voice/Music Processor - Paolo Balestri">
+    <reapack name="ZP BUS Chain.jsfx" type="effect" desc="ZP BUS Chain - Voice/Music Processor · latocardioide.it · dubbertools.com">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
 \widowctrl\hyphauto
 
-{\pard \ql \f0 \sa180 \li0 \fi0 Catena di dinamica e colore per voce parlata, podcast e doppiaggio. Integra espansore, compressori analogici modellati (1175, LA2, MajorTom), saturazione bus ANA (CALDO, CORPO, APERTO), Brown Guard e limiter finale.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Catena di dinamica e colore per voce parlata, podcast e doppiaggio. Integra espansore, compressori analogici modellati (1175, LA2 Clean/Gray, MajorTom), saturazione bus ANA (CALDO, CORPO, APERTO + PAD -6 dB), Brown Guard e limiter finale 2x oversampled.\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 Sviluppata su un'idea di Paolo Balestri \u183 ? Lato Cardioide (latocardioide.it) Guida completa: https://latocardioide.it/strumenti/ o dal pulsante '?'\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Dynamics and bus-color processor for spoken voice, podcast and dubbing. Combines expander, modeled analog compressors (1175, LA2, MajorTom), ANA bus saturation (CALDO, CORPO, APERTO), Brown Guard and safety limiter.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Dynamics and bus-color processor for spoken voice, podcast and dubbing. Combines expander, modeled analog compressors (1175, LA2 Clean/Gray, MajorTom), ANA bus saturation (CALDO, CORPO, APERTO + -6 dB PAD), Brown Guard and 2x oversampled safety limiter.\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 Developed from an idea by Paolo Balestri \u183 ? Lato Cardioide (latocardioide.it) Complete documentation: https://latocardioide.it/strumenti/ or click '?'\par}
 }
 ]]></description>
@@ -5638,14 +6081,38 @@ Brown Guard: separati gli interruttori DYN (correzione che insegue il target Slo
   ed EQ (quattro punti manuali); entrambi restano indipendenti dal master Brown On.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/bf4eaded02fbfb08f46e1cbc411b88c28da3f677/ZP%20Voce/ZP%20BUS%20Chain.jsfx</source>
       </version>
+      <version name="1.3.3" author="Paolo Balestri" time="2026-11-22T11:49:46Z">
+        <changelog><![CDATA[1.3.3: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (1175/LA2/MT/Gate/Brown/ANA/Limiter e RMS in/out).
+Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
+Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+  altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
+Brown Guard: separati gli interruttori DYN (correzione che insegue il target Slope)
+  ed EQ (quattro punti manuali); entrambi restano indipendenti dal master Brown On.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Voce/ZP%20BUS%20Chain.jsfx</source>
+      </version>
+      <version name="1.3.7" author="Paolo Balestri" time="2026-11-27T23:24:46Z">
+        <changelog><![CDATA[1.3.7: Taratura strumentale LA2 GRAY su UAD Teletronix LA-2A Gray: eliminata l'opacizzazione HF e la cancellazione di fase in MIX parallelo tramite oversampling 2x sul solo residuo non lineare (0.00 dB roll-off lineare, DC blocker 6 Hz sul solo residuo), risposta trasformatore UTC A-24 con apertura aria +0.81 dB @ 20 kHz, armoniche valvolari 12AX7A/12BH7A ricalibrate (H2 -58.5 dBc @ -18 dBFS, headroom morbida senza schiacciamento), sidechain con enfasi aperta che risparmia i 6-10 kHz e inviluppo cella T4B reale (attacco rapido + rilascio 50% in 60 ms con memoria fosforo). CLEAN invariato al 100%.
+1.3.6: Headroom intermedio e oversampling 2x per mix caldi/spot radio (-8 LUFS): LA2 GRAY passa a stadio valvolare 2x oversampled con curva asintotica (rimosso hard clamp), ANA aggiunge guardia morbida pre-folding e pulsante PAD -6 dB auto-compensato (slider81), Voice Limiter usa oversampling 2x sulla saturazione/clipper eliminando l'aliasing sulle medio-alte.
+1.3.5: Stadio LA2 con selettore CLEAN | GRAY (nuovo motore opto-valvolare T4B Gray con trasformatori ingresso/uscita sempre in percorso anche a 0 dB GR, armoniche H2/H3 asimmetriche con DC blocker, cella T4B dual-stage con memoria fosforo, soft knee 12 dB e sidechain R37; CLEAN retrocompatibile) + rack auto-compatto con i 7 pulsanti di presenza modulo (clic = accendi/spegni e mostra solo attivi; tasto destro = isola quel solo modulo; rimossi gli ON/OFF duplicati nei pannelli).
+1.3.4: Rilevamento cambio samplerate in @block (ext_noinit=1) con aggiornamento finestre meter, azzeramento buffer ANA e compute_dsp_params().
+1.3.3: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (1175/LA2/MT/Gate/Brown/ANA/Limiter e RMS in/out).
+Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
+Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+  altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.
+Brown Guard: separati gli interruttori DYN (correzione che insegue il target Slope)
+  ed EQ (quattro punti manuali); entrambi restano indipendenti dal master Brown On.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Voce/ZP%20BUS%20Chain.jsfx</source>
+      </version>
     </reapack>
-    <reapack name="ZP Clean &amp; Paint.lua" type="script" desc="ZP Clean &amp; Paint (BETA) — REAPER 7">
+    <reapack name="ZP Clean &amp; Paint.lua" type="script" desc="ZP Clean &amp; Paint — REAPER 7">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
 \widowctrl\hyphauto
 
-{\pard \ql \f0 \sa180 \li0 \fi0 IT \u8212- BETA. Pannello REAPER per Clean (CoreML/fallback) e Paint (RVC), collegato al motore esterno ZP Voice Model Lab. Il motore, l'ambiente Python, i modelli CoreML/RVC e i preset non sono inclusi nel pacchetto. Configurare lab_root_path.txt; vedi la guida ZP Beta. EN \u8212- BETA. REAPER panel for Clean (CoreML/fallback) and Paint (RVC), connected to the separate ZP Voice Model Lab engine. The engine, Python environment, CoreML/RVC models and presets are not included. Configure lab_root_path.txt; see the ZP Beta guide.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 IT. Pannello REAPER per Clean (CoreML/fallback) e Paint (RVC), collegato al motore esterno ZP Voice Model Lab. Il motore, l'ambiente Python, i modelli CoreML/RVC e i preset non sono inclusi nel pacchetto. Configurare lab_root_path.txt; vedi la guida ZP Beta. EN. REAPER panel for Clean (CoreML/fallback) and Paint (RVC), connected to the separate ZP Voice Model Lab engine. The engine, Python environment, CoreML/RVC models and presets are not included. Configure lab_root_path.txt; see the ZP Beta guide.\par}
 }
 ]]></description>
       </metadata>
@@ -5892,8 +6359,26 @@ Il ? di ZP BrownSlope Prism apre la sua sezione nella guida principale della Sui
      e passa ai plugin la lingua scelta nella Suite. Tutto quello che faceva prima resta uguale.]]></changelog>
         <source main="main">https://github.com/capitanpaolone/zp-suite/raw/bf4eaded02fbfb08f46e1cbc411b88c28da3f677/ZP%20Voce/ZP%20Harmonic%20Space%20Carver%20Cue%20Navigator.lua</source>
       </version>
+      <version name="1.16" author="Paolo Balestri / Codex" time="2026-11-22T11:49:46Z">
+        <changelog><![CDATA[1.16: cliccando un marker #HSC a trasporto fermo il cue corrispondente si seleziona nel Carver;
+  Shared Bus v3 Track Directory + Open-FX Mailbox (nomi traccia/ruoli/folder e click-per-aprire da Master Pro).
+Marker #HSC cliccato sulla timeline (trasporto fermo): il cue si seleziona anche nei Carver.
+Il ? di ZP Magic Voice LAB apre la sua guida dedicata (magic_voice_lab.html).
+Rampa del cue fino a 1200 ms (formato di scambio con il Carver allargato); i preset C/S/M/L non contano piu'.
+Il ? di ZP BrownSlope Prism apre la sua sezione nella guida principale della Suite (non piu' la pagina di ZP Lab).
+2026-11-09: memoria per marker estesa a Rampa e durata Custom; sincronizzazione con JSFX e render.
+1.14: preset C/S/M/L salvati per marker nel progetto; il Carver riceve anche una copia nel suo stato
+     per mantenere le impostazioni cue-specifiche disponibili durante il render offline.
+1.13: l'item GUID diventa l'ancora primaria anche quando il take cambia; riferimenti mancanti
+     distinti dai cue spostati e comando ADOTTA POSIZIONE.
+1.12: dal Carver, un clic sull'avviso CUE FUORI POSTO riporta tutti i cue rossi sulla loro voce
+     e dice quanti ne ha riallineati (Ctrl+Z annulla).
+1.11: quando premi ? in un plugin ZP apre la sua sezione nella guida della Suite (italiano o inglese),
+     e passa ai plugin la lingua scelta nella Suite. Tutto quello che faceva prima resta uguale.]]></changelog>
+        <source main="main">https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Voce/ZP%20Harmonic%20Space%20Carver%20Cue%20Navigator.lua</source>
+      </version>
     </reapack>
-    <reapack name="ZP Harmonic Space Carver.jsfx" type="effect" desc="ZP Harmonic Space Carver Ducker - Paolo Balestri">
+    <reapack name="ZP Harmonic Space Carver.jsfx" type="effect" desc="ZP Harmonic Space Carver Ducker · latocardioide.it · dubbertools.com">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
@@ -6229,6 +6714,61 @@ Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suit
 Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/bf4eaded02fbfb08f46e1cbc411b88c28da3f677/ZP%20Voce/ZP%20Harmonic%20Space%20Carver.jsfx</source>
       </version>
+      <version name="2.6.12" author="Paolo Balestri" time="2026-11-22T11:49:46Z">
+        <changelog><![CDATA[2.6.12: cliccando un marker #HSC sulla timeline a trasporto fermo si seleziona lo stesso cue nel Carver;
+  telemetria ZP Shared Bus v3 verso Master Pro (VCA duck, Carver multibanda, Glue, livelli musica/sidechain e delta).
+Cliccando un marker #HSC sulla timeline (trasporto fermo) il cue si seleziona anche nel Carver: il pomello Rampa mostra e salva quello.
+Cue: un solo comportamento. Rampa regolabile fino a 1200 ms (per marker), poi la musica resta a duck 0
+  finche' non arriva il primo suono dal sidechain dopo un silenzio. Tolti i preset C/S/M/L e la tenuta Custom.
+LOCK nel pannello Carver: attacco e rilascio del Carver comandati dal VCA (rispetta Voice Hold e il rientro GRADUAL).
+Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
+2026-11-09: Rampa e durata Custom salvate e richiamate per marker insieme a C/S/M/L.
+2026-11-09: ripristino proporzioni GUI compatte; preset sopra Rampa/Custom e Voice Ret leggibile.
+Corretta la parentesi mancante nel comando cue in Play; algoritmi DSP invariati.
+2.6.10: preset C/S/M/L salvati per singolo marker nel progetto.
+GUI cue riordinata: Voice Ret leggibile, preset sopra i controlli e timeline libera da sovrapposizioni.
+2.6.9: Tenuta cue selezionabile (Personalizzata/Breve/Media/Lunga); alla scadenza il detector torna attivo.
+Il cue apre indipendentemente dal detector per la Rampa e una tenuta Custom/Breve/Media/Lunga.
+Il contatore del cue avanza anche quando il VCA e' escluso o ha priorita' zero.
+Riferimento primario per item GUID: la sostituzione del take nello stesso item non fa scattare un falso allarme.
+Cue ambra quando il riferimento voce manca; selezione + ADOTTA POSIZIONE lo conferma dopo verifica.
+L'avviso rosso CUE FUORI POSTO in alto e' un pulsante: un clic riporta tutti i cue rossi sulla
+  loro voce (come il tasto ZP HSC Cue - Riallinea); Ctrl+Z annulla.
+Cue ambra = riferimento voce cambiato/mancante; selezionalo e usa ADOTTA POSIZIONE.
+Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+  altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Voce/ZP%20Harmonic%20Space%20Carver.jsfx</source>
+      </version>
+      <version name="2.6.13" author="Paolo Balestri" time="2026-11-27T23:24:46Z">
+        <changelog><![CDATA[2.6.13: Lookahead PDC onesto (0 campioni con Anticipo=0; fisso a 20 ms quando attivo >0 con dual-tap ring buffer
+  su musica/return e detector sidechain + crossfade 20 ms senza click o re-PDC al trascinamento slider)
+  e memset completo del ring buffer su @init e cambio samplerate.
+2.6.12: cliccando un marker #HSC sulla timeline a trasporto fermo si seleziona lo stesso cue nel Carver;
+  telemetria ZP Shared Bus v3 verso Master Pro (VCA duck, Carver multibanda, Glue, livelli musica/sidechain e delta).
+Cliccando un marker #HSC sulla timeline (trasporto fermo) il cue si seleziona anche nel Carver: il pomello Rampa mostra e salva quello.
+Cue: un solo comportamento. Rampa regolabile fino a 1200 ms (per marker), poi la musica resta a duck 0
+  finche' non arriva il primo suono dal sidechain dopo un silenzio. Tolti i preset C/S/M/L e la tenuta Custom.
+LOCK nel pannello Carver: attacco e rilascio del Carver comandati dal VCA (rispetta Voice Hold e il rientro GRADUAL).
+Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
+2026-11-09: Rampa e durata Custom salvate e richiamate per marker insieme a C/S/M/L.
+2026-11-09: ripristino proporzioni GUI compatte; preset sopra Rampa/Custom e Voice Ret leggibile.
+Corretta la parentesi mancante nel comando cue in Play; algoritmi DSP invariati.
+2.6.10: preset C/S/M/L salvati per singolo marker nel progetto.
+GUI cue riordinata: Voice Ret leggibile, preset sopra i controlli e timeline libera da sovrapposizioni.
+2.6.9: Tenuta cue selezionabile (Personalizzata/Breve/Media/Lunga); alla scadenza il detector torna attivo.
+Il cue apre indipendentemente dal detector per la Rampa e una tenuta Custom/Breve/Media/Lunga.
+Il contatore del cue avanza anche quando il VCA e' escluso o ha priorita' zero.
+Riferimento primario per item GUID: la sostituzione del take nello stesso item non fa scattare un falso allarme.
+Cue ambra quando il riferimento voce manca; selezione + ADOTTA POSIZIONE lo conferma dopo verifica.
+L'avviso rosso CUE FUORI POSTO in alto e' un pulsante: un clic riporta tutti i cue rossi sulla
+  loro voce (come il tasto ZP HSC Cue - Riallinea); Ctrl+Z annulla.
+Cue ambra = riferimento voce cambiato/mancante; selezionalo e usa ADOTTA POSIZIONE.
+Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+  altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Voce/ZP%20Harmonic%20Space%20Carver.jsfx</source>
+      </version>
     </reapack>
     <reapack name="ZP HSC - Mostra tracce voce.lua" type="script" desc="ZP HSC - Mostra tracce voce">
       <metadata>
@@ -6388,14 +6928,14 @@ Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]
         <source main="main">https://github.com/capitanpaolone/zp-suite/raw/768f24a7ccab7468bac92aa6231b07c0c9afacc8/ZP%20Voce/ZP%20HSC%20Cue%20-%20Successivo.lua</source>
       </version>
     </reapack>
-    <reapack name="ZP Magic Voice LAB.jsfx" type="effect" desc="ZP Magic Voice LAB - Vocal Homogenizer &amp; Resonance Controller - Paolo Balestri">
+    <reapack name="ZP Magic Voice LAB.jsfx" type="effect" desc="ZP Magic Voice LAB - Vocal Homogenizer &amp; Resonance Controller · latocardioide.it · dubbertools.com">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
 \widowctrl\hyphauto
 
 {\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 ZP Magic Voice\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Processore vocale di omogeneizzazione timbrica e controllo dinamico delle risonanze per doppiaggio, voiceover, podcast e sessioni remote. Uniforma registrazioni provenienti da microfoni e ambienti diversi tramite 7 stadi dedicati: Preamp & Filter Stage, Opto+RComp Peak Leveler, 4-Band Dynamic Resonance Controller (DRC A/B/C/D con Solo), Dynamic EQ, Tone Shaper + Mid Bump, Spectral Dynamic Balancer e Sample Peak Safety Limiter.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Processore vocale di omogeneizzazione timbrica e controllo dinamico delle risonanze per doppiaggio, voiceover, podcast e sessioni remote. Uniforma registrazioni provenienti da microfoni e ambienti diversi tramite 7 stadi dedicati: HW Insert & Preamp a 5 firme (GLUE, VOXBOX, NEVE, VCA, TAPE), Opto+RComp Peak Leveler, 4-Band Dynamic Resonance Controller (DRC A/B/C/D con Solo), Dynamic EQ, Tone Shaper + Mid Bump, Spectral Dynamic Balancer e True Peak 4x Safety Limiter.\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 Vocal homogenization and dynamic resonance control processor for dubbing, voiceover, podcasting and remote sessions. Unifies recordings from diverse microphones and acoustic spaces through 7 dedicated stages.\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 Sviluppata su un'idea di Paolo Balestri \u183 ? Lato Cardioide (latocardioide.it)\par}
 }
@@ -6503,8 +7043,118 @@ v1.1.0
 v1.0.0 Prima release.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/729506eb3a5ddcb2b4ad6acea6d9158d63c42d35/ZP%20Voce/ZP%20Magic%20Voice%20LAB.jsfx</source>
       </version>
+      <version name="1.2.4" author="Paolo Balestri - Zio Paolo" time="2026-11-22T11:49:46Z">
+        <changelog><![CDATA[v1.2.4: Hardware Insert (HW INS, slider57) a latenza zero con curva pre-dinamica e dispersione all-pass sui bassi
+  calibrata su MagicFlow AU; Preamp aggiornato con curva di trasformatore reale e saturazione dispari H3 senza DC offset;
+  LEGA OUTPUT su PEAK, DYN EQ, TONE e DYN BAL; memoria A/B salvata nel progetto; OUTPUT esteso a ±24 dB;
+  telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (dinamica, tonalita', livelli e alert DELTA/SOLO).
+Pulsante ? (accanto a FULL/MINI/JSFX): apre la guida di Magic Voice LAB nell'help della Suite, tramite il Cue Navigator.
+Memoria A/B di lavoro (barra USCITA): LEGA mette lo stato slegato in A e si prova in B; A/B per confrontare, A=B per chiudere.
+LEGA OUTPUT su Peak Leveler, Dynamic EQ, Tone EQ e Dynamic Balance (riferimento: media degli ultimi secondi di voce): cambiando il modulo, la manopola OUTPUT si corregge di quanto il modulo
+  alza o abbassa (calcolato dai parametri, non misurato); OUTPUT resta dov'e' quando si lega o si slega.
+v1.2.3: MONITOR Dynamic EQ e Dynamic Balance aggiornati con le curve reali continue delle rispettive funzioni di trasferimento complesse (5 bande SVF e 3 bande 1-pole), scala centrata zoomabile (±5/±12 dB su Dyn EQ, ±6/±12 dB su Dyn Bal) e telemetria per banda; DSP invariato.
+v1.2.2: 2·DRC aggiornato con rotori FREQ (centro logaritmico in Hz) e OCT (ampiezza in ottave, 0.12-3.50 oct) retrocompatibili sugli slider HP/LP esistenti; MONITOR DRC ridisegnato con le curve a campana SVF reali dinamiche (0..-12 dB), anteprima statica delle campane e somma complessiva.
+v1.2.1: DELTA globale con avviso lampeggiante "DELTA MODE" e auto-off a 30s; DELTA MOLLA esteso (D·MOLLA) che isola il delta del singolo stadio toccato/trascinato con ritorno automatico al rilascio; Suggerimenti calcolati su blocchi di 4s di parlato attivo (completamente esclusi durante DELTA/MOLLA/SOLO); MONITOR Dynamic EQ centrato e zoommato (±5 dB di default, toggle ±12 dB); selettore CHIARO / SCURO solo colore con controlli DRC HP/LP sempre visibili.
+LAB 5: INPUT riportato a drive dritto (-12..+12 dB, default 0 dB, auto-compensato), soglie DRC ripristinate al range utile per il parlato con release meter leggibile e spia BYPASSED cliccabile in pannello 2, suggerimenti bilanciamento timbrico su media lenta 1.8 s post-uscita con filtri del 2° ordine (stop falsi "Voce scura").
+LAB 4: selezione moduli piu' evidente (bordo, sfondo e badge MONITOR), separazione Input/Peak e Filtri nel pannello 1, pannello 3 con rotori in verticale e preset in fila a destra, isoletta dedicata Uscita/Output. DSP invariato.
+DYN-EQ PROTO 1: Stadio 4 (Dynamic EQ) ricostruito sulle misure strumentali di MagicFlow AU (59 freq x 5 livelli, curve A/B/C/D, partizione 5 bande a 2 SVF coerente di fase, lift +3 dB e tempi per curva/banda).
+LAB 2: modulo 2 e monitor indicano DRC; nome esteso nella riga di aiuto.
+LAB 1: frequenze logaritmiche e ingresso numerico; guida e misuratori aggiornati. DSP 1.1.1.
+v1.1.1
+- Nelle viste FULL e MINI la lista parametri di REAPER resta nascosta (tutta la finestra alla grafica).
+- Il MONITOR si allunga e usa tutto lo spazio verticale libero.
+- Riduzioni a zero mostrate come 0.0 dB (non piu' -0.0).
+- Etichette del monitor DRC/Dyn EQ non piu' sovrapposte alla nota.
+v1.1.0
+- Interfaccia scalabile: si adatta alla finestra FX (piu' grande e leggibile di default, @gfx 1240x900).
+- Spiegazioni solo nella barra in basso (nessuna sovrapposizione nei pannelli).
+- Pulsante SUGGERIMENTI in basso a destra: seconda barra con i suggerimenti dell'analisi in tempo reale.
+- Frequenze in formato k (1.6k, 18.6k).
+- Bande DRC generiche 20 Hz - 20 kHz (nome automatico LOW/BOX/HARSH/PRES/SIB/AIR secondo la frequenza).
+- Nuovo preset MAGIC 1 (da Magic1.mfp di Paolo).
+- MONITOR: clic su un modulo (titolo, knob, pulsante o scheda) per vederne l'azione reale:
+  curva dei filtri, riduzione Opto/RComp, bande DRC sullo spettro, Dynamic EQ, curva Tone EQ,
+  distribuzione spettrale del Dynamic Balance contro il target, livelli di uscita.
+- Corretto l'arco dei knob (ora coincide con l'indicatore).
+- Maschere slider oltre il 32 calcolate con 2^(n-1).
+v1.0.0 Prima release.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Voce/ZP%20Magic%20Voice%20LAB.jsfx</source>
+      </version>
+      <version name="1.2.7" author="Paolo Balestri · Lato Cardioide" time="2026-11-27T23:24:46Z">
+        <changelog><![CDATA[v1.2.7: Verifica strumentale completa, fix oversampling 2x sul solo residuo non lineare, ritaratura 5 cartucce UAD e restyling UI:
+  - Fix perdita HF e fase (Preamp, Dynamic Balance e Safety Limiter passano a oversampling 2x sul solo residuo non lineare f(x)-x: 0.00 dB roll-off lineare fino a Nyquist, crossover DynBal coerente al campione senza buco medio-alto e DELTA / D·MOLLA / MIX allineati al campione).
+  - Fix LEGA OUTPUT su Input/Peak (riferimento vocale realistico -19 dBFS senza sovra-spinta a vuoto su OUTPUT) + micro-attacco 0.35 ms sul Safety Limiter contro distorsioni sui picchi con PEAK CEIL basso; corretti indici telemetria Shared Bus v3.
+  - Banco 5 cartucce rinominato e ricalibrato su misure UAD a parità di RMS: GLUE (MagicFlow intatto), VOXBOX (Manley Classe A H2 pura), NEVE (1073 Marinair + 2N3055), VCA (console SSL/API), TAPE (Studer A800 15 IPS con head-bump 42 Hz e alte aperte).
+  - UI: spia dinamica reale sopra PEAK RED (senza testo sovrapposto), barra livello INPUT in tempo reale con tacca -18 dB, pulsanti LEGA OUTPUT compatti con simbolo '∞' (8 orizzontale) in pannello 1 e 3, titolo '3 · DYN EQ TONE & BALANCE'.
+v1.2.6: Headroom intermedio pulito e oversampling 2x per mix spinti (spot radio -8 LUFS) senza cambiare la calibrazione timbrica né la latenza (0 PDC):
+  - Preamp (profili 0..4 GLUE/TUBE/IRON/BCAST/TAPE): shaper H2/H3 in oversampling 2x (zero aliasing medio-alte con Input Drive alto).
+  - Dynamic Balance: saturazione armonica Low/Mid convertita da polinomio cubico aperto a curva razionale monotona in oversampling 2x (elimina il foldback digitale sopra 0 dBFS).
+  - Safety Limiter: rilevatore True Peak 4x cubico reale (Catmull-Rom) + soft-knee catcher 2x oversampled negli ultimi 1.5 dB sotto ceiling.
+  - LED ON/OFF cliccabili sui moduli PEAK, DYN EQ, TONE e DYN BAL + escursione libera FREQ DRC (24 Hz-19 kHz) anche con OCT largo.
+v1.2.5: Rilevamento esplicito cambio samplerate in @block con ricalcolo immediato dei coefficienti DSP (ext_noinit=1).
+v1.2.4: Hardware Insert (HW INS, slider57) a latenza zero con curva pre-dinamica e dispersione all-pass sui bassi
+  calibrata su MagicFlow AU; Preamp aggiornato con curva di trasformatore reale e saturazione dispari H3 senza DC offset;
+  banco interno a 5 firme hardware (slider58: GLUE, TUBE, IRON, BCAST, TAPE) per HW INS e Preamp (curve, all-pass, sag e H2/H3 con DC blocker);
+  taratura fine GLUE/catena (EQ/LPF e all-pass 6 stadi riallineati in fase/ampiezza, compensazione spettrale DRC, Dynamic EQ B bassa, soglia Peak Leveler);
+  LEGA OUTPUT su PEAK, DYN EQ, TONE e DYN BAL; memoria A/B salvata nel progetto; OUTPUT esteso a ±24 dB;
+  telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (dinamica, tonalita', livelli e alert DELTA/SOLO);
+  restyling pannello hardware old-style (LED dedicati + targhette Dymo sulla striscia di catena e DRC,
+  pulsanti tattili serigrafati su INSERT/PREAMP/FILTERS/SOLO/GAIN MATCH/DELTA/D·MOLLA e barra LED sui selettori).
+Pulsante ? (accanto a FULL/MINI/JSFX): apre la guida di Magic Voice LAB nell'help della Suite, tramite il Cue Navigator.
+Memoria A/B di lavoro (barra USCITA): LEGA mette lo stato slegato in A e si prova in B; A/B per confrontare, A=B per chiudere.
+LEGA OUTPUT su Peak Leveler, Dynamic EQ, Tone EQ e Dynamic Balance (riferimento: media degli ultimi secondi di voce): cambiando il modulo, la manopola OUTPUT si corregge di quanto il modulo
+  alza o abbassa (calcolato dai parametri, non misurato); OUTPUT resta dov'e' quando si lega o si slega.
+v1.2.3: MONITOR Dynamic EQ e Dynamic Balance aggiornati con le curve reali continue delle rispettive funzioni di trasferimento complesse (5 bande SVF e 3 bande 1-pole), scala centrata zoomabile (±5/±12 dB su Dyn EQ, ±6/±12 dB su Dyn Bal) e telemetria per banda; DSP invariato.
+v1.2.2: 2·DRC aggiornato con rotori FREQ (centro logaritmico in Hz) e OCT (ampiezza in ottave, 0.12-3.50 oct) retrocompatibili sugli slider HP/LP esistenti; MONITOR DRC ridisegnato con le curve a campana SVF reali dinamiche (0..-12 dB), anteprima statica delle campane e somma complessiva.
+v1.2.1: DELTA globale con avviso lampeggiante "DELTA MODE" e auto-off a 30s; DELTA MOLLA esteso (D·MOLLA) che isola il delta del singolo stadio toccato/trascinato con ritorno automatico al rilascio; Suggerimenti calcolati su blocchi di 4s di parlato attivo (completamente esclusi durante DELTA/MOLLA/SOLO); MONITOR Dynamic EQ centrato e zoommato (±5 dB di default, toggle ±12 dB); selettore CHIARO / SCURO solo colore con controlli DRC HP/LP sempre visibili.
+LAB 5: INPUT riportato a drive dritto (-12..+12 dB, default 0 dB, auto-compensato), soglie DRC ripristinate al range utile per il parlato con release meter leggibile e spia BYPASSED cliccabile in pannello 2, suggerimenti bilanciamento timbrico su media lenta 1.8 s post-uscita con filtri del 2° ordine (stop falsi "Voce scura").
+LAB 4: selezione moduli piu' evidente (bordo, sfondo e badge MONITOR), separazione Input/Peak e Filtri nel pannello 1, pannello 3 con rotori in verticale e preset in fila a destra, isoletta dedicata Uscita/Output. DSP invariato.
+DYN-EQ PROTO 1: Stadio 4 (Dynamic EQ) ricostruito sulle misure strumentali di MagicFlow AU (59 freq x 5 livelli, curve A/B/C/D, partizione 5 bande a 2 SVF coerente di fase, lift +3 dB e tempi per curva/banda).
+LAB 2: modulo 2 e monitor indicano DRC; nome esteso nella riga di aiuto.
+LAB 1: frequenze logaritmiche e ingresso numerico; guida e misuratori aggiornati. DSP 1.1.1.
+v1.1.1
+- Nelle viste FULL e MINI la lista parametri di REAPER resta nascosta (tutta la finestra alla grafica).
+- Il MONITOR si allunga e usa tutto lo spazio verticale libero.
+- Riduzioni a zero mostrate come 0.0 dB (non piu' -0.0).
+- Etichette del monitor DRC/Dyn EQ non piu' sovrapposte alla nota.
+v1.1.0
+- Interfaccia scalabile: si adatta alla finestra FX (piu' grande e leggibile di default, @gfx 1240x900).
+- Spiegazioni solo nella barra in basso (nessuna sovrapposizione nei pannelli).
+- Pulsante SUGGERIMENTI in basso a destra: seconda barra con i suggerimenti dell'analisi in tempo reale.
+- Frequenze in formato k (1.6k, 18.6k).
+- Bande DRC generiche 20 Hz - 20 kHz (nome automatico LOW/BOX/HARSH/PRES/SIB/AIR secondo la frequenza).
+- Nuovo preset MAGIC 1 (da Magic1.mfp di Paolo).
+- MONITOR: clic su un modulo (titolo, knob, pulsante o scheda) per vederne l'azione reale:
+  curva dei filtri, riduzione Opto/RComp, bande DRC sullo spettro, Dynamic EQ, curva Tone EQ,
+  distribuzione spettrale del Dynamic Balance contro il target, livelli di uscita.
+- Corretto l'arco dei knob (ora coincide con l'indicatore).
+- Maschere slider oltre il 32 calcolate con 2^(n-1).
+v1.0.0 Prima release.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Voce/ZP%20Magic%20Voice%20LAB.jsfx</source>
+      </version>
     </reapack>
-    <reapack name="ZP Spoken Finish.jsfx" type="effect" desc="ZP Spoken Finish - Voice Harmonic Exciter / De-Exciter - Paolo Balestri">
+    <reapack name="ZP Spoken Finish Pro.jsfx" type="effect" desc="ZP Spoken Finish Pro - Voice Harmonic Exciter / MAGIC · latocardioide.it · dubbertools.com">
+      <metadata>
+        <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
+{\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
+\widowctrl\hyphauto
+
+{\pard \ql \f0 \sa180 \li0 \fi0 Nuova generazione dell'eccitatore e de-eccitatore armonico per voce parlata, podcast e doppiaggio, affiancata al classico ZP Spoken Finish (3.10.2) per non alterare le sessioni esistenti. Motore Chebyshev 2x oversampled a 3 zone coerenti di fase, firma sonora MAGIC (Velvet / Air Silk / 3D Focus) con S-Guard, Voice of God con 2a armonica toracica, Cinema Air > 6.2 kHz, gain match dinamico e limiter True Peak 4x cubico.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Sviluppata su un'idea di Paolo Balestri \u183 ? Lato Cardioide (latocardioide.it) Guida completa: https://latocardioide.it/strumenti/ o dal pulsante '?'\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Next-generation voice harmonic exciter and de-exciter for spoken word, podcast and dubbing, shipped alongside classic ZP Spoken Finish (3.10.2) to preserve 100% recall on existing sessions. 2x oversampled Chebyshev 3-zone phase-coherent engine, MAGIC sonic signature (Velvet / Air Silk / 3D Focus) with S-Guard, Voice of God with H2 chest reinforcement, Cinema Air > 6.2 kHz, dynamic gain matching and 4x cubic true-peak limiter.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Developed from an idea by Paolo Balestri \u183 ? Lato Cardioide (latocardioide.it) Complete documentation: https://latocardioide.it/strumenti/ or click '?'\par}
+}
+]]></description>
+      </metadata>
+      <version name="1.0.0" author="Paolo Balestri" time="2026-11-27T23:24:46Z">
+        <changelog><![CDATA[1.0.0: prima versione autonoma di ZP Spoken Finish Pro (evoluzione 3.11.0 affiancata al classico ZP Spoken Finish 3.10.2 per retrocompatibilita' totale delle sessioni):
+  - Modulo firma sonora MAGIC (OFF di default, attivo con un clic in Simple e Advanced) a 3 caratteri con morphing senza click: VELVET (calore H2 125-260 Hz + tasca anti-cartone 380 Hz + seta morbida), AIR SILK (aria armonica > 7 kHz stile Dolby-361 con S-Guard automatica anti-sibilanti) e 3D FOCUS (all-pass analogico 2 stadi + fuoco formantico 1.6-4.5 kHz).
+  - Generatore armonico Chebyshev normalizzato sull'inviluppo in banda (H2+H4 pari / H3+H5 dispari) con oversampling 2x sul solo residuo (0.00 dB perdita lineare fino a Nyquist) e architettura a 3 zone coerenti di fase.
+  - Voice of God con rinforzo toracico 2a armonica, Cinema Air reale > 6.2 kHz, Gain Match (-6..+3 dB), DELTA puro con auto-off 30s, tema Chiaro/Scuro persistente, limiter True Peak 4x cubico e telemetria ZP Shared Bus v3.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Voce/ZP%20Spoken%20Finish%20Pro.jsfx</source>
+      </version>
+    </reapack>
+    <reapack name="ZP Spoken Finish.jsfx" type="effect" desc="ZP Spoken Finish - Voice Harmonic Exciter / De-Exciter · latocardioide.it · dubbertools.com">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
@@ -6539,8 +7189,16 @@ Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suit
 Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/bf4eaded02fbfb08f46e1cbc411b88c28da3f677/ZP%20Voce/ZP%20Spoken%20Finish.jsfx</source>
       </version>
+      <version name="3.10.2" author="Paolo Balestri" time="2026-11-22T11:49:46Z">
+        <changelog><![CDATA[3.10.2: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro (armoniche, VOG/body, aria, dynamic drive e livelli).
+Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
+Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+  altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Voce/ZP%20Spoken%20Finish.jsfx</source>
+      </version>
     </reapack>
-    <reapack name="ZP Stagekeeper Dialogue Director.jsfx" type="effect" desc="ZP Stagekeeper Dialogue Director AutoMixer - Paolo Balestri">
+    <reapack name="ZP Stagekeeper Dialogue Director.jsfx" type="effect" desc="ZP Stagekeeper Dialogue Director AutoMixer · latocardioide.it · dubbertools.com">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
@@ -6584,8 +7242,26 @@ Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suit
 Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/bf4eaded02fbfb08f46e1cbc411b88c28da3f677/ZP%20Voce/ZP%20Stagekeeper%20Dialogue%20Director.jsfx</source>
       </version>
+      <version name="2.5.3" author="Paolo Balestri" time="2026-11-22T11:49:46Z">
+        <changelog><![CDATA[2.5.3: telemetria ZP Shared Bus v3 in sola lettura verso Master Pro (stato L/R/Neutral, riduzione, limiter, alert CHECK L/R); DSP e preset invariati.
+Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
+Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+  altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Voce/ZP%20Stagekeeper%20Dialogue%20Director.jsfx</source>
+      </version>
+      <version name="2.5.4" author="Paolo Balestri" time="2026-11-27T23:24:46Z">
+        <changelog><![CDATA[2.5.4: Lookahead Gate e Limiter con buffer ring a capacita' fissa (G_BUF_CAP / LIM_BUF_CAP disgiunti con memset su @init)
+  e dichiarazione PDC onesta in refresh_runtime() senza aliasing L/R.
+2.5.3: telemetria ZP Shared Bus v3 in sola lettura verso Master Pro (stato L/R/Neutral, riduzione, limiter, alert CHECK L/R); DSP e preset invariati.
+Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
+Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+  altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Voce/ZP%20Stagekeeper%20Dialogue%20Director.jsfx</source>
+      </version>
     </reapack>
-    <reapack name="ZP Subliminal Presence Layer White.jsfx" type="effect" desc="ZP Subliminal Presence Layer White - Paolo Balestri">
+    <reapack name="ZP Subliminal Presence Layer White.jsfx" type="effect" desc="ZP Subliminal Presence Layer White · latocardioide.it · dubbertools.com">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
@@ -6620,8 +7296,15 @@ Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suit
 Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/bf4eaded02fbfb08f46e1cbc411b88c28da3f677/ZP%20Voce/ZP%20Subliminal%20Presence%20Layer%20White.jsfx</source>
       </version>
+      <version name="3.2.4" author="Paolo Balestri" time="2026-11-27T23:24:46Z">
+        <changelog><![CDATA[Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
+Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+  altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Voce/ZP%20Subliminal%20Presence%20Layer%20White.jsfx</source>
+      </version>
     </reapack>
-    <reapack name="ZP Voiceover Unified Chain.jsfx" type="effect" desc="ZP Voiceover Unified Chain - Voice Leveler - Paolo Balestri">
+    <reapack name="ZP Voiceover Unified Chain.jsfx" type="effect" desc="ZP Voiceover Unified Chain - Voice Leveler · latocardioide.it · dubbertools.com">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
@@ -6660,6 +7343,23 @@ Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suit
 Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
         <source>https://github.com/capitanpaolone/zp-suite/raw/bf4eaded02fbfb08f46e1cbc411b88c28da3f677/ZP%20Voce/ZP%20Voiceover%20Unified%20Chain.jsfx</source>
       </version>
+      <version name="4.1.9" author="Paolo Balestri" time="2026-11-22T11:49:46Z">
+        <changelog><![CDATA[4.1.9: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro e commit atomico del frame legacy.
+Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
+Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+  altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/96a9c030c60f427cd0dfd32055855698df364af6/ZP%20Voce/ZP%20Voiceover%20Unified%20Chain.jsfx</source>
+      </version>
+      <version name="4.1.10" author="Paolo Balestri" time="2026-11-27T23:24:46Z">
+        <changelog><![CDATA[4.1.10: Rilevamento cambio samplerate in @block (ext_noinit=1) con aggiornamento finestre meter e compute_dsp_params().
+4.1.9: telemetria ZP Shared Bus v3 multi-istanza verso Master Pro e commit atomico del frame legacy.
+Grafica zoomabile: allargando la finestra del plugin tutta l'interfaccia scala in proporzione (ZP Proportional Zoom Engine). Solo grafica: audio, parametri e preset invariati.
+Pulsante ? che apre la sezione di questo plugin nella guida della ZP Studio Suite (con il Cue Navigator acceso;
+  altrimenti dice dove trovarla). Testi di aiuto in italiano o inglese secondo la lingua della Suite.
+Descrizione (? di REAPER) in italiano e inglese, con i crediti Lato Cardioide.]]></changelog>
+        <source>https://github.com/capitanpaolone/zp-suite/raw/ba9ce21ba36ea923f117aab39cbf6bce70570d17/ZP%20Voce/ZP%20Voiceover%20Unified%20Chain.jsfx</source>
+      </version>
     </reapack>
   </category>
   <metadata>
@@ -6688,6 +7388,7 @@ README in Italian
 {\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b ZP Master} \u8212- mastering and reference-tone tools.\par}
 {\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b ZP Misura} \u8212- loudness meters, oscilloscope, passive signal probes and ZP BrownSlope Prism, a passive brown-slope analyzer.\sa180\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 Version 2.6.6 adds automatic copying and Sync now in Render & Copy on Windows (requires js_ReaScriptAPI) and Linux (requires find and stat). Version 2.6.5 updates the Solo Recorder guide to explain how ZP Remote packages relate to Dubbertools. Version 2.6.4 added Render & Copy, a Dubbertools link in SOLO Web, and the ZP Remote REAPER tool for creating packages and importing deliveries. ZP Remote export requires Python 3 and ffmpeg.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Version 2.6.9 introduces {\b ZP Shared Bus v3.1}, the new {\b {\f1 39 ZP Telemetry Engine}}, the new {\b {\f1 ZP Spoken Finish Pro 1.0.0}} (shipped alongside classic {\f1 ZP Spoken Finish 3.10.2} with the {\f1 MAGIC} {\f1 VELVET \u183 ? AIR SILK \u183 ? 3D FOCUS} signature module), {\b {\f1 30 ZP SRT 2.0}} (unified 4-tab subtitle workstation with {\f1 Coalesce short cues}), two calibrated {\b Project Templates} ({\f1 -18 LUFS} VoiceOver and {\f1 -8 LUFS} Mix-Spot), {\b {\f1 ZP Master Pro 2.52}} ({\f1 TRANSP} transparent profile + {\f1 ENHANCE} + {\f1 2\u215 ? PRECLIP} + {\f1 SPT -8 LUFS} preset and {\b CATENA} tab), {\b {\f1 ZP BUS Chain 1.3.7}} (Teletronix LA-2A Gray-calibrated {\f1 LA2 GRAY} + {\f1 PAD -6} + {\f1 2\u215 ?} oversampling), {\b {\f1 ZP Magic Voice LAB 1.2.7}} ({\f1 20 kHz} linear transparency via residual-only 2\u215 ? oversampling and 5 UAD-calibrated hardware cartridges), {\b {\f1 ZP Click & Attack Softener 1.4}} (STFT spectral {\f1 MICRO-CLICK} with {\f1 ~940 Hz} local pocket coherence, continuous {\f1 Freq Skew} {\f1 Low \u8596 ? Air}, and automatable {\f1 Micro %}), {\b {\f1 ZP Loudness Meter Multichannel 45.3}}, {\b {\f1 ZP BrownSlope Prism 1.2}} (cepstral comb-filter detection), {\b {\f1 ZP Audition Noise Monitor 1.1}} (Monitor FX), and unified product branding ({\f1 latocardioide.it \u183 ? dubbertools.com}) across all Lua windows, JSFX plugins, and IT/EN guides.\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 ZP Studio Suite 2.6.7 distributes {\b ZP Magic Voice LAB 1.2.0-lab3}, the correct version, as a separate {\b ZP Voce} effect. {\b ZP Magic Voice 1.2.0} without LAB is an archived prototype and is excluded from the package. Install ZP Magic Voice LAB alongside ZP Studio Suite in ReaPack. {\field{\*\fldinst{HYPERLINK "ZP%20Studio%20Suite/help/en/magic_voice_lab.html"}}{\fldrslt{\ul
 Operating guide
 }}}
@@ -6697,10 +7398,11 @@ Operating guide
 changelog
 }}}
  for the complete list of changes.\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Beta in this release\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b ZP Clean & Paint (BETA)}: ReaPack installs the REAPER actions. The ZP Voice Model Lab engine, Python environment, presets and voice models remain external and must be installed and configured separately.\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b ZP Montaggio Parlato (BETA)}: requires ZP Studio Suite and ZP Speech from 33 Welcome; the current version is tested on macOS. PDF import needs {\f1 pdftotext} (Poppler). Clipboard paste needs SWS.\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b ZP BrownSlope Dynamic Guard (BETA)} and {\b ZP Click & Attack Softener (BETA)}: separate effects to try on sessions and working copies. Cue Navigator is only needed for the {\f1 ?} help button.\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Separate packages\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Starting with 2.6.9, these packages have graduated from BETA (2026-11-26); the requirements and limits stay as listed.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b ZP Clean & Paint}: ReaPack installs the REAPER actions. The ZP Voice Model Lab engine, Python environment, presets and voice models remain external and must be installed and configured separately.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b ZP Montaggio Parlato}: requires ZP Studio Suite and ZP Speech from 33 Welcome; the current version is tested on macOS. PDF import needs {\f1 pdftotext} (Poppler). Clipboard paste needs SWS.\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b ZP BrownSlope Dynamic Guard} and {\b ZP Click & Attack Softener}: separate effects to try on sessions and working copies. Cue Navigator is only needed for the {\f1 ?} help button.\sa180\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 ZP Speech (the transcription engine behind Transcribe, 29) is not in the ReaPack package: install it from Welcome (33), which downloads it from GitHub. On macOS it uses MacWhisper or OpenAI Whisper; on Windows and Linux it uses local OpenAI Whisper and is still {\b experimental}.\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Guides and source\par}
 {\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\field{\*\fldinst{HYPERLINK "ZP%20Studio%20Suite/help/en/index.html"}}{\fldrslt{\ul
@@ -6708,7 +7410,7 @@ English Suite guide
 }}}
 \par}
 {\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\field{\*\fldinst{HYPERLINK "ZP%20Studio%20Suite/help/en/lab.html"}}{\fldrslt{\ul
-ZP Suite Beta guide
+Separate packages guide
 }}}
 \par}
 {\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\field{\*\fldinst{HYPERLINK "ZP%20Studio%20Suite/help/index.html"}}{\fldrslt{\ul
@@ -6724,8 +7426,8 @@ ReaPack repository index
 }}}
 \sa180\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 The ReaPack package description and release notes are provided in both English and Italian. The GitHub README is English-first; Italian readers can choose the Italian README and set the Suite language in {\b 33 Welcome}.\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 License\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 GPL-3.0-or-later for most components; some REAPER-derived meters are LGPL-2.1-or-later. See {\field{\*\fldinst{HYPERLINK "LICENSE"}}{\fldrslt{\ul
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 License and Disclaimer of Warranty\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Most components are licensed under {\b GPL-3.0-or-later}; some REAPER-derived meters are {\b LGPL-2.1-or-later}. See {\field{\*\fldinst{HYPERLINK "LICENSE"}}{\fldrslt{\ul
 LICENSE
 }}}
 , {\field{\*\fldinst{HYPERLINK "LICENSE-LGPL-2.1.txt"}}{\fldrslt{\ul
@@ -6735,6 +7437,7 @@ LICENSE-LGPL-2.1.txt
 NOTICE.md
 }}}
 .\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b No Warranty ("AS IS"):} ZP Suite is free, open-source software provided {\b "as is" without warranty of any kind}, either expressed or implied, including implied warranties of merchantability or fitness for a particular purpose (pursuant to Sections 15\u8211-16 of the GNU GPLv3). You assume all risk regarding quality, performance, and suitability in production: always keep backups of important sessions and verify rendered deliverables. In no event shall the author be liable for any direct, indirect, incidental, or consequential damages, downtime, or data loss arising from the use or inability to use this software.\par}
 }
 ]]></description>
   </metadata>
