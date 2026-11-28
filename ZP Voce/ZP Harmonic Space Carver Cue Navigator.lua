@@ -1,5 +1,5 @@
 -- @description ZP Harmonic Space Carver Cue Navigator (background helper)
--- @version 1.16
+-- @version 1.17
 -- @author Paolo Balestri / Codex
 -- @about Collega i Carver a REAPER: salti tra i cue, punto del cursore a trasporto fermo,
 --   verifica del routing sidechain e cue come marker #HSC sul righello (seguono l'editing).

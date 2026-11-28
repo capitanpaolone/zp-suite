@@ -1,5 +1,5 @@
 -- @description ZP Clean & Paint — REAPER 7
--- @version 1.0.1
+-- @version 1.0.2
 -- @author Paolo Balestri / Antigravity
 -- @about
 --   IT. Pannello REAPER per Clean (CoreML/fallback) e Paint (RVC), collegato al motore esterno ZP Voice Model Lab.

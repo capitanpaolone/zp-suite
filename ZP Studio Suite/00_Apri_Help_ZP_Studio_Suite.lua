@@ -1,5 +1,5 @@
 -- @description ZP Studio Suite
--- @version 2.6.9
+-- @version 2.6.9.1
 -- @author Paolo Balestri
 -- @license GPL-3.0-or-later
 -- @links
@@ -23,7 +23,10 @@
 --   sono disponibili in entrambe le lingue. Il supporto screen reader Windows usa
 --   NVDA Controller Client (LGPL 2.1, NV Access). Dettagli in README.it.md.
 -- @changelog
---   2.6.9 (in preparazione)
+--   2.6.9.1 (2026-11-28)
+--   EN — Complete 2.6.9 ReaPack release: 39 ZP Telemetry Engine, ZP_SRT_Engine + redesigned 30 ZP SRT, 36 ZP Montaggio Parlato button in 32 Toolbar installer, updated EN catalog, and calibrated VoiceOver (-18 LUFS) / Mix-Spot (-8 LUFS) project templates.
+--   IT — Distribuzione ReaPack completa 2.6.9: 39 ZP Telemetry Engine, ZP_SRT_Engine + 30 ZP SRT ridisegnato, pulsante 36 ZP Montaggio Parlato in 32 Installa Toolbar, catalogo EN aggiornato e template di progetto VoiceOver (-18 LUFS) / Mix-Spot (-8 LUFS).
+--   2.6.9 (2026-11-22)
 --   EN — ZP Shared Bus v3 (Master Pro 2.48 + 9 voice/bus/music JSFX + Cue Navigator 1.16): multi-instance telemetry from every active channel and bus ordered upstream->downstream, CATENA view in Master Pro Navigator, upstream DELTA/SOLO/CHECK alerts, Music Probe/Carver context, and click-to-open FX via Cue Navigator.
 --   IT — ZP Shared Bus v3 (Master Pro 2.48 + 9 JSFX voce/bus/musica + Cue Navigator 1.16): telemetria multi-istanza da tutti i canali e bus ordinata da monte a valle, scheda CATENA nel Navigator di Master Pro, alert a monte DELTA/SOLO/CHECK, contesto Music Probe/Carver e apertura diretta FX al clic con Cue Navigator.
 --   EN — Carver 2.6.12 + Cue Navigator 1.16: select a cue when its #HSC marker is clicked while stopped.
